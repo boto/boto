@@ -163,6 +163,8 @@ class Key(S3Key):
         just overriding/sharing code the way it currently works).
         """
         provider = self.bucket.connection.provider
+        if headers is None:
+            headers = {}
         if policy:
             headers[provider.acl_header] = policy
         if hasattr(fp, 'name'):
