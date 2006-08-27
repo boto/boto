@@ -21,13 +21,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
+__version__ = '0.1a'
+
 setup(name = "boto",
-      version = "0.1a",
+      version = __version__,
       description = "Amazon Web Services Library",
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
       url = "http://code.google.com/p/boto/",
       packages = [ 'boto' ],
+      scripts=['test.py'],
       license = 'MIT',
       platforms = 'Posix; MacOS X; Windows',
       classifiers = [ 'Development Status :: 3 - Alpha',
@@ -35,4 +43,5 @@ setup(name = "boto",
                       'License :: OSI Approved :: MIT License',
                       'Operating System :: OS Independent',
                       'Topic :: Internet',
+                      ],
       )
