@@ -1,62 +1,38 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+#!/usr/bin/python
+
+# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
 #
-# This file is part of paramiko.
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
 #
-# Paramiko is free software; you can redistribute it and/or modify it under the
-# terms of the GNU Lesser General Public License as published by the Free
-# Software Foundation; either version 2.1 of the License, or (at your option)
-# any later version.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# Paramiko is distrubuted in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-# A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
-# details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Paramiko; if not, write to the Free Software Foundation, Inc.,
-# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
-
-longdesc = '''
-This is a library for making SSH2 connections (client or server).
-Emphasis is on using SSH2 as an alternative to SSL for making secure
-connections between python scripts.  All major ciphers and hash methods
-are supported.  SFTP client and server mode are both supported too.
-
-Required packages:
-    pyCrypto
-'''
-
-# if someday we want to *require* setuptools, uncomment this:
-# (it will cause setuptools to be automatically downloaded)
-#import ez_setup
-#ez_setup.use_setuptools()
-
-try:
-    from setuptools import setup
-    kw = {
-        'install_requires': 'pycrypto >= 1.9',
-    }
-except ImportError:
-    from distutils.core import setup
-    kw = {}
-
-setup(name = "paramiko",
-      version = "1.5.4",
-      description = "SSH2 protocol library",
-      author = "Robey Pointer",
-      author_email = "robey@lag.net",
-      url = "http://www.lag.net/paramiko/",
-      packages = [ 'paramiko' ],
-      download_url = 'http://www.lag.net/paramiko/download/paramiko-1.5.4.zip',
-      license = 'LGPL',
+setup(name = "boto",
+      version = "0.1a",
+      description = "Amazon Web Services Library",
+      author = "Mitch Garnaat",
+      author_email = "mitch@garnaat.com",
+      url = "http://code.google.com/p/boto/",
+      packages = [ 'boto' ],
+      license = 'MIT',
       platforms = 'Posix; MacOS X; Windows',
-      classifiers = [ 'Development Status :: 5 - Production/Stable',
+      classifiers = [ 'Development Status :: 3 - Alpha',
                       'Intended Audience :: Developers',
-                      'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
+                      'License :: OSI Approved :: MIT License',
                       'Operating System :: OS Independent',
                       'Topic :: Internet',
-                      'Topic :: Security :: Cryptography' ],
-      long_description = longdesc,
-      **kw
       )
