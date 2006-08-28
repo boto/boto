@@ -30,6 +30,9 @@ class Message:
         self.body = body
         self.id = None
 
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'MessageBody':
             self.__dict__['body'] = value

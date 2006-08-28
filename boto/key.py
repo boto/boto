@@ -37,8 +37,13 @@ class Key:
         self.owner = None
         self.storage_class = None
 
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
-        if key == 'ETag':
+        if key == 'Key':
+            self.__dict__['key'] = value
+        elif key == 'ETag':
             self.__dict__['etag'] = value
         elif key == 'LastModified':
             self.__dict__['last_modified'] = value

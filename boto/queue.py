@@ -36,6 +36,9 @@ class Queue:
         self.url = url
         self.message_class = message_class
 
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'url' or key == 'QueueUrl':
             self.__dict__['url'] = value

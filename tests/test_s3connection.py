@@ -50,6 +50,6 @@ class S3ConnectionTest (unittest.TestCase):
         fp = open('foobar')
         assert s == fp.read(), 'corrupted file'
         fp.close()
-        bucket.delete_contents(k)
+        bucket.delete_key(k)
         c.delete_bucket(bucket)
         print '--- tests completed ---'

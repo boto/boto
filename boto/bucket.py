@@ -24,16 +24,18 @@ from boto.owner import Owner
 from boto.key import Key
 from boto.exception import S3ResponseError
 import xml.sax
+import urllib
 
 class Bucket:
 
-    def __init__(self, connection=None, name=None, prefix=None,
-                 page_size=100, debug=None):
+    def __init__(self, connection=None, name=None, debug=None):
         self.name = name
         self.connection = connection
-        self.page_size = page_size
         self.debug = debug
 
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'Name':
             self.__dict__['name'] = value
@@ -42,10 +44,20 @@ class Bucket:
         else:
             self.__dict__[key] = value
 
-    def get_all_contents(self, marker=None, headers=None):
+    # params can be one of: prefix, marker, max-keys, delimiter
+    # as defined in S3 Developer's Guide, however since max-keys is not
+    # a legal variable in Python you have to pass maxkeys and this
+    # method will munge it (Ugh!)
+    def get_all_keys(self, headers=None, **params):
         path = '/%s' % self.name
-        if marker:
-            path = path + '?marker=%s' % marker
+        l = []
+        for k,v in params.items():
+            if  k == 'maxkeys':
+                k = 'max-keys'
+            l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
+        s = '&'.join(l)
+        if s:
+            path = path + '?%s' % s
         response = self.connection.make_request('GET', path, headers)
         body = response.read()
         if response.status == 200:
@@ -55,13 +67,11 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def delete_contents(self, contents):
-        path = '/%s/%s' % (self.name, contents.key)
+    def delete_key(self, key):
+        path = '/%s/%s' % (self.name, key.key)
         response = self.connection.make_request('DELETE', path)
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
         
-#     def __repr__(self):
-#         return 'Bucket(%s)' % self.name
 

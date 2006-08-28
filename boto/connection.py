@@ -297,7 +297,7 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('GET', path)
         body = response.read()
         if response.status > 300:
-            raise 'get_all_buckets failed'
+            raise S3ResponseError(response.status, response.reason)
         # h = handler.XmlHandler(self, {'Owner': Owner,
         #                               'Bucket': Bucket})
         # ignoring Owner for now
@@ -312,7 +312,7 @@ class S3Connection(AWSAuthConnection):
         if response.status == 409:
              raise S3CreateError(response.status, response.reason)
         if response.status == 200:
-            b = Bucket(self, bucket_name, self, debug=self.debug)
+            b = Bucket(self, bucket_name, debug=self.debug)
             return b
         else:
             raise S3ResponseError(response.status, response.reason)
