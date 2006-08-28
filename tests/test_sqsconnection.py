@@ -67,10 +67,19 @@ class SQSConnectionTest (unittest.TestCase):
         assert queue.count() == 1
         time.sleep(10)
 
-        # now read the message from the queue
-        message = queue.read()
+        # now read the message from the queue with a 10 second timeout
+        message = queue.read(visibility_timeout=10)
         assert message
         assert message.get_body() == message_body
+
+        # now immediately try another read, shouldn't find anything
+        message = queue.read()
+        assert message == None
+
+        # now wait 10 seconds and try again
+        time.sleep(10)
+        message = queue.read()
+        assert message
 
         # now delete the message
         queue.delete_message(message)
