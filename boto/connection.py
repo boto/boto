@@ -90,7 +90,6 @@ def canonical_string(method, path, headers, expires=None):
             buf += "%s\n" % interesting_headers[key]
 
     # don't include anything after the first ? in the resource...
-    #buf += "/%s" % path.split('?')[0]
     buf += "%s" % path.split('?')[0]
 
     # ...unless there is an acl or torrent parameter
@@ -144,7 +143,6 @@ class AWSAuthConnection:
             
         self.set_debug(debug)
         self._last_rs = None
-        self._cache = {}
 
     def set_debug(self, debug=0):
         self.debug = debug
@@ -172,36 +170,6 @@ class AWSAuthConnection:
             print '\n\n%s\n\n' % c_string
         headers['Authorization'] = \
             "AWS %s:%s" % (self.aws_access_key_id, encode(self.aws_secret_access_key, c_string))
-
-    def __len__(self):
-        return len(self._cache.keys())
-
-    def __getitem__(self, key):
-        if self._cache.has_key(key):
-            return self._cache[key]
-        else:
-            raise KeyError(key)
-
-    def __contains__(self, item):
-        if item in self._cache:
-            return True
-        else:
-            return False
-
-    def keys(self):
-        return self._cache.keys()
-
-    def values(self):
-        return self._cache.values()
-
-    def items(self):
-        return self._cache.items()
-
-    def has_key(self, key):
-        if self._cache.has_key(key):
-            return True
-        else:
-            return False
         
     def get_aws_metadata(self, headers):
         metadata = {}
@@ -276,22 +244,13 @@ class SQSConnection(AWSAuthConnection):
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = 's3.amazonaws.com'
-    BufferSize = 1024
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, debug=0):
         AWSAuthConnection.__init__(self, self.DefaultHost,
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, debug)
-        self._cache = {}
     
-    def add_child(self, child, text):
-        child.connection = self
-        if isinstance(child, Owner):
-            self.owner = child
-        elif isinstance(child, Bucket):
-            self._cache[child.name] = child
-
     def get_all_buckets(self):
         path = '/'
         response = self.make_request('GET', path)
@@ -323,6 +282,4 @@ class S3Connection(AWSAuthConnection):
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
-        if bucket.name in self._cache.keys():
-            del self._cache[bucket.name]
 

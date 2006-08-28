@@ -25,6 +25,9 @@ class Owner:
         self.id = id
         self.display_name = display_name
 
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'DisplayName':
             self.__dict__['display_name'] = value

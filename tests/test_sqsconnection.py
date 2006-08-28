@@ -63,7 +63,7 @@ class SQSConnectionTest (unittest.TestCase):
         message_body = 'This is a test'
         message = Message(queue, message_body)
         queue.write(message)
-        time.sleep(10)
+        time.sleep(5)
         assert queue.count() == 1
         time.sleep(10)
 
@@ -74,7 +74,7 @@ class SQSConnectionTest (unittest.TestCase):
 
         # now delete the message
         queue.delete_message(message)
-        time.sleep(10)
+        time.sleep(5)
         assert queue.count() == 0
 
         # now delete that queue

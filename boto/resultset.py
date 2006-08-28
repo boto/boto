@@ -24,6 +24,9 @@ class ResultSet:
     def __init__(self):
         self._results = []
 
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'IsTruncated':
             self.__dict__['is_truncated'] = value

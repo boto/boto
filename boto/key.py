@@ -22,6 +22,7 @@
 import urllib
 import mimetypes
 import md5
+import StringIO
 import boto
 from boto.exception import S3ResponseError
 
@@ -99,6 +100,11 @@ class Key:
     def set_contents_from_filename(self, filename):
         fp = open(filename, 'rb')
         self.from_file(fp)
+        fp.close()
+
+    def set_contents_from_string(self, s):
+        fp = StringIO.StringIO(s)
+        self.set_contents_from_file(fp)
         fp.close()
 
     def get_file(self, fp, headers={}):
