@@ -42,6 +42,9 @@ class Message:
         else:
             self.__dict__[key] = value
 
+    def parse_body(self, body):
+        pass
+
     def __len__(self):
         return len(self.body)
 
