@@ -47,6 +47,9 @@ class Queue:
         else:
             self.__dict__[key] = value
 
+    def set_message_class(self, message_class):
+        self.message_class = message_class
+
     # get the visibility timeout for the queue
     def get_timeout(self):
         path = '%s' % self.id

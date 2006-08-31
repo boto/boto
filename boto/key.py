@@ -28,10 +28,10 @@ from boto.exception import S3ResponseError
 
 class Key:
 
-    def __init__(self, bucket=None, filename=None):
+    def __init__(self, bucket=None):
         self.bucket = bucket
         self.content_type = 'application/octet-stream'
-        self.filename = filename
+        self.filename = None
         self.etag = None
         self.key = None
         self.last_modified = None
@@ -99,7 +99,7 @@ class Key:
 
     def set_contents_from_filename(self, filename):
         fp = open(filename, 'rb')
-        self.from_file(fp)
+        self.set_contents_from_file(fp)
         fp.close()
 
     def set_contents_from_string(self, s):

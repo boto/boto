@@ -27,6 +27,7 @@ Some unit tests for the S3Connection
 
 import unittest
 import time
+import os
 from boto.connection import S3Connection
 from boto.key import Key
 
@@ -52,6 +53,7 @@ class S3ConnectionTest (unittest.TestCase):
         assert s == fp.read(), 'corrupted file'
         fp.close()
         bucket.delete_key(k)
+        os.unlink('foobar')
         # test a few variations on get_all_keys - first load some data
         k.key = 'foo/bar'
         k.set_contents_from_string(s)
