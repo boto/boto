@@ -135,5 +135,5 @@ class Key:
 
     def get_contents_to_filename(self, filename):
         fp = open(filename, 'wb')
-        self.to_file(fp)
+        self.get_contents_to_file(fp)
         fp.close()

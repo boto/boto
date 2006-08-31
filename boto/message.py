@@ -35,6 +35,7 @@ class Message:
     # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'MessageBody':
+            self.parse_body(value)
             self.__dict__['body'] = value
         elif key == 'MessageId':
             self.__dict__['id'] = value
