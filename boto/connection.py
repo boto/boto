@@ -46,7 +46,7 @@ import time
 import urllib
 import os
 import xml.sax
-from boto.exception import SQSError, S3ResponseError
+from boto.exception import SQSError, S3ResponseError, S3CreateError
 from boto import handler
 from boto.queue import Queue
 from boto.bucket import Bucket
