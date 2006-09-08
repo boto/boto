@@ -111,7 +111,7 @@ class Queue:
     def clear(self, page_size=100, vtimeout=10):
         """Utility function to remove all messages from a queue"""
         n = 0
-        l = self.get_messages(page_size, vtimeout
+        l = self.get_messages(page_size, vtimeout)
         while l:
             for m in l:
                 self.delete_message(m)
