@@ -108,15 +108,15 @@ class Queue:
         xml.sax.parseString(body, handler)
         return handler.rs
 
-    def clear(self, page_size=100):
+    def clear(self, page_size=100, vtimeout=10):
         """Utility function to remove all messages from a queue"""
         n = 0
-        l = self.get_messages(page_size, 10)
+        l = self.get_messages(page_size, vtimeout
         while l:
             for m in l:
                 self.delete_message(m)
                 n += 1
-            l = self.get_messages(page_size, 10)
+            l = self.get_messages(page_size, vtimeout)
         return n
 
     def count(self, page_size=100, vtimeout=10):
