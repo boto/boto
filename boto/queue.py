@@ -119,13 +119,13 @@ class Queue:
             l = self.get_messages(page_size, 10)
         return n
 
-    def count(self, page_size=100):
+    def count(self, page_size=100, vtimeout=10):
         """Utility function to count the number of messages in a queue"""
         n = 0
-        l = self.get_messages(page_size, 10)
+        l = self.get_messages(page_size, vtimeout)
         while l:
             for m in l:
                 n += 1
-            l = self.get_messages(page_size, 10)
+            l = self.get_messages(page_size, vtimeout)
         return n
     
