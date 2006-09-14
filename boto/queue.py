@@ -129,3 +129,18 @@ class Queue:
             l = self.get_messages(page_size, vtimeout)
         return n
     
+    def dump(self, file_name, page_size=100, vtimeout=10, sep=''):
+        """Utility function to dump the messages in a queue to a file"""
+        fp = open(file_name, 'wb')
+        n = 0
+        l = self.get_messages(page_size, vtimeout)
+        while l:
+            for m in l:
+                fp.write(m.get_body())
+                if sep:
+                    fp.write(sep)
+                n += 1
+            l = self.get_messages(page_size, vtimeout)
+        fp.close()
+        return n
+    
