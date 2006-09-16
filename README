@@ -1,0 +1,25 @@
+boto 0.2a
+15 Sep 2006
+
+Copyright (c) 2006 Mitch Garnaat <mitch@garnaat.org>
+
+http://code.google.com/p/boto
+
+Boto is a Python package that provides interfaces to Amazon Web Services.
+At the moment, boto supports S3 (Simple Storage Service) and SQS (Simple
+Queue Service) via the REST API's provided by those services.  The goal
+is to support additional services in the future.
+
+The goal of boto is to provide a very simple, easy to use, lightweight
+wrapper around the Amazon services.  Not all features supported by the
+Amazon Web Services will be supported in boto.  Basically, only those
+features I need to do what I want to do are supported.  To the extent that
+the features I need are the features that you need you may find boto useful.
+
+Boto was written using Python 2.4.1 on Mac OSX.  It has also been tested
+on Linux Fedora Core 4 using Python 2.4.1.  Boto requires no additional
+libraries or packages other than those that are distributed with Python 2.4.1.
+
+There is very little in the way of documentation for boto at this point in time.
+The best way to see how it works is to look at the unit tests in the tests
+directory of the distribution.
