@@ -122,6 +122,7 @@ class AWSAuthConnection:
                  is_secure=True, port=None, debug=False):
         self.is_secure = is_secure
         self.server = server
+        self.debug = debug
         if not port:
             port = PORTS_BY_SECURITY[is_secure]
         self.port = port
@@ -150,7 +151,7 @@ class AWSAuthConnection:
         else:
             self.connection = httplib.HTTPConnection("%s:%d" % (self.server,
                                                                 self.port))
-        self.set_debug(debug)
+        self.set_debug(self.debug)
 
     def set_debug(self, debug=0):
         self.debug = debug
