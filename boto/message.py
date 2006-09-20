@@ -27,7 +27,7 @@ class Message:
     
     def __init__(self, queue=None, body=''):
         self.queue = queue
-        self.body = body
+        self.set_body(body)
         self.id = None
 
     # This allows the XMLHandler to set the attributes as they are named
@@ -35,15 +35,15 @@ class Message:
     # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'MessageBody':
-            self.parse_body(value)
+            self.set_body(value)
             self.__dict__['body'] = value
         elif key == 'MessageId':
             self.__dict__['id'] = value
         else:
             self.__dict__[key] = value
 
-    def parse_body(self, body):
-        pass
+    def set_body(self, body):
+        self.body = body
 
     def __len__(self):
         return len(self.body)
