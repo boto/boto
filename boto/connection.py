@@ -120,9 +120,11 @@ class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
                  aws_secret_access_key=None,
                  is_secure=True, port=None, debug=False):
-
+        self.is_secure = is_secure
+        self.server = server
         if not port:
             port = PORTS_BY_SECURITY[is_secure]
+        self.port = port
 
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
@@ -135,14 +137,20 @@ class AWSAuthConnection:
         else:
             if os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
                 self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
-                
-        if (is_secure):
-            self.connection = httplib.HTTPSConnection("%s:%d" % (server, port))
-        else:
-            self.connection = httplib.HTTPConnection("%s:%d" % (server, port))
-            
-        self.set_debug(debug)
+
+        self.make_http_connection()
         self._last_rs = None
+
+    def make_http_connection(self):
+        if self.debug:
+            print 'establishing HTTP connection'
+        if (self.is_secure):
+            self.connection = httplib.HTTPSConnection("%s:%d" % (self.server,
+                                                                 self.port))
+        else:
+            self.connection = httplib.HTTPConnection("%s:%d" % (self.server,
+                                                                self.port))
+        self.set_debug(debug)
 
     def set_debug(self, debug=0):
         self.debug = debug
@@ -157,9 +165,13 @@ class AWSAuthConnection:
         # add auth header
         self.add_aws_auth_header(final_headers, method, path)
 
-        #self.connection.request(method, "/%s" % path, data, final_headers)
         self.connection.request(method, path, data, final_headers)
-        return self.connection.getresponse()
+        try:
+            return self.connection.getresponse()
+        except httplib.HTTPException, e:
+            self.make_http_connection()
+            self.connection.request(method, path, data, final_headers)
+            return self.connection.getresponse()
 
     def add_aws_auth_header(self, headers, method, path):
         if not headers.has_key('Date'):
