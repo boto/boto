@@ -60,7 +60,7 @@ class Queue:
         handler = XmlHandler(self, {})
         xml.sax.parseString(body, handler)
         self.connection._last_rs = handler.rs
-        return handler.rs.VisibilityTimeout
+        return int(handler.rs.VisibilityTimeout)
 
     # convenience method that returns a single message or None if queue is empty
     def read(self, visibility_timeout=None):
