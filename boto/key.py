@@ -137,3 +137,8 @@ class Key:
         fp = open(filename, 'wb')
         self.get_contents_to_file(fp)
         fp.close()
+
+    def get_contents_as_string(self):
+        fp = StringIO.StringIO()
+        self.get_contents_to_file(fp)
+        return fp.getvalue()
