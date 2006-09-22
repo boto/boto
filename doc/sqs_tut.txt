@@ -128,6 +128,9 @@ StatusCode attribute is just the status code returned in the response.  All
 of these attributes map directly to elements in the XML response returned
 by SQS.
 
+Reading Messages
+----------------
+
 So, now we have a message in our queue.  How would we go about reading it?
 Here's one way:
 
@@ -187,6 +190,9 @@ a visibility_timeout parameter to read, if you desire:
 >>> m.get_body()
 u'This is my first message'
 
+Deleting Messages and Queues
+----------------------------
+
 Note that the first message we put in the queue is still there, even though
 we have read it a number of times.  That's because we never deleted it.  To
 remove a message from a queue:
@@ -199,6 +205,27 @@ If I want to delete the entire queue, I would use:
 >>> conn.delete_queue(q)
 
 However, this won't succeed unless the queue is empty.
+
+Listing All Available Queues
+----------------------------
+In addition to accessing specific queues via the create_queue method
+you can also get a list of all available queues that you have created.
+
+>>> rs = conn.get_all_queues()
+
+This returns a ResultSet object, as described above.  The ResultSet
+can be used as a sequence or list type object to retrieve Queue objects.
+
+>>> len(rs)
+11
+>>> for q in rs:
+... print q.id
+...
+<listing of available queues>
+>>> q = rs[0]
+
+Other Stuff
+-----------
 
 That covers the basic operations of creating queues, writing messages,
 reading messages, deleting messages, and deleting queues.  There are a
