@@ -1,5 +1,5 @@
-boto 0.2a
-15 Sep 2006
+boto 0.3a
+24 Sep 2006
 
 Copyright (c) 2006 Mitch Garnaat <mitch@garnaat.org>
 
@@ -30,4 +30,21 @@ following environment variables to ascertain your credentials:
 
 AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
+
+Changes
+-------
+
+boto 0.3a changes
+
++ Documented environment variables used.  Fixes Issue-1.
++ Added set_body() method, torched parse_body().  Fixed Issue-5.
++ Added tutorial for SQS use.  Partially fixes Issue-2.
++ Added start of a tutorial for S3 use.  Partially fixes Issue-2.
++ get_timeout method now returns int rather than string.  Fixes Issue-3
++ Now automatically re-establishes HTTP connection with service if keep-alive times out or pipe is broken.  Fixes Issue-4.
++ Added a get_contents_as_string method.  Fixes Issue-6.
+
+
+
+
 
