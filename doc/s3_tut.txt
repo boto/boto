@@ -1,0 +1,130 @@
+An Introduction to boto's S3 interface
+---------------------------------------
+
+This tutorial focuses on the boto interface to the Simple Storage Service
+from Amazon Web Services.  This tutorial assumes that you have already
+downloaded and installed boto.
+
+Creating a Connection
+---------------------
+The first step in accessing S3 is to create a connection to the service.
+There are two ways to do this in boto.  The first is:
+
+>>> from boto.connection import S3Connection
+>>> conn = S3Connection('<aws access key>', '<aws secret key>')
+
+At this point the variable conn will point to an S3Connection object.  In
+this example, the AWS access key and AWS secret key are passed in to the
+method explicitely.  Alternatively, you can set the environment variables:
+
+AWS_ACCESS_KEY_ID - Your AWS Access Key ID
+AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
+
+and then call the constructor without any arguments, like this:
+
+>>> conn = S3Connection()
+
+There is also a shortcut function in the boto package, called connect_s3
+that may provide a slightly easier means of creating a connection:
+
+>>> import boto
+>>> conn = boto.connect_s3()
+
+In either case, conn will point to an S3Connection object which we will
+use throughout the remainder of this tutorial.
+
+Creating a Bucket
+----------------
+
+Once you have a connection established with S3, you will probably want to
+create a bucket.  A bucket is a container used to store key/value pairs
+in S3.  A bucket can hold un unlimited about of data so you could potentially
+have just one bucket in S3 for all of your information.  Or, you could create
+separate buckets for different types of data.  You can figure all of that out
+later, first let's just create a bucket.  That can be accomplished like this:
+
+>>> bucket = conn.create_bucket('mybucket')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in ?
+  File "boto/connection.py", line 285, in create_bucket
+    raise S3CreateError(response.status, response.reason)
+boto.exception.S3CreateError: S3Error[409]: Conflict
+
+Whoa.  What happended there?  Well, the thing you have to know about
+buckets is that they are kind of like domain names.  It's one flat name
+space that everyone who uses S3 shares.  So, someone has already create
+a bucket called "mybucket" in S3 and that means no one else can grab that
+bucket name.  So, you have to come up with a name that hasn't been taken yet.
+For example, something that uses a unique string as a prefix.  Your
+AWS_ACCESS_KEY (NOT YOUR SECRET KEY!) could work but I'll leave it to
+your imagination to come up with something.  I'll just assume that you
+found an acceptable name.
+
+The create_bucket method will create the requested bucket if it does not
+exist or will return the existing bucket if it does exist.
+
+Storing Data
+----------------
+
+Once you have a bucket, presumably you will want to store some data
+in it.  S3 doesn't care what kind of information you store in your objects
+or what format you use to store it.  All you need is a key that is unique
+within your bucket.
+
+The Key object is used in boto to keep track of data stored in S3.  To store
+new data in S3, start by creating a new Key object:
+
+>>> from boto.key import Key
+>>> k = Key(bucket)
+>>> k.key = 'foobar'
+>>> k.set_contents_from_string('This is a test of S3')
+
+The net effect of these statements is to create a new object in S3 with a
+key of "foobar" and a value of "This is a test of S3".  To validate that
+this worked, quit out of the interpreter and start it up again.  Then:
+
+>>> import boto
+>>> c = boto.connect_s3()
+>>> b = c.create_bucket('mybucket') # substitute your bucket name here
+>>> from boto.key import Key
+>>> k = Key(b)
+>>> k.key = 'foobar'
+>>> k.get_contents_as_string()
+'This is a test of S3'
+
+So, we can definitely store and retrieve strings.  A more interesting
+example may be to store the contents of a local file in S3 and then retrieve
+the contents to another local file.
+
+>>> k = Key(b)
+>>> k.key = 'myfile'
+>>> k.set_contents_from_filename('foo.jpg')
+>>> k.get_contents_to_filename('bar.jpg')
+
+There are a couple of things to note about this.  When you send data to
+S3 from a file or filename, boto will attempt to determine the correct
+mime type for that file and send it as a Content-Type header.  The boto
+package uses the standard mimetypes package in Python to do the mime type
+guessing.  The other thing to note is that boto does stream the content
+to and from S3 so you should be able to send and receive large files without
+any problem.
+
+Listing All Available Buckets
+----------------------------
+In addition to accessing specific buckets via the create_bucket method
+you can also get a list of all available buckets that you have created.
+
+>>> rs = conn.get_all_buckets()
+
+This returns a ResultSet object (see the SQS Tutorial for more info on
+ResultSet objects).  The ResultSet can be used as a sequence or list type
+object to retrieve Bucket objects.
+
+>>> len(rs)
+11
+>>> for b in rs:
+... print b.name
+...
+<listing of available buckets>
+>>> b = rs[0]
+
