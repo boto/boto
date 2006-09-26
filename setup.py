@@ -31,6 +31,7 @@ __version__ = '0.3a'
 setup(name = "boto",
       version = __version__,
       description = "Amazon Web Services Library",
+      long_description="Python interface to Amazon's Web Services.",
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
       url = "http://code.google.com/p/boto/",
