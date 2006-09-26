@@ -73,6 +73,11 @@ class S3ConnectionTest (unittest.TestCase):
         assert len(rs) == 3
         rs = bucket.get_all_keys(maxkeys=5)
         assert len(rs) == 5
+        # test the lookup method
+        k = bucket.lookup('foo/bar')
+        assert isinstance(k, Key)
+        k = bucket.lookup('notthere')
+        assert k == None
         for k in all:
             bucket.delete_key(k)
         # now delete bucket

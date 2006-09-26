@@ -44,6 +44,26 @@ class Bucket:
         else:
             self.__dict__[key] = value
 
+    def lookup(self, key):
+        path = '/%s/%s' % (self.name, key)
+        response = self.connection.make_request('HEAD', path)
+        if response.status == 200:
+            body = response.read()
+            k = Key()
+            k.bucket = self
+            k.etag = response.getheader('etag')
+            k.content_type = response.getheader('content-type')
+            k.last_modified = response.getheader('last-modified')
+            k.key = key
+            return k
+        else:
+            # -- gross hack --
+            # httplib gets confused with chunked responses to HEAD requests
+            # so I have to fake it out
+            response.chunked = 0
+            body = response.read()
+            return None
+
     # params can be one of: prefix, marker, max-keys, delimiter
     # as defined in S3 Developer's Guide, however since max-keys is not
     # a legal variable in Python you have to pass maxkeys and this
