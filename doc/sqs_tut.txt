@@ -134,7 +134,7 @@ Reading Messages
 So, now we have a message in our queue.  How would we go about reading it?
 Here's one way:
 
->>> rs = m.get_messages()
+>>> rs = q.get_messages()
 >>> len(rs)
 1
 >>> m = rs[0]

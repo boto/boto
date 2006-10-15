@@ -129,7 +129,7 @@ class Queue:
             l = self.get_messages(page_size, vtimeout)
         return n
     
-    def dump(self, file_name, page_size=100, vtimeout=10, sep=''):
+    def dump(self, file_name, page_size=100, vtimeout=10, sep='\n'):
         """Utility function to dump the messages in a queue to a file"""
         fp = open(file_name, 'wb')
         n = 0
@@ -141,6 +141,25 @@ class Queue:
                     fp.write(sep)
                 n += 1
             l = self.get_messages(page_size, vtimeout)
+        fp.close()
+        return n
+
+    def load(self, file_name, sep='\n'):
+        """Utility function to load messages from a file to a queue"""
+        fp = open(file_name, 'rb')
+        n = 0
+        body = ''
+        l = fp.readline()
+        while l:
+            if l == sep:
+                m = Message(self, body)
+                self.write(m)
+                n += 1
+                print 'writing message %d' % n
+                body = ''
+            else:
+                body = body + l
+            l = fp.readline()
         fp.close()
         return n
     
