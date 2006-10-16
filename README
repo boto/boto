@@ -1,5 +1,5 @@
-boto 0.3a
-24 Sep 2006
+boto 0.4b
+16 Oct 2006
 
 Copyright (c) 2006 Mitch Garnaat <mitch@garnaat.org>
 
@@ -33,59 +33,13 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
-
-[boto 0.3a changes]
-
-------------------------------------------------------------------------
-r32 | Mitch.Garnaat | 2006-09-22 10:52:07 -0400 (Fri, 22 Sep 2006) | 3 lines
-
-Added section to describe get_all_queues method.  Added some section headings.
-
+[boto 0.4b changes]
 
 ------------------------------------------------------------------------
-r31 | Mitch.Garnaat | 2006-09-20 22:16:24 -0400 (Wed, 20 Sep 2006) | 3 lines
+r44 | Mitch.Garnaat | 2006-10-16 15:08:34 -0400 (Mon, 16 Oct 2006) | 3 lines
 
-Added a get_contents_as_string method.  Fixes Issue-6.
+Changed strftime to use explicit format string rather than %X.  Fixes Issue-11.
 
-
-------------------------------------------------------------------------
-r30 | Mitch.Garnaat | 2006-09-20 22:13:04 -0400 (Wed, 20 Sep 2006) | 2 lines
-
-Modified for new integer output of get_timeout method.
-
-------------------------------------------------------------------------
-r29 | Mitch.Garnaat | 2006-09-20 16:14:17 -0400 (Wed, 20 Sep 2006) | 2 lines
-
-Fixed stupid bug in last checkin.
-
-------------------------------------------------------------------------
-r28 | Mitch.Garnaat | 2006-09-20 15:34:12 -0400 (Wed, 20 Sep 2006) | 3 lines
-
-Now automatically re-establishes HTTP connection with service if keep-alive times out or pipe is broken.  Fixes Issue-4.
-
-
-------------------------------------------------------------------------
-r27 | Mitch.Garnaat | 2006-09-20 15:31:39 -0400 (Wed, 20 Sep 2006) | 3 lines
-
-Added set_body() method, torched parse_body().  Fixed Issue-5.
-
-
-------------------------------------------------------------------------
-r26 | Mitch.Garnaat | 2006-09-20 15:30:35 -0400 (Wed, 20 Sep 2006) | 3 lines
-
-get_timeout method now returns int rather than string.  Fixes Issue-3.
-
-
-------------------------------------------------------------------------
-r25 | Mitch.Garnaat | 2006-09-20 15:29:44 -0400 (Wed, 20 Sep 2006) | 3 lines
-
-Added tutorial for SQS use.  Partially fixes Issue-2.
-
-
-------------------------------------------------------------------------
-r24 | Mitch.Garnaat | 2006-09-20 15:28:24 -0400 (Wed, 20 Sep 2006) | 3 lines
-
-Documented environment variables used.  Fixes Issue-1.
 
 
 [boto 0.4a changes]
@@ -140,4 +94,57 @@ Added changes from 2a to 3a.  Bumped version numbers to 0.3a.
 r33 | Mitch.Garnaat | 2006-09-24 18:47:52 -0400 (Sun, 24 Sep 2006) | 3 lines
 
 A start on the tutorial for S3 usage.  Partially fixes Issue-2.
+
+[boto 0.3a changes]
+
+------------------------------------------------------------------------
+r32 | Mitch.Garnaat | 2006-09-22 10:52:07 -0400 (Fri, 22 Sep 2006) | 3 lines
+
+Added section to describe get_all_queues method.  Added some section headings.
+
+
+------------------------------------------------------------------------
+r31 | Mitch.Garnaat | 2006-09-20 22:16:24 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Added a get_contents_as_string method.  Fixes Issue-6.
+
+
+------------------------------------------------------------------------
+r30 | Mitch.Garnaat | 2006-09-20 22:13:04 -0400 (Wed, 20 Sep 2006) | 2 lines
+
+Modified for new integer output of get_timeout method.
+
+------------------------------------------------------------------------
+r29 | Mitch.Garnaat | 2006-09-20 16:14:17 -0400 (Wed, 20 Sep 2006) | 2 lines
+
+Fixed stupid bug in last checkin.
+
+------------------------------------------------------------------------
+r28 | Mitch.Garnaat | 2006-09-20 15:34:12 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Now automatically re-establishes HTTP connection with service if keep-alive times out or pipe is broken.  Fixes Issue-4.
+
+
+------------------------------------------------------------------------
+r27 | Mitch.Garnaat | 2006-09-20 15:31:39 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Added set_body() method, torched parse_body().  Fixed Issue-5.
+
+
+------------------------------------------------------------------------
+r26 | Mitch.Garnaat | 2006-09-20 15:30:35 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+get_timeout method now returns int rather than string.  Fixes Issue-3.
+
+
+------------------------------------------------------------------------
+r25 | Mitch.Garnaat | 2006-09-20 15:29:44 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Added tutorial for SQS use.  Partially fixes Issue-2.
+
+
+------------------------------------------------------------------------
+r24 | Mitch.Garnaat | 2006-09-20 15:28:24 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Documented environment variables used.  Fixes Issue-1.
 
