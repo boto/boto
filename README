@@ -34,17 +34,110 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 Changes
 -------
 
-boto 0.3a changes
+[boto 0.3a changes]
 
-+ Documented environment variables used.  Fixes Issue-1.
-+ Added set_body() method, torched parse_body().  Fixed Issue-5.
-+ Added tutorial for SQS use.  Partially fixes Issue-2.
-+ Added start of a tutorial for S3 use.  Partially fixes Issue-2.
-+ get_timeout method now returns int rather than string.  Fixes Issue-3
-+ Now automatically re-establishes HTTP connection with service if keep-alive times out or pipe is broken.  Fixes Issue-4.
-+ Added a get_contents_as_string method.  Fixes Issue-6.
+------------------------------------------------------------------------
+r32 | Mitch.Garnaat | 2006-09-22 10:52:07 -0400 (Fri, 22 Sep 2006) | 3 lines
+
+Added section to describe get_all_queues method.  Added some section headings.
 
 
+------------------------------------------------------------------------
+r31 | Mitch.Garnaat | 2006-09-20 22:16:24 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Added a get_contents_as_string method.  Fixes Issue-6.
 
 
+------------------------------------------------------------------------
+r30 | Mitch.Garnaat | 2006-09-20 22:13:04 -0400 (Wed, 20 Sep 2006) | 2 lines
+
+Modified for new integer output of get_timeout method.
+
+------------------------------------------------------------------------
+r29 | Mitch.Garnaat | 2006-09-20 16:14:17 -0400 (Wed, 20 Sep 2006) | 2 lines
+
+Fixed stupid bug in last checkin.
+
+------------------------------------------------------------------------
+r28 | Mitch.Garnaat | 2006-09-20 15:34:12 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Now automatically re-establishes HTTP connection with service if keep-alive times out or pipe is broken.  Fixes Issue-4.
+
+
+------------------------------------------------------------------------
+r27 | Mitch.Garnaat | 2006-09-20 15:31:39 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Added set_body() method, torched parse_body().  Fixed Issue-5.
+
+
+------------------------------------------------------------------------
+r26 | Mitch.Garnaat | 2006-09-20 15:30:35 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+get_timeout method now returns int rather than string.  Fixes Issue-3.
+
+
+------------------------------------------------------------------------
+r25 | Mitch.Garnaat | 2006-09-20 15:29:44 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Added tutorial for SQS use.  Partially fixes Issue-2.
+
+
+------------------------------------------------------------------------
+r24 | Mitch.Garnaat | 2006-09-20 15:28:24 -0400 (Wed, 20 Sep 2006) | 3 lines
+
+Documented environment variables used.  Fixes Issue-1.
+
+
+[boto 0.4a changes]
+
+r41 | Mitch.Garnaat | 2006-10-16 06:38:24 -0400 (Mon, 16 Oct 2006) | 2 lines
+
+Adding distro file for 0.4a release.
+
+------------------------------------------------------------------------
+r40 | Mitch.Garnaat | 2006-10-16 06:37:05 -0400 (Mon, 16 Oct 2006) | 2 lines
+
+bumping version number.
+
+------------------------------------------------------------------------
+r39 | Mitch.Garnaat | 2006-10-15 09:11:41 -0400 (Sun, 15 Oct 2006) | 4 lines
+
+Added a load method to queue object, the inverse of the dump method.
+
+Fixed typo in SQS tutorial.  Fixes Issue-9.
+
+------------------------------------------------------------------------
+r38 | Mitch.Garnaat | 2006-09-26 11:12:57 -0400 (Tue, 26 Sep 2006) | 3 lines
+
+Added long description entry.  Fixes Issue-7.
+
+
+------------------------------------------------------------------------
+r37 | Mitch.Garnaat | 2006-09-26 08:52:17 -0400 (Tue, 26 Sep 2006) | 3 lines
+
+Added a lookup method to the bucket object.  Uses a HEAD request to determine if a particular key exists in the bucket or not.  Also updated the unit test script to test this feature.
+
+
+------------------------------------------------------------------------
+r36 | Mitch.Garnaat | 2006-09-24 18:59:12 -0400 (Sun, 24 Sep 2006) | 3 lines
+
+Added the release egg.
+
+
+------------------------------------------------------------------------
+r35 | Mitch.Garnaat | 2006-09-24 18:52:06 -0400 (Sun, 24 Sep 2006) | 3 lines
+
+Changed comment about no documentation available.  Now points users to doc directory.
+
+
+------------------------------------------------------------------------
+r34 | Mitch.Garnaat | 2006-09-24 18:50:16 -0400 (Sun, 24 Sep 2006) | 3 lines
+
+Added changes from 2a to 3a.  Bumped version numbers to 0.3a.
+
+
+------------------------------------------------------------------------
+r33 | Mitch.Garnaat | 2006-09-24 18:47:52 -0400 (Sun, 24 Sep 2006) | 3 lines
+
+A start on the tutorial for S3 usage.  Partially fixes Issue-2.
 
