@@ -20,7 +20,8 @@
 # IN THE SOFTWARE.
 
 from boto import handler
-from boto.owner import Owner
+from boto.acl import Policy, ACL, Grant, CannedACLStrings
+from boto.user import User
 from boto.key import Key
 from boto.exception import S3ResponseError
 import xml.sax
@@ -28,7 +29,7 @@ import urllib
 
 class Bucket:
 
-    def __init__(self, connection=None, name=None, debug=None):
+    def __init__(self, connection=None, name=None, debug=None, xml_attrs=None):
         self.name = name
         self.connection = connection
         self.debug = debug
@@ -81,17 +82,57 @@ class Bucket:
         response = self.connection.make_request('GET', path, headers)
         body = response.read()
         if response.status == 200:
-            h = handler.XmlHandler(self, {'Owner': Owner, 'Contents': Key})
+            h = handler.XmlHandler(self, {'Owner': User, 'Contents': Key})
             xml.sax.parseString(body, h)
             return h.rs
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def delete_key(self, key):
-        path = '/%s/%s' % (self.name, key.key)
+    def delete_key(self, key_name):
+        # for backward compatibility, previous version expected a Key object
+        if isinstance(key_name, Key):
+            key_name = key_name.key
+        path = '/%s/%s' % (self.name, key_name)
         response = self.connection.make_request('DELETE', path)
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
+
+    def set_acl(self, acl_str, key_name=None):
+        # just in case user passes a Key object rather than key name
+        if isinstance(key_name, Key):
+            key_name = key_name.key
+        assert acl_str in CannedACLStrings
+        if key_name:
+            path = '/%s/%s?acl' % (self.name, key_name)
+        else:
+            path = '/%s?acl' % self.name
+        headers = {'x-amz-acl': acl_str}
+        response = self.connection.make_request('PUT', path, headers)
+        body = response.read()
+        if response.status != 200:
+            raise S3ResponseError(response.status, response.reason)
+
+    def get_acl(self, key_name=None):
+        # just in case user passes a Key object rather than key name
+        if isinstance(key_name, Key):
+            key_name = key_name.key
+        if key_name:
+            path = '/%s/%s?acl' % (self.name, key_name)
+        else:
+            path = '/%s?acl' % self.name
+        response = self.connection.make_request('GET', path)
+        body = response.read()
+        if response.status == 200:
+            h = handler.XmlHandler(self, {'AccessControlPolicy' : Policy,
+                                          'AccessControlList' : ACL,
+                                          'Grant': Grant,
+                                          'Grantee': User,
+                                          'Owner' : User})
+            xml.sax.parseString(body, h)
+            return h.rs[0]
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
         
 

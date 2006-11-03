@@ -31,7 +31,8 @@ from boto.message import Message
 
 class Queue:
     
-    def __init__(self, connection=None, url=None, message_class=Message):
+    def __init__(self, connection=None, url=None,
+                 message_class=Message, xml_attrs=None):
         self.connection = connection
         self.url = url
         self.message_class = message_class

@@ -32,7 +32,7 @@ class XmlHandler(xml.sax.ContentHandler):
 
     def startElement(self, name, attrs):
         if name in self.elements.keys():
-            node = self.elements[name](self.nodes[-1])
+            node = self.elements[name](self.nodes[-1], xml_attrs=attrs)
             self.nodes.append(node)
 
     def endElement(self, name):

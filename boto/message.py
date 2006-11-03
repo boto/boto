@@ -25,7 +25,7 @@ Represents an SQS Message
 
 class Message:
     
-    def __init__(self, queue=None, body=''):
+    def __init__(self, queue=None, body='', xml_attrs=None):
         self.queue = queue
         self.set_body(body)
         self.id = None

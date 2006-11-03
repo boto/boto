@@ -19,9 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class Owner:
-    def __init__(self, parent=None, id='', display_name=''):
-        parent.owner = self
+class User:
+    def __init__(self, parent=None, id='', display_name='', xml_attrs=None):
+        if parent:
+            parent.owner = self
+        self.type = None
+        if xml_attrs:
+            if xml_attrs.has_key('xsi:type'):
+                self.type = xml_attrs['xsi:type']
         self.id = id
         self.display_name = display_name
 
@@ -33,6 +38,8 @@ class Owner:
             self.__dict__['display_name'] = value
         elif key == 'ID':
             self.__dict__['id'] = value
+        elif key == 'URI':
+            self.__dict__['uri'] = value
         else:
             self.__dict__[key] = value
 

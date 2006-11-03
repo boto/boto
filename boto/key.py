@@ -28,7 +28,7 @@ from boto.exception import S3ResponseError
 
 class Key:
 
-    def __init__(self, bucket=None):
+    def __init__(self, bucket=None, xml_attrs=None):
         self.bucket = bucket
         self.content_type = 'application/octet-stream'
         self.filename = None
@@ -142,3 +142,12 @@ class Key:
         fp = StringIO.StringIO()
         self.get_contents_to_file(fp)
         return fp.getvalue()
+
+    # convenience methods for setting/getting ACL
+    def set_acl(self, acl_str):
+        if self.bucket != None:
+            self.bucket.set_acl(acl_str, self.key)
+
+    def get_acl(self):
+        if self.bucket != None:
+            return self.bucket.get_acl(self.key)

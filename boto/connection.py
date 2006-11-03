@@ -50,7 +50,7 @@ from boto.exception import SQSError, S3ResponseError, S3CreateError
 from boto import handler
 from boto.queue import Queue
 from boto.bucket import Bucket
-from boto.owner import Owner
+from boto.user import User
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 METADATA_PREFIX = 'x-amz-meta-'
@@ -271,7 +271,7 @@ class S3Connection(AWSAuthConnection):
         body = response.read()
         if response.status > 300:
             raise S3ResponseError(response.status, response.reason)
-        # h = handler.XmlHandler(self, {'Owner': Owner,
+        # h = handler.XmlHandler(self, {'Owner': User,
         #                               'Bucket': Bucket})
         # ignoring Owner for now
         h = handler.XmlHandler(self, {'Bucket': Bucket})

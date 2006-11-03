@@ -78,6 +78,21 @@ class S3ConnectionTest (unittest.TestCase):
         assert isinstance(k, Key)
         k = bucket.lookup('notthere')
         assert k == None
+        # try some acl stuff
+        bucket.set_acl('public-read')
+        policy = bucket.get_acl()
+        assert len(policy.acl.grants) == 2
+        bucket.set_acl('private')
+        policy = bucket.get_acl()
+        assert len(policy.acl.grants) == 1
+        k = bucket.lookup('foo/bar')
+        k.set_acl('public-read')
+        policy = k.get_acl()
+        assert len(policy.acl.grants) == 2
+        k.set_acl('private')
+        policy = k.get_acl()
+        assert len(policy.acl.grants) == 1
+        # now delete all keys in bucket
         for k in all:
             bucket.delete_key(k)
         # now delete bucket
