@@ -33,6 +33,21 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.5a changes]
+------------------------------------------------------------------------
+
+r48 | Mitch.Garnaat | 2006-11-02 20:25:51 -0500 (Thu, 02 Nov 2006) | 3 lines
+
+Added support for some ACL operations in S3.  The canned ACL's can be
+set on buckets and keys using the set_acl method.  In addition, the
+get_acl method parses the AccessControlPolicy response sent by S3 and
+creates corresponding Python objects to represent the ACL, Grants,
+Grantees, etc.  At some point in the future we may support the ability
+to set arbitrary ACL's but not yet.  Fixes Issue-12 and incorporates
+code contributed by benjaminlyu (thanks!).
+
+------------------------------------------------------------------------
+
 [boto 0.4b changes]
 
 ------------------------------------------------------------------------
