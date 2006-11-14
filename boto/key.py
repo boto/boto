@@ -23,6 +23,7 @@ import urllib
 import mimetypes
 import md5
 import StringIO
+import base64
 import boto
 from boto.exception import S3ResponseError
 
@@ -59,7 +60,7 @@ class Key:
 
     def send_file(self, fp):
         http_conn = self.bucket.connection.connection
-        headers = {'ETag':self.md5}
+        headers = {'Content-MD5':self.base64md5}
         if self.content_type:
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = self.size
@@ -79,6 +80,8 @@ class Key:
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason)
         self.etag = response.getheader('etag')
+        if self.etag != self.md5:
+            raise S3DataError('Injected data did not return correct MD5')
 
     def _compute_md5(self, fp):
         m = md5.new()
@@ -87,6 +90,7 @@ class Key:
             m.update(s)
             s = fp.read(4096)
         self.md5 = '"%s"' % m.hexdigest()
+        self.base64md5 = base64.b64encode(m.digest())
         self.size = fp.tell()
         fp.seek(0)
 
