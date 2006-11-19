@@ -25,12 +25,14 @@ import md5
 import StringIO
 import base64
 import boto
+import boto.connection
 from boto.exception import S3ResponseError
 
 class Key:
 
     def __init__(self, bucket=None, xml_attrs=None):
         self.bucket = bucket
+        self.metadata = {}
         self.content_type = 'application/octet-stream'
         self.filename = None
         self.etag = None
@@ -58,13 +60,26 @@ class Key:
         else:
             self.__dict__[key] = value
 
+    def get_all_metadata(self, headers):
+        prefix = boto.connection.METADATA_PREFIX
+        for hkey in headers.keys():
+            if hkey.lower().startswith(prefix):
+                self.metadata[hkey[len(prefix):]] = headers[hkey]
+                del headers[hkey]
+
+    def get_metadata(self, key):
+        return self.metadata[key]
+
+    def set_metadata(self, key, value):
+        self.metadata[key] = value
+    
     def send_file(self, fp):
         http_conn = self.bucket.connection.connection
         headers = {'Content-MD5':self.base64md5}
         if self.content_type:
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = self.size
-        final_headers = boto.connection.merge_meta(headers, {});
+        final_headers = boto.connection.merge_meta(headers, self.metadata);
         path = '/%s/%s' % (self.bucket.name, urllib.quote_plus(self.key))
         self.bucket.connection.add_aws_auth_header(final_headers, 'PUT', path)
         http_conn.putrequest('PUT', path)
@@ -122,6 +137,7 @@ class Key:
         http_conn.endheaders()
         resp = http_conn.getresponse()
         response_headers = resp.msg
+        self.get_all_metadata(response_headers)
         for key in response_headers.keys():
             if key.lower() == 'content-length':
                 self.size = response_headers[key]

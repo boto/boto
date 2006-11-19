@@ -185,15 +185,6 @@ class AWSAuthConnection:
         headers['Authorization'] = \
             "AWS %s:%s" % (self.aws_access_key_id, encode(self.aws_secret_access_key, c_string))
         
-    def get_aws_metadata(self, headers):
-        metadata = {}
-        for hkey in headers.keys():
-            if hkey.lower().startswith(METADATA_PREFIX):
-                metadata[hkey[len(METADATA_PREFIX):]] = headers[hkey]
-                del headers[hkey]
-
-        return metadata
-    
 class SQSConnection(AWSAuthConnection):
     
     DefaultHost = 'queue.amazonaws.com'

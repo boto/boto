@@ -78,6 +78,25 @@ class S3ConnectionTest (unittest.TestCase):
         assert isinstance(k, Key)
         k = bucket.lookup('notthere')
         assert k == None
+        # try some metadata stuff
+        k = Key(bucket)
+        k.key = 'has_metadata'
+        mdkey1 = 'meta1'
+        mdval1 = 'This is the first metadata value'
+        k.set_metadata(mdkey1, mdval1)
+        mdkey2 = 'meta2'
+        mdval2 = 'This is the second metadata value'
+        k.set_metadata(mdkey2, mdval2)
+        k.set_contents_from_string(s)
+        k = bucket.lookup('has_metadata')
+        assert k.get_metadata(mdkey1) == mdval1
+        assert k.get_metadata(mdkey2) == mdval2
+        k = Key(bucket)
+        k.key = 'has_metadata'
+        k.get_contents_as_string()
+        assert k.get_metadata(mdkey1) == mdval1
+        assert k.get_metadata(mdkey2) == mdval2
+        bucket.delete_key(k)
         # try some acl stuff
         bucket.set_acl('public-read')
         policy = bucket.get_acl()

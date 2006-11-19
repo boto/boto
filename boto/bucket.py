@@ -52,6 +52,7 @@ class Bucket:
             body = response.read()
             k = Key()
             k.bucket = self
+            k.get_all_metadata(response.msg)
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.last_modified = response.getheader('last-modified')
