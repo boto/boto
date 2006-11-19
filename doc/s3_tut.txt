@@ -188,3 +188,26 @@ FULL_CONTROL <boto.user.User instance at 0x2e6a30>
 
 The Python objects representing the ACL can be found in the acl.py module
 of boto.
+
+Setting/Getting Metadata Values on Key Objects
+----------------------------------------------
+S3 allows arbitrary user metadata to be assigned to objects within a bucket.
+To take advantage of this S3 feature, you should use the set_metadata and
+get_metadata methods of the Key object to set and retrieve metadata associated
+with an S3 object.  For example:
+
+>>> k = Key(b)
+>>> k.key = 'has_metadata'
+>>> k.set_metadata('meta1', 'This is the first metadata value')
+>>> k.set_metadata('meta2', 'This is the second metadata value')
+>>> k.set_contents_from_filename('foo.txt')
+
+This code associates two metadata key/value pairs with the Key k.  To retrieve
+those values later:
+
+>>> k = b.lookup('has_metadata)
+>>> k.get_metadata('meta1')
+'This is the first metadata value'
+>>> k.get_metadata('meta2')
+'This is the second metadata value'
+>>>
