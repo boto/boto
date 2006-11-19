@@ -33,6 +33,24 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+
+[boto 0.6a changes]
+------------------------------------------------------------------------
+r53 | Mitch.Garnaat | 2006-11-19 11:22:16 -0500 (Sun, 19 Nov 2006) | 2 lines
+
+Updated to S3 tutorial with a simple example of metadata usage.
+
+------------------------------------------------------------------------
+r52 | Mitch.Garnaat | 2006-11-19 11:15:22 -0500 (Sun, 19 Nov 2006) | 3 lines
+
+Added ability to set/get metadata values on Key objects.  Also updated unit tests to test new capability.  Fixes Issue-15.
+
+------------------------------------------------------------------------
+r51 | Mitch.Garnaat | 2006-11-14 17:03:55 -0500 (Tue, 14 Nov 2006) | 3 lines
+
+Added support for MD5 verification on upload.  Incorporated contributed code from Giao Phan.  Fixes Issue-14.
+
+
 [boto 0.5a changes]
 ------------------------------------------------------------------------
 
