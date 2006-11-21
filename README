@@ -34,6 +34,12 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 Changes
 -------
 
+[boto 0.6b changes]
+------------------------------------------------------------------------
+r56 | Mitch.Garnaat | 2006-11-21 10:13:24 -0500 (Tue, 21 Nov 2006) | 2 lines
+
+Making sure all paths are properly escaped in S3 requests.  Fixes Issue-16.
+
 [boto 0.6a changes]
 ------------------------------------------------------------------------
 r53 | Mitch.Garnaat | 2006-11-19 11:22:16 -0500 (Sun, 19 Nov 2006) | 2 lines
