@@ -47,7 +47,7 @@ class Bucket:
 
     def lookup(self, key):
         path = '/%s/%s' % (self.name, key)
-        response = self.connection.make_request('HEAD', path)
+        response = self.connection.make_request('HEAD', urllib.quote(path))
         if response.status == 200:
             body = response.read()
             k = Key()
@@ -71,7 +71,7 @@ class Bucket:
     # a legal variable in Python you have to pass maxkeys and this
     # method will munge it (Ugh!)
     def get_all_keys(self, headers=None, **params):
-        path = '/%s' % self.name
+        path = '/%s' % urllib.quote(self.name)
         l = []
         for k,v in params.items():
             if  k == 'maxkeys':
@@ -94,7 +94,8 @@ class Bucket:
         if isinstance(key_name, Key):
             key_name = key_name.key
         path = '/%s/%s' % (self.name, key_name)
-        response = self.connection.make_request('DELETE', path)
+        response = self.connection.make_request('DELETE',
+                                                urllib.quote(path))
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
@@ -105,9 +106,10 @@ class Bucket:
             key_name = key_name.key
         assert acl_str in CannedACLStrings
         if key_name:
-            path = '/%s/%s?acl' % (self.name, key_name)
+            path = '/%s/%s' % (self.name, key_name)
         else:
-            path = '/%s?acl' % self.name
+            path = '/%s' % self.name
+        path = urllib.quote(path) + '?acl'
         headers = {'x-amz-acl': acl_str}
         response = self.connection.make_request('PUT', path, headers)
         body = response.read()
@@ -119,9 +121,10 @@ class Bucket:
         if isinstance(key_name, Key):
             key_name = key_name.key
         if key_name:
-            path = '/%s/%s?acl' % (self.name, key_name)
+            path = '/%s/%s' % (self.name, key_name)
         else:
-            path = '/%s?acl' % self.name
+            path = '/%s' % self.name
+        path = urllib.quote(path) + '?acl'
         response = self.connection.make_request('GET', path)
         body = response.read()
         if response.status == 200:

@@ -97,6 +97,17 @@ class S3ConnectionTest (unittest.TestCase):
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
         bucket.delete_key(k)
+        # try a key with a funny character
+        rs = bucket.get_all_keys()
+        num_keys = len(rs)
+        k = Key(bucket)
+        k.key = 'testnewline\n'
+        k.set_contents_from_string('This is a test')
+        rs = bucket.get_all_keys()
+        assert len(rs) == num_keys + 1
+        bucket.delete_key(k)
+        rs = bucket.get_all_keys()
+        assert len(rs) == num_keys
         # try some acl stuff
         bucket.set_acl('public-read')
         policy = bucket.get_acl()

@@ -80,7 +80,8 @@ class Key:
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = self.size
         final_headers = boto.connection.merge_meta(headers, self.metadata);
-        path = '/%s/%s' % (self.bucket.name, urllib.quote_plus(self.key))
+        path = '/%s/%s' % (self.bucket.name, self.key)
+        path = urllib.quote(path)
         self.bucket.connection.add_aws_auth_header(final_headers, 'PUT', path)
         http_conn.putrequest('PUT', path)
         for key in final_headers:
@@ -129,7 +130,8 @@ class Key:
     def get_file(self, fp, headers={}):
         http_conn = self.bucket.connection.connection
         final_headers = boto.connection.merge_meta(headers, {})
-        path = '/%s/%s' % (self.bucket.name, urllib.quote_plus(self.key))
+        path = '/%s/%s' % (self.bucket.name, self.key)
+        path = urllib.quote(path)
         self.bucket.connection.add_aws_auth_header(final_headers, 'GET', path)
         http_conn.putrequest('GET', path)
         for key in final_headers:

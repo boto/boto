@@ -258,7 +258,7 @@ class S3Connection(AWSAuthConnection):
     
     def get_all_buckets(self):
         path = '/'
-        response = self.make_request('GET', path)
+        response = self.make_request('GET', urllib.quote(path))
         body = response.read()
         if response.status > 300:
             raise S3ResponseError(response.status, response.reason)
@@ -271,7 +271,7 @@ class S3Connection(AWSAuthConnection):
 
     def create_bucket(self, bucket_name, headers={}):
         path = '/%s' % bucket_name
-        response = self.make_request('PUT', path, headers)
+        response = self.make_request('PUT', urllib.quote(path), headers)
         body = response.read()
         if response.status == 409:
              raise S3CreateError(response.status, response.reason)
@@ -283,7 +283,7 @@ class S3Connection(AWSAuthConnection):
 
     def delete_bucket(self, bucket):
         path = '/%s' % bucket.name
-        response = self.make_request('DELETE', path)
+        response = self.make_request('DELETE', urllib.quote(path))
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
