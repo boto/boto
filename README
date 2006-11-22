@@ -34,6 +34,12 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 Changes
 -------
 
+[boto 0.6c changes]
+------------------------------------------------------------------------
+r60 | Mitch.Garnaat | 2006-11-22 07:29:43 -0500 (Wed, 22 Nov 2006) | 3 lines
+
+Refactored some of the S3 code to eliminate circular dependencies.
+
 [boto 0.6b changes]
 ------------------------------------------------------------------------
 r56 | Mitch.Garnaat | 2006-11-21 10:13:24 -0500 (Tue, 21 Nov 2006) | 2 lines

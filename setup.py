@@ -26,7 +26,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-__version__ = '0.6b'
+__version__ = '0.6c'
 
 setup(name = "boto",
       version = __version__,
