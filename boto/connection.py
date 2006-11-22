@@ -51,70 +51,9 @@ from boto import handler
 from boto.queue import Queue
 from boto.bucket import Bucket
 from boto.user import User
+import boto.utils
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
-METADATA_PREFIX = 'x-amz-meta-'
-AMAZON_HEADER_PREFIX = 'x-amz-'
-
-# generates the aws canonical string for the given parameters
-def canonical_string(method, path, headers, expires=None):
-    interesting_headers = {}
-    for key in headers:
-        lk = key.lower()
-        if lk in ['content-md5', 'content-type', 'date'] or lk.startswith(AMAZON_HEADER_PREFIX):
-            interesting_headers[lk] = headers[key].strip()
-
-    # these keys get empty strings if they don't exist
-    if not interesting_headers.has_key('content-type'):
-        interesting_headers['content-type'] = ''
-    if not interesting_headers.has_key('content-md5'):
-        interesting_headers['content-md5'] = ''
-
-    # just in case someone used this.  it's not necessary in this lib.
-    if interesting_headers.has_key('x-amz-date'):
-        interesting_headers['date'] = ''
-
-    # if you're using expires for query string auth, then it trumps date
-    # (and x-amz-date)
-    if expires:
-        interesting_headers['date'] = str(expires)
-
-    sorted_header_keys = interesting_headers.keys()
-    sorted_header_keys.sort()
-
-    buf = "%s\n" % method
-    for key in sorted_header_keys:
-        if key.startswith(AMAZON_HEADER_PREFIX):
-            buf += "%s:%s\n" % (key, interesting_headers[key])
-        else:
-            buf += "%s\n" % interesting_headers[key]
-
-    # don't include anything after the first ? in the resource...
-    buf += "%s" % path.split('?')[0]
-
-    # ...unless there is an acl or torrent parameter
-    if re.search("[&?]acl($|=|&)", path):
-        buf += "?acl"
-    elif re.search("[&?]torrent($|=|&)", path):
-        buf += "?torrent"
-
-    return buf
-
-# computes the base64'ed hmac-sha hash of the canonical string and the secret
-# access key, optionally urlencoding the result
-def encode(aws_secret_access_key, str, urlencode=False):
-    b64_hmac = base64.encodestring(hmac.new(aws_secret_access_key, str, sha).digest()).strip()
-    if urlencode:
-        return urllib.quote_plus(b64_hmac)
-    else:
-        return b64_hmac
-
-def merge_meta(headers, metadata):
-    final_headers = headers.copy()
-    for k in metadata.keys():
-        final_headers[METADATA_PREFIX + k] = metadata[k]
-
-    return final_headers
 
 class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
@@ -162,7 +101,7 @@ class AWSAuthConnection:
             headers = {}
         if metadata == None:
             metadata = {}
-        final_headers = merge_meta(headers, metadata);
+        final_headers = boto.utils.merge_meta(headers, metadata);
         # add auth header
         self.add_aws_auth_header(final_headers, method, path)
 
@@ -179,11 +118,13 @@ class AWSAuthConnection:
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
-        c_string = canonical_string(method, path, headers)
+        c_string = boto.utils.canonical_string(method, path, headers)
         if self.debug:
             print '\n\n%s\n\n' % c_string
         headers['Authorization'] = \
-            "AWS %s:%s" % (self.aws_access_key_id, encode(self.aws_secret_access_key, c_string))
+            "AWS %s:%s" % (self.aws_access_key_id,
+                           boto.utils.encode(self.aws_secret_access_key,
+                                             c_string))
         
 class SQSConnection(AWSAuthConnection):
     

@@ -24,6 +24,7 @@ from boto.acl import Policy, ACL, Grant, CannedACLStrings
 from boto.user import User
 from boto.key import Key
 from boto.exception import S3ResponseError
+import boto.utils
 import xml.sax
 import urllib
 
@@ -52,7 +53,7 @@ class Bucket:
             body = response.read()
             k = Key()
             k.bucket = self
-            k.get_all_metadata(response.msg)
+            k.metadata = boto.utils.get_aws_metadata(response.msg)
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.last_modified = response.getheader('last-modified')
