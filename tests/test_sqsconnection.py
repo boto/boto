@@ -60,7 +60,7 @@ class SQSConnectionTest (unittest.TestCase):
         assert t == timeout, '%d != %d' % (t, timeout)
     
         # now add a message
-        message_body = 'This is a test'
+        message_body = 'This is a test\n'
         message = Message(queue, message_body)
         queue.write(message)
         time.sleep(5)

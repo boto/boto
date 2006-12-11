@@ -23,6 +23,8 @@
 Represents an SQS Message
 """
 
+import base64
+
 class Message:
     
     def __init__(self, queue=None, body='', xml_attrs=None):
@@ -35,8 +37,7 @@ class Message:
     # more conventional looking python variables names automatically
     def __setattr__(self, key, value):
         if key == 'MessageBody':
-            self.set_body(value)
-            self.__dict__['body'] = value
+            self.set_body_b64(value)
         elif key == 'MessageId':
             self.__dict__['id'] = value
         else:
@@ -45,10 +46,17 @@ class Message:
     def set_body(self, body):
         self.body = body
 
+    def set_body_b64(self, body):
+        self.body = base64.b64decode(body)
+
     def __len__(self):
         return len(self.body)
 
     def get_body(self):
         return self.body
+
+    def get_body_b64(self):
+        return base64.b64encode(self.get_body())
+
 
 
