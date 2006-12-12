@@ -48,6 +48,7 @@ class Message:
 
     def set_body_b64(self, body):
         self.body = base64.b64decode(body)
+        self.set_body(self.body)
 
     def __len__(self):
         return len(self.body)
