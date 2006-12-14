@@ -27,21 +27,21 @@ import base64
 
 class Message:
     
-    def __init__(self, queue=None, body='', xml_attrs=None):
+    def __init__(self, queue=None, body=''):
         self.queue = queue
         self.set_body(body)
         self.id = None
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'MessageBody':
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'MessageBody':
             self.set_body_b64(value)
-        elif key == 'MessageId':
-            self.__dict__['id'] = value
+        elif name == 'MessageId':
+            self.id = value
         else:
-            self.__dict__[key] = value
+            setattr(self, name, value)
 
     def set_body(self, body):
         self.body = body

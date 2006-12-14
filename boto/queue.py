@@ -28,25 +28,27 @@ import urlparse
 from boto.exception import SQSError
 from boto.handler import XmlHandler
 from boto.message import Message
+from boto.resultset import ResultSet
 
 class Queue:
     
-    def __init__(self, connection=None, url=None,
-                 message_class=Message, xml_attrs=None):
+    def __init__(self, connection=None, url=None, message_class=Message):
         self.connection = connection
         self.url = url
         self.message_class = message_class
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'url' or key == 'QueueUrl':
-            self.__dict__['url'] = value
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'QueueUrl':
+            self.url = value
             if value:
-                self.__dict__['id'] = urlparse.urlparse(value)[2]
+                self.id = urlparse.urlparse(value)[2]
+        elif name == 'VisibilityTimeout':
+            self.visibility_timeout = int(value)
         else:
-            self.__dict__[key] = value
+            setattr(self, name, value)
 
     def set_message_class(self, message_class):
         self.message_class = message_class
@@ -58,15 +60,13 @@ class Queue:
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        handler = XmlHandler(self, {})
+        handler = XmlHandler(self, self.connection)
         xml.sax.parseString(body, handler)
-        self.connection._last_rs = handler.rs
-        return int(handler.rs.VisibilityTimeout)
+        return self.visibility_timeout
 
     # convenience method that returns a single message or None if queue is empty
     def read(self, visibility_timeout=None):
         rs = self.get_messages(1, visibility_timeout)
-        self.connection._last_rs = rs
         if len(rs) == 1:
             return rs[0]
         else:
@@ -81,10 +81,9 @@ class Queue:
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        handler = XmlHandler(message, {})
+        handler = XmlHandler(message, self.connection)
         xml.sax.parseString(body, handler)
-        message.id = handler.rs.MessageId
-        return handler.rs
+        return None
 
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None):
@@ -95,19 +94,21 @@ class Queue:
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        handler = XmlHandler(self, {'Message' : self.message_class})
-        xml.sax.parseString(body, handler)
-        return handler.rs
+        rs = ResultSet('Message', self.message_class)
+        h = XmlHandler(rs, self.connection)
+        xml.sax.parseString(body, h)
+        return rs
 
     def delete_message(self, message):
-        path = '%s/%s' % (message.queue.id, message.id)
+        path = '%s/%s' % (self.id, message.id)
         response = self.connection.make_request('DELETE', path)
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        handler = XmlHandler(self, {})
-        xml.sax.parseString(body, handler)
-        return handler.rs
+        rs = ResultSet()
+        h = XmlHandler(rs, self.connection)
+        xml.sax.parseString(body, h)
+        return rs
 
     def clear(self, page_size=100, vtimeout=10):
         """Utility function to remove all messages from a queue"""

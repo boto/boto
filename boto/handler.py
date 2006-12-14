@@ -19,32 +19,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.resultset import ResultSet
 import xml.sax
 
 class XmlHandler(xml.sax.ContentHandler):
 
-    def __init__(self, parent, elements):
-        self.rs = ResultSet()
-        self.elements = elements
-        self.nodes = [parent]
+    def __init__(self, root_node, connection):
+        self.connection = connection
+        self.nodes = [('root', root_node)]
         self.current_text = ''
 
     def startElement(self, name, attrs):
-        if name in self.elements.keys():
-            node = self.elements[name](self.nodes[-1], xml_attrs=attrs)
-            self.nodes.append(node)
+        new_node = self.nodes[-1][1].startElement(name, attrs, self.connection)
+        if new_node != None:
+            self.nodes.append((name, new_node))
 
     def endElement(self, name):
-        if name in self.elements.keys():
-            node = self.nodes.pop()
-            setattr(node, name, self.current_text)
-            if len(self.nodes) == 1:
-                self.rs.append(node)
-        elif len(self.nodes) > 1:
-            setattr(self.nodes[-1], name, self.current_text)
-        else:
-            setattr(self.rs, name, self.current_text)
+        self.nodes[-1][1].endElement(name, self.current_text, self.connection)
+        if self.nodes[-1][0] == name:
+            self.nodes.pop()
         self.current_text = ''
 
     def characters(self, content):

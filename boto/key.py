@@ -27,10 +27,11 @@ import base64
 import boto
 import boto.utils
 from boto.exception import S3ResponseError
+from boto.user import User
 
 class Key:
 
-    def __init__(self, bucket=None, xml_attrs=None):
+    def __init__(self, bucket=None):
         self.bucket = bucket
         self.metadata = {}
         self.content_type = 'application/octet-stream'
@@ -41,24 +42,28 @@ class Key:
         self.owner = None
         self.storage_class = None
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'Key':
-            self.__dict__['key'] = value
-        elif key == 'ETag':
-            self.__dict__['etag'] = value
-        elif key == 'LastModified':
-            self.__dict__['last_modified'] = value
-        elif key == 'Size':
-            self.__dict__['size'] = value
-        elif key == 'StorageClass':
-            self.__dict__['storage_class'] = value
-        elif key == 'Contents':
+    def startElement(self, name, attrs, connection):
+        if name == 'Owner':
+            self.owner = User(self)
+            return self.owner
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Key':
+            self.key = value
+        elif name == 'ETag':
+            self.etag = value
+        elif name == 'LastModified':
+            self.last_modified = value
+        elif name == 'Size':
+            self.size = value
+        elif name == 'StorageClass':
+            self.storage_class = value
+        elif name == 'Owner':
             pass
         else:
-            self.__dict__[key] = value
+            setattr(self, name, value)
 
     def get_metadata(self, key):
         return self.metadata[key]

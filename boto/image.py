@@ -19,52 +19,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class ResultSet:
+"""
+Represents an EC2 Image
+"""
 
-    def __init__(self, marker_elem='', factory=None):
-        self.marker_elem = marker_elem
-        self.factory = factory
-        self._results = []
+class Image:
+    
+    def __init__(self, parent=None):
+        self.id = None
+        self.location = None
+        self.state = None
+        self.ownerId = None
+        self.isPublic = False
 
     def startElement(self, name, attrs, connection):
-        if name == self.marker_elem:
-            obj = self.factory(connection)
-            self._results.append(obj)
-            return obj
-        else:
-            return None
+        return None
 
     def endElement(self, name, value, connection):
-        if name == 'IsTruncated':
-            self.is_truncated = value
-        elif name == 'Marker':
-            self.marker = value
-        elif name == 'Prefix':
-            self.prefix = value
+        if name == 'imageId':
+            self.id = value
+        elif name == 'imageLocation':
+            self.location = value
+        elif name == 'imageState':
+            self.state = value
+        elif name == 'imageOwnerId':
+            self.ownerId = value
+        elif name == 'isPublic':
+            self.is_public = bool(value)
         else:
             setattr(self, name, value)
-        
-    def __repr__(self):
-        return repr(self._results)
 
-    def __len__(self):
-        return len(self._results)
 
-    def __getitem__(self, key):
-        return self._results[key]
 
-    def append(self, value):
-        self._results.append(value)
-
-    def count(self):
-        return self._results.count()
-
-    def insert(self, value):
-        self._results.insert(value)
-
-    def pop(self):
-        return self._results.pop()
-
-    def __contains__(self, item):
-        return item in self._results
 

@@ -50,7 +50,11 @@ from boto.exception import SQSError, S3ResponseError, S3CreateError
 from boto import handler
 from boto.queue import Queue
 from boto.bucket import Bucket
+from boto.resultset import ResultSet
 from boto.user import User
+from boto.image import Image
+from boto.keypair import KeyPair
+from boto.securitygroup import SecurityGroup
 import boto.utils
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
@@ -161,9 +165,10 @@ class SQSConnection(AWSAuthConnection):
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        h = handler.XmlHandler(self, {'QueueUrl': Queue})
+        rs = ResultSet('QueueUrl', Queue)
+        h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
-        return h.rs
+        return rs
 
     def create_queue(self, queue_name, visibility_timeout=None):
         path = '/?QueueName=%s' % queue_name
@@ -173,19 +178,20 @@ class SQSConnection(AWSAuthConnection):
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        h = handler.XmlHandler(self, {'QueueUrl' : Queue})
+        q = Queue(self)
+        h = handler.XmlHandler(q, self)
         xml.sax.parseString(body, h)
-        self._last_rs = h.rs
-        return h.rs[0]
+        return q
 
     def delete_queue(self, queue):
         response = self.make_request('DELETE', queue.id)
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        h = handler.XmlHandler(self, {})
+        rs = ResultSet()
+        h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
-        return h.rs
+        return rs
 
 class S3Connection(AWSAuthConnection):
 
@@ -197,18 +203,28 @@ class S3Connection(AWSAuthConnection):
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, debug)
     
+    def generate_url(self, request, bits=None, expires_in=60):
+        if bits:
+            if not isinstance(bits, Bits):
+                raise BitBucketTypeError('Value must be of type Bits')
+        self.connection.query_gen.set_expires_in(expires_in)
+        if request == 'get':
+            return self.connection.query_gen.get(self.name, bits.key)
+        elif request == 'delete':
+            return self.connection.query_gen.delete(self.name, bits.key)
+        else:
+            raise BitBucketError('Invalid request: %s' % request)
+
     def get_all_buckets(self):
         path = '/'
         response = self.make_request('GET', urllib.quote(path))
         body = response.read()
         if response.status > 300:
             raise S3ResponseError(response.status, response.reason)
-        # h = handler.XmlHandler(self, {'Owner': User,
-        #                               'Bucket': Bucket})
-        # ignoring Owner for now
-        h = handler.XmlHandler(self, {'Bucket': Bucket})
+        rs = ResultSet('Bucket', Bucket)
+        h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
-        return h.rs
+        return rs
 
     def create_bucket(self, bucket_name, headers={}):
         path = '/%s' % bucket_name
@@ -229,3 +245,90 @@ class S3Connection(AWSAuthConnection):
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
 
+class EC2Connection(AWSAuthConnection):
+
+    DefaultHost = 'ec2.amazonaws.com'
+    EC2Version = '2006-10-01'
+    SignatureVersion = '1'
+
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+                 is_secure=True, port=None, debug=0):
+        AWSAuthConnection.__init__(self, self.DefaultHost,
+                                   aws_access_key_id, aws_secret_access_key,
+                                   is_secure, port, debug)
+
+    def make_request(self, action, params=None):
+        if params == None:
+            params = {}
+        h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+        params['Action'] = action
+        params['Version'] = self.EC2Version
+        params['AWSAccessKeyId'] = self.aws_access_key_id
+        params['SignatureVersion'] = self.SignatureVersion
+        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        keys = params.keys()
+	keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        qs = ''
+        for key in keys:
+            h.update(key)
+            h.update(str(params[key]))
+            qs += key + '=' + urllib.quote(str(params[key])) + '&'
+        signature = base64.b64encode(h.digest())
+        qs += 'Signature=' + urllib.quote(signature)
+        self.connection.request('GET', '/?%s' % qs)
+        try:
+            return self.connection.getresponse()
+        except httplib.HTTPException, e:
+            self.make_http_connection()
+            self.connection.request('GET', '/?%s' % qs)
+            return self.connection.getresponse()
+
+    def build_list_params(self, params, items, label):
+        for i in range(1, len(items)+1):
+            params['%s.%d' % (label, i)] = items[i-1]
+        
+    def describe_images(self, image_ids=None, owners=None, executable_by=None):
+        params = {}
+        if image_ids:
+            self.build_list_params(params, image_ids, 'ImageId')
+        if owners:
+            self.build_list_params(params, owners, 'Owner')
+        if executable_by:
+            self.build_list_params(params, executable_by, 'ExecutableBy')
+        response = self.make_request('DescribeImages')
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', Image)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def describe_keypairs(self, keynames=None):
+        params = {}
+        if keynames:
+            self.build_list_params(params, keynames, 'KeyName')
+        response = self.make_request('DescribeKeyPairs', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', KeyPair)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise S3ResponseError(response.status, response.reason)
+        
+    def describe_securitygroups(self, groupnames=None):
+        params = {}
+        if groupnames:
+            self.build_list_params(params, groupnames, 'GroupName')
+        response = self.make_request('DescribeSecurityGroups')
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', SecurityGroup)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise S3ResponseError(response.status, response.reason)

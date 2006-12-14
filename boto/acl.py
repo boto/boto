@@ -19,63 +19,81 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.user import User
+
 CannedACLStrings = ['private', 'public-read',
                     'public-read-write', 'authenticated-read']
 
 class Policy:
 
-    def __init__(self, parent=None, xml_attrs=None):
+    def __init__(self, parent=None):
         self.parent = parent
         self.acl = None
 
-    def add_acl(self, acl):
-        self.acl = acl
-        
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'AccessControlPolicy':
+    def startElement(self, name, attrs, connection):
+        if name == 'Owner':
+            self.owner = User(self)
+            return self.owner
+        elif name == 'AccessControlList':
+            self.acl = ACL(self)
+            return self.acl
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Owner':
+            pass
+        elif name == 'AccessControlList':
             pass
         else:
-            self.__dict__[key] = value
+            setattr(self, name, value)
 
 class ACL:
 
-    def __init__(self, policy=None, xml_attrs=None):
-        if policy:
-            policy.add_acl(self)
+    def __init__(self, policy=None):
+        self.policy = policy
         self.grants = []
 
     def add_grant(self, grant):
         self.grants.append(grant)
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'AccessControlList':
+    def startElement(self, name, attrs, connection):
+        if name == 'Grant':
+            self.grants.append(Grant(self))
+            return self.grants[-1]
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Grant':
             pass
         else:
-            self.__dict__[key] = value
+            setattr(self, name, value)
 
 class Grant:
 
-    def __init__(self, acl=None, xml_attrs=None):
-        if acl:
-            acl.add_grant(self)
+    def __init__(self, acl=None, grantee=None):
+        self.acl = acl
+        self.grantee = grantee
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'Permission':
-            self.__dict__['permission'] = value
-        elif key == 'owner':
-            self.__dict__['grantee'] = value
-        elif key == 'Grant':
-            pass
+    def startElement(self, name, attrs, connection):
+        if name == 'Grantee':
+            self.grantee = User(self)
+            if attrs.has_key('xsi:type'):
+                self.grantee.type = attrs['xsi:type']
+            else:
+                self.grantee.type = None
+            return self.grantee
         else:
-            self.__dict__[key] = value
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Grantee':
+            pass
+        elif name == 'Permission':
+            self.permission = value
+        else:
+            setattr(self, name, value)
+
 
             

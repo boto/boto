@@ -19,24 +19,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class User:
-    def __init__(self, parent=None, id='', display_name=''):
-        if parent:
-            parent.owner = self
-        self.type = None
-        self.id = id
-        self.display_name = display_name
+"""
+Represents an EC2 Instance
+"""
 
-    def startElement(self, name, attrs, connection):
-        return None
+class Instance:
+    
+    def __init__(self, parent=None):
+        self.id = None
+        self.location = None
+        self.state = None
+        self.ownerId = None
+        self.isPublic = False
 
-    def endElement(self, name, value, connection):
-        if name == 'DisplayName':
-            self.display_name = value
-        elif name == 'ID':
-            self.id = value
-        elif name == 'URI':
-            self.uri = value
+    # This allows the XMLHandler to set the attributes as they are named
+    # in the XML response but have the capitalized names converted to
+    # more conventional looking python variables names automatically
+    def __setattr__(self, key, value):
+        if key == 'imageId':
+            self.__dict__['id'] = value
+        elif key == 'imageLocation':
+            self.__dict__['location'] = value
+        elif key == 'imageState':
+            self.__dict__['state'] = value
+        elif key == 'imageOwnerId':
+            self.__dict__['ownerId'] = value
+        elif key == 'isPublic':
+            self.__dict__['ownerId'] = bool(value)
         else:
-            setattr(self, name, value)
+            self.__dict__[key] = value
+
+
 

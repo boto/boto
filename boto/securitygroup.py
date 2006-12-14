@@ -19,52 +19,59 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class ResultSet:
+"""
+Represents an EC2 Security Group
+"""
 
-    def __init__(self, marker_elem='', factory=None):
-        self.marker_elem = marker_elem
-        self.factory = factory
-        self._results = []
+class SecurityGroup:
+    
+    def __init__(self, parent=None):
+        self.owner_id = None
+        self.name = None
+        self.description = None
+        self.ip_permissions = []
 
     def startElement(self, name, attrs, connection):
-        if name == self.marker_elem:
-            obj = self.factory(connection)
-            self._results.append(obj)
-            return obj
+        if name == 'item':
+            self.ip_permissions.append(IPPermissions(self))
+            return self.ip_permissions[-1]
         else:
             return None
 
     def endElement(self, name, value, connection):
-        if name == 'IsTruncated':
-            self.is_truncated = value
-        elif name == 'Marker':
-            self.marker = value
-        elif name == 'Prefix':
-            self.prefix = value
+        if name == 'ownerId':
+            self.owner_id = value
+        elif name == 'groupName':
+            self.name = value
+        elif name == 'groupDescription':
+            self.description = value
+        elif name == 'ipRanges':
+            pass
         else:
             setattr(self, name, value)
+
+class IPPermissions:
+
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.ip_protocol = None
+        self.from_port = None
+        self.to_port = None
+        self.ip_ranges = []
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'ipProtocol':
+            self.ip_protocol = value
+        elif name == 'fromPort':
+            self.from_port = value
+        elif name == 'toPort':
+            self.to_port = value
+        elif name == 'cidrIp':
+            self.ip_ranges.append(value)
+        else:
+            setattr(self, name, value)
+
         
-    def __repr__(self):
-        return repr(self._results)
-
-    def __len__(self):
-        return len(self._results)
-
-    def __getitem__(self, key):
-        return self._results[key]
-
-    def append(self, value):
-        self._results.append(value)
-
-    def count(self):
-        return self._results.count()
-
-    def insert(self, value):
-        self._results.insert(value)
-
-    def pop(self):
-        return self._results.pop()
-
-    def __contains__(self, item):
-        return item in self._results
-

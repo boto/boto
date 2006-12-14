@@ -27,4 +27,8 @@ def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None):
 def connect_s3(aws_access_key_id=None, aws_secret_access_key=None):
     from boto.connection import S3Connection
     return S3Connection(aws_access_key_id, aws_secret_access_key)
-    
+
+def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None):
+    from boto.connection import EC2Connection
+    return EC2Connection(aws_access_key_id, aws_secret_access_key)
+

@@ -20,7 +20,8 @@
 # IN THE SOFTWARE.
 
 from boto import handler
-from boto.acl import Policy, ACL, Grant, CannedACLStrings
+from boto.resultset import ResultSet
+from boto.acl import Policy, CannedACLStrings
 from boto.user import User
 from boto.key import Key
 from boto.exception import S3ResponseError
@@ -30,21 +31,21 @@ import urllib
 
 class Bucket:
 
-    def __init__(self, connection=None, name=None, debug=None, xml_attrs=None):
+    def __init__(self, connection=None, name=None, debug=None):
         self.name = name
         self.connection = connection
         self.debug = debug
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'Name':
-            self.__dict__['name'] = value
-        elif key == 'CreationDate':
-            self.__dict__['creation_date'] = value
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Name':
+            self.name = value
+        elif name == 'CreationDate':
+            self.creation_date = value
         else:
-            self.__dict__[key] = value
+            setattr(self, name, value)
 
     def lookup(self, key):
         path = '/%s/%s' % (self.name, key)
@@ -84,9 +85,10 @@ class Bucket:
         response = self.connection.make_request('GET', path, headers)
         body = response.read()
         if response.status == 200:
-            h = handler.XmlHandler(self, {'Owner': User, 'Contents': Key})
+            rs = ResultSet('Contents', Key)
+            h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
-            return h.rs
+            return rs
         else:
             raise S3ResponseError(response.status, response.reason)
 
@@ -129,13 +131,10 @@ class Bucket:
         response = self.connection.make_request('GET', path)
         body = response.read()
         if response.status == 200:
-            h = handler.XmlHandler(self, {'AccessControlPolicy' : Policy,
-                                          'AccessControlList' : ACL,
-                                          'Grant': Grant,
-                                          'Grantee': User,
-                                          'Owner' : User})
+            policy = Policy(self)
+            h = handler.XmlHandler(policy, self)
             xml.sax.parseString(body, h)
-            return h.rs[0]
+            return policy
         else:
             raise S3ResponseError(response.status, response.reason)
 
