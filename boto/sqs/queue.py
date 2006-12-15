@@ -27,7 +27,7 @@ import xml.sax
 import urlparse
 from boto.exception import SQSError
 from boto.handler import XmlHandler
-from boto.message import Message
+from boto.sqs.message import Message
 from boto.resultset import ResultSet
 
 class Queue:

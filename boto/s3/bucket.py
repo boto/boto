@@ -21,9 +21,9 @@
 
 from boto import handler
 from boto.resultset import ResultSet
-from boto.acl import Policy, CannedACLStrings
-from boto.user import User
-from boto.key import Key
+from boto.s3.acl import Policy, CannedACLStrings
+from boto.s3.user import User
+from boto.s3.key import Key
 from boto.exception import S3ResponseError
 import boto.utils
 import xml.sax
