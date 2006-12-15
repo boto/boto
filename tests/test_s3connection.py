@@ -29,7 +29,7 @@ import unittest
 import time
 import os
 from boto.connection import S3Connection
-from boto.key import Key
+from boto.s3.key import Key
 
 class S3ConnectionTest (unittest.TestCase):
 
