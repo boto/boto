@@ -48,14 +48,13 @@ import os
 import xml.sax
 from boto.exception import SQSError, S3ResponseError, S3CreateError
 from boto import handler
-from boto.queue import Queue
-from boto.bucket import Bucket
+from boto.sqs.queue import Queue
+from boto.s3.bucket import Bucket
 from boto.resultset import ResultSet
-from boto.user import User
-from boto.image import Image
-from boto.instance import Reservation
-from boto.keypair import KeyPair
-from boto.securitygroup import SecurityGroup
+from boto.ec2.image import Image
+from boto.ec2.instance import Reservation, Instance
+from boto.ec2.keypair import KeyPair
+from boto.ec2.securitygroup import SecurityGroup
 import boto.utils
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
@@ -296,7 +295,7 @@ class EC2Connection(AWSAuthConnection):
             self.build_list_params(params, owners, 'Owner')
         if executable_by:
             self.build_list_params(params, executable_by, 'ExecutableBy')
-        response = self.make_request('DescribeImages')
+        response = self.make_request('DescribeImages', params)
         body = response.read()
         if response.status == 200:
             rs = ResultSet('item', Image)
@@ -310,7 +309,7 @@ class EC2Connection(AWSAuthConnection):
         params = {}
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
-        response = self.make_request('DescribeInstances')
+        response = self.make_request('DescribeInstances', params)
         body = response.read()
         if response.status == 200:
             rs = ResultSet('item', Reservation)
@@ -334,11 +333,11 @@ class EC2Connection(AWSAuthConnection):
         else:
             raise S3ResponseError(response.status, response.reason)
         
-    def describe_securitygroups(self, groupnames=None):
+    def describe_security_groups(self, groupnames=None):
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
-        response = self.make_request('DescribeSecurityGroups')
+        response = self.make_request('DescribeSecurityGroups', params)
         body = response.read()
         if response.status == 200:
             rs = ResultSet('item', SecurityGroup)
@@ -347,3 +346,92 @@ class EC2Connection(AWSAuthConnection):
             return rs
         else:
             raise S3ResponseError(response.status, response.reason)
+        
+    def terminate_instances(self, instance_ids=None):
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        response = self.make_request('TerminateInstances', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', Instance)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def run_instances(self, image_id, min_count, max_count,
+                      key_name=None, security_groups=None, user_data=None):
+        params = {'ImageId':image_id,
+                  'MinCount':min_count,
+                  'MaxCount': max_count}
+        if key_name:
+            params['KeyName'] = key_name
+        if security_groups:
+            self.build_list_params(params, security_groups, 'SecurityGroup')
+        if user_data:
+            params['UserData'] = user_data
+        response = self.make_request('RunInstances', params)
+        body = response.read()
+        if response.status == 200:
+            #rs = ResultSet('RunInstancesResponse', Reservation)
+            res = Reservation(self.connection)
+            h = handler.XmlHandler(res, self)
+            xml.sax.parseString(body, h)
+            return res
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def create_security_group(self, name, description):
+        params = {'GroupName':name, 'GroupDescription':description}
+        response = self.make_request('CreateSecurityGroup', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def delete_security_group(self, name):
+        params = {'GroupName':name}
+        response = self.make_request('DeleteSecurityGroup', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def authorize_security_group(self, group_name, src_security_group_name=None,
+                                 src_security_group_owner_id=None,
+                                 ip_protocol=None, from_port=None, to_port=None,
+                                 cidr_ip=None):
+        params = {'GroupName':group_name}
+        if src_security_group_name:
+            params['SourceSecurityGroupName'] = src_security_group_name
+        if src_security_group_owner_id:
+            params['SourceSecurityGroupOwnerId'] = src_security_group_owner_id
+        if ip_protocol:
+            params['IpProtocol'] = ip_protocol
+        if from_port:
+            params['FromPort'] = from_port
+        if to_port:
+            params['ToPort'] = to_port
+        if cidr_ip:
+            params['CidrIp'] = cidr_ip
+        response = self.make_request('AuthorizeSecurityGroupIngress', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+        

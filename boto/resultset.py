@@ -41,6 +41,8 @@ class ResultSet:
             self.marker = value
         elif name == 'Prefix':
             self.prefix = value
+        elif name == 'return':
+            self.status = bool(value)
         else:
             setattr(self, name, value)
         
