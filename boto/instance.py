@@ -78,6 +78,10 @@ class Instance:
             self.key_name = value
         elif name == 'amiLaunchIndex':
             self.ami_launch_index = value
+        elif name == 'shutdownState':
+            self.shutdown_state = value
+        elif name == 'previousState':
+            self.previous_state = value
         else:
             setattr(self, name, value)
 
