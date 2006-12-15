@@ -53,6 +53,7 @@ from boto.bucket import Bucket
 from boto.resultset import ResultSet
 from boto.user import User
 from boto.image import Image
+from boto.instance import Reservation
 from boto.keypair import KeyPair
 from boto.securitygroup import SecurityGroup
 import boto.utils
@@ -299,6 +300,20 @@ class EC2Connection(AWSAuthConnection):
         body = response.read()
         if response.status == 200:
             rs = ResultSet('item', Image)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def describe_instances(self, instance_ids=None):
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        response = self.make_request('DescribeInstances')
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', Reservation)
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs

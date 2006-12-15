@@ -23,31 +23,91 @@
 Represents an EC2 Instance
 """
 
-class Instance:
+from boto.resultset import ResultSet
+
+class Reservation:
     
     def __init__(self, parent=None):
         self.id = None
-        self.location = None
-        self.state = None
-        self.ownerId = None
-        self.isPublic = False
+        self.owner_id = None
+        self.groups = []
+        self.instances = []
 
-    # This allows the XMLHandler to set the attributes as they are named
-    # in the XML response but have the capitalized names converted to
-    # more conventional looking python variables names automatically
-    def __setattr__(self, key, value):
-        if key == 'imageId':
-            self.__dict__['id'] = value
-        elif key == 'imageLocation':
-            self.__dict__['location'] = value
-        elif key == 'imageState':
-            self.__dict__['state'] = value
-        elif key == 'imageOwnerId':
-            self.__dict__['ownerId'] = value
-        elif key == 'isPublic':
-            self.__dict__['ownerId'] = bool(value)
+    def startElement(self, name, attrs, connection):
+        if name == 'instancesSet':
+            self.instances = ResultSet('item', Instance)
+            return self.instances
+        elif name == 'groupSet':
+            self.groups = ResultSet('item', Group)
+            return self.groups
         else:
-            self.__dict__[key] = value
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'reservationId':
+            self.id = value
+        elif name == 'ownerId':
+            self.owner_id = value
+        else:
+            setattr(self, name, value)
+            
+class Instance:
+    
+    def __init__(self, parent=None):
+        self.parent = None
+        self.id = None
+        self.dns_name = None
+        self.state = None
+        self.key_name = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'instanceState':
+            self.state = InstanceState(self)
+            return self.state
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'instanceId':
+            self.id = value
+        elif name == 'imageId':
+            self.image_id = value
+        elif name == 'dnsName':
+            self.dns_name = value
+        elif name == 'keyName':
+            self.key_name = value
+        elif name == 'amiLaunchIndex':
+            self.ami_launch_index = value
+        else:
+            setattr(self, name, value)
+
+class Group:
+
+    def __init__(self, parent=None):
+        self.id = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'groupId':
+            self.id = value
+        else:
+            setattr(self, name, value)
+    
+class InstanceState:
+    
+    def __init__(self, parent=None):
+        self.parent = None
+        self.code = None
+        self.name = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        setattr(self, name, value)
+        
 
 
 
