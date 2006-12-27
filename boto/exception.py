@@ -31,10 +31,10 @@ class SQSError(Exception):
         self.body = body
 
     def __repr__(self):
-        return 'SQSError: %s %s' % (self.status, self.reason)
+        return 'SQSError: %s %s\n%s' % (self.status, self.reason, self.body)
 
     def __str__(self):
-        return 'SQSError: %s %s' % (self.status, self.reason)
+        return 'SQSError: %s %s\n%s' % (self.status, self.reason, self.body)
 
 class S3Error(Exception):
     def __init__(self, reason):
