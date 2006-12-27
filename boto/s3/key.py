@@ -41,6 +41,8 @@ class Key:
         self.last_modified = None
         self.owner = None
         self.storage_class = None
+        self.md5 = None
+        self.base64md5 = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -94,7 +96,7 @@ class Key:
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason)
         self.etag = response.getheader('etag')
-        if self.etag != self.md5:
+        if self.etag != '"%s"'  % self.md5:
             raise S3DataError('Injected data did not return correct MD5')
 
     def _compute_md5(self, fp):
@@ -103,14 +105,15 @@ class Key:
         while s:
             m.update(s)
             s = fp.read(4096)
-        self.md5 = '"%s"' % m.hexdigest()
+        self.md5 = m.hexdigest()
         self.base64md5 = base64.b64encode(m.digest())
         self.size = fp.tell()
         fp.seek(0)
 
     def set_contents_from_file(self, fp):
         if self.bucket != None:
-            self._compute_md5(fp)
+            if self.md5 == None:
+                self._compute_md5(fp)
             if hasattr(fp, 'name'):
                 self.content_type = mimetypes.guess_type(fp.name)[0]
             self.send_file(fp)
