@@ -287,7 +287,7 @@ class EC2Connection(AWSAuthConnection):
         for i in range(1, len(items)+1):
             params['%s.%d' % (label, i)] = items[i-1]
         
-    def describe_images(self, image_ids=None, owners=None, executable_by=None):
+    def get_all_images(self, image_ids=None, owners=None, executable_by=None):
         params = {}
         if image_ids:
             self.build_list_params(params, image_ids, 'ImageId')
@@ -305,7 +305,7 @@ class EC2Connection(AWSAuthConnection):
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def describe_instances(self, instance_ids=None):
+    def get_all_instances(self, instance_ids=None):
         params = {}
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
@@ -319,7 +319,7 @@ class EC2Connection(AWSAuthConnection):
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def describe_keypairs(self, keynames=None):
+    def get_all_key_pairs(self, keynames=None):
         params = {}
         if keynames:
             self.build_list_params(params, keynames, 'KeyName')
@@ -333,7 +333,7 @@ class EC2Connection(AWSAuthConnection):
         else:
             raise S3ResponseError(response.status, response.reason)
         
-    def describe_security_groups(self, groupnames=None):
+    def get_all_security_groups(self, groupnames=None):
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
@@ -344,6 +344,52 @@ class EC2Connection(AWSAuthConnection):
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def register_image(self, image_location):
+        params = {'ImageLocation':image_location}
+        response = self.make_request('RegisterImage', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.imageId
+        else:
+            raise S3ResponseError(response.status, response.reason)
+        
+    def deregister_image(self, image_id):
+        params = {'ImageId':image_id}
+        response = self.make_request('DeregisterImage', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise S3ResponseError(response.status, response.reason)
+        
+    def run_instances(self, image_id, min_count=1, max_count=1, key_name=None,
+                      security_groups=None, user_data=None):
+        params = {'ImageId':image_id,
+                  'MinCount':min_count,
+                  'MaxCount': max_count}
+        if key_name:
+            params['KeyName'] = key_name
+        if security_groups:
+            self.connection.build_list_params(params, security_groups,
+                                              'SecurityGroup')
+        if user_data:
+            params['UserData'] = user_data
+        response = self.make_request('RunInstances', params)
+        body = response.read()
+        if response.status == 200:
+            res = Reservation(self.connection)
+            h = handler.XmlHandler(res, self)
+            xml.sax.parseString(body, h)
+            return res
         else:
             raise S3ResponseError(response.status, response.reason)
         
@@ -361,37 +407,18 @@ class EC2Connection(AWSAuthConnection):
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def run_instances(self, image_id, min_count, max_count,
-                      key_name=None, security_groups=None, user_data=None):
-        params = {'ImageId':image_id,
-                  'MinCount':min_count,
-                  'MaxCount': max_count}
-        if key_name:
-            params['KeyName'] = key_name
-        if security_groups:
-            self.build_list_params(params, security_groups, 'SecurityGroup')
-        if user_data:
-            params['UserData'] = user_data
-        response = self.make_request('RunInstances', params)
-        body = response.read()
-        if response.status == 200:
-            #rs = ResultSet('RunInstancesResponse', Reservation)
-            res = Reservation(self.connection)
-            h = handler.XmlHandler(res, self)
-            xml.sax.parseString(body, h)
-            return res
-        else:
-            raise S3ResponseError(response.status, response.reason)
-
     def create_security_group(self, name, description):
         params = {'GroupName':name, 'GroupDescription':description}
         response = self.make_request('CreateSecurityGroup', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
+            sg = SecurityGroup(self, name, description)
+            h = handler.XmlHandler(sg, self)
             xml.sax.parseString(body, h)
-            return rs.status
+            if sg.status:
+                return sg
+            else:
+                return None
         else:
             raise S3ResponseError(response.status, response.reason)
 
@@ -433,5 +460,30 @@ class EC2Connection(AWSAuthConnection):
             return rs.status
         else:
             raise S3ResponseError(response.status, response.reason)
+
+    def create_key_pair(self, key_name):
+        params = {'KeyName':key_name}
+        response = self.make_request('CreateKeyPair', params)
+        body = response.read()
+        if response.status == 200:
+            key = KeyPair(self)
+            h = handler.XmlHandler(key, self)
+            xml.sax.parseString(body, h)
+            return key
+        else:
+            raise S3ResponseError(response.status, response.reason)
+        
+    def delete_key_pair(self, key_name):
+        params = {'KeyName':key_name}
+        response = self.make_request('DeleteKeyPair', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
 
         
