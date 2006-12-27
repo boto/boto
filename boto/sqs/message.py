@@ -24,6 +24,7 @@ Represents an SQS Message
 """
 
 import base64
+import StringIO
 
 class Message:
     
@@ -59,5 +60,52 @@ class Message:
     def get_body_b64(self):
         return base64.b64encode(self.get_body())
 
+#
+# subclass that provides RFC821-like headers
+#
+class MHMessage(Message):
 
+    def __init__(self, queue=None, body='', xml_attrs=None):
+        self.dict = {}
+        Message.__init__(self, queue, body)
 
+    def set_body(self, body):
+        fp = StringIO.StringIO(body)
+        line = fp.readline()
+        while line:
+            delim = line.find(':')
+            key = line[0:delim]
+            value = line[delim+1:].strip()
+            self.dict[key.strip()] = value.strip()
+            line = fp.readline()
+
+    def get_body(self):
+        s = ''
+        for key,value in self.dict.items():
+            s = s + '%s: %s\n' % (key, value)
+        return s
+
+    def __len__(self):
+        return len(self.get_body())
+
+    def __getitem__(self, key):
+        if self.dict.has_key(key):
+            return self.dict[key]
+        else:
+            raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        self.dict[key] = value
+
+    def keys(self):
+        return self.dict.keys()
+
+    def values(self):
+        return self.dict.values()
+
+    def items(self):
+        return self.dict.items()
+
+    def has_key(self, key):
+        return self.dict.has_key(key)
+        
