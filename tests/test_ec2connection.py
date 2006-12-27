@@ -41,25 +41,49 @@ class EC2ConnectionTest (unittest.TestCase):
         status = c.create_security_group(group_name, group_desc)
         assert status
         # now get a listing of all security groups and look for our new one
-        rs = c.describe_security_groups()
+        rs = c.get_all_security_groups()
         found = False
         for g in rs:
             if g.name == group_name:
                 found = True
         assert found
         # now pass arg to filter results to only our new group
-        rs = c.describe_security_groups([group_name])
+        rs = c.get_all_security_groups([group_name])
         assert len(rs) == 1
         group = rs[0]
         # now delete the security group
         status = c.delete_security_group(group_name)
         # now make sure it's really gone
-        rs = c.describe_security_groups()
+        rs = c.get_all_security_groups()
         found = False
         for g in rs:
             if g.name == group_name:
                 found = True
         assert not found
         
+        # create a new key pair
+        key_name = 'test-%d' % int(time.time())
+        status = c.create_key_pair(key_name)
+        assert status
+        # now get a listing of all key pairs and look for our new one
+        rs = c.get_all_key_pairs()
+        found = False
+        for k in rs:
+            if k.name == key_name:
+                found = True
+        assert found
+        # now pass arg to filter results to only our new key pair
+        rs = c.get_all_key_pairs([key_name])
+        assert len(rs) == 1
+        key_pair = rs[0]
+        # now delete the key pair
+        status = c.delete_key_pair(key_name)
+        # now make sure it's really gone
+        rs = c.get_all_key_pairs()
+        found = False
+        for k in rs:
+            if k.name == key_name:
+                found = True
+        assert not found
         
         print '--- tests completed ---'
