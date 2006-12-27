@@ -24,10 +24,14 @@ Represents an EC2 Instance
 """
 
 from boto.resultset import ResultSet
+import xml.sax
+from boto.exception import SQSError, S3ResponseError, S3CreateError
+from boto import handler
 
 class Reservation:
     
-    def __init__(self, parent=None):
+    def __init__(self, connection=None):
+        self.connection = connection
         self.id = None
         self.owner_id = None
         self.groups = []
@@ -53,8 +57,8 @@ class Reservation:
             
 class Instance:
     
-    def __init__(self, parent=None):
-        self.parent = None
+    def __init__(self, connection=None):
+        self.connection = connection
         self.id = None
         self.dns_name = None
         self.state = None
@@ -84,6 +88,27 @@ class Instance:
             self.previous_state = value
         else:
             setattr(self, name, value)
+
+    def _update(self, updated):
+        self.updated = updated
+        if hasattr(updated, 'dns_name'):
+            self.dns_name = updated.dns_name
+        if hasattr(updated, 'ami_launch_index'):
+            self.ami_launch_index = updated.ami_launch_index
+        self.shutdown_state = updated.shutdown_state
+        self.previous_state = updated.previous_state
+        if hasattr(updated, 'state'):
+            self.state = updated.state
+        else:
+            self.state = None
+
+    def update(self):
+        rs = self.connection.get_all_instances([self.id])
+        self._update(rs[0])
+
+    def stop(self):
+        rs = self.connection.terminate_instances([self.id])
+        self._update(rs[0])
 
 class Group:
 

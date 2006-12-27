@@ -25,10 +25,12 @@ Represents an EC2 Security Group
 
 class SecurityGroup:
     
-    def __init__(self, parent=None):
-        self.owner_id = None
-        self.name = None
-        self.description = None
+    def __init__(self, connection=None, owner_id=None,
+                 name=None, description=None):
+        self.connection = connection
+        self.owner_id = owner_id
+        self.name = name
+        self.description = description
         self.ip_permissions = []
 
     def startElement(self, name, attrs, connection):
@@ -47,6 +49,8 @@ class SecurityGroup:
             self.description = value
         elif name == 'ipRanges':
             pass
+        elif name == 'return':
+            self.status = bool(value)
         else:
             setattr(self, name, value)
 

@@ -25,9 +25,11 @@ Represents an EC2 Keypair
 
 class KeyPair:
     
-    def __init__(self, parent=None):
+    def __init__(self, connection=None):
+        self.connection = connection
         self.name = None
         self.fingerprint = None
+        self.material = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -37,6 +39,8 @@ class KeyPair:
             self.name = value
         elif name == 'keyFingerprint':
             self.fingerprint = value
+        elif name == 'keyMaterial':
+            self.material = value
         else:
             setattr(self, name, value)
 

@@ -25,7 +25,8 @@ Represents an EC2 Image
 
 class Image:
     
-    def __init__(self, parent=None):
+    def __init__(self, connection=None):
+        self.connection = connection
         self.id = None
         self.location = None
         self.state = None
@@ -49,6 +50,12 @@ class Image:
         else:
             setattr(self, name, value)
 
+    def run(self, min_count=1, max_count=1, key_name=None,
+            security_groups=None, user_data=None):
+        return self.connection.run_instances(self.id, min_count, max_count,
+                                             key_name, security_groups,
+                                             user_data)
 
-
+    def deregister(self):
+        return self.connection.deregister_image(self.id)
 
