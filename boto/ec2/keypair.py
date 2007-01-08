@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -31,6 +31,9 @@ class KeyPair:
         self.fingerprint = None
         self.material = None
 
+    def __repr__(self):
+        return 'KeyPair:%s' % self.name
+
     def startElement(self, name, attrs, connection):
         return None
 
@@ -43,6 +46,9 @@ class KeyPair:
             self.material = value
         else:
             setattr(self, name, value)
+
+    def delete(self):
+        return self.connection.delete_key_pair(self.name)
 
 
 

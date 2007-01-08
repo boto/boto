@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.s3.user import User
+import StringIO
 
 CannedACLStrings = ['private', 'public-read',
                     'public-read-write', 'authenticated-read']
@@ -48,6 +49,13 @@ class Policy:
         else:
             setattr(self, name, value)
 
+    def to_xml(self):
+        s = '<AccessControlPolicy>'
+        s += self.owner.to_xml()
+        s += self.acl.to_xml()
+        s += '</AccessControlPolicy>'
+        return s
+
 class ACL:
 
     def __init__(self, policy=None):
@@ -70,6 +78,13 @@ class ACL:
         else:
             setattr(self, name, value)
 
+    def to_xml(self):
+        s = '<AccessControlList>'
+        for grant in self.grants:
+            s += grant.to_xml()
+        s += '</AccessControlList>'
+        return s
+        
 class Grant:
 
     def __init__(self, acl=None, grantee=None):
@@ -95,5 +110,11 @@ class Grant:
         else:
             setattr(self, name, value)
 
-
+    def to_xml(self):
+        s = '<Grant>'
+        s += self.grantee.to_xml('Grantee')
+        s += '<Permission>%s</Permission>' % self.permission
+        s += '</Grant>'
+        return s
+        
             

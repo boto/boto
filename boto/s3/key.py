@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -26,7 +26,7 @@ import StringIO
 import base64
 import boto
 import boto.utils
-from boto.exception import S3ResponseError
+from boto.exception import S3ResponseError, S3Error
 from boto.s3.user import User
 
 class Key:
@@ -87,12 +87,17 @@ class Key:
         for key in final_headers:
             http_conn.putheader(key,final_headers[key])
         http_conn.endheaders()
-        l = fp.read(4096)
-        while len(l) > 0:
-            http_conn.send(l)
+        try:
             l = fp.read(4096)
-        response = http_conn.getresponse()
-        body = response.read()
+            while len(l) > 0:
+                http_conn.send(l)
+                l = fp.read(4096)
+            response = http_conn.getresponse()
+            body = response.read()
+        except Exception, e:
+            self.bucket.connection.make_http_connection()
+            print 'Caught an unexpected exception'
+            raise e
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason)
         self.etag = response.getheader('etag')

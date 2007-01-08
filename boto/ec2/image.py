@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -32,6 +32,9 @@ class Image:
         self.state = None
         self.ownerId = None
         self.isPublic = False
+
+    def __repr__(self):
+        return 'Image:%s' % self.id
 
     def startElement(self, name, attrs, connection):
         return None

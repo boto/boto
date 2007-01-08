@@ -93,7 +93,7 @@ class.
 For this tutorial, let's just assume that we are using the boto Message
 class.  So, first we need to create a Message object:
 
->>> from boto.message import Message
+>>> from boto.sqs.message import Message
 >>> m = Message()
 >>> m.set_body('This is my first message.')
 >>> rs = q.write(m)

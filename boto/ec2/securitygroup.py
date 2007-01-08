@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -31,16 +31,21 @@ class SecurityGroup:
         self.owner_id = owner_id
         self.name = name
         self.description = description
-        self.ip_permissions = []
+        self.rules = []
+
+    def __repr__(self):
+        return 'SecurityGroup:%s' % self.name
 
     def startElement(self, name, attrs, connection):
+        print 'SecurityGroup.startElement: %s' % name
         if name == 'item':
-            self.ip_permissions.append(IPPermissions(self))
-            return self.ip_permissions[-1]
+            self.rules.append(IPPermissions(self))
+            return self.rules[-1]
         else:
             return None
 
     def endElement(self, name, value, connection):
+        print 'SecurityGroup.endElement: %s' % name
         if name == 'ownerId':
             self.owner_id = value
         elif name == 'groupName':
@@ -54,6 +59,9 @@ class SecurityGroup:
         else:
             setattr(self, name, value)
 
+    def delete(self):
+        return self.connection.delete_security_group(self.name)
+
 class IPPermissions:
 
     def __init__(self, parent=None):
@@ -61,21 +69,55 @@ class IPPermissions:
         self.ip_protocol = None
         self.from_port = None
         self.to_port = None
-        self.ip_ranges = []
+        self.grants = []
+
+    def __repr__(self):
+        return 'IPPermissions:%s(%s-%s)' % (self.ip_protocol,
+                                            self.from_port, self.to_port)
 
     def startElement(self, name, attrs, connection):
+        print 'IPPermissions.startElement: %s' % name
+        if name == 'item':
+            self.grants.append(GroupOrCIDR(self))
+            return self.grants[-1]
         return None
 
     def endElement(self, name, value, connection):
+        print 'IPPermissions.endElement: %s' % name
         if name == 'ipProtocol':
             self.ip_protocol = value
         elif name == 'fromPort':
             self.from_port = value
         elif name == 'toPort':
             self.to_port = value
-        elif name == 'cidrIp':
-            self.ip_ranges.append(value)
         else:
             setattr(self, name, value)
 
-        
+class GroupOrCIDR:
+
+    def __init__(self, parent=None):
+        self.user_id = None
+        self.group_name = None
+        self.cidr_ip = None
+
+    def __repr__(self):
+        if self.cidr_ip:
+            return '%s' % self.cidr_ip
+        else:
+            return '%s-%s' % (self.group_name, self.user_id)
+
+    def startElement(self, name, attrs, connection):
+        print 'GroupOrCIDR.startElement: %s' % name
+        return None
+
+    def endElement(self, name, value, connection):
+        print 'GroupOrCIDR.endElement: %s' % name
+        if name == 'userId':
+            self.user_id = value
+        elif name == 'groupName':
+            self.group_name = value
+        if name == 'cidrIp':
+            self.cidr_ip = value
+        else:
+            setattr(self, name, value)
+

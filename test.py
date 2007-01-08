@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -35,8 +35,8 @@ from test_s3connection import S3ConnectionTest
 from test_ec2connection import EC2ConnectionTest
 
 suite = unittest.TestSuite()
-suite.addTest(unittest.makeSuite(SQSConnectionTest))
-suite.addTest(unittest.makeSuite(S3ConnectionTest))
+#suite.addTest(unittest.makeSuite(SQSConnectionTest))
+#suite.addTest(unittest.makeSuite(S3ConnectionTest))
 suite.addTest(unittest.makeSuite(EC2ConnectionTest))
 verbosity = 1
 unittest.TextTestRunner(verbosity=verbosity).run(suite)

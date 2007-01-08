@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006, 2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -24,9 +24,6 @@ Represents an EC2 Instance
 """
 
 from boto.resultset import ResultSet
-import xml.sax
-from boto.exception import SQSError, S3ResponseError, S3CreateError
-from boto import handler
 
 class Reservation:
     
@@ -36,6 +33,9 @@ class Reservation:
         self.owner_id = None
         self.groups = []
         self.instances = []
+
+    def __repr__(self):
+        return 'Instance:%s' % self.id
 
     def startElement(self, name, attrs, connection):
         if name == 'instancesSet':
