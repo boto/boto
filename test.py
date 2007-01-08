@@ -35,8 +35,8 @@ from test_s3connection import S3ConnectionTest
 from test_ec2connection import EC2ConnectionTest
 
 suite = unittest.TestSuite()
-#suite.addTest(unittest.makeSuite(SQSConnectionTest))
-#suite.addTest(unittest.makeSuite(S3ConnectionTest))
+suite.addTest(unittest.makeSuite(SQSConnectionTest))
+suite.addTest(unittest.makeSuite(S3ConnectionTest))
 suite.addTest(unittest.makeSuite(EC2ConnectionTest))
 verbosity = 1
 unittest.TextTestRunner(verbosity=verbosity).run(suite)

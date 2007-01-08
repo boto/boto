@@ -37,7 +37,6 @@ class SecurityGroup:
         return 'SecurityGroup:%s' % self.name
 
     def startElement(self, name, attrs, connection):
-        print 'SecurityGroup.startElement: %s' % name
         if name == 'item':
             self.rules.append(IPPermissions(self))
             return self.rules[-1]
@@ -45,7 +44,6 @@ class SecurityGroup:
             return None
 
     def endElement(self, name, value, connection):
-        print 'SecurityGroup.endElement: %s' % name
         if name == 'ownerId':
             self.owner_id = value
         elif name == 'groupName':
@@ -76,14 +74,12 @@ class IPPermissions:
                                             self.from_port, self.to_port)
 
     def startElement(self, name, attrs, connection):
-        print 'IPPermissions.startElement: %s' % name
         if name == 'item':
             self.grants.append(GroupOrCIDR(self))
             return self.grants[-1]
         return None
 
     def endElement(self, name, value, connection):
-        print 'IPPermissions.endElement: %s' % name
         if name == 'ipProtocol':
             self.ip_protocol = value
         elif name == 'fromPort':
@@ -107,11 +103,9 @@ class GroupOrCIDR:
             return '%s-%s' % (self.group_name, self.user_id)
 
     def startElement(self, name, attrs, connection):
-        print 'GroupOrCIDR.startElement: %s' % name
         return None
 
     def endElement(self, name, value, connection):
-        print 'GroupOrCIDR.endElement: %s' % name
         if name == 'userId':
             self.user_id = value
         elif name == 'groupName':
