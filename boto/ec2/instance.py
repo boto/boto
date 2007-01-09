@@ -35,7 +35,7 @@ class Reservation:
         self.instances = []
 
     def __repr__(self):
-        return 'Instance:%s' % self.id
+        return 'Reservation:%s' % self.id
 
     def startElement(self, name, attrs, connection):
         if name == 'instancesSet':
@@ -54,6 +54,10 @@ class Reservation:
             self.owner_id = value
         else:
             setattr(self, name, value)
+
+    def stop_all(self):
+        for instance in self.instances:
+            instance.stop()
             
 class Instance:
     
@@ -63,7 +67,13 @@ class Instance:
         self.dns_name = None
         self.state = None
         self.key_name = None
+        self.shutdown_state = None
+        self.previous_state = None
+        self.image_id = None
 
+    def __repr__(self):
+        return 'Instance:%s' % self.id
+    
     def startElement(self, name, attrs, connection):
         if name == 'instanceState':
             self.state = InstanceState(self)
@@ -104,7 +114,7 @@ class Instance:
 
     def update(self):
         rs = self.connection.get_all_instances([self.id])
-        self._update(rs[0])
+        self._update(rs[0].instances[0])
 
     def stop(self):
         rs = self.connection.terminate_instances([self.id])
@@ -130,6 +140,9 @@ class InstanceState:
         self.parent = None
         self.code = None
         self.name = None
+
+    def __repr__(self):
+        return self.name
 
     def startElement(self, name, attrs, connection):
         return None

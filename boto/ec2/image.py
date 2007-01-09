@@ -53,7 +53,7 @@ class Image:
         else:
             setattr(self, name, value)
 
-    def run(self, min_count=1, max_count=1, key_name=None,
+    def run(self, min_count=1, max_count=1, keypair=None,
             security_groups=None, user_data=None):
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,

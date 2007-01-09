@@ -412,7 +412,7 @@ class EC2Connection(AWSAuthConnection):
         response = self.make_request('CreateSecurityGroup', params)
         body = response.read()
         if response.status == 200:
-            sg = SecurityGroup(self, name, description)
+            sg = SecurityGroup(self, name=name, description=description)
             h = handler.XmlHandler(sg, self)
             xml.sax.parseString(body, h)
             if sg.status:
@@ -452,6 +452,33 @@ class EC2Connection(AWSAuthConnection):
         if cidr_ip:
             params['CidrIp'] = cidr_ip
         response = self.make_request('AuthorizeSecurityGroupIngress', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise S3ResponseError(response.status, response.reason)
+
+    def revoke_security_group(self, group_name, src_security_group_name=None,
+                              src_security_group_owner_id=None,
+                              ip_protocol=None, from_port=None, to_port=None,
+                              cidr_ip=None):
+        params = {'GroupName':group_name}
+        if src_security_group_name:
+            params['SourceSecurityGroupName'] = src_security_group_name
+        if src_security_group_owner_id:
+            params['SourceSecurityGroupOwnerId'] = src_security_group_owner_id
+        if ip_protocol:
+            params['IpProtocol'] = ip_protocol
+        if from_port:
+            params['FromPort'] = from_port
+        if to_port:
+            params['ToPort'] = to_port
+        if cidr_ip:
+            params['CidrIp'] = cidr_ip
+        response = self.make_request('RevokeSecurityGroupIngress', params)
         body = response.read()
         if response.status == 200:
             rs = ResultSet()

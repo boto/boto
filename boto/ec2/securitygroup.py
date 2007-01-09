@@ -60,6 +60,24 @@ class SecurityGroup:
     def delete(self):
         return self.connection.delete_security_group(self.name)
 
+    def authorize(self, ip_protocol=None, from_port=None, to_port=None,
+                  cidr_ip=None, src_group=None):
+        status = self.connection.authorize_security_group(self.name,
+                                                          src_group.name,
+                                                          src_group.owner_id,
+                                                          ip_protocol,
+                                                          from_port,
+                                                          to_port,
+                                                          cidr_ip)
+        if status:
+            rule = IPPermissions(self)
+            rule.ip_protocol = ip_protocol
+            rule.from_port = from_port
+            rule.to_port = to_port
+            self.rules.append(rule)
+            rule.add_grant(src_group.name, src_group.owner_id, cidr_ip)
+        return status
+
 class IPPermissions:
 
     def __init__(self, parent=None):
@@ -88,6 +106,14 @@ class IPPermissions:
             self.to_port = value
         else:
             setattr(self, name, value)
+
+    def add_grant(self, user_id=None, group_name=None, cidr_ip=None):
+        grant = GroupOrCIDR(self)
+        grant.user_id = user_id
+        grant.group_name = group_name
+        grant.cidr_ip = cidr_ip
+        self.grants.append(grant)
+        return grant
 
 class GroupOrCIDR:
 
