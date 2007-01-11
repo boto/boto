@@ -26,7 +26,7 @@ import StringIO
 import base64
 import boto
 import boto.utils
-from boto.exception import S3ResponseError, S3Error
+from boto.exception import S3ResponseError, S3DataError
 from boto.s3.user import User
 
 class Key:
