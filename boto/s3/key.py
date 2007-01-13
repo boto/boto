@@ -144,6 +144,8 @@ class Key:
             http_conn.putheader(key,final_headers[key])
         http_conn.endheaders()
         resp = http_conn.getresponse()
+        if resp.status != 200:
+            raise S3ResponseError(resp.status, resp.reason)
         response_headers = resp.msg
         self.metadata = boto.utils.get_aws_metadata(response_headers)
         for key in response_headers.keys():
