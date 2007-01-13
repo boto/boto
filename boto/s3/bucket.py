@@ -31,6 +31,18 @@ import urllib
 
 class Bucket:
 
+    BucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
+       <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+         <LoggingEnabled>
+           <TargetBucket>%s</TargetBucket>
+           <TargetPrefix>%s</TargetPrefix>
+         </LoggingEnabled>
+       </BucketLoggingStatus>"""
+    
+    EmptyBucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
+       <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+       </BucketLoggingStatus>"""
+
     def __init__(self, connection=None, name=None, debug=None):
         self.name = name
         self.connection = connection
@@ -138,5 +150,39 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason)
 
+    def enable_logging(self, target_bucket, target_prefix=''):
+        if isinstance(target_bucket, Bucket):
+            target_bucket_name = target_bucket.name
+        else:
+            target_bucket_name = target_bucket
+        path = '/%s' % self.name
+        path = urllib.quote(path) + '?logging'
+        body = self.BucketLoggingBody % (target_bucket, target_prefix)
+        response = self.connection.make_request('PUT', path, body)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise S3ResponseError(response.status, response.reason)
         
+    def disable_logging(self):
+        path = '/%s' % self.name
+        path = urllib.quote(path) + '?logging'
+        body = self.EmptyBucketLoggingBody
+        response = self.connection.make_request('PUT', path, body)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise S3ResponseError(response.status, response.reason)
+        
+    def get_logging_status(self):
+        path = '/%s' % self.name
+        path = urllib.quote(path) + '?logging'
+        response = self.connection.make_request('GET', path)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise S3ResponseError(response.status, response.reason)
 

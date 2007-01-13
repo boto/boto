@@ -226,6 +226,11 @@ class S3Connection(AWSAuthConnection):
         xml.sax.parseString(body, h)
         return rs
 
+    def get_bucket(self, bucket_name):
+        bucket = Bucket(self, bucket_name)
+        rs = bucket.get_all_keys(None, maxkeys=0)
+        return bucket
+
     def create_bucket(self, bucket_name, headers={}):
         path = '/%s' % bucket_name
         response = self.make_request('PUT', urllib.quote(path), headers)

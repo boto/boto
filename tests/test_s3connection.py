@@ -39,6 +39,8 @@ class S3ConnectionTest (unittest.TestCase):
         # create a new, empty bucket
         bucket_name = 'test-%d' % int(time.time())
         bucket = c.create_bucket(bucket_name)
+        # now try a get_bucket call and see if it's really there
+        bucket = c.get_bucket(bucket_name)
         # create a new key and store it's content from a string
         k = Key(bucket)
         k.key = 'foobar'
