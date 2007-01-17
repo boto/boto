@@ -60,22 +60,72 @@ class SecurityGroup:
     def delete(self):
         return self.connection.delete_security_group(self.name)
 
+    def add_rule(self, ip_protocol, from_port, to_port,
+                 src_group_name, src_group_owner_id, cidr_ip):
+        rule = IPPermissions(self)
+        rule.ip_protocol = ip_protocol
+        rule.from_port = from_port
+        rule.to_port = to_port
+        self.rules.append(rule)
+        rule.add_grant(src_group_name, src_group_owner_id, cidr_ip)
+
+    def remove_rule(self, ip_protocol, from_port, to_port,
+                    src_group_name, src_group_owner_id, cidr_ip):
+        target_rule = None
+        for rule in self.rules:
+            if rule.ip_protocol == ip_protocol:
+                if rule.from_port == from_port:
+                    if rule.to_port == to_port:
+                        target_rule = rule
+                        target_grant = None
+                        for grants in rule.grants:
+                            if grant.group_name == src_group_name:
+                                if grant.owner_id == src_group_owner_id:
+                                    if grant.cidr_ip == cidr_ip:
+                                        target_grant = grant
+                        if target_grant:
+                            rule.grants.remove(target_grant)
+        if len(rule.grants) == 0:
+            self.rules.remove(target_rule)
+
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
                   cidr_ip=None, src_group=None):
+        if src_group:
+            src_group_name = src_group.name
+            src_group_owner_id = src_group.owner_id
+        else:
+            src_group_name = None
+            src_group_owner_id = None
         status = self.connection.authorize_security_group(self.name,
-                                                          src_group.name,
-                                                          src_group.owner_id,
+                                                          src_group_name,
+                                                          src_group_owner_id,
                                                           ip_protocol,
                                                           from_port,
                                                           to_port,
                                                           cidr_ip)
         if status:
-            rule = IPPermissions(self)
-            rule.ip_protocol = ip_protocol
-            rule.from_port = from_port
-            rule.to_port = to_port
-            self.rules.append(rule)
-            rule.add_grant(src_group.name, src_group.owner_id, cidr_ip)
+            self.add_rule(ip_protocol, from_port, to_port, src_group_name,
+                          src_group_owner_id, cidr_ip)
+        return status
+
+    def revoke(self, ip_protocol=None, from_port=None, to_port=None,
+               cidr_ip=None, src_group=None):
+        if src_group:
+            src_group_name = src_group.name
+            src_group_owner_id = src_group.owner_id
+        else:
+            src_group_name = None
+            src_group_owner_id = None
+        status = self.connection.revoke_security_group(self.name,
+                                                       src_group_name,
+                                                       src_group_owner_id,
+                                                       ip_protocol,
+                                                       from_port,
+                                                       to_port,
+                                                       cidr_ip)
+        if status:
+            self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
+                             src_group_owner_id, cidr_ip)
         return status
 
 class IPPermissions:

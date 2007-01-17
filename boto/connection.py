@@ -46,12 +46,13 @@ import time
 import urllib
 import os
 import xml.sax
-from boto.exception import SQSError, S3ResponseError, S3CreateError
+from boto.exception import SQSError, S3ResponseError
+from boto.exception import S3CreateError, EC2ResponseError
 from boto import handler
 from boto.sqs.queue import Queue
 from boto.s3.bucket import Bucket
 from boto.resultset import ResultSet
-from boto.ec2.image import Image
+from boto.ec2.image import Image, ImageAttribute
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.keypair import KeyPair
 from boto.ec2.securitygroup import SecurityGroup
@@ -291,6 +292,8 @@ class EC2Connection(AWSAuthConnection):
     def build_list_params(self, params, items, label):
         for i in range(1, len(items)+1):
             params['%s.%d' % (label, i)] = items[i-1]
+
+    # Image methods
         
     def get_all_images(self, image_ids=None, owners=None, executable_by=None):
         params = {}
@@ -308,8 +311,82 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
 
+    def register_image(self, image_location):
+        params = {'ImageLocation':image_location}
+        response = self.make_request('RegisterImage', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.imageId
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+        
+    def deregister_image(self, image_id):
+        params = {'ImageId':image_id}
+        response = self.make_request('DeregisterImage', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+        
+    # ImageAttribute methods
+        
+    def get_image_attribute(self, image_id, attribute='launchPermission'):
+        params = {'ImageId' : image_id,
+                  'Attribute' : attribute}
+        response = self.make_request('DescribeImageAttribute', params)
+        body = response.read()
+        if response.status == 200:
+            image_attr = ImageAttribute()
+            h = handler.XmlHandler(image_attr, self)
+            xml.sax.parseString(body, h)
+            print body
+            return image_attr
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+        
+    def modify_image_attribute(self, image_id, attribute='launchPermission',
+                               operation='add', user_ids=None, groups=None):
+        params = {'ImageId' : image_id,
+                  'Attribute' : attribute,
+                  'OperationType' : operation}
+        if user_ids:
+            self.build_list_params(params, user_ids, 'UserId')
+        if groups:
+            self.build_list_params(params, groups, 'UserGroup')
+        response = self.make_request('ModifyImageAttribute', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    def reset_image_attribute(self, image_id, attribute='launchPermission'):
+        params = {'ImageId' : image_id,
+                  'Attribute' : attribute}
+        response = self.make_request('ResetImageAttribute', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+        
+    # Instance methods
+        
     def get_all_instances(self, instance_ids=None):
         params = {}
         if instance_ids:
@@ -322,60 +399,8 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
 
-    def get_all_key_pairs(self, keynames=None):
-        params = {}
-        if keynames:
-            self.build_list_params(params, keynames, 'KeyName')
-        response = self.make_request('DescribeKeyPairs', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet('item', KeyPair)
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise S3ResponseError(response.status, response.reason)
-        
-    def get_all_security_groups(self, groupnames=None):
-        params = {}
-        if groupnames:
-            self.build_list_params(params, groupnames, 'GroupName')
-        response = self.make_request('DescribeSecurityGroups', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet('item', SecurityGroup)
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise S3ResponseError(response.status, response.reason)
-
-    def register_image(self, image_location):
-        params = {'ImageLocation':image_location}
-        response = self.make_request('RegisterImage', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs.imageId
-        else:
-            raise S3ResponseError(response.status, response.reason)
-        
-    def deregister_image(self, image_id):
-        params = {'ImageId':image_id}
-        response = self.make_request('DeregisterImage', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs.status
-        else:
-            raise S3ResponseError(response.status, response.reason)
-        
     def run_instances(self, image_id, min_count=1, max_count=1, key_name=None,
                       security_groups=None, user_data=None):
         params = {'ImageId':image_id,
@@ -396,7 +421,7 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return res
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
         
     def terminate_instances(self, instance_ids=None):
         params = {}
@@ -410,7 +435,63 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    # Keypair methods
+        
+    def get_all_key_pairs(self, keynames=None):
+        params = {}
+        if keynames:
+            self.build_list_params(params, keynames, 'KeyName')
+        response = self.make_request('DescribeKeyPairs', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', KeyPair)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+        
+    def create_key_pair(self, key_name):
+        params = {'KeyName':key_name}
+        response = self.make_request('CreateKeyPair', params)
+        body = response.read()
+        if response.status == 200:
+            key = KeyPair(self)
+            h = handler.XmlHandler(key, self)
+            xml.sax.parseString(body, h)
+            return key
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+        
+    def delete_key_pair(self, key_name):
+        params = {'KeyName':key_name}
+        response = self.make_request('DeleteKeyPair', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    # SecurityGroup methods
+        
+    def get_all_security_groups(self, groupnames=None):
+        params = {}
+        if groupnames:
+            self.build_list_params(params, groupnames, 'GroupName')
+        response = self.make_request('DescribeSecurityGroups', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet('item', SecurityGroup)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
 
     def create_security_group(self, name, description):
         params = {'GroupName':name, 'GroupDescription':description}
@@ -425,7 +506,7 @@ class EC2Connection(AWSAuthConnection):
             else:
                 return None
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
 
     def delete_security_group(self, name):
         params = {'GroupName':name}
@@ -437,7 +518,7 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs.status
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason)
 
     def authorize_security_group(self, group_name, src_security_group_name=None,
                                  src_security_group_owner_id=None,
@@ -455,7 +536,7 @@ class EC2Connection(AWSAuthConnection):
         if to_port:
             params['ToPort'] = to_port
         if cidr_ip:
-            params['CidrIp'] = cidr_ip
+            params['CidrIp'] = urllib.quote(cidr_ip)
         response = self.make_request('AuthorizeSecurityGroupIngress', params)
         body = response.read()
         if response.status == 200:
@@ -464,7 +545,7 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs.status
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
 
     def revoke_security_group(self, group_name, src_security_group_name=None,
                               src_security_group_owner_id=None,
@@ -491,31 +572,7 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs.status
         else:
-            raise S3ResponseError(response.status, response.reason)
-
-    def create_key_pair(self, key_name):
-        params = {'KeyName':key_name}
-        response = self.make_request('CreateKeyPair', params)
-        body = response.read()
-        if response.status == 200:
-            key = KeyPair(self)
-            h = handler.XmlHandler(key, self)
-            xml.sax.parseString(body, h)
-            return key
-        else:
-            raise S3ResponseError(response.status, response.reason)
-        
-    def delete_key_pair(self, key_name):
-        params = {'KeyName':key_name}
-        response = self.make_request('DeleteKeyPair', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs.status
-        else:
-            raise S3ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
 
 
         

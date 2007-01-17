@@ -222,5 +222,32 @@ last example, this time we will specify another SecurityGroup object.
 True
 >>>
 
+Now, to verify that the web group now has access to the app servers, we want to
+temporarily allow SSH access to the web servers from our computer.  Let's
+say that our IP address is 192.168.1.130 as it is in the EC2 Developer
+Guide.  To enable that access:
+
+>>> web.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='192.168.1.130/32')
+True
+>>>
+
+Now that this access is authorized, we could ssh into an instance running in
+the web group and then try to telnet to specific ports on servers in the
+appserver group, as shown in the EC2 Developer's Guide.  When this testing is
+complete, we would want to revoke SSH access to the web server group, like this:
+
+>>> web.rules
+[IPPermissions:tcp(80-80),
+ IPPermissions:tcp(22-22)]
+>>> web.revoke('tcp', 22, 22, cidr_ip='192.168.1.130/32')
+True
+>>> web.rules
+[IPPermissions:tcp(80-80)]
+>>>
+
+
+
+
+
 
 

@@ -62,3 +62,37 @@ class Image:
     def deregister(self):
         return self.connection.deregister_image(self.id)
 
+    def get_attribute(self, attribute_name):
+        return self.connection.get_image_attribute(self.id, attribute_name)
+
+    def reset_attribute(self, attribute_name):
+        return self.connection.reset_image_attribute(self.id, attribute_name)
+
+
+class ImageAttribute:
+
+    def __init__(self, parent=None):
+        self.name = None
+        self.attrs = {}
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'launchPermission':
+            self.name = 'launch_permission'
+        elif name == 'group':
+            if self.attrs.has_key('groups'):
+                self.attrs['groups'].append(value)
+            else:
+                self.attrs['groups'] = [value]
+        elif name == 'userId':
+            if self.attrs.has_key('user_ids'):
+                self.attrs['user_ids'].append(value)
+            else:
+                self.attrs['user_ids'] = [value]
+            print self.attrs
+        elif name == 'imageId':
+            self.image_id = value
+        else:
+            setattr(self, name, value)

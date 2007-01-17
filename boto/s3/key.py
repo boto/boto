@@ -115,22 +115,24 @@ class Key:
         self.size = fp.tell()
         fp.seek(0)
 
-    def set_contents_from_file(self, fp):
+    def set_contents_from_file(self, fp, content_type=None):
         if self.bucket != None:
             if self.md5 == None:
                 self._compute_md5(fp)
-            if hasattr(fp, 'name'):
+            if content_type:
+                self.content_type = content_type
+            elif hasattr(fp, 'name'):
                 self.content_type = mimetypes.guess_type(fp.name)[0]
             self.send_file(fp)
 
-    def set_contents_from_filename(self, filename):
+    def set_contents_from_filename(self, filename, content_type=None):
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp)
+        self.set_contents_from_file(fp, content_type)
         fp.close()
 
-    def set_contents_from_string(self, s):
+    def set_contents_from_string(self, s, content_type=None):
         fp = StringIO.StringIO(s)
-        self.set_contents_from_file(fp)
+        self.set_contents_from_file(fp, content_type)
         fp.close()
 
     def get_file(self, fp, headers={}):

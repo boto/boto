@@ -70,3 +70,5 @@ class S3DataError(S3Error):
 class S3CreateError(S3ResponseError):
     pass
 
+class EC2ResponseError(SQSError):
+    pass
