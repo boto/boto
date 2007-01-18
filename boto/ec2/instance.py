@@ -142,7 +142,7 @@ class InstanceState:
         self.name = None
 
     def __repr__(self):
-        return self.name
+        return 'state:%s' % self.name
 
     def startElement(self, name, attrs, connection):
         return None

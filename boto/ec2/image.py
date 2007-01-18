@@ -53,7 +53,7 @@ class Image:
         else:
             setattr(self, name, value)
 
-    def run(self, min_count=1, max_count=1, keypair=None,
+    def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None):
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,
@@ -62,12 +62,28 @@ class Image:
     def deregister(self):
         return self.connection.deregister_image(self.id)
 
-    def get_attribute(self, attribute_name):
-        return self.connection.get_image_attribute(self.id, attribute_name)
+    def get_launch_permissions(self):
+        img_attrs = self.connection.get_image_attribute(self.id,
+                                                        'launchPermission')
+        return img_attrs.attrs
 
-    def reset_attribute(self, attribute_name):
-        return self.connection.reset_image_attribute(self.id, attribute_name)
+    def set_launch_permissions(self, user_ids=None, group_names=None):
+        return self.connection.modify_image_attribute(self.id,
+                                                      'launchPermission',
+                                                      'add',
+                                                      user_ids,
+                                                      group_names)
 
+    def remove_launch_permissions(self, user_ids=None, group_names=None):
+        return self.connection.modify_image_attribute(self.id,
+                                                      'launchPermission',
+                                                      'remove',
+                                                      user_ids,
+                                                      group_names)
+
+    def reset_launch_attributes(self):
+        return self.connection.reset_image_attribute(self.id,
+                                                     'launchPermission')
 
 class ImageAttribute:
 
@@ -91,7 +107,6 @@ class ImageAttribute:
                 self.attrs['user_ids'].append(value)
             else:
                 self.attrs['user_ids'] = [value]
-            print self.attrs
         elif name == 'imageId':
             self.image_id = value
         else:

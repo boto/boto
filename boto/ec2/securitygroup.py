@@ -78,9 +78,9 @@ class SecurityGroup:
                     if rule.to_port == to_port:
                         target_rule = rule
                         target_grant = None
-                        for grants in rule.grants:
+                        for grant in rule.grants:
                             if grant.group_name == src_group_name:
-                                if grant.owner_id == src_group_owner_id:
+                                if grant.user_id == src_group_owner_id:
                                     if grant.cidr_ip == cidr_ip:
                                         target_grant = grant
                         if target_grant:

@@ -348,7 +348,6 @@ class EC2Connection(AWSAuthConnection):
             image_attr = ImageAttribute()
             h = handler.XmlHandler(image_attr, self)
             xml.sax.parseString(body, h)
-            print body
             return image_attr
         else:
             raise EC2ResponseError(response.status, response.reason, body)
@@ -409,8 +408,7 @@ class EC2Connection(AWSAuthConnection):
         if key_name:
             params['KeyName'] = key_name
         if security_groups:
-            self.connection.build_list_params(params, security_groups,
-                                              'SecurityGroup')
+            self.build_list_params(params, security_groups, 'SecurityGroup')
         if user_data:
             params['UserData'] = user_data
         response = self.make_request('RunInstances', params)
@@ -518,7 +516,7 @@ class EC2Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return rs.status
         else:
-            raise EC2ResponseError(response.status, response.reason)
+            raise EC2ResponseError(response.status, response.reason, body)
 
     def authorize_security_group(self, group_name, src_security_group_name=None,
                                  src_security_group_owner_id=None,

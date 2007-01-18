@@ -44,8 +44,6 @@ class SQSConnectionTest (unittest.TestCase):
             queue = c.create_queue('bad_queue_name')
         except SQSError:
             pass
-        else:
-            fail('expected an SQSError')
         
         # now create one that should work and should be unique (i.e. a new one)
         queue_name = 'test%d' % int(time.time())

@@ -29,17 +29,38 @@ import unittest
 import time
 import os
 from boto.connection import EC2Connection
+import telnetlib
+import socket
 
 class EC2ConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
+        # this is my user_id, if you want to run these tests you should
+        # replace this with yours or they won't work
+        user_id = '084307701560'
         print '--- running EC2Connection tests ---'
         c = EC2Connection()
+        # get list of private AMI's
+        rs = c.get_all_images(owners=[user_id])
+        assert len(rs) > 0
+        # now pick the first one
+        image = rs[0]
+        # temporarily make this image runnable by everyone
+        status = image.set_launch_permissions(group_names=['all'])
+        assert status
+        d = image.get_launch_permissions()
+        assert d.has_key('groups')
+        assert len(d['groups']) > 0
+        # now remove that permission
+        status = image.remove_launch_permissions(group_names=['all'])
+        assert status
+        d = image.get_launch_permissions()
+        assert not d.has_key('groups')
+        
         # create a new security group
         group_name = 'test-%d' % int(time.time())
         group_desc = 'This is a security group created during unit testing'
-        status = c.create_security_group(group_name, group_desc)
-        assert status
+        group = c.create_security_group(group_name, group_desc)
         # now get a listing of all security groups and look for our new one
         rs = c.get_all_security_groups()
         found = False
@@ -51,6 +72,7 @@ class EC2ConnectionTest (unittest.TestCase):
         rs = c.get_all_security_groups([group_name])
         assert len(rs) == 1
         group = rs[0]
+        #
         # now delete the security group
         status = c.delete_security_group(group_name)
         # now make sure it's really gone
@@ -60,6 +82,41 @@ class EC2ConnectionTest (unittest.TestCase):
             if g.name == group_name:
                 found = True
         assert not found
+        # now create it again for use with the instance test
+        group = c.create_security_group(group_name, group_desc)
+        
+        # now try to launch apache image with our new security group
+        rs = c.get_all_images()
+        img_loc = 'ec2-public-images/fedora-core4-apache.manifest.xml'
+        for image in rs:
+            if image.location == img_loc:
+                break
+        reservation = image.run(security_groups=[group.name])
+        instance = reservation.instances[0]
+        while instance.state.name != 'running':
+            print '\tinstance is %s' % instance.state.name
+            time.sleep(30)
+            instance.update()
+        # instance in now running, try to telnet to port 80
+        t = telnetlib.Telnet()
+        try:
+            t.open(instance.dns_name, 80)
+        except socket.error:
+            pass
+        # now open up port 80 and try again, it should work
+        group.authorize('tcp', 80, 80, '0.0.0.0/0')
+        t.open(instance.dns_name, 80)
+        t.close()
+        # now revoke authorization and try again
+        group.revoke('tcp', 80, 80, '0.0.0.0/0')
+        try:
+            t.open(instance.dns_name, 80)
+        except socket.error:
+            pass
+        # now kill the instance and delete the security group
+        instance.stop()
+        # unfortunately, I can't delete the sg within this script
+        #sg.delete()
         
         # create a new key pair
         key_name = 'test-%d' % int(time.time())

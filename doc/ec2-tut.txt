@@ -158,6 +158,59 @@ for a small period of time subsequent to their termination.
 terminated
 >>>
 
+A recent addition to the EC2 api's is to allow other EC2 users to launch
+your images.  There are a couple of ways of accessing this capability in
+boto but I'll show you the simplest way here.  First of all, you need to
+know the Amazon ID for the user in question.  The Amazon Id is a twelve
+digit number that appears on your Account Activity page at AWS.  It looks
+like this:
+
+1234-5678-9012
+
+To use this number in API calls, you need to remove the dashes so in our
+example the user ID would be 12345678912.  To allow the user associated
+with this ID to launch one of your images, let's assume that the variable
+image represents the Image you want to share.  So:
+
+>>> image.get_launch_permissions()
+{}
+>>>
+
+The get_launch_permissions method returns a dictionary object two possible
+entries; user_ids or groups.  In our case we haven't yet given anyone
+permission to launch our image so the dictionary is empty.  To add our
+EC2 user:
+
+>>> image.set_launch_permissions(['123456789012'])
+True
+>>> image.get_launch_permissions()
+{'user_ids': [u'123456789012']}
+>>>
+
+We have now added the desired user to the launch permissions for the Image
+so that user will now be able to access and launch our Image.  You can add
+multiple users at one time by adding them all to the list you pass in as
+a parameter to the method.  To revoke the user's launch permissions:
+
+>>> image.remove_launch_permissions(['123456789012'])
+True
+>>> image.get_launch_permissions()
+{}
+>>>
+
+It is possible to pass a list of group names to the set_launch_permissions
+method, as well.  The only group available at the moment is the group "all"
+which would allow any valid EC2 user to launch your image.
+
+Finally, you can completely reset the launch permissions for an Image with:
+
+>>> image.reset_launch_permissions()
+True
+>>>
+
+This will remove all users and groups from the launch permission list and
+makes the Image private, again.
+
 Security Groups
 ----------------
 
