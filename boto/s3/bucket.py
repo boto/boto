@@ -158,7 +158,7 @@ class Bucket:
         path = '/%s' % self.name
         path = urllib.quote(path) + '?logging'
         body = self.BucketLoggingBody % (target_bucket, target_prefix)
-        response = self.connection.make_request('PUT', path, body)
+        response = self.connection.make_request('PUT', path, data=body)
         body = response.read()
         if response.status == 200:
             return body
@@ -169,7 +169,7 @@ class Bucket:
         path = '/%s' % self.name
         path = urllib.quote(path) + '?logging'
         body = self.EmptyBucketLoggingBody
-        response = self.connection.make_request('PUT', path, body)
+        response = self.connection.make_request('PUT', path, data=body)
         body = response.read()
         if response.status == 200:
             return body

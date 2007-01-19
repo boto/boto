@@ -65,11 +65,16 @@ class AWSAuthConnection:
                  aws_secret_access_key=None,
                  is_secure=True, port=None, debug=False):
         self.is_secure = is_secure
+        if (is_secure):
+            self.protocol = 'https'
+        else:
+            self.protocol = 'http'
         self.server = server
         self.debug = debug
         if not port:
             port = PORTS_BY_SECURITY[is_secure]
         self.port = port
+        self.server_name = '%s:%d' % (server, port)
 
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
@@ -197,6 +202,7 @@ class SQSConnection(AWSAuthConnection):
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = 's3.amazonaws.com'
+    QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, debug=0):
@@ -204,18 +210,20 @@ class S3Connection(AWSAuthConnection):
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, debug)
     
-    def generate_url(self, request, bits=None, expires_in=60):
-        if bits:
-            if not isinstance(bits, Bits):
-                raise BitBucketTypeError('Value must be of type Bits')
-        self.connection.query_gen.set_expires_in(expires_in)
-        if request == 'get':
-            return self.connection.query_gen.get(self.name, bits.key)
-        elif request == 'delete':
-            return self.connection.query_gen.delete(self.name, bits.key)
+    def generate_url(self, expires_in, method, path, headers):
+        expires = int(time.time() + expires_in)
+        canonical_str = boto.utils.canonical_string(method, path,
+                                                    headers, expires)
+        encoded_canonical = boto.utils.encode(self.aws_secret_access_key,
+                                              canonical_str, True)
+        if '?' in path:
+            arg_div = '&'
         else:
-            raise BitBucketError('Invalid request: %s' % request)
-
+            arg_div = '?'
+        query_part = self.QueryString % (encoded_canonical, expires,
+                                         self.aws_access_key_id)
+        return self.protocol + '://' + self.server_name + path  + arg_div + query_part
+    
     def get_all_buckets(self):
         path = '/'
         response = self.make_request('GET', urllib.quote(path))

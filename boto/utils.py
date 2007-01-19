@@ -84,6 +84,8 @@ def canonical_string(method, path, headers, expires=None):
     # ...unless there is an acl or torrent parameter
     if re.search("[&?]acl($|=|&)", path):
         buf += "?acl"
+    elif re.search("[&?]logging($|=|&)", path):
+        buf += "?logging"
     elif re.search("[&?]torrent($|=|&)", path):
         buf += "?torrent"
 
@@ -112,4 +114,5 @@ def get_aws_metadata(headers):
             metadata[hkey[len(METADATA_PREFIX):]] = headers[hkey]
             del headers[hkey]
     return metadata
+
 
