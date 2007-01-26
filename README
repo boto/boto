@@ -1,7 +1,7 @@
-boto 0.7a
-21 Nov 2006
+boto 0.8a
+26-Jan-2007
 
-Copyright (c) 2006 Mitch Garnaat <mitch@garnaat.org>
+Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
 
 http://code.google.com/p/boto
 
@@ -35,6 +35,17 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.8a changes]
+------------------------------------------------------------------------
+r105 | Mitch.Garnaat | 2007-01-26 15:44:30 -0500 (Fri, 26 Jan 2007) | 1 line
+
+Added support for enabling bucket logging in S3.  Also added a sleep delay in unit test for SQS.
+------------------------------------------------------------------------
+r97 | Mitch.Garnaat | 2007-01-19 15:32:39 -0500 (Fri, 19 Jan 2007) | 1 line
+
+Some fixes to try to enable support for logging.  Also, first cut at a generate_url method for S3 connection.
+------------------------------------------------------------------------
+
 [boto 0.7a changes]
 ------------------------------------------------------------------------
 r91 | Mitch.Garnaat | 2007-01-17 19:39:28 -0500 (Wed, 17 Jan 2007) | 1 line
