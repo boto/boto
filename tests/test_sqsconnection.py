@@ -49,6 +49,7 @@ class SQSConnectionTest (unittest.TestCase):
         queue_name = 'test%d' % int(time.time())
         timeout = 60
         queue = c.create_queue(queue_name, timeout)
+        time.sleep(10)
         rs  = c.get_all_queues()
         assert len(rs) == num_queues+1
         assert queue.count() == 0

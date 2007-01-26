@@ -87,23 +87,32 @@ class ACL:
         
 class Grant:
 
-    def __init__(self, acl=None, grantee=None):
-        self.acl = acl
-        self.grantee = grantee
+    NameSpace = 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+
+    def __init__(self, permission=None, type=None, id=None,
+                 display_name=None, uri=None, email_address=None):
+        self.permission = permission
+        self.id = id
+        self.display_name = display_name
+        self.uri = uri
+        self.email_address = email_address
+        self.type = type
 
     def startElement(self, name, attrs, connection):
         if name == 'Grantee':
-            self.grantee = User(self)
-            if attrs.has_key('xsi:type'):
-                self.grantee.type = attrs['xsi:type']
-            else:
-                self.grantee.type = None
-            return self.grantee
-        else:
-            return None
+            self.type = attrs['xsi:type']
+        return None
 
     def endElement(self, name, value, connection):
-        if name == 'Grantee':
+        if name == 'ID':
+            self.id = value
+        elif name == 'DisplayName':
+            self.display_name = value
+        elif name == 'URI':
+            self.uri = value
+        elif name == 'EmailAddress':
+            self.email_address = value
+        elif name == 'Grantee':
             pass
         elif name == 'Permission':
             self.permission = value
@@ -112,7 +121,15 @@ class Grant:
 
     def to_xml(self):
         s = '<Grant>'
-        s += self.grantee.to_xml('Grantee')
+        s += '<Grantee %s xsi:type="%s">' % (self.NameSpace, self.type)
+        if self.type == 'CanonicalUser':
+            s += '<ID>%s</ID>' % self.id
+            s += '<DisplayName>%s</DisplayName>' % self.display_name
+        elif self.type == 'Group':
+            s += '<URI>%s</URI>' % self.uri
+        else:
+            s += '<EmailAddress>%s</EmailAddress>' % self.email_address
+        s += '</Grantee>'
         s += '<Permission>%s</Permission>' % self.permission
         s += '</Grant>'
         return s

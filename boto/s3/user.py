@@ -35,8 +35,6 @@ class User:
             self.display_name = value
         elif name == 'ID':
             self.id = value
-        elif name == 'URI':
-            self.uri = value
         else:
             setattr(self, name, value)
 

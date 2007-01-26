@@ -21,7 +21,7 @@
 
 from boto import handler
 from boto.resultset import ResultSet
-from boto.s3.acl import Policy, CannedACLStrings
+from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
@@ -42,6 +42,8 @@ class Bucket:
     EmptyBucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
        <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
        </BucketLoggingStatus>"""
+
+    LoggingGroup = 'http://acs.amazonaws.com/groups/s3/LogDelivery'
 
     def __init__(self, connection=None, name=None, debug=None):
         self.name = name
@@ -115,10 +117,7 @@ class Bucket:
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason)
 
-    def set_acl(self, acl_str, key_name=None):
-        # just in case user passes a Key object rather than key name
-        if isinstance(key_name, Key):
-            key_name = key_name.key
+    def set_canned_acl(self, acl_str, key_name=None):
         assert acl_str in CannedACLStrings
         if key_name:
             path = '/%s/%s' % (self.name, key_name)
@@ -131,6 +130,26 @@ class Bucket:
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason)
 
+    def set_xml_acl(self, acl_str, key_name=None):
+        if key_name:
+            path = '/%s/%s' % (self.name, key_name)
+        else:
+            path = '/%s' % self.name
+        path = urllib.quote(path) + '?acl'
+        response = self.connection.make_request('PUT', path, data=acl_str)
+        body = response.read()
+        if response.status != 200:
+            raise S3ResponseError(response.status, response.reason)
+
+    def set_acl(self, acl_or_str, key_name=None):
+        # just in case user passes a Key object rather than key name
+        if isinstance(key_name, Key):
+            key_name = key_name.key
+        if isinstance(acl_or_str, Policy):
+            self.set_xml_acl(acl_or_str.to_xml(), key_name)
+        else:
+            self.set_canned_acl(acl_or_str, key_name)
+            
     def get_acl(self, key_name=None):
         # just in case user passes a Key object rather than key name
         if isinstance(key_name, Key):
@@ -157,7 +176,7 @@ class Bucket:
             target_bucket_name = target_bucket
         path = '/%s' % self.name
         path = urllib.quote(path) + '?logging'
-        body = self.BucketLoggingBody % (target_bucket, target_prefix)
+        body = self.BucketLoggingBody % (target_bucket_name, target_prefix)
         response = self.connection.make_request('PUT', path, data=body)
         body = response.read()
         if response.status == 200:
@@ -186,3 +205,10 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason)
 
+    def set_as_logging_target(self):
+        policy = self.get_acl()
+        g1 = Grant(permission='WRITE', type='Group', uri=self.LoggingGroup)
+        g2 = Grant(permission='READ_ACP', type='Group', uri=self.LoggingGroup)
+        policy.acl.add_grant(g1)
+        policy.acl.add_grant(g2)
+        self.set_acl(policy)
