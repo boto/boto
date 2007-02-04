@@ -36,7 +36,7 @@ class ResultSet:
 
     def endElement(self, name, value, connection):
         if name == 'IsTruncated':
-            self.is_truncated = value
+            self.is_truncated = bool(value)
         elif name == 'Marker':
             self.marker = value
         elif name == 'Prefix':
