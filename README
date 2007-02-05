@@ -35,6 +35,16 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.8b changes]
+------------------------------------------------------------------------
+r114 | Mitch.Garnaat | 2007-02-05 08:53:05 -0500 (Mon, 05 Feb 2007) | 1 line
+
+Fixed handling of whitespace that was breaking EC2 support.  Fixes Issue-31.
+------------------------------------------------------------------------
+r110 | Mitch.Garnaat | 2007-02-04 10:36:15 -0500 (Sun, 04 Feb 2007) | 1 line
+
+is_truncated attribute now gets converted to a true boolean value rather than a string.  Fixes Issue-29.
+
 [boto 0.8a changes]
 ------------------------------------------------------------------------
 r105 | Mitch.Garnaat | 2007-01-26 15:44:30 -0500 (Fri, 26 Jan 2007) | 1 line
