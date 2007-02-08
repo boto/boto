@@ -111,6 +111,8 @@ class AWSAuthConnection:
             headers = {}
         if metadata == None:
             metadata = {}
+        if not headers.has_key('Content-Length'):
+            headers['Content-Length'] = len(data)
         final_headers = boto.utils.merge_meta(headers, metadata);
         # add auth header
         self.add_aws_auth_header(final_headers, method, path)
