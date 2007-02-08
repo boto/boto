@@ -73,10 +73,17 @@ class Key:
     def set_metadata(self, key, value):
         self.metadata[key] = value
     
-    def send_file(self, fp):
+    def send_file(self, fp, headers=None):
         http_conn = self.bucket.connection.connection
-        headers = {'Content-MD5':self.base64md5}
-        if self.content_type:
+        if not headers:
+            headers = {}
+        headers['Content-MD5'] = self.base64md5
+        if headers.has_key('Content-Type'):
+            self.content_type = headers['Content-Type']
+        elif hasattr(fp, 'name'):
+            self.content_type = mimetypes.guess_type(fp.name)[0]
+            headers['Content-Type'] = self.content_type
+        else:
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = self.size
         final_headers = boto.utils.merge_meta(headers, self.metadata);
@@ -115,24 +122,20 @@ class Key:
         self.size = fp.tell()
         fp.seek(0)
 
-    def set_contents_from_file(self, fp, content_type=None):
+    def set_contents_from_file(self, fp, headers=None):
         if self.bucket != None:
             if self.md5 == None:
                 self._compute_md5(fp)
-            if content_type:
-                self.content_type = content_type
-            elif hasattr(fp, 'name'):
-                self.content_type = mimetypes.guess_type(fp.name)[0]
-            self.send_file(fp)
+            self.send_file(fp, headers)
 
-    def set_contents_from_filename(self, filename, content_type=None):
+    def set_contents_from_filename(self, filename, headers=None):
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, content_type)
+        self.set_contents_from_file(fp, headers)
         fp.close()
 
-    def set_contents_from_string(self, s, content_type=None):
+    def set_contents_from_string(self, s, headers=None):
         fp = StringIO.StringIO(s)
-        self.set_contents_from_file(fp, content_type)
+        self.set_contents_from_file(fp, headers)
         fp.close()
 
     def get_file(self, fp, headers={}):
@@ -155,6 +158,8 @@ class Key:
                 self.size = response_headers[key]
             elif key.lower() == 'etag':
                 self.etag = response_headers[key]
+            elif key.lower() == 'content-type':
+                self.content_type = response_headers[key]
         l = resp.read(4096)
         while len(l) > 0:
             fp.write(l)

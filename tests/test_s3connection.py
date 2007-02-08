@@ -57,8 +57,11 @@ class S3ConnectionTest (unittest.TestCase):
         bucket.delete_key(k)
         os.unlink('foobar')
         # test a few variations on get_all_keys - first load some data
+        # for the first one, let's override the content type
+        phony_mimetype = 'application/x-boto-test'
+        headers = {'Content-Type': phony_mimetype}
         k.key = 'foo/bar'
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s, headers)
         k.key = 'foo/bas'
         k.set_contents_from_string(s)
         k.key = 'foo/bat'
@@ -78,6 +81,7 @@ class S3ConnectionTest (unittest.TestCase):
         # test the lookup method
         k = bucket.lookup('foo/bar')
         assert isinstance(k, Key)
+        assert k.content_type == phony_mimetype
         k = bucket.lookup('notthere')
         assert k == None
         # try some metadata stuff
