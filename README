@@ -1,5 +1,5 @@
-boto 0.8b
-05-Feb-2007
+boto 0.8c
+08-Feb-2007
 
 Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
 
@@ -35,6 +35,33 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.8c changes]
+------------------------------------------------------------------------
+r121 | Mitch.Garnaat | 2007-02-08 15:19:51 -0500 (Thu, 08 Feb 2007) | 1 line
+
+Bumping EC2 API version and adding support for GetConsoleOutput and
+RebootInstances. Fixes Issue-34.
+------------------------------------------------------------------------
+r120 | Mitch.Garnaat | 2007-02-08 14:33:10 -0500 (Thu, 08 Feb 2007) | 1 line
+
+Merged in changes from David Strip to support proxy servers for non-SSL
+connections.  Fixes Issue-32.
+------------------------------------------------------------------------
+r119 | Mitch.Garnaat | 2007-02-08 08:14:48 -0500 (Thu, 08 Feb 2007) | 1 line
+
+Added an explicit Content-Length header if one wasn't provided.  Fixes Issue-33.
+------------------------------------------------------------------------
+r118 | Mitch.Garnaat | 2007-02-07 22:18:35 -0500 (Wed, 07 Feb 2007) | 1 line
+
+The set_content_* methods of Key object now accepts an optional dictionary
+of headers to be sent with the PUT request.  Also added a test case for this.
+Fixes Issue-28.
+------------------------------------------------------------------------
+r117 | Mitch.Garnaat | 2007-02-07 20:31:52 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Added some command-line option processing to the unit test script to allow individual tests to be run rather than running all tests.
+
+
 [boto 0.8b changes]
 ------------------------------------------------------------------------
 r114 | Mitch.Garnaat | 2007-02-05 08:53:05 -0500 (Mon, 05 Feb 2007) | 1 line
