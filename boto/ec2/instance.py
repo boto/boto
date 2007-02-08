@@ -24,6 +24,7 @@ Represents an EC2 Instance
 """
 
 from boto.resultset import ResultSet
+import base64
 
 class Reservation:
     
@@ -120,6 +121,12 @@ class Instance:
         rs = self.connection.terminate_instances([self.id])
         self._update(rs[0])
 
+    def reboot(self):
+        return self.connection.reboot_instances([self.id])
+
+    def get_console_output(self):
+        return self.connection.get_console_output(self.id)
+
 class Group:
 
     def __init__(self, parent=None):
@@ -137,7 +144,7 @@ class Group:
 class InstanceState:
     
     def __init__(self, parent=None):
-        self.parent = None
+        self.parent = parent
         self.code = None
         self.name = None
 
@@ -150,6 +157,21 @@ class InstanceState:
     def endElement(self, name, value, connection):
         setattr(self, name, value)
         
+class ConsoleOutput:
 
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.instance_id = None
+        self.timestamp = None
+        self.comment = None
 
+    def startElement(self, name, attrs, connection):
+        return None
 
+    def endElement(self, name, value, connection):
+        if name == 'instanceId':
+            self.instance_id = value
+        elif name == 'output':
+            self.output = base64.b64decode(value)
+        else:
+            setattr(self, name, value)

@@ -54,7 +54,7 @@ from boto.sqs.queue import Queue
 from boto.s3.bucket import Bucket
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
-from boto.ec2.instance import Reservation, Instance
+from boto.ec2.instance import Reservation, Instance, ConsoleOutput
 from boto.ec2.keypair import KeyPair
 from boto.ec2.securitygroup import SecurityGroup
 import boto.utils
@@ -297,7 +297,7 @@ class S3Connection(AWSAuthConnection):
 class EC2Connection(AWSAuthConnection):
 
     DefaultHost = 'ec2.amazonaws.com'
-    EC2Version = '2006-10-01'
+    EC2Version = '2007-01-03'
     SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -480,6 +480,33 @@ class EC2Connection(AWSAuthConnection):
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    def get_console_output(self, instance_id):
+        params = {}
+        self.build_list_params(params, [instance_id], 'InstanceId')
+        response = self.make_request('GetConsoleOutput', params)
+        body = response.read()
+        if response.status == 200:
+            co = ConsoleOutput()
+            h = handler.XmlHandler(co, self)
+            xml.sax.parseString(body, h)
+            return co
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    def reboot_instances(self, instance_ids=None):
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        response = self.make_request('RebootInstances', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
         else:
             raise EC2ResponseError(response.status, response.reason, body)
 
