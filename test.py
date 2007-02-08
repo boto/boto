@@ -25,7 +25,7 @@ do the unit tests!
 """
 
 import sys, os, unittest
-from optparse import OptionParser
+import getopt, sys
 import boto
 
 sys.path.append('tests/')
@@ -34,9 +34,46 @@ from test_sqsconnection import SQSConnectionTest
 from test_s3connection import S3ConnectionTest
 from test_ec2connection import EC2ConnectionTest
 
-suite = unittest.TestSuite()
-suite.addTest(unittest.makeSuite(SQSConnectionTest))
-suite.addTest(unittest.makeSuite(S3ConnectionTest))
-suite.addTest(unittest.makeSuite(EC2ConnectionTest))
-verbosity = 1
-unittest.TextTestRunner(verbosity=verbosity).run(suite)
+def usage():
+    print 'test.py  [-t testsuite] [-v verbosity]'
+    print '    -t   run specific testsuite (s3|sqs|ec2)'
+    print '    -v   verbosity (0|1|2)'
+  
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'ht:v:',
+                                   ['help', 'testsuite', 'verbosity'])
+    except:
+        usage()
+        sys.exit(2)
+    testsuite = 'all'
+    verbosity = 1
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            usage()
+            sys.exit()
+        if o in ('-t', '--testsuite'):
+            testsuite = a
+        if o in ('-v', '--verbosity'):
+            verbosity = int(a)
+    if len(args) != 0:
+        usage()
+        sys.exit()
+    suite = unittest.TestSuite()
+    if testsuite == 'all':
+        suite.addTest(unittest.makeSuite(SQSConnectionTest))
+        suite.addTest(unittest.makeSuite(S3ConnectionTest))
+        suite.addTest(unittest.makeSuite(EC2ConnectionTest))
+    elif testsuite == 's3':
+        suite.addTest(unittest.makeSuite(S3ConnectionTest))
+    elif testsuite == 'sqs':
+        suite.addTest(unittest.makeSuite(SQSConnectionTest))
+    elif testsuite == 'ec2':
+        suite.addTest(unittest.makeSuite(EC2ConnectionTest))
+    else:
+        usage()
+        sys.exit()
+    unittest.TextTestRunner(verbosity=verbosity).run(suite)
+
+if __name__ == "__main__":
+    main()
