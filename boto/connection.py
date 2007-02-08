@@ -48,6 +48,7 @@ import os
 import xml.sax
 from boto.exception import SQSError, S3ResponseError
 from boto.exception import S3CreateError, EC2ResponseError
+from boto.exception import AWSAuthConnectionError
 from boto import handler
 from boto.sqs.queue import Queue
 from boto.s3.bucket import Bucket
@@ -62,8 +63,8 @@ PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
-                 aws_secret_access_key=None,
-                 is_secure=True, port=None, debug=False):
+                 aws_secret_access_key=None, is_secure=True, port=None,
+                 proxy=None, proxy_port=None, debug=False):
         self.is_secure = is_secure
         if (is_secure):
             self.protocol = 'https'
@@ -88,24 +89,49 @@ class AWSAuthConnection:
             if os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
                 self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
 
+        self.proxy = proxy
+        #This lowercase environment var is the same as used in urllib
+        if os.environ.has_key('http_proxy'): 
+            self.proxy = os.environ['http_proxy'].split(':')[0]
+	self.use_proxy = (self.proxy != None)
+
+        if (self.use_proxy and self.is_secure):
+            raise AWSAuthConnectionError("Unable to provide secure connection through proxy")
+
+        if proxy_port:
+            self.proxy_port = proxy_port
+        else:
+            if os.environ.has_key('http_proxy'):
+                self.proxy_port = os.environ['http_proxy'].split(':')[1]
+
         self.make_http_connection()
         self._last_rs = None
 
     def make_http_connection(self):
+	if (self.use_proxy):
+	    cnxn_point = self.proxy
+            cnxn_port = int(self.proxy_port)
+	else:
+	    cnxn_point = self.server
+            cnxn_port = self.port
         if self.debug:
             print 'establishing HTTP connection'
         if (self.is_secure):
-            self.connection = httplib.HTTPSConnection("%s:%d" % (self.server,
-                                                                 self.port))
+            self.connection = httplib.HTTPSConnection("%s:%d" % (cnxn_point,
+                                                                 cnxn_port))
         else:
-            self.connection = httplib.HTTPConnection("%s:%d" % (self.server,
-                                                                self.port))
+            self.connection = httplib.HTTPConnection("%s:%d" % (cnxn_point,
+                                                                cnxn_port))
         self.set_debug(self.debug)
 
     def set_debug(self, debug=0):
         self.debug = debug
         self.connection.set_debuglevel(debug)
 
+    def prefix_proxy_to_path(self, path):
+        path = self.protocol + '://' + self.server + path
+        return path
+        
     def make_request(self, method, path, headers=None, data='', metadata=None):
         if headers == None:
             headers = {}
@@ -116,7 +142,8 @@ class AWSAuthConnection:
         final_headers = boto.utils.merge_meta(headers, metadata);
         # add auth header
         self.add_aws_auth_header(final_headers, method, path)
-
+        if self.use_proxy:
+            path = self.prefix_proxy_to_path(path)
         self.connection.request(method, path, data, final_headers)
         try:
             return self.connection.getresponse()
@@ -145,10 +172,11 @@ class SQSConnection(AWSAuthConnection):
     DefaultContentType = 'text/plain'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, debug=0):
+                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 debug=0):
         AWSAuthConnection.__init__(self, self.DefaultHost,
                                    aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, debug)
+                                   is_secure, port, proxy, proxy_port, debug)
 
     def make_request(self, method, path, headers=None, data=''):
         # add auth header
@@ -207,10 +235,11 @@ class S3Connection(AWSAuthConnection):
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, debug=0):
+                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 debug=0):
         AWSAuthConnection.__init__(self, self.DefaultHost,
                                    aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, debug)
+                                   is_secure, port, proxy, proxy_port, debug)
     
     def generate_url(self, expires_in, method, path, headers):
         expires = int(time.time() + expires_in)
@@ -255,7 +284,11 @@ class S3Connection(AWSAuthConnection):
             raise S3ResponseError(response.status, response.reason)
 
     def delete_bucket(self, bucket):
-        path = '/%s' % bucket.name
+        if isinstance(bucket, Bucket):
+            bucket_name = bucket.name
+        else:
+            bucket_name = bucket
+        path = '/%s' % bucket_name
         response = self.make_request('DELETE', urllib.quote(path))
         body = response.read()
         if response.status != 204:
@@ -268,10 +301,11 @@ class EC2Connection(AWSAuthConnection):
     SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, port=None, debug=0):
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 debug=0):
         AWSAuthConnection.__init__(self, self.DefaultHost,
                                    aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, debug)
+                                   is_secure, port, proxy, proxy_port, debug)
 
     def make_request(self, action, params=None):
         if params == None:
@@ -290,13 +324,17 @@ class EC2Connection(AWSAuthConnection):
             h.update(str(params[key]))
             qs += key + '=' + urllib.quote(str(params[key])) + '&'
         signature = base64.b64encode(h.digest())
-        qs += 'Signature=' + urllib.quote(signature)
-        self.connection.request('GET', '/?%s' % qs)
+        qs = '/?' + qs + 'Signature=' + urllib.quote(signature)
+
+	if self.use_proxy:
+            qs = self.prefix_proxy_to_path(qs)
+
+        self.connection.request('GET', qs)
         try:
             return self.connection.getresponse()
         except httplib.HTTPException, e:
             self.make_http_connection()
-            self.connection.request('GET', '/?%s' % qs)
+            self.connection.request('GET', qs)
             return self.connection.getresponse()
 
     def build_list_params(self, params, items, label):

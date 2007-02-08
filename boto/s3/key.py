@@ -90,6 +90,12 @@ class Key:
         path = '/%s/%s' % (self.bucket.name, self.key)
         path = urllib.quote(path)
         self.bucket.connection.add_aws_auth_header(final_headers, 'PUT', path)
+        #the prepending of the protocol and true host must occur after
+        #the authentication header is computed (line above). The
+        #authentication includes the path, which for authentication is
+        #only the bucket and key
+        if self.bucket.connection.use_proxy:
+            path = self.bucket.connection.prefix_proxy_to_path(path)
         http_conn.putrequest('PUT', path)
         for key in final_headers:
             http_conn.putheader(key,final_headers[key])
@@ -144,6 +150,12 @@ class Key:
         path = '/%s/%s' % (self.bucket.name, self.key)
         path = urllib.quote(path)
         self.bucket.connection.add_aws_auth_header(final_headers, 'GET', path)
+        #the prepending of the protocol and true host must occur after
+        #the authentication header is computed (line above). The
+        #authentication includes the path, which for authentication is
+        #only the bucket and key
+        if (self.bucket.connection.use_proxy == True):
+            path = self.bucket.connection.prefix_proxy_to_path(path)
         http_conn.putrequest('GET', path)
         for key in final_headers:
             http_conn.putheader(key,final_headers[key])
