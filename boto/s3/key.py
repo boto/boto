@@ -31,10 +31,12 @@ from boto.s3.user import User
 
 class Key:
 
+    DefaultContentType = 'application/octet-stream'
+
     def __init__(self, bucket=None):
         self.bucket = bucket
         self.metadata = {}
-        self.content_type = 'application/octet-stream'
+        self.content_type = self.DefaultContentType
         self.filename = None
         self.etag = None
         self.key = None
@@ -82,6 +84,8 @@ class Key:
             self.content_type = headers['Content-Type']
         elif hasattr(fp, 'name'):
             self.content_type = mimetypes.guess_type(fp.name)[0]
+            if self.content_type == None:
+                self.content_type = self.DefaultContentType
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
