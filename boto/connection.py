@@ -173,8 +173,8 @@ class SQSConnection(AWSAuthConnection):
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
-                 debug=0):
-        AWSAuthConnection.__init__(self, self.DefaultHost,
+                 host=DefaultHost, debug=0):
+        AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, debug)
 
@@ -236,8 +236,8 @@ class S3Connection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
-                 debug=0):
-        AWSAuthConnection.__init__(self, self.DefaultHost,
+                 host=DefaultHost, debug=0):
+        AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, debug)
     
@@ -302,8 +302,8 @@ class EC2Connection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 debug=0):
-        AWSAuthConnection.__init__(self, self.DefaultHost,
+                 host=DefaultHost, debug=0):
+        AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, debug)
 
