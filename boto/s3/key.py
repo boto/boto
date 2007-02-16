@@ -148,7 +148,9 @@ class Key:
         self.set_contents_from_file(fp, headers)
         fp.close()
 
-    def get_file(self, fp, headers={}):
+    def get_file(self, fp, headers=None):
+        if not headers:
+            headers = {}
         http_conn = self.bucket.connection.connection
         final_headers = boto.utils.merge_meta(headers, {})
         path = '/%s/%s' % (self.bucket.name, self.key)
@@ -176,19 +178,28 @@ class Key:
                 self.etag = response_headers[key]
             elif key.lower() == 'content-type':
                 self.content_type = response_headers[key]
+            elif key.lower() == 'last-modified':
+                self.last_modified = response_headers[key]
         l = resp.read(4096)
         while len(l) > 0:
             fp.write(l)
             l = resp.read(4096)
         resp.read()
 
-    def get_contents_to_file(self, file):
+    def get_contents_to_file(self, file, headers=None):
         if self.bucket != None:
-            self.get_file(file)
+            self.get_file(file, headers)
+        # if last_modified date was sent from s3, try to set file's timestamp
+        if self.last_modified != None:
+            try:
+                modified_tuple = rfc822.parsedate_tz(self.last_modified)
+                modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+                os.utime(fp.name, (modified_stamp, modified_stamp))
+            except Exception, e: pass
 
-    def get_contents_to_filename(self, filename):
+    def get_contents_to_filename(self, filename, headers=None):
         fp = open(filename, 'wb')
-        self.get_contents_to_file(fp)
+        self.get_contents_to_file(fp, headers)
         fp.close()
 
     def get_contents_as_string(self):
