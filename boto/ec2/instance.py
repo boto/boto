@@ -67,6 +67,7 @@ class Instance:
         self.id = None
         self.dns_name = None
         self.state = None
+        self.state_code = None
         self.key_name = None
         self.shutdown_state = None
         self.previous_state = None
@@ -76,11 +77,7 @@ class Instance:
         return 'Instance:%s' % self.id
     
     def startElement(self, name, attrs, connection):
-        if name == 'instanceState':
-            self.state = InstanceState(self)
-            return self.state
-        else:
-            return None
+        return None
 
     def endElement(self, name, value, connection):
         if name == 'instanceId':
@@ -97,6 +94,10 @@ class Instance:
             self.shutdown_state = value
         elif name == 'previousState':
             self.previous_state = value
+        elif name == 'name':
+            self.state = value
+        elif name == 'code':
+            self.state_code = int(value)
         else:
             setattr(self, name, value)
 
@@ -112,6 +113,10 @@ class Instance:
             self.state = updated.state
         else:
             self.state = None
+        if hasattr(updated, 'state_code'):
+            self.state_code = updated.state_code
+        else:
+            self.state_code = None
 
     def update(self):
         rs = self.connection.get_all_instances([self.id])
@@ -141,22 +146,6 @@ class Group:
         else:
             setattr(self, name, value)
     
-class InstanceState:
-    
-    def __init__(self, parent=None):
-        self.parent = parent
-        self.code = None
-        self.name = None
-
-    def __repr__(self):
-        return 'state:%s' % self.name
-
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        setattr(self, name, value)
-        
 class ConsoleOutput:
 
     def __init__(self, parent=None):

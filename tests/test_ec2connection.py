@@ -93,8 +93,8 @@ class EC2ConnectionTest (unittest.TestCase):
                 break
         reservation = image.run(security_groups=[group.name])
         instance = reservation.instances[0]
-        while instance.state.name != 'running':
-            print '\tinstance is %s' % instance.state.name
+        while instance.state != 'running':
+            print '\tinstance is %s' % instance.state
             time.sleep(30)
             instance.update()
         # instance in now running, try to telnet to port 80
