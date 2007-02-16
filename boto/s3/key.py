@@ -22,7 +22,10 @@
 import urllib
 import mimetypes
 import md5
+import os
+import rfc822
 import StringIO
+import time
 import base64
 import boto
 import boto.utils
