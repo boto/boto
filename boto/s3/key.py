@@ -192,6 +192,11 @@ class Key:
     def get_contents_to_file(self, file, headers=None):
         if self.bucket != None:
             self.get_file(file, headers)
+
+    def get_contents_to_filename(self, filename, headers=None):
+        fp = open(filename, 'wb')
+        self.get_contents_to_file(fp, headers)
+        fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
             try:
@@ -199,11 +204,6 @@ class Key:
                 modified_stamp = int(rfc822.mktime_tz(modified_tuple))
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception, e: pass
-
-    def get_contents_to_filename(self, filename, headers=None):
-        fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers)
-        fp.close()
 
     def get_contents_as_string(self):
         fp = StringIO.StringIO()
