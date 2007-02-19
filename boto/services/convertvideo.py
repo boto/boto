@@ -33,6 +33,7 @@
 #  affiliates.
 
 from boto.services.service import Service
+import os
 
 class ConvertVideo(Service):
 
