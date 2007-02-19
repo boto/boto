@@ -247,7 +247,7 @@ class Service:
                         output_keys.append('%s;type=%s' % (key, type))
                         self.put_file(input_message['Bucket'], file, key)
                     output_message['OutputKey'] = ','.join(output_keys)
-                    self.write_message(self.output_queue_name, output_message)
+                    self.write_message([self.output_queue_name], output_message)
                     self.delete_message(input_message)
                     self.cleanup()
                 else:
