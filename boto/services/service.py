@@ -244,10 +244,7 @@ class Service:
                     for file, type in results:
                         key = self.compute_key(file)
                         output_keys.append('%s;type=%s' % (key, type))
-                        self.put_file(input_message['Bucket'],
-                                      os.path.join(self.working_dir,
-                                                   'out_file'),
-                                      key)
+                        self.put_file(input_message['Bucket'], file, key)
                     output_message['OutputKey'] = ','.join(output_keys)
                     self.write_message(self.output_queue_name, output_message)
                     self.delete_message(input_message)
