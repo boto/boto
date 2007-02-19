@@ -66,13 +66,14 @@ class Service:
         self.create_connections()
 
     def get_userdata(self):
-        metadata = {}
+        userdata = {}
         s = boto.utils.get_instance_userdata()
         if s:
             l = s.split('|')
             for nvpair in l:
                 t = nvpair.split('=')
-                metadata[t[0].strip()] = t[1].strip()
+                userdata[t[0].strip()] = t[1].strip()
+        return userdata
 
     def create_connections(self):
         self.queue_cache = {}
