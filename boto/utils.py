@@ -115,4 +115,27 @@ def get_aws_metadata(headers):
             del headers[hkey]
     return metadata
 
+def get_instance_metadata(version='latest'):
+    metadata = {}
+    try:
+        url = 'http://169.254.169.254/%s/meta-data' % version
+        s = urllib.urlopen(url)
+        md_fields = s.read().split('\n')
+        for md in md_fields:
+            md_url = url + '/%s' % md
+            s = urllib.urlopen(md_url)
+            metadata[md] = s.read()
+    except:
+        print 'problem reading metadata'
+    return metadata
 
+def get_instance_userdata(version='latest'):
+    user_data = None
+    try:
+        url = 'http://169.254.169.254/%s/user-data' % version
+        user_data = urllib.urlopen(url)
+    except:
+        print 'problem reading metadata'
+    return user_data
+    
+    
