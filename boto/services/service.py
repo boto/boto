@@ -118,7 +118,7 @@ class Service:
             return self.queue_cache[queue_name]
         else:
             queue = self.sqs_conn.create_queue(queue_name)
-            queue.set_message_class(SDSMessage)
+            queue.set_message_class(MHMessage)
             self.queue_cache[queue_name] = queue
             return queue
 
@@ -232,7 +232,7 @@ class Service:
                 input_message = self.read_message()
                 if input_message:
                     num_tries = 0
-                    output_message = SDSMessage(None, input_message.get_body())
+                    output_message = MHMessage(None, input_message.get_body())
                     in_key = self.split_key(input_message['InputKey'])[0]
                     self.get_file(input_message['InputBucket'], in_key,
                                   os.path.join(self.working_dir,'in_file'))
