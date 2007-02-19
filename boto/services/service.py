@@ -53,7 +53,7 @@ class Service:
                  working_dir='work'):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        md = self.get_metadata()
+        md = self.get_userdata()
         if input_queue_name:
             self.input_queue_name = input_queue_name
         elif md.has_key('InputQueue'):
@@ -65,9 +65,9 @@ class Service:
         self.create_working_dir(working_dir)
         self.create_connections()
 
-    def get_metadata(self):
+    def get_userdata(self):
         metadata = {}
-        s = boto.utils.get_instance_metadata()
+        s = boto.utils.get_instance_userdata()
         if s:
             l = s.split('|')
             for nvpair in l:
