@@ -133,7 +133,8 @@ def get_instance_userdata(version='latest'):
     user_data = None
     try:
         url = 'http://169.254.169.254/%s/user-data' % version
-        user_data = urllib.urlopen(url)
+        s = urllib.urlopen(url)
+        user_data = s.read()
     except:
         print 'problem reading metadata'
     return user_data
