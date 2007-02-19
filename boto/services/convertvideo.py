@@ -46,5 +46,5 @@ class ConvertVideo(Service):
         command = self.Command % (in_file_name, out_file_name)
         print 'running:\n%s' % command
         os.system(command)
-        return [out_file_name, 'video/quicktime']
+        return [(out_file_name, 'video/quicktime')]
         
