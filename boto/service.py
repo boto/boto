@@ -39,17 +39,7 @@ class Service:
         os.chdir(self.working_dir)
         
     def notify(self, msg):
-        import smtplib, socket
-        subject = "Message from Server - %s" % self.__class__.__name__
-        body = "From: mitch@garnaat.com\r\n"
-        body = body + "To: mitch@garnaat.com\r\n"
-        body = body + "Subject: " + subject + '\r\n\r\n'
-        body = body + 'Server: %s\n' % self.__class__.__name__
-        body = body + 'Host: %s\n' % socket.gethostname()
-        body = body + msg
-        server = smtplib.SMTP('localhost')
-        server.sendmail('mitch@garnaat.com', 'mitch@garnaat.com', body)
-        server.quit()
+        pass
         
     def compute_key(self, filename):
         fp = open(filename, 'rb')
