@@ -32,7 +32,7 @@
 #  this software code. (c) 2006 Amazon Digital Services, Inc. or its
 #  affiliates.
 
-from boto.service import Service
+from boto.services.service import Service
 
 class ConvertVideo(Service):
 
