@@ -40,11 +40,6 @@ class ConvertVideo(Service):
 
     Command = """ffmpeg -i %s -f mov -r 29.97 -b 1200kb -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -ar 48000 -ab 192 -s 320x240 -vcodec mpeg4 -acodec aac out.mov"""
 
-    def __init__(self, aws_access_key_id=None,
-                 aws_secret_access_key=None, working_dir='work'):
-        Service.__init__(self, aws_access_key_id,
-                         aws_secret_access_key, 'vidconv-input', working_dir)
-
     def process_file(self, in_file_name, msg):
         os.system(self.Command % in_file_name)
         return [(os.path.join(self.working_dir, 'out.mov'), 'video/quicktime')]

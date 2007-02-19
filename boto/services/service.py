@@ -36,6 +36,7 @@ from boto.connection import SQSConnection, S3Connection
 from boto.s3.key import Key
 from boto.sqs.message import MHMessage
 from boto.exception import SQSError, S3ResponseError
+import boto.utils
 import StringIO
 import time
 import os
@@ -47,14 +48,31 @@ class Service:
     RetryCount = 5
     ProcessingTime = 60
 
-    def __init__(self, aws_access_key_id=None,
-                 aws_secret_access_key=None, input_queue_name=None,
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+                 input_queue_name=None, output_queue_name=None,
                  working_dir='work'):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.input_queue_name = input_queue_name
+        md = self.get_metadata()
+        if input_queue_name:
+            self.input_queue_name = input_queue_name
+        elif md.has_key('InputQueue'):
+            self.input_queue_name = md['InputQueue']
+        if output_queue_name:
+            self.output_queue_name = output_queue_name
+        elif md.has_key('OuputQueue'):
+            self.output_queue_name = md['OutputQueue']
         self.create_working_dir(working_dir)
         self.create_connections()
+
+    def get_metadata(self):
+        metadata = {}
+        s = boto.utils.get_instance_metadata()
+        if s:
+            l = s.split('|')
+            for nvpair in l:
+                t = nvpair.split('=')
+                metadata[t[0].strip()] = t[1].strip()
 
     def create_connections(self):
         self.queue_cache = {}
@@ -229,8 +247,7 @@ class Service:
                                                    'out_file'),
                                       key)
                     output_message['OutputKey'] = ','.join(output_keys)
-                    self.write_message(input_message['OutputQueues'],
-                                       output_message)
+                    self.write_message(self.output_queue_name, output_message)
                     self.delete_message(input_message)
                     self.cleanup()
                 else:
@@ -247,3 +264,4 @@ class Service:
                     
         if notify:
             self.notify('Service Stopping')
+
