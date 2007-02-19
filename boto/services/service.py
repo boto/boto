@@ -136,7 +136,6 @@ class Service:
 
     # read a new message from our queue
     def read_message(self):
-        print 'read_message()'
         try:
             message = self.input_queue.read(self.ProcessingTime)
             if message:
@@ -151,7 +150,6 @@ class Service:
 
     # retrieve the source file from S3
     def get_file(self, bucket_name, key, file_name):
-        print 'get_file(%s, %s, %s)' % (bucket_name, key, file_name)
         successful = False
         while not successful:
             try:
@@ -186,8 +184,6 @@ class Service:
 
     # write message to each output queue
     def write_message(self, queue_names, message):
-        print 'write_message()'
-        print message
         message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                                  time.gmtime())
         message['Server'] = self.__class__.__name__
