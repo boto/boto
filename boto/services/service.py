@@ -136,6 +136,7 @@ class Service:
 
     # read a new message from our queue
     def read_message(self):
+        print 'read_message()'
         try:
             message = self.input_queue.read(self.ProcessingTime)
             if message:
@@ -150,6 +151,7 @@ class Service:
 
     # retrieve the source file from S3
     def get_file(self, bucket_name, key, file_name):
+        print 'get_file(%s, %s, %s)' % (bucket_name, key, file_name)
         successful = False
         while not successful:
             try:
@@ -168,6 +170,7 @@ class Service:
 
     # store result file in S3
     def put_file(self, bucket_name, file_name, key):
+        print 'put_file(%s, %s, %s)' % (bucket_name, file_name, key)
         successful = False
         while not successful:
             try:
@@ -183,6 +186,8 @@ class Service:
 
     # write message to each output queue
     def write_message(self, queue_names, message):
+        print 'write_message()'
+        print message
         message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                                  time.gmtime())
         message['Server'] = self.__class__.__name__
@@ -233,8 +238,8 @@ class Service:
                 if input_message:
                     num_tries = 0
                     output_message = MHMessage(None, input_message.get_body())
-                    in_key = self.split_key(input_message['InputKey'])[0]
-                    self.get_file(input_message['InputBucket'], in_key,
+                    in_key = input_message['Key']
+                    self.get_file(input_message['Bucket'], in_key,
                                   os.path.join(self.working_dir,'in_file'))
                     results = self.process_file(os.path.join(self.working_dir,
                                                              'in_file'),
@@ -243,7 +248,7 @@ class Service:
                     for file, type in results:
                         key = self.compute_key(file)
                         output_keys.append('%s;type=%s' % (key, type))
-                        self.put_file(input_message['OutputBucket'],
+                        self.put_file(input_message['Bucket'],
                                       os.path.join(self.working_dir,
                                                    'out_file'),
                                       key)
