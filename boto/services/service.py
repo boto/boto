@@ -19,19 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-#
-# Parts of this code were copied or derived from sample code supplied by AWS.
-# The following notice applies to that code.
-#
-#  This software code is made available "AS IS" without warranties of any
-#  kind.  You may copy, display, modify and redistribute the software
-#  code either by itself or as incorporated into your code; provided that
-#  you do not remove any proprietary notices.  Your use of this software
-#  code is at your own risk and you waive any claim against Amazon
-#  Digital Services, Inc. or its affiliates with respect to your use of
-#  this software code. (c) 2006 Amazon Digital Services, Inc. or its
-#  affiliates.
-
 from boto.connection import SQSConnection, S3Connection
 from boto.s3.key import Key
 from boto.sqs.message import MHMessage
@@ -183,7 +170,8 @@ class Service:
         return k.key
 
     # write message to each output queue
-    def write_message(self, queue_names, message):
+    def write_message(self, message):
+        print 'write_message: entered'
         message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                                  time.gmtime())
         message['Server'] = self.__class__.__name__
@@ -191,20 +179,18 @@ class Service:
             message['Host'] = os.environ['HOSTNAME']
         else:
             message['Host'] = 'unknown'
-        l = queue_names.split(',')
-        for queue_name in l:
-            queue = self.get_queue(queue_name)
-            print 'writing message to %s' % queue.id
-            successful = False
-            num_tries = 0
-            while not successful and num_tries < self.RetryCount:
-                try:
-                    num_tries += 1
-                    print message.get_body()
-                    queue.write(message)
-                    successful = True
-                except SQSError, e:
-                    print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+        queue = self.get_queue(self.output_queue_name)
+        print 'writing message to %s' % queue.id
+        successful = False
+        num_tries = 0
+        while not successful and num_tries < self.RetryCount:
+            try:
+                num_tries += 1
+                print message.get_body()
+                queue.write(message)
+                successful = True
+            except SQSError, e:
+                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
 
     # delete message from input queue
     def delete_message(self, message):
@@ -247,7 +233,7 @@ class Service:
                         output_keys.append('%s;type=%s' % (key, type))
                         self.put_file(input_message['Bucket'], file, key)
                     output_message['OutputKey'] = ','.join(output_keys)
-                    self.write_message([self.output_queue_name], output_message)
+                    self.write_message(output_message)
                     self.delete_message(input_message)
                     self.cleanup()
                 else:
