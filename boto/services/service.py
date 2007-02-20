@@ -233,7 +233,7 @@ class Service:
                         self.put_file(input_message['Bucket'], file, key)
                     output_message['OutputKey'] = ','.join(output_keys)
                     self.write_message(output_message)
-                    #self.delete_message(input_message)
+                    self.delete_message(input_message)
                     self.cleanup()
                 else:
                     num_tries += 1
