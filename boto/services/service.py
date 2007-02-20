@@ -171,7 +171,6 @@ class Service:
 
     # write message to each output queue
     def write_message(self, message):
-        print 'write_message: entered'
         message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                                  time.gmtime())
         message['Server'] = self.__class__.__name__
@@ -234,7 +233,7 @@ class Service:
                         self.put_file(input_message['Bucket'], file, key)
                     output_message['OutputKey'] = ','.join(output_keys)
                     self.write_message(output_message)
-                    self.delete_message(input_message)
+                    #self.delete_message(input_message)
                     self.cleanup()
                 else:
                     num_tries += 1
