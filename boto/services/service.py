@@ -49,7 +49,6 @@ class Service:
         # now override any values with instance user data passed on startup
         if read_userdata:
             self.get_userdata()
-        else:
         self.create_working_dir(working_dir)
         self.create_connections()
 
