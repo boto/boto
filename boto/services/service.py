@@ -40,27 +40,29 @@ class Service:
                  working_dir='work'):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        md = self.get_userdata()
+        self.userdata = None
         if input_queue_name:
             self.input_queue_name = input_queue_name
         elif md.has_key('InputQueue'):
-            self.input_queue_name = md['InputQueue']
+            self.get_userdata()
+            self.input_queue_name = self.userdata['InputQueue']
         if output_queue_name:
             self.output_queue_name = output_queue_name
         elif md.has_key('OuputQueue'):
-            self.output_queue_name = md['OutputQueue']
+            self.get_userdata()
+            self.output_queue_name = self.userdata['OutputQueue']
         self.create_working_dir(working_dir)
         self.create_connections()
 
     def get_userdata(self):
-        userdata = {}
+        if self.userdata:
+            return
         s = boto.utils.get_instance_userdata()
         if s:
             l = s.split('|')
             for nvpair in l:
                 t = nvpair.split('=')
-                userdata[t[0].strip()] = t[1].strip()
-        return userdata
+                self.userdata[t[0].strip()] = t[1].strip()
 
     def create_connections(self):
         self.queue_cache = {}
