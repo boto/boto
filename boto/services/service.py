@@ -224,6 +224,7 @@ class Service:
 
     def shutdown(self):
         if self.do_shutdown and self.meta_data.has_key('instance-id'):
+            time.sleep(60)
             c = EC2Connection(self.aws_access_key_id,
                               self.aws_secret_access_key)
             c.terminate_instances([self.meta_data['instance-id']])
