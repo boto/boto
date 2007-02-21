@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import getopt, sys, imp
-from smartdoc.xip import Xip
 
 def usage():
     print 'start_service.py -m module -c class_name [-w working_dir] [-i input_queue_name] [-o output_queue_name]'
+    sys.exit()
 
 def find_class(module, class_name):
     modules = module.split('.')
@@ -23,7 +23,6 @@ def main():
                                     'inputqueue', 'outputqueue'])
     except:
         usage()
-        sys.exit(2)
     input_queue = None
     output_queue = None
     wdir = 'work'
@@ -43,9 +42,13 @@ def main():
             input_queue = a
         if o in ('-o', '--outputqueue'):
             output_queue = a
+    print 'module=%s' % module
+    print 'class_name=%s' % classname
+    print 'input_queue=%s' % input_queue
+    print 'output-queue=%s' % output_queue
+    print 'wdir=%s' % wdir
     if not class_name or not module:
         usage()
-        exit(2)
     cls = find_class(module, class_name)
     s = cls(working_dir=wdir, input_queue_name=input_queue,
             output_queue_name=output-queue)
