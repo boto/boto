@@ -75,7 +75,7 @@ class Service:
         if working_dir:
             self.working_dir = working_dir
         else:
-            self.working_dir = os.path.expanduser('~/%s' % working_dir)
+            self.working_dir = os.path.expanduser('~/work')
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)
         os.chdir(self.working_dir)
