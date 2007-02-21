@@ -37,32 +37,30 @@ class Service:
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  input_queue_name=None, output_queue_name=None,
-                 working_dir='work'):
+                 do_shutdown=False, notify_email=None, read_userdata=True,
+                 working_dir=None):
+        self.meta_data = {}
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.userdata = None
-        if input_queue_name:
-            self.input_queue_name = input_queue_name
-        elif md.has_key('InputQueue'):
+        self.input_queue_name = input_queue_name
+        self.output_queue_name = output_queue_name
+        self.notify_email = notify_email
+        self.do_shutdown = do_shutdown
+        # now override any values with instance user data passed on startup
+        if read_userdata:
             self.get_userdata()
-            self.input_queue_name = self.userdata['InputQueue']
-        if output_queue_name:
-            self.output_queue_name = output_queue_name
-        elif md.has_key('OuputQueue'):
-            self.get_userdata()
-            self.output_queue_name = self.userdata['OutputQueue']
+        else:
         self.create_working_dir(working_dir)
         self.create_connections()
 
     def get_userdata(self):
-        if self.userdata:
-            return
+        self.meta_data = boto.utils.get_instance_metadata()
         s = boto.utils.get_instance_userdata()
         if s:
             l = s.split('|')
             for nvpair in l:
                 t = nvpair.split('=')
-                self.userdata[t[0].strip()] = t[1].strip()
+                setattr(self, t[0].strip(), t[1].strip())
 
     def create_connections(self):
         self.queue_cache = {}
@@ -75,13 +73,27 @@ class Service:
                                     self.aws_secret_access_key)
 
     def create_working_dir(self, working_dir):
-        self.working_dir = os.path.expanduser('~/%s' % working_dir)
+        if working_dir:
+            self.working_dir = working_dir
+        else:
+            self.working_dir = os.path.expanduser('~/%s' % working_dir)
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)
         os.chdir(self.working_dir)
         
     def notify(self, msg):
-        pass
+        if self.notify_email:
+            import smtplib, socket
+            subject = "Message from Server - %s" % self.__class__.__name__
+            body = "From: %s\r\n" % self.notify_email
+            body = body + "To: %s\r\n" % self.notify_email
+            body = body + "Subject: " + subject + '\r\n\r\n'
+            body = body + 'Server: %s\n' % self.__class__.__name__
+            body = body + 'Host: %s\n' % socket.gethostname()
+            body = body + msg
+            server = smtplib.SMTP('localhost')
+            server.sendmail(self.notify_email, self.notify_email, body)
+            server.quit()
         
     def compute_key(self, filename):
         fp = open(filename, 'rb')
@@ -211,9 +223,13 @@ class Service:
     def cleanup(self):
         pass
 
+    def shutdown(self):
+        if self.do_shutdown and self.meta_data.has_key('instance-id'):
+            c = boto.connect_ec2()
+            c.terminate_instances([self.meta_data['instance-id']])
+
     def run(self, notify=False):
-        if notify:
-            self.notify('Service Starting')
+        self.notify('Service Starting')
         num_tries = 0
         while num_tries < self.RetryCount:
             try:
@@ -248,7 +264,6 @@ class Service:
                     s = fp.getvalue()
                     self.notify('Service failed\n%s' % s)
                 self.create_connections()
-                    
-        if notify:
-            self.notify('Service Stopping')
+        self.notify('Service Shutting Down')
+        self.shutdown()
 
