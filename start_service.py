@@ -45,7 +45,7 @@ def main():
     cls = find_class(mod_name, class_name)
     s = cls(working_dir=wdir, input_queue_name=input_queue,
             output_queue_name=output_queue)
-    s.run(notify)
+    s.run()
 
 if __name__ == "__main__":
     main()
