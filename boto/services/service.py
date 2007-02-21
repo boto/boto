@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.connection import SQSConnection, S3Connection
+from boto.connection import SQSConnection, S3Connection, EC2Connection
 from boto.s3.key import Key
 from boto.sqs.message import MHMessage
 from boto.exception import SQSError, S3ResponseError
@@ -224,7 +224,8 @@ class Service:
 
     def shutdown(self):
         if self.do_shutdown and self.meta_data.has_key('instance-id'):
-            c = boto.connect_ec2()
+            c = EC2Connection(self.aws_access_key_id,
+                              self.aws_secret_access_key)
             c.terminate_instances([self.meta_data['instance-id']])
 
     def run(self, notify=False):
