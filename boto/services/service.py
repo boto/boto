@@ -32,7 +32,19 @@ import md5
 
 class Service:
 
+    # Number of times to retry failed requests to S3 or SQS
     RetryCount = 5
+
+    # Number of seconds to wait between Retries
+    RetryDelay = 5
+
+    # Number of times to retry queue read when no messages are available
+    MainLoopRetryCount = 5
+    
+    # Number of seconds to wait before retrying queue read in main loop
+    MainLoopDelay = 30
+
+    # Time required to process a transaction
     ProcessingTime = 60
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -136,23 +148,31 @@ class Service:
 
     # read a new message from our queue
     def read_message(self):
-        try:
-            message = self.input_queue.read(self.ProcessingTime)
-            if message:
-                print message.get_body()
-                key = 'Service-Read'
-                message[key] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                             time.gmtime())
-        except SQSError, e:
-            print 'caught SQSError[%s]: %s' % (e.status, e.reason)
-            message = None
+        message = None
+        successful = False
+        num_tries = 0
+        while not successful and num_tries < self.RetryCount:
+            try:
+                num_tries += 1
+                message = self.input_queue.read(self.ProcessingTime)
+                if message:
+                    print message.get_body()
+                    key = 'Service-Read'
+                    message[key] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
+                                                 time.gmtime())
+                successful = True
+            except SQSError, e:
+                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
         return message
 
     # retrieve the source file from S3
     def get_file(self, bucket_name, key, file_name):
         successful = False
-        while not successful:
+        num_tries = 0
+        while not successful and num_tries < self.RetryCount:
             try:
+                num_tries += 1
                 print 'getting file %s.%s' % (bucket_name, key)
                 bucket = self.get_bucket(bucket_name)
                 k = Key(bucket)
@@ -161,6 +181,7 @@ class Service:
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
 
     # process source file, return list of output files
     def process_file(self, in_file_name, msg):
@@ -170,8 +191,10 @@ class Service:
     def put_file(self, bucket_name, file_name, key):
         print 'put_file(%s, %s, %s)' % (bucket_name, file_name, key)
         successful = False
-        while not successful:
+        num_tries = 0
+        while not successful and num_tries < self.RetryCount:
             try:
+                num_tries += 1
                 bucket = self.get_bucket(bucket_name)
                 k = Key(bucket)
                 k.key = key
@@ -180,6 +203,7 @@ class Service:
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
         return k.key
 
     # write message to each output queue
@@ -203,6 +227,7 @@ class Service:
                 successful = True
             except SQSError, e:
                 print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
 
     # delete message from input queue
     def delete_message(self, message):
@@ -216,6 +241,7 @@ class Service:
                 successful = True
             except SQSError, e:
                 print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
                 
 
     # to clean up any files, etc. after each iteration
@@ -232,7 +258,7 @@ class Service:
     def run(self, notify=False):
         self.notify('Service Starting')
         num_tries = 0
-        while num_tries < self.RetryCount:
+        while num_tries < self.MainLoopRetryCount:
             try:
                 input_message = self.read_message()
                 if input_message:
@@ -255,14 +281,13 @@ class Service:
                     self.cleanup()
                 else:
                     num_tries += 1
-                    time.sleep(30)
+                    time.sleep(self.MainLoopDelay)
             except Exception, e:
                 num_tries += 1
-                if notify:
-                    fp = StringIO.StringIO()
-                    traceback.print_exc(None, fp)
-                    s = fp.getvalue()
-                    self.notify('Service failed\n%s' % s)
+                fp = StringIO.StringIO()
+                traceback.print_exc(None, fp)
+                s = fp.getvalue()
+                self.notify('Service failed\n%s' % s)
                 self.create_connections()
         self.notify('Service Shutting Down')
         self.shutdown()
