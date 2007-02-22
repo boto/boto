@@ -241,11 +241,9 @@ class Service:
                     in_key = input_message['Key']
                     self.get_file(input_message['Bucket'], in_key,
                                   os.path.join(self.working_dir,'in_file'))
-                    print 'back from get_file'
                     results = self.process_file(os.path.join(self.working_dir,
                                                              'in_file'),
                                                 output_message)
-                    print 'results=', results
                     output_keys = []
                     for file, type in results:
                         key = self.compute_key(file)

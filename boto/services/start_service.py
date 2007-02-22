@@ -40,7 +40,7 @@ def main():
         usage()
     input_queue = None
     output_queue = None
-    wdir = 'work'
+    wdir = None
     module_name = None
     class_name = None
     for o, a in opts:
