@@ -47,6 +47,9 @@ class Service:
     # Time required to process a transaction
     ProcessingTime = 60
 
+    # Number of successful queue reads before spawning helpers
+    SpawnCount = 10
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  input_queue_name=None, output_queue_name=None,
                  do_shutdown=False, notify_email=None, read_userdata=True,
@@ -255,14 +258,21 @@ class Service:
                               self.aws_secret_access_key)
             c.terminate_instances([self.meta_data['instance-id']])
 
+    def spawn_children(self):
+        self.notify('%s - Spawning Child' % self.meta_data['instance-id'])
+
     def run(self, notify=False):
         self.notify('Service Starting')
-        num_tries = 0
-        while num_tries < self.MainLoopRetryCount:
+        successful_reads = 0
+        empty_reads = 0
+        while empty_reads < self.MainLoopRetryCount:
             try:
+                if successful_reads >= self.SpawnCount:
+                    self.spawn_children()
                 input_message = self.read_message()
                 if input_message:
-                    num_tries = 0
+                    empty_reads = 0
+                    successful_reads += 1
                     output_message = MHMessage(None, input_message.get_body())
                     in_key = input_message['Key']
                     self.get_file(input_message['Bucket'], in_key,
@@ -280,10 +290,12 @@ class Service:
                     self.delete_message(input_message)
                     self.cleanup()
                 else:
-                    num_tries += 1
+                    empty_reads += 1
+                    successful_reads = 0
                     time.sleep(self.MainLoopDelay)
             except Exception, e:
-                num_tries += 1
+                empty_reads += 1
+                successful_reads = 0
                 fp = StringIO.StringIO()
                 traceback.print_exc(None, fp)
                 s = fp.getvalue()
