@@ -29,6 +29,7 @@ class ConvertVideo(Service):
     Command = """ffmpeg -y -i %s -f mov -r 29.97 -b 1200kb -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -ar 48000 -ab 192 -s 320x240 -vcodec mpeg4 -acodec aac %s"""
 
     def process_file(self, in_file_name, msg):
+        print 'process_file(%s)' % in_file_name
         out_file_name = os.path.join(self.working_dir, 'out.mov')
         command = self.Command % (in_file_name, out_file_name)
         print 'running:\n%s' % command
