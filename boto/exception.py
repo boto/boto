@@ -73,13 +73,16 @@ class S3CreateError(S3ResponseError):
 class EC2ResponseError(SQSError):
     pass
 
-class AWSAuthConnectionError(Exception):
+class SDBResponseError(SQSError):
+    pass
+
+class AWSConnectionError(Exception):
 
     def __init__(self, reason):
         self.reason = reason
 
     def __repr__(self):
-        return 'AWSAuthConnnectionError: %s' % self.reason
+        return 'AWSConnnectionError: %s' % self.reason
 
     def __str__(self):
-        return 'AWSAuthConnnectionError: %s' % self.reason
+        return 'AWSConnnectionError: %s' % self.reason

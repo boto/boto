@@ -28,7 +28,7 @@ Some unit tests for the EC2Connection
 import unittest
 import time
 import os
-from boto.connection import EC2Connection
+from boto.ec2.connection import EC2Connection
 import telnetlib
 import socket
 

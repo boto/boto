@@ -43,6 +43,11 @@ class ResultSet:
             self.prefix = value
         elif name == 'return':
             self.status = bool(value)
+        elif name == 'StatusCode':
+            if (value == 'Success'):
+                self.status = True
+            else:
+                self.status = False
         else:
             setattr(self, name, value)
         

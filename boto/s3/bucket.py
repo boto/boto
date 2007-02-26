@@ -45,10 +45,10 @@ class Bucket:
 
     LoggingGroup = 'http://acs.amazonaws.com/groups/s3/LogDelivery'
 
-    def __init__(self, connection=None, name=None, debug=None):
+    def __init__(self, connection=None, name=None, key_class=Key):
         self.name = name
         self.connection = connection
-        self.debug = debug
+        self.key_class = key_class
 
     def startElement(self, name, attrs, connection):
         return None
@@ -61,13 +61,15 @@ class Bucket:
         else:
             setattr(self, name, value)
 
+    def set_key_class(self, key_class):
+        self.key_class = key_class
+
     def lookup(self, key):
         path = '/%s/%s' % (self.name, key)
         response = self.connection.make_request('HEAD', urllib.quote(path))
         if response.status == 200:
             body = response.read()
-            k = Key()
-            k.bucket = self
+            k = self.key_class(self)
             k.metadata = boto.utils.get_aws_metadata(response.msg)
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
@@ -99,16 +101,19 @@ class Bucket:
         response = self.connection.make_request('GET', path, headers)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('Contents', Key)
+            rs = ResultSet('Contents', self.key_class)
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
             raise S3ResponseError(response.status, response.reason)
 
+    def new_key(self):
+        return self.key_class(self)
+
     def delete_key(self, key_name):
         # for backward compatibility, previous version expected a Key object
-        if isinstance(key_name, Key):
+        if isinstance(key_name, self.key_class):
             key_name = key_name.key
         path = '/%s/%s' % (self.name, key_name)
         response = self.connection.make_request('DELETE',
@@ -143,7 +148,7 @@ class Bucket:
 
     def set_acl(self, acl_or_str, key_name=None):
         # just in case user passes a Key object rather than key name
-        if isinstance(key_name, Key):
+        if isinstance(key_name, self.key_class):
             key_name = key_name.key
         if isinstance(acl_or_str, Policy):
             self.set_xml_acl(acl_or_str.to_xml(), key_name)
@@ -152,7 +157,7 @@ class Bucket:
             
     def get_acl(self, key_name=None):
         # just in case user passes a Key object rather than key name
-        if isinstance(key_name, Key):
+        if isinstance(key_name, self.key_class):
             key_name = key_name.key
         if key_name:
             path = '/%s/%s' % (self.name, key_name)

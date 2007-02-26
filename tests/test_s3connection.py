@@ -28,8 +28,7 @@ Some unit tests for the S3Connection
 import unittest
 import time
 import os
-from boto.connection import S3Connection
-from boto.s3.key import Key
+from boto.s3.connection import S3Connection
 
 class S3ConnectionTest (unittest.TestCase):
 
@@ -42,36 +41,41 @@ class S3ConnectionTest (unittest.TestCase):
         # now try a get_bucket call and see if it's really there
         bucket = c.get_bucket(bucket_name)
         # create a new key and store it's content from a string
-        k = Key(bucket)
+        k = bucket.new_key()
         k.key = 'foobar'
-        s = 'This is a test of file upload and download'
-        k.set_contents_from_string(s)
+        s1 = 'This is a test of file upload and download'
+        s2 = 'This is a second string to test file upload and download'
+        k.set_contents_from_string(s1)
         fp = open('foobar', 'wb')
         # now get the contents from s3 to a local file
         k.get_contents_to_file(fp)
         fp.close()
         fp = open('foobar')
         # check to make sure content read from s3 is identical to original
-        assert s == fp.read(), 'corrupted file'
+        assert s1 == fp.read(), 'corrupted file'
         fp.close()
         bucket.delete_key(k)
-        os.unlink('foobar')
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type
         phony_mimetype = 'application/x-boto-test'
         headers = {'Content-Type': phony_mimetype}
         k.key = 'foo/bar'
-        k.set_contents_from_string(s, headers)
+        k.set_contents_from_string(s1, headers)
         k.key = 'foo/bas'
-        k.set_contents_from_string(s)
+        k.set_contents_from_filename('foobar')
         k.key = 'foo/bat'
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s1)
         k.key = 'fie/bar'
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s1)
         k.key = 'fie/bas'
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s1)
         k.key = 'fie/bat'
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s1)
+        # try resetting the contents to another value
+        md5 = k.md5
+        k.set_contents_from_string(s2)
+        assert k.md5 != md5
+        os.unlink('foobar')
         all = bucket.get_all_keys()
         assert len(all) == 6
         rs = bucket.get_all_keys(prefix='foo')
@@ -80,12 +84,12 @@ class S3ConnectionTest (unittest.TestCase):
         assert len(rs) == 5
         # test the lookup method
         k = bucket.lookup('foo/bar')
-        assert isinstance(k, Key)
+        assert isinstance(k, bucket.key_class)
         assert k.content_type == phony_mimetype
         k = bucket.lookup('notthere')
         assert k == None
         # try some metadata stuff
-        k = Key(bucket)
+        k = bucket.new_key()
         k.key = 'has_metadata'
         mdkey1 = 'meta1'
         mdval1 = 'This is the first metadata value'
@@ -93,11 +97,11 @@ class S3ConnectionTest (unittest.TestCase):
         mdkey2 = 'meta2'
         mdval2 = 'This is the second metadata value'
         k.set_metadata(mdkey2, mdval2)
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s1)
         k = bucket.lookup('has_metadata')
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
-        k = Key(bucket)
+        k = bucket.new_key()
         k.key = 'has_metadata'
         k.get_contents_as_string()
         assert k.get_metadata(mdkey1) == mdval1
@@ -106,7 +110,7 @@ class S3ConnectionTest (unittest.TestCase):
         # try a key with a funny character
         rs = bucket.get_all_keys()
         num_keys = len(rs)
-        k = Key(bucket)
+        k = bucket.new_key()
         k.key = 'testnewline\n'
         k.set_contents_from_string('This is a test')
         rs = bucket.get_all_keys()

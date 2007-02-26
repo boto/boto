@@ -137,8 +137,9 @@ class Key:
 
     def set_contents_from_file(self, fp, headers=None):
         if self.bucket != None:
-            if self.md5 == None:
-                self._compute_md5(fp)
+            self._compute_md5(fp)
+            if self.key == None:
+                self.key = self.md5
             self.send_file(fp, headers)
 
     def set_contents_from_filename(self, filename, headers=None):
@@ -218,3 +219,5 @@ class Key:
     def get_acl(self):
         if self.bucket != None:
             return self.bucket.get_acl(self.key)
+
+    

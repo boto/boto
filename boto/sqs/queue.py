@@ -85,6 +85,9 @@ class Queue:
         xml.sax.parseString(body, handler)
         return None
 
+    def new_message(self, body=None):
+        return self.message_class(self, body)
+
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None):
         path = '%s/front?NumberOfMessages=%d' % (self.id, num_messages)

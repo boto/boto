@@ -27,8 +27,7 @@ Some unit tests for the SQSConnection
 
 import unittest
 import time
-from boto.connection import SQSConnection
-from boto.sqs.message import Message
+from boto.sqs.connection import SQSConnection
 from boto.exception import SQSError
 
 class SQSConnectionTest (unittest.TestCase):
@@ -60,7 +59,7 @@ class SQSConnectionTest (unittest.TestCase):
     
         # now add a message
         message_body = 'This is a test\n'
-        message = Message(queue, message_body)
+        message = queue.new_message(message_body)
         queue.write(message)
         time.sleep(5)
         assert queue.count() == 1
