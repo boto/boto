@@ -19,7 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.connection import SQSConnection, S3Connection, EC2Connection
+from boto.s3.connection import S3Connection
+from boto.sqs.connection import SQSConnection
+from boto.ec2.connection import EC2Connection
 from boto.s3.key import Key
 from boto.sqs.message import MHMessage
 from boto.exception import SQSError, S3ResponseError
@@ -269,6 +271,7 @@ class Service:
             try:
                 if successful_reads >= self.SpawnCount:
                     self.spawn_children()
+                    successful_reads = 0
                 input_message = self.read_message()
                 if input_message:
                     empty_reads = 0
