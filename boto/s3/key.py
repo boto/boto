@@ -131,7 +131,9 @@ class Key:
             m.update(s)
             s = fp.read(4096)
         self.md5 = m.hexdigest()
-        self.base64md5 = base64.b64encode(m.digest())
+        self.base64md5 = base64.encodestring(m.digest())
+        if self.base64md5[-1] == '\n':
+            self.base64md5 = self.base64md5[0:-1]
         self.size = fp.tell()
         fp.seek(0)
 
