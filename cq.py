@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 #
 import getopt, sys
-from boto.connection import SQSConnection
+from boto.sqs.connection import SQSConnection
 from boto.exception import SQSError
 
 def usage():
