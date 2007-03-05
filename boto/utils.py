@@ -129,12 +129,18 @@ def get_instance_metadata(version='latest'):
         print 'problem reading metadata'
     return metadata
 
-def get_instance_userdata(version='latest'):
+def get_instance_userdata(version='latest', sep=None):
     user_data = None
     try:
         url = 'http://169.254.169.254/%s/user-data' % version
         s = urllib.urlopen(url)
         user_data = s.read()
+        if sep:
+            l = user_data.split(sep)
+            user_data = {}
+            for nvpair in l:
+                t = nvpair.split('=')
+                user_data[t[0].strip()] = t[1].strip()
     except:
         print 'problem reading metadata'
     return user_data

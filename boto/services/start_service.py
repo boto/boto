@@ -9,17 +9,13 @@ def usage():
 def get_userdata():
     module_name = None
     class_name = None
-    s = get_instance_userdata()
-    if s:
-        l = s.split('|')
-        for nvpair in l:
-            t = nvpair.split('=')
-            if t[0].strip() == 'module_name':
-                module_name = t[1].strip()
-            elif t[0].strip() == 'class_name':
-                class_name = t[1].strip()
+    d = get_instance_userdata(sep='|')
+    if d:
+        if d.has_key('module_name'):
+            module_name = d['module_name']
+        if d.has_key('class_name']:
+            class_name = d['class_name']
     return (module_name, class_name)
-    
 
 def find_class(module, class_name):
     modules = module.split('.')

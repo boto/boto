@@ -71,12 +71,10 @@ class Service:
 
     def get_userdata(self):
         self.meta_data = boto.utils.get_instance_metadata()
-        s = boto.utils.get_instance_userdata()
-        if s:
-            l = s.split('|')
-            for nvpair in l:
-                t = nvpair.split('=')
-                setattr(self, t[0].strip(), t[1].strip())
+        d = boto.utils.get_instance_userdata(sep='|')
+        if d:
+            for key in d.keys():
+                setattr(self, key, d[key])
 
     def create_connections(self):
         self.queue_cache = {}
@@ -193,8 +191,7 @@ class Service:
         return []
 
     # store result file in S3
-    def put_file(self, bucket_name, file_name, key):
-        print 'put_file(%s, %s, %s)' % (bucket_name, file_name, key)
+    def put_file(self, bucket_name, file_name):
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
@@ -202,14 +199,13 @@ class Service:
                 num_tries += 1
                 bucket = self.get_bucket(bucket_name)
                 k = Key(bucket)
-                k.key = key
                 k.set_contents_from_filename(file_name)
                 print 'putting file %s as %s.%s' % (file_name, bucket_name, k.key)
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error[%s]: %s' % (e.status, e.reason)
                 time.sleep(self.RetryDelay)
-        return k.key
+        return k
 
     # write message to each output queue
     def write_message(self, message):
@@ -285,9 +281,8 @@ class Service:
                                                 output_message)
                     output_keys = []
                     for file, type in results:
-                        key = self.compute_key(file)
-                        output_keys.append('%s;type=%s' % (key, type))
-                        self.put_file(input_message['Bucket'], file, key)
+                        key = self.put_file(input_message['Bucket'], file)
+                        output_keys.append('%s;type=%s' % (key.key, type))
                     output_message['OutputKey'] = ','.join(output_keys)
                     self.write_message(output_message)
                     self.delete_message(input_message)
