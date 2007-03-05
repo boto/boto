@@ -21,6 +21,7 @@
 
 import urllib
 import xml.sax
+import base64
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
@@ -160,7 +161,7 @@ class EC2Connection(AWSQueryConnection):
         if security_groups:
             self.build_list_params(params, security_groups, 'SecurityGroup')
         if user_data:
-            params['UserData'] = user_data
+            params['UserData'] = base64.b64encode(user_data)
         response = self.make_request('RunInstances', params)
         body = response.read()
         if response.status == 200:
