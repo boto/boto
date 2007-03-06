@@ -108,4 +108,7 @@ class MHMessage(Message):
 
     def has_key(self, key):
         return self.dict.has_key(key)
+
+    def update(self, d):
+        return self.dict.update(d)
         

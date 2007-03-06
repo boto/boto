@@ -85,7 +85,7 @@ class Queue:
         xml.sax.parseString(body, handler)
         return None
 
-    def new_message(self, body=None):
+    def new_message(self, body=''):
         return self.message_class(self, body)
 
     # get a variable number of messages, returns a list of messages
