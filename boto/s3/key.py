@@ -48,6 +48,7 @@ class Key:
         self.storage_class = None
         self.md5 = None
         self.base64md5 = None
+        self.path = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -77,6 +78,9 @@ class Key:
 
     def set_metadata(self, key, value):
         self.metadata[key] = value
+
+    def update_metadata(self, d):
+        self.metadata.update(d)
     
     def send_file(self, fp, headers=None):
         http_conn = self.bucket.connection.connection
@@ -85,8 +89,8 @@ class Key:
         headers['Content-MD5'] = self.base64md5
         if headers.has_key('Content-Type'):
             self.content_type = headers['Content-Type']
-        elif hasattr(fp, 'name'):
-            self.content_type = mimetypes.guess_type(fp.name)[0]
+        elif self.path:
+            self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
                 self.content_type = self.DefaultContentType
             headers['Content-Type'] = self.content_type
@@ -137,16 +141,22 @@ class Key:
         self.size = fp.tell()
         fp.seek(0)
 
-    def set_contents_from_file(self, fp, headers=None):
+    def set_contents_from_file(self, fp, headers=None, replace=True):
+        if hasattr(fp, 'name'):
+            self.path = fp.name
         if self.bucket != None:
             self._compute_md5(fp)
             if self.key == None:
                 self.key = self.md5
+            if not replace:
+                k = self.bucket.lookup(self.key)
+                if k:
+                    return
             self.send_file(fp, headers)
 
-    def set_contents_from_filename(self, filename, headers=None):
+    def set_contents_from_filename(self, filename, headers=None, replace=True):
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers)
+        self.set_contents_from_file(fp, headers, replace)
         fp.close()
 
     def set_contents_from_string(self, s, headers=None):
