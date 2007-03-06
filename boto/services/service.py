@@ -273,7 +273,7 @@ class Service:
                     empty_reads = 0
                     successful_reads += 1
                     output_message = MHMessage(None, input_message.get_body())
-                    in_key = input_message['Key']
+                    in_key = input_message['InputKey']
                     self.get_file(input_message['Bucket'], in_key,
                                   os.path.join(self.working_dir,'in_file'))
                     results = self.process_file(os.path.join(self.working_dir,
