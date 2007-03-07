@@ -190,8 +190,6 @@ class Service:
                 print 'caught SQSError[%s]: %s' % (e.status, e.reason)
                 time.sleep(self.RetryDelay)
 
-    def get_result(self, path)
-    # read a new message from our queue
     def read_message(self):
         message = None
         successful = False
