@@ -31,6 +31,7 @@ import time
 import os
 import sys, traceback
 import md5
+from socket import gethostname
 
 class Service:
 
@@ -149,6 +150,47 @@ class Service:
         bucket = self.get_bucket(bucket_name)
         return bucket.lookup(key)
 
+    def create_msg(self, key, params=None):
+        m = self.input_queue.new_message()
+        if params:
+            m.update(params)
+        if key.path:
+            t = os.path.split(key.path)
+            m['OriginalLocation'] = t[0]
+            m['OriginalFileName'] = t[1]
+        m['Date'] = time.strftime("%a, %d %b %Y %X GMT",
+                                  time.gmtime())
+        m['Host'] = gethostname()
+        m['Bucket'] = key.bucket.name
+        m['InputKey'] = key.key
+        m['Size'] = key.size
+        return m
+
+    def submit_file(self, path, bucket_name, metadata=None):
+        if not metadata:
+            metadata = {}
+        bucket = self.get_bucket(bucket_name)
+        k = bucket.new_key()
+        k.update_metadata(metadata)
+        successful = False
+        num_tries = 0
+        while not successful and num_tries < self.RetryCount:
+            try:
+                num_tries += 1
+                print 'submitting file: %s' % path
+                k.set_contents_from_filename(path, replace=False)
+                m = self.create_msg(k, metadata)
+                print m.get_body()
+                self.input_queue.write(m)
+                successful = True
+            except S3ResponseError, e:
+                print 'caught S3Error[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
+            except SQSError, e:
+                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                time.sleep(self.RetryDelay)
+
+    def get_result(self, path)
     # read a new message from our queue
     def read_message(self):
         message = None

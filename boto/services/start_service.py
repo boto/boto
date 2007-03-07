@@ -4,7 +4,8 @@ import boto
 from boto.utils import get_instance_userdata
 
 def usage():
-    print 'start_service.py -m module -c class_name [-r] [-a ami_id] [-w working_dir] [-i input_queue_name] [-o output_queue_name]'
+    print 'SYNOPSIS'
+    print '\tstart_service.py -m module -c class_name [-r] [-a ami_id] [-e email_address] [-k key_name] [-n num_instances] [-w working_dir] [-i input_queue_name] [-o output_queue_name] [-n num_instances]'
     sys.exit()
 
 def get_userdata(params):
@@ -25,14 +26,16 @@ def find_class(params):
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:c:hi:k:m:o:rw:',
-                                   ['ami', 'class', 'help', 'inputqueue',
-                                    'keypair', 'module', 'outputqueue',
-                                    'remote', 'working_dir'])
+        opts, args = getopt.getopt(sys.argv[1:], 'a:c:e:hi:k:m:n:o:rw:',
+                                   ['ami', 'class', 'email', 'help',
+                                    'inputqueue', 'keypair', 'module',
+                                    'numinstances', 'outputqueue', 'remote',
+                                    'working_dir'])
     except:
         usage()
     params = {'module_name' : None,
               'class_name' : None,
+              'notify_email' : None,
               'input_queue_name' : None,
               'output_queue_name' : None,
               'working_dir' : None,
@@ -45,6 +48,8 @@ def main():
             params['ami'] = a
         if o in ('-c', '--class'):
             params['class_name'] = a
+        if o in ('-e', '--email'):
+            params['notify_email'] = a
         if o in ('-h', '--help'):
             usage()
         if o in ('-i', '--inputqueue'):
@@ -53,6 +58,8 @@ def main():
             params['keypair'] = a
         if o in ('-m', '--module'):
             params['module_name'] = a
+        if o in ('-n', '--num_instances'):
+            params['num_instances'] = int(a)
         if o in ('-o', '--outputqueue'):
             params['output_queue_name'] = a
         if o in ('-r', '--remote'):
@@ -73,16 +80,20 @@ def main():
             if v:
                 l.append('%s=%s' % (k, v))
         c = boto.connect_ec2()
-        c.set_debug(1)
         l.append('aws_access_key_id=%s' % c.aws_access_key_id)
         l.append('aws_secret_access_key=%s' % c.aws_secret_access_key)
         s = '|'.join(l)
-        print s
         if params['ami']:
             rs = c.get_all_images([params['ami']])
             img = rs[0]
-            r = img.run(user_data=s, key_name=params['keypair'])
-            print r.id
+            r = img.run(user_data=s, key_name=params['keypair'],
+                        max_count=params.get('num_instances', 1))
+            print 'Server: %s.%s - %s (Started)' % (params['module_name'],
+                                                    params['class_name'],
+                                                    params['ami'])
+            print 'Reservation %s contains the following instances:' % r.id
+            for i in r.instances:
+                print '\t%s' % i.id
         else:
             print '-a option is required'
             usage()
