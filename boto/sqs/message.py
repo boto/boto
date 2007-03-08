@@ -111,4 +111,7 @@ class MHMessage(Message):
 
     def update(self, d):
         return self.dict.update(d)
+
+    def get(self, key, default=None):
+        return self.dict.get(key, default)
         
