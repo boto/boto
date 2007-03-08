@@ -32,6 +32,7 @@ import os
 import sys, traceback
 import md5
 from socket import gethostname
+import mimetypes
 
 class Service:
 
@@ -55,7 +56,7 @@ class Service:
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  input_queue_name=None, output_queue_name=None,
-                 do_shutdown=False, notify_email=None, read_userdata=True,
+                 do_shutdown=True, notify_email=None, read_userdata=True,
                  working_dir=None):
         self.meta_data = {}
         self.aws_access_key_id = aws_access_key_id
@@ -190,6 +191,32 @@ class Service:
                 print 'caught SQSError[%s]: %s' % (e.status, e.reason)
                 time.sleep(self.RetryDelay)
 
+    def get_result(self, path, original_name=False,
+                   default_ext='.bin', delete_msg=True):
+        q = self.get_queue(self.output_queue_name)
+        m = q.read()
+        if m:
+            outputs = m['OutputKey'].split(',')
+            for output in outputs:
+                key_name, type = output.split(';')
+                mime_type = type.split('=')[1]
+                if original_name:
+                    file_name = m.get('OriginalFileName', key_name)
+                    file_name, ext = os.path.splitext(file_name)
+                    ext = mimetypes.guess_extension(mime_type)
+                    if not ext:
+                        ext = default_ext
+                    file_name = file_name + ext
+                else:
+                    file_name = key_name
+                bucket = self.get_bucket(m['Bucket'])
+                key = bucket.lookup(key_name)
+                print 'retrieving file: %s' % file_name
+                key.get_contents_to_filename(os.path.join(path, file_name))
+            if delete_msg:
+                q.delete_message(m)
+        return m
+
     def read_message(self):
         message = None
         successful = False
@@ -238,7 +265,7 @@ class Service:
             try:
                 num_tries += 1
                 bucket = self.get_bucket(bucket_name)
-                k = Key(bucket)
+                k = bucket.new_key()
                 k.set_contents_from_filename(file_name)
                 print 'putting file %s as %s.%s' % (file_name, bucket_name, k.key)
                 successful = True
@@ -296,18 +323,12 @@ class Service:
                               self.aws_secret_access_key)
             c.terminate_instances([self.meta_data['instance-id']])
 
-    def spawn_children(self):
-        self.notify('%s - Spawning Child' % self.meta_data['instance-id'])
-
     def run(self, notify=False):
         self.notify('Service Starting')
         successful_reads = 0
         empty_reads = 0
         while empty_reads < self.MainLoopRetryCount:
             try:
-                if successful_reads >= self.SpawnCount:
-                    self.spawn_children()
-                    successful_reads = 0
                 input_message = self.read_message()
                 if input_message:
                     empty_reads = 0

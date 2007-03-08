@@ -11,6 +11,7 @@ class FileSubmitter:
                                read_userdata=False)
 
     def submit_path(self, path, tags=None, batch=None, ignore_dirs=[]):
+        total = 0
         metadata = {}
         if tags:
             metadata['Tags'] = tags
@@ -30,10 +31,13 @@ class FileSubmitter:
                     fullpath = os.path.join(root, file)
                     self.service.submit_file(fullpath, self.bucket_name,
                                              metadata)
+                    total += 1
         elif os.path.isfile(path):
             self.service.submit_file(path, self.bucket_name, metadata)
+            total += 1
         else:
             print 'problem with %s' % path
+        print '%d files successfully submitted.' % total
 
 def usage():
     print 'submit_files.py  [-b bucketname] [-q queuename] path [tags]'
@@ -65,7 +69,6 @@ def main():
         tags = args[1]
     s = FileSubmitter(bucket_name, queue_name)
     s.submit_path(path, tags, ignore_dirs=['.svn'])
-    print 'Done!'
     return 1
 
 if __name__ == "__main__":
