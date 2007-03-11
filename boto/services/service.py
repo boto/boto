@@ -181,7 +181,6 @@ class Service:
                 print 'submitting file: %s' % path
                 k.set_contents_from_filename(path, replace=False)
                 m = self.create_msg(k, metadata)
-                print m.get_body()
                 self.input_queue.write(m)
                 successful = True
             except S3ResponseError, e:
@@ -192,27 +191,28 @@ class Service:
                 time.sleep(self.RetryDelay)
 
     def get_result(self, path, original_name=False,
-                   default_ext='.bin', delete_msg=True):
+                   default_ext='.bin', delete_msg=True, get_file=True):
         q = self.get_queue(self.output_queue_name)
         m = q.read()
         if m:
-            outputs = m['OutputKey'].split(',')
-            for output in outputs:
-                key_name, type = output.split(';')
-                mime_type = type.split('=')[1]
-                if original_name:
-                    file_name = m.get('OriginalFileName', key_name)
-                    file_name, ext = os.path.splitext(file_name)
-                    ext = mimetypes.guess_extension(mime_type)
-                    if not ext:
-                        ext = default_ext
-                    file_name = file_name + ext
-                else:
-                    file_name = key_name
-                bucket = self.get_bucket(m['Bucket'])
-                key = bucket.lookup(key_name)
-                print 'retrieving file: %s' % file_name
-                key.get_contents_to_filename(os.path.join(path, file_name))
+            if get_file:
+                outputs = m['OutputKey'].split(',')
+                for output in outputs:
+                    key_name, type = output.split(';')
+                    mime_type = type.split('=')[1]
+                    if original_name:
+                        file_name = m.get('OriginalFileName', key_name)
+                        file_name, ext = os.path.splitext(file_name)
+                        ext = mimetypes.guess_extension(mime_type)
+                        if not ext:
+                            ext = default_ext
+                        file_name = file_name + ext
+                    else:
+                        file_name = key_name
+                    bucket = self.get_bucket(m['Bucket'])
+                    key = bucket.lookup(key_name)
+                    print 'retrieving file: %s' % file_name
+                    key.get_contents_to_filename(os.path.join(path, file_name))
             if delete_msg:
                 q.delete_message(m)
         return m

@@ -6,11 +6,13 @@ from boto.services.service import Service
 class ResultProcessor:
 
     TimeFormat = '%a, %d %b %Y %H:%M:%S %Z'
+    LogFileName = 'log.csv'
 
     def __init__(self, queue_name):
         self.queue_name = queue_name
         self.service = Service(output_queue_name=queue_name,
                                read_userdata=False)
+        self.log_fp = None
         self.num_files = 0
         self.total_time = 0
         self.min_time = timedelta.max
@@ -34,27 +36,44 @@ class ResultProcessor:
         if end_time > self.latest_time:
             self.latest_time = end_time
 
+    def log_message(self, msg, path):
+        keys = msg.keys()
+        keys.sort()
+        if not self.log_fp:
+            self.log_fp = open(os.path.join(path, self.LogFileName), 'w')
+            line = ','.join(keys)
+            self.log_fp.write(line+'\n')
+        values = []
+        for key in keys:
+            value = msg[key]
+            if value.find(',') > 0:
+                value = '"%s"' % value
+            values.append(value)
+        line = ','.join(values)
+        self.log_fp.write(line+'\n')
+
     def get_results(self, path):
         total_files = 0
         total_time = 0
         if not os.path.isdir(path):
             os.mkdir(path)
-        fp = open(os.path.join(path, 'messages.txt'), 'w')
-        m = self.service.get_result(path, original_name=True)
+        m = self.service.get_result(path, original_name=True, get_file=False)
         while m:
             total_files += 1
-            fp.write(m.get_body())
-            fp.write('\n')
+            self.log_message(m, path)
             self.calculate_stats(m)
-            m = self.service.get_result(path, original_name=True)
-        fp.close()
+            m = self.service.get_result(path, original_name=True,
+                                        get_file=False)
+        self.log_fp.close()
         print '%d results successfully retrieved.' % total_files
-        self.avg_time = self.total_time/total_files
-        print 'Minimum Processing Time: %f' % self.min_time
-        print 'Maximum Processing Time: %f' % self.max_time
+        self.avg_time = float(self.total_time)/total_files
+        print 'Minimum Processing Time: %d' % self.min_time.seconds
+        print 'Maximum Processing Time: %d' % self.max_time.seconds
         print 'Average Processing Time: %f' % self.avg_time
         self.elapsed_time = self.latest_time-self.earliest_time
-        print 'Elapsed Time: %f' % self.elapsed_time.seconds
+        print 'Elapsed Time: %d' % self.elapsed_time.seconds
+        tput = 1.0 / ((self.elapsed_time.seconds/60.0) / total_files)
+        print 'Throughput: %f transactions / minute' % tput
         
 def usage():
     print 'get_results.py  [-q queuename] path'
