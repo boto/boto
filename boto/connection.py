@@ -39,6 +39,7 @@ Handles basic connections to AWS
 import base64
 import hmac
 import httplib
+import socket
 import re
 import sha
 import sys
@@ -140,10 +141,16 @@ class AWSAuthConnection:
         self.add_aws_auth_header(final_headers, method, path)
         if self.use_proxy:
             path = self.prefix_proxy_to_path(path)
-        self.connection.request(method, path, data, final_headers)
         try:
+            self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
         except httplib.HTTPException, e:
+            print 'encountered HTTPException, trying to recover'
+            self.make_http_connection()
+            self.connection.request(method, path, data, final_headers)
+            return self.connection.getresponse()
+        except socket.error, e:
+            print 'encountered socket.error, trying to recover'
             self.make_http_connection()
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()

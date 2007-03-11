@@ -111,6 +111,10 @@ class Bucket:
     def new_key(self):
         return self.key_class(self)
 
+    def generate_url(self, expires_in, method='GET', headers=None):
+        return self.connection.generate_url(expires_in, method,
+                                            '/'+self.name, headers)
+
     def delete_key(self, key_name):
         # for backward compatibility, previous version expected a Key object
         if isinstance(key_name, self.key_class):

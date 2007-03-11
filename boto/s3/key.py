@@ -82,6 +82,12 @@ class Key:
     def update_metadata(self, d):
         self.metadata.update(d)
     
+    def generate_url(self, expires_in, method='GET', headers=None):
+        path = '/%s/%s' % (self.bucket.name, self.key)
+        path = urllib.quote(path)
+        return self.bucket.connection.generate_url(expires_in, method,
+                                                   path, headers)
+    
     def send_file(self, fp, headers=None):
         http_conn = self.bucket.connection.connection
         if not headers:

@@ -21,6 +21,8 @@
 
 import xml.sax
 import urllib
+import time
+import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
@@ -39,7 +41,9 @@ class S3Connection(AWSAuthConnection):
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, debug)
     
-    def generate_url(self, expires_in, method, path, headers):
+    def generate_url(self, expires_in, method, path, headers=None):
+        if not headers:
+            headers = {}
         expires = int(time.time() + expires_in)
         canonical_str = boto.utils.canonical_string(method, path,
                                                     headers, expires)
