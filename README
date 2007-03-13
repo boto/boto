@@ -1,5 +1,5 @@
-boto 0.8c
-08-Feb-2007
+boto 0.8d
+13-Mar-2007
 
 Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
 
@@ -35,6 +35,67 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.8d changes]
+r130 | Mitch.Garnaat | 2007-02-11 08:22:56 -0500 (Sun, 11 Feb 2007) | 1 line
+
+Fixed a problem with Content-Type headers when the mimetype of the underlying file is unknown.  Fixes Issue-35.
+------------------------------------------------------------------------
+r131 | Mitch.Garnaat | 2007-02-15 12:37:34 -0500 (Thu, 15 Feb 2007) | 1 line
+
+Allow host to be passed as parameter to connection constructors.  Fixes Issue-38
+------------------------------------------------------------------------
+r132 | Mitch.Garnaat | 2007-02-16 12:17:19 -0500 (Fri, 16 Feb 2007) | 1 line
+
+Got rid of the InstanceState object.  The state attribute is now a string.  The code that was part of the InstanceState object is now stored as the state_code attribute of the Instance object.
+------------------------------------------------------------------------
+r133 | Mitch.Garnaat | 2007-02-16 12:28:53 -0500 (Fri, 16 Feb 2007) | 1 line
+
+Added support for last_modified header on file download from s3.  Also allow header dictionary to be passed as param to get_contents_to_* methods of Key object.  Based on patches submitted by ps.spam.  Fixes Issue-39, Issue-40, Issue-41.
+------------------------------------------------------------------------
+r134 | Mitch.Garnaat | 2007-02-16 12:44:35 -0500 (Fri, 16 Feb 2007) | 1 line
+
+Incorporating additional fixes for proxy support supplied by D. Strip.
+------------------------------------------------------------------------
+r142 | Mitch.Garnaat | 2007-02-19 12:07:47 -0500 (Mon, 19 Feb 2007) | 1 line
+
+Adding utility functions to retrieve metadata and userdata for an instance
+
+------------------------------------------------------------------------
+r177 | Mitch.Garnaat | 2007-02-25 20:47:31 -0500 (Sun, 25 Feb 2007) | 2 lines
+
+Refactoring the connection code.  Now each subsystem has it's own connection.py file with the connection class for that service.  The conneciton.py at the boto level only has the superclasses.  Factored out a common superclass for Query connections.  Added factory methods to queue and bucket to create new instances of messages and key, respectively.  Fixed Issue-44.
+
+------------------------------------------------------------------------
+r179 | Mitch.Garnaat | 2007-03-04 16:57:32 -0500 (Sun, 04 Mar 2007) | 1 line
+
+Incorporating patch from josh.bressers which allows boto to be used in Python 2.3.  Fixes Issue-45.
+------------------------------------------------------------------------
+r180 | Mitch.Garnaat | 2007-03-05 09:53:00 -0500 (Mon, 05 Mar 2007) | 1 line
+
+Forgot to Base64 encode the UserData parameter to RunInstances.  Fixes Issue-47.
+------------------------------------------------------------------------
+r184 | Mitch.Garnaat | 2007-03-06 13:09:16 -0500 (Tue, 06 Mar 2007) | 1 line
+
+Added an update method to the MHMessage class.  Allows update of fields from another mapping type.  Fixed a bug in the new_message method of queue.py.
+------------------------------------------------------------------------
+r185 | Mitch.Garnaat | 2007-03-06 13:12:57 -0500 (Tue, 06 Mar 2007) | 1 line
+
+Added a replace flag to the set_contents_from_* methods.  The default value is True which will cause it to act as it always has.  If you pass in False, however, the key object will check in the bucket first and see if there is already an object with the same key.  If there is, it won't overwrite it.
+------------------------------------------------------------------------
+r190 | Mitch.Garnaat | 2007-03-08 13:11:41 -0500 (Thu, 08 Mar 2007) | 1 line
+
+Adding a command line utility to read status messages from the output queue and retrieve corresponding files
+------------------------------------------------------------------------
+r191 | Mitch.Garnaat | 2007-03-11 15:06:29 -0400 (Sun, 11 Mar 2007) | 2 lines
+
+Updated tutorials to reflect new package structure.  Fixes Issue-48.
+
+------------------------------------------------------------------------
+r192 | Mitch.Garnaat | 2007-03-11 15:47:12 -0400 (Sun, 11 Mar 2007) | 1 line
+
+Adding generate_key methods to Bucket and Key classes.  Fixing a bug I introduced in boto/connection.py when I split the subclasses out into separate packges.  Fixes Issue-46 and Issue-50.
+
+
 [boto 0.8c changes]
 ------------------------------------------------------------------------
 r121 | Mitch.Garnaat | 2007-02-08 15:19:51 -0500 (Thu, 08 Feb 2007) | 1 line
