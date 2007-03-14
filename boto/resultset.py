@@ -22,12 +22,15 @@
 class ResultSet:
 
     def __init__(self, marker_elem='', factory=None):
-        self.marker_elem = marker_elem
+        if isinstance(marker_elem, list):
+            self.marker_elem = marker_elem
+        else:
+            self.marker_elem = [marker_elem]
         self.factory = factory
         self._results = []
 
     def startElement(self, name, attrs, connection):
-        if name == self.marker_elem:
+        if name in self.marker_elem:
             obj = self.factory(connection)
             self._results.append(obj)
             return obj

@@ -22,6 +22,7 @@
 import urllib
 import xml.sax
 from boto import handler
+from boto.mturk.price import Price
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
@@ -39,26 +40,37 @@ class MTurkConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     host, debug)
 
-    def build_attr_list(self, params, attributes, do_value=True):
-        keys = attributes.keys()
-        keys.sort()
-        i = 1
-        for key in keys:
-            params['Attribute.%d.Name'%i] = key
-            if do_value:
-                params['Attribute.%d.Value'%i] = attributes[key]
-            i += 1
-
     def get_account_balance(self):
         params = {}
         response = self.make_request('GetAccountBalance', params)
         body = response.read()
         if response.status == 200:
-            print body
-            rs = ResultSet()
+            rs = ResultSet(['AvailableBalance', 'OnHoldBalance'], Price)
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    def register_hit_type(self, title, description, reward, duration,
+                          keywords=None, approval_delay=None, qual_req=None):
+        """
+        Register a new HIT Type
+        \ttitle, description are strings
+        \treward is a Price object
+        \tduration can be an integer or string
+        """
+        params = {'Title' : title,
+                  'Description' : description,
+                  'AssignmentDurationInSeconds' : duration}
+        params.update(reward.get_as_params('Reward'))
+        response = self.make_request('RegisterHITType', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.HITTypeId
         else:
             raise EC2ResponseError(response.status, response.reason, body)
         
