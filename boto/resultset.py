@@ -19,62 +19,54 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class ResultSet:
+class ResultSet(list):
 
     def __init__(self, marker_elem='', factory=None):
+        list.__init__(self)
         if isinstance(marker_elem, list):
             self.marker_elem = marker_elem
         else:
             self.marker_elem = [marker_elem]
         self.factory = factory
-        self._results = []
+        self.index = 0
+        self.marker = None
+        self.is_truncated = False
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.index == len(self):
+            raise StopIteration
+        self.index += 1
+        return self[self.index-1]
 
     def startElement(self, name, attrs, connection):
         if name in self.marker_elem:
             obj = self.factory(connection)
-            self._results.append(obj)
+            self.append(obj)
             return obj
         else:
             return None
 
+    def to_boolean(self, value, true_value='true'):
+        if value == true_value:
+            return True
+        else:
+            return False
+
     def endElement(self, name, value, connection):
         if name == 'IsTruncated':
-            self.is_truncated = bool(value)
+            self.is_truncated = self.to_boolean(value)
         elif name == 'Marker':
             self.marker = value
         elif name == 'Prefix':
             self.prefix = value
         elif name == 'return':
-            self.status = bool(value)
+            self.status = self.to_boolean(value)
         elif name == 'StatusCode':
-            if (value == 'Success'):
-                self.status = True
-            else:
-                self.status = False
+            self.status = self.to_boolean(value, 'Success')
         else:
             setattr(self, name, value)
         
-    def __repr__(self):
-        return repr(self._results)
-
-    def __len__(self):
-        return len(self._results)
-
-    def __getitem__(self, key):
-        return self._results[key]
-
-    def append(self, value):
-        self._results.append(value)
-
-    def count(self):
-        return self._results.count()
-
-    def insert(self, value):
-        self._results.insert(value)
-
-    def pop(self):
-        return self._results.pop()
-
-    def __contains__(self, item):
-        return item in self._results
 

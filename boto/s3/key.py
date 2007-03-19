@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 import urllib
+import socket
 import mimetypes
 import md5
 import os
@@ -36,13 +37,13 @@ class Key:
 
     DefaultContentType = 'application/octet-stream'
 
-    def __init__(self, bucket=None):
+    def __init__(self, bucket=None, key=None):
         self.bucket = bucket
+        self.key = key
         self.metadata = {}
         self.content_type = self.DefaultContentType
         self.filename = None
         self.etag = None
-        self.key = None
         self.last_modified = None
         self.owner = None
         self.storage_class = None
@@ -124,9 +125,14 @@ class Key:
                 l = fp.read(4096)
             response = http_conn.getresponse()
             body = response.read()
-        except Exception, e:
+        except socket.error, e:
+            print 'Caught a socket error, trying to recover'
             self.bucket.connection.make_http_connection()
+            fp.seek(0)
+            self.send_file(fp, headers)
+        except Exception, e:
             print 'Caught an unexpected exception'
+            self.bucket.connection.make_http_connection()
             raise e
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason)

@@ -20,4 +20,8 @@
 # IN THE SOFTWARE.
 #
 
+from connection import S3Connection as Connection
+from key import Key
+from bucket import Bucket
 
+__all__ = ['Connection', 'Key', 'Bucket']

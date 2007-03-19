@@ -29,6 +29,17 @@ import boto.utils
 import xml.sax
 import urllib
 
+def bucket_lister(bucket):
+    more_results = True
+    marker = ''
+    while more_results:
+        rs = bucket.get_all_keys(marker=marker)
+        for k in rs:
+            yield k
+        marker = k.key
+        more_results= rs.is_truncated
+        print 'marker=%s, more_results=%s' % (marker, more_results)
+        
 class Bucket:
 
     BucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
@@ -49,6 +60,9 @@ class Bucket:
         self.name = name
         self.connection = connection
         self.key_class = key_class
+
+    def __iter__(self):
+        return bucket_lister(self)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -108,8 +122,8 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def new_key(self):
-        return self.key_class(self)
+    def new_key(self, key=None):
+        return self.key_class(self, key)
 
     def generate_url(self, expires_in, method='GET', headers=None):
         return self.connection.generate_url(expires_in, method,

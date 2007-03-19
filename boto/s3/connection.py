@@ -40,6 +40,9 @@ class S3Connection(AWSAuthConnection):
         AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, debug)
+
+    def __iter__(self):
+        return self.get_all_buckets()
     
     def generate_url(self, expires_in, method, path, headers=None):
         if not headers:
