@@ -56,6 +56,12 @@ class SQSConnectionTest (unittest.TestCase):
         # check the visibility timeout
         t = queue.get_timeout()
         assert t == timeout, '%d != %d' % (t, timeout)
+
+        # now change the visibility timeout
+        timeout = 45
+        queue.set_timeout(timeout)
+        t = queue.get_timeout()
+        assert t == timeout, '%d != %d' % (t, timeout)
     
         # now add a message
         message_body = 'This is a test\n'

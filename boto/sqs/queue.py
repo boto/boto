@@ -64,6 +64,17 @@ class Queue:
         xml.sax.parseString(body, handler)
         return self.visibility_timeout
 
+    # set the visibility timeout for the queue
+    def set_timeout(self, visibility_timeout):
+        path = '%s?VisibilityTimeout=%d' % (self.id, visibility_timeout)
+        response = self.connection.make_request('PUT', path)
+        body = response.read()
+        if response.status >= 300:
+            raise SQSError(response.status, response.reason, body)
+        handler = XmlHandler(self, self.connection)
+        xml.sax.parseString(body, handler)
+        self.visibility_timeout = visibility_timeout
+
     # convenience method that returns a single message or None if queue is empty
     def read(self, visibility_timeout=None):
         rs = self.get_messages(1, visibility_timeout)
