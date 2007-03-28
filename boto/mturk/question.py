@@ -122,21 +122,76 @@ class QuestionContent:
 
 class AnswerSpecification:
     
-    #ANSWERSPECIFICATION_XML_TEMPLATE = """
-    #    <AnswerSpecification>
-    #        <FreeTextAnswer>
-    #            <Constraints>
-    #                <Length minLength="2" maxLength="2" />
-    #            </Constraints>
-    #            <DefaultText>C1</DefaultText>
-    #        </FreeTextAnswer>
-    #    </AnswerSpecification>
-    #"""
+    ANSWERSPECIFICATION_XML_TEMPLATE = """<AnswerSpecification>%s</AnswerSpecification>"""
     
-    ANSWERSPECIFICATION_XML_TEMPLATE = """<AnswerSpecification><FreeTextAnswer><Constraints><Length minLength="2" maxLength="2" /></Constraints><DefaultText>C1</DefaultText></FreeTextAnswer></AnswerSpecification>"""
-    
-    def __init__(self):
-        pass
+    def __init__(self, spec):
+        self.spec = spec
     def get_as_xml(self):
         values = () # TODO
-        return AnswerSpecification.ANSWERSPECIFICATION_XML_TEMPLATE % values
+        return AnswerSpecification.ANSWERSPECIFICATION_XML_TEMPLATE % self.spec.get_as_xml()
+
+class FreeTextAnswer:
+    
+    FREETEXTANSWER_XML_TEMPLATE = """<FreeTextAnswer>%s%s</FreeTextAnswer>""" # (constraints, default)
+    FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE = """<Constraints>%s%s</Constraints>""" # (is_numeric_xml, length_xml)
+    FREETEXTANSWER_LENGTH_XML_TEMPLATE = """<Length %s %s />""" # (min_length_attr, max_length_attr)
+    FREETEXTANSWER_ISNUMERIC_XML_TEMPLATE = """<IsNumeric %s %s />""" # (min_value_attr, max_value_attr)
+    FREETEXTANSWER_DEFAULTTEXT_XML_TEMPLATE = """<DefaultText>%s</DefaultText>""" # (default)
+    
+    def __init__(self, default=None, min_length=None, max_length=None, is_numeric=False, min_value=None, max_value=None):
+        self.default = default
+        self.min_length = min_length
+        self.max_length = max_length
+        self.is_numeric = is_numeric
+        self.min_value = min_value
+        self.max_value = max_value
+    
+    def get_as_xml(self):
+        is_numeric_xml = ""
+        if self.is_numeric:
+            min_value_attr = ""
+            max_value_attr = ""
+            if self.min_value:
+                min_value_attr = """minValue="%d" """ % self.min_value
+            if self.max_value:
+                max_value_attr = """maxValue="%d" """ % self.max_value
+            is_numeric_xml = FreeTextAnswer.FREETEXTANSWER_ISNUMERIC_XML_TEMPLATE % (min_value_attr, max_value_attr)
+        
+        length_xml = ""
+        if self.min_length or self.max_length:
+            min_length_attr = ""
+            max_length_attr = ""
+            if self.min_length:
+                min_length_attr = """minLength="%d" """
+            if self.max_length:
+                max_length_attr = """maxLength="%d" """
+            length_xml = FreeTextAnswer.FREETEXTANSWER_LENGTH_XML_TEMPLATE % (min_length_attr, max_length_attr)
+        
+        constraints_xml = ""
+        if is_numeric_xml != "" or length_xml != "":
+            constraints_xml = FreeTextAnswer.FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE % (is_numeric_xml, length_xml)
+        
+        default_xml = ""
+        if self.default is not None:
+            default_xml = FreeTextAnswer.FREETEXTANSWER_DEFAULTTEXT_XML_TEMPLATE % self.default
+        
+        return FreeTextAnswer.FREETEXTANSWER_XML_TEMPLATE % (constraints_xml, default_xml)
+
+class FileUploadAnswer:
+    FILEUPLOADANSWER_XML_TEMLPATE = """<FileUploadAnswer><MinFileSizeInBytes>%d</MinFileSizeInBytes><MaxFileSizeInBytes>%d</MaxFileSizeInBytes></FileUploadAnswer>""" # (min, max)
+    DEFAULT_MIN_SIZE = 1024 # 1K (completely arbitrary!)
+    DEFAULT_MAX_SIZE = 5 * 1024 * 1024 # 5MB (completely arbitrary!)
+    
+    def __init__(self, min=None, max=None):
+        self.min = min
+        self.max = max
+        if self.min is None:
+            self.min = FileUploadAnswer.DEFAULT_MIN_SIZE
+        if self.max is None:
+            self.max = FileUploadAnswer.DEFAULT_MAX_SIZE
+    
+    def get_as_xml(self):
+        return FileUploadAnswer.FILEUPLOADANSWER_XML_TEMLPATE % (self.min, self.max)
+
+class SelectionAnswer:
+    pass #TODO

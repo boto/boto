@@ -31,6 +31,7 @@ class MTurkConnection(AWSQueryConnection):
     
     APIVersion = '2006-10-31'
     SignatureVersion = '1'
+    NOTIFICATION_VERSION = APIVersion # May not be the same as APIVersion in the future.
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
@@ -73,6 +74,45 @@ class MTurkConnection(AWSQueryConnection):
             return rs.HITTypeId
         else:
             raise EC2ResponseError(response.status, response.reason, body)
+    
+    def set_email_notification(hit_type, email):
+        """
+        Performs a SetHITTypeNotification operation to set email notification for a specified HIT type
+        """
+        assert type(hit_type) is str, "hit_type argument should be a string."
+        
+        params = {'HITTypeId': hit_type}
+        
+        notification_params = {'Destination': email,
+                               'Transport': 'Email',
+                               'Version': MTurkConnection.NOTIFICATION_VERSION }
+        
+        # Set up dict of 'Notification.1.Transport' etc. values
+        notification_rest_params = {}
+        num = 1
+        for key in notification_params:
+            notification_rest_params['Notification.%d.%s' % (num, key)] = notification_params[key]
+        
+        # Update main params dict
+        params.update(notification_rest_params)
+        
+        # Execute operation
+        response = self.make_request('SetHITTypeNotification', params)
+        body = response.read()
+        
+        # From the Developer Guide:
+        # A successful request for the SetHITTypeNotification operation will return with no errors. The 
+        # response will include a SetHITTypeNotificationResult element, which contains the Request (if 
+        # the Request response group is specified). The operation returns no other data.
+        
+        if response.status == 200: # Is this the correct way to test if it worked?
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.HITTypeId
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+    
     
     def create_hit(self, title=None, description=None, keywords=None, reward=0.00,
                    duration=60*60*24*7, approval_delay=None, qual_req=None, hit_type=None,
@@ -124,7 +164,7 @@ class MTurkConnection(AWSQueryConnection):
         Returns a comma+space-separated string of keywords from either a list or a string
         """
         if type(keywords) is list:
-            final_keywords = keywords.join(', ')
+            final_keywords = ', '.join(keywords)
         elif type(keywords) is str:
             final_keywords = keywords
         elif keywords is None:

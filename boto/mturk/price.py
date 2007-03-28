@@ -46,5 +46,3 @@ class Price:
     def get_as_params(self, label, ord=1):
         return {'%s.%d.Amount'%(label, ord) : str(self.amount),
                 '%s.%d.CurrencyCode'%(label, ord) : self.currency_code}
-
-            
