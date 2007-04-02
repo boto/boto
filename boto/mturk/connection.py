@@ -24,7 +24,7 @@ import xml.sax
 from boto import handler
 from boto.mturk.price import Price
 from boto.mturk.question import QuestionForm
-import boto.notification
+import boto.mturk.notification
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
