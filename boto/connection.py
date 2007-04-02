@@ -85,8 +85,8 @@ class AWSAuthConnection:
         if os.environ.has_key('http_proxy'): 
             self.proxy = os.environ['http_proxy'].split(':')
             self.proxy = proxy_port_pair[0]
-            self.use_proxy = (self.proxy != None)
-        
+            
+        self.use_proxy = (self.proxy != None)
         if (self.use_proxy and self.is_secure):
             raise AWSConnectionError("Unable to provide secure connection through proxy")
         
