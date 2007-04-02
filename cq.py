@@ -25,17 +25,19 @@ from boto.sqs.connection import SQSConnection
 from boto.exception import SQSError
 
 def usage():
-    print 'cq.py [-c] [-q queue_name] [-o output_file]'
+    print 'cq.py [-c] [-q queue_name] [-o output_file] [-t timeout]'
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hcq:o:',
-                                   ['help', 'clear', 'queue', 'output'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hcq:o:t:',
+                                   ['help', 'clear', 'queue',
+                                    'output', 'timeout'])
     except:
         usage()
         sys.exit(2)
     queue_name = ''
     output_file = ''
+    timeout = 30
     clear = False
     for o, a in opts:
         if o in ('-h', '--help'):
@@ -47,6 +49,8 @@ def main():
             output_file = a
         if o in ('-c', '--clear'):
             clear = True
+        if o in ('-t', '--timeout'):
+            timeout = int(a)
     c = SQSConnection()
     if queue_name:
         try:
@@ -71,7 +75,7 @@ def main():
         elif output_file:
             q.dump(output_file)
         else:
-            print q.id, q.count()
+            print q.id, q.count(vtimeout=timeout)
 
 if __name__ == "__main__":
     main()
