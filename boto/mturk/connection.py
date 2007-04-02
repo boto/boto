@@ -23,6 +23,8 @@ import urllib
 import xml.sax
 from boto import handler
 from boto.mturk.price import Price
+from boto.mturk.question import QuestionForm
+import boto.notification
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
@@ -31,7 +33,6 @@ class MTurkConnection(AWSQueryConnection):
     
     APIVersion = '2006-10-31'
     SignatureVersion = '1'
-    NOTIFICATION_VERSION = APIVersion # May not be the same as APIVersion in the future.
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
@@ -85,7 +86,7 @@ class MTurkConnection(AWSQueryConnection):
         
         notification_params = {'Destination': email,
                                'Transport': 'Email',
-                               'Version': MTurkConnection.NOTIFICATION_VERSION }
+                               'Version': boto.mturk.notification.NOTIFICATION_VERSION }
         
         # Set up dict of 'Notification.1.Transport' etc. values
         notification_rest_params = {}
@@ -116,12 +117,19 @@ class MTurkConnection(AWSQueryConnection):
     
     def create_hit(self, title=None, description=None, keywords=None, reward=0.00,
                    duration=60*60*24*7, approval_delay=None, qual_req=None, hit_type=None,
-                   question=None):
+                   question=None, questions=None):
         """
         Creates a new HIT.
         Returns HITId as a string.
         See: http://docs.amazonwebservices.com/AWSMechanicalTurkRequester/2006-10-31/ApiReference_CreateHITOperation.html
         """
+        
+        # handle single or multiple questions
+        if question is not None and questions is not None:
+            raise ValueError("Must specify either question (single Question instance) or questions (list), but not both")
+        if question is not None and questions is None:
+            questions = [question]
+        
         
         # Handle keywords
         final_keywords = MTurkConnection.get_keywords_as_string(keywords)
@@ -129,12 +137,15 @@ class MTurkConnection(AWSQueryConnection):
         # Handle price argument
         final_price = MTurkConnection.get_price_as_price(reward)
         
+        # Set up QuestionForm data structure
+        qf = QuestionForm(questions=questions)
+        
         # Handle basic arguments and set up params dict
         params = {'Title': title,
                   'Description' : description,
                   'Keywords': final_keywords,
                   'AssignmentDurationInSeconds' : duration,
-                  'Question': question.get_as_xml()}
+                  'Question': qf.get_as_xml() }
         
         if approval_delay is not None:
             params.update({'AutoApprovalDelayInSeconds': approval_delay })
@@ -153,8 +164,8 @@ class MTurkConnection(AWSQueryConnection):
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             
-            #return rs.HIT #.HITId
-            return rs # return entire ResultSet for testing purposes
+            return rs.HITId
+            #return rs # return entire ResultSet for testing purposes
         else:
             raise EC2ResponseError(response.status, response.reason, body)
     

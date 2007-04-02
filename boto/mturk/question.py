@@ -21,34 +21,12 @@
 
 class Question:
     
-    QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
-
-    QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s"><Question><QuestionIdentifier>%s</QuestionIdentifier>%s%s</Question></QuestionForm>"""
+    QUESTION_XML_TEMPLATE = """<Question><QuestionIdentifier>%s</QuestionIdentifier>%s%s</Question>"""
     
     def __init__(self, identifier, content, answer_spec): #amount=0.0, currency_code='USD'):
         self.identifier = identifier
         self.content = content
         self.answer_spec = answer_spec
-    
-    #def __repr__(self):
-    #    if self.formatted_price:
-    #        return self.formatted_price
-    #    else:
-    #        return str(self.amount)
-    
-    def startElement(self, name, attrs, connection):
-        return None
-    
-    def endElement(self, name, value, connection):
-        
-        #if name == 'Amount':
-        #    self.amount = float(value)
-        #elif name == 'CurrencyCode':
-        #    self.currency_code = value
-        #elif name == 'FormattedPrice':
-        #    self.formatted_price = value
-        
-        pass # What's this method for?  I don't get it.
     
     def get_as_params(self, label='Question', identifier=None):
         
@@ -58,9 +36,37 @@ class Question:
         return { label : self.get_as_xml() }
     
     def get_as_xml(self):
-        # Very basic QuestionForm template
-        values = (Question.QUESTIONFORM_SCHEMA_LOCATION, self.identifier, self.content.get_as_xml(), self.answer_spec.get_as_xml())
-        return Question.QUESTIONFORM_XML_TEMPLATE % values
+        ret = Question.QUESTION_XML_TEMPLATE % (self.identifier, self.content.get_as_xml(), self.answer_spec.get_as_xml())
+        return ret
+
+class QuestionForm:
+    
+    QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
+    QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s">%s</QuestionForm>""" # % (ns, questions_xml)
+    
+    def __init__(self, questions=None):
+        if questions is None or type(questions) is not list:
+            raise ValueError("Must pass a list of Question instances to QuestionForm constructor")
+        else:
+            self.questions = questions
+    
+    def get_as_xml(self):
+        questions_xml = "".join([q.get_as_xml() for q in self.questions])
+        return QuestionForm.QUESTIONFORM_XML_TEMPLATE % (QuestionForm.QUESTIONFORM_SCHEMA_LOCATION, questions_xml)
+    
+    #def startElement(self, name, attrs, connection):
+    #    return None
+    #
+    #def endElement(self, name, value, connection):
+    #    
+    #    #if name == 'Amount':
+    #    #    self.amount = float(value)
+    #    #elif name == 'CurrencyCode':
+    #    #    self.currency_code = value
+    #    #elif name == 'FormattedPrice':
+    #    #    self.formatted_price = value
+    #    
+    #    pass # What's this method for?  I don't get it.
 
 class QuestionContent:
     
@@ -194,4 +200,68 @@ class FileUploadAnswer:
         return FileUploadAnswer.FILEUPLOADANSWER_XML_TEMLPATE % (self.min, self.max)
 
 class SelectionAnswer:
-    pass #TODO
+    """
+    A class to generate SelectionAnswer XML data structures.
+    Does not yet implement Binary selection options.
+    """
+    SELECTIONANSWER_XML_TEMPLATE = """<SelectionAnswer>%s<Selections>%s</Selections></SelectionAnswer>""" # % (style_xml, selections_xml)
+    SELECTION_XML_TEMPLATE = """<Selection><SelectionIdentifier>%s</SelectionIdentifier>%s</Selection>""" # (identifier, value_xml)
+    SELECTION_VALUE_XML_TEMPLATE = """<%s>%s</%s>""" # (type, value, type)
+    STYLE_XML_TEMPLATE = """<StyleSuggestion>%s</StyleSuggestion>""" # (style)
+    ACCEPTED_STYLES = ['radiobutton', 'dropdown', 'checkbox', 'list', 'combobox', 'multichooser']
+    
+    def __init__(self, min=1, max=1, style=None, selections=None, type='text', other=False):
+        
+        if style is not None:
+            if style in SelectionAnswer.ACCEPTED_STYLES:
+                self.style_suggestion = style
+            else:
+                raise ValueError("style '%s' not recognized; should be one of %s" % (style, ', '.join(SelectionAnswer.ACCEPTED_STYLES)))
+        else:
+            self.style_suggestion = None
+        
+        if selections is None:
+            raise ValueError("SelectionAnswer.__init__(): selections must be a non-empty list of tuples")
+        else:
+            self.selections = selections
+        
+        self.min_selections = min
+        self.max_selections = max
+        
+        assert len(selections) >= self.min_selections, "# of selections is less than minimum of %d" % self.min_selections
+        #assert len(selections) <= self.max_selections, "# of selections exceeds maximum of %d" % self.max_selections
+        
+        self.type = type
+        
+        self.other = other
+    
+    def get_as_xml(self):
+        xml = ""
+        if self.type == 'text':
+            TYPE_TAG = "Text"
+        elif self.type == 'binary':
+            TYPE_TAG = "Binary"
+        else:
+            raise ValueError("illegal type: %s; must be either 'text' or 'binary'" % str(self.type))
+        
+        # build list of <Selection> elements
+        selections_xml = ""
+        for tpl in self.selections:
+            value_xml = SelectionAnswer.SELECTION_VALUE_XML_TEMPLATE % (TYPE_TAG, tpl[0], TYPE_TAG)
+            selection_xml = SelectionAnswer.SELECTION_XML_TEMPLATE % (tpl[1], value_xml)
+            selections_xml += selection_xml
+        
+        if self.other:
+            # add <OtherSelection> element
+            selections_xml += "<OtherSelection />"
+        
+        if self.style_suggestion is not None:
+            style_xml = SelectionAnswer.STYLE_XML_TEMPLATE % self.style_suggestion
+        else:
+            style_xml = ""
+        
+        ret = SelectionAnswer.SELECTIONANSWER_XML_TEMPLATE % (style_xml, selections_xml)
+        
+        # return XML
+        return ret
+        
