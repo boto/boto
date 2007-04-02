@@ -67,29 +67,29 @@ class AWSAuthConnection:
             port = PORTS_BY_SECURITY[is_secure]
         self.port = port
         self.server_name = '%s:%d' % (server, port)
-
+        
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
         else:
             if os.environ.has_key('AWS_ACCESS_KEY_ID'):
                 self.aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-
+        
         if aws_secret_access_key:
             self.aws_secret_access_key = aws_secret_access_key
         else:
             if os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
                 self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
-
+        
         self.proxy = proxy
         #This lowercase environment var is the same as used in urllib
         if os.environ.has_key('http_proxy'): 
             self.proxy = os.environ['http_proxy'].split(':')
             self.proxy = proxy_port_pair[0]
-	self.use_proxy = (self.proxy != None)
-
+            self.use_proxy = (self.proxy != None)
+        
         if (self.use_proxy and self.is_secure):
             raise AWSConnectionError("Unable to provide secure connection through proxy")
-
+        
         if proxy_port:
             self.proxy_port = proxy_port
         else:
@@ -100,16 +100,16 @@ class AWSAuthConnection:
                     self.proxy_port = self.port
                 else:
                     self.proxy_port = os.environ['http_proxy'].split(':')[1]
-
+        
         self.make_http_connection()
         self._last_rs = None
 
     def make_http_connection(self):
-	if (self.use_proxy):
-	    cnxn_point = self.proxy
+        if (self.use_proxy):
+            cnxn_point = self.proxy
             cnxn_port = int(self.proxy_port)
-	else:
-	    cnxn_point = self.server
+        else:
+            cnxn_point = self.server
             cnxn_port = self.port
         if self.debug:
             print 'establishing HTTP connection'
@@ -159,7 +159,7 @@ class AWSAuthConnection:
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
-
+        
         c_string = boto.utils.canonical_string(method, path, headers)
         if self.debug:
             print '\n\n%s\n\n' % c_string
@@ -167,7 +167,7 @@ class AWSAuthConnection:
             "AWS %s:%s" % (self.aws_access_key_id,
                            boto.utils.encode(self.aws_secret_access_key,
                                              c_string))
-        
+
 class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''
@@ -190,7 +190,7 @@ class AWSQueryConnection(AWSAuthConnection):
         params['SignatureVersion'] = self.SignatureVersion
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         keys = params.keys()
-	keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         qs = ''
         for key in keys:
             h.update(key)
@@ -198,10 +198,10 @@ class AWSQueryConnection(AWSAuthConnection):
             qs += key + '=' + urllib.quote(str(params[key])) + '&'
         signature = base64.b64encode(h.digest())
         qs = '/?' + qs + 'Signature=' + urllib.quote(signature)
-
-	if self.use_proxy:
+        
+        if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
-
+        
         self.connection.request('GET', qs)
         try:
             return self.connection.getresponse()
@@ -214,4 +214,4 @@ class AWSQueryConnection(AWSAuthConnection):
         for i in range(1, len(items)+1):
             params['%s.%d' % (label, i)] = items[i-1]
 
-        
+
