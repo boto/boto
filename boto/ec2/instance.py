@@ -66,6 +66,8 @@ class Instance:
         self.connection = connection
         self.id = None
         self.dns_name = None
+        self.public_dns_name = None
+        self.private_dns_name = None
         self.state = None
         self.state_code = None
         self.key_name = None
@@ -84,8 +86,11 @@ class Instance:
             self.id = value
         elif name == 'imageId':
             self.image_id = value
-        elif name == 'dnsName':
-            self.dns_name = value
+        elif name == 'dnsName' or name == 'publicDnsName':
+            self.dns_name = value           # backwards compatibility
+            self.public_dns_name = value
+        elif name == 'privateDnsName':
+            self.private_dns_name = value
         elif name == 'keyName':
             self.key_name = value
         elif name == 'amiLaunchIndex':
@@ -105,6 +110,8 @@ class Instance:
         self.updated = updated
         if hasattr(updated, 'dns_name'):
             self.dns_name = updated.dns_name
+        if hasattr(updated, 'private_dns_name'):
+            self.private_dns_name = updated.private_dns_name
         if hasattr(updated, 'ami_launch_index'):
             self.ami_launch_index = updated.ami_launch_index
         self.shutdown_state = updated.shutdown_state
