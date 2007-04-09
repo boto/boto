@@ -65,7 +65,7 @@ class MTurkConnection(AWSQueryConnection):
         params = {'Title' : title,
                   'Description' : description,
                   'AssignmentDurationInSeconds' : duration}
-        params.update(reward.get_as_params('Reward'))
+        params.update(MTurkConnection.get_price_as_price(reward).get_as_params('Reward'))
         response = self.make_request('RegisterHITType', params)
         body = response.read()
         if response.status == 200:
