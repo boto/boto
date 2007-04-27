@@ -25,7 +25,7 @@ from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
-from boto.resultset import S3BucketListResultSet
+from boto.s3.bucketlistresultset import BucketListResultSet
 import boto.utils
 import xml.sax
 import urllib
@@ -52,7 +52,7 @@ class Bucket:
         self.key_class = key_class
 
     def __iter__(self):
-        return S3BucketListResultSet(self)
+        return BucketListResultSet(self)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -105,7 +105,7 @@ class Bucket:
     def list(self, prefix="", delimiter=""):
         """
         List key objects within a bucket.  This returns an instance of an
-        S3BucketListResultSet that automatically handles all of the result
+        BucketListResultSet that automatically handles all of the result
         paging, etc. from S3.  You just need to keep iterating until
         there are no more results.
         Called with no arguments, this will return an iterator object across
@@ -119,7 +119,7 @@ class Bucket:
         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
         for more details.
         """
-        return S3BucketListResultSet(self, prefix, delimiter)
+        return BucketListResultSet(self, prefix, delimiter)
 
     # params can be one of: prefix, marker, max-keys, delimiter
     # as defined in S3 Developer's Guide, however since max-keys is not
