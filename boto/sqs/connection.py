@@ -67,6 +67,13 @@ class SQSConnection(AWSAuthConnection):
         xml.sax.parseString(body, h)
         return rs
 
+    def get_queue(self, queue_name):
+        rs = self.get_all_queues(queue_name)
+        if len(rs) == 1:
+            return rs[0]
+        else:
+            return None
+
     def create_queue(self, queue_name, visibility_timeout=None):
         path = '/?QueueName=%s' % queue_name
         if visibility_timeout:

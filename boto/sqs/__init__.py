@@ -20,4 +20,8 @@
 # IN THE SOFTWARE.
 #
 
+from connection import SQSConnection as Connection
+from queue import Queue
+from message import Message, MHMessage
 
+__all__ = ['Connection', 'Queue', 'Message', 'MHMessage']

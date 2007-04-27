@@ -160,6 +160,35 @@ class Queue:
         fp.close()
         return n
 
+    def save_to_s3(self, bucket):
+        """
+        Read all messages from the queue and persist them to S3.
+        Messages are stored in the S3 bucket using a naming scheme of:
+            <queue_id>/<message_id>
+        """
+        n = 0
+        m = self.read()
+        while m:
+            n += 1
+            key = bucket.new_key('%s/%s' % (self.id, m.id))
+            key.set_contents_from_string(m.get_body())
+            self.delete_message(m)
+            m = self.read()
+        return n
+
+    def load_from_s3(self, bucket):
+        """
+        Load messages previously saved to S3.
+        """
+        n = 0
+        prefix = '%s/' % self.id
+        rs = bucket.list(prefix=prefix)
+        for key in rs:
+            n += 1
+            m = self.new_message(key.get_contents_as_string())
+            self.write(m)
+        return n
+
     def load(self, file_name, sep='\n'):
         """Utility function to load messages from a file to a queue"""
         fp = open(file_name, 'rb')
@@ -178,4 +207,5 @@ class Queue:
             l = fp.readline()
         fp.close()
         return n
+    
     
