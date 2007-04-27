@@ -25,21 +25,11 @@ from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
+from boto.resultset import S3BucketListResultSet
 import boto.utils
 import xml.sax
 import urllib
 
-def bucket_lister(bucket):
-    more_results = True
-    marker = ''
-    while more_results:
-        rs = bucket.get_all_keys(marker=marker)
-        for k in rs:
-            yield k
-        marker = k.key
-        more_results= rs.is_truncated
-        print 'marker=%s, more_results=%s' % (marker, more_results)
-        
 class Bucket:
 
     BucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
@@ -62,7 +52,7 @@ class Bucket:
         self.key_class = key_class
 
     def __iter__(self):
-        return bucket_lister(self)
+        return S3BucketListResultSet(self)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -76,9 +66,22 @@ class Bucket:
             setattr(self, name, value)
 
     def set_key_class(self, key_class):
+        """
+        Set the Key class associated with this bucket.  By default, this
+        would be the boto.s3.key.Key class but if you want to subclass that
+        for some reason this allows you to associate your new class with a
+        bucket so that when you call bucket.new_key() or when you get a listing
+        of keys in the bucket you will get an instances of your key class
+        rather than the default.
+        """
         self.key_class = key_class
 
     def lookup(self, key):
+        """
+        Check to see if a particular key exists within the bucket.  This
+        method uses a HEAD request to check for the existance of the key.
+        Returns: An instance of a Key object or None
+        """
         path = '/%s/%s' % (self.name, key)
         response = self.connection.make_request('HEAD', urllib.quote(path))
         if response.status == 200:
@@ -98,6 +101,25 @@ class Bucket:
             response.chunked = 0
             body = response.read()
             return None
+
+    def list(self, prefix="", delimiter=""):
+        """
+        List key objects within a bucket.  This returns an instance of an
+        S3BucketListResultSet that automatically handles all of the result
+        paging, etc. from S3.  You just need to keep iterating until
+        there are no more results.
+        Called with no arguments, this will return an iterator object across
+        all keys within the bucket.
+        The prefix parameter allows you to limit the listing to a particular
+        prefix.  For example, if you call the method with prefix='/foo/'
+        then the iterator will only cycle through the keys that begin with
+        the string '/foo/'.
+        The delimiter parameter can be used in conjunction with the prefix
+        to allow you to organize and browse your keys hierarchically. See:
+        http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
+        for more details.
+        """
+        return S3BucketListResultSet(self, prefix, delimiter)
 
     # params can be one of: prefix, marker, max-keys, delimiter
     # as defined in S3 Developer's Guide, however since max-keys is not
