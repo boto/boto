@@ -34,10 +34,11 @@ class SQSConnection(AWSAuthConnection):
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0):
+                 host=DefaultHost, debug=0, https_connection_factory=None):
         AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port, debug)
+                                   is_secure, port, proxy, proxy_port, debug,
+                                   https_connection_factory)
 
     def make_request(self, method, path, headers=None, data=''):
         # add auth header
