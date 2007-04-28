@@ -55,8 +55,10 @@ PORTS_BY_SECURITY = { True: 443, False: 80 }
 class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
                  aws_secret_access_key=None, is_secure=True, port=None,
-                 proxy=None, proxy_port=None, debug=False):
+                 proxy=None, proxy_port=None, debug=False,
+                 https_connection_factory=None):
         self.is_secure = is_secure
+        self.https_connection_factory = https_connection_factory
         if (is_secure):
             self.protocol = 'https'
         else:
@@ -114,8 +116,11 @@ class AWSAuthConnection:
         if self.debug:
             print 'establishing HTTP connection'
         if (self.is_secure):
-            self.connection = httplib.HTTPSConnection("%s:%d" % (cnxn_point,
-                                                                 cnxn_port))
+            if self.https_connection_factory:
+                self.connection = self.https_connection_factory("%s:%d" % (cnxn_point, cnxn_port))
+            else:
+                self.connection = httplib.HTTPSConnection("%s:%d" % (cnxn_point,
+                                                                     cnxn_port))
         else:
             self.connection = httplib.HTTPConnection("%s:%d" % (cnxn_point,
                                                                 cnxn_port))
@@ -175,10 +180,11 @@ class AWSQueryConnection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host=None, debug=0):
+                 host=None, debug=0, https_connection_factory=None):
         AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port, debug)
+                                   is_secure, port, proxy, proxy_port, debug,
+                                   https_connection_factory)
 
     def make_request(self, action, params=None):
         if params == None:
