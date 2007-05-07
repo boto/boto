@@ -52,18 +52,18 @@ class ResultProcessor:
         line = ','.join(values)
         self.log_fp.write(line+'\n')
 
-    def get_results(self, path):
+    def get_results(self, path, get_file=True):
         total_files = 0
         total_time = 0
         if not os.path.isdir(path):
             os.mkdir(path)
-        m = self.service.get_result(path, original_name=True, get_file=False)
+        m = self.service.get_result(path, original_name=True, get_file=get_file)
         while m:
             total_files += 1
             self.log_message(m, path)
             self.calculate_stats(m)
             m = self.service.get_result(path, original_name=True,
-                                        get_file=False)
+                                        get_file=get_file)
         self.log_fp.close()
         print '%d results successfully retrieved.' % total_files
         self.avg_time = float(self.total_time)/total_files
@@ -80,17 +80,20 @@ def usage():
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hq:',
-                                   ['help', 'queue'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hnq:',
+                                   ['help', 'no_retrieve', 'queue'])
     except:
         usage()
         sys.exit(2)
     queue_name = None
     notify = False
+    get_file = True
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
             sys.exit()
+        if o in ('-n', '--no-retrieve'):
+            get_file = False
         if o in ('-q', '--queue'):
             queue_name = a
     if len(args) == 0:
@@ -100,7 +103,7 @@ def main():
     if len(args) > 1:
         tags = args[1]
     s = ResultProcessor(queue_name)
-    s.get_results(path)
+    s.get_results(path, get_file)
     return 1
 
 if __name__ == "__main__":

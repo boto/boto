@@ -34,6 +34,10 @@ import md5
 from socket import gethostname
 import mimetypes
 
+# Timezone formats
+ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
+RFC1123 = '%a, %d %b %Y %X GMT'
+
 class Service:
 
     # Number of times to retry failed requests to S3 or SQS
@@ -111,16 +115,6 @@ class Service:
             server.sendmail(self.notify_email, self.notify_email, body)
             server.quit()
         
-    def compute_key(self, filename):
-        fp = open(filename, 'rb')
-        m = md5.new()
-        s = fp.read(4096)
-        while s:
-            m.update(s)
-            s = fp.read(4096)
-        fp.close()
-        return m.hexdigest()
-
     def split_key(key):
         if key.find(';') < 0:
             t = (key, '')
@@ -159,8 +153,18 @@ class Service:
             t = os.path.split(key.path)
             m['OriginalLocation'] = t[0]
             m['OriginalFileName'] = t[1]
-        m['Date'] = time.strftime("%a, %d %b %Y %X GMT",
-                                  time.gmtime())
+            mime_type = mimetypes.guess_type(t[1])[0]
+            if mime_type == None:
+                mime_type = 'application/octet-stream'
+            m['Content-Type'] = mime_type
+            s = os.stat(key.path)
+            t = time.gmtime(s[7])
+            m['FileAccessedDate'] = time.strftime(ISO8601, t)
+            t = time.gmtime(s[8])
+            m['FileModifiedDate'] = time.strftime(ISO8601, t)
+            t = time.gmtime(s[9])
+            m['FileCreateDate'] = time.strftime(ISO8601, t)
+        m['Date'] = time.strftime(RFC1123, time.gmtime())
         m['Host'] = gethostname()
         m['Bucket'] = key.bucket.name
         m['InputKey'] = key.key
