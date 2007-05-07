@@ -64,16 +64,18 @@ class ResultProcessor:
             self.calculate_stats(m)
             m = self.service.get_result(path, original_name=True,
                                         get_file=get_file)
-        self.log_fp.close()
+        if self.log_fp:
+            self.log_fp.close()
         print '%d results successfully retrieved.' % total_files
-        self.avg_time = float(self.total_time)/total_files
-        print 'Minimum Processing Time: %d' % self.min_time.seconds
-        print 'Maximum Processing Time: %d' % self.max_time.seconds
-        print 'Average Processing Time: %f' % self.avg_time
-        self.elapsed_time = self.latest_time-self.earliest_time
-        print 'Elapsed Time: %d' % self.elapsed_time.seconds
-        tput = 1.0 / ((self.elapsed_time.seconds/60.0) / total_files)
-        print 'Throughput: %f transactions / minute' % tput
+        if total_files > 0:
+            self.avg_time = float(self.total_time)/total_files
+            print 'Minimum Processing Time: %d' % self.min_time.seconds
+            print 'Maximum Processing Time: %d' % self.max_time.seconds
+            print 'Average Processing Time: %f' % self.avg_time
+            self.elapsed_time = self.latest_time-self.earliest_time
+            print 'Elapsed Time: %d' % self.elapsed_time.seconds
+            tput = 1.0 / ((self.elapsed_time.seconds/60.0) / total_files)
+            print 'Throughput: %f transactions / minute' % tput
         
 def usage():
     print 'get_results.py  [-q queuename] path'
