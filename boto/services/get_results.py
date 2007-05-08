@@ -78,7 +78,10 @@ class ResultProcessor:
             print 'Throughput: %f transactions / minute' % tput
         
 def usage():
-    print 'get_results.py  [-q queuename] path'
+    print 'get_results.py  [-q queuename] [-n] path'
+    print '\tif -n is specified, the result files will not be retrieved'
+    print '\tfrom S3, otherwise the result files will be downloaded to'
+    print '\tthe specified path'
   
 def main():
     try:
