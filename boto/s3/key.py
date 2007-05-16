@@ -83,7 +83,7 @@ class Key:
             setattr(self, name, value)
 
     def exists(self):
-        return bool(self.bucket.lookup(self.name))
+        return bool(self.bucket.lookup(self.key))
 
     def get_metadata(self, key):
         return self.metadata[key]
