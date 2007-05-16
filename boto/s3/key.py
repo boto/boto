@@ -51,14 +51,6 @@ class Key:
         self.base64md5 = None
         self.path = None
 
-    def __getattr__(self, name):
-        if name == 'name':
-            return self.key
-
-    def __setattr__(self, name, value):
-        if name == 'name':
-            self.key = value
-
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
             self.owner = User(self)
@@ -81,9 +73,6 @@ class Key:
             pass
         else:
             setattr(self, name, value)
-
-    def exists(self):
-        return bool(self.bucket.lookup(self.key))
 
     def get_metadata(self, key):
         return self.metadata[key]
