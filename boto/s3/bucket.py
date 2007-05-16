@@ -52,7 +52,7 @@ class Bucket:
         self.key_class = key_class
 
     def __iter__(self):
-        return BucketListResultSet(self)
+        return iter(BucketListResultSet(self))
 
     def startElement(self, name, attrs, connection):
         return None
