@@ -130,6 +130,7 @@ class Key:
             self.bucket.connection.make_http_connection()
             fp.seek(0)
             self.send_file(fp, headers)
+            return
         except Exception, e:
             print 'Caught an unexpected exception'
             self.bucket.connection.make_http_connection()
