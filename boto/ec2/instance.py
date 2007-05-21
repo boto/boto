@@ -110,6 +110,7 @@ class Instance:
         self.updated = updated
         if hasattr(updated, 'dns_name'):
             self.dns_name = updated.dns_name
+            self.public_dns_name = updated.dns_name
         if hasattr(updated, 'private_dns_name'):
             self.private_dns_name = updated.private_dns_name
         if hasattr(updated, 'ami_launch_index'):
