@@ -76,13 +76,19 @@ class Bucket:
         """
         self.key_class = key_class
 
-    def lookup(self, key):
+    def lookup(self, key_name):
+        """
+        Deprecated: Please use get_key method.
+        """
+        return self.get_key(key_name)
+        
+    def get_key(self, key_name):
         """
         Check to see if a particular key exists within the bucket.  This
         method uses a HEAD request to check for the existance of the key.
         Returns: An instance of a Key object or None
         """
-        path = '/%s/%s' % (self.name, key)
+        path = '/%s/%s' % (self.name, key_name)
         response = self.connection.make_request('HEAD', urllib.quote(path))
         if response.status == 200:
             body = response.read()
@@ -92,7 +98,7 @@ class Bucket:
             k.content_type = response.getheader('content-type')
             k.last_modified = response.getheader('last-modified')
             k.size = response.getheader('content-length')
-            k.key = key
+            k.name = key_name
             return k
         else:
             # -- gross hack --
@@ -121,11 +127,15 @@ class Bucket:
         """
         return BucketListResultSet(self, prefix, delimiter)
 
-    # params can be one of: prefix, marker, max-keys, delimiter
-    # as defined in S3 Developer's Guide, however since max-keys is not
-    # a legal variable in Python you have to pass maxkeys and this
-    # method will munge it (Ugh!)
     def get_all_keys(self, headers=None, **params):
+        """
+        Deprecated: This is better handled now by list method.
+        
+        params can be one of: prefix, marker, max-keys, delimiter
+        as defined in S3 Developer's Guide, however since max-keys is not
+        a legal variable in Python you have to pass maxkeys and this
+        method will munge it (Ugh!)
+        """
         path = '/%s' % urllib.quote(self.name)
         l = []
         for k,v in params.items():
@@ -145,8 +155,8 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason)
 
-    def new_key(self, key=None):
-        return self.key_class(self, key)
+    def new_key(self, key_name=None):
+        return self.key_class(self, key_name)
 
     def generate_url(self, expires_in, method='GET', headers=None):
         return self.connection.generate_url(expires_in, method,
@@ -155,7 +165,7 @@ class Bucket:
     def delete_key(self, key_name):
         # for backward compatibility, previous version expected a Key object
         if isinstance(key_name, self.key_class):
-            key_name = key_name.key
+            key_name = key_name.name
         path = '/%s/%s' % (self.name, key_name)
         response = self.connection.make_request('DELETE',
                                                 urllib.quote(path))
@@ -190,7 +200,7 @@ class Bucket:
     def set_acl(self, acl_or_str, key_name=None):
         # just in case user passes a Key object rather than key name
         if isinstance(key_name, self.key_class):
-            key_name = key_name.key
+            key_name = key_name.name
         if isinstance(acl_or_str, Policy):
             self.set_xml_acl(acl_or_str.to_xml(), key_name)
         else:
@@ -199,7 +209,7 @@ class Bucket:
     def get_acl(self, key_name=None):
         # just in case user passes a Key object rather than key name
         if isinstance(key_name, self.key_class):
-            key_name = key_name.key
+            key_name = key_name.name
         if key_name:
             path = '/%s/%s' % (self.name, key_name)
         else:

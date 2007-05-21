@@ -37,9 +37,9 @@ class Key:
 
     DefaultContentType = 'application/octet-stream'
 
-    def __init__(self, bucket=None, key=None):
+    def __init__(self, bucket=None, name=None):
         self.bucket = bucket
-        self.key = key
+        self.name = name
         self.metadata = {}
         self.content_type = self.DefaultContentType
         self.filename = None
@@ -51,6 +51,18 @@ class Key:
         self.base64md5 = None
         self.path = None
 
+    def __getattr__(self, name):
+        if name == 'key':
+            return self.name
+        else:
+            raise AttributeError
+
+    def __setattr__(self, name, value):
+        if name == 'key':
+            self.__dict__['name'] = value
+        else:
+            self.__dict__[name] = value
+
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
             self.owner = User(self)
@@ -60,7 +72,7 @@ class Key:
 
     def endElement(self, name, value, connection):
         if name == 'Key':
-            self.key = value
+            self.name = value
         elif name == 'ETag':
             self.etag = value
         elif name == 'LastModified':
@@ -74,17 +86,23 @@ class Key:
         else:
             setattr(self, name, value)
 
-    def get_metadata(self, key):
-        return self.metadata[key]
+    def exists(self):
+        return bool(self.bucket.lookup(self.name))
 
-    def set_metadata(self, key, value):
-        self.metadata[key] = value
+    def delete(self):
+        return self.bucket.delete_key(self.name)
+
+    def get_metadata(self, name):
+        return self.metadata[name]
+
+    def set_metadata(self, name, value):
+        self.metadata[name] = value
 
     def update_metadata(self, d):
         self.metadata.update(d)
     
     def generate_url(self, expires_in, method='GET', headers=None):
-        path = '/%s/%s' % (self.bucket.name, self.key)
+        path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
         return self.bucket.connection.generate_url(expires_in, method,
                                                    path, headers)
@@ -105,7 +123,7 @@ class Key:
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = self.size
         final_headers = boto.utils.merge_meta(headers, self.metadata);
-        path = '/%s/%s' % (self.bucket.name, self.key)
+        path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
         self.bucket.connection.add_aws_auth_header(final_headers, 'PUT', path)
         #the prepending of the protocol and true host must occur after
@@ -159,10 +177,10 @@ class Key:
             self.path = fp.name
         if self.bucket != None:
             self._compute_md5(fp)
-            if self.key == None:
-                self.key = self.md5
+            if self.name == None:
+                self.name = self.md5
             if not replace:
-                k = self.bucket.lookup(self.key)
+                k = self.bucket.lookup(self.name)
                 if k:
                     return
             self.send_file(fp, headers)
@@ -182,7 +200,7 @@ class Key:
             headers = {}
         http_conn = self.bucket.connection.connection
         final_headers = boto.utils.merge_meta(headers, {})
-        path = '/%s/%s' % (self.bucket.name, self.key)
+        path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
         self.bucket.connection.add_aws_auth_header(final_headers, 'GET', path)
         #the prepending of the protocol and true host must occur after
@@ -239,10 +257,10 @@ class Key:
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str):
         if self.bucket != None:
-            self.bucket.set_acl(acl_str, self.key)
+            self.bucket.set_acl(acl_str, self.name)
 
     def get_acl(self):
         if self.bucket != None:
-            return self.bucket.get_acl(self.key)
+            return self.bucket.get_acl(self.name)
 
     
