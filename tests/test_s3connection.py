@@ -42,7 +42,7 @@ class S3ConnectionTest (unittest.TestCase):
         bucket = c.get_bucket(bucket_name)
         # create a new key and store it's content from a string
         k = bucket.new_key()
-        k.key = 'foobar'
+        k.name = 'foobar'
         s1 = 'This is a test of file upload and download'
         s2 = 'This is a second string to test file upload and download'
         k.set_contents_from_string(s1)
@@ -59,17 +59,17 @@ class S3ConnectionTest (unittest.TestCase):
         # for the first one, let's override the content type
         phony_mimetype = 'application/x-boto-test'
         headers = {'Content-Type': phony_mimetype}
-        k.key = 'foo/bar'
+        k.name = 'foo/bar'
         k.set_contents_from_string(s1, headers)
-        k.key = 'foo/bas'
+        k.name = 'foo/bas'
         k.set_contents_from_filename('foobar')
-        k.key = 'foo/bat'
+        k.name = 'foo/bat'
         k.set_contents_from_string(s1)
-        k.key = 'fie/bar'
+        k.name = 'fie/bar'
         k.set_contents_from_string(s1)
-        k.key = 'fie/bas'
+        k.name = 'fie/bas'
         k.set_contents_from_string(s1)
-        k.key = 'fie/bat'
+        k.name = 'fie/bat'
         k.set_contents_from_string(s1)
         # try resetting the contents to another value
         md5 = k.md5
@@ -90,7 +90,7 @@ class S3ConnectionTest (unittest.TestCase):
         assert k == None
         # try some metadata stuff
         k = bucket.new_key()
-        k.key = 'has_metadata'
+        k.name = 'has_metadata'
         mdkey1 = 'meta1'
         mdval1 = 'This is the first metadata value'
         k.set_metadata(mdkey1, mdval1)
@@ -102,7 +102,7 @@ class S3ConnectionTest (unittest.TestCase):
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
         k = bucket.new_key()
-        k.key = 'has_metadata'
+        k.name = 'has_metadata'
         k.get_contents_as_string()
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
@@ -111,7 +111,7 @@ class S3ConnectionTest (unittest.TestCase):
         rs = bucket.get_all_keys()
         num_keys = len(rs)
         k = bucket.new_key()
-        k.key = 'testnewline\n'
+        k.name = 'testnewline\n'
         k.set_contents_from_string('This is a test')
         rs = bucket.get_all_keys()
         assert len(rs) == num_keys + 1
