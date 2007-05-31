@@ -36,7 +36,9 @@ class SQSConnectionTest (unittest.TestCase):
         print '--- running SQSConnection tests ---'
         c = SQSConnection()
         rs = c.get_all_queues()
-        num_queues = len(rs)
+        num_queues = 0
+        for q in rs:
+            num_queues += 1
     
         # try illegal name
         try:
@@ -50,12 +52,26 @@ class SQSConnectionTest (unittest.TestCase):
         queue = c.create_queue(queue_name, timeout)
         time.sleep(10)
         rs  = c.get_all_queues()
-        assert len(rs) == num_queues+1
-        assert queue.count() == 0
+        i = 0
+        for q in rs:
+            i += 1
+        assert i == num_queues+1
+        assert queue.count_slow() == 0
 
         # check the visibility timeout
         t = queue.get_timeout()
         assert t == timeout, '%d != %d' % (t, timeout)
+
+        # now try to get queue attributes
+        a = q.get_attributes()
+        assert a.has_key('ApproximateNumberOfMessages')
+        assert a.has_key('VisibilityTimeout')
+        a = q.get_attributes('ApproximateNumberOfMessages')
+        assert a.has_key('ApproximateNumberOfMessages')
+        assert not a.has_key('VisibilityTimeout')
+        a = q.get_attributes('VisibilityTimeout')
+        assert not a.has_key('ApproximateNumberOfMessages')
+        assert a.has_key('VisibilityTimeout')
 
         # now change the visibility timeout
         timeout = 45
@@ -68,7 +84,7 @@ class SQSConnectionTest (unittest.TestCase):
         message = queue.new_message(message_body)
         queue.write(message)
         time.sleep(5)
-        assert queue.count() == 1
+        assert queue.count_slow() == 1
         time.sleep(10)
 
         # now read the message from the queue with a 10 second timeout
@@ -88,12 +104,15 @@ class SQSConnectionTest (unittest.TestCase):
         # now delete the message
         queue.delete_message(message)
         time.sleep(5)
-        assert queue.count() == 0
+        assert queue.count_slow() == 0
 
         # now delete that queue
         c.delete_queue(queue)
         rs = c.get_all_queues()
-        assert len(rs) == num_queues
+        i = 0
+        for q in rs:
+            i += 1
+        assert i == num_queues
 
         print '--- tests completed ---'
     
