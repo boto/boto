@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+11# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -108,8 +108,7 @@ class Service:
             return
         lq = self.get_queue(self.log_queue_name)
         m = lq.new_message()
-        t = time.gmtime(s[7])
-        m['Timestamp'] = time.strftime(ISO8601, t)
+        m['Timestamp'] = time.strftime(ISO8601, time.gmtime())
         for key in params:
             m[key] = params[key]
         lq.write(m)
