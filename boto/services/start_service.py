@@ -5,7 +5,7 @@ from boto.utils import get_instance_userdata
 
 def usage():
     print 'SYNOPSIS'
-    print '\tstart_service.py -m module -c class_name [-r] [-a ami_id] [-e email_address] [-k key_name] [-l log_queue_name] [-n num_instances] [-w working_dir] [-i input_queue_name] [-o output_queue_name] [-n num_instances]'
+    print '\tstart_service.py -m module -c class_name [-r] [-p] [-a ami_id] [-e email_address] [-k key_name] [-l log_queue_name] [-n num_instances] [-w working_dir] [-i input_queue_name] [-o output_queue_name]'
     sys.exit()
 
 def get_userdata(params):
@@ -26,11 +26,11 @@ def find_class(params):
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:c:e:hi:k:l:m:n:o:rw:',
+        opts, args = getopt.getopt(sys.argv[1:], 'a:c:e:hi:k:l:m:n:o:prw:',
                                    ['ami', 'class', 'email', 'help',
                                     'inputqueue', 'keypair', 'logqueue',
                                     'module', 'numinstances', 'outputqueue',
-                                    'remote', 'working_dir'])
+                                    'persist', 'remote', 'working_dir'])
     except:
         usage()
     params = {'module_name' : None,
@@ -41,6 +41,7 @@ def main():
               'log_queue_name' : None,
               'working_dir' : None,
               'keypair' : None,
+              'on_completion' : 'shutdown',
               'ami' : None}
     remote = None
     ami = None
@@ -65,6 +66,8 @@ def main():
             params['num_instances'] = int(a)
         if o in ('-o', '--outputqueue'):
             params['output_queue_name'] = a
+        if o in ('-p', '--persist'):
+            params['on_completion'] = 'persist'
         if o in ('-r', '--remote'):
             remote = True
         if o in ('-w', '--working_dir'):

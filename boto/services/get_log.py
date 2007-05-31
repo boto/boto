@@ -24,7 +24,7 @@ def main():
             log_file_name = a
     c = boto.connect_sqs()
     q = c.get_queue(log_queue_name)
-    q.dump(log_file_name)
+    q.save(log_file_name)
 
 if __name__ == "__main__":
     main()

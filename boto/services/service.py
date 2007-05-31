@@ -60,8 +60,8 @@ class Service:
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  input_queue_name=None, output_queue_name=None,
-                 do_shutdown=True, notify_email=None, read_userdata=True,
-                 working_dir=None, log_queue_name=None):
+                 on_completion='shutdown', notify_email=None,
+                 read_userdata=True, working_dir=None, log_queue_name=None):
         self.meta_data = {}
         self.queue_cache = {}
         self.bucket_cache = {}
@@ -71,7 +71,7 @@ class Service:
         self.output_queue_name = output_queue_name
         self.log_queue_name = log_queue_name
         self.notify_email = notify_email
-        self.do_shutdown = do_shutdown
+        self.on_completion = on_completion
         # now override any values with instance user data passed on startup
         if read_userdata:
             self.get_userdata()
@@ -108,7 +108,8 @@ class Service:
             return
         lq = self.get_queue(self.log_queue_name)
         m = lq.new_message()
-        m['Date'] = time.strftime(RFC1123, time.gmtime())
+        t = time.gmtime(s[7])
+        m['Timestamp'] = time.strftime(ISO8601, t)
         for key in params:
             m[key] = params[key]
         lq.write(m)
@@ -234,7 +235,7 @@ class Service:
         return m
 
     def read_message(self):
-        self.log(method='get_bucket')
+        self.log(method='read_message')
         message = None
         successful = False
         num_tries = 0
@@ -340,11 +341,12 @@ class Service:
         pass
 
     def shutdown(self):
-        if self.do_shutdown and self.meta_data.has_key('instance-id'):
-            time.sleep(60)
-            c = EC2Connection(self.aws_access_key_id,
-                              self.aws_secret_access_key)
-            c.terminate_instances([self.meta_data['instance-id']])
+        if self.on_completion == 'shutdown':
+            if self.meta_data.has_key('instance-id'):
+                time.sleep(60)
+                c = EC2Connection(self.aws_access_key_id,
+                                  self.aws_secret_access_key)
+                c.terminate_instances([self.meta_data['instance-id']])
 
     def run(self, notify=False):
         self.notify('Service Starting')
