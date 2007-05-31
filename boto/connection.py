@@ -102,6 +102,8 @@ class AWSAuthConnection:
                     self.proxy_port = self.port
                 else:
                     self.proxy_port = os.environ['http_proxy'].split(':')[1]
+            else:
+                self.proxy_port = None
         
         self.make_http_connection()
         self._last_rs = None
@@ -186,7 +188,9 @@ class AWSQueryConnection(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port, debug,
                                    https_connection_factory)
 
-    def make_request(self, action, params=None):
+    def make_request(self, action, params=None, path=None, verb='GET'):
+        if path == None:
+            path = '/'
         if params == None:
             params = {}
         h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
@@ -203,12 +207,12 @@ class AWSQueryConnection(AWSAuthConnection):
             h.update(str(params[key]))
             qs += key + '=' + urllib.quote(str(params[key])) + '&'
         signature = base64.b64encode(h.digest())
-        qs = '/?' + qs + 'Signature=' + urllib.quote(signature)
+        qs = path + '?' + qs + 'Signature=' + urllib.quote(signature)
         
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
         
-        self.connection.request('GET', qs)
+        self.connection.request(verb, qs)
         try:
             return self.connection.getresponse()
         except httplib.HTTPException, e:

@@ -36,6 +36,7 @@ class Queue:
         self.connection = connection
         self.url = url
         self.message_class = message_class
+        self.visibility_timeout = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -53,38 +54,80 @@ class Queue:
     def set_message_class(self, message_class):
         self.message_class = message_class
 
-    # get the visibility timeout for the queue
+    def get_attributes(self, attributes='All'):
+        """
+        Retrieves attributes about this queue object and returns
+        them in an Attribute instance (subclass of a Dictionary).
+        Inputs:
+            attributes - A string containing
+                         All|ApproximateNumberOfMessages|VisibilityTimeout
+                         Default value is "All"
+        Returns:
+            An Attribute object which is a mapping type holding the
+            requested name/value pairs
+        """
+        return self.connection.get_queue_attributes(self.id, attributes)
+
+    def set_attribute(self, attribute, value):
+        """
+        Set a new value for an attribute of the Queue.
+        Inputs:
+            attribute - The name of the attribute you want to set.  The
+                        only valid value at this time is: VisibilityTimeout
+                value - The new value for the attribute.
+                        For VisibilityTimeout the value must be an
+                        integer number of seconds from 0 to 86400.
+        Returns:
+            Boolean True if successful, otherwise False.
+        """
+        return self.connection.set_queue_attribute(self.id, attribute, value)
+
     def get_timeout(self):
-        path = '%s' % self.id
-        response = self.connection.make_request('GET', path)
-        body = response.read()
-        if response.status >= 300:
-            raise SQSError(response.status, response.reason, body)
-        handler = XmlHandler(self, self.connection)
-        xml.sax.parseString(body, handler)
-        return self.visibility_timeout
+        """
+        Get the visibility timeout for the queue.
+        Inputs:
+            None
+        Returns:
+            The number of seconds as an integer.
+        """
+        a = self.get_attributes('VisibilityTimeout')
+        return int(a['VisibilityTimeout'])
 
-    # set the visibility timeout for the queue
     def set_timeout(self, visibility_timeout):
-        path = '%s?VisibilityTimeout=%d' % (self.id, visibility_timeout)
-        response = self.connection.make_request('PUT', path)
-        body = response.read()
-        if response.status >= 300:
-            raise SQSError(response.status, response.reason, body)
-        handler = XmlHandler(self, self.connection)
-        xml.sax.parseString(body, handler)
-        self.visibility_timeout = visibility_timeout
+        """
+        Set the visibility timeout for the queue.
+        Inputs:
+            visibility_timeout - The desired timeout in seconds
+        Returns:
+            Nothing
+        """
+        retval = self.set_attribute('VisibilityTimeout', visibility_timeout)
+        if retval:
+            self.visibility_timeout = visibility_timeout
+        return retval
 
-    # convenience method that returns a single message or None if queue is empty
     def read(self, visibility_timeout=None):
+        """
+        Read a single message from the queue.
+        Inputs:
+            visibility_timeout - The timeout for this message in seconds
+        Returns:
+            A single message or None if queue is empty
+        """
         rs = self.get_messages(1, visibility_timeout)
         if len(rs) == 1:
             return rs[0]
         else:
             return None
 
-    # add a single message to the queue
     def write(self, message):
+        """
+        Add a single message to the queue.
+        Inputs:
+            message - The message to be written to the queue
+        Returns:
+            None
+        """
         path = '%s/back' % self.id
         message.queue = self
         response = self.connection.make_request('PUT', path, None,
@@ -136,7 +179,23 @@ class Queue:
         return n
 
     def count(self, page_size=100, vtimeout=10):
-        """Utility function to count the number of messages in a queue"""
+        """
+        Utility function to count the number of messages in a queue.
+        Note: This function now calls GetQueueAttributes to obtain
+        an 'approximate' count of the number of messages in a queue.
+        """
+        a = self.get_attributes('ApproximateNumberOfMessages')
+        return a['ApproximateNumberOfMessages']
+    
+    def count_slow(self, page_size=100, vtimeout=10):
+        """
+        Deprecated.  This is the old 'count' method that actually counts
+        the messages by reading them all.  This gives an accurate count but
+        is very slow for queues with non-trivial number of messasges.
+        Instead, use get_attribute('ApproximateNumberOfMessages') to take
+        advantage of the new SQS capability.  This is retained only for
+        the unit tests.
+        """
         n = 0
         l = self.get_messages(page_size, vtimeout)
         while l:
