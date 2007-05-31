@@ -5,7 +5,7 @@ from boto.utils import get_instance_userdata
 
 def usage():
     print 'SYNOPSIS'
-    print '\tstart_service.py -m module -c class_name [-r] [-a ami_id] [-e email_address] [-k key_name] [-n num_instances] [-w working_dir] [-i input_queue_name] [-o output_queue_name] [-n num_instances]'
+    print '\tstart_service.py -m module -c class_name [-r] [-a ami_id] [-e email_address] [-k key_name] [-l log_queue_name] [-n num_instances] [-w working_dir] [-i input_queue_name] [-o output_queue_name] [-n num_instances]'
     sys.exit()
 
 def get_userdata(params):
@@ -26,11 +26,11 @@ def find_class(params):
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:c:e:hi:k:m:n:o:rw:',
+        opts, args = getopt.getopt(sys.argv[1:], 'a:c:e:hi:k:l:m:n:o:rw:',
                                    ['ami', 'class', 'email', 'help',
-                                    'inputqueue', 'keypair', 'module',
-                                    'numinstances', 'outputqueue', 'remote',
-                                    'working_dir'])
+                                    'inputqueue', 'keypair', 'logqueue',
+                                    'module', 'numinstances', 'outputqueue',
+                                    'remote', 'working_dir'])
     except:
         usage()
     params = {'module_name' : None,
@@ -38,6 +38,7 @@ def main():
               'notify_email' : None,
               'input_queue_name' : None,
               'output_queue_name' : None,
+              'log_queue_name' : None,
               'working_dir' : None,
               'keypair' : None,
               'ami' : None}
@@ -56,6 +57,8 @@ def main():
             params['input_queue_name'] = a
         if o in ('-k', '--keypair'):
             params['keypair'] = a
+        if o in ('-l', '--logqueue'):
+            params['log_queue_name'] = a
         if o in ('-m', '--module'):
             params['module_name'] = a
         if o in ('-n', '--num_instances'):
@@ -102,7 +105,8 @@ def main():
         cls = find_class(params)
         s = cls(working_dir=params['working_dir'],
                 input_queue_name=params['input_queue_name'],
-                output_queue_name=params['output_queue_name'])
+                output_queue_name=params['output_queue_name'],
+                log_queue_name=params['log_queue_name'])
         s.run()
 
 if __name__ == "__main__":

@@ -61,19 +61,22 @@ class Service:
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  input_queue_name=None, output_queue_name=None,
                  do_shutdown=True, notify_email=None, read_userdata=True,
-                 working_dir=None):
+                 working_dir=None, log_queue_name=None):
         self.meta_data = {}
+        self.queue_cache = {}
+        self.bucket_cache = {}
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.input_queue_name = input_queue_name
         self.output_queue_name = output_queue_name
+        self.log_queue_name = log_queue_name
         self.notify_email = notify_email
         self.do_shutdown = do_shutdown
         # now override any values with instance user data passed on startup
         if read_userdata:
             self.get_userdata()
-        self.create_working_dir(working_dir)
         self.create_connections()
+        self.create_working_dir(working_dir)
 
     def get_userdata(self):
         self.meta_data = boto.utils.get_instance_metadata()
@@ -83,8 +86,6 @@ class Service:
                 setattr(self, key, d[key])
 
     def create_connections(self):
-        self.queue_cache = {}
-        self.bucket_cache = {}
         self.sqs_conn = SQSConnection(self.aws_access_key_id,
                                       self.aws_secret_access_key)
         if self.input_queue_name:
@@ -93,6 +94,7 @@ class Service:
                                     self.aws_secret_access_key)
 
     def create_working_dir(self, working_dir):
+        self.log(method='create_working_dir', working_dir=working_dir)
         if working_dir:
             self.working_dir = working_dir
         else:
@@ -100,6 +102,16 @@ class Service:
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)
         os.chdir(self.working_dir)
+
+    def log(self, **params):
+        if self.log_queue_name == None:
+            return
+        lq = self.get_queue(self.log_queue_name)
+        m = lq.new_message()
+        m['Date'] = time.strftime(RFC1123, time.gmtime())
+        for key in params:
+            m[key] = params[key]
+        lq.write(m)
         
     def notify(self, msg):
         if self.notify_email:
@@ -222,6 +234,7 @@ class Service:
         return m
 
     def read_message(self):
+        self.log(method='get_bucket')
         message = None
         successful = False
         num_tries = 0
@@ -242,6 +255,8 @@ class Service:
 
     # retrieve the source file from S3
     def get_file(self, bucket_name, key, file_name):
+        self.log(method='get_file', bucket_name=bucket_name,
+                 key=key, file_name=file_name)
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
@@ -263,6 +278,8 @@ class Service:
 
     # store result file in S3
     def put_file(self, bucket_name, file_name):
+        self.log(method='put_file', bucket_name=bucket_name,
+                 file_name=file_name)
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
@@ -280,6 +297,7 @@ class Service:
 
     # write message to each output queue
     def write_message(self, message):
+        self.log(method='write_message')
         message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                                  time.gmtime())
         message['Server'] = self.__class__.__name__
@@ -303,6 +321,7 @@ class Service:
 
     # delete message from input queue
     def delete_message(self, message):
+        self.log(method='delete_message')
         print 'deleting message from %s' % self.input_queue.id
         successful = False
         num_tries = 0
