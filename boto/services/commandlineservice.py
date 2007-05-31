@@ -19,19 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.services.commandlineservice import CommandLineService
+from boto.services.service import Service
 import os
 
-class ConvertVideo(CommandLineService):
+class CommandLineService(Service):
 
-    ProcessingTime = 120
-
-    Command = """ffmpeg -y -i %s -f mov -r 29.97 -b 1200kb -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -ar 48000 -ab 192 -s 320x240 -vcodec mpeg4 -acodec aac %s"""
-
-    def process_file(self, in_file_name, msg):
-        out_file_name = os.path.join(self.working_dir, 'out.mov')
-        command = self.Command % (in_file_name, out_file_name)
-        print 'running:\n%s' % command
-        self.run_command(command, msg)
-        return [(out_file_name, 'video/quicktime')]
+    def run_command(self, command, msg):
+        log_file_name = self.__class__.__name__ + '.log'
+        log_file_name = os.path.join(self.working_dir, log_file_name)
+        log_fp = open(log_file_name, 'a')
+        log_fp.write('\n---------------------------\n')
+        log_fp.write('running:\n%s\n' % command)
+        t = os.popen4(command)
+        log_fp.write(msg.get_body())
+        log_fp.write('\n')
+        log_fp.write(t[1].read())
+        log_fp.write('\n')
+        log_fp.close()
+        t[0].close()
+        t[1].close()
         
