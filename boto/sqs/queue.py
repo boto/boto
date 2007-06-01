@@ -219,11 +219,34 @@ class Queue:
         fp.close()
         return n
 
+    def save(self, file_name, sep='\n'):
+        """
+        Read all messages from the queue and persist them to local file.
+        Messages are written to the file and the 'sep' string is written
+        in between messages.  Messages are deleted from the queue after
+        being written to the file.
+        Returns the number of messages saved.
+        """
+        fp = open(file_name, 'wb')
+        n = 0
+        m = self.read()
+        while m:
+            n += 1
+            fp.write(m.get_body())
+            if sep:
+                fp.write(sep)
+            self.delete_message(m)
+            m = self.read()
+        fp.close()
+        return n
+
     def save_to_s3(self, bucket):
         """
         Read all messages from the queue and persist them to S3.
         Messages are stored in the S3 bucket using a naming scheme of:
             <queue_id>/<message_id>
+        Messages are deleted from the queue after being saved to S3.
+        Returns the number of messages saved.
         """
         n = 0
         m = self.read()
