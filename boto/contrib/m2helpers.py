@@ -49,4 +49,4 @@ def https_connection_factory(cafile=None, capath=None):
         return HTTPSConnection(
             ssl_context=secure_context(cafile=cafile, capath=capath),
                 *args, **kwargs)
-    return factory
+    return (factory, (SSL.SSLError,))

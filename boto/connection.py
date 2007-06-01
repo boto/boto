@@ -58,7 +58,12 @@ class AWSAuthConnection:
                  proxy=None, proxy_port=None, debug=False,
                  https_connection_factory=None):
         self.is_secure = is_secure
-        self.https_connection_factory = https_connection_factory
+        self.https_exceptions = (httplib.HTTPException, socket.error)
+        if https_connection_factory is not None:
+            self.https_connection_factory = https_connection_factory[0]
+            self.http_exceptions += https_connection_factory[1]
+        else:
+            self.https_connection_factory = None
         if (is_secure):
             self.protocol = 'https'
         else:
@@ -151,8 +156,10 @@ class AWSAuthConnection:
         try:
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
-        except httplib.HTTPException, e:
-            print 'encountered HTTPException, trying to recover'
+        except self.http_exceptions, e:
+            if self.debug:
+                print 'encountered %s exception, trying to recover' % \
+                    e.__class__.__name__
             self.make_http_connection()
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
@@ -215,7 +222,10 @@ class AWSQueryConnection(AWSAuthConnection):
         self.connection.request(verb, qs)
         try:
             return self.connection.getresponse()
-        except httplib.HTTPException, e:
+        except self.http_exceptions, e:
+            if self.debug:
+                print 'encountered %s exception, trying to recover' % \
+                    e.__class__.__name__
             self.make_http_connection()
             self.connection.request('GET', qs)
             return self.connection.getresponse()
