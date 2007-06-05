@@ -119,7 +119,7 @@ class SQSConnection(AWSAuthConnection):
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
-        rs = ResultSet('QueueUrl', Queue)
+        rs = ResultSet([('QueueUrl', Queue)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs

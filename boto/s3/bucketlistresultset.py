@@ -25,12 +25,14 @@ def bucket_lister(bucket, prefix='', delimiter=''):
     """
     more_results = True
     marker = ''
+    k = None
     while more_results:
         rs = bucket.get_all_keys(prefix=prefix, marker=marker,
                                  delimiter=delimiter)
         for k in rs:
             yield k
-        marker = k.key
+        if k:
+            marker = k.key
         more_results= rs.is_truncated
         
 class BucketListResultSet:

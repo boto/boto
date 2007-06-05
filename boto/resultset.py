@@ -20,14 +20,29 @@
 # IN THE SOFTWARE.
 
 class ResultSet(list):
+    """
+    The ResultSet is used to pass results back from the Amazon services
+    to the client.  It has an ugly but workable mechanism for parsing
+    the XML results from AWS.  Because I don't really want any dependencies
+    on external libraries, I'm using the standard SAX parser that comes
+    with Python.  The good news is that it's quite fast and efficient but
+    it makes some things rather difficult.
 
-    def __init__(self, marker_elem='', factory=None):
+    You can pass in, as the marker_elem parameter, a list of tuples.
+    Each tuple contains a string as the first element which represents
+    the XML element that the resultset needs to be on the lookout for
+    and a Python class as the second element of the tuple.  Each time the
+    specified element is found in the XML, a new instance of the class
+    will be created and popped onto the stack.
+
+    """
+
+    def __init__(self, marker_elem=None):
         list.__init__(self)
         if isinstance(marker_elem, list):
-            self.marker_elem = marker_elem
+            self.markers = marker_elem
         else:
-            self.marker_elem = [marker_elem]
-        self.factory = factory
+            self.markers = []
         self.index = 0
         self.marker = None
         self.is_truncated = False
@@ -43,12 +58,12 @@ class ResultSet(list):
         return self[self.index-1]
 
     def startElement(self, name, attrs, connection):
-        if name in self.marker_elem:
-            obj = self.factory(connection)
-            self.append(obj)
-            return obj
-        else:
-            return None
+        for t in self.markers:
+            if name == t[0]:
+                obj = t[1](connection)
+                self.append(obj)
+                return obj
+        return None
 
     def to_boolean(self, value, true_value='true'):
         if value == true_value:

@@ -40,10 +40,10 @@ class Reservation:
 
     def startElement(self, name, attrs, connection):
         if name == 'instancesSet':
-            self.instances = ResultSet('item', Instance)
+            self.instances = ResultSet([('item', Instance)])
             return self.instances
         elif name == 'groupSet':
-            self.groups = ResultSet('item', Group)
+            self.groups = ResultSet([('item', Group)])
             return self.groups
         else:
             return None

@@ -67,7 +67,7 @@ class S3Connection(AWSAuthConnection):
         body = response.read()
         if response.status > 300:
             raise S3ResponseError(response.status, response.reason)
-        rs = ResultSet('Bucket', Bucket)
+        rs = ResultSet([('Bucket', Bucket)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs

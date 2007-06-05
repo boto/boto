@@ -48,7 +48,8 @@ class MTurkConnection(AWSQueryConnection):
         response = self.make_request('GetAccountBalance', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet(['AvailableBalance', 'OnHoldBalance'], Price)
+            rs = ResultSet([('AvailableBalance', Price),
+                            ('OnHoldBalance', Price)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs

@@ -24,6 +24,7 @@ from boto.resultset import ResultSet
 from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
+from boto.s3.prefix import Prefix
 from boto.exception import S3ResponseError
 from boto.s3.bucketlistresultset import BucketListResultSet
 import boto.utils
@@ -148,7 +149,8 @@ class Bucket:
         response = self.connection.make_request('GET', path, headers)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('Contents', self.key_class)
+            rs = ResultSet([('Contents', self.key_class),
+                            ('CommonPrefixes', Prefix)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs

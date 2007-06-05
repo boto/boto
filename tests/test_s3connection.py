@@ -80,6 +80,8 @@ class S3ConnectionTest (unittest.TestCase):
         assert len(all) == 6
         rs = bucket.get_all_keys(prefix='foo')
         assert len(rs) == 3
+        rs = bucket.get_all_keys(prefix='', delimiter='/')
+        assert len(rs) == 2
         rs = bucket.get_all_keys(maxkeys=5)
         assert len(rs) == 5
         # test the lookup method

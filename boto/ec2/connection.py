@@ -58,7 +58,7 @@ class EC2Connection(AWSQueryConnection):
         response = self.make_request('DescribeImages', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('item', Image)
+            rs = ResultSet([('item', Image)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -145,7 +145,7 @@ class EC2Connection(AWSQueryConnection):
         response = self.make_request('DescribeInstances', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('item', Reservation)
+            rs = ResultSet([('item', Reservation)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -183,7 +183,7 @@ class EC2Connection(AWSQueryConnection):
         response = self.make_request('TerminateInstances', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('item', Instance)
+            rs = ResultSet([('item', Instance)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -226,7 +226,7 @@ class EC2Connection(AWSQueryConnection):
         response = self.make_request('DescribeKeyPairs', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('item', KeyPair)
+            rs = ResultSet([('item', KeyPair)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -266,7 +266,7 @@ class EC2Connection(AWSQueryConnection):
         response = self.make_request('DescribeSecurityGroups', params)
         body = response.read()
         if response.status == 200:
-            rs = ResultSet('item', SecurityGroup)
+            rs = ResultSet([('item', SecurityGroup)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
