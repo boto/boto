@@ -107,7 +107,7 @@ class Key:
         return self.bucket.connection.generate_url(expires_in, method,
                                                    path, headers)
     
-    def send_file(self, fp, headers=None, cb=None, cb_num=10):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10):
         http_conn = self.bucket.connection.connection
         if not headers:
             headers = {}
@@ -138,8 +138,9 @@ class Key:
         http_conn.endheaders()
         try:
             if cb:
-                cb_count = self.size / 4096 / (cb_num-1)
+                cb_count = self.size / 4096 / (num_cb-2)
                 i = total_bytes = 0
+                cb(total_bytes, self.size)
             l = fp.read(4096)
             while len(l) > 0:
                 http_conn.send(l)
@@ -183,7 +184,8 @@ class Key:
         self.size = fp.tell()
         fp.seek(0)
 
-    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None):
+    def set_contents_from_file(self, fp, headers=None, replace=True,
+                               cb=None, num_cb=10):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -215,10 +217,10 @@ class Key:
                 k = self.bucket.lookup(self.name)
                 if k:
                     return
-            self.send_file(fp, headers, cb)
+            self.send_file(fp, headers, cb, num_cb)
 
     def set_contents_from_filename(self, filename, headers=None,
-                                   replace=True, cb=None):
+                                   replace=True, cb=None, num_cb=10):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -226,11 +228,11 @@ class Key:
         parameters.
         """
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace)
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb)
         fp.close()
 
     def set_contents_from_string(self, s, headers=None,
-                                 replace=True, cb=None):
+                                 replace=True, cb=None, num_cb=10):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -238,10 +240,10 @@ class Key:
         parameters.
         """
         fp = StringIO.StringIO(s)
-        self.set_contents_from_file(fp, headers)
+        self.set_contents_from_file(fp, headers, cb, num_cb)
         fp.close()
 
-    def get_file(self, fp, headers=None, cb=None, cb_num=10):
+    def get_file(self, fp, headers=None, cb=None, num_cb=10):
         if not headers:
             headers = {}
         http_conn = self.bucket.connection.connection
@@ -274,8 +276,9 @@ class Key:
             elif key.lower() == 'last-modified':
                 self.last_modified = response_headers[key]
         if cb:
-            cb_count = self.size / 4096 / (cb_num-1)
+            cb_count = self.size / 4096 / (num_cb-2)
             i = total_bytes = 0
+            cb(total_bytes, self.size)
         l = resp.read(4096)
         while len(l) > 0:
             fp.write(l)
@@ -290,7 +293,7 @@ class Key:
             cb(total_bytes, self.size)
         resp.read()
 
-    def get_contents_to_file(self, fp, headers=None, cb=None):
+    def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Write the contents of the object to the file pointed
@@ -308,9 +311,10 @@ class Key:
              the total number of bytes that need to be transmitted.
         """
         if self.bucket != None:
-            self.get_file(fp, headers, cb)
+            self.get_file(fp, headers, cb, num_cb)
 
-    def get_contents_to_filename(self, filename, headers=None, cb=None):
+    def get_contents_to_filename(self, filename, headers=None,
+                                 cb=None, num_cb=10):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Store contents of the object to a file named by 'filename'.
@@ -318,7 +322,7 @@ class Key:
         parameters.
         """
         fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers, cb)
+        self.get_contents_to_file(fp, headers, cb, num_cb)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
@@ -328,7 +332,7 @@ class Key:
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception, e: pass
 
-    def get_contents_as_string(self, cb=None):
+    def get_contents_as_string(self, cb=None, num_cb=10):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -336,7 +340,7 @@ class Key:
         parameters.
         """
         fp = StringIO.StringIO()
-        self.get_contents_to_file(fp, cb)
+        self.get_contents_to_file(fp, cb, num_cb)
         return fp.getvalue()
 
     # convenience methods for setting/getting ACL
