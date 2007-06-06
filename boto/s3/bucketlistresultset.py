@@ -32,7 +32,7 @@ def bucket_lister(bucket, prefix='', delimiter=''):
         for k in rs:
             yield k
         if k:
-            marker = k.key
+            marker = k.name
         more_results= rs.is_truncated
         
 class BucketListResultSet:
