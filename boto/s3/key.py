@@ -240,10 +240,10 @@ class Key:
         parameters.
         """
         fp = StringIO.StringIO(s)
-        self.set_contents_from_file(fp, headers, cb, num_cb)
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb)
         fp.close()
 
-    def get_file(self, fp, headers=None, cb=None, num_cb=10):
+    def get_file_old(self, fp, headers=None, cb=None, num_cb=10):
         if not headers:
             headers = {}
         http_conn = self.bucket.connection.connection
@@ -262,6 +262,41 @@ class Key:
             http_conn.putheader(key,final_headers[key])
         http_conn.endheaders()
         resp = http_conn.getresponse()
+        if resp.status != 200:
+            raise S3ResponseError(resp.status, resp.reason)
+        response_headers = resp.msg
+        self.metadata = boto.utils.get_aws_metadata(response_headers)
+        for key in response_headers.keys():
+            if key.lower() == 'content-length':
+                self.size = int(response_headers[key])
+            elif key.lower() == 'etag':
+                self.etag = response_headers[key]
+            elif key.lower() == 'content-type':
+                self.content_type = response_headers[key]
+            elif key.lower() == 'last-modified':
+                self.last_modified = response_headers[key]
+        if cb:
+            cb_count = self.size / 4096 / (num_cb-2)
+            i = total_bytes = 0
+            cb(total_bytes, self.size)
+        l = resp.read(4096)
+        while len(l) > 0:
+            fp.write(l)
+            if cb:
+                total_bytes += len(l)
+                i += 1
+                if i == cb_count:
+                    cb(total_bytes, self.size)
+                    i = 0
+            l = resp.read(4096)
+        if cb:
+            cb(total_bytes, self.size)
+        resp.read()
+
+    def get_file(self, fp, headers=None, cb=None, num_cb=10):
+        path = '/%s/%s' % (self.bucket.name, self.name)
+        path = urllib.quote(path)
+        resp = self.bucket.connection.make_request('GET', path, headers)
         if resp.status != 200:
             raise S3ResponseError(resp.status, resp.reason)
         response_headers = resp.msg
@@ -332,7 +367,7 @@ class Key:
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception, e: pass
 
-    def get_contents_as_string(self, cb=None, num_cb=10):
+    def get_contents_as_string(self, headers=None, cb=None, num_cb=10):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -340,7 +375,7 @@ class Key:
         parameters.
         """
         fp = StringIO.StringIO()
-        self.get_contents_to_file(fp, cb, num_cb)
+        self.get_contents_to_file(fp, headers, cb, num_cb)
         return fp.getvalue()
 
     # convenience methods for setting/getting ACL

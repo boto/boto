@@ -164,7 +164,8 @@ class AWSAuthConnection:
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
         except socket.error, e:
-            print 'encountered socket.error, trying to recover'
+            if self.debug:
+                print 'encountered socket.error, trying to recover'
             self.make_http_connection()
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
