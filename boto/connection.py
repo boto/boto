@@ -163,12 +163,6 @@ class AWSAuthConnection:
             self.make_http_connection()
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
-        except socket.error, e:
-            if self.debug:
-                print 'encountered socket.error, trying to recover'
-            self.make_http_connection()
-            self.connection.request(method, path, data, final_headers)
-            return self.connection.getresponse()
 
     def add_aws_auth_header(self, headers, method, path):
         if not headers.has_key('Date'):
@@ -220,8 +214,8 @@ class AWSQueryConnection(AWSAuthConnection):
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
         
-        self.connection.request(verb, qs)
         try:
+            self.connection.request(verb, qs)
             return self.connection.getresponse()
         except self.http_exceptions, e:
             if self.debug:

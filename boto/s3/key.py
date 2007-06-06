@@ -243,56 +243,6 @@ class Key:
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
         fp.close()
 
-    def get_file_old(self, fp, headers=None, cb=None, num_cb=10):
-        if not headers:
-            headers = {}
-        http_conn = self.bucket.connection.connection
-        final_headers = boto.utils.merge_meta(headers, {})
-        path = '/%s/%s' % (self.bucket.name, self.name)
-        path = urllib.quote(path)
-        self.bucket.connection.add_aws_auth_header(final_headers, 'GET', path)
-        #the prepending of the protocol and true host must occur after
-        #the authentication header is computed (line above). The
-        #authentication includes the path, which for authentication is
-        #only the bucket and key
-        if (self.bucket.connection.use_proxy == True):
-            path = self.bucket.connection.prefix_proxy_to_path(path)
-        http_conn.putrequest('GET', path)
-        for key in final_headers:
-            http_conn.putheader(key,final_headers[key])
-        http_conn.endheaders()
-        resp = http_conn.getresponse()
-        if resp.status != 200:
-            raise S3ResponseError(resp.status, resp.reason)
-        response_headers = resp.msg
-        self.metadata = boto.utils.get_aws_metadata(response_headers)
-        for key in response_headers.keys():
-            if key.lower() == 'content-length':
-                self.size = int(response_headers[key])
-            elif key.lower() == 'etag':
-                self.etag = response_headers[key]
-            elif key.lower() == 'content-type':
-                self.content_type = response_headers[key]
-            elif key.lower() == 'last-modified':
-                self.last_modified = response_headers[key]
-        if cb:
-            cb_count = self.size / 4096 / (num_cb-2)
-            i = total_bytes = 0
-            cb(total_bytes, self.size)
-        l = resp.read(4096)
-        while len(l) > 0:
-            fp.write(l)
-            if cb:
-                total_bytes += len(l)
-                i += 1
-                if i == cb_count:
-                    cb(total_bytes, self.size)
-                    i = 0
-            l = resp.read(4096)
-        if cb:
-            cb(total_bytes, self.size)
-        resp.read()
-
     def get_file(self, fp, headers=None, cb=None, num_cb=10):
         path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
