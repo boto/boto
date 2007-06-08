@@ -166,7 +166,7 @@ class Key:
             self.bucket.connection.make_http_connection()
             raise e
         if response.status != 200:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
         self.etag = response.getheader('etag')
         if self.etag != '"%s"'  % self.md5:
             raise S3DataError('Injected data did not return correct MD5')

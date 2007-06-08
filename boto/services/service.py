@@ -200,7 +200,8 @@ class Service:
                 self.input_queue.write(m)
                 successful = True
             except S3ResponseError, e:
-                print 'caught S3Error[%s]: %s' % (e.status, e.reason)
+                print 'caught S3Error'
+                print e
                 time.sleep(self.RetryDelay)
             except SQSError, e:
                 print 'caught SQSError[%s]: %s' % (e.status, e.reason)
@@ -269,7 +270,8 @@ class Service:
                 k.get_contents_to_filename(file_name)
                 successful = True
             except S3ResponseError, e:
-                print 'caught S3Error[%s]: %s' % (e.status, e.reason)
+                print 'caught S3Error[%s]'
+                print e
                 time.sleep(self.RetryDelay)
 
     # process source file, return list of output files
@@ -291,7 +293,8 @@ class Service:
                 print 'putting file %s as %s.%s' % (file_name, bucket_name, k.key)
                 successful = True
             except S3ResponseError, e:
-                print 'caught S3Error[%s]: %s' % (e.status, e.reason)
+                print 'caught S3Error'
+                print e
                 time.sleep(self.RetryDelay)
         return k
 

@@ -155,7 +155,7 @@ class Bucket:
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def new_key(self, key_name=None):
         return self.key_class(self, key_name)
@@ -173,7 +173,7 @@ class Bucket:
                                                 urllib.quote(path))
         body = response.read()
         if response.status != 204:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name=None):
         assert acl_str in CannedACLStrings
@@ -186,7 +186,7 @@ class Bucket:
         response = self.connection.make_request('PUT', path, headers)
         body = response.read()
         if response.status != 200:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def set_xml_acl(self, acl_str, key_name=None):
         if key_name:
@@ -197,7 +197,7 @@ class Bucket:
         response = self.connection.make_request('PUT', path, data=acl_str)
         body = response.read()
         if response.status != 200:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def set_acl(self, acl_or_str, key_name=None):
         # just in case user passes a Key object rather than key name
@@ -225,7 +225,7 @@ class Bucket:
             xml.sax.parseString(body, h)
             return policy
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def enable_logging(self, target_bucket, target_prefix=''):
         if isinstance(target_bucket, Bucket):
@@ -240,7 +240,7 @@ class Bucket:
         if response.status == 200:
             return body
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
         
     def disable_logging(self):
         path = '/%s' % self.name
@@ -251,7 +251,7 @@ class Bucket:
         if response.status == 200:
             return body
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
         
     def get_logging_status(self):
         path = '/%s' % self.name
@@ -261,7 +261,7 @@ class Bucket:
         if response.status == 200:
             return body
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def set_as_logging_target(self):
         policy = self.get_acl()

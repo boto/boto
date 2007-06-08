@@ -47,16 +47,17 @@ class S3Error(Exception):
         return 'S3Error: %s' % self.reason
 
 class S3ResponseError(S3Error):
-    def __init__(self, status, reason):
+    def __init__(self, status, reason, body=''):
         S3Error.__init__(self, reason)
         self.status = status
         self.reason = reason
+        self.body = body
 
     def __repr__(self):
-        return 'S3Error[%d]: %s' % (self.status, self.reason)
+        return 'S3Error[%d]: %s\n%s' % (self.status, self.reason, self.body)
 
     def __str__(self):
-        return 'S3Error[%d]: %s' % (self.status, self.reason)
+        return 'S3Error[%d]: %s\n%s' % (self.status, self.reason, self.body)
 
 class S3TypeError(S3Error):
     pass

@@ -66,7 +66,7 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('GET', urllib.quote(path))
         body = response.read()
         if response.status > 300:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
         rs = ResultSet([('Bucket', Bucket)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
@@ -87,7 +87,7 @@ class S3Connection(AWSAuthConnection):
             b = Bucket(self, bucket_name)
             return b
         else:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
     def delete_bucket(self, bucket):
         if isinstance(bucket, Bucket):
@@ -98,5 +98,5 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('DELETE', urllib.quote(path))
         body = response.read()
         if response.status != 204:
-            raise S3ResponseError(response.status, response.reason)
+            raise S3ResponseError(response.status, response.reason, body)
 
