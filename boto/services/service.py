@@ -183,7 +183,7 @@ class Service:
         m['Size'] = key.size
         return m
 
-    def submit_file(self, path, bucket_name, metadata=None):
+    def submit_file(self, path, bucket_name, metadata=None, cb=None):
         if not metadata:
             metadata = {}
         bucket = self.get_bucket(bucket_name)
@@ -195,7 +195,8 @@ class Service:
             try:
                 num_tries += 1
                 print 'submitting file: %s' % path
-                k.set_contents_from_filename(path, replace=False)
+                k.set_contents_from_filename(path, replace=False,
+                                             cb=cb, num_cb=100)
                 m = self.create_msg(k, metadata)
                 self.input_queue.write(m)
                 successful = True
