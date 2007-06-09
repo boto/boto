@@ -205,7 +205,8 @@ class Service:
                 print e
                 time.sleep(self.RetryDelay)
             except SQSError, e:
-                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                print 'caught SQSError'
+                print e
                 time.sleep(self.RetryDelay)
 
     def get_result(self, path, original_name=False,
@@ -251,7 +252,8 @@ class Service:
                                                  time.gmtime())
                 successful = True
             except SQSError, e:
-                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                print 'caught SQSError'
+                print e
                 time.sleep(self.RetryDelay)
         return message
 
@@ -320,7 +322,8 @@ class Service:
                 queue.write(message)
                 successful = True
             except SQSError, e:
-                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                print 'caught SQSError'
+                print e
                 time.sleep(self.RetryDelay)
 
     # delete message from input queue
@@ -335,7 +338,8 @@ class Service:
                 self.input_queue.delete_message(message)
                 successful = True
             except SQSError, e:
-                print 'caught SQSError[%s]: %s' % (e.status, e.reason)
+                print 'caught SQSError'
+                print e
                 time.sleep(self.RetryDelay)
                 
 

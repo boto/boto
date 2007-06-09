@@ -50,7 +50,7 @@ def usage():
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hb:pq:',
+        opts, args = getopt.getopt(sys.argv[1:], 'hb:p:q:',
                                    ['help', 'bucket', 'progress', 'queue'])
     except:
         usage()
