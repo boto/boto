@@ -7,12 +7,13 @@ def submit_cb(bytes_so_far, total_bytes):
 
 class FileSubmitter:
 
-    def __init__(self, bucket_name, queue_name, cb=None):
+    def __init__(self, bucket_name, queue_name, cb=None, num_cb=0):
         self.bucket_name = bucket_name
         self.queue_name = queue_name
         self.service = Service(input_queue_name=queue_name,
                                read_userdata=False)
         self.cb = cb
+        self.num_cb = num_cb
 
     def submit_path(self, path, tags=None, batch=None, ignore_dirs=[]):
         total = 0
@@ -37,7 +38,8 @@ class FileSubmitter:
                                              metadata, self.cb)
                     total += 1
         elif os.path.isfile(path):
-            self.service.submit_file(path, self.bucket_name, metadata, self.cb)
+            self.service.submit_file(path, self.bucket_name, metadata,
+                                     self.cb, self.num_cb)
             total += 1
         else:
             print 'problem with %s' % path
@@ -55,7 +57,8 @@ def main():
         sys.exit(2)
     bucket_name = None
     queue_name = None
-    progress = None
+    cb = None
+    num_cb = 0
     tags = ''
     notify = False
     for o, a in opts:
@@ -65,7 +68,8 @@ def main():
         if o in ('-b', '--bucket'):
             bucket_name = a
         if o in ('-p', '--progress'):
-            progress = submit_cb
+            num_cb = int(a)
+            cb = submit_cb
         if o in ('-q', '--queue'):
             queue_name = a
     if len(args) == 0:
@@ -74,7 +78,7 @@ def main():
     path = args[0]
     if len(args) > 1:
         tags = args[1]
-    s = FileSubmitter(bucket_name, queue_name, cb=progress)
+    s = FileSubmitter(bucket_name, queue_name, cb=cb, num_cb=num_cb)
     s.submit_path(path, tags, ignore_dirs=['.svn'])
     return 1
 
