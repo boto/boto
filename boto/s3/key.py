@@ -132,13 +132,16 @@ class Key:
         #only the bucket and key
         if self.bucket.connection.use_proxy:
             path = self.bucket.connection.prefix_proxy_to_path(path)
-        http_conn.putrequest('PUT', path)
-        for key in final_headers:
-            http_conn.putheader(key,final_headers[key])
-        http_conn.endheaders()
         try:
+            http_conn.putrequest('PUT', path)
+            for key in final_headers:
+                http_conn.putheader(key,final_headers[key])
+            http_conn.endheaders()
             if cb:
-                cb_count = self.size / 4096 / (num_cb-2)
+                if num_cb > 2:
+                    cb_count = self.size / 4096 / (num_cb-2)
+                else:
+                    cb_count = 0
                 i = total_bytes = 0
                 cb(total_bytes, self.size)
             l = fp.read(4096)
@@ -261,7 +264,10 @@ class Key:
             elif key.lower() == 'last-modified':
                 self.last_modified = response_headers[key]
         if cb:
-            cb_count = self.size / 4096 / (num_cb-2)
+            if num_cb > 2:
+                cb_count = self.size / 4096 / (num_cb-2)
+            else:
+                cb_count = 0
             i = total_bytes = 0
             cb(total_bytes, self.size)
         l = resp.read(4096)
