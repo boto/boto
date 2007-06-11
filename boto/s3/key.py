@@ -37,6 +37,8 @@ class Key:
 
     DefaultContentType = 'application/octet-stream'
 
+    BufferSize = 8192
+
     def __init__(self, bucket=None, name=None):
         self.bucket = bucket
         self.name = name
@@ -137,14 +139,17 @@ class Key:
             for key in final_headers:
                 http_conn.putheader(key,final_headers[key])
             http_conn.endheaders()
+            save_debug = self.bucket.connection.debug
+            if self.bucket.connection.debug == 1:
+                self.bucket.connection.set_debug(0)
             if cb:
                 if num_cb > 2:
-                    cb_count = self.size / 4096 / (num_cb-2)
+                    cb_count = self.size / self.BufferSize / (num_cb-2)
                 else:
                     cb_count = 0
                 i = total_bytes = 0
                 cb(total_bytes, self.size)
-            l = fp.read(4096)
+            l = fp.read(self.BufferSize)
             while len(l) > 0:
                 http_conn.send(l)
                 if cb:
@@ -153,11 +158,12 @@ class Key:
                     if i == cb_count:
                         cb(total_bytes, self.size)
                         i = 0
-                l = fp.read(4096)
+                l = fp.read(self.BufferSize)
             if cb:
                 cb(total_bytes, self.size)
             response = http_conn.getresponse()
             body = response.read()
+            self.bucket.connection.set_debug(save_debug)
         except socket.error, e:
             print 'Caught a socket error, trying to recover'
             self.bucket.connection.make_http_connection()
@@ -176,10 +182,10 @@ class Key:
 
     def _compute_md5(self, fp):
         m = md5.new()
-        s = fp.read(4096)
+        s = fp.read(self.BufferSize)
         while s:
             m.update(s)
-            s = fp.read(4096)
+            s = fp.read(self.BufferSize)
         self.md5 = m.hexdigest()
         self.base64md5 = base64.encodestring(m.digest())
         if self.base64md5[-1] == '\n':
@@ -265,12 +271,15 @@ class Key:
                 self.last_modified = response_headers[key]
         if cb:
             if num_cb > 2:
-                cb_count = self.size / 4096 / (num_cb-2)
+                cb_count = self.size / self.BufferSize / (num_cb-2)
             else:
                 cb_count = 0
             i = total_bytes = 0
             cb(total_bytes, self.size)
-        l = resp.read(4096)
+        save_debug = self.bucket.connection.debug
+        if self.bucket.connection.debug == 1:
+            self.bucket.connection.set_debug(0)
+        l = resp.read(self.BufferSize)
         while len(l) > 0:
             fp.write(l)
             if cb:
@@ -279,10 +288,11 @@ class Key:
                 if i == cb_count:
                     cb(total_bytes, self.size)
                     i = 0
-            l = resp.read(4096)
+            l = resp.read(self.BufferSize)
         if cb:
             cb(total_bytes, self.size)
         resp.read()
+        self.bucket.connection.set_debug(save_debug)
 
     def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10):
         """
