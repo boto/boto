@@ -124,6 +124,7 @@ class Key:
         else:
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = self.size
+        headers['Expect'] = '100-Continue'
         final_headers = boto.utils.merge_meta(headers, self.metadata);
         path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
