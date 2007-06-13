@@ -74,9 +74,6 @@ class S3CreateError(S3ResponseError):
 class EC2ResponseError(SQSError):
     pass
 
-class SDBResponseError(SQSError):
-    pass
-
 class AWSConnectionError(Exception):
 
     def __init__(self, reason):
