@@ -118,11 +118,11 @@ def get_aws_metadata(headers):
 def get_instance_metadata(version='latest'):
     metadata = {}
     try:
-        url = 'http://169.254.169.254/%s/meta-data' % version
+        url = 'http://169.254.169.254/%s/meta-data/' % version
         s = urllib.urlopen(url)
         md_fields = s.read().split('\n')
         for md in md_fields:
-            md_url = url + '/%s' % md
+            md_url = url + md
             s = urllib.urlopen(md_url)
             metadata[md] = s.read()
     except:
@@ -132,7 +132,7 @@ def get_instance_metadata(version='latest'):
 def get_instance_userdata(version='latest', sep=None):
     user_data = None
     try:
-        url = 'http://169.254.169.254/%s/user-data' % version
+        url = 'http://169.254.169.254/%s/user-data/' % version
         s = urllib.urlopen(url)
         user_data = s.read()
         if sep:
