@@ -82,7 +82,7 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('PUT', urllib.quote(path), headers)
         body = response.read()
         if response.status == 409:
-             raise S3CreateError(response.status, response.reason)
+             raise S3CreateError(response.status, response.reason, body)
         if response.status == 200:
             b = Bucket(self, bucket_name)
             return b
