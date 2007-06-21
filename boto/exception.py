@@ -23,20 +23,8 @@
 # Exception classes - Subclassing allows you to check for specific errors
 #
 
-class SQSError(Exception):
+class BotoClientError(Exception):
     
-    def __init__(self, status, reason, body):
-        self.status = status
-        self.reason = reason
-        self.body = body
-
-    def __repr__(self):
-        return 'SQSError: %s %s\n%s' % (self.status, self.reason, self.body)
-
-    def __str__(self):
-        return 'SQSError: %s %s\n%s' % (self.status, self.reason, self.body)
-
-class S3Error(Exception):
     def __init__(self, reason):
         self.reason = reason
 
@@ -45,42 +33,37 @@ class S3Error(Exception):
 
     def __str__(self):
         return 'S3Error: %s' % self.reason
-
-class S3ResponseError(S3Error):
+    
+class BotoServerError(Exception):
+    
     def __init__(self, status, reason, body=''):
-        S3Error.__init__(self, reason)
         self.status = status
         self.reason = reason
         self.body = body
 
     def __repr__(self):
-        return 'S3Error[%d]: %s\n%s' % (self.status, self.reason, self.body)
+        return '%s: %s %s\n%s' % (self.__class__.__name__,
+                                  self.status, self.reason, self.body)
 
     def __str__(self):
-        return 'S3Error[%d]: %s\n%s' % (self.status, self.reason, self.body)
+        return '%s: %s %s\n%s' % (self.__class__.__name__,
+                                  self.status, self.reason, self.body)
 
-class S3TypeError(S3Error):
+class S3CreateError(BotoServerError):
     pass
 
-class S3EmptyError(S3Error):
+class SQSError(BotoServerError):
+    pass
+    
+class S3ResponseError(BotoServerError):
     pass
 
-class S3DataError(S3Error):
+class EC2ResponseError(BotoServerError):
     pass
 
-class S3CreateError(S3ResponseError):
+class AWSConnectionError(BotoClientError):
     pass
 
-class EC2ResponseError(SQSError):
+class S3DataError(BotoClientError):
     pass
 
-class AWSConnectionError(Exception):
-
-    def __init__(self, reason):
-        self.reason = reason
-
-    def __repr__(self):
-        return 'AWSConnnectionError: %s' % self.reason
-
-    def __str__(self):
-        return 'AWSConnnectionError: %s' % self.reason
