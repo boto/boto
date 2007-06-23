@@ -60,6 +60,11 @@ class Message:
     def get_body_b64(self):
         return base64.b64encode(self.get_body())
 
+    def change_visibility(self, vtimeout):
+        return self.queue.connection.change_message_visibility(self.queue.id,
+                                                               self.id,
+                                                               vtimeout)
+
 #
 # subclass that provides RFC821-like headers
 #

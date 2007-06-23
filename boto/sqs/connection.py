@@ -70,6 +70,20 @@ class SQSQueryConnection(AWSQueryConnection):
             return rs.status
         else:
             raise SQSError(response.status, response.reason, body)
+
+    def change_message_visibility(self, queue_url, message_id, vtimeout):
+        params = {'MessageId' : message_id,
+                  'VisibilityTimeout' : vtimeout}
+        response = self.make_request('ChangeMessageVisibility', params,
+                                     queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise SQSError(response.status, response.reason, body)
         
 class SQSConnection(AWSAuthConnection):
     
@@ -165,6 +179,21 @@ class SQSConnection(AWSAuthConnection):
         """
         qc = self.get_query_connection()
         return qc.set_queue_attribute(queue_url, attribute, value)
+
+    def change_message_visibility(self, queue_url, message_id, vtimeout):
+        """
+        Change the VisibilityTimeout for an individual message.
+        Inputs:
+            queue_url - The URL of the desired SQS queue
+            message_id - The ID of the message whose timeout will be changed
+            vtimeout - The new VisibilityTimeout value, in seconds
+        Returns:
+            Boolean True if successful, otherwise False
+        Note: This functionality is also available as a method of the
+              Message object.
+        """
+        qc = self.get_query_connection()
+        return qc.change_message_visibility(queue_url, message_id, vtimeout)
     
     def create_queue(self, queue_name, visibility_timeout=None):
         """

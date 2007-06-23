@@ -152,7 +152,7 @@ class Queue:
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
         rs = ResultSet([('Message', self.message_class)])
-        h = XmlHandler(rs, self.connection)
+        h = XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
 

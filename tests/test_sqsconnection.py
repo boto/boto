@@ -101,6 +101,13 @@ class SQSConnectionTest (unittest.TestCase):
         message = queue.read()
         assert message
 
+        # now terminate the visibility timeout for this message
+        message.change_visibility(0)
+
+        # now see if we can read it in the queue
+        message = queue.read()
+        assert message
+
         # now delete the message
         queue.delete_message(message)
         time.sleep(5)
