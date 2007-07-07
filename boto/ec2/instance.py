@@ -140,6 +140,9 @@ class Instance:
     def get_console_output(self):
         return self.connection.get_console_output(self.id)
 
+    def confirm_product(self, product_code):
+        return self.connection.confirm_product_instance(self.id, product_code)
+
 class Group:
 
     def __init__(self, parent=None):

@@ -33,7 +33,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = '2007-01-19'
+    APIVersion = '2007-03-01'
     SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -214,6 +214,19 @@ class EC2Connection(AWSQueryConnection):
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs.status
+        else:
+            raise EC2ResponseError(response.status, response.reason, body)
+
+    def confirm_product_instance(self, product_code, instance_id):
+        params = {'ProductCode' : product_code,
+                  'InstanceId' : instance_id}
+        response = self.make_request('ConfirmProductInstance', params)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return (rs.status, rs.ownerId)
         else:
             raise EC2ResponseError(response.status, response.reason, body)
 

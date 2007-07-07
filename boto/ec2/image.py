@@ -31,7 +31,8 @@ class Image:
         self.location = None
         self.state = None
         self.ownerId = None
-        self.isPublic = False
+        self.is_public = False
+        self.product_codes = []
 
     def __repr__(self):
         return 'Image:%s' % self.id
@@ -50,6 +51,8 @@ class Image:
             self.ownerId = value
         elif name == 'isPublic':
             self.is_public = bool(value)
+        elif name == 'productCode':
+            self.product_codes.append(value)
         else:
             setattr(self, name, value)
 
@@ -97,6 +100,9 @@ class ImageAttribute:
     def endElement(self, name, value, connection):
         if name == 'launchPermission':
             self.name = 'launch_permission'
+        elif name == 'productCodes':
+            self.name = 'product_codes'
+            self.attrs[self.name] = []
         elif name == 'group':
             if self.attrs.has_key('groups'):
                 self.attrs['groups'].append(value)
@@ -109,5 +115,7 @@ class ImageAttribute:
                 self.attrs['user_ids'] = [value]
         elif name == 'imageId':
             self.image_id = value
+        elif name == 'productCode':
+            self.attrs['product_codes'].append(value)
         else:
             setattr(self, name, value)

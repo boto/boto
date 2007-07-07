@@ -142,5 +142,13 @@ class EC2ConnectionTest (unittest.TestCase):
             if k.name == key_name:
                 found = True
         assert not found
+
+        # short test around Paid AMI capability
+        demo_paid_ami_id = 'ami-bd9d78d4'
+        demo_paid_ami_product_code = 'A79EC0DB'
+        l = c.get_all_images([demo_paid_ami_id])
+        assert len(l) == 1
+        assert len(l[0].product_codes) == 1
+        assert l[0].product_codes[0] == demo_paid_ami_product_code
         
         print '--- tests completed ---'
