@@ -1,5 +1,5 @@
-boto 0.8d
-13-Mar-2007
+boto 0.9b
+09-Jul-2007
 
 Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
 
@@ -37,7 +37,15 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
-[boto bolivia_0 changes]
+
+[boto 0.9b changes]
+------------------------------------------------------------------------
+r309 | Mitch.Garnaat | 2007-07-07 15:24:56 -0400 (Sat, 07 Jul 2007) | 1 line
+
+Adding support for new Paid AMI feature in EC2.  Fixes Issue-69.
+------------------------------------------------------------------------
+
+[boto 0.9a changes]
 
 ------------------------------------------------------------------------
 r196 | Mitch.Garnaat | 2007-03-13 19:35:35 -0400 (Tue, 13 Mar 2007) | 1 line
