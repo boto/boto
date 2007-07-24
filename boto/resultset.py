@@ -53,6 +53,7 @@ class ResultSet(list):
 
     def next(self):
         if self.index == len(self):
+            self.index = 0
             raise StopIteration
         self.index += 1
         return self[self.index-1]
