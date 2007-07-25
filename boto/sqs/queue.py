@@ -131,7 +131,7 @@ class Queue:
         path = '%s/back' % self.id
         message.queue = self
         response = self.connection.make_request('PUT', path, None,
-                                                message.get_body_b64())
+                                                message.get_body_encoded())
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
