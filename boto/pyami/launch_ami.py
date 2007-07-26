@@ -24,9 +24,29 @@ import getopt, sys, imp
 import boto
 from boto.utils import get_instance_userdata
 
+usage_string = """
+SYNOPSIS
+    launch_ami.py -m module -c class_name -a ami_id -b bucket_name [-r]
+                  [-k key_name] [-n num_instances]  [-w working_dir] extra_data
+    Where:
+        module - the name of the Python module you wish to pass to the AMI
+        class_name - the name of the class to be instantiated within the module
+        ami_id - the id of the AMI you wish to launch
+        bucket_name - the name of the bucket in which the script will be stored
+        key_name - the name of the keypair to use when launching the AMI
+        num_instances - how many instances of the AMI to launch (default 1)
+        working_dir - path on newly launched instance used for storing script
+        extra_data - additional name-value pairs that will be passed as
+                     userdata to the newly launched instance.  These should
+                     be of the form "name=value"
+        The -r option reloads the Python module to S3 without launching
+        another instance.  This can be useful during debugging to allow
+        you to test a new version of your script without shutting down
+        your instance and starting up another one.
+"""
+
 def usage():
-    print 'SYNOPSIS'
-    print '\tlaunch_ami.py -m module -c class_name -a ami_id -b bucket_name [-k key_name]  [-n num_instances]  [-w working_dir]'
+    print usage_string
     sys.exit()
 
 def main():
@@ -90,6 +110,8 @@ def main():
     c = boto.connect_ec2()
     l.append('aws_access_key_id=%s' % c.aws_access_key_id)
     l.append('aws_secret_access_key=%s' % c.aws_secret_access_key)
+    for kv in args:
+        l.append(kv)
     s = '|'.join(l)
     if not reload:
         rs = c.get_all_images([params['ami']])
