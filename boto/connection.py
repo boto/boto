@@ -58,7 +58,7 @@ class AWSAuthConnection:
                  proxy=None, proxy_port=None, debug=False,
                  https_connection_factory=None):
         self.is_secure = is_secure
-        self.http_exceptions = (httplib.HTTPException, socket.error)
+        self.http_exceptions = (httplib.HTTPException, socket.error, socket.gaierror)
         if https_connection_factory is not None:
             self.https_connection_factory = https_connection_factory[0]
             self.http_exceptions += https_connection_factory[1]
