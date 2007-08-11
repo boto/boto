@@ -3,15 +3,38 @@ import getopt, sys, os, time
 from datetime import datetime, timedelta
 from boto.services.service import Service
 
+Usage =  """
+    get_results.py  [-q queuename] [-m mimetype_file] [-n] path
+
+        queuename - The name of the SQS queue containing status messages.
+                    This would be the queuename passed with the -o arg
+                    to the start_service.py command
+        mimetype_file - A file containing additional mimetypes to be
+                        loaded before processing the results.  The file
+                        should consist of lines of text where each line
+                        represents a new mimetype and file extension
+                        separated by whitespace, e.g."
+                        
+                        video/x-flv    flv
+
+        path - The location on your local file system where results
+               will be stored.
+        if -n is specified, the result files will not be retrieved
+        from S3, otherwise the result files will be downloaded to
+        the specified path'
+    """
+
 class ResultProcessor:
 
+    
     TimeFormat = '%a, %d %b %Y %H:%M:%S %Z'
     LogFileName = 'log.csv'
 
-    def __init__(self, queue_name):
+    def __init__(self, queue_name, mimetype_files=None):
         self.queue_name = queue_name
         self.service = Service(output_queue_name=queue_name,
-                               read_userdata=False)
+                               read_userdata=False,
+                               mimetype_files=mimetype_files)
         self.log_fp = None
         self.num_files = 0
         self.total_time = 0
@@ -78,25 +101,26 @@ class ResultProcessor:
             print 'Throughput: %f transactions / minute' % tput
         
 def usage():
-    print 'get_results.py  [-q queuename] [-n] path'
-    print '\tif -n is specified, the result files will not be retrieved'
-    print '\tfrom S3, otherwise the result files will be downloaded to'
-    print '\tthe specified path'
+    print Usage
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hnq:',
-                                   ['help', 'no_retrieve', 'queue'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hmnq:',
+                                   ['help', 'mimetypes',
+                                    'no_retrieve', 'queue'])
     except:
         usage()
         sys.exit(2)
     queue_name = None
+    mimetype_file = None
     notify = False
     get_file = True
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
             sys.exit()
+        if o in ('-m', '--mimetypes'):
+            mimetype_file = [a]
         if o in ('-n', '--no-retrieve'):
             get_file = False
         if o in ('-q', '--queue'):
@@ -107,7 +131,7 @@ def main():
     path = args[0]
     if len(args) > 1:
         tags = args[1]
-    s = ResultProcessor(queue_name)
+    s = ResultProcessor(queue_name, mimetype_file)
     s.get_results(path, get_file)
     return 1
 

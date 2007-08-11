@@ -61,7 +61,8 @@ class Service:
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  input_queue_name=None, output_queue_name=None,
                  on_completion='shutdown', notify_email=None,
-                 read_userdata=True, working_dir=None, log_queue_name=None):
+                 read_userdata=True, working_dir=None, log_queue_name=None,
+                 mimetype_files=None):
         self.meta_data = {}
         self.queue_cache = {}
         self.bucket_cache = {}
@@ -77,6 +78,8 @@ class Service:
             self.get_userdata()
         self.create_connections()
         self.create_working_dir(working_dir)
+        if mimetype_files:
+            mimetypes.init(mimetype_files)
 
     def get_userdata(self):
         self.meta_data = boto.utils.get_instance_metadata()
