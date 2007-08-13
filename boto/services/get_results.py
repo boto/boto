@@ -105,7 +105,7 @@ def usage():
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hmnq:',
+        opts, args = getopt.getopt(sys.argv[1:], 'hm:nq:',
                                    ['help', 'mimetypes',
                                     'no_retrieve', 'queue'])
     except:
