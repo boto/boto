@@ -90,7 +90,7 @@ class AWSAuthConnection:
         self.proxy = proxy
         #This lowercase environment var is the same as used in urllib
         if os.environ.has_key('http_proxy'): 
-            self.proxy = os.environ['http_proxy'].split(':')
+            proxy_port_pair = os.environ['http_proxy'].split(':')
             self.proxy = proxy_port_pair[0]
             
         self.use_proxy = (self.proxy != None)
@@ -101,12 +101,12 @@ class AWSAuthConnection:
             self.proxy_port = proxy_port
         else:
             if os.environ.has_key('http_proxy'):
-                self.proxy_port = os.environ['http_proxy'].split(':')[1]
+                proxy_port_pair = os.environ['http_proxy'].split(':')[1]
                 if len(proxy_port_pair) != 2:
                     print "http_proxy env var does not specify port, using default"
                     self.proxy_port = self.port
                 else:
-                    self.proxy_port = os.environ['http_proxy'].split(':')[1]
+                    self.proxy_port = proxy_port_pair[1]
             else:
                 self.proxy_port = None
         
