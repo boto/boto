@@ -42,7 +42,7 @@ information necessary to boot instances of your software in EC2.
 
 To get a listing of all available Images:
 
->>> images = c.get_all_images()
+>>> images = conn.get_all_images()
 >>> images
 [Image:ami-20b65349, Image:ami-22b6534b, Image:ami-23b6534a, Image:ami-25b6534c, Image:ami-26b6534f, Image:ami-2bb65342, Image:ami-78b15411, Image:ami-a4aa4fcd, Image:ami-c3b550aa, Image:ami-e4b6538d, Image:ami-f1b05598]
 >>> for image in images:
@@ -76,8 +76,8 @@ all of the instances associated with this reservation:
 >>> reservation.instances
 [Instance:i-6761850e]
 >>> instance = reservation.instances[0]
->>> intstance.state
-pending
+>>> instance.state
+u'pending'
 >>>
 
 So, we have an instance booting up that is still in the pending state.  We
@@ -86,15 +86,35 @@ state:
 
 >>> instance.update()
 >>> instance.state
-pending
+u'pending'
 >>> # wait a few minutes
 >>> instance.update()
 >>> instance.state
-running
+u'running'
 
 So, now our instance is running.  The time it takes to boot a new instance
 varies based on a number of different factors but usually it takes less than
 five minutes.
+
+Now the instance is up and running you can find out its DNS name like this:
+
+>>> instance.dns_name
+u'ec2-72-44-40-153.z-2.compute-1.amazonaws.com'
+
+This provides the public DNS name for your instance.  Since the 2007--3-22
+release of the EC2 service, the default addressing scheme for instances
+uses NAT-addresses which means your instance has both a public IP address and a
+non-routable private IP address.  You can access each of these addresses
+like this:
+
+>>> instance.public_dns_name
+u'ec2-72-44-40-153.z-2.compute-1.amazonaws.com'
+>>> instance.private_dns_name
+u'domU-12-31-35-00-42-33.z-2.compute-1.internal'
+
+Even though your instance has a public DNS name, you won't be able to
+access it yet because you need to set up some security rules which are
+described later in this tutorial.
 
 Since you are now being charged for that instance we just created, you will
 probably want to know how to terminate the instance, as well.  The simplest
@@ -103,11 +123,11 @@ way is to use the stop method of the Instance object:
 >>> instance.stop()
 >>> instance.update()
 >>> instance.state
-shutting-down
+u'shutting-down'
 >>> # wait a minute
 >>> instance.update()
 >>> instance.state
-terminated
+u'terminated'
 >>>
 
 When we created our new instance, we didn't pass any args to the run method
@@ -122,7 +142,7 @@ security_groups - A list of security groups to associate with the
                   instance.  This can either be a list of SecurityGroup
                   objects or a list of strings with the names of the
                   desired security groups.
-user_date - Data to be made available to the launched instances.  This
+user_data - Data to be made available to the launched instances.  This
             should be base64 encoded according to the EC2 documentation.
 
 So, if I wanted to create two instances of the base image and launch them
@@ -133,8 +153,8 @@ with my keypair, called gsg-keypair, I would to this:
 [Instance:i-5f618536, Instance:i-5e618537]
 >>> for i in reservation.instances:
 ...    print i.status
-pending
-pending
+u'pending'
+u'pending'
 >>>
 
 Later, when you are finished with the instances you can either stop each
@@ -149,13 +169,13 @@ list returned is actually a list of Reservation objects (which contain
 the Instances) and that the list may include recently terminated instances
 for a small period of time subsequent to their termination.
 
->>> instances = c.get_all_instances()
+>>> instances = conn.get_all_instances()
 >>> instances
 [Reservation:r-a76085ce, Reservation:r-a66085cf, Reservation:r-8c6085e5]
 >>> r = instances[0]
 >>> for inst in r.instances:
 ...    print inst.state
-terminated
+u'terminated'
 >>>
 
 A recent addition to the EC2 api's is to allow other EC2 users to launch
