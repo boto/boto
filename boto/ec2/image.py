@@ -50,7 +50,17 @@ class Image:
         elif name == 'imageOwnerId':
             self.ownerId = value
         elif name == 'isPublic':
-            self.is_public = bool(value)
+            if value == 'false':
+                self.is_public = False
+            elif value == 'true':
+                self.is_public = True
+            else:
+                raise Exception(
+                    'Unexpected value of isPublic %s for image %s'%(
+                        value, 
+                        self.id
+                    )
+                )
         elif name == 'productCode':
             self.product_codes.append(value)
         else:

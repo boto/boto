@@ -53,7 +53,17 @@ class SecurityGroup:
         elif name == 'ipRanges':
             pass
         elif name == 'return':
-            self.status = bool(value)
+            if value == 'false':
+                self.status = False
+            elif value == 'true':
+                self.status = True
+            else:
+                raise Exception(
+                    'Unexpected value of status %s for image %s'%(
+                        value, 
+                        self.id
+                    )
+                )
         else:
             setattr(self, name, value)
 
