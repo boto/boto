@@ -39,13 +39,22 @@ class AmiInitializer:
         self.inst_data = get_instance_metadata()
         self.user_data = get_instance_userdata(sep='|')
 
-    def dump_data(self):
-        print 'Instance Metadata'
+    def write_metadata(self):
+        fp = open(os.path.expanduser('~pyami/metadata.ini'), 'w')
+        fp.write('[Metadata]\n')
         for key in self.inst_data:
-            print '%s: %s' % (key, self.inst_data[key])
-        print 'Instance Userdata'
+            fp.write('%s: %s\n' % (key, self.inst_data[key]))
+        fp.write('[Userdata]\n')
         for key in self.user_data:
-            print '%s: %s' % (key, self.user_data[key])
+            fp.write('%s: %s\n' % (key, self.user_data[key]))
+        fp.close()
+
+    def write_env_setup(self):
+        fp = open('/etc/profile.d/aws.sh', 'w')
+        fp.write('# AWS Environment Setup Script\n')
+        fp.write('export AWS_ACCESS_KEY_ID=%s\n' % self.user_data['aws_access_key_id'])
+        fp.write('export AWS_SECRET_ACCESS_KEY=%s\n' % self.user_data['aws_secret_access_key'])
+        fp.close()
 
     def create_working_dir(self):
         self.working_dir = self.user_data.get('working_dir',
@@ -71,7 +80,8 @@ class AmiInitializer:
         s.run()
 
     def run(self):
-        self.dump_data()
+        self.write_metadata()
+        self.write_env_setup()
         self.create_working_dir()
         self.get_script()
         self.run_script()

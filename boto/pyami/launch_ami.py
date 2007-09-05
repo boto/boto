@@ -20,19 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import getopt, sys, imp
+import getopt, sys, imp, time
 import boto
 from boto.utils import get_instance_userdata
 
 usage_string = """
 SYNOPSIS
-    launch_ami.py -m module -c class_name -a ami_id -b bucket_name [-r]
-                  [-k key_name] [-n num_instances]  [-w working_dir] extra_data
+    launch_ami.py -m module -c class_name -a ami_id -b bucket_name [-r] [-s]
+                  [-g group] [-k key_name] [-n num_instances]
+                  [-w working_dir] extra_data
     Where:
         module - the name of the Python module you wish to pass to the AMI
         class_name - the name of the class to be instantiated within the module
         ami_id - the id of the AMI you wish to launch
         bucket_name - the name of the bucket in which the script will be stored
+        group - the name of the security group the instance will run in
         key_name - the name of the keypair to use when launching the AMI
         num_instances - how many instances of the AMI to launch (default 1)
         working_dir - path on newly launched instance used for storing script
@@ -43,6 +45,9 @@ SYNOPSIS
         another instance.  This can be useful during debugging to allow
         you to test a new version of your script without shutting down
         your instance and starting up another one.
+        The -s option tells the script to run synchronously, meaning to
+        wait until the instance is actually up and running.  It then prints
+        the IP address and internal and external DNS names before exiting.
 """
 
 def usage():
@@ -51,8 +56,8 @@ def usage():
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c:hk:m:rw:',
-                                   ['ami', 'bucket', 'class', 'help',
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c:g:hk:m:rsw:',
+                                   ['ami', 'bucket', 'class', 'group', 'help',
                                     'keypair', 'module', 'numinstances',
                                     'reload', 'working_dir'])
     except:
@@ -60,10 +65,12 @@ def main():
     params = {'module_name' : None,
               'class_name' : None,
               'bucket_name' : None,
+              'group' : 'default',
               'keypair' : None,
               'ami' : None,
               'working_dir' : None}
     reload = None
+    wait = None
     ami = None
     for o, a in opts:
         if o in ('-a', '--ami'):
@@ -72,6 +79,8 @@ def main():
             params['bucket_name'] = a
         if o in ('-c', '--class'):
             params['class_name'] = a
+        if o in ('-g', '--group'):
+            params['group'] = a
         if o in ('-h', '--help'):
             usage()
         if o in ('-k', '--keypair'):
@@ -82,13 +91,15 @@ def main():
             params['num_instances'] = int(a)
         if o in ('-r', '--reload'):
             reload = True
+        if o in ('-s', '--synchronous'):
+            wait = True
         if o in ('-w', '--working_dir'):
             params['working_dir'] = a
 
     # check required fields
     required = ['ami', 'bucket_name', 'class_name', 'module_name']
     for pname in required:
-        if pname not in params.keys():
+        if not params.get(pname, None):
             print '%s is required' % pname
             usage()
     # first copy the desired module file to S3 bucket
@@ -117,11 +128,25 @@ def main():
         rs = c.get_all_images([params['ami']])
         img = rs[0]
         r = img.run(user_data=s, key_name=params['keypair'],
+                    security_groups=[params['group']],
                     max_count=params.get('num_instances', 1))
         print 'AMI: %s - %s (Started)' % (params['ami'], img.location)
         print 'Reservation %s contains the following instances:' % r.id
         for i in r.instances:
             print '\t%s' % i.id
+        if wait:
+            running = False
+            while not running:
+                time.sleep(30)
+                [i.update() for i in r.instances]
+                status = [i.state for i in r.instances]
+                print status
+                if status.count('running') == len(r.instances):
+                    running = True
+            for i in r.instances:
+                print 'Instance: %s' % i.ami_launch_index
+                print 'Public DNS Name: %s' % i.public_dns_name
+                print 'Private DNS Name: %s' % i.private_dns_name
 
 if __name__ == "__main__":
     main()
