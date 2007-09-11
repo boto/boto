@@ -148,6 +148,8 @@ class Bucket:
             path = path + '?%s' % s
         response = self.connection.make_request('GET', path, headers)
         body = response.read()
+        if self.connection.debug > 1:
+            print body
         if response.status == 200:
             rs = ResultSet([('Contents', self.key_class),
                             ('CommonPrefixes', Prefix)])
