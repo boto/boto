@@ -103,11 +103,12 @@ class Key:
     def update_metadata(self, d):
         self.metadata.update(d)
     
-    def generate_url(self, expires_in, method='GET', headers=None):
+    def generate_url(self, expires_in, method='GET',
+                     headers=None, query_auth=True):
         path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
         return self.bucket.connection.generate_url(expires_in, method,
-                                                   path, headers)
+                                                   path, headers, query_auth)
     
     def send_file(self, fp, headers=None, cb=None, num_cb=10):
         http_conn = self.bucket.connection.connection
@@ -165,7 +166,10 @@ class Key:
             response = http_conn.getresponse()
             body = response.read()
             self.bucket.connection.set_debug(save_debug)
-        except socket.error, e:
+        except socket.error, (value, message):
+            if value in self.bucket.connection.socket_exception_values:
+                print 'Caught %d:%s socket error, aborting' % (value, message)
+                raise
             print 'Caught a socket error, trying to recover'
             self.bucket.connection.make_http_connection()
             fp.seek(0)

@@ -45,7 +45,8 @@ class S3Connection(AWSAuthConnection):
     def __iter__(self):
         return self.get_all_buckets()
     
-    def generate_url(self, expires_in, method, path, headers=None):
+    def generate_url(self, expires_in, method, path,
+                     headers=None, query_auth=True):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
@@ -55,10 +56,15 @@ class S3Connection(AWSAuthConnection):
                                               canonical_str, True)
         if '?' in path:
             arg_div = '&'
-        else:
+        elif query_auth:
             arg_div = '?'
-        query_part = self.QueryString % (encoded_canonical, expires,
-                                         self.aws_access_key_id)
+        else:
+            arg_div = ''
+        if query_auth:
+            query_part = self.QueryString % (encoded_canonical, expires,
+                                             self.aws_access_key_id)
+        else:
+            query_part = ''
         return self.protocol + '://' + self.server_name + path  + arg_div + query_part
     
     def get_all_buckets(self):
