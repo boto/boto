@@ -39,7 +39,7 @@ Handles basic connections to AWS
 import base64
 import hmac
 import httplib
-import socket
+import socket, errno
 import re
 import sha
 import sys
@@ -58,7 +58,10 @@ class AWSAuthConnection:
                  proxy=None, proxy_port=None, debug=False,
                  https_connection_factory=None):
         self.is_secure = is_secure
+        # define exceptions from httplib that we want to catch and retry
         self.http_exceptions = (httplib.HTTPException, socket.error, socket.gaierror)
+        # define values in socket exceptions we don't want to catch
+        self.socket_exception_values = (errno.EINTR,)
         if https_connection_factory is not None:
             self.https_connection_factory = https_connection_factory[0]
             self.http_exceptions += https_connection_factory[1]
