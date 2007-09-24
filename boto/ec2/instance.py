@@ -128,7 +128,8 @@ class Instance:
 
     def update(self):
         rs = self.connection.get_all_instances([self.id])
-        self._update(rs[0].instances[0])
+        if len(rs) > 0:
+            self._update(rs[0].instances[0])
 
     def stop(self):
         rs = self.connection.terminate_instances([self.id])
