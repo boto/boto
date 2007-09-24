@@ -23,17 +23,7 @@ import sys, os, imp
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 
-def find_class(params):
-    modules = params['module_name'].split('.')
-    path = None
-    for module_name in modules:
-        fp, pathname, description = imp.find_module(module_name, path)
-        module = imp.load_module(module_name, fp, pathname, description)
-        if hasattr(module, '__path__'):
-            path = module.__path__
-    return getattr(module, params['class_name'])
-  
-class AmiInitializer:
+class Bootstrap:
 
     def __init__(self):
         self.inst_data = get_instance_metadata()
@@ -57,34 +47,17 @@ class AmiInitializer:
         fp.close()
 
     def create_working_dir(self):
-        self.working_dir = self.user_data.get('working_dir',
-                                              os.path.expanduser('~/pyami'))
+        self.working_dir = self.user_data.get('working_dir', '/mnt/pyami')
         print 'Working directory: %s' % self.working_dir
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)
         sys.path.append(self.working_dir)
 
-    def get_script(self):
-        c = boto.connect_s3(self.user_data['aws_access_key_id'],
-                            self.user_data['aws_secret_access_key'])
-        bucket = c.get_bucket(self.user_data['bucket_name'])
-        module_name = self.user_data['module_name'] + '.py'
-        script = bucket.get_key(module_name)
-        print 'Fetching %s.%s' % (bucket.name, script.name)
-        script_path = os.path.join(self.working_dir, module_name)
-        script.get_contents_to_filename(script_path)
-
-    def run_script(self):
-        cls = find_class(self.user_data)
-        s = cls(self.inst_data, self.user_data)
-        s.run()
-
     def run(self):
         self.write_metadata()
         self.write_env_setup()
         self.create_working_dir()
-        self.get_script()
-        self.run_script()
 
-ai = AmiInitializer()
-ai.run()
+if __name__ == "__main__":
+    bs = Bootstrap()
+    bs.run()
