@@ -19,11 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import sys, os, imp
+import sys, os
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 
 class Bootstrap:
+    """
+    The Bootstrap class is instantiated and run as part of the PyAMI
+    instance initialization process.  The methods in this class will
+    be run from the rc.local script of the instance and will be run
+    as the root user.
+    """
 
     def __init__(self):
         self.inst_data = get_instance_metadata()
@@ -53,11 +59,11 @@ class Bootstrap:
             os.mkdir(self.working_dir)
         sys.path.append(self.working_dir)
 
-    def run(self):
+    def main(self):
         self.write_metadata()
         self.write_env_setup()
         self.create_working_dir()
 
 if __name__ == "__main__":
     bs = Bootstrap()
-    bs.run()
+    bs.main()

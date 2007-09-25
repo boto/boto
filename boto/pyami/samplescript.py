@@ -22,9 +22,8 @@
 
 class AmiScript:
 
-    def __init__(self, instance_data, user_data):
-        self.instance_data = instance_data
-        self.user_data = user_data
+    def __init__(self, config):
+        self.config = config
 
     def run(self):
         print 'Hello from PyAMI'

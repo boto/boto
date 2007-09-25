@@ -29,15 +29,30 @@ SYNOPSIS
     launch_ami.py -m module -c class_name -a ami_id -b bucket_name [-r] [-s]
                   [-g group] [-k key_name] [-n num_instances]
                   [-w working_dir] extra_data
+    launch_ami.py -a ami_id [-b bucket_name] [-s script_name]
+                  [-m module] [-c class_name] [-r] 
+                  [-g group] [-k key_name] [-n num_instances]
+                  [-w] [extra_data]
     Where:
-        module - the name of the Python module you wish to pass to the AMI
-        class_name - the name of the class to be instantiated within the module
         ami_id - the id of the AMI you wish to launch
+        module - The name of the Python module containing the class you
+                 want to run when the instance is started.  If you use this
+                 option the Python module must already be stored on the
+                 instance in a location that is on the Python path.
+        script_file - The name of a local Python module that you would like
+                      to have copied to S3 and then run on the instance
+                      when it is started.  The specified module must be
+                      import'able (i.e. in your local Python path).  It
+                      will then be copied to the specified bucket in S3
+                      (see the -b option).  Once the new instance(s)
+                      start up the script will be copied from S3 and then
+                      run locally on the instance.
+        class_name - The name of the class to be instantiated within the
+                     module or script file specified.
         bucket_name - the name of the bucket in which the script will be stored
         group - the name of the security group the instance will run in
         key_name - the name of the keypair to use when launching the AMI
         num_instances - how many instances of the AMI to launch (default 1)
-        working_dir - path on newly launched instance used for storing script
         extra_data - additional name-value pairs that will be passed as
                      userdata to the newly launched instance.  These should
                      be of the form "name=value"
@@ -45,7 +60,7 @@ SYNOPSIS
         another instance.  This can be useful during debugging to allow
         you to test a new version of your script without shutting down
         your instance and starting up another one.
-        The -s option tells the script to run synchronously, meaning to
+        The -w option tells the script to run synchronously, meaning to
         wait until the instance is actually up and running.  It then prints
         the IP address and internal and external DNS names before exiting.
 """
@@ -56,22 +71,22 @@ def usage():
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c:g:hk:m:rsw:',
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c:g:hk:m:n:rs:w',
                                    ['ami', 'bucket', 'class', 'group', 'help',
                                     'keypair', 'module', 'numinstances',
-                                    'reload', 'working_dir'])
+                                    'reload', 'script_name', 'wait'])
     except:
         usage()
     params = {'module_name' : None,
+              'script_name' : None,
               'class_name' : None,
               'bucket_name' : None,
               'group' : 'default',
               'keypair' : None,
               'ami' : None,
-              'working_dir' : None}
+              'num_instances' : 1}
     reload = None
     wait = None
-    ami = None
     for o, a in opts:
         if o in ('-a', '--ami'):
             params['ami'] = a
@@ -91,10 +106,10 @@ def main():
             params['num_instances'] = int(a)
         if o in ('-r', '--reload'):
             reload = True
-        if o in ('-s', '--synchronous'):
+        if o in ('-s', '--script'):
+            params['script_name'] = a
+        if o in ('-w', '--wait'):
             wait = True
-        if o in ('-w', '--working_dir'):
-            params['working_dir'] = a
 
     # check required fields
     required = ['ami', 'bucket_name', 'class_name', 'module_name']
@@ -102,17 +117,18 @@ def main():
         if not params.get(pname, None):
             print '%s is required' % pname
             usage()
-    # first copy the desired module file to S3 bucket
-    if reload:
-        print 'Reloading module %s to S3' % params['module_name']
-    else:
-        print 'Copying module %s to S3' % params['module_name']
-    l = imp.find_module(params['module_name'])
-    c = boto.connect_s3()
-    bucket = c.get_bucket(params['bucket_name'])
-    key = bucket.new_key(params['module_name']+'.py')
-    key.set_contents_from_file(l[0])
-    params['script_md5'] = key.md5
+    if params['script_name']:
+        # first copy the desired module file to S3 bucket
+        if reload:
+            print 'Reloading module %s to S3' % params['script_name']
+        else:
+            print 'Copying module %s to S3' % params['script_name']
+        l = imp.find_module(params['script_name'])
+        c = boto.connect_s3()
+        bucket = c.get_bucket(params['script_name'])
+        key = bucket.new_key(params['script_name']+'.py')
+        key.set_contents_from_file(l[0])
+        params['script_md5'] = key.md5
     # we have everything we need, now build userdata string
     l = []
     for k, v in params.items():
