@@ -34,6 +34,7 @@ class Bootstrap:
     def __init__(self):
         self.inst_data = get_instance_metadata()
         self.user_data = get_instance_userdata(sep='|')
+        self.working_dir = '/mnt/pyami'
 
     def write_metadata(self):
         fp = open(os.path.expanduser('~pyami/metadata.ini'), 'w')
@@ -43,6 +44,7 @@ class Bootstrap:
         fp.write('[Userdata]\n')
         for key in self.user_data:
             fp.write('%s: %s\n' % (key, self.user_data[key]))
+        fp.write('working_dir: %s\n' % self.working_dir)
         fp.close()
 
     def write_env_setup(self):
@@ -53,7 +55,6 @@ class Bootstrap:
         fp.close()
 
     def create_working_dir(self):
-        self.working_dir = self.user_data.get('working_dir', '/mnt/pyami')
         print 'Working directory: %s' % self.working_dir
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)

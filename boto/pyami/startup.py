@@ -53,7 +53,8 @@ class Startup:
             bucket = c.get_bucket(self.get_user_data('bucket_name'))
             script = bucket.get_key(script_name)
             print 'Fetching %s.%s' % (bucket.name, script.name)
-            script_path = os.path.join(self.working_dir, script_name)
+            script_path = os.path.join(self.get_user_data('working_dir'),
+                                                          script_name)
             script.get_contents_to_filename(script_path)
             self.module_name = script_name
         else:
