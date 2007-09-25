@@ -45,7 +45,7 @@ class Startup:
         return val
 
     def get_script(self):
-        script_name = self.user_data['script_name']
+        script_name = self.get_user_data['script_name']
         if script_name:
             c = boto.connect_s3(self.get_user_data('aws_access_key_id'),
                                 self.get_user_data('aws_secret_access_key'))
@@ -57,7 +57,7 @@ class Startup:
             script.get_contents_to_filename(script_path)
             self.module_name = script_name
         else:
-            self.module_name = self.user_data['module_name']
+            self.module_name = self.get_user_data['module_name']
 
     def run_script(self):
         if self.module_name:
