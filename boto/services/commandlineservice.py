@@ -24,10 +24,17 @@ import os
 
 class CommandLineService(Service):
 
-    def run_command(self, command, msg):
+    def log_command(self, output_fp):
         log_file_name = self.__class__.__name__ + '.log'
         log_file_name = os.path.join(self.working_dir, log_file_name)
         log_fp = open(log_file_name, 'a')
+        output_fp.seek(0)
+        log_fp.write(output_fp.read())
+        log_fp.close()
+        output_fp.close()
+        
+    def run_command(self, command, msg):
+        log_fp = StringIO()
         log_fp.write('\n---------------------------\n')
         log_fp.write('running:\n%s\n' % command)
         t = os.popen4(command)
@@ -35,7 +42,7 @@ class CommandLineService(Service):
         log_fp.write('\n')
         log_fp.write(t[1].read())
         log_fp.write('\n')
-        log_fp.close()
         t[0].close()
         t[1].close()
+        self.log_command(log_fp)
         
