@@ -63,8 +63,8 @@ class Startup:
         if self.module_name:
             cls = find_class(self.module_name,
                              self.get_user_data('class_name'))
-        s = cls(self.config)
-        s.run()
+            s = cls(self.config)
+            s.run()
 
     def main(self):
         self.read_metadata()
