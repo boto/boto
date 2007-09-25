@@ -59,7 +59,6 @@ class Bootstrap:
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)
         os.chmod(self.working_dir, 0777)
-        sys.path.append(self.working_dir)
 
     def main(self):
         self.write_metadata()

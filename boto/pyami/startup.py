@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os
+import os, sys
 import boto
 import ConfigParser
 from boto.utils import find_class
@@ -27,7 +27,7 @@ from boto.utils import find_class
 class Startup:
 
     def read_metadata(self):
-        self.config = ConfigParser.SafeConfigParser()
+        self.config = ConfigParser.RawConfigParser()
         self.config.read(os.path.expanduser('~pyami/metadata.ini'))
 
     def get_instance_data(self, name):
@@ -56,7 +56,8 @@ class Startup:
             script_path = os.path.join(self.get_user_data('working_dir'),
                                                           script_name)
             script.get_contents_to_filename(script_path)
-            self.module_name = script_name
+            self.module_name = self.get_user_data('script_name')
+            sys.path.append(self.get_user_data('working_dir'))
         else:
             self.module_name = self.get_user_data('module_name')
 
