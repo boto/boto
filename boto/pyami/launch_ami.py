@@ -112,7 +112,7 @@ def main():
             wait = True
 
     # check required fields
-    required = ['ami', 'bucket_name', 'class_name', 'module_name']
+    required = ['ami']
     for pname in required:
         if not params.get(pname, None):
             print '%s is required' % pname
