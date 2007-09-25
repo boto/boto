@@ -41,6 +41,7 @@ import hmac
 import re
 import sha
 import urllib
+import imp
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -145,4 +146,13 @@ def get_instance_userdata(version='latest', sep=None):
         print 'problem reading metadata'
     return user_data
     
+def find_class(module_name, class_name):
+    modules = module_name.split('.')
+    path = None
+    for module_name in modules:
+        fp, pathname, description = imp.find_module(module_name, path)
+        module = imp.load_module(module_name, fp, pathname, description)
+        if hasattr(module, '__path__'):
+            path = module.__path__
+    return getattr(module, class_name)
     
