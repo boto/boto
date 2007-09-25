@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.services.service import Service
-import os
+import os, StringIO
 
 class CommandLineService(Service):
 
@@ -34,7 +34,7 @@ class CommandLineService(Service):
         output_fp.close()
         
     def run_command(self, command, msg):
-        log_fp = StringIO()
+        log_fp = StringIO.StringIO()
         log_fp.write('\n---------------------------\n')
         log_fp.write('running:\n%s\n' % command)
         t = os.popen4(command)
