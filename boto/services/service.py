@@ -157,7 +157,7 @@ class Service:
             self.bucket_cache[bucket_name] = bucket
             return bucket
 
-    def create_msg(self, key, params=None):
+    def create_msg(self, key, params=None, bucket_name=None):
         m = self.input_queue.new_message()
         if params:
             m.update(params)
@@ -176,9 +176,16 @@ class Service:
             m['FileModifiedDate'] = time.strftime(ISO8601, t)
             t = time.gmtime(s[9])
             m['FileCreateDate'] = time.strftime(ISO8601, t)
+        else:
+            m['OriginalFileName'] = key.name
+            m['OriginalLocation'] = key.bucket.name
+            m['ContentType'] = key.content_type
         m['Date'] = time.strftime(RFC1123, time.gmtime())
         m['Host'] = gethostname()
-        m['Bucket'] = key.bucket.name
+        if bucket_name:
+            m['Bucket'] = bucket_name
+        else:
+            m['Bucket'] = key.bucket.name
         m['InputKey'] = key.name
         m['Size'] = key.size
         return m
