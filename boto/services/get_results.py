@@ -34,7 +34,8 @@ class ResultProcessor:
         self.queue_name = queue_name
         self.service = Service(output_queue_name=queue_name,
                                read_userdata=False,
-                               mimetype_files=mimetype_files)
+                               mimetype_files=mimetype_files,
+                               preserve_file_name=True)
         self.log_fp = None
         self.num_files = 0
         self.total_time = 0
@@ -80,13 +81,12 @@ class ResultProcessor:
         total_time = 0
         if not os.path.isdir(path):
             os.mkdir(path)
-        m = self.service.get_result(path, original_name=True, get_file=get_file)
+        m = self.service.get_result(path, get_file=get_file)
         while m:
             total_files += 1
             self.log_message(m, path)
             self.calculate_stats(m)
-            m = self.service.get_result(path, original_name=True,
-                                        get_file=get_file)
+            m = self.service.get_result(path, get_file=get_file)
         if self.log_fp:
             self.log_fp.close()
         print '%d results successfully retrieved.' % total_files
@@ -131,6 +131,8 @@ def main():
     path = args[0]
     if len(args) > 1:
         tags = args[1]
+    # mimetypes doesn't know about flv files, let's clue it in
+    mimetypes.add_type('video/x-flv', '.flv')
     s = ResultProcessor(queue_name, mimetype_file)
     s.get_results(path, get_file)
     return 1

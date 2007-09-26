@@ -62,7 +62,7 @@ class Service:
                  input_queue_name=None, output_queue_name=None,
                  on_completion='shutdown', notify_email=None,
                  read_userdata=True, working_dir=None, log_queue_name=None,
-                 mimetype_files=None):
+                 mimetype_files=None, preserve_file_name=False):
         self.meta_data = {}
         self.queue_cache = {}
         self.bucket_cache = {}
@@ -73,6 +73,7 @@ class Service:
         self.log_queue_name = log_queue_name
         self.notify_email = notify_email
         self.on_completion = on_completion
+        self.preserve_file_name = preserve_file_name
         # now override any values with instance user data passed on startup
         if read_userdata:
             self.get_userdata()
@@ -156,10 +157,6 @@ class Service:
             self.bucket_cache[bucket_name] = bucket
             return bucket
 
-    def key_exists(self, bucket_name, key):
-        bucket = self.get_bucket(bucket_name)
-        return bucket.lookup(key)
-
     def create_msg(self, key, params=None):
         m = self.input_queue.new_message()
         if params:
@@ -182,7 +179,7 @@ class Service:
         m['Date'] = time.strftime(RFC1123, time.gmtime())
         m['Host'] = gethostname()
         m['Bucket'] = key.bucket.name
-        m['InputKey'] = key.key
+        m['InputKey'] = key.name
         m['Size'] = key.size
         return m
 
@@ -190,7 +187,11 @@ class Service:
         if not metadata:
             metadata = {}
         bucket = self.get_bucket(bucket_name)
-        k = bucket.new_key()
+        if self.preserve_file_name:
+            key_name = os.path.split(path)[1]
+        else:
+            key_name = None
+        k = bucket.new_key(key_name)
         k.update_metadata(metadata)
         successful = False
         num_tries = 0
@@ -212,8 +213,7 @@ class Service:
                 print e
                 time.sleep(self.RetryDelay)
 
-    def get_result(self, path, original_name=False,
-                   default_ext='.bin', delete_msg=True, get_file=True):
+    def get_result(self, path, delete_msg=True, get_file=True):
         q = self.get_queue(self.output_queue_name)
         m = q.read()
         if m:
@@ -221,20 +221,10 @@ class Service:
                 outputs = m['OutputKey'].split(',')
                 for output in outputs:
                     key_name, type = output.split(';')
-                    mime_type = type.split('=')[1]
-                    if original_name:
-                        file_name = m.get('OriginalFileName', key_name)
-                        file_name, ext = os.path.splitext(file_name)
-                        ext = mimetypes.guess_extension(mime_type)
-                        if not ext:
-                            ext = default_ext
-                        file_name = file_name + ext
-                    else:
-                        file_name = key_name
                     bucket = self.get_bucket(m['Bucket'])
                     key = bucket.lookup(key_name)
-                    print 'retrieving file: %s' % file_name
-                    key.get_contents_to_filename(os.path.join(path, file_name))
+                    print 'retrieving file: %s' % key_name
+                    key.get_contents_to_filename(os.path.join(path, key_name))
             if delete_msg:
                 q.delete_message(m)
         return m
@@ -261,19 +251,19 @@ class Service:
         return message
 
     # retrieve the source file from S3
-    def get_file(self, bucket_name, key, file_name):
+    def get_file(self, bucket_name, key_name, file_name):
         self.log(method='get_file', bucket_name=bucket_name,
-                 key=key, file_name=file_name)
+                 key=key_name, file_name=file_name)
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
             try:
                 num_tries += 1
-                print 'getting file %s.%s' % (bucket_name, key)
+                print 'getting file %s.%s' % (bucket_name, key_name)
                 bucket = self.get_bucket(bucket_name)
-                k = Key(bucket)
-                k.key = key
-                k.get_contents_to_filename(file_name)
+                key = Key(bucket)
+                key.name = key_name
+                key.get_contents_to_filename(file_name)
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error[%s]'
@@ -285,18 +275,23 @@ class Service:
         return []
 
     # store result file in S3
-    def put_file(self, bucket_name, file_name):
+    def put_file(self, bucket_name, file_path):
         self.log(method='put_file', bucket_name=bucket_name,
-                 file_name=file_name)
+                 file_path=file_path)
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
             try:
                 num_tries += 1
                 bucket = self.get_bucket(bucket_name)
-                k = bucket.new_key()
-                k.set_contents_from_filename(file_name)
-                print 'putting file %s as %s.%s' % (file_name, bucket_name, k.key)
+                if self.preserve_file_name:
+                    key_name = os.path.split(file_path)[1]
+                else:
+                    key_name = None
+                k = bucket.new_key(key_name)
+                k.set_contents_from_filename(file_path)
+                print 'putting file %s as %s.%s' % (file_path, bucket_name,
+                                                    k.name)
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error'
@@ -370,15 +365,17 @@ class Service:
                     successful_reads += 1
                     output_message = MHMessage(None, input_message.get_body())
                     in_key = input_message['InputKey']
+                    in_file_name = input_message.get('OriginalFileName',
+                                                     'in_file')
                     self.get_file(input_message['Bucket'], in_key,
-                                  os.path.join(self.working_dir,'in_file'))
+                                  os.path.join(self.working_dir,in_file_name))
                     results = self.process_file(os.path.join(self.working_dir,
-                                                             'in_file'),
+                                                             in_file_name),
                                                 output_message)
                     output_keys = []
                     for file, type in results:
                         key = self.put_file(input_message['Bucket'], file)
-                        output_keys.append('%s;type=%s' % (key.key, type))
+                        output_keys.append('%s;type=%s' % (key.name, type))
                     output_message['OutputKey'] = ','.join(output_keys)
                     self.write_message(output_message)
                     self.delete_message(input_message)

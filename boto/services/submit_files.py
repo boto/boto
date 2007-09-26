@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import getopt, sys, os, time
+import getopt, sys, os, time, mimetypes
 from boto.services.service import Service
 
 def submit_cb(bytes_so_far, total_bytes):
@@ -7,11 +7,13 @@ def submit_cb(bytes_so_far, total_bytes):
 
 class FileSubmitter:
 
-    def __init__(self, bucket_name, queue_name, cb=None, num_cb=0):
+    def __init__(self, bucket_name, queue_name, cb=None, num_cb=0,
+                 gen_key=False):
         self.bucket_name = bucket_name
         self.queue_name = queue_name
+        preserve = not gen_key
         self.service = Service(input_queue_name=queue_name,
-                               read_userdata=False)
+                               read_userdata=False, preserve_file_name=preserve)
         self.cb = cb
         self.num_cb = num_cb
 
@@ -34,8 +36,13 @@ class FileSubmitter:
                         dirs.remove(ignore)
                 for file in files:
                     fullpath = os.path.join(root, file)
+                    if generate_keys:
+                        key_name = None
+                    else:
+                        key_name = file
                     self.service.submit_file(fullpath, self.bucket_name,
-                                             metadata, self.cb)
+                                             key_name, metadata,
+                                             self.cb, self.num_cb)
                     total += 1
         elif os.path.isfile(path):
             self.service.submit_file(path, self.bucket_name, metadata,
@@ -46,12 +53,13 @@ class FileSubmitter:
         print '%d files successfully submitted.' % total
 
 def usage():
-    print 'submit_files.py  [-b bucketname] [-p] [-q queuename] path [tags]'
+    print 'submit_files.py  [-b bucketname] [-g] [-p] [-q queuename] path [tags]'
   
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hb:p:q:',
-                                   ['help', 'bucket', 'progress', 'queue'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hb:gp:q:',
+                                   ['help', 'bucket', 'gen_key',
+                                    'progress', 'queue'])
     except:
         usage()
         sys.exit(2)
@@ -61,12 +69,15 @@ def main():
     num_cb = 0
     tags = ''
     notify = False
+    gen_key = False
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
             sys.exit()
         if o in ('-b', '--bucket'):
             bucket_name = a
+        if o in ('-g', '--gen_key'):
+            gen_key = True
         if o in ('-p', '--progress'):
             num_cb = int(a)
             cb = submit_cb
@@ -78,7 +89,10 @@ def main():
     path = args[0]
     if len(args) > 1:
         tags = args[1]
-    s = FileSubmitter(bucket_name, queue_name, cb=cb, num_cb=num_cb)
+    # mimetypes doesn't know about flv files, let's clue it in
+    mimetypes.add_type('video/x-flv', '.flv')
+    s = FileSubmitter(bucket_name, queue_name, cb=cb, num_cb=num_cb,
+                      gen_key=gen_key)
     s.submit_path(path, tags, ignore_dirs=['.svn'])
     return 1
 
