@@ -26,9 +26,6 @@ from boto.utils import get_instance_userdata
 
 usage_string = """
 SYNOPSIS
-    launch_ami.py -m module -c class_name -a ami_id -b bucket_name [-r] [-s]
-                  [-g group] [-k key_name] [-n num_instances]
-                  [-w working_dir] extra_data
     launch_ami.py -a ami_id [-b bucket_name] [-s script_name]
                   [-m module] [-c class_name] [-r] 
                   [-g group] [-k key_name] [-n num_instances]
@@ -53,6 +50,8 @@ SYNOPSIS
         group - the name of the security group the instance will run in
         key_name - the name of the keypair to use when launching the AMI
         num_instances - how many instances of the AMI to launch (default 1)
+        input_queue_name - Name of SQS to read input messages from
+        output_queue_name - Name of SQS to write output messages to
         extra_data - additional name-value pairs that will be passed as
                      userdata to the newly launched instance.  These should
                      be of the form "name=value"
@@ -71,9 +70,10 @@ def usage():
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c:g:hk:m:n:rs:w',
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c:g:hi:k:m:n:o:rs:w',
                                    ['ami', 'bucket', 'class', 'group', 'help',
-                                    'keypair', 'module', 'numinstances',
+                                    'inputqueue', 'keypair', 'module',
+                                    'numinstances', 'outputqueue',
                                     'reload', 'script_name', 'wait'])
     except:
         usage()
@@ -84,7 +84,9 @@ def main():
               'group' : 'default',
               'keypair' : None,
               'ami' : None,
-              'num_instances' : 1}
+              'num_instances' : 1,
+              'input_queue_name' : None,
+              'output_queue_name' : None}
     reload = None
     wait = None
     for o, a in opts:
@@ -98,12 +100,16 @@ def main():
             params['group'] = a
         if o in ('-h', '--help'):
             usage()
+        if o in ('-i', '--inputqueue'):
+            params['input_queue_name'] = a
         if o in ('-k', '--keypair'):
             params['keypair'] = a
         if o in ('-m', '--module'):
             params['module_name'] = a
         if o in ('-n', '--num_instances'):
             params['num_instances'] = int(a)
+        if o in ('-o', '--outputqueue'):
+            params['output_queue_name'] = a
         if o in ('-r', '--reload'):
             reload = True
         if o in ('-s', '--script'):
@@ -125,7 +131,7 @@ def main():
             print 'Copying module %s to S3' % params['script_name']
         l = imp.find_module(params['script_name'])
         c = boto.connect_s3()
-        bucket = c.get_bucket(params['script_name'])
+        bucket = c.get_bucket(params['bucket_name'])
         key = bucket.new_key(params['script_name']+'.py')
         key.set_contents_from_file(l[0])
         params['script_md5'] = key.md5

@@ -38,10 +38,10 @@ class Bootstrap:
 
     def write_metadata(self):
         fp = open(os.path.expanduser('~pyami/metadata.ini'), 'w')
-        fp.write('[Metadata]\n')
+        fp.write('[Instance]\n')
         for key in self.inst_data:
             fp.write('%s: %s\n' % (key, self.inst_data[key]))
-        fp.write('[Userdata]\n')
+        fp.write('[User]\n')
         for key in self.user_data:
             fp.write('%s: %s\n' % (key, self.user_data[key]))
         fp.write('working_dir: %s\n' % self.working_dir)
