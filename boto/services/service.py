@@ -375,13 +375,14 @@ class Service:
                     results = self.process_file(os.path.join(self.working_dir,
                                                              in_file_name),
                                                 output_message)
-                    output_keys = []
-                    for file, type in results:
-                        key = self.put_file(input_message['Bucket'], file)
-                        output_keys.append('%s;type=%s' % (key.name, type))
-                    output_message['OutputKey'] = ','.join(output_keys)
-                    self.write_message(output_message)
-                    self.delete_message(input_message)
+                    if results != None:
+                        output_keys = []
+                        for file, type in results:
+                            key = self.put_file(input_message['Bucket'], file)
+                            output_keys.append('%s;type=%s' % (key.name, type))
+                        output_message['OutputKey'] = ','.join(output_keys)
+                        self.write_message(output_message)
+                        self.delete_message(input_message)
                     self.cleanup()
                 else:
                     empty_reads += 1
