@@ -32,14 +32,14 @@ class Startup:
 
     def get_instance_data(self, name):
         try:
-            val = self.config.get('Metadata', name)
+            val = self.config.get('Instance', name)
         except:
             val = None
         return val
 
     def get_user_data(self, name):
         try:
-            val = self.config.get('Userdata', name)
+            val = self.config.get('User', name)
         except:
             val = None
         return val
