@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.services.service import Service
-import os, StringIO
+import popen2, os, StringIO
 
 class CommandLineService(Service):
 
@@ -37,12 +37,15 @@ class CommandLineService(Service):
         log_fp = StringIO.StringIO()
         log_fp.write('\n---------------------------\n')
         log_fp.write('running:\n%s\n' % command)
-        t = os.popen4(command)
+        p = popen2.Popen4(command)
+        status = p.wait()
         log_fp.write(msg.get_body())
         log_fp.write('\n')
-        log_fp.write(t[1].read())
+        log_fp.write(p.fromchild.read())
         log_fp.write('\n')
-        t[0].close()
-        t[1].close()
-        self.log_command(log_fp)
+        exit_code = os.WEXITSTATUS(status)
+        # only log unsuccessful commands
+        if exit_code != 0:
+            self.log_command(log_fp)
+        return exit_code
         

@@ -288,41 +288,44 @@ class Service:
                     key_name = os.path.split(file_path)[1]
                 else:
                     key_name = None
-                k = bucket.new_key(key_name)
-                k.set_contents_from_filename(file_path)
+                key = bucket.new_key(key_name)
+                key.set_contents_from_filename(file_path)
                 print 'putting file %s as %s.%s' % (file_path, bucket_name,
-                                                    k.name)
+                                                    key.name)
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error'
                 print e
                 time.sleep(self.RetryDelay)
-        return k
+        return key
 
-    # write message to each output queue
-    def write_message(self, message):
-        self.log(method='write_message')
-        message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                                 time.gmtime())
-        message['Server'] = self.__class__.__name__
-        if os.environ.has_key('HOSTNAME'):
-            message['Host'] = os.environ['HOSTNAME']
-        else:
-            message['Host'] = 'unknown'
-        queue = self.get_queue(self.output_queue_name)
-        print 'writing message to %s' % queue.id
+    def _write_message(self, queue, message):
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
             try:
                 num_tries += 1
-                print message.get_body()
                 queue.write(message)
                 successful = True
             except SQSError, e:
                 print 'caught SQSError'
                 print e
                 time.sleep(self.RetryDelay)
+
+    # write message to each output queue
+    def write_message(self, message):
+        if self.output_queue_name:
+            self.log(method='write_message')
+            message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
+                                                     time.gmtime())
+            message['Server'] = self.__class__.__name__
+            if os.environ.has_key('HOSTNAME'):
+                message['Host'] = os.environ['HOSTNAME']
+            else:
+                message['Host'] = 'unknown'
+            queue = self.get_queue(self.output_queue_name)
+            print 'writing message to %s' % queue.id
+            self._write_message(queue, message)
 
     # delete message from input queue
     def delete_message(self, message):
