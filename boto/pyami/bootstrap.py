@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import sys, os
+import sys, os, pwd
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 
@@ -46,6 +46,9 @@ class Bootstrap:
             fp.write('%s: %s\n' % (key, self.user_data[key]))
         fp.write('working_dir: %s\n' % self.working_dir)
         fp.close()
+        # chown to pyami user
+        t = pwd.getpwnam('pyami')
+        os.chown(os.path.expanduser('~pyami/metadata.ini'), t[2], t[3])
 
     def write_env_setup(self):
         fp = open('/etc/profile.d/aws.sh', 'w')
