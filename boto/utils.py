@@ -40,7 +40,7 @@ import base64
 import hmac
 import re
 import sha
-import urllib
+import urllib, urllib2
 import imp
 
 METADATA_PREFIX = 'x-amz-meta-'
@@ -156,3 +156,11 @@ def find_class(module_name, class_name):
             path = module.__path__
     return getattr(module, class_name)
     
+def update_dme(username, password, dme_id, ip_address):
+    """
+    Update your Dynamic DNS record with DNSMadeEasy.com
+    """
+    dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
+    dme_url += '?username=%s&password=%s&id=%s&ip=%s'
+    s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
+    return s.read()
