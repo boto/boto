@@ -26,7 +26,7 @@ from boto.utils import get_instance_userdata
 
 usage_string = """
 SYNOPSIS
-    launch_ami.py -a ami_id [-b bucket_name] [-s script_name]
+    launch_ami.py -a ami_id [-b script_bucket] [-s script_name]
                   [-m module] [-c class_name] [-r] 
                   [-g group] [-k key_name] [-n num_instances]
                   [-w] [extra_data]
@@ -46,7 +46,8 @@ SYNOPSIS
                       run locally on the instance.
         class_name - The name of the class to be instantiated within the
                      module or script file specified.
-        bucket_name - the name of the bucket in which the script will be stored
+        script_bucket - the name of the bucket in which the script will be
+                        stored
         group - the name of the security group the instance will run in
         key_name - the name of the keypair to use when launching the AMI
         num_instances - how many instances of the AMI to launch (default 1)
@@ -80,7 +81,7 @@ def main():
     params = {'module_name' : None,
               'script_name' : None,
               'class_name' : None,
-              'bucket_name' : None,
+              'script_bucket' : None,
               'group' : 'default',
               'keypair' : None,
               'ami' : None,
@@ -93,7 +94,7 @@ def main():
         if o in ('-a', '--ami'):
             params['ami'] = a
         if o in ('-b', '--bucket'):
-            params['bucket_name'] = a
+            params['script_bucket'] = a
         if o in ('-c', '--class'):
             params['class_name'] = a
         if o in ('-g', '--group'):
@@ -131,7 +132,7 @@ def main():
             print 'Copying module %s to S3' % params['script_name']
         l = imp.find_module(params['script_name'])
         c = boto.connect_s3()
-        bucket = c.get_bucket(params['bucket_name'])
+        bucket = c.get_bucket(params['script_bucket'])
         key = bucket.new_key(params['script_name']+'.py')
         key.set_contents_from_file(l[0])
         params['script_md5'] = key.md5

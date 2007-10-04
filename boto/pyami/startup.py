@@ -50,7 +50,7 @@ class Startup:
             c = boto.connect_s3(self.get_user_data('aws_access_key_id'),
                                 self.get_user_data('aws_secret_access_key'))
             script_name = script_name + '.py'
-            bucket = c.get_bucket(self.get_user_data('bucket_name'))
+            bucket = c.get_bucket(self.get_user_data('script_name'))
             script = bucket.get_key(script_name)
             print 'Fetching %s.%s' % (bucket.name, script.name)
             script_path = os.path.join(self.get_user_data('working_dir'),
