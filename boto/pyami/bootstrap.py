@@ -53,8 +53,12 @@ class Bootstrap:
     def write_env_setup(self):
         fp = open('/etc/profile.d/aws.sh', 'w')
         fp.write('# AWS Environment Setup Script\n')
-        fp.write('export AWS_ACCESS_KEY_ID=%s\n' % self.user_data['aws_access_key_id'])
-        fp.write('export AWS_SECRET_ACCESS_KEY=%s\n' % self.user_data['aws_secret_access_key'])
+        access_key = self.user_data.get('aws_access_key_id', None)
+        if access_key:
+            fp.write('export AWS_ACCESS_KEY_ID=%s\n' % access_key)
+        secret_key = self.user_data.get('aws_secret_access_key', None)
+        if secret_key:
+            fp.write('export AWS_SECRET_ACCESS_KEY=%s\n' % secret_key)
         fp.close()
 
     def create_working_dir(self):
