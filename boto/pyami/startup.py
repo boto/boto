@@ -65,11 +65,13 @@ class Startup:
             self.module_name = self.get_user_data('module_name')
 
     def run_script(self):
-        if self.module_name:
-            cls = find_class(self.module_name,
-                             self.get_user_data('class_name'))
-            s = cls(self.config)
-            s.run()
+        debug = self.get_user_data('debug')
+        if not debug:
+            if self.module_name:
+                cls = find_class(self.module_name,
+                                 self.get_user_data('class_name'))
+                s = cls(self.config)
+                s.run()
 
     def main(self):
         self.read_metadata()
