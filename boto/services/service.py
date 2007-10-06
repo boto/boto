@@ -153,7 +153,7 @@ class Service:
         if bucket_name in self.bucket_cache.keys():
             return self.bucket_cache[bucket_name]
         else:
-            bucket = self.s3_conn.create_bucket(bucket_name)
+            bucket = self.s3_conn.get_bucket(bucket_name)
             self.bucket_cache[bucket_name] = bucket
             return bucket
 
