@@ -385,7 +385,11 @@ class Service:
                     if results != None:
                         output_keys = []
                         for file, type in results:
-                            key = self.put_file(input_message['Bucket'], file)
+                            if input_message.has_key('OutputBucket'):
+                                output_bucket = input_message['OutputBucket']
+                            else:
+                                output_bucket = input_message['Bucket']
+                            key = self.put_file(output_bucket, file)
                             output_keys.append('%s;type=%s' % (key.name, type))
                         output_message['OutputKey'] = ','.join(output_keys)
                         self.write_message(output_message)
