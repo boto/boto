@@ -27,7 +27,7 @@ from boto.utils import find_class
 class PyamiConfig(ConfigParser.RawConfigParser):
 
     def __init__(self, path):
-        ConfigParser.RawConfigParser.__init_(self)
+        ConfigParser.RawConfigParser.__init__(self)
         self.read(path)
 
     def get_instance(self, name, default=None):
