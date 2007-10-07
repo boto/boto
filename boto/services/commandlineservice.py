@@ -33,7 +33,7 @@ class CommandLineService(Service):
         log_fp.close()
         output_fp.close()
         
-    def run_command(self, command, msg):
+    def run_command(self, command, msg, debug=0):
         log_fp = StringIO.StringIO()
         log_fp.write('\n---------------------------\n')
         log_fp.write('running:\n%s\n' % command)
@@ -44,8 +44,8 @@ class CommandLineService(Service):
         log_fp.write(p.fromchild.read())
         log_fp.write('\n')
         exit_code = os.WEXITSTATUS(status)
-        # only log unsuccessful commands
-        if exit_code != 0:
+        # only log unsuccessful commands unless debug flag is set
+        if exit_code != 0 or debug > 0:
             self.log_command(log_fp)
         return exit_code
         
