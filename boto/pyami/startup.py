@@ -44,9 +44,9 @@ class PyamiConfig(ConfigParser.RawConfigParser):
             val = default
         return val
 
-    def get_int_user(self, name, default=0):
+    def getint_user(self, name, default=0):
         try:
-            val = self.get_int('User', name)
+            val = self.getint('User', name)
         except:
             val = default
         return val
@@ -78,7 +78,7 @@ class Startup:
             self.module_name = self.config.get_user('module_name')
 
     def run_script(self):
-        debug = self.config.get_int_user('debug')
+        debug = self.config.getint_user('debug')
         if debug > 0:
             return
         if self.module_name:
