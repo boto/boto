@@ -24,14 +24,12 @@ import popen2, os, StringIO
 
 class CommandLineService(Service):
 
-    def log_command(self, output_fp):
-        log_file_name = self.__class__.__name__ + '.log'
-        log_file_name = os.path.join(self.working_dir, log_file_name)
-        log_fp = open(log_file_name, 'a')
-        output_fp.seek(0)
-        log_fp.write(output_fp.read())
-        log_fp.close()
-        output_fp.close()
+    def log_data(self, data):
+        out_file_name = self.__class__.__name__ + '.log'
+        out_file_name = os.path.join(self.working_dir, out_file_name)
+        out_fp = open(out_file_name, 'a')
+        out_fp.write(data)
+        out_fp.close()
         
     def run_command(self, command, msg, debug=0):
         log_fp = StringIO.StringIO()
@@ -46,6 +44,7 @@ class CommandLineService(Service):
         exit_code = os.WEXITSTATUS(status)
         # only log unsuccessful commands unless debug flag is set
         if exit_code != 0 or debug > 0:
-            self.log_command(log_fp)
+            log_fp.seek(0)
+            self.log_data(log_fp.read())
         return exit_code
         
