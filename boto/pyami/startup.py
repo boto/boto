@@ -24,54 +24,68 @@ import boto
 import ConfigParser
 from boto.utils import find_class
 
+class PyamiConfig(ConfigParser.RawConfigParser):
+
+    def __init__(self, path):
+        ConfigParser.RawConfigParser.__init_(self)
+        self.read(path)
+
+    def get_instance(self, name, default=None):
+        try:
+            val = self.get('Instance', name)
+        except:
+            val = default
+        return val
+
+    def get_user(self, name, default=None):
+        try:
+            val = self.get('User', name)
+        except:
+            val = default
+        return val
+
+    def get_int_user(self, name, default=0):
+        try:
+            val = self.get_int('User', name)
+        except:
+            val = default
+        return val
+
+    
 class Startup:
 
     def read_metadata(self):
-        self.config = ConfigParser.RawConfigParser()
-        self.config.read(os.path.expanduser('~pyami/metadata.ini'))
-
-    def get_instance_data(self, name):
-        try:
-            val = self.config.get('Instance', name)
-        except:
-            val = None
-        return val
-
-    def get_user_data(self, name):
-        try:
-            val = self.config.get('User', name)
-        except:
-            val = None
-        return val
+        self.config = PyamiConfig(os.path.expanduser('~pyami/metadata.ini'))
 
     def get_script(self):
-        script_name = self.get_user_data('script_name')
+        script_name = self.config.get_user('script_name')
         if script_name:
-            c = boto.connect_s3(self.get_user_data('aws_access_key_id'),
-                                self.get_user_data('aws_secret_access_key'))
+            c = boto.connect_s3(self.config.get_user('aws_access_key_id'),
+                                self.config.get_user('aws_secret_access_key'))
             script_name = script_name + '.py'
-            script_bucket = self.get_user_data('script_bucket')
+            script_bucket = self.config.get_user('script_bucket')
             if not script_bucket:
-                script_bucket = self.get_user_data('bucket_name')
+                script_bucket = self.config.get_user('bucket_name')
             bucket = c.get_bucket(script_bucket)
             script = bucket.get_key(script_name)
             print 'Fetching %s.%s' % (bucket.name, script.name)
-            script_path = os.path.join(self.get_user_data('working_dir'),
+            script_path = os.path.join(self.config.get_user('working_dir'),
                                                           script_name)
             script.get_contents_to_filename(script_path)
-            self.module_name = self.get_user_data('script_name')
-            sys.path.append(self.get_user_data('working_dir'))
+            self.module_name = self.config.get_user('script_name')
+            sys.path.append(self.config.get_user('working_dir'))
         else:
-            self.module_name = self.get_user_data('module_name')
+            self.module_name = self.config.get_user('module_name')
 
     def run_script(self):
-        debug = self.get_user_data('debug')
-        if not debug:
-            if self.module_name:
-                cls = find_class(self.module_name,
-                                 self.get_user_data('class_name'))
-                s = cls(self.config)
-                s.run()
+        debug = self.config.get_int_user('debug')
+        if debug > 0:
+            return
+        if self.module_name:
+            cls = find_class(self.module_name,
+                             self.config.get_user('class_name'))
+            s = cls(self.config)
+            s.run()
 
     def main(self):
         self.read_metadata()
