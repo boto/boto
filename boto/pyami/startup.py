@@ -79,7 +79,8 @@ class Startup:
 
     def run_script(self):
         debug = self.config.getint_user('debug')
-        if debug > 0:
+        # debug level greater than 1 means don't even startup the script
+        if debug > 1:
             return
         if self.module_name:
             cls = find_class(self.module_name,
