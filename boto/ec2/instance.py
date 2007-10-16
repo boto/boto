@@ -73,6 +73,8 @@ class Instance:
         self.key_name = None
         self.shutdown_state = None
         self.previous_state = None
+        self.instance_type = None
+        self.launch_time = None
         self.image_id = None
 
     def __repr__(self):
@@ -103,6 +105,10 @@ class Instance:
             self.state = value
         elif name == 'code':
             self.state_code = int(value)
+        elif name == 'instanceType':
+            self.instance_type = value
+        elif name == 'launchTime':
+            self.launch_time = value
         else:
             setattr(self, name, value)
 

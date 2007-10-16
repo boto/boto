@@ -67,10 +67,12 @@ class Image:
             setattr(self, name, value)
 
     def run(self, min_count=1, max_count=1, key_name=None,
-            security_groups=None, user_data=None, addressing_type=None):
+            security_groups=None, user_data=None,
+            addressing_type=None, instance_type='m1.small'):
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,
-                                             user_data, addressing_type)
+                                             user_data, addressing_type,
+                                             instance_type)
 
     def deregister(self):
         return self.connection.deregister_image(self.id)

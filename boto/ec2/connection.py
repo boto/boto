@@ -33,12 +33,12 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = '2007-03-01'
+    APIVersion = '2007-08-29'
     SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host='ec2.amazonaws.com', debug=0,
+                 host='ec2-pinotage.amazonaws.com', debug=0,
                  https_connection_factory=None):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -154,7 +154,8 @@ class EC2Connection(AWSQueryConnection):
 
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,
-                      user_data=None, addressing_type=None):
+                      user_data=None, addressing_type=None,
+                      instance_type='m1.small'):
         params = {'ImageId':image_id,
                   'MinCount':min_count,
                   'MaxCount': max_count}
@@ -166,6 +167,8 @@ class EC2Connection(AWSQueryConnection):
             params['UserData'] = base64.b64encode(user_data)
         if addressing_type:
             params['AddressingType'] = addressing_type
+        if instance_type:
+            params['InstanceType'] = instance_type
         response = self.make_request('RunInstances', params)
         body = response.read()
         if response.status == 200:
