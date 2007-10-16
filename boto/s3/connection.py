@@ -83,6 +83,13 @@ class S3Connection(AWSAuthConnection):
         rs = bucket.get_all_keys(None, maxkeys=0)
         return bucket
 
+    def lookup(self, bucket_name):
+        try:
+            bucket = self.get_bucket(bucket_name)
+        except:
+            bucket = None
+        return bucket
+
     def create_bucket(self, bucket_name, headers={}):
         path = '/%s' % bucket_name
         response = self.make_request('PUT', urllib.quote(path), headers)
