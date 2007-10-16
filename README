@@ -1,5 +1,5 @@
-boto 0.9b
-09-Jul-2007
+boto 0.9c
+16-Oct-2007
 
 Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
 
@@ -37,6 +37,41 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.9c changes]
+------------------------------------------------------------------------
+r313 | Mitch.Garnaat | 2007-07-24 16:23:40 -0400 (Tue, 24 Jul 2007) | 1 line
+
+Need to reset the ResultSet internal index variable before raising StopIteration.  Fixes Issue-71.
+------------------------------------------------------------------------
+r314 | Mitch.Garnaat | 2007-07-24 23:04:07 -0400 (Tue, 24 Jul 2007) | 1 line
+
+Create RawMessage class to avoid base64 encode/decode of message bodies.  Fixes Issue-72.
+------------------------------------------------------------------------
+r320 | Mitch.Garnaat | 2007-08-14 16:16:18 -0400 (Tue, 14 Aug 2007) | 1 line
+
+Incorporating patch from David Strip for proxy handling.
+------------------------------------------------------------------------
+r322 | Mitch.Garnaat | 2007-09-04 05:07:56 -0400 (Tue, 04 Sep 2007) | 1 line
+
+Incorporating patches from James Gardiner.  These include correcting all references to the variable c to be conn, updating the console sessions to show the Unicode output and showing how to get the dns_name for an instance.  Also added a paragraph on NAT addressing and described how to access the private DNS name
+------------------------------------------------------------------------
+r323 | Mitch.Garnaat | 2007-09-04 05:28:28 -0400 (Tue, 04 Sep 2007) | 1 line
+
+Added patch from James Gardiner which corrects handling of boolean responses from AWS in image.py.  Also fixed a similar problem in securitygroup.py
+------------------------------------------------------------------------
+r325 | Mitch.Garnaat | 2007-09-11 12:48:45 -0400 (Tue, 11 Sep 2007) | 1 line
+
+The ListBucket response body now gets printed to stdout if the debug level is > 1.
+------------------------------------------------------------------------
+r326 | Mitch.Garnaat | 2007-09-11 12:51:59 -0400 (Tue, 11 Sep 2007) | 1 line
+
+Can now generate a URL without the query string authorization part.  Fixes Issue-75.  Also fixed a bug which prevented the upload operation in key.py to be interrupted by a SIG-INT.  Fixes Issue-77.
+------------------------------------------------------------------------
+r327 | Mitch.Garnaat | 2007-09-12 08:45:18 -0400 (Wed, 12 Sep 2007) | 1 line
+
+Forgot to check this in as part of revision 326 to address Issue-77.  This is where the socket_exception_values gets defined.
+------------------------------------------------------------------------
+
 
 [boto 0.9b changes]
 ------------------------------------------------------------------------
