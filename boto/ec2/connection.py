@@ -162,7 +162,13 @@ class EC2Connection(AWSQueryConnection):
         if key_name:
             params['KeyName'] = key_name
         if security_groups:
-            self.build_list_params(params, security_groups, 'SecurityGroup')
+            l = []
+            for group in security_groups:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
             params['UserData'] = base64.b64encode(user_data)
         if addressing_type:
