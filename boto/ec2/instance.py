@@ -136,6 +136,7 @@ class Instance:
         rs = self.connection.get_all_instances([self.id])
         if len(rs) > 0:
             self._update(rs[0].instances[0])
+        return self.state
 
     def stop(self):
         rs = self.connection.terminate_instances([self.id])
