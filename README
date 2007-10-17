@@ -1,4 +1,4 @@
-boto 0.9c
+boto 0.9d
 16-Oct-2007
 
 Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
@@ -37,6 +37,17 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 0.9d changes]
+------------------------------------------------------------------------
+r371 | Mitch.Garnaat | 2007-10-16 21:05:47 -0400 (Tue, 16 Oct 2007) | 1 line
+
+Changing reference to pre-release EC2 server.
+------------------------------------------------------------------------
+r372 | Mitch.Garnaat | 2007-10-16 21:10:16 -0400 (Tue, 16 Oct 2007) | 1 line
+
+update method now returns updated state
+------------------------------------------------------------------------
+
 [boto 0.9c changes]
 ------------------------------------------------------------------------
 r313 | Mitch.Garnaat | 2007-07-24 16:23:40 -0400 (Tue, 24 Jul 2007) | 1 line
