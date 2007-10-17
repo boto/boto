@@ -36,13 +36,8 @@ class FileSubmitter:
                         dirs.remove(ignore)
                 for file in files:
                     fullpath = os.path.join(root, file)
-                    if generate_keys:
-                        key_name = None
-                    else:
-                        key_name = file
                     self.service.submit_file(fullpath, self.bucket_name,
-                                             key_name, metadata,
-                                             self.cb, self.num_cb)
+                                             metadata, self.cb, self.num_cb)
                     total += 1
         elif os.path.isfile(path):
             self.service.submit_file(path, self.bucket_name, metadata,
