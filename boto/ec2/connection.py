@@ -38,7 +38,7 @@ class EC2Connection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host='ec2-pinotage.amazonaws.com', debug=0,
+                 host='ec2.amazonaws.com', debug=0,
                  https_connection_factory=None):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
