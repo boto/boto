@@ -234,11 +234,11 @@ class SQSConnection(AWSAuthConnection):
             should probably return a Boolean indicating success or
             failure.
         """
+        method = 'DELETE'
+        path = queue.id
         if force_deletion:
-            path = 'DELETE?ForceDeletion=true'
-        else:
-            path = 'DELETE'
-        response = self.make_request(path, queue.id)
+            path = path + '?ForceDeletion=true'
+        response = self.make_request(method, path)
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)
