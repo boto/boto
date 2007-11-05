@@ -42,6 +42,7 @@ import re
 import sha
 import urllib, urllib2
 import imp
+import popen2, os, StringIO
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -164,3 +165,37 @@ def update_dme(username, password, dme_id, ip_address):
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
     s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
+
+class ShellCommand(object):
+
+    def __init__(self, command, log_fp=None):
+        self.exit_code = 0
+        self.command = command
+        if log_fp:
+            self.log_fp = log_fp
+        else:
+            self.log_fp = StringIO.StringIO()
+        self.run()
+
+    def run(self):
+        self.log_fp.write('running:\n%s\n' % self.command)
+        p = popen2.Popen4(self.command)
+        status = p.wait()
+        self.log_fp.write(p.fromchild.read())
+        self.log_fp.write('\n')
+        self.exit_code = os.WEXITSTATUS(status)
+        return self.exit_code
+
+    def setReadOnly(self, value):
+        raise AttributeError
+
+    def getStatus(self):
+        return self.exit_code
+
+    status = property(getStatus, setReadOnly, None, 'The exit code for the command')
+
+    def getOutput(self):
+        return self.log_fp.getvalue()
+
+    output = property(getOutput, setReadOnly, None, 'The STDIN and STDERR output of the command')
+    
