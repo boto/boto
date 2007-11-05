@@ -19,16 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os, sys
+import os, sys, StringIO
 import boto
 import ConfigParser
 from boto.utils import find_class
 
+MetadataConfigPath = '/home/pyami/metadata.ini'
+
 class PyamiConfig(ConfigParser.RawConfigParser):
 
-    def __init__(self, path):
+    def __init__(self, path=None, fp=None):
         ConfigParser.RawConfigParser.__init__(self)
-        self.read(path)
+        if path:
+            self.read(path)
+        if fp:
+            self.readfp(fp)
 
     def get_instance(self, name, default=None):
         try:
@@ -51,11 +56,15 @@ class PyamiConfig(ConfigParser.RawConfigParser):
             val = default
         return val
 
+    def dump(self):
+        s = StringIO.StringIO()
+        self.write(s)
+        print s.getvalue()
     
 class Startup:
 
     def read_metadata(self):
-        self.config = PyamiConfig(os.path.expanduser('~pyami/metadata.ini'))
+        self.config = PyamiConfig(os.path.expanduser(MetadataConfigPath))
 
     def get_script(self):
         script_name = self.config.get_user('script_name')
