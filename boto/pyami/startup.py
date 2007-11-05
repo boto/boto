@@ -60,6 +60,17 @@ class PyamiConfig(ConfigParser.RawConfigParser):
         s = StringIO.StringIO()
         self.write(s)
         print s.getvalue()
+
+    def dump_safe(self, fp=None):
+        if not fp:
+            fp = StringIO.StringIO()
+        for section in self.sections():
+            fp.write('[%s]\n' % section)
+            for option in self.options(section):
+                if option == 'aws_secret_access_key':
+                    fp.write('%s: xxxxxxxxxxxxxxxxxx\n' % option)
+                else:
+                    fp.write('%s: %s\n' % (option, self.get(section, option)))
     
 class Startup:
 
