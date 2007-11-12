@@ -19,63 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os, sys, StringIO
+import os, sys
 import boto
-import ConfigParser
 from boto.utils import find_class
+from boto.pyami.config import Config
 
-MetadataConfigPath = '/home/pyami/metadata.ini'
-
-class PyamiConfig(ConfigParser.RawConfigParser):
-
-    def __init__(self, path=None, fp=None):
-        ConfigParser.RawConfigParser.__init__(self)
-        if path:
-            self.read(path)
-        if fp:
-            self.readfp(fp)
-
-    def get_instance(self, name, default=None):
-        try:
-            val = self.get('Instance', name)
-        except:
-            val = default
-        return val
-
-    def get_user(self, name, default=None):
-        try:
-            val = self.get('User', name)
-        except:
-            val = default
-        return val
-
-    def getint_user(self, name, default=0):
-        try:
-            val = self.getint('User', name)
-        except:
-            val = default
-        return val
-
-    def dump(self):
-        s = StringIO.StringIO()
-        self.write(s)
-        print s.getvalue()
-
-    def dump_safe(self, fp=None):
-        if not fp:
-            fp = StringIO.StringIO()
-        for section in self.sections():
-            fp.write('[%s]\n' % section)
-            for option in self.options(section):
-                if option == 'aws_secret_access_key':
-                    fp.write('%s: xxxxxxxxxxxxxxxxxx\n' % option)
-                else:
-                    fp.write('%s: %s\n' % (option, self.get(section, option)))
-    
 class Startup:
-
-    def read_metadata(self):
-        self.config = PyamiConfig(os.path.expanduser(MetadataConfigPath))
 
     def get_script(self):
         script_name = self.config.get_user('script_name')
@@ -109,7 +58,7 @@ class Startup:
             s.run()
 
     def main(self):
-        self.read_metadata()
+        self.config = Config()
         self.get_script()
         self.run_script()
 
