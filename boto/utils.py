@@ -126,7 +126,10 @@ def get_instance_metadata(version='latest'):
         for md in md_fields:
             md_url = url + md
             s = urllib.urlopen(md_url)
-            metadata[md] = s.read()
+            val = s.read()
+            if val.find('\n') > 0:
+                val = val.split('\n')
+            metadata[md] = val
     except:
         print 'problem reading metadata'
     return metadata
