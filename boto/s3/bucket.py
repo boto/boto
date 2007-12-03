@@ -272,3 +272,16 @@ class Bucket:
         policy.acl.add_grant(g1)
         policy.acl.add_grant(g2)
         self.set_acl(policy)
+
+    def get_location(self):
+        path = '/%s' % self.name
+        path = urllib.quote(path) + '?location'
+        response = self.connection.make_request('GET', path)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.LocationConstraint
+        else:
+            raise S3ResponseError(response.status, response.reason, body)

@@ -21,13 +21,17 @@
 
 import xml.sax
 import urllib
-import time
+import time, re
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
 from boto.resultset import ResultSet
 from boto.exception import S3ResponseError, S3CreateError
+
+BucketConfigurationBody = """<CreateBucketConfiguration><LocationConstraint>%s</LocationConstraint></CreateBucketConfiguration>"""
+
+DNSRegex = re.compile('^[a-z0-9]+[a-z0-9\\.-]*[a-z0-9\.]+')
 
 class S3Connection(AWSAuthConnection):
 
@@ -44,6 +48,60 @@ class S3Connection(AWSAuthConnection):
 
     def __iter__(self):
         return self.get_all_buckets()
+
+    def make_request(self, method, path, headers=None, data='', metadata=None):
+        if headers == None:
+            headers = {}
+        if metadata == None:
+            metadata = {}
+        if not headers.has_key('Content-Length'):
+            headers['Content-Length'] = len(data)
+        final_headers = boto.utils.merge_meta(headers, metadata);
+        # ugh
+        # we need to do some ugly stuff here to try to handle the "new style" requests
+        # if the bucketname can be passed in the Host header, we should do it that way
+        # otherwise, do it the old-fashioned (and much more elegant) way
+        # is the path like this: /bucketname
+        path_to_sign = path
+        if path[1:].find('/') < 0:
+            bucketname = path[1:]
+            remainder = '/'
+        else: # or like this /bucketname/key
+            bucketname = path[1:path[1:].find('/')+1]
+            remainder = path[path[1:].find('/')+1:]
+        if len(bucketname) >= 3 and len(bucketname) <= 63:
+            m = DNSRegex.search(bucketname)
+            if m != None and m.end() == len(bucketname):
+                if bucketname.find('-.') < 0:
+                    final_headers['Host'] = '%s.%s' % (bucketname, self.server)
+                    path = remainder
+                    path_to_sign += '/'
+        # add auth header
+        self.add_aws_auth_header(final_headers, method, path_to_sign)
+        if self.use_proxy:
+            path = self.prefix_proxy_to_path(path)
+        try:
+            self.connection.request(method, path, data, final_headers)
+            return self.connection.getresponse()
+        except self.http_exceptions, e:
+            if self.debug:
+                print 'encountered %s exception, trying to recover' % \
+                    e.__class__.__name__
+            self.make_http_connection()
+            self.connection.request(method, path, data, final_headers)
+            return self.connection.getresponse()
+
+    def is_dns_name(self, bucket_name):
+        if len(bucket_name) < 3 or len(bucket_name) > 63:
+            return False
+        m = DNSRegex.search(bucket_name)
+        if m == None:
+            return False
+        if m.end() != len(bucket_name):
+            return False
+        if bucket_name.find('-.') != -1:
+            return False
+        return True
     
     def generate_url(self, expires_in, method, path,
                      headers=None, query_auth=True):
@@ -90,9 +148,14 @@ class S3Connection(AWSAuthConnection):
             bucket = None
         return bucket
 
-    def create_bucket(self, bucket_name, headers={}):
+    def create_bucket(self, bucket_name, headers=None, location=''):
         path = '/%s' % bucket_name
-        response = self.make_request('PUT', urllib.quote(path), headers)
+        if location:
+            body = BucketConfigurationBody % location
+        else:
+            body = ''
+        print 'len(body)=%d' % len(body)
+        response = self.make_request('PUT', urllib.quote(path), headers, body)
         body = response.read()
         if response.status == 409:
              raise S3CreateError(response.status, response.reason, body)
