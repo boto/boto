@@ -82,6 +82,44 @@ class Queue:
         """
         return self.connection.set_queue_attribute(self.id, attribute, value)
 
+    def add_grant(self, permission, email_address=None, user_id=None):
+        """
+        Add a grant to this queue.
+        Inputs:
+            permission - The permission being granted.  One of "ReceiveMessage", "SendMessage" or "FullControl"
+            email_address - the email address of the grantee.  If email_address is supplied, user_id should be None
+            user_id - The ID of the grantee.  If user_id is supplied, email_address should be None
+        Returns:
+            Boolean True if successful, otherwise False
+        """
+        return self.connection.add_grant(self.id, permission, email_address, user_id)
+
+    def remove_grant(self, permission, email_address=None, user_id=None):
+        """
+        Remove a grant from this queue.
+        Inputs:
+            permission - The permission being removed.  One of "ReceiveMessage", "SendMessage" or "FullControl"
+            email_address - the email address of the grantee.  If email_address is supplied, user_id should be None
+            user_id - The ID of the grantee.  If user_id is supplied, email_address should be None
+        Returns:
+            Boolean True if successful, otherwise False
+        """
+        return self.connection.remove_grant(self.id, permission, email_address, user_id)
+
+    def list_grants(self, permission=None, email_address=None, user_id=None):
+        """
+        List the grants to this queue.
+        Inputs:
+            permission - The permission granted.  One of "ReceiveMessage", "SendMessage" or "FullControl".
+                         If supplied, only grants that allow this permission will be returned.
+            email_address - the email address of the grantee.  If supplied, only grants related to this email
+                            address will be returned
+            user_id - The ID of the grantee.  If supplied, only grants related to his user_id will be returned.
+        Returns:
+            A string containing the XML Response elements describing the grants.
+        """
+        return self.connection.list_grants(self.id, permission, email_address, user_id)
+
     def get_timeout(self):
         """
         Get the visibility timeout for the queue.
