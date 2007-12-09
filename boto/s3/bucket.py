@@ -25,11 +25,13 @@ from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
-from boto.exception import S3ResponseError
+from boto.exception import S3ResponseError, S3PermissionsError
 from boto.s3.bucketlistresultset import BucketListResultSet
 import boto.utils
 import xml.sax
 import urllib
+
+S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
 class Bucket:
 
@@ -228,6 +230,66 @@ class Bucket:
             return policy
         else:
             raise S3ResponseError(response.status, response.reason, body)
+
+    def add_email_grant(self, permission, email_address, recursive=False):
+        """
+        Convenience method that provides a quick way to add an email grant to a bucket.
+        This method retrieves the current ACL, creates a new grant based on the parameters
+        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
+        Inputs:
+            permission - The permission being granted.  Should be one of:
+                         READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
+                         See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
+                         for more details on permissions.
+            email_address - The email address associated with the AWS account your are granting
+                            the permission to.
+            recursive - A boolean value to controls whether the command will apply the
+                        grant to all keys within the bucket or not.  The default value is False.
+                        By passing a True value, the call will iterate through all keys in the
+                        bucket and apply the same grant to each key.
+                        CAUTION: If you have a lot of keys, this could take a long time!
+        Returns:
+            Nothing
+        """
+        if permission not in S3Permissions:
+            raise S3PermissionsError('Unknown Permission: %s' % permission)
+        policy = self.get_acl()
+        policy.acl.add_email_grant(permission, email_address)
+        self.set_acl(policy)
+        for key in self:
+            key.add_email_grant(permission, email_address)
+
+    def add_user_grant(self, permission, user_id, recursive=False):
+        """
+        Convenience method that provides a quick way to add a canonical user grant to a bucket.
+        This method retrieves the current ACL, creates a new grant based on the parameters
+        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
+        Inputs:
+            permission - The permission being granted.  Should be one of:
+                         READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
+                         See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
+                         for more details on permissions.
+            user_id - The canonical user id associated with the AWS account your are granting
+                      the permission to.
+            recursive - A boolean value to controls whether the command will apply the
+                        grant to all keys within the bucket or not.  The default value is False.
+                        By passing a True value, the call will iterate through all keys in the
+                        bucket and apply the same grant to each key.
+                        CAUTION: If you have a lot of keys, this could take a long time!
+        Returns:
+            Nothing
+        """
+        if permission not in S3Permissions:
+            raise S3PermissionsError('Unknown Permission: %s' % permission)
+        policy = self.get_acl()
+        policy.acl.add_user_grant(permission, user_id)
+        self.set_acl(policy)
+        for key in self:
+            key.add_user_grant(permission, user_id)
+
+    def list_grants(self):
+        policy = self.get_acl()
+        return policy.acl.grants()
 
     def enable_logging(self, target_bucket, target_prefix=''):
         if isinstance(target_bucket, Bucket):

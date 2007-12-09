@@ -33,6 +33,10 @@ class BotoClientError(Exception):
 
     def __str__(self):
         return 'S3Error: %s' % self.reason
+
+class S3PermissionsError(BotoClientError):
+
+    pass
     
 class BotoServerError(Exception):
     
