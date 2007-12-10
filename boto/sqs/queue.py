@@ -52,6 +52,15 @@ class Queue:
             setattr(self, name, value)
 
     def set_message_class(self, message_class):
+        """
+        Set the message class that should be used when instantiating messages read
+        from the queue.  By default, the class boto.sqs.message.Message is used but
+        this can be overriden with any class that behaves like a message.
+        Inputs:
+            message_class - The new message class
+        Returns:
+            Nothing
+        """
         self.message_class = message_class
 
     def get_attributes(self, attributes='All'):
@@ -296,12 +305,15 @@ class Queue:
             m = self.read()
         return n
 
-    def load_from_s3(self, bucket):
+    def load_from_s3(self, bucket, prefix=None):
         """
         Load messages previously saved to S3.
         """
         n = 0
-        prefix = '%s/' % self.id
+        if prefix:
+            prefix = '%s/' % prefix
+        else:
+            prefix = '%s/' % self.id
         rs = bucket.list(prefix=prefix)
         for key in rs:
             n += 1
