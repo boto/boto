@@ -256,8 +256,9 @@ class Bucket:
         policy = self.get_acl()
         policy.acl.add_email_grant(permission, email_address)
         self.set_acl(policy)
-        for key in self:
-            key.add_email_grant(permission, email_address)
+        if recursive:
+            for key in self:
+                key.add_email_grant(permission, email_address)
 
     def add_user_grant(self, permission, user_id, recursive=False):
         """
@@ -284,8 +285,9 @@ class Bucket:
         policy = self.get_acl()
         policy.acl.add_user_grant(permission, user_id)
         self.set_acl(policy)
-        for key in self:
-            key.add_user_grant(permission, user_id)
+        if recursive:
+            for key in self:
+                key.add_user_grant(permission, user_id)
 
     def list_grants(self):
         policy = self.get_acl()
