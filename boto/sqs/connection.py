@@ -22,6 +22,7 @@
 from boto.connection import AWSAuthConnection, AWSQueryConnection
 import xml.sax
 from boto.sqs.queue import Queue
+from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto import handler
 from boto.resultset import ResultSet
@@ -135,6 +136,32 @@ class SQSQueryConnection(AWSQueryConnection):
         body = response.read()
         if response.status == 200:
             return body
+        else:
+            raise SQSError(response.status, response.reason, body)
+
+    def receive_message(self, queue_url, number_messages=1,
+                        visibility_timeout=None, message_class=Message):
+        """
+        This provides the same functionality as the read and get_messages methods
+        of the queue object.  The only reason this is included here is that there is
+        currently a bug in SQS that makes it impossible to read a message from a queue
+        owned by someone else (even if you have been granted appropriate permissions)
+        via the REST interface.  As it turns out, I need to be able to do this so until
+        the REST interface gets fixed this is the workaround.
+        """
+        params = {'NumberOfMessages' : number_messages}
+        if visibility_timeout:
+            params['VisibilityTimeout'] = visibility_timeout
+        response = self.make_request('ReceiveMessage', params, queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet([('Message', message_class)])
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            if len(rs) == 1:
+                return rs[0]
+            else:
+                return rs
         else:
             raise SQSError(response.status, response.reason, body)
         
