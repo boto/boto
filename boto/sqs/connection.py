@@ -156,12 +156,28 @@ class SQSQueryConnection(AWSQueryConnection):
         body = response.read()
         if response.status == 200:
             rs = ResultSet([('Message', message_class)])
-            h = handler.XmlHandler(rs, self)
+            h = handler.XmlHandler(rs, queue_url)
             xml.sax.parseString(body, h)
             if len(rs) == 1:
                 return rs[0]
             else:
                 return rs
+        else:
+            raise SQSError(response.status, response.reason, body)
+
+    def delete_message(self, queue_url, message_id):
+        """
+        Because we have to use the Query interface to read messages from queues that
+        we don't own, we also have to provide a way to delete those messages via Query.
+        """
+        params = {'MessageId' : message_id}
+        response = self.make_request('DeleteMessage', params, queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
         else:
             raise SQSError(response.status, response.reason, body)
         
