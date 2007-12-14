@@ -18,22 +18,33 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
 
-def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None):
-    from boto.sqs.connection import SQSConnection
-    return SQSConnection(aws_access_key_id, aws_secret_access_key)
+def query_lister(domain, query='', max_results=None, sort=None):
+    more_results = True
+    num_results = 0
+    more_token = None
+    while more_results:
+        rs = domain.connection.query(domain.name, query, None, more_token, sort)
+        for item_name in rs:
+            if max_results:
+                if num_results == max_results:
+                    raise StopIteration
+            yield item_name
+            num_results += 1
+        more_token = rs.more_token
+        more_results = more_token != None
+        
+class QueryResultSet:
+
+    def __init__(self, domain=None, query='', max_results=None, sort=None):
+        self.max_results = max_results
+        self.domain = domain
+        self.query = query
+        self.sort = sort
+
+    def __iter__(self):
+        return query_lister(self.domain, self.query,
+                            self.max_results, self.sort)
+
+
     
-def connect_s3(aws_access_key_id=None, aws_secret_access_key=None):
-    from boto.s3.connection import S3Connection
-    return S3Connection(aws_access_key_id, aws_secret_access_key)
-
-def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None):
-    from boto.ec2.connection import EC2Connection
-    return EC2Connection(aws_access_key_id, aws_secret_access_key)
-
-def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None):
-    from boto.sdb.connection import SDBConnection
-    return SDBConnection(aws_access_key_id, aws_secret_access_key)
-
-
