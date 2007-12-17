@@ -261,7 +261,7 @@ class Key:
         path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
         resp = self.bucket.connection.make_request('GET', path, headers)
-        if resp.status != 200:
+        if resp.status < 199 or resp.status > 299:
             raise S3ResponseError(resp.status, resp.reason)
         response_headers = resp.msg
         self.metadata = boto.utils.get_aws_metadata(response_headers)
