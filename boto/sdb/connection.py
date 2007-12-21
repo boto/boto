@@ -69,7 +69,7 @@ class SDBConnection(AWSQueryConnection):
         """
         d = Domain(self, domain_name)
         if validate:
-            self.query(domain_name, '', max_domains=1)
+            self.query(domain_name, '', max_items=1)
         return d
 
     def get_all_domains(self, max_domains=None, next_token=None):

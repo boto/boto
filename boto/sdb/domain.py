@@ -34,7 +34,7 @@ class Domain:
         return 'Domain:%s' % self.name
 
     def __iter__(self):
-        return QueryResultSet(self)
+        return iter(QueryResultSet(self))
 
     def startElement(self, name, attrs, connection):
         return None
@@ -55,6 +55,6 @@ class Domain:
         return self.connection.delete_attributes(self.name, item_name,
                                                  attributes)
 
-    def query(self, query='', max_results=None, more_token=None):
-        return QueryResultSet(self, query, max_results)
+    def query(self, query=''):
+        return iter(QueryResultSet(self, query))
     
