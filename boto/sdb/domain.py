@@ -45,9 +45,8 @@ class Domain:
         else:
             setattr(self, name, value)
 
-    def put_attributes(self, item_name, attributes, replace=True):
-        return self.connection.put_attributes(self.name, item_name,
-                                              attributes, replace)
+    def put_attributes(self, item_name, attributes):
+        return self.connection.put_attributes(self.name, item_name, attributes)
 
     def get_attributes(self, item_name, attributes=None):
         return self.connection.get_attributes(self.name, item_name, attributes)
@@ -56,6 +55,6 @@ class Domain:
         return self.connection.delete_attributes(self.name, item_name,
                                                  attributes)
 
-    def query(self, query='', max_results=None, more_token=None, sort=None):
-        return QueryResultSet(self, query, max_results, sort)
+    def query(self, query='', max_results=None, more_token=None):
+        return QueryResultSet(self, query, max_results)
     

@@ -25,17 +25,17 @@ from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain
 from boto.sdb.item import Item
-from boto.exception import EC2ResponseError
+from boto.exception import SDBResponseError
 from boto.resultset import ResultSet
 
 class SDBConnection(AWSQueryConnection):
 
-    APIVersion = '2007-02-09'
+    APIVersion = '2007-11-07'
     SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
-                 host='sds.amazonaws.com', debug=0,
+                 host='sdb.amazonaws.com', debug=0,
                  https_connection_factory=None):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -69,15 +69,15 @@ class SDBConnection(AWSQueryConnection):
         """
         d = Domain(self, domain_name)
         if validate:
-            self.query(domain_name, '', max_results=1)
+            self.query(domain_name, '', max_domains=1)
         return d
 
-    def get_all_domains(self, max_result=None, more_token=None):
+    def get_all_domains(self, max_domains=None, next_token=None):
         params = {}
-        if max_result:
-            params['MaxResults'] = max_results
-        if more_token:
-            params['MoreToken'] = more_token
+        if max_domains:
+            params['MaxNumberOfDomains'] = max_domains
+        if next_token:
+            params['NextToken'] = next_token
         response = self.make_request('ListDomains', params)
         body = response.read()
         if response.status == 200:
@@ -86,7 +86,7 @@ class SDBConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)
         
     def create_domain(self, domain_name):
         params = {'DomainName':domain_name}
@@ -99,7 +99,7 @@ class SDBConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             return domain
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)
         
     def delete_domain(self, domain_or_name):
         if (isinstance(domain_or_name, Domain)):
@@ -113,11 +113,11 @@ class SDBConnection(AWSQueryConnection):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
-            return rs.status
+            return True
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)
         
-    def put_attributes(self, domain_name, item_name, attributes, replace=False):
+    def put_attributes(self, domain_name, item_name, attributes):
         """
         Store attributes for a given item in a domain.
         Parameters:
@@ -132,19 +132,15 @@ class SDBConnection(AWSQueryConnection):
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         self.build_attr_list(params, attributes, True)
-        if replace:
-            params['Replace'] = 'true'
-        else:
-            params['Replace'] = 'false'
         response = self.make_request('PutAttributes', params)
         body = response.read()
         if response.status == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
-            return rs.status
+            return True
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)
 
     def get_attributes(self, domain_name, item_name, attributes=None):
         params = {'DomainName' : domain_name,
@@ -161,7 +157,7 @@ class SDBConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             return item
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)
         
     def delete_attributes(self, domain_name, item_name, attrs=None):
         params = {'DomainName':domain_name,
@@ -174,23 +170,20 @@ class SDBConnection(AWSQueryConnection):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
-            return rs.status
+            return True
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)
         
-    def query(self, domain_name, query='', max_results=None,
-              more_token=None, sort=None):
+    def query(self, domain_name, query='', max_items=None, next_token=None):
         """
         Returns a list of item names within domain_name that match the query.
         """
         params = {'DomainName':domain_name,
                   'QueryExpression' : query}
-        if max_results:
-            params['MaxResults'] = max_results
-        if more_token:
-            params['MoreToken'] = more_token
-        if sort:
-            params['Sort'] = sort
+        if max_items:
+            params['MaxNumberOfItems'] = max_items
+        if next_token:
+            params['NextToken'] = next_token
         response = self.make_request('Query', params)
         body = response.read()
         if self.debug > 1:
@@ -201,4 +194,4 @@ class SDBConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status, response.reason, body)

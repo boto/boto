@@ -19,32 +19,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-def query_lister(domain, query='', max_results=None, sort=None):
+def query_lister(domain, query='', max_items=None):
     more_results = True
     num_results = 0
-    more_token = None
+    next_token = None
     while more_results:
-        rs = domain.connection.query(domain.name, query, None, more_token, sort)
+        rs = domain.connection.query(domain.name, query, None, next_token)
         for item_name in rs:
-            if max_results:
-                if num_results == max_results:
+            if max_items:
+                if num_results == max_items:
                     raise StopIteration
             yield item_name
             num_results += 1
-        more_token = rs.more_token
-        more_results = more_token != None
+        next_token = rs.next_token
+        more_results = next_token != None
         
 class QueryResultSet:
 
-    def __init__(self, domain=None, query='', max_results=None, sort=None):
-        self.max_results = max_results
+    def __init__(self, domain=None, query='', max_items=None):
+        self.max_items = max_items
         self.domain = domain
         self.query = query
-        self.sort = sort
 
     def __iter__(self):
-        return query_lister(self.domain, self.query,
-                            self.max_results, self.sort)
+        return query_lister(self.domain, self.query, self.max_items)
 
 
     

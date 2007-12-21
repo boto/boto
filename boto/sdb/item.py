@@ -50,7 +50,7 @@ class Item(dict):
                 self[self.last_key] = value
         elif name == 'BoxUsage':
             if value:
-                self.box_usage = int(value)
+                self.box_usage = float(value)
         elif name == 'RequestId':
             self.request_id = value
         else:

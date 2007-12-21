@@ -65,6 +65,9 @@ class S3ResponseError(BotoServerError):
 class EC2ResponseError(BotoServerError):
     pass
 
+class SDBResponseError(BotoServerError):
+    pass
+
 class AWSConnectionError(BotoClientError):
     pass
 

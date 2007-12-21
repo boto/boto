@@ -28,7 +28,7 @@ Some unit tests for the SDBConnection
 import unittest
 import time
 from boto.sdb.connection import SDBConnection
-from boto.exception import EC2ResponseError
+from boto.exception import SDBResponseError
 
 class SDBConnectionTest (unittest.TestCase):
 
@@ -41,7 +41,7 @@ class SDBConnectionTest (unittest.TestCase):
         # try illegal name
         try:
             domain = c.create_domain('bad:domain:name')
-        except EC2ResponseError:
+        except SDBResponseError:
             pass
         
         # now create one that should work and should be unique (i.e. a new one)
