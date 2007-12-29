@@ -42,23 +42,28 @@ class SDBConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     host, debug, https_connection_factory)
 
-    def build_attr_list(self, params, attributes, do_value=True):
+    def build_name_value_list(self, params, attributes, replace):
         keys = attributes.keys()
         keys.sort()
         i = 1
         for key in keys:
-            if do_value:
-                value = attributes[key]
-                if isinstance(value, list):
-                    for v in value:
-                        params['Attribute.%d.Name'%i] = key
-                        params['Attribute.%d.Value'%i] = v
-                        i += 1
-                else:
+            value = attributes[key]
+            if isinstance(value, list):
+                for v in value:
                     params['Attribute.%d.Name'%i] = key
-                    params['Attribute.%d.Value'%i] = value
+                    params['Attribute.%d.Value'%i] = v
+                    i += 1
             else:
                 params['Attribute.%d.Name'%i] = key
+                params['Attribute.%d.Value'%i] = value
+                if replace:
+                    params['Attribute.%d.Replace'%i] = 'true'
+            i += 1
+
+    def build_name_list(self, params, attribute_names):
+        i = 1
+        for name in attribute_names.sort():
+            params['Attribute.%d.Name'%i] = key
             i += 1
 
     def get_domain(self, domain_name, validate=True):
@@ -117,7 +122,7 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
         
-    def put_attributes(self, domain_name, item_name, attributes):
+    def put_attributes(self, domain_name, item_name, attributes, replace=True):
         """
         Store attributes for a given item in a domain.
         Parameters:
@@ -126,12 +131,15 @@ class SDBConnection(AWSQueryConnection):
                         associated with
             attributes - a dict containing the name/value pairs to store
                          as attributes
+            replace - a boolean value that determines whether the attribute
+                      values passed in will replace any existing values or will
+                      be added as additional values.  Defaults to True.
         Returns:
-            Boolean True or False or raises an exception
+            Boolean True or raises an exception
         """
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
-        self.build_attr_list(params, attributes, True)
+        self.build_name_value_list(params, attributes, replace)
         response = self.make_request('PutAttributes', params)
         body = response.read()
         if response.status == 200:
@@ -142,7 +150,7 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
 
-    def get_attributes(self, domain_name, item_name, attributes=None):
+    def get_attributes(self, domain_name, item_name, attributes=None, item=None):
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         if attributes:
@@ -150,20 +158,19 @@ class SDBConnection(AWSQueryConnection):
         response = self.make_request('GetAttributes', params)
         body = response.read()
         if response.status == 200:
-            item = Item(self)
-            item.name = item_name
-            item.domain_name = domain_name
+            if item == None:
+                item = Item(self, item_name, domain_name)
             h = handler.XmlHandler(item, self)
             xml.sax.parseString(body, h)
             return item
         else:
             raise SDBResponseError(response.status, response.reason, body)
         
-    def delete_attributes(self, domain_name, item_name, attrs=None):
+    def delete_attributes(self, domain_name, item_name, attr_names=None):
         params = {'DomainName':domain_name,
                   'ItemName' : item_name}
-        if attrs:
-            self.build_attr_list(params, attrs, False)
+        if attr_names:
+            self.build_name_list(params, attr_names)
         response = self.make_request('DeleteAttributes', params)
         body = response.read()
         if response.status == 200:

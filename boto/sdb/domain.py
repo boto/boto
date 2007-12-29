@@ -45,8 +45,8 @@ class Domain:
         else:
             setattr(self, name, value)
 
-    def put_attributes(self, item_name, attributes):
-        return self.connection.put_attributes(self.name, item_name, attributes)
+    def put_attributes(self, item_name, attributes, replace=True):
+        return self.connection.put_attributes(self.name, item_name, attributes, replace)
 
     def get_attributes(self, item_name, attributes=None):
         return self.connection.get_attributes(self.name, item_name, attributes)

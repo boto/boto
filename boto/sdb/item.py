@@ -25,11 +25,12 @@ Represents an SDB Item
 
 class Item(dict):
     
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, name=None, domain_name=None, domain=None):
         dict.__init__(self)
         self.connection = connection
-        self.domain_name = None
-        self.name = ''
+        self.name = name
+        self.domain_name = domain_name
+        self.domain = domain
         self.box_usage = 0
         self.request_id = None
 
