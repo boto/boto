@@ -62,8 +62,9 @@ class SDBConnection(AWSQueryConnection):
 
     def build_name_list(self, params, attribute_names):
         i = 1
-        for name in attribute_names.sort():
-            params['Attribute.%d.Name'%i] = key
+        attribute_names.sort()
+        for name in attribute_names:
+            params['Attribute.%d.Name'%i] = name
             i += 1
 
     def get_domain(self, domain_name, validate=True):
@@ -72,10 +73,10 @@ class SDBConnection(AWSQueryConnection):
         If the validate parameter is True, the domain_name is validated
         by performing a query (returning a max of 1 item) against the domain.
         """
-        d = Domain(self, domain_name)
+        domain = Domain(self, domain_name)
         if validate:
-            self.query(domain_name, '', max_items=1)
-        return d
+            self.query(domain, '', max_items=1)
+        return domain
 
     def get_all_domains(self, max_domains=None, next_token=None):
         params = {}
@@ -105,12 +106,15 @@ class SDBConnection(AWSQueryConnection):
             return domain
         else:
             raise SDBResponseError(response.status, response.reason, body)
+
+    def get_domain_and_name(self, domain_or_name):
+        if (isinstance(domain_or_name, Domain)):
+            return (domain_or_name, domain_or_name.name)
+        else:
+            return (self.get_domain(domain_or_name), domain_or_name)
         
     def delete_domain(self, domain_or_name):
-        if (isinstance(domain_or_name, Domain)):
-            domain_name = domain_or_name.name
-        else:
-            domain_name = domain_or_name
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
         response = self.make_request('DeleteDomain', params)
         body = response.read()
@@ -122,11 +126,11 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
         
-    def put_attributes(self, domain_name, item_name, attributes, replace=True):
+    def put_attributes(self, domain_or_name, item_name, attributes, replace=True):
         """
         Store attributes for a given item in a domain.
         Parameters:
-            domain_name - the name of the SDB domain
+            domain__or_name - either a domain object or the name of a domain in SimpleDB
             item_name - the name of the SDB item the attributes will be
                         associated with
             attributes - a dict containing the name/value pairs to store
@@ -137,6 +141,7 @@ class SDBConnection(AWSQueryConnection):
         Returns:
             Boolean True or raises an exception
         """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         self.build_name_value_list(params, attributes, replace)
@@ -150,7 +155,8 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
 
-    def get_attributes(self, domain_name, item_name, attributes=None, item=None):
+    def get_attributes(self, domain_or_name, item_name, attributes=None, item=None):
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         if attributes:
@@ -159,14 +165,15 @@ class SDBConnection(AWSQueryConnection):
         body = response.read()
         if response.status == 200:
             if item == None:
-                item = Item(self, item_name, domain_name)
+                item = Item(domain, item_name)
             h = handler.XmlHandler(item, self)
             xml.sax.parseString(body, h)
             return item
         else:
             raise SDBResponseError(response.status, response.reason, body)
         
-    def delete_attributes(self, domain_name, item_name, attr_names=None):
+    def delete_attributes(self, domain_or_name, item_name, attr_names=None):
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
                   'ItemName' : item_name}
         if attr_names:
@@ -181,10 +188,11 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
         
-    def query(self, domain_name, query='', max_items=None, next_token=None):
+    def query(self, domain_or_name, query='', max_items=None, next_token=None):
         """
         Returns a list of item names within domain_name that match the query.
         """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
                   'QueryExpression' : query}
         if max_items:

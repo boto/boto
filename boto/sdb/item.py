@@ -23,14 +23,15 @@
 Represents an SDB Item
 """
 
-class Item(dict):
+from UserDict import DictMixin
+
+class Item(DictMixin):
     
-    def __init__(self, connection=None, name=None, domain_name=None, domain=None):
-        dict.__init__(self)
-        self.connection = connection
-        self.name = name
-        self.domain_name = domain_name
+    def __init__(self, domain, name=''):
         self.domain = domain
+        self.name = name
+        self._dict = None
+        self.active = True
         self.box_usage = 0
         self.request_id = None
 
@@ -43,12 +44,14 @@ class Item(dict):
         elif name == 'Name':
             self.last_key = value
         elif name == 'Value':
-            if self.has_key(self.last_key):
-                if not isinstance(self[self.last_key], list):
-                    self[self.last_key] = [self[self.last_key]]
-                self[self.last_key].append(value)
+            if self._dict == None:
+                self._dict = {}
+            if self._dict.has_key(self.last_key):
+                if not isinstance(self._dict[self.last_key], list):
+                    self._dict[self.last_key] = [self._dict[self.last_key]]
+                self._dict[self.last_key].append(value)
             else:
-                self[self.last_key] = value
+                self._dict[self.last_key] = value
         elif name == 'BoxUsage':
             if value:
                 self.box_usage = float(value)
@@ -56,4 +59,49 @@ class Item(dict):
             self.request_id = value
         else:
             setattr(self, name, value)
+
+    def load(self):
+        if self._dict == None:
+            self._dict = {}
+        self.domain.get_attributes(self.domain.name, self.name, item=self)
+
+    def save(self):
+        self.domain.put_attributes(self.name, self)
+
+    def __getitem__(self, key):
+        if self._dict == None:
+            self.load()
+        return self._dict[key]
+
+    def __setitem__(self, key, value):
+        if self._dict == None:
+            self.load()
+        if self.active:
+            self.domain.put_attributes(self.name, {key : value})
+        self._dict[key] = value
+
+    def __delitem__(self, key):
+        if self._dict == None:
+            self.load()
+        if self.active:
+            self.domain.delete_attributes(self.name, [key])
+        del self._dict[key]
+
+    def keys(self):
+        if self._dict == None:
+            self.load()
+        return self._dict.keys()
+
+    def add_value(self, key, value):
+        if self.has_key(key):
+            if self.active:
+                self.domain.put_attributes(self.name, {key : value}, replace=False)
+            if not isinstance(self._dict[key], list):
+                self._dict[key] = [self._dict[key]]
+            self._dict[key].append(value)
+        else:
+            self[key] = value
+
+        
+        
 

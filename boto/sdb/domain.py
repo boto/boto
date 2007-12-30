@@ -23,6 +23,7 @@
 Represents an SDB Domain
 """
 from boto.sdb.queryresultset import QueryResultSet
+from boto.sdb.item import Item
 
 class Domain:
     
@@ -46,15 +47,25 @@ class Domain:
             setattr(self, name, value)
 
     def put_attributes(self, item_name, attributes, replace=True):
-        return self.connection.put_attributes(self.name, item_name, attributes, replace)
+        return self.connection.put_attributes(self, item_name, attributes, replace)
 
-    def get_attributes(self, item_name, attributes=None):
-        return self.connection.get_attributes(self.name, item_name, attributes)
+    def get_attributes(self, item_name, attributes=None, item=None):
+        return self.connection.get_attributes(self, item_name, attributes, item)
 
     def delete_attributes(self, item_name, attributes=None):
-        return self.connection.delete_attributes(self.name, item_name,
-                                                 attributes)
+        return self.connection.delete_attributes(self, item_name, attributes)
 
     def query(self, query=''):
         return iter(QueryResultSet(self, query))
+
+    def get_item(self, item_name):
+        item = self.get_attributes(item_name)
+        if item:
+            item.domain = self
+            return item
+        else:
+            return None
+
+    def new_item(self, item_name):
+        return Item(self, item_name)
     
