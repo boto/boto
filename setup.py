@@ -26,7 +26,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-__version__ = '0.9d'
+__version__ = '1.0a'
 
 setup(name = "boto",
       version = __version__,
@@ -35,7 +35,7 @@ setup(name = "boto",
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
       url = "http://code.google.com/p/boto/",
-      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.ec2',
+      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.ec2', 'boto.sdb',
                    'boto.mturk', 'boto.contrib', 'tests'],
       scripts=['test.py'],
       license = 'MIT',

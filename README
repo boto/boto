@@ -1,5 +1,5 @@
-boto 0.9d
-16-Oct-2007
+boto 1.0a
+30-Dec-2007
 
 Copyright (c) 2006,2007 Mitch Garnaat <mitch@garnaat.org>
 
@@ -37,6 +37,97 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Changes
 -------
+[boto 1.0a changes]
+------------------------------------------------------------------------
+r375 | Mitch.Garnaat | 2007-10-17 13:06:17 -0400 (Wed, 17 Oct 2007) | 1 line
+
+Fixed a dangling reference to a non-existant variable.
+------------------------------------------------------------------------
+r376 | Mitch.Garnaat | 2007-10-25 11:17:15 -0400 (Thu, 25 Oct 2007) | 1 line
+
+Adding test for force_deletion flag
+------------------------------------------------------------------------
+r377 | Mitch.Garnaat | 2007-10-25 11:18:51 -0400 (Thu, 25 Oct 2007) | 1 line
+
+Apparently, the force_deletion flag in delete_queue has never actually worked.  How embarrasing.  Fixes Issue-81.
+------------------------------------------------------------------------
+r378 | Mitch.Garnaat | 2007-11-05 08:49:06 -0500 (Mon, 05 Nov 2007) | 1 line
+
+Refactoring the CommandLineService and creating a utility class for handling command line invocation.
+------------------------------------------------------------------------
+r379 | Mitch.Garnaat | 2007-11-05 08:52:16 -0500 (Mon, 05 Nov 2007) | 1 line
+
+Added a dump method and moved path to metadata file to a module variable.
+------------------------------------------------------------------------
+r380 | Mitch.Garnaat | 2007-11-05 11:44:16 -0500 (Mon, 05 Nov 2007) | 1 line
+
+added a dump_safe method for the config file that filters out the aws_secret_access_key value.
+------------------------------------------------------------------------
+r381 | Mitch.Garnaat | 2007-11-12 07:31:07 -0500 (Mon, 12 Nov 2007) | 1 line
+
+Splitting out the config class.
+------------------------------------------------------------------------
+r382 | Mitch.Garnaat | 2007-12-03 07:05:06 -0500 (Mon, 03 Dec 2007) | 1 line
+
+Properly handle newline-separated list values in instance data.
+------------------------------------------------------------------------
+r387 | Mitch.Garnaat | 2007-12-04 09:14:26 -0500 (Tue, 04 Dec 2007) | 1 line
+
+Adding initial support for grants in SQS.  Also adding Chris Moyer's YAMlMessage class to contrib.
+------------------------------------------------------------------------
+r388 | Mitch.Garnaat | 2007-12-04 21:40:05 -0500 (Tue, 04 Dec 2007) | 1 line
+
+Added boto.contrib to packages so it will get installed properly.
+------------------------------------------------------------------------
+r389 | Mitch.Garnaat | 2007-12-09 10:48:41 -0500 (Sun, 09 Dec 2007) | 1 line
+
+Adding convenience methods to S3 module to make it easier to add grants to buckets and keys.  Also added a few more docstrings.
+------------------------------------------------------------------------
+r390 | Mitch.Garnaat | 2007-12-09 10:49:33 -0500 (Sun, 09 Dec 2007) | 1 line
+
+Adding convenience methods to S3 module to make it easier to add grants to buckets and keys.  Also added a few more docstrings.
+------------------------------------------------------------------------
+r391 | Mitch.Garnaat | 2007-12-09 22:49:43 -0500 (Sun, 09 Dec 2007) | 1 line
+
+Forgot to make the setting of the grants on all keys in a bucket dependent on the recursive param to the method.
+------------------------------------------------------------------------
+r392 | Mitch.Garnaat | 2007-12-10 13:37:27 -0500 (Mon, 10 Dec 2007) | 1 line
+
+Added optional parameter to the load_from_s3 method to allow a prefix other than the one for the current queue to be used.  This allows messages to be moved from one queue to another.
+------------------------------------------------------------------------
+r393 | Mitch.Garnaat | 2007-12-10 22:16:54 -0500 (Mon, 10 Dec 2007) | 1 line
+
+Adding a receive_message method to the QueryConnection class.  I need this because the REST version is broken and won't let you read from queues you don't own, even if you have permission to do so.
+------------------------------------------------------------------------
+r394 | Mitch.Garnaat | 2007-12-12 10:02:32 -0500 (Wed, 12 Dec 2007) | 1 line
+
+Added a delete_message method to the QueryConnection.
+------------------------------------------------------------------------
+r395 | Mitch.Garnaat | 2007-12-13 22:53:13 -0500 (Thu, 13 Dec 2007) | 1 line
+
+Adding current SimpleDB implementation.  Finally
+------------------------------------------------------------------------
+r398 | Mitch.Garnaat | 2007-12-17 16:45:08 -0500 (Mon, 17 Dec 2007) | 1 line
+
+Patch from Eric Evans to correctly handle 206 response from S3 when doing range GET requests on a key.
+------------------------------------------------------------------------
+r399 | Mitch.Garnaat | 2007-12-21 06:48:59 -0500 (Fri, 21 Dec 2007) | 1 line
+
+Snapshot of SDB code that works with API version released with public beta.  Still missing support for replace flag on put_attributes.
+------------------------------------------------------------------------
+r400 | Mitch.Garnaat | 2007-12-21 08:23:36 -0500 (Fri, 21 Dec 2007) | 1 line
+
+Fixed a bug in get_domain and tweaked the iterators/generators for query to return the generator directly so you can do a next() on it.
+------------------------------------------------------------------------
+r401 | Mitch.Garnaat | 2007-12-29 10:05:33 -0500 (Sat, 29 Dec 2007) | 1 line
+
+Cleaning up a few things and wrapping up initial implementation.
+------------------------------------------------------------------------
+r405 | Mitch.Garnaat | 2007-12-30 11:47:00 -0500 (Sun, 30 Dec 2007) | 1 line
+
+Added some more capabilities to the Item object to make it behave more like a regular dictionary.
+------------------------------------------------------------------------
+
 [boto 0.9d changes]
 ------------------------------------------------------------------------
 r371 | Mitch.Garnaat | 2007-10-16 21:05:47 -0400 (Tue, 16 Oct 2007) | 1 line
