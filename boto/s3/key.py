@@ -261,7 +261,7 @@ class Key:
         path = '/%s/%s' % (self.bucket.name, self.name)
         path = urllib.quote(path)
         resp = self.bucket.connection.make_request('GET', path, headers)
-        if resp.status != 200:
+        if resp.status < 199 or resp.status > 299:
             raise S3ResponseError(resp.status, resp.reason)
         response_headers = resp.msg
         self.metadata = boto.utils.get_aws_metadata(response_headers)
@@ -358,4 +358,40 @@ class Key:
         if self.bucket != None:
             return self.bucket.get_acl(self.name)
 
-    
+    def add_email_grant(self, permission, email_address):
+        """
+        Convenience method that provides a quick way to add an email grant to a key.
+        This method retrieves the current ACL, creates a new grant based on the parameters
+        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
+        Inputs:
+            permission - The permission being granted.  Should be one of:
+                         READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
+                         See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
+                         for more details on permissions.
+            email_address - The email address associated with the AWS account your are granting
+                            the permission to.
+        Returns:
+            Nothing
+        """
+        policy = self.get_acl()
+        policy.acl.add_email_grant(permission, email_address)
+        self.set_acl(policy)
+
+    def add_user_grant(self, permission, user_id):
+        """
+        Convenience method that provides a quick way to add a canonical user grant to a key.
+        This method retrieves the current ACL, creates a new grant based on the parameters
+        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
+        Inputs:
+            permission - The permission being granted.  Should be one of:
+                         READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
+                         See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
+                         for more details on permissions.
+            user_id - The canonical user id associated with the AWS account your are granting
+                      the permission to.
+        Returns:
+            Nothing
+        """
+        policy = self.get_acl()
+        policy.acl.add_user_grant(permission, user_id)
+        self.set_acl(policy)

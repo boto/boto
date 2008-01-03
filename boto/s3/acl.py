@@ -65,6 +65,15 @@ class ACL:
     def add_grant(self, grant):
         self.grants.append(grant)
 
+    def add_email_grant(self, permission, email_address):
+        grant = Grant(permission=permission, type='AmazonCustomerByEmail',
+                      email_address=email_address)
+        self.grants.append(grant)
+
+    def add_user_grant(self, permission, user_id):
+        grant = Grant(permission=permission, type='CanonicalUser', id=user_id)
+        self.grants.append(grant)
+
     def startElement(self, name, attrs, connection):
         if name == 'Grant':
             self.grants.append(Grant(self))

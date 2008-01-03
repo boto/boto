@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -21,29 +19,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+def query_lister(domain, query='', max_items=None):
+    more_results = True
+    num_results = 0
+    next_token = None
+    while more_results:
+        rs = domain.connection.query(domain.name, query, None, next_token)
+        for item_name in rs:
+            if max_items:
+                if num_results == max_items:
+                    raise StopIteration
+            yield item_name
+            num_results += 1
+        next_token = rs.next_token
+        more_results = next_token != None
+        
+class QueryResultSet:
 
-__version__ = '1.0a'
+    def __init__(self, domain=None, query='', max_items=None):
+        self.max_items = max_items
+        self.domain = domain
+        self.query = query
 
-setup(name = "boto",
-      version = __version__,
-      description = "Amazon Web Services Library",
-      long_description="Python interface to Amazon's Web Services.",
-      author = "Mitch Garnaat",
-      author_email = "mitch@garnaat.com",
-      url = "http://code.google.com/p/boto/",
-      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.ec2', 'boto.sdb',
-                   'boto.mturk', 'boto.contrib', 'tests'],
-      scripts=['test.py'],
-      license = 'MIT',
-      platforms = 'Posix; MacOS X; Windows',
-      classifiers = [ 'Development Status :: 3 - Alpha',
-                      'Intended Audience :: Developers',
-                      'License :: OSI Approved :: MIT License',
-                      'Operating System :: OS Independent',
-                      'Topic :: Internet',
-                      ],
-      )
+    def __iter__(self):
+        return query_lister(self.domain, self.query, self.max_items)
+
+
+    

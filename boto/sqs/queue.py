@@ -52,6 +52,15 @@ class Queue:
             setattr(self, name, value)
 
     def set_message_class(self, message_class):
+        """
+        Set the message class that should be used when instantiating messages read
+        from the queue.  By default, the class boto.sqs.message.Message is used but
+        this can be overriden with any class that behaves like a message.
+        Inputs:
+            message_class - The new message class
+        Returns:
+            Nothing
+        """
         self.message_class = message_class
 
     def get_attributes(self, attributes='All'):
@@ -81,6 +90,44 @@ class Queue:
             Boolean True if successful, otherwise False.
         """
         return self.connection.set_queue_attribute(self.id, attribute, value)
+
+    def add_grant(self, permission, email_address=None, user_id=None):
+        """
+        Add a grant to this queue.
+        Inputs:
+            permission - The permission being granted.  One of "ReceiveMessage", "SendMessage" or "FullControl"
+            email_address - the email address of the grantee.  If email_address is supplied, user_id should be None
+            user_id - The ID of the grantee.  If user_id is supplied, email_address should be None
+        Returns:
+            Boolean True if successful, otherwise False
+        """
+        return self.connection.add_grant(self.id, permission, email_address, user_id)
+
+    def remove_grant(self, permission, email_address=None, user_id=None):
+        """
+        Remove a grant from this queue.
+        Inputs:
+            permission - The permission being removed.  One of "ReceiveMessage", "SendMessage" or "FullControl"
+            email_address - the email address of the grantee.  If email_address is supplied, user_id should be None
+            user_id - The ID of the grantee.  If user_id is supplied, email_address should be None
+        Returns:
+            Boolean True if successful, otherwise False
+        """
+        return self.connection.remove_grant(self.id, permission, email_address, user_id)
+
+    def list_grants(self, permission=None, email_address=None, user_id=None):
+        """
+        List the grants to this queue.
+        Inputs:
+            permission - The permission granted.  One of "ReceiveMessage", "SendMessage" or "FullControl".
+                         If supplied, only grants that allow this permission will be returned.
+            email_address - the email address of the grantee.  If supplied, only grants related to this email
+                            address will be returned
+            user_id - The ID of the grantee.  If supplied, only grants related to his user_id will be returned.
+        Returns:
+            A string containing the XML Response elements describing the grants.
+        """
+        return self.connection.list_grants(self.id, permission, email_address, user_id)
 
     def get_timeout(self):
         """
@@ -258,12 +305,15 @@ class Queue:
             m = self.read()
         return n
 
-    def load_from_s3(self, bucket):
+    def load_from_s3(self, bucket, prefix=None):
         """
         Load messages previously saved to S3.
         """
         n = 0
-        prefix = '%s/' % self.id
+        if prefix:
+            prefix = '%s/' % prefix
+        else:
+            prefix = '%s/' % self.id
         rs = bucket.list(prefix=prefix)
         for key in rs:
             n += 1

@@ -29,6 +29,7 @@ import unittest
 import time
 import os
 from boto.s3.connection import S3Connection
+from boto.exception import S3PermissionsError
 
 class S3ConnectionTest (unittest.TestCase):
 
@@ -134,6 +135,13 @@ class S3ConnectionTest (unittest.TestCase):
         k.set_acl('private')
         policy = k.get_acl()
         assert len(policy.acl.grants) == 1
+        # try the convenience methods for grants
+        bucket.add_user_grant('FULL_CONTROL',
+                              'c1e724fbfa0979a4448393c59a8c055011f739b6d102fb37a65f26414653cd67')
+        try:
+            bucket.add_email_grant('foobar', 'foo@bar.com')
+        except S3PermissionsError:
+            pass
         # now delete all keys in bucket
         for k in all:
             bucket.delete_key(k)

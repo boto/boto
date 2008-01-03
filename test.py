@@ -33,10 +33,11 @@ sys.path.append('tests/')
 from test_sqsconnection import SQSConnectionTest
 from test_s3connection import S3ConnectionTest
 from test_ec2connection import EC2ConnectionTest
+from test_sdbconnection import SDBConnectionTest
 
 def usage():
     print 'test.py  [-t testsuite] [-v verbosity]'
-    print '    -t   run specific testsuite (s3|sqs|ec2)'
+    print '    -t   run specific testsuite (s3|sqs|ec2|sdb|all)'
     print '    -v   verbosity (0|1|2)'
   
 def main():
@@ -64,12 +65,15 @@ def main():
         suite.addTest(unittest.makeSuite(SQSConnectionTest))
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
         suite.addTest(unittest.makeSuite(EC2ConnectionTest))
+        suite.addTest(unittest.makeSuite(SDBConnectionTest))
     elif testsuite == 's3':
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
     elif testsuite == 'sqs':
         suite.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == 'ec2':
         suite.addTest(unittest.makeSuite(EC2ConnectionTest))
+    elif testsuite == 'sdb':
+        suite.addTest(unittest.makeSuite(SDBConnectionTest))
     else:
         usage()
         sys.exit()

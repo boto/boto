@@ -33,7 +33,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = '2007-03-01'
+    APIVersion = '2007-08-29'
     SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -154,18 +154,27 @@ class EC2Connection(AWSQueryConnection):
 
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,
-                      user_data=None, addressing_type=None):
+                      user_data=None, addressing_type=None,
+                      instance_type='m1.small'):
         params = {'ImageId':image_id,
                   'MinCount':min_count,
                   'MaxCount': max_count}
         if key_name:
             params['KeyName'] = key_name
         if security_groups:
-            self.build_list_params(params, security_groups, 'SecurityGroup')
+            l = []
+            for group in security_groups:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
             params['UserData'] = base64.b64encode(user_data)
         if addressing_type:
             params['AddressingType'] = addressing_type
+        if instance_type:
+            params['InstanceType'] = instance_type
         response = self.make_request('RunInstances', params)
         body = response.read()
         if response.status == 200:

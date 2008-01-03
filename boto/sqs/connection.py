@@ -22,11 +22,18 @@
 from boto.connection import AWSAuthConnection, AWSQueryConnection
 import xml.sax
 from boto.sqs.queue import Queue
+from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto import handler
 from boto.resultset import ResultSet
 from boto.exception import SQSError
 
+PERM_ReceiveMessage = 'ReceiveMessage'
+PERM_SendMessage = 'SendMessage'
+PERM_FullControl = 'FullControl'
+
+AllPermissions = [PERM_ReceiveMessage, PERM_SendMessage, PERM_FullControl]
+                 
 class SQSQueryConnection(AWSQueryConnection):
 
     """
@@ -76,6 +83,95 @@ class SQSQueryConnection(AWSQueryConnection):
                   'VisibilityTimeout' : vtimeout}
         response = self.make_request('ChangeMessageVisibility', params,
                                      queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise SQSError(response.status, response.reason, body)
+        
+    def add_grant(self, queue_url, permission, email_address=None, user_id=None):
+        params = {'Permission' : permission}
+        if user_id:
+            params['Grantee.ID'] = user_id
+        if email_address:
+            params['Grantee.EmailAddress'] = email_address
+        response = self.make_request('AddGrant', params, queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise SQSError(response.status, response.reason, body)
+        
+    def remove_grant(self, queue_url, permission, email_address=None, user_id=None):
+        params = {'Permission' : permission}
+        if user_id:
+            params['Grantee.ID'] = user_id
+        if email_address:
+            params['Grantee.EmailAddress'] = email_address
+        response = self.make_request('RemoveGrant', params, queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            raise SQSError(response.status, response.reason, body)
+        
+    def list_grants(self, queue_url, permission=None, email_address=None, user_id=None):
+        params = {}
+        if user_id:
+            params['Grantee.ID'] = user_id
+        if email_address:
+            params['Grantee.EmailAddress'] = email_address
+        if permission:
+            params['Permission'] = permission
+        response = self.make_request('ListGrants', params, queue_url)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise SQSError(response.status, response.reason, body)
+
+    def receive_message(self, queue_url, number_messages=1,
+                        visibility_timeout=None, message_class=Message):
+        """
+        This provides the same functionality as the read and get_messages methods
+        of the queue object.  The only reason this is included here is that there is
+        currently a bug in SQS that makes it impossible to read a message from a queue
+        owned by someone else (even if you have been granted appropriate permissions)
+        via the REST interface.  As it turns out, I need to be able to do this so until
+        the REST interface gets fixed this is the workaround.
+        """
+        params = {'NumberOfMessages' : number_messages}
+        if visibility_timeout:
+            params['VisibilityTimeout'] = visibility_timeout
+        response = self.make_request('ReceiveMessage', params, queue_url)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet([('Message', message_class)])
+            h = handler.XmlHandler(rs, queue_url)
+            xml.sax.parseString(body, h)
+            if len(rs) == 1:
+                return rs[0]
+            else:
+                return rs
+        else:
+            raise SQSError(response.status, response.reason, body)
+
+    def delete_message(self, queue_url, message_id):
+        """
+        Because we have to use the Query interface to read messages from queues that
+        we don't own, we also have to provide a way to delete those messages via Query.
+        """
+        params = {'MessageId' : message_id}
+        response = self.make_request('DeleteMessage', params, queue_url)
         body = response.read()
         if response.status == 200:
             rs = ResultSet()
@@ -194,7 +290,51 @@ class SQSConnection(AWSAuthConnection):
         """
         qc = self.get_query_connection()
         return qc.change_message_visibility(queue_url, message_id, vtimeout)
-    
+
+    def add_grant(self, queue_url, permission, email_address=None, user_id=None):
+        """
+        Add a grant to a queue.
+        Inputs:
+            queue_url - The URL of the desired SQS queue
+            permission - The permission being granted.  One of "ReceiveMessage", "SendMessage" or "FullControl"
+            email_address - the email address of the grantee.  If email_address is supplied, user_id should be None
+            user_id - The ID of the grantee.  If user_id is supplied, email_address should be None
+        Returns:
+            Boolean True if successful, otherwise False
+        """
+        qc = self.get_query_connection()
+        return qc.add_grant(queue_url, permission, email_address, user_id)
+
+    def remove_grant(self, queue_url, permission, email_address=None, user_id=None):
+        """
+        Remove a grant from a queue.
+        Inputs:
+            queue_url - The URL of the desired SQS queue
+            permission - The permission being removed.  One of "ReceiveMessage", "SendMessage" or "FullControl"
+            email_address - the email address of the grantee.  If email_address is supplied, user_id should be None
+            user_id - The ID of the grantee.  If user_id is supplied, email_address should be None
+        Returns:
+            Boolean True if successful, otherwise False
+        """
+        qc = self.get_query_connection()
+        return qc.remove_grant(queue_url, permission, email_address, user_id)
+
+    def list_grants(self, queue_url, permission=None, email_address=None, user_id=None):
+        """
+        List the grants to a queue.
+        Inputs:
+            queue_url - The URL of the desired SQS queue
+            permission - The permission granted.  One of "ReceiveMessage", "SendMessage" or "FullControl".
+                         If supplied, only grants that allow this permission will be returned.
+            email_address - the email address of the grantee.  If supplied, only grants related to this email
+                            address will be returned
+            user_id - The ID of the grantee.  If supplied, only grants related to his user_id will be returned.
+        Returns:
+            A string containing the XML Response elements describing the grants.
+        """
+        qc = self.get_query_connection()
+        return qc.list_grants(queue_url, permission, email_address, user_id)
+
     def create_queue(self, queue_name, visibility_timeout=None):
         """
         Create a new queue.
@@ -234,11 +374,11 @@ class SQSConnection(AWSAuthConnection):
             should probably return a Boolean indicating success or
             failure.
         """
+        method = 'DELETE'
+        path = queue.id
         if force_deletion:
-            path = 'DELETE?ForceDeletion=true'
-        else:
-            path = 'DELETE'
-        response = self.make_request(path, queue.id)
+            path = path + '?ForceDeletion=true'
+        response = self.make_request(method, path)
         body = response.read()
         if response.status >= 300:
             raise SQSError(response.status, response.reason, body)

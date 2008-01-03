@@ -21,41 +21,10 @@
 #
 import os, sys
 import boto
-import ConfigParser
 from boto.utils import find_class
+from boto.pyami.config import Config
 
-class PyamiConfig(ConfigParser.RawConfigParser):
-
-    def __init__(self, path):
-        ConfigParser.RawConfigParser.__init__(self)
-        self.read(path)
-
-    def get_instance(self, name, default=None):
-        try:
-            val = self.get('Instance', name)
-        except:
-            val = default
-        return val
-
-    def get_user(self, name, default=None):
-        try:
-            val = self.get('User', name)
-        except:
-            val = default
-        return val
-
-    def getint_user(self, name, default=0):
-        try:
-            val = self.getint('User', name)
-        except:
-            val = default
-        return val
-
-    
 class Startup:
-
-    def read_metadata(self):
-        self.config = PyamiConfig(os.path.expanduser('~pyami/metadata.ini'))
 
     def get_script(self):
         script_name = self.config.get_user('script_name')
@@ -89,7 +58,7 @@ class Startup:
             s.run()
 
     def main(self):
-        self.read_metadata()
+        self.config = Config()
         self.get_script()
         self.run_script()
 

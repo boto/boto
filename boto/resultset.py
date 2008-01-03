@@ -46,7 +46,7 @@ class ResultSet(list):
         self.index = 0
         self.marker = None
         self.is_truncated = False
-        self.more_token = None
+        self.next_token = None
 
     def __iter__(self):
         return self
@@ -85,8 +85,10 @@ class ResultSet(list):
             self.status = self.to_boolean(value, 'Success')
         elif name == 'ItemName':
             self.append(value)
-        elif name == 'MoreToken':
-            self.more_token = value
+        elif name == 'NextToken':
+            self.next_token = value
+        elif name == 'BoxUsage':
+            self.box_usage = float(value)
         else:
             setattr(self, name, value)
         

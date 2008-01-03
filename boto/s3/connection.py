@@ -78,9 +78,29 @@ class S3Connection(AWSAuthConnection):
         xml.sax.parseString(body, h)
         return rs
 
+    def get_canonical_user_id(self):
+        """
+        Convenience method that returns the "CanonicalUserID" of the user who's credentials
+        are associated with the connection.  The only way to get this value is to do a GET
+        request on the service which returns all buckets associated with the account.  As part
+        of that response, the canonical userid is returned.  This method simply does all of
+        that and then returns just the user id.
+        Returns:
+            A string containing the canonical user id.
+        """
+        rs = self.get_all_buckets()
+        return rs.ID
+
     def get_bucket(self, bucket_name):
         bucket = Bucket(self, bucket_name)
         rs = bucket.get_all_keys(None, maxkeys=0)
+        return bucket
+
+    def lookup(self, bucket_name):
+        try:
+            bucket = self.get_bucket(bucket_name)
+        except:
+            bucket = None
         return bucket
 
     def create_bucket(self, bucket_name, headers={}):

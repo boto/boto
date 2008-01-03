@@ -76,6 +76,7 @@ class SQSConnectionTest (unittest.TestCase):
         # now change the visibility timeout
         timeout = 45
         queue.set_timeout(timeout)
+        time.sleep(5)
         t = queue.get_timeout()
         assert t == timeout, '%d != %d' % (t, timeout)
     
@@ -113,13 +114,23 @@ class SQSConnectionTest (unittest.TestCase):
         time.sleep(5)
         assert queue.count_slow() == 0
 
-        # now delete that queue
-        c.delete_queue(queue)
-        rs = c.get_all_queues()
-        i = 0
-        for q in rs:
-            i += 1
-        assert i == num_queues
+        # create another queue so we can test force deletion
+        queue_name = 'test%d' % int(time.time())
+        timeout = 60
+        queue = c.create_queue(queue_name, timeout)
+        time.sleep(15)
+        
+        # now add a couple of messages
+        message_body = 'This is a test\n'
+        message = queue.new_message(message_body)
+        queue.write(message)
+        message_body = 'This is another test\n'
+        message = queue.new_message(message_body)
+        queue.write(message)
+        time.sleep(15)
+
+        # now delete that queue and messages
+        c.delete_queue(queue, True)
 
         print '--- tests completed ---'
     

@@ -32,4 +32,8 @@ def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None):
     from boto.ec2.connection import EC2Connection
     return EC2Connection(aws_access_key_id, aws_secret_access_key)
 
+def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None):
+    from boto.sdb.connection import SDBConnection
+    return SDBConnection(aws_access_key_id, aws_secret_access_key)
+
 

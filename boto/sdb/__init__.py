@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,30 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
 
-__version__ = '1.0a'
-
-setup(name = "boto",
-      version = __version__,
-      description = "Amazon Web Services Library",
-      long_description="Python interface to Amazon's Web Services.",
-      author = "Mitch Garnaat",
-      author_email = "mitch@garnaat.com",
-      url = "http://code.google.com/p/boto/",
-      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.ec2', 'boto.sdb',
-                   'boto.mturk', 'boto.contrib', 'tests'],
-      scripts=['test.py'],
-      license = 'MIT',
-      platforms = 'Posix; MacOS X; Windows',
-      classifiers = [ 'Development Status :: 3 - Alpha',
-                      'Intended Audience :: Developers',
-                      'License :: OSI Approved :: MIT License',
-                      'Operating System :: OS Independent',
-                      'Topic :: Internet',
-                      ],
-      )

@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Chris Moyer
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -21,29 +19,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+"""
+This module was contributed by Chris Moyer.  It provides a subclass of the
+SQS Message class that supports YAML as the body of the message.
 
-__version__ = '1.0a'
+This module requires the yaml module.
+"""
+from boto.sqs.message import Message
+import yaml
 
-setup(name = "boto",
-      version = __version__,
-      description = "Amazon Web Services Library",
-      long_description="Python interface to Amazon's Web Services.",
-      author = "Mitch Garnaat",
-      author_email = "mitch@garnaat.com",
-      url = "http://code.google.com/p/boto/",
-      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.ec2', 'boto.sdb',
-                   'boto.mturk', 'boto.contrib', 'tests'],
-      scripts=['test.py'],
-      license = 'MIT',
-      platforms = 'Posix; MacOS X; Windows',
-      classifiers = [ 'Development Status :: 3 - Alpha',
-                      'Intended Audience :: Developers',
-                      'License :: OSI Approved :: MIT License',
-                      'Operating System :: OS Independent',
-                      'Topic :: Internet',
-                      ],
-      )
+class YAMLMessage(Message):
+	"""
+	The YAMLMessage class provides a YAML compatible message. Encoding and
+	decoding are handled automaticaly.
+
+	Access this message data like such:
+
+	m.data = [ 1, 2, 3]
+	m.data[0] # Returns 1
+
+	This depends on the PyYAML package
+	"""
+
+	def __init__(self, queue=None, body='', xml_attrs=None):
+		self.data = None
+		Message.__init__(self, queue, body)
+
+	def set_body(self, body):
+		self.data = yaml.load(body)
+
+	def get_body(self):
+		return yaml.dump(self.data)
