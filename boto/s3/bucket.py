@@ -144,6 +144,8 @@ class Bucket:
         for k,v in params.items():
             if  k == 'maxkeys':
                 k = 'max-keys'
+            if isinstance(v, unicode):
+                v = v.encode('utf-8')
             l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
         s = '&'.join(l)
         if s:
