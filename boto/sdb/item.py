@@ -32,7 +32,6 @@ class Item(DictMixin):
         self.name = name
         self._dict = None
         self.active = True
-        self.box_usage = 0
         self.request_id = None
 
     def startElement(self, name, attrs, connection):
@@ -53,8 +52,10 @@ class Item(DictMixin):
             else:
                 self._dict[self.last_key] = value
         elif name == 'BoxUsage':
-            if value:
-                self.box_usage = float(value)
+            try:
+                connection.box_usage += float(value)
+            except:
+                pass
         elif name == 'RequestId':
             self.request_id = value
         else:
@@ -63,7 +64,7 @@ class Item(DictMixin):
     def load(self):
         if self._dict == None:
             self._dict = {}
-        self.domain.get_attributes(self.domain.name, self.name, item=self)
+        self.domain.get_attributes(self.name, item=self)
 
     def save(self):
         self.domain.put_attributes(self.name, self)

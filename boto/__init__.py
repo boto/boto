@@ -20,20 +20,20 @@
 # IN THE SOFTWARE.
 #
 
-def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None):
+def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sqs.connection import SQSConnection
-    return SQSConnection(aws_access_key_id, aws_secret_access_key)
+    return SQSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
     
-def connect_s3(aws_access_key_id=None, aws_secret_access_key=None):
+def connect_s3(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.s3.connection import S3Connection
-    return S3Connection(aws_access_key_id, aws_secret_access_key)
+    return S3Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
-def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None):
+def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.ec2.connection import EC2Connection
-    return EC2Connection(aws_access_key_id, aws_secret_access_key)
+    return EC2Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
-def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None):
+def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sdb.connection import SDBConnection
-    return SDBConnection(aws_access_key_id, aws_secret_access_key)
+    return SDBConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 

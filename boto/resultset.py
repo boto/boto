@@ -88,7 +88,10 @@ class ResultSet(list):
         elif name == 'NextToken':
             self.next_token = value
         elif name == 'BoxUsage':
-            self.box_usage = float(value)
+            try:
+                connection.box_usage += float(value)
+            except:
+                pass
         else:
             setattr(self, name, value)
         

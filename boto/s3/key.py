@@ -53,6 +53,12 @@ class Key:
         self.base64md5 = None
         self.path = None
 
+    def __repr__(self):
+        if self.bucket:
+            return '<Key: %s,%s>' % (self.bucket.name, self.name)
+        else:
+            return '<Key: None,%s>' % self.name
+
     def __getattr__(self, name):
         if name == 'key':
             return self.name

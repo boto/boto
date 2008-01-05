@@ -41,6 +41,7 @@ class SDBConnection(AWSQueryConnection):
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     host, debug, https_connection_factory)
+        self.box_usage = 0.0
 
     def build_name_value_list(self, params, attributes, replace):
         keys = attributes.keys()
@@ -66,6 +67,14 @@ class SDBConnection(AWSQueryConnection):
         for name in attribute_names:
             params['Attribute.%d.Name'%i] = name
             i += 1
+
+    def get_usage(self):
+        return self.box_usage
+
+    def print_usage(self):
+        print 'Total Usage: %f compute seconds' % self.box_usage
+        cost = self.box_usage * 0.14
+        print 'Approximate Cost: $%f' % cost
 
     def get_domain(self, domain_name, validate=True):
         """

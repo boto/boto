@@ -22,6 +22,7 @@
 import sys, os, pwd
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
+from boto.pyami.config import Config
 
 class Bootstrap:
     """
@@ -32,31 +33,34 @@ class Bootstrap:
     """
 
     def __init__(self):
-        self.inst_data = get_instance_metadata()
-        self.user_data = get_instance_userdata(sep='|')
+        self.config = None
         self.working_dir = '/mnt/pyami'
 
     def write_metadata(self):
         fp = open(os.path.expanduser('~pyami/metadata.ini'), 'w')
         fp.write('[Instance]\n')
-        for key in self.inst_data:
-            fp.write('%s: %s\n' % (key, self.inst_data[key]))
+        inst_data = get_instance_metadata()
+        for key in inst_data:
+            fp.write('%s: %s\n' % (key, inst_data[key]))
         fp.write('[User]\n')
-        for key in self.user_data:
-            fp.write('%s: %s\n' % (key, self.user_data[key]))
+        user_data = get_instance_userdata(sep='|')
+        for key in user_data:
+            fp.write('%s: %s\n' % (key, user_data[key]))
         fp.write('working_dir: %s\n' % self.working_dir)
         fp.close()
         # chown to pyami user
         t = pwd.getpwnam('pyami')
         os.chown(os.path.expanduser('~pyami/metadata.ini'), t[2], t[3])
+        # now that we have written the file, read it into a pyami Config object
+        self.config = Config()
 
     def write_env_setup(self):
         fp = open('/etc/profile.d/aws.sh', 'w')
         fp.write('# AWS Environment Setup Script\n')
-        access_key = self.user_data.get('aws_access_key_id', None)
+        access_key = self.config.get_user('aws_access_key_id', None)
         if access_key:
             fp.write('export AWS_ACCESS_KEY_ID=%s\n' % access_key)
-        secret_key = self.user_data.get('aws_secret_access_key', None)
+        secret_key = self.config.get_user('aws_secret_access_key', None)
         if secret_key:
             fp.write('export AWS_SECRET_ACCESS_KEY=%s\n' % secret_key)
         fp.close()
@@ -67,6 +71,20 @@ class Bootstrap:
             os.mkdir(self.working_dir)
         os.chmod(self.working_dir, 0777)
 
+    def get_eggs(self):
+        egg_bucket = self.config.get_user('egg_bucket', None)
+        if egg_bucket:
+            s3 = boto.connect_s3(self.config.get_user('aws_access_key_id'),
+                                 self.config.get_user('aws_secret_access_key'))
+            bucket = s3.get_bucket(egg_bucket)
+            eggs = self.config.get_user('eggs', '')
+            for egg in eggs.split(','):
+                if egg:
+                    egg_key = bucket.get_key(egg.strip())
+                    print 'Fetching %s.%s' % (bucket.name, egg_key.name)
+                    egg_path = os.path.join(self.config.get_user('working_dir'), egg_key.name)
+                    egg_key.get_contents_to_filename(egg_path)
+            
     def main(self):
         self.write_metadata()
         self.write_env_setup()

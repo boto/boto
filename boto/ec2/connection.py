@@ -49,6 +49,9 @@ class EC2Connection(AWSQueryConnection):
         
     def get_all_images(self, image_ids=None, owners=None, executable_by=None):
         params = {}
+        # if user passed in a single image_id, turn it into a list
+        if isinstance(image_ids, str):
+            image_ids = [image_ids]
         if image_ids:
             self.build_list_params(params, image_ids, 'ImageId')
         if owners:
@@ -140,6 +143,9 @@ class EC2Connection(AWSQueryConnection):
         
     def get_all_instances(self, instance_ids=None):
         params = {}
+        # if user passed in a single instance_id, turn it into a list
+        if isinstance(instance_ids, str):
+            instance_ids = [instance_ids]
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
         response = self.make_request('DescribeInstances', params)

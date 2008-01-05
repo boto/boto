@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.sdb.item import Item
+
 def query_lister(domain, query='', max_items=None):
     more_results = True
     num_results = 0
@@ -29,7 +31,7 @@ def query_lister(domain, query='', max_items=None):
             if max_items:
                 if num_results == max_items:
                     raise StopIteration
-            yield item_name
+            yield Item(domain, item_name)
             num_results += 1
         next_token = rs.next_token
         more_results = next_token != None
