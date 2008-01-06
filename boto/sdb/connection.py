@@ -87,6 +87,13 @@ class SDBConnection(AWSQueryConnection):
             self.query(domain, '', max_items=1)
         return domain
 
+    def lookup(self, domain_name):
+        try:
+            domain = self.get_domain(domain_name)
+        except:
+            domain = None
+        return domain
+
     def get_all_domains(self, max_domains=None, next_token=None):
         params = {}
         if max_domains:
@@ -169,7 +176,7 @@ class SDBConnection(AWSQueryConnection):
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         if attributes:
-            self.build_list_params(params, attributes, 'AttributeName')
+            self.build_name_list(params, attributes)
         response = self.make_request('GetAttributes', params)
         body = response.read()
         if response.status == 200:
