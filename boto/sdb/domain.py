@@ -68,4 +68,7 @@ class Domain:
 
     def new_item(self, item_name):
         return Item(self, item_name)
+
+    def delete_item(self, item):
+        self.delete_attributes(item.name)
     

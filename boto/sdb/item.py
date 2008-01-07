@@ -103,6 +103,9 @@ class Item(DictMixin):
         else:
             self[key] = value
 
+    def delete(self):
+        self.domain.delete_item(self)
+
         
         
 
