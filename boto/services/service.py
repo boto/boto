@@ -188,10 +188,6 @@ class Service:
             m['Bucket'] = key.bucket.name
         m['InputKey'] = key.name
         m['Size'] = key.size
-        if self.preserve_file_name:
-            m['PreserveFileName'] = 'true'
-        else:
-            m['PreserveFileName'] = 'false'
         return m
 
     def submit_file(self, path, bucket_name, metadata=None, cb=None, num_cb=0):
@@ -294,9 +290,7 @@ class Service:
         return []
 
     # store result file in S3
-    def put_file(self, bucket_name, file_path, preserve=None):
-        if preserve == None:
-            preserve = self.preserve_file_name
+    def put_file(self, bucket_name, file_path):
         self.log(method='put_file', bucket_name=bucket_name,
                  file_path=file_path)
         successful = False
@@ -305,7 +299,7 @@ class Service:
             try:
                 num_tries += 1
                 bucket = self.get_bucket(bucket_name)
-                if preserve:
+                if self.preserve_file_name:
                     key_name = os.path.split(file_path)[1]
                 else:
                     key_name = None
@@ -403,11 +397,7 @@ class Service:
                                 output_bucket = input_message['OutputBucket']
                             else:
                                 output_bucket = input_message['Bucket']
-                            preserve = self.preserve_file_name
-                            if input_message.has_key('PreserveFileName'):
-                                if input_message['PreserveFileName'].lower() == 'true':
-                                    preserve = True
-                            key = self.put_file(output_bucket, file, preserve)
+                            key = self.put_file(output_bucket, file)
                             output_keys.append('%s;type=%s' % (key.name, type))
                         output_message['OutputKey'] = ','.join(output_keys)
                         self.write_message(output_message)
