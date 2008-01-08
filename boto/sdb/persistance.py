@@ -127,7 +127,7 @@ class StringValue:
     def get_as_string(self):
         return self.get()
     
-class UnsignedIntValue:
+class PositiveIntegerValue:
 
     def __init__(self, **params):
         if params.has_key('max_length'):
@@ -153,6 +153,34 @@ class UnsignedIntValue:
 
     def get_as_string(self):
         return self.format_string % self.get()
+    
+class BooleanValue:
+
+    def __init__(self, **params):
+        if params.has_key('default'):
+            self.set(params['default'])
+        else:
+            self.set(False)
+
+    def set(self, value):
+        if not isinstance(value, bool):
+            raise SDBPersistanceError('Value must be of type bool')
+        self.value = value
+
+    def set_from_string(self, str_value):
+        if str_value.lower() == 'true':
+            self.set(True)
+        else:
+            self.set(False)
+
+    def get(self):
+        return self.value
+
+    def get_as_string(self):
+        if self.get():
+            return 'true'
+        else:
+            return 'false'
     
 class DateTimeValue:
 
@@ -187,20 +215,19 @@ class DateTimeValue:
 class ObjectValue:
 
     def __init__(self, **params):
-        if params.has_key('max_length'):
-            self.max_length = params['max_length']
+        self.set(None)
+        if params.has_key('ref_class'):
+            self.ref_class = params['ref_class']
         else:
-            self.max_length = 1024
-        if params.has_key('default'):
-            self.set(params['default'])
-        else:
-            self.set(None)
+            self.ref_class = SDBObject
 
     def set(self, value):
         if value == None:
             return
         if not isinstance(value, SDBObject):
-            raise SDBPersistanceError('Value must be subclass of SDBObject')
+            raise SDBPersistanceError('Value must be a subclass of SDBObject')
+        if not isinstance(value, self.ref_class):
+            raise SDBPersistanceError('Value must be an instance of class %s' % self.ref_class)
         self.value = value
 
     def set_from_string(self, str_value):
@@ -231,7 +258,7 @@ class ScalarProperty(object):
             except AttributeError:
                 domain = Persistance.get_domain()
                 a = domain.get_attributes(obj, [self.name])
-                if a.has_key(self.name):
+                if self.name in a:
                     self.value.set_from_string(a[self.name])
                     value = self.value.get()
                     setattr(obj, self.slot_name, value)
@@ -243,17 +270,25 @@ class ScalarProperty(object):
         domain = Persistance.get_domain()
         self.value.set(value)
         setattr(obj, self.slot_name, self.value.get())
-        domain.put_attributes(obj, {self.name : self.value.get_as_string()}, replace=True)
+        try:
+            domain.put_attributes(obj, {self.name : self.value.get_as_string()}, replace=True)
+        except:
+            print 'Problem setting value: %s' % value
 
 class StringProperty(ScalarProperty):
 
     def __init__(self, name, **params):
         ScalarProperty.__init__(self, name, StringValue, **params)
 
-class UnsignedIntProperty(ScalarProperty):
+class PositiveIntegerProperty(ScalarProperty):
 
     def __init__(self, name, **params):
-        ScalarProperty.__init__(self, name, UnsignedIntValue, **params)
+        ScalarProperty.__init__(self, name, PositiveIntegerValue, **params)
+
+class BooleanProperty(ScalarProperty):
+
+    def __init__(self, name, **params):
+        ScalarProperty.__init__(self, name, BooleanValue, **params)
 
 class DateTimeProperty(ScalarProperty):
 
@@ -282,7 +317,10 @@ class MultiValueProperty(object):
         self.value.set(value)
         self._list.append(self.value.get())
         domain = Persistance.get_domain()
-        domain.put_attributes(self.object, {self.name : self.value.get_as_string()}, replace=False)
+        try:
+            domain.put_attributes(self.object, {self.name : self.value.get_as_string()}, replace=False)
+        except:
+            print 'problem appending %s' % value
 
     def __get__(self, obj, objtype):
         if obj != None:
@@ -291,7 +329,7 @@ class MultiValueProperty(object):
                 self._list = []
                 domain = Persistance.get_domain()
                 a = domain.get_attributes(obj, [self.name])
-                if a.has_key(self.name):
+                if self.name in a:
                     lst = a[self.name]
                     if not isinstance(lst, list):
                         lst = [lst]
@@ -309,17 +347,29 @@ class MultiValueProperty(object):
             self.value.set(value)
             str_list.append(self.value.get_as_string())
         domain = Persistance.get_domain()
-        domain.put_attributes(obj, {self.name : str_list}, replace=True)
+        try:
+            domain.put_attributes(obj, {self.name : str_list}, replace=True)
+        except:
+            print 'problem setting value: %s' % value
+
+    def __getitem__(self, key):
+        if self._list != None:
+            return self._list[key]
 
 class StringListProperty(MultiValueProperty):
 
     def __init__(self, name, **params):
         MultiValueProperty.__init__(self, name, StringValue, **params)
 
-class UnsignedIntListProperty(MultiValueProperty):
+class PositiveIntegerListProperty(MultiValueProperty):
 
     def __init__(self, name, **params):
-        MultiValueProperty.__init__(self, name, UnsignedIntValue, **params)
+        MultiValueProperty.__init__(self, name, PositiveIntegerValue, **params)
+
+class BooleanListProperty(MultiValueProperty):
+
+    def __init__(self, name, **params):
+        MultiValueProperty.__init__(self, name, BooleanValue, **params)
 
 class ObjectListProperty(MultiValueProperty):
 

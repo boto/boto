@@ -27,11 +27,11 @@ from UserDict import DictMixin
 
 class Item(DictMixin):
     
-    def __init__(self, domain, name=''):
+    def __init__(self, domain, name='', active=True):
         self.domain = domain
         self.name = name
         self._dict = None
-        self.active = True
+        self.active = active
         self.request_id = None
 
     def startElement(self, name, attrs, connection):
@@ -66,8 +66,8 @@ class Item(DictMixin):
             self._dict = {}
         self.domain.get_attributes(self.name, item=self)
 
-    def save(self):
-        self.domain.put_attributes(self.name, self)
+    def save(self, replace=True):
+        self.domain.put_attributes(self.name, self, replace)
 
     def __getitem__(self, key):
         if self._dict == None:
