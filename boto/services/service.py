@@ -228,10 +228,18 @@ class Service:
                 outputs = m['OutputKey'].split(',')
                 for output in outputs:
                     key_name, type = output.split(';')
+                    if type:
+                        mimetype = type.split('=')[1]
                     bucket = self.get_bucket(m['Bucket'])
                     key = bucket.lookup(key_name)
-                    print 'retrieving file: %s' % key_name
-                    key.get_contents_to_filename(os.path.join(path, key_name))
+                    if m.has_key('OriginalFileName'):
+                        file_name, ext = os.path.splitext(m['OriginalFileName'])
+                        file_name = file_name + mimetypes.guess_extension(mimetype)
+                        file_name = os.path.join(path, file_name)
+                    else:
+                        file_name = os.path.join(path, key_name)
+                    print 'retrieving file: %s to %s' % (key_name, file_name)
+                    key.get_contents_to_filename(file_name)
             if delete_msg:
                 q.delete_message(m)
         return m

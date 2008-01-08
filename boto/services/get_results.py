@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import getopt, sys, os, time
+import getopt, sys, os, time, mimetypes
 from datetime import datetime, timedelta
 from boto.services.service import Service
 
