@@ -188,6 +188,10 @@ class Service:
             m['Bucket'] = key.bucket.name
         m['InputKey'] = key.name
         m['Size'] = key.size
+        if self.preserve_file_name:
+            m['PreserveFileName'] = 'true'
+        else:
+            m['PreserveFileName'] = 'false'
         return m
 
     def submit_file(self, path, bucket_name, metadata=None, cb=None, num_cb=0):
@@ -232,12 +236,7 @@ class Service:
                         mimetype = type.split('=')[1]
                     bucket = self.get_bucket(m['Bucket'])
                     key = bucket.lookup(key_name)
-                    if m.has_key('OriginalFileName'):
-                        file_name, ext = os.path.splitext(m['OriginalFileName'])
-                        file_name = file_name + mimetypes.guess_extension(mimetype)
-                        file_name = os.path.join(path, file_name)
-                    else:
-                        file_name = os.path.join(path, key_name)
+                    file_name = os.path.join(path, key_name)
                     print 'retrieving file: %s to %s' % (key_name, file_name)
                     key.get_contents_to_filename(file_name)
             if delete_msg:
@@ -289,24 +288,31 @@ class Service:
     def process_file(self, in_file_name, msg):
         return []
 
+    def determine_key_name(self, m, mimetype):
+        preserve = self.preserve_file_name
+        key_name = None
+        if m.has_key('PreserveFileName'):
+            if m['PreserveFileName'].lower() == 'true':
+                preserve = True
+        if preserve:
+            if m.has_key('OriginalFileName'):
+                file_name, ext = os.path.splitext(m['OriginalFileName'])
+                key_name = file_name + mimetypes.guess_extension(mimetype)
+        return key_name
+
     # store result file in S3
-    def put_file(self, bucket_name, file_path):
-        self.log(method='put_file', bucket_name=bucket_name,
-                 file_path=file_path)
+    def put_file(self, bucket_name, file_path, key_name=None):
+        self.log(method='put_file', bucket_name=bucket_name, file_path=file_path,
+                 key_name=key_name)
         successful = False
         num_tries = 0
         while not successful and num_tries < self.RetryCount:
             try:
                 num_tries += 1
                 bucket = self.get_bucket(bucket_name)
-                if self.preserve_file_name:
-                    key_name = os.path.split(file_path)[1]
-                else:
-                    key_name = None
                 key = bucket.new_key(key_name)
                 key.set_contents_from_filename(file_path)
-                print 'putting file %s as %s.%s' % (file_path, bucket_name,
-                                                    key.name)
+                print 'putting file %s as %s.%s' % (file_path, bucket_name, key.name)
                 successful = True
             except S3ResponseError, e:
                 print 'caught S3Error'
@@ -397,7 +403,8 @@ class Service:
                                 output_bucket = input_message['OutputBucket']
                             else:
                                 output_bucket = input_message['Bucket']
-                            key = self.put_file(output_bucket, file)
+                            key_name = self.determine_key_name(input_message, type)
+                            key = self.put_file(output_bucket, file, key_name)
                             output_keys.append('%s;type=%s' % (key.name, type))
                         output_message['OutputKey'] = ','.join(output_keys)
                         self.write_message(output_message)
