@@ -67,21 +67,21 @@ class SDBObject(object):
         else:
             rs = cls.find(**params)
             try:
-                id = rs.next()
+                obj = rs.next()
             except StopIteration:
                 raise SDBPersistanceError('%s object matching query does not exist' % cls.__name__)
             try:
                 rs.next()
             except StopIteration:
-                return cls(id)
+                return obj
             raise SDBPersistanceError('Query matched more than 1 item')
 
     @classmethod
     def find(cls, **params):
         keys = params.keys()
-        if len(keys) > 5:
-            raise SDBPersistanceError('Too many fields, max is 5')
-        parts = []
+        if len(keys) > 4:
+            raise SDBPersistanceError('Too many fields, max is 4')
+        parts = ["['__type__' = '%s']" % cls.__name__]
         for key in keys:
             if cls.__dict__.has_key(key):
                 if isinstance(cls.__dict__[key], ScalarProperty):
@@ -124,7 +124,7 @@ class SDBObject(object):
         return '%s<%s>' % (self.__class__.__name__, self.id)
 
     def get_handle(self):
-        return '%s:%s' % (self.__class__.__module__, self)
+        return '%s:%s:%s' % (self.__class__.__module__, self.__class__.__name__, self.id)
 
 class ValueChecker:
 
@@ -274,9 +274,10 @@ class ObjectChecker(ValueChecker):
 
     def from_string(self, str_value):
         try:
-            module_name, class_name, obj_name = str_value.split(':')
-            cls = find_class(module_name, class_name)
-            return cls(obj_name)
+            domain = Persistance.get_domain()
+            attrs = domain.get_attributes(str_value, ['__module__', '__type__'])
+            cls = find_class(attrs['__module__'], attrs['__type__'])
+            return cls(str_value)
         except:
             raise ValueError
 
