@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007,2008 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -45,10 +45,6 @@ class Persistance:
     def get_domain(cls):
         return cls.__domain
 
-    @classmethod
-    def delete(key):
-        cls.__domain.delete_attributes(key)
-
 def object_lister(cls, query_lister):
     for item in query_lister:
         yield cls(item.name)
@@ -92,7 +88,6 @@ class SDBObject(object):
             else:
                 raise SDBPersistanceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
-        print query
         domain = Persistance.get_domain()
         rs = domain.query(query)
         return object_lister(cls, rs)
@@ -104,27 +99,38 @@ class SDBObject(object):
         return object_lister(cls, rs)
 
     def __init__(self, id=None, name=None):
-        domain = Persistance.get_domain()
-        if id:
-            self.id = id
+        self.id = id
+        self.name = name
+        if self.id:
+            self.auto_update = True
+            domain = Persistance.get_domain()
             attrs = domain.get_attributes(self.id, ['__name__'])
             if attrs.has_key('__name__'):
                 self.name = attrs['__name__']
         else:
-            attrs = {}
             self.id = str(uuid.uuid4())
-            self.name = name
-            if self.name:
-                attrs['__name__'] = self.name
-            attrs['__type__'] = self.__class__.__name__
-            attrs['__module__'] = self.__class__.__module__
-            domain.put_attributes(self.id, attrs, replace=True)
+            self.auto_update = False
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
 
-    def get_handle(self):
-        return '%s:%s:%s' % (self.__class__.__module__, self.__class__.__name__, self.id)
+    def save(self):
+        keys = self.__class__.__dict__.keys()
+        attrs = {'__type__' : self.__class__.__name__,
+                 '__module__' : self.__class__.__module__}
+        if self.name:
+            attrs['__name__'] = self.name
+        for key in keys:
+            if isinstance(self.__class__.__dict__[key], ScalarProperty):
+                property = self.__class__.__dict__[key]
+                attrs[property.name] = property.to_string(self)
+        domain = Persistance.get_domain()
+        domain.put_attributes(self.id, attrs, replace=True)
+        self.auto_update = True
+        
+    def delete(self):
+        domain = Persistance.get_domain()
+        domain.delete_attributes(self.id)
 
 class ValueChecker:
 
@@ -292,27 +298,51 @@ class ScalarProperty(object):
         self.checker = checker_class(**params)
         self.slot_name = '__' + name
 
+    def save(self, obj):
+        domain = Persistance.get_domain()
+        domain.put_attributes(obj.id, {self.name : self.to_string(obj)}, replace=True)
+
+    def to_string(self, obj):
+        return self.checker.to_string(getattr(obj, self.name))
+
+    def load(self, obj):
+        domain = Persistance.get_domain()
+        a = domain.get_attributes(obj.id, [self.name])
+        # try to get the attribute value from SDB
+        if self.name in a:
+            value = self.checker.from_string(a[self.name])
+            setattr(obj, self.slot_name, value)
+        # if it's not there, set the value to the default value
+        else:
+            self.__set__(obj, self.checker.default)
+
     def __get__(self, obj, objtype):
         if obj:
             try:
                 value = getattr(obj, self.slot_name)
             except AttributeError:
-                domain = Persistance.get_domain()
-                a = domain.get_attributes(obj.id, [self.name])
-                if self.name in a:
-                    value = self.checker.from_string(a[self.name])
-                    setattr(obj, self.slot_name, value)
+                if obj.auto_update:
+                    self.load(obj)
+                    value = getattr(obj, self.slot_name)
                 else:
-                    self.__set__(obj, self.checker.get())
+                    value = self.checker.default
+                    setattr(obj, self.slot_name, self.checker.default)
         return value
 
     def __set__(self, obj, value):
-        domain = Persistance.get_domain()
+        self.checker.check(value)
         try:
-            domain.put_attributes(obj.id, {self.name : self.checker.to_string(value)}, replace=True)
+            old_value = getattr(obj, self.slot_name)
         except:
-            print 'Problem setting value: %s' % value
+            old_value = self.checker.default
         setattr(obj, self.slot_name, value)
+        if obj.auto_update:
+            try:
+                self.save(obj)
+            except:
+                setattr(obj, self.slot_name, old_value)
+                raise
+                                      
 
 class StringProperty(ScalarProperty):
 
