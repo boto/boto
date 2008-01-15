@@ -101,6 +101,13 @@ class SDBObject(object):
     def __init__(self, id=None, name=None):
         self.id = id
         self.name = name
+        # look for all of the Properties and set their names
+        # this is probably better handled with a metaclass, maybe later
+        keys = self.__class__.__dict__.keys()
+        for key in keys:
+            if isinstance(self.__class__.__dict__[key], Property):
+                property = self.__class__.__dict__[key]
+                property.set_name(key)
         if self.id:
             self.auto_update = True
             domain = Persistance.get_domain()
@@ -291,12 +298,18 @@ class ObjectChecker(ValueChecker):
         self.check(value)
         return value.id
 
-class ScalarProperty(object):
+class Property(object):
 
-    def __init__(self, name, checker_class, **params):
-        self.name = name
+    def __init__(self, checker_class, **params):
+        self.name = ''
         self.checker = checker_class(**params)
-        self.slot_name = '__' + name
+        self.slot_name = '__'
+        
+    def set_name(self, name):
+        self.name = name
+        self.slot_name = '__' + self.name
+
+class ScalarProperty(Property):
 
     def save(self, obj):
         domain = Persistance.get_domain()
@@ -343,38 +356,32 @@ class ScalarProperty(object):
                 setattr(obj, self.slot_name, old_value)
                 raise
                                       
-
 class StringProperty(ScalarProperty):
 
-    def __init__(self, name, **params):
-        ScalarProperty.__init__(self, name, StringChecker, **params)
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, StringChecker, **params)
 
 class PositiveIntegerProperty(ScalarProperty):
 
-    def __init__(self, name, **params):
-        ScalarProperty.__init__(self, name, PositiveIntegerChecker, **params)
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, PositiveIntegerChecker, **params)
 
 class BooleanProperty(ScalarProperty):
 
-    def __init__(self, name, **params):
-        ScalarProperty.__init__(self, name, BooleanChecker, **params)
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, BooleanChecker, **params)
 
 class DateTimeProperty(ScalarProperty):
 
-    def __init__(self, name, **params):
-        ScalarProperty.__init__(self, name, DateTimeChecker, **params)
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, DateTimeChecker, **params)
 
 class ObjectProperty(ScalarProperty):
 
-    def __init__(self, name, **params):
-        ScalarProperty.__init__(self, name, ObjectChecker, **params)
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, ObjectChecker, **params)
         
-class MultiValueProperty(object):
-
-    def __init__(self, name, checker_class, **params):
-        self.name = name
-        self.checker = checker_class(**params)
-        self._list = None
+class MultiValueProperty(Property):
 
     def __repr__(self):
         if self._list == None:
