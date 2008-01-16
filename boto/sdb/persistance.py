@@ -45,9 +45,18 @@ class Persistance:
     def get_domain(cls):
         return cls.__domain
 
+def revive_object_from_id(id):
+    domain = Persistance.get_domain()
+    attrs = domain.get_attributes(id, ['__module__', '__type__'])
+    cls = find_class(attrs['__module__'], attrs['__type__'])
+    return cls(id)
+
 def object_lister(cls, query_lister):
     for item in query_lister:
-        yield cls(item.name)
+        if cls:
+            yield cls(item.name)
+        else:
+            yield revive_object_from_id(item.name)
 
 class SDBBase(type):
     "Metaclass for all SDBObjects"
@@ -149,6 +158,14 @@ class SDBObject(object):
     def delete(self):
         domain = Persistance.get_domain()
         domain.delete_attributes(self.id)
+
+    def get_related_objects(self, ref_name, ref_cls=None):
+        domain = Persistance.get_domain()
+        query = "['%s' = '%s']" % (ref_name, self.id)
+        if ref_cls:
+            query += " intersection ['__type__'='%s']" % ref_cls.__name__
+        rs = domain.query(query)
+        return object_lister(ref_cls, rs)
 
 class ValueChecker:
 
@@ -298,10 +315,7 @@ class ObjectChecker(ValueChecker):
 
     def from_string(self, str_value):
         try:
-            domain = Persistance.get_domain()
-            attrs = domain.get_attributes(str_value, ['__module__', '__type__'])
-            cls = find_class(attrs['__module__'], attrs['__type__'])
-            return cls(str_value)
+            revive_object_from_id(str_value)
         except:
             raise ValueError
 
