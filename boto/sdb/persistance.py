@@ -48,8 +48,26 @@ class Persistance:
 def object_lister(cls, query_lister):
     for item in query_lister:
         yield cls(item.name)
-                  
+
+class SDBBase(type):
+    "Metaclass for all SDBObjects"
+    def __init__(cls, name, bases, dict):
+        super(SDBBase, cls).__init__(name, bases, dict)
+        # Make sure this is a subclass of SDBObject - mainly copied from django ModelBase (thanks!)
+        try:
+            if filter(lambda b: issubclass(b, SDBObject), bases):
+                # look for all of the Properties and set their names
+                for key in dict.keys():
+                    if isinstance(dict[key], Property):
+                        property = dict[key]
+                        property.set_name(key)
+        except NameError:
+            # 'SDBObject' isn't defined yet, meaning we're looking at our own
+            # SDBObject class, defined below.
+            pass
+        
 class SDBObject(object):
+    __metaclass__ = SDBBase
 
     @classmethod
     def get(cls, id=None, **params):
@@ -101,13 +119,6 @@ class SDBObject(object):
     def __init__(self, id=None, name=None):
         self.id = id
         self.name = name
-        # look for all of the Properties and set their names
-        # this is probably better handled with a metaclass, maybe later
-        keys = self.__class__.__dict__.keys()
-        for key in keys:
-            if isinstance(self.__class__.__dict__[key], Property):
-                property = self.__class__.__dict__[key]
-                property.set_name(key)
         if self.id:
             self.auto_update = True
             domain = Persistance.get_domain()
