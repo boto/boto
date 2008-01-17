@@ -22,6 +22,7 @@
 import boto
 from datetime import datetime
 from boto.exception import SDBPersistanceError
+from boto.s3.key import Key
 from boto.utils import find_class
 import uuid
 
@@ -31,6 +32,7 @@ class Persistance:
 
     __sdb = boto.connect_sdb()
     __domain = None
+    __s3_conn = None
         
     @classmethod
     def set_domain(cls, domain_name):
@@ -44,6 +46,12 @@ class Persistance:
     @classmethod
     def get_domain(cls):
         return cls.__domain
+
+    @classmethod
+    def get_s3_connection(cls):
+        if cls.__s3_conn == None:
+            cls.__s3_conn = boto.connect_s3()
+        return cls.__s3_conn
 
 def revive_object_from_id(id):
     domain = Persistance.get_domain()
@@ -300,10 +308,7 @@ class ObjectChecker(ValueChecker):
 
     def __init__(self, **params):
         self.default = None
-        if params.has_key('ref_class'):
-            self.ref_class = params['ref_class']
-        else:
-            self.ref_class = SDBObject
+        self.ref_class = params.get('ref_class', SDBObject)
 
     def check(self, value):
         if value == None:
@@ -315,13 +320,40 @@ class ObjectChecker(ValueChecker):
 
     def from_string(self, str_value):
         try:
-            revive_object_from_id(str_value)
+            return revive_object_from_id(str_value)
         except:
             raise ValueError
 
     def to_string(self, value):
         self.check(value)
         return value.id
+
+class S3KeyChecker(ValueChecker):
+
+    def __init__(self, **params):
+        self.default = None
+
+    def check(self, value):
+        if value == None:
+            return
+        if not isinstance(value, Key):
+            raise TypeError
+
+    def from_string(self, str_value):
+        try:
+            bucket_name, key_name = str_value.split('/')
+            s3 = Persistance.get_s3_connection()
+            bucket = s3.get_bucket(bucket_name)
+            key = bucket.get_key(key_name)
+            if not key:
+                key = bucket.new_key(key_name)
+            return key
+        except:
+            raise ValueError
+
+    def to_string(self, value):
+        self.check(value)
+        return '%s/%s' % (value.bucket.name, value.name)
 
 class Property(object):
 
@@ -405,6 +437,11 @@ class ObjectProperty(ScalarProperty):
 
     def __init__(self, **params):
         ScalarProperty.__init__(self, ObjectChecker, **params)
+
+class S3KeyProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, S3KeyChecker, **params)
         
 class MultiValueProperty(Property):
 
