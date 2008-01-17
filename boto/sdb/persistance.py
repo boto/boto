@@ -516,21 +516,21 @@ class MultiValueProperty(Property):
 
 class StringListProperty(MultiValueProperty):
 
-    def __init__(self, name, **params):
-        MultiValueProperty.__init__(self, name, StringChecker, **params)
+    def __init__(self, **params):
+        MultiValueProperty.__init__(self, StringChecker, **params)
 
 class PositiveIntegerListProperty(MultiValueProperty):
 
-    def __init__(self, name, **params):
-        MultiValueProperty.__init__(self, name, PositiveIntegerChecker, **params)
+    def __init__(self, **params):
+        MultiValueProperty.__init__(self, PositiveIntegerChecker, **params)
 
 class BooleanListProperty(MultiValueProperty):
 
-    def __init__(self, name, **params):
-        MultiValueProperty.__init__(self, name, BooleanChecker, **params)
+    def __init__(self, **params):
+        MultiValueProperty.__init__(self, BooleanChecker, **params)
 
 class ObjectListProperty(MultiValueProperty):
 
-    def __init__(self, name, **params):
-        MultiValueProperty.__init__(self, name, ObjectChecker, **params)
+    def __init__(self, **params):
+        MultiValueProperty.__init__(self, ObjectChecker, **params)
         
