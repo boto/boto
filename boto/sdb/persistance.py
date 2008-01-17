@@ -319,6 +319,8 @@ class ObjectChecker(ValueChecker):
             raise TypeError
 
     def from_string(self, str_value):
+        if not str_value:
+            return None
         try:
             return revive_object_from_id(str_value)
         except:
@@ -326,7 +328,10 @@ class ObjectChecker(ValueChecker):
 
     def to_string(self, value):
         self.check(value)
-        return value.id
+        if value == None:
+            return ''
+        else:
+            return value.id
 
 class S3KeyChecker(ValueChecker):
 
@@ -345,6 +350,8 @@ class S3KeyChecker(ValueChecker):
             raise TypeError
 
     def from_string(self, str_value):
+        if not str_value:
+            return
         try:
             bucket_name, key_name = str_value.split('/')
             s3 = Persistance.get_s3_connection()
@@ -358,7 +365,10 @@ class S3KeyChecker(ValueChecker):
 
     def to_string(self, value):
         self.check(value)
-        return '%s/%s' % (value.bucket.name, value.name)
+        if value == None:
+            return None
+        else:
+            return '%s/%s' % (value.bucket.name, value.name)
 
 class Property(object):
 
