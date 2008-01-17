@@ -466,6 +466,10 @@ class S3KeyProperty(ScalarProperty):
                                       
 class MultiValueProperty(Property):
 
+    def __init__(self, checker_class, **params):
+        Property.__init__(self, checker_class, **params)
+        self._list = None
+
     def __repr__(self):
         if self._list == None:
             return '[]'
