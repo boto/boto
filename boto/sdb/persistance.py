@@ -336,7 +336,12 @@ class S3KeyChecker(ValueChecker):
     def check(self, value):
         if value == None:
             return
-        if not isinstance(value, Key):
+        if isinstance(value, str):
+            try:
+                bucket_name, key_name = value.split('/')
+            except:
+                raise ValueError
+        elif not isinstance(value, Key):
             raise TypeError
 
     def from_string(self, str_value):
@@ -443,6 +448,22 @@ class S3KeyProperty(ScalarProperty):
     def __init__(self, **params):
         ScalarProperty.__init__(self, S3KeyChecker, **params)
         
+    def __set__(self, obj, value):
+        self.checker.check(value)
+        try:
+            old_value = getattr(obj, self.slot_name)
+        except:
+            old_value = self.checker.default
+        if isinstance(value, str):
+            value = self.checker.from_string(value)
+        setattr(obj, self.slot_name, value)
+        if obj.auto_update:
+            try:
+                self.save(obj)
+            except:
+                setattr(obj, self.slot_name, old_value)
+                raise
+                                      
 class MultiValueProperty(Property):
 
     def __repr__(self):
