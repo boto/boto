@@ -257,9 +257,9 @@ class BooleanChecker(ValueChecker):
 
     def __init__(self, **params):
         if params.has_key('default'):
-            self.set(params['default'])
+            self.default = params['default']
         else:
-            self.set(False)
+            self.default = False
 
     def check(self, value):
         if not isinstance(value, bool):
@@ -286,9 +286,9 @@ class DateTimeChecker(ValueChecker):
         else:
             self.maxlength = 1024
         if params.has_key('default'):
-            self.set(params['default'])
+            self.default = params['default']
         else:
-            self.set(datetime.now())
+            self.default = datetime.now()
 
     def check(self, value):
         if not isinstance(value, datetime):
