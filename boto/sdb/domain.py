@@ -49,8 +49,8 @@ class Domain:
     def put_attributes(self, item_name, attributes, replace=True):
         return self.connection.put_attributes(self, item_name, attributes, replace)
 
-    def get_attributes(self, item_name, attributes=None, item=None):
-        return self.connection.get_attributes(self, item_name, attributes, item)
+    def get_attributes(self, item_name, attribute_name=None, item=None):
+        return self.connection.get_attributes(self, item_name, attribute_name, item)
 
     def delete_attributes(self, item_name, attributes=None):
         return self.connection.delete_attributes(self, item_name, attributes)

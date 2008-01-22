@@ -171,12 +171,12 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
 
-    def get_attributes(self, domain_or_name, item_name, attributes=None, item=None):
+    def get_attributes(self, domain_or_name, item_name, attribute_name=None, item=None):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
-        if attributes:
-            self.build_name_list(params, attributes)
+        if attribute_name:
+            params['AttributeName'] = attribute_name
         response = self.make_request('GetAttributes', params)
         body = response.read()
         if response.status == 200:
