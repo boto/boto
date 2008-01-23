@@ -135,6 +135,19 @@ class SDBObject(object):
         rs = domain.query("['__type__' = '%s']" % cls.__name__)
         return object_lister(cls, rs)
 
+    @classmethod
+    def find_properties(cls):
+        properties = []
+        while cls:
+            for key in cls.__dict__.keys():
+                if isinstance(cls.__dict__[key], ScalarProperty):
+                    properties.append(cls.__dict__[key])
+            if len(cls.__bases__) > 0:
+                cls = cls.__bases__[0]
+            else:
+                cls = None
+        return properties
+        
     def __init__(self, id=None):
         self.id = id
         if self.id:
@@ -151,13 +164,10 @@ class SDBObject(object):
         return '%s<%s>' % (self.__class__.__name__, self.id)
 
     def save(self):
-        keys = self.__class__.__dict__.keys()
         attrs = {'__type__' : self.__class__.__name__,
                  '__module__' : self.__class__.__module__}
-        for key in keys:
-            if isinstance(self.__class__.__dict__[key], ScalarProperty):
-                property = self.__class__.__dict__[key]
-                attrs[property.name] = property.to_string(self)
+        for property in self.find_properties():
+            attrs[property.name] = property.to_string(self)
         domain = Persistance.get_domain()
         domain.put_attributes(self.id, attrs, replace=True)
         self.auto_update = True
