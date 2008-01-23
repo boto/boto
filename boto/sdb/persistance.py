@@ -30,15 +30,17 @@ ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class Persistance:
 
-    __sdb = boto.connect_sdb()
+    __sdb = None
     __domain = None
     __s3_conn = None
         
     @classmethod
-    def set_domain(cls, domain_name):
+    def set_domain(cls, domain_name, aws_access_key_id=None, aws_secret_access_key=None):
         """
         Set the domain in which persisted objects will be stored
         """
+        cls.__sdb = boto.connect_sdb(aws_access_key_id=aws_access_key_id,
+                                     aws_secret_access_key=aws_secret_access_key)
         cls.__domain = cls.__sdb.lookup(domain_name)
         if not cls.__domain:
             cls.__domain = cls.__sdb.create_domain(domain_name)
@@ -90,7 +92,7 @@ class SDBObject(object):
     def get(cls, id=None, **params):
         domain = Persistance.get_domain()
         if id:
-            a = domain.get_attributes(id, ['__type__'])
+            a = domain.get_attributes(id, '__type__')
             if a.has_key('__type__'):
                 return cls(id)
             else:
@@ -133,15 +135,14 @@ class SDBObject(object):
         rs = domain.query("['__type__' = '%s']" % cls.__name__)
         return object_lister(cls, rs)
 
-    def __init__(self, id=None, name=None):
+    def __init__(self, id=None):
         self.id = id
-        self.name = name
         if self.id:
             self.auto_update = True
             domain = Persistance.get_domain()
-            attrs = domain.get_attributes(self.id, ['__name__'])
-            if attrs.has_key('__name__'):
-                self.name = attrs['__name__']
+            attrs = domain.get_attributes(self.id, '__type__')
+            if len(attrs.keys()) == 0:
+                raise SDBPersistanceError('Object %s: not found' % self.id)
         else:
             self.id = str(uuid.uuid4())
             self.auto_update = False
@@ -153,8 +154,6 @@ class SDBObject(object):
         keys = self.__class__.__dict__.keys()
         attrs = {'__type__' : self.__class__.__name__,
                  '__module__' : self.__class__.__module__}
-        if self.name:
-            attrs['__name__'] = self.name
         for key in keys:
             if isinstance(self.__class__.__dict__[key], ScalarProperty):
                 property = self.__class__.__dict__[key]
@@ -370,6 +369,34 @@ class S3KeyChecker(ValueChecker):
         else:
             return '%s/%s' % (value.bucket.name, value.name)
 
+class S3BucketChecker(ValueChecker):
+
+    def __init__(self, **params):
+        self.default = None
+
+    def check(self, value):
+        if value == None:
+            return
+        if not isinstance(value, str):
+            raise TypeError
+
+    def from_string(self, str_value):
+        if not str_value:
+            return
+        try:
+            s3 = Persistance.get_s3_connection()
+            bucket = s3.get_bucket(str_value)
+            return bucket
+        except:
+            raise ValueError
+
+    def to_string(self, value):
+        self.check(value)
+        if value == None:
+            return None
+        else:
+            return '%s' % value.bucket.name
+
 class Property(object):
 
     def __init__(self, checker_class, **params):
@@ -392,7 +419,7 @@ class ScalarProperty(Property):
 
     def load(self, obj):
         domain = Persistance.get_domain()
-        a = domain.get_attributes(obj.id, [self.name])
+        a = domain.get_attributes(obj.id, self.name)
         # try to get the attribute value from SDB
         if self.name in a:
             value = self.checker.from_string(a[self.name])
@@ -474,6 +501,28 @@ class S3KeyProperty(ScalarProperty):
                 setattr(obj, self.slot_name, old_value)
                 raise
                                       
+class S3BucketProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, S3BucketChecker, **params)
+        
+    def __set__(self, obj, value):
+        self.checker.check(value)
+        try:
+            old_value = getattr(obj, self.slot_name)
+        except:
+            old_value = self.checker.default
+        if isinstance(value, str):
+            value = self.checker.from_string(value)
+        setattr(obj, self.slot_name, value)
+        if obj.auto_update:
+            try:
+                self.save(obj)
+            except:
+                setattr(obj, self.slot_name, old_value)
+                raise
+
+                                      
 class MultiValueProperty(Property):
 
     def __init__(self, checker_class, **params):
@@ -501,7 +550,7 @@ class MultiValueProperty(Property):
             if self._list == None:
                 self._list = []
                 domain = Persistance.get_domain()
-                a = domain.get_attributes(obj.id, [self.name])
+                a = domain.get_attributes(obj.id, self.name)
                 if self.name in a:
                     lst = a[self.name]
                     if not isinstance(lst, list):
@@ -548,3 +597,13 @@ class ObjectListProperty(MultiValueProperty):
     def __init__(self, **params):
         MultiValueProperty.__init__(self, ObjectChecker, **params)
         
+class HasManyProperty(Property):
+
+    def set_name(self, name):
+        self.name = name
+        self.slot_name = '__' + self.name
+
+    def __get__(self, obj, objtype):
+        return self
+
+
