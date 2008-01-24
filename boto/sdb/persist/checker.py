@@ -21,6 +21,7 @@
 
 from datetime import datetime
 from boto.s3.key import Key
+from boto.sdb.persist import revive_object_from_id
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 

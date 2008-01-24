@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.exception import SDBPersistanceError
-from boto.sdb.persist import get_domain
+from boto.sdb.persist import get_domain, object_lister
 from boto.sdb.persist.property import *
 import uuid
 
