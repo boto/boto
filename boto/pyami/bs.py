@@ -24,6 +24,8 @@ import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config
 
+MetadataIniPath = '/usr/local/etc/metadata.ini'
+
 class Bootstrap:
     """
     The Bootstrap class is instantiated and run as part of the PyAMI
@@ -40,7 +42,7 @@ class Bootstrap:
         self.working_dir = '/mnt/pyami'
 
     def write_metadata(self):
-        fp = open(os.path.expanduser('/usr/local/etc/metadata.ini'), 'w')
+        fp = open(os.path.expanduser(MetadataIniPath), 'w')
         fp.write('[Instance]\n')
         inst_data = get_instance_metadata()
         for key in inst_data:
@@ -52,7 +54,7 @@ class Bootstrap:
         fp.write('working_dir: %s\n' % self.working_dir)
         fp.close()
         # now that we have written the file, read it into a pyami Config object
-        self.config = Config()
+        self.config = Config(MetadataIniPath)
 
     def write_env_setup(self):
         fp = open('/etc/profile.d/aws.sh', 'w')
