@@ -26,18 +26,18 @@ class ScriptBase:
         return time.strftime(ISO8601, time.gmtime())
         
     def notify(self, subject):
-        to_string = self.config.get_user('notify_to', None)
+        to_string = self.config.get_value('Notification', 'smtp_to', None)
         if to_string:
             try:
-                from_string = self.config.get_user('notify_from', 'boto')
+                from_string = self.config.get_value('Notification', 'smtp_from', 'boto')
                 body = "From: %s\n" % from_string
                 body += "To: %s\n" % to_string
                 body += "Subject: %s\n\n" % subject
                 body += self.log_fp.getvalue()
-                smtp_host = self.config.get_user('smtp_host', 'localhost')
+                smtp_host = self.config.get_value('Notification', 'smtp_host', 'localhost')
                 server = smtplib.SMTP(smtp_host)
-                smtp_user = self.config.get_user('smtp_user', '')
-                smtp_pass = self.config.get_user('smtp_pass', '')
+                smtp_user = self.config.get_value('Notification', 'smtp_user', '')
+                smtp_pass = self.config.get_value('Notification', 'smtp_pass', '')
                 server.login(smtp_user, smtp_pass)
                 server.sendmail(from_string, to_string, body)
                 server.quit()

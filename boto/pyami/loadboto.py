@@ -103,6 +103,7 @@ class LoadPackages(ScriptBase):
         self.write_env_setup()
         self.create_working_dir()
         self.load_boto()
+        self.notify('LoadBoto Completed for %s' % self.config.get_instance('instance_id'))
 
 if __name__ == "__main__":
     lp = LoadPackages()
