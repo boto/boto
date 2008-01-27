@@ -54,6 +54,13 @@ class Config(ConfigParser.RawConfigParser):
             val = default
         return val
 
+    def get_value(self, section, name, default=None):
+        try:
+            val = self.get(section, name)
+        except:
+            val = default
+        return val
+    
     def dump(self):
         s = StringIO.StringIO()
         self.write(s)
