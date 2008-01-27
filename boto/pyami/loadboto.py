@@ -39,9 +39,9 @@ class LoadPackages(ScriptBase):
     """
 
     def __init__(self):
+        self.working_dir = '/mnt/pyami'
         self.write_metadata()
         ScriptBase.__init__(self, self.config)
-        self.working_dir = '/mnt/pyami'
 
     def write_metadata(self):
         fp = open(os.path.expanduser(MetadataConfigPath), 'w')
@@ -60,10 +60,10 @@ class LoadPackages(ScriptBase):
     def write_env_setup(self):
         fp = open('/etc/profile.d/aws.sh', 'w')
         fp.write('\n# AWS Environment Setup Script\n')
-        access_key = self.config.get('Credentials', 'aws_access_key_id', None)
+        access_key = self.config.get_value('Credentials', 'aws_access_key_id', None)
         if access_key:
             fp.write('export AWS_ACCESS_KEY_ID=%s\n' % access_key)
-        secret_key = self.config.get('Credentials', 'aws_secret_access_key', None)
+        secret_key = self.config.get_value('Credentials', 'aws_secret_access_key', None)
         if secret_key:
             fp.write('export AWS_SECRET_ACCESS_KEY=%s\n' % secret_key)
         fp.close()
@@ -74,14 +74,14 @@ class LoadPackages(ScriptBase):
             os.mkdir(self.working_dir)
 
     def load_boto(self):
-        update = self.config.get_user('boto_update', 'svn:HEAD')
+        update = self.config.get_value('Boto', 'boto_update', 'svn:HEAD')
         if update.startswith('svn'):
             if update.find(':'):
                 method, version = update.split(':')
                 version = '-r%s' % version
             else:
                 version = '-rHEAD'
-            location = self.config.get_user('boto_location', '/usr/local/boto')
+            location = self.config.get_value('Bobo', 'boto_location', '/usr/local/boto')
             self.run('svn update %s %s' % (version, location))
 
     def get_eggs(self):
