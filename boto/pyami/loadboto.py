@@ -102,7 +102,8 @@ class LoadPackages(ScriptBase):
         self.write_metadata()
         self.write_env_setup()
         self.create_working_dir()
+        self.load_boto()
 
 if __name__ == "__main__":
-    bs = Bootstrap()
-    bs.main()
+    lp = LoadPackages()
+    lp.main()
