@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import sys, os, pwd
+import sys, os, pwd, tarfile
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config
@@ -27,9 +27,9 @@ from boto.pyami.scriptbase import ScriptBase
 
 MetadataConfigPath = '/etc/metadata.ini'
 
-class LoadPackages(ScriptBase):
+class LoadBoto(ScriptBase):
     """
-    The LoadPackages class is instantiated and run as part of the PyAMI
+    The LoadBoto class is instantiated and run as part of the PyAMI
     instance initialization process.  The methods in this class will
     be run from the rc.local script of the instance and will be run
     as the root user.
@@ -49,7 +49,6 @@ class LoadPackages(ScriptBase):
         inst_data = get_instance_metadata()
         for key in inst_data:
             fp.write('%s: %s\n' % (key, inst_data[key]))
-        fp.write('[Credentials]\n')
         user_data = get_instance_userdata()
         fp.write('\n%s\n' % user_data)
         fp.write('working_dir: %s\n' % self.working_dir)
@@ -76,35 +75,48 @@ class LoadPackages(ScriptBase):
     def load_boto(self):
         update = self.config.get_value('Boto', 'boto_update', 'svn:HEAD')
         if update.startswith('svn'):
-            if update.find(':'):
+            if update.find(':') >= 0:
                 method, version = update.split(':')
                 version = '-r%s' % version
             else:
                 version = '-rHEAD'
-            location = self.config.get_value('Bobo', 'boto_location', '/usr/local/boto')
+            location = self.config.get_value('Boto', 'boto_location', '/usr/local/boto')
             self.run('svn update %s %s' % (version, location))
+        elif update.startswith('s3'):
+            p = update.find(':')
+            if p >= 0:
+                try:
+                    bucket_name, key_name = update[p+1:].split('/')
+                    s3 = boto.connect_s3(self.config.get_value('Credentials', 'aws_access_key_id'),
+                                         self.config.get_value('Credentials', 'aws_secret_access_key'))
+                    bucket = s3.get_bucket(bucket_name)
+                    key = bucket.get_key(key_name)
+                    self.log_fp.write('\nFetching %s.%s\n' % (bucket_name, key_name))
+                    path = os.path.join(self.working_dir, key.name)
+                    key.get_contents_to_filename(path)
+                    # first remove the symlink needed when running from subversion
+                    self.run('rm /usr/local/lib/python2.5/site-packages/boto')
+                    # now untar the downloaded file
+                    tf = tarfile.open(path, 'r:gz')
+                    tf.list(verbose=True)
+                    dir_name = tf.getnames()[0]
+                    tf.extractall(self.working_dir)
+                    # now run the installer
+                    setup_path = os.path.join(self.working_dir, dir_name)
+                    old_dir = os.getcwd()
+                    os.chdir(setup_path)
+                    self.run('python setup.py install')
+                    os.chdir(old_dir)
+                except:
+                    self.log_fp.write('\nProblem fetching from S3\n')
 
-    def get_eggs(self):
-        egg_bucket = self.config.get_user('egg_bucket', None)
-        if egg_bucket:
-            s3 = boto.connect_s3(self.config.get_user('aws_access_key_id'),
-                                 self.config.get_user('aws_secret_access_key'))
-            bucket = s3.get_bucket(egg_bucket)
-            eggs = self.config.get_user('eggs', '')
-            for egg in eggs.split(','):
-                if egg:
-                    egg_key = bucket.get_key(egg.strip())
-                    print 'Fetching %s.%s' % (bucket.name, egg_key.name)
-                    egg_path = os.path.join(self.config.get_user('working_dir'), egg_key.name)
-                    egg_key.get_contents_to_filename(egg_path)
-            
     def main(self):
         self.write_metadata()
         self.write_env_setup()
         self.create_working_dir()
         self.load_boto()
-        self.notify('LoadBoto Completed for %s' % self.config.get_instance('instance_id'))
+        self.notify('LoadBoto Completed for %s' % self.config.get_instance('instance-id'))
 
 if __name__ == "__main__":
-    lp = LoadPackages()
+    lp = LoadBoto()
     lp.main()
