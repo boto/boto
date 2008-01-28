@@ -21,7 +21,7 @@
 #
 import sys, os, pwd, tarfile
 import boto
-from boto.utils import get_instance_metadata, get_instance_userdata
+from boto.utils import get_instance_metadata, get_instance_userdata_raw
 from boto.pyami.config import Config
 from boto.pyami.scriptbase import ScriptBase
 
@@ -49,7 +49,7 @@ class LoadBoto(ScriptBase):
         inst_data = get_instance_metadata()
         for key in inst_data:
             fp.write('%s: %s\n' % (key, inst_data[key]))
-        user_data = get_instance_userdata()
+        user_data = get_instance_userdata_raw()
         fp.write('\n%s\n' % user_data)
         fp.write('working_dir: %s\n' % self.working_dir)
         fp.close()

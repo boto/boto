@@ -150,6 +150,16 @@ def get_instance_userdata(version='latest', sep=None):
         print 'problem reading metadata'
     return user_data
     
+def get_instance_userdata_raw(version='latest'):
+    user_data = None
+    try:
+        url = 'http://169.254.169.254/%s/user-data/' % version
+        s = urllib.urlopen(url)
+        user_data = s.read()
+    except:
+        print 'problem reading metadata'
+    return user_data
+    
 def find_class(module_name, class_name):
     modules = module_name.split('.')
     path = None
