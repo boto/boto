@@ -81,6 +81,7 @@ class Server(SDBObject):
 
     def __init__(self, id=None, name=None):
         SDBObject.__init__(self, id)
+        self.name = name
         self.reservation = None
         self._instance = None
         self._ssh_client = None
