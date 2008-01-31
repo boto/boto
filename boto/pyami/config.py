@@ -73,7 +73,7 @@ class Config(ConfigParser.RawConfigParser):
             fp.write('[%s]\n' % section)
             for option in self.options(section):
                 if option == 'aws_secret_access_key':
-                    fp.write('%s: xxxxxxxxxxxxxxxxxx\n' % option)
+                    fp.write('%s = xxxxxxxxxxxxxxxxxx\n' % option)
                 else:
-                    fp.write('%s: %s\n' % (option, self.get(section, option)))
+                    fp.write('%s = %s\n' % (option, self.get(section, option)))
     
