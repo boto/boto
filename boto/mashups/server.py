@@ -25,6 +25,7 @@ High-level abstraction of an EC2 server
 import boto
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config
+from boto.pyami.loadboto import MetadataConfigPath
 from boto.mashups.interactive import interactive_shell
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
@@ -221,6 +222,12 @@ class Server(SDBObject):
         path, name = os.path.split(cert_file)
         remote_cert_file = '/mnt/%s' % name
         self.put_file(cert_file, remote_cert_file)
+        print '\tdeleting %s' % MetadataConfigPath
+        # delete the metadata.ini file if it exists
+        try:
+            sftp_client.remove(MetadataConfigPath)
+        except:
+            pass
         command = 'ec2-bundle-vol '
         command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
         command += '-u %s ' % self.reservation.owner_id

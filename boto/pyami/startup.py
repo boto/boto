@@ -22,43 +22,55 @@
 import os, sys
 import boto
 from boto.utils import find_class
-from boto.pyami.config import Config
+from boto import config
 
 class Startup:
 
+    def get_eggs(self):
+        egg_bucket = config.get_value('Boto', 'egg_bucket', None)
+        if egg_bucket:
+            s3 = boto.connect_s3()
+            bucket = s3.get_bucket(egg_bucket)
+            eggs = config.get_value('Boto', 'eggs', '')
+            for egg in eggs.split(','):
+                if egg:
+                    egg_key = bucket.get_key(egg.strip())
+                    print 'Fetching %s.%s' % (bucket.name, egg_key.name)
+                    egg_path = os.path.join(config.get_value('General', 'working_dir'), egg_key.name)
+                    egg_key.get_contents_to_filename(egg_path)
+            
     def get_script(self):
-        script_name = self.config.get_user('script_name')
+        script_name = config.get_value('Boto', 'script_name')
         if script_name:
-            c = boto.connect_s3(self.config.get_user('aws_access_key_id'),
-                                self.config.get_user('aws_secret_access_key'))
+            c = boto.connect_s3()
             script_name = script_name + '.py'
-            script_bucket = self.config.get_user('script_bucket')
+            script_bucket = config.get_value('Boto', 'script_bucket')
             if not script_bucket:
-                script_bucket = self.config.get_user('bucket_name')
+                script_bucket = self.config.get_value('Boto', 'bucket_name')
             bucket = c.get_bucket(script_bucket)
             script = bucket.get_key(script_name)
             print 'Fetching %s.%s' % (bucket.name, script.name)
-            script_path = os.path.join(self.config.get_user('working_dir'),
-                                                          script_name)
+            script_path = os.path.join(config.get_value('General', 'working_dir'), script_name)
             script.get_contents_to_filename(script_path)
-            self.module_name = self.config.get_user('script_name')
-            sys.path.append(self.config.get_user('working_dir'))
+            self.module_name = config.get_value('Boto', 'script_name')
+            sys.path.append(config.get_value('General', 'working_dir'))
         else:
-            self.module_name = self.config.get_user('module_name')
+            self.module_name = config.get_value('Boto', 'module_name')
 
     def run_script(self):
-        debug = self.config.getint_user('debug')
+        try:
+            debug = config.getint('Boto', 'debug')
+        except:
+            debug = 0
         # debug level greater than 1 means don't even startup the script
         if debug > 1:
             return
         if self.module_name:
-            cls = find_class(self.module_name,
-                             self.config.get_user('class_name'))
-            s = cls(self.config)
+            cls = find_class(self.module_name, config.get_value('Boto', 'class_name'))
+            s = cls()
             s.run()
 
     def main(self):
-        self.config = Config()
         self.get_script()
         self.run_script()
 

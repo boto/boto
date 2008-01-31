@@ -22,10 +22,8 @@
 import sys, os, pwd, tarfile
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata_raw
-from boto.pyami.config import Config
+from boto.pyami.config import Config, BotoConfigPath
 from boto.pyami.scriptbase import ScriptBase
-
-MetadataConfigPath = '/etc/metadata.ini'
 
 class LoadBoto(ScriptBase):
     """
@@ -44,7 +42,7 @@ class LoadBoto(ScriptBase):
         ScriptBase.__init__(self, self.config)
 
     def write_metadata(self):
-        fp = open(os.path.expanduser(MetadataConfigPath), 'w')
+        fp = open(os.path.expanduser(BotoConfigPath), 'w')
         fp.write('[Instance]\n')
         inst_data = get_instance_metadata()
         for key in inst_data:
@@ -54,7 +52,7 @@ class LoadBoto(ScriptBase):
         fp.write('working_dir = %s\n' % self.working_dir)
         fp.close()
         # now that we have written the file, read it into a pyami Config object
-        self.config = Config(path=MetadataConfigPath)
+        self.config = Config()
 
     def write_env_setup(self):
         fp = open('/etc/profile.d/aws.sh', 'w')
@@ -87,8 +85,8 @@ class LoadBoto(ScriptBase):
             if p >= 0:
                 try:
                     bucket_name, key_name = update[p+1:].split('/')
-                    s3 = boto.connect_s3(self.config.get_value('Credentials', 'aws_access_key_id'),
-                                         self.config.get_value('Credentials', 'aws_secret_access_key'))
+                    s3 = boto.connect_s3(self.config.get('Credentials', 'aws_access_key_id'),
+                                         self.config.get('Credentials', 'aws_secret_access_key'))
                     bucket = s3.get_bucket(bucket_name)
                     key = bucket.get_key(key_name)
                     self.log_fp.write('\nFetching %s.%s\n' % (bucket_name, key_name))
