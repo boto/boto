@@ -112,7 +112,10 @@ class Bucket:
             # so I have to fake it out
             response.chunked = 0
             body = response.read()
-            return None
+            if response.status == 404:
+                return None
+            else:
+                raise S3ResponseError(response.status, response.reason, body)
 
     def list(self, prefix="", delimiter=""):
         """
@@ -170,16 +173,14 @@ class Bucket:
         return self.key_class(self, key_name)
 
     def generate_url(self, expires_in, method='GET', headers=None):
-        return self.connection.generate_url(expires_in, method,
-                                            '/'+self.name, headers)
+        return self.connection.generate_url(expires_in, method, '/'+self.name, headers)
 
     def delete_key(self, key_name):
         # for backward compatibility, previous version expected a Key object
         if isinstance(key_name, self.key_class):
             key_name = key_name.name
         path = '/%s/%s' % (self.name, key_name)
-        response = self.connection.make_request('DELETE',
-                                                urllib.quote(path))
+        response = self.connection.make_request('DELETE', urllib.quote(path))
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason, body)
