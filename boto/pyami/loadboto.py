@@ -48,10 +48,10 @@ class LoadBoto(ScriptBase):
         fp.write('[Instance]\n')
         inst_data = get_instance_metadata()
         for key in inst_data:
-            fp.write('%s: %s\n' % (key, inst_data[key]))
+            fp.write('%s = %s\n' % (key, inst_data[key]))
         user_data = get_instance_userdata_raw()
         fp.write('\n%s\n' % user_data)
-        fp.write('working_dir: %s\n' % self.working_dir)
+        fp.write('working_dir = %s\n' % self.working_dir)
         fp.close()
         # now that we have written the file, read it into a pyami Config object
         self.config = Config(path=MetadataConfigPath)
