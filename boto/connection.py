@@ -51,6 +51,7 @@ from boto.exception import AWSConnectionError
 import boto.utils
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
+USER_AGENT = "Boto/$Rev$"
 
 class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
@@ -146,7 +147,7 @@ class AWSAuthConnection:
         
     def make_request(self, method, path, headers=None, data='', metadata=None):
         if headers == None:
-            headers = {}
+            headers = {'User-Agent' : USER_AGENT}
         if metadata == None:
             metadata = {}
         if not headers.has_key('Content-Length'):
@@ -194,6 +195,7 @@ class AWSQueryConnection(AWSAuthConnection):
                                    https_connection_factory)
 
     def make_request(self, action, params=None, path=None, verb='GET'):
+        headers = {'User-Agent' : USER_AGENT}
         if path == None:
             path = '/'
         if params == None:
@@ -225,7 +227,7 @@ class AWSQueryConnection(AWSAuthConnection):
                 print 'encountered %s exception, trying to recover' % \
                     e.__class__.__name__
             self.make_http_connection()
-            self.connection.request('GET', qs)
+            self.connection.request('GET', qs, headers=headers)
             return self.connection.getresponse()
 
     def build_list_params(self, params, items, label):
