@@ -156,7 +156,8 @@ class Order(IObject):
                     time.sleep(15)
                     states = [i.update() for i in r.instances]
             for i in r.instances:
-                server = Server(name=item.name)
+                server = Server()
+                server.name = item.name
                 server.instance_id = i.id
                 server.reservation = r
                 server.save()
