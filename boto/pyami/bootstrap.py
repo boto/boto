@@ -49,22 +49,13 @@ class Bootstrap(ScriptBase):
             fp.write('%s = %s\n' % (key, inst_data[key]))
         user_data = get_instance_userdata_raw()
         fp.write('\n%s\n' % user_data)
-        fp.write('[General]\n')
+        fp.write('[Pyami]\n')
         fp.write('working_dir = %s\n' % self.working_dir)
         fp.close()
+        # This file has the AWS credentials, should we lock it down?
+        # os.chmod(BotoConfigPath, stat.S_IREAD | stat.S_IWRITE)
         # now that we have written the file, read it into a pyami Config object
         self.config = Config()
-
-    def write_env_setup(self):
-        fp = open('/etc/profile.d/aws.sh', 'w')
-        fp.write('\n# AWS Environment Setup Script\n')
-        access_key = self.config.get_value('Credentials', 'aws_access_key_id', None)
-        if access_key:
-            fp.write('export AWS_ACCESS_KEY_ID=%s\n' % access_key)
-        secret_key = self.config.get_value('Credentials', 'aws_secret_access_key', None)
-        if secret_key:
-            fp.write('export AWS_SECRET_ACCESS_KEY=%s\n' % secret_key)
-        fp.close()
 
     def create_working_dir(self):
         print 'Working directory: %s' % self.working_dir
@@ -111,7 +102,6 @@ class Bootstrap(ScriptBase):
 
     def main(self):
         self.write_metadata()
-        self.write_env_setup()
         self.create_working_dir()
         self.load_boto()
         self.notify('Bootstrap Completed for %s' % self.config.get_instance('instance-id'))

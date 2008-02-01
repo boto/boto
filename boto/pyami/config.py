@@ -24,10 +24,10 @@ import ConfigParser
 
 BotoConfigPath = '/etc/boto.cfg'
 
-class Config(ConfigParser.RawConfigParser):
+class Config(ConfigParser.SafeConfigParser):
 
     def __init__(self, path=None, fp=None):
-        ConfigParser.RawConfigParser.__init__(self)
+        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami'})
         if path:
             self.read(path)
         elif fp:
