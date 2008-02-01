@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 import boto
+from boto.utils import find_class
 
 __sdb = None
 __domain = None
