@@ -93,9 +93,10 @@ class Item(IObject):
         if not config_path:
             config_path = self.get_filename('Specify Config file')
         self.config = Config(path=config_path)
-        self.config.add_section('Credentials')
-        self.config.set('Credentials', 'aws_access_key_id', self.ec2.aws_access_key_id)
-        self.config.set('Credentials', 'aws_secret_access_key', self.ec2.aws_secret_access_key)
+        if not self.config.has_section('Credentials'):
+            self.config.add_section('Credentials')
+            self.config.set('Credentials', 'aws_access_key_id', self.ec2.aws_access_key_id)
+            self.config.set('Credentials', 'aws_secret_access_key', self.ec2.aws_secret_access_key)
 
     def get_userdata_string(self):
         s = StringIO.StringIO()
@@ -155,7 +156,8 @@ class Order(IObject):
                     time.sleep(15)
                     states = [i.update() for i in r.instances]
             for i in r.instances:
-                server = Server(name=item.name)
+                server = Server()
+                server.name = item.name
                 server.instance_id = i.id
                 server.reservation = r
                 server.save()
