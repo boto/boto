@@ -49,6 +49,7 @@ class Bootstrap(ScriptBase):
             fp.write('%s = %s\n' % (key, inst_data[key]))
         user_data = get_instance_userdata_raw()
         fp.write('\n%s\n' % user_data)
+        fp.write('[General]\n')
         fp.write('working_dir = %s\n' % self.working_dir)
         fp.close()
         # now that we have written the file, read it into a pyami Config object
