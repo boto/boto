@@ -72,6 +72,8 @@ class Bootstrap(ScriptBase):
             location = self.config.get_value('Boto', 'boto_location', '/usr/local/boto')
             self.run('svn update %s %s' % (version, location))
         else:
+            # first remove the symlink needed when running from subversion
+            self.run('rm /usr/local/lib/python2.5/site-packages/boto')
             self.run('easy_install %s' % update)
 
     def main(self):
