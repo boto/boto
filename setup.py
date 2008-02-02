@@ -26,10 +26,10 @@ try:
 except ImportError:
     from distutils.core import setup
 
-__version__ = '1.0a'
+from boto import Version
 
 setup(name = "boto",
-      version = __version__,
+      version = Version,
       description = "Amazon Web Services Library",
       long_description="Python interface to Amazon's Web Services.",
       author = "Mitch Garnaat",

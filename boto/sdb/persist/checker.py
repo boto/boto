@@ -68,9 +68,9 @@ class StringChecker(ValueChecker):
     def check(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
             if len(value) > self.maxlength:
-                raise ValueError
+                raise ValueError, 'Length of value greater than maxlength'
         else:
-            raise TypeError
+            raise TypeError, 'Expecting String, got %s' % type(value)
 
     def from_string(self, str_value):
         return str_value
@@ -95,7 +95,7 @@ class PositiveIntegerChecker(ValueChecker):
 
     def check(self, value):
         if not isinstance(value, int):
-            raise TypeError
+            raise TypeError, 'Expecting int, got %s' % type(value)
 
     def from_string(self, str_value):
         return int(str_value)
@@ -114,7 +114,7 @@ class BooleanChecker(ValueChecker):
 
     def check(self, value):
         if not isinstance(value, bool):
-            raise TypeError
+            raise TypeError, 'Expecting bool, got %s' % type(value)
 
     def from_string(self, str_value):
         if str_value.lower() == 'true':
@@ -143,7 +143,7 @@ class DateTimeChecker(ValueChecker):
 
     def check(self, value):
         if not isinstance(value, datetime):
-            raise TypeError
+            raise TypeError, 'Expecting datetime, got %s' % type(value)
 
     def from_string(self, str_value):
         try:
@@ -167,7 +167,7 @@ class ObjectChecker(ValueChecker):
         if value == None:
             return
         if not isinstance(value, self.ref_class):
-            raise TypeError
+            raise TypeError, 'Expecting %s, got %s' % (self.ref_class, type(value))
 
     def from_string(self, str_value):
         if not str_value:
@@ -198,7 +198,7 @@ class S3KeyChecker(ValueChecker):
             except:
                 raise ValueError
         elif not isinstance(value, Key):
-            raise TypeError
+            raise TypeError, 'Expecting Key, got %s' % type(value)
 
     def from_string(self, str_value):
         if not str_value:

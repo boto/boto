@@ -19,19 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import StringIO
+import StringIO, os
 import ConfigParser
 
-MetadataConfigPath = '/home/pyami/metadata.ini'
+BotoConfigPath = '/etc/boto.cfg'
 
-class Config(ConfigParser.RawConfigParser):
+class Config(ConfigParser.SafeConfigParser):
 
-    def __init__(self, path=MetadataConfigPath, fp=None):
-        ConfigParser.RawConfigParser.__init__(self)
+    def __init__(self, path=None, fp=None):
+        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami'})
         if path:
             self.read(path)
-        if fp:
+        elif fp:
             self.readfp(fp)
+        else:
+            self.read([BotoConfigPath, os.path.expanduser('~/boto.cfg'), os.path.expanduser('~/.boto/boto.cfg')])
 
     def get_instance(self, name, default=None):
         try:

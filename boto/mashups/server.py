@@ -24,7 +24,7 @@ High-level abstraction of an EC2 server
 """
 import boto
 from boto.mashups.iobject import IObject
-from boto.pyami.config import Config
+from boto.pyami.config import Config, BotoConfigPath
 from boto.mashups.interactive import interactive_shell
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
@@ -79,9 +79,8 @@ class Server(SDBObject):
         s.save()
         return s
 
-    def __init__(self, id=None, name=None):
+    def __init__(self, id=None):
         SDBObject.__init__(self, id)
-        self.name = name
         self.reservation = None
         self._instance = None
         self._ssh_client = None
@@ -145,7 +144,7 @@ class Server(SDBObject):
 
     def getConfig(self):
         if not self._config:
-            remote_file = MetadataConfigPath
+            remote_file = BotoConfigPath
             local_file = '%s.ini' % self.instance.id
             self.get_file(remote_file, local_file)
             self._config = Config(local_file)
@@ -156,7 +155,7 @@ class Server(SDBObject):
         fp = open(local_file)
         config.write(fp)
         fp.close()
-        self.put_file(local_file, MetadataConfigPath)
+        self.put_file(local_file, BotoConfigPath)
         self._config = config
 
     config = property(getConfig, setConfig, None,
@@ -221,6 +220,12 @@ class Server(SDBObject):
         path, name = os.path.split(cert_file)
         remote_cert_file = '/mnt/%s' % name
         self.put_file(cert_file, remote_cert_file)
+        print '\tdeleting %s' % BotoConfigPath
+        # delete the metadata.ini file if it exists
+        try:
+            sftp_client.remove(BotoConfigPath)
+        except:
+            pass
         command = 'ec2-bundle-vol '
         command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
         command += '-u %s ' % self.reservation.owner_id

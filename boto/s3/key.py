@@ -32,7 +32,7 @@ import boto
 import boto.utils
 from boto.exception import S3ResponseError, S3DataError
 from boto.s3.user import User
-from boto.connection import USER_AGENT
+from boto import UserAgent
 
 class Key:
 
@@ -121,7 +121,7 @@ class Key:
         http_conn = self.bucket.connection.connection
         if not headers:
             headers = {}
-        headers['User-Agent'] = USER_AGENT
+        headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
         if headers.has_key('Content-Type'):
             self.content_type = headers['Content-Type']

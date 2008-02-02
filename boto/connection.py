@@ -49,14 +49,14 @@ import os
 import xml.sax
 from boto.exception import AWSConnectionError
 import boto.utils
+from boto import config, UserAgent
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
-USER_AGENT = "Boto/$Rev$"
 
 class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
                  aws_secret_access_key=None, is_secure=True, port=None,
-                 proxy=None, proxy_port=None, debug=False,
+                 proxy=None, proxy_port=None, debug=0,
                  https_connection_factory=None):
         self.is_secure = is_secure
         # define exceptions from httplib that we want to catch and retry
@@ -74,6 +74,11 @@ class AWSAuthConnection:
             self.protocol = 'http'
         self.server = server
         self.debug = debug
+        if config.has_option('Boto', 'debug'):
+            try:
+                self.debug = config.getint('Boto', 'debug')
+            except:
+                print 'problem reading debug option in boto.cfg'
         if not port:
             port = PORTS_BY_SECURITY[is_secure]
         self.port = port
@@ -81,15 +86,17 @@ class AWSAuthConnection:
         
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
-        else:
-            if os.environ.has_key('AWS_ACCESS_KEY_ID'):
-                self.aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
+        elif os.environ.has_key('AWS_ACCESS_KEY_ID'):
+            self.aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
+        elif config.has_option('Credentials', 'aws_access_key_id'):
+            self.aws_access_key_id = config.get('Credentials', 'aws_access_key_id')
         
         if aws_secret_access_key:
             self.aws_secret_access_key = aws_secret_access_key
-        else:
-            if os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
-                self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+        elif os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
+            self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+        elif config.has_option('Credentials', 'aws_secret_access_key'):
+            self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
         
         self.proxy = proxy
         #This lowercase environment var is the same as used in urllib
@@ -147,7 +154,7 @@ class AWSAuthConnection:
         
     def make_request(self, method, path, headers=None, data='', metadata=None):
         if headers == None:
-            headers = {'User-Agent' : USER_AGENT}
+            headers = {'User-Agent' : UserAgent}
         if metadata == None:
             metadata = {}
         if not headers.has_key('Content-Length'):
@@ -195,7 +202,7 @@ class AWSQueryConnection(AWSAuthConnection):
                                    https_connection_factory)
 
     def make_request(self, action, params=None, path=None, verb='GET'):
-        headers = {'User-Agent' : USER_AGENT}
+        headers = {'User-Agent' : UserAgent}
         if path == None:
             path = '/'
         if params == None:
@@ -220,7 +227,7 @@ class AWSQueryConnection(AWSAuthConnection):
             qs = self.prefix_proxy_to_path(qs)
         
         try:
-            self.connection.request(verb, qs)
+            self.connection.request(verb, qs, headers=headers)
             return self.connection.getresponse()
         except self.http_exceptions, e:
             if self.debug:

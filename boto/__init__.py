@@ -19,6 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from boto.pyami.config import Config
+import os, sys
+
+Version = '1.0a'
+UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
+config = Config()
 
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sqs.connection import SQSConnection
