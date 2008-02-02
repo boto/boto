@@ -19,8 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import sys, os, pwd, tarfile
-import boto
+import sys, os, pwd
 from boto.utils import get_instance_metadata, get_instance_userdata_raw
 from boto.pyami.config import Config, BotoConfigPath
 from boto.pyami.scriptbase import ScriptBase
@@ -72,33 +71,8 @@ class Bootstrap(ScriptBase):
                 version = '-rHEAD'
             location = self.config.get_value('Boto', 'boto_location', '/usr/local/boto')
             self.run('svn update %s %s' % (version, location))
-        elif update.startswith('s3'):
-            p = update.find(':')
-            if p >= 0:
-                try:
-                    bucket_name, key_name = update[p+1:].split('/')
-                    s3 = boto.connect_s3(self.config.get('Credentials', 'aws_access_key_id'),
-                                         self.config.get('Credentials', 'aws_secret_access_key'))
-                    bucket = s3.get_bucket(bucket_name)
-                    key = bucket.get_key(key_name)
-                    self.log_fp.write('\nFetching %s.%s\n' % (bucket_name, key_name))
-                    path = os.path.join(self.working_dir, key.name)
-                    key.get_contents_to_filename(path)
-                    # first remove the symlink needed when running from subversion
-                    self.run('rm /usr/local/lib/python2.5/site-packages/boto')
-                    # now untar the downloaded file
-                    tf = tarfile.open(path, 'r:gz')
-                    tf.list(verbose=True)
-                    dir_name = tf.getnames()[0]
-                    tf.extractall(self.working_dir)
-                    # now run the installer
-                    setup_path = os.path.join(self.working_dir, dir_name)
-                    old_dir = os.getcwd()
-                    os.chdir(setup_path)
-                    self.run('python setup.py install')
-                    os.chdir(old_dir)
-                except:
-                    self.log_fp.write('\nProblem fetching from S3\n')
+        else:
+            self.run('easy_install %s' % update)
 
     def main(self):
         self.write_metadata()
