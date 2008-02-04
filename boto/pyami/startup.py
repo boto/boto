@@ -32,7 +32,7 @@ class Startup(ScriptBase):
         if package_str:
             packages = package_str.split(',')
             for package in packages:
-                self.run('easy_install %s' % package)
+                self.run('easy_install %s' % package, exit_on_error=False)
 
     def get_script(self):
         script_name = config.get_value('Pyami', 'script_name')

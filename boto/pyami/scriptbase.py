@@ -61,11 +61,12 @@ class ScriptBase:
         if os.path.ismount(path):
             self.run('umount %s' % path)
 
-    def run(self, command, check_err=True):
+    def run(self, command, check_err=True, exit_on_error=True):
         self.last_command = ShellCommand(command, self.log_fp)
         if self.last_command.status != 0 and check_err:
             self.notify('Error encountered')
-            sys.exit(-1)
+            if exit_on_error:
+                sys.exit(-1)
 
     def main(self):
         pass
