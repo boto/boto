@@ -56,9 +56,10 @@ PORTS_BY_SECURITY = { True: 443, False: 80 }
 class AWSAuthConnection:
     def __init__(self, server, aws_access_key_id=None,
                  aws_secret_access_key=None, is_secure=True, port=None,
-                 proxy=None, proxy_port=None, debug=0,
-                 https_connection_factory=None):
+                 proxy=None, proxy_port=None, proxy_user=None,
+                 proxy_pass=None, debug=0, https_connection_factory=None):
         self.is_secure = is_secure
+        self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
         self.http_exceptions = (httplib.HTTPException, socket.error, socket.gaierror)
         # define values in socket exceptions we don't want to catch
@@ -79,10 +80,11 @@ class AWSAuthConnection:
                 self.debug = config.getint('Boto', 'debug')
             except:
                 print 'problem reading debug option in boto.cfg'
-        if not port:
-            port = PORTS_BY_SECURITY[is_secure]
-        self.port = port
-        self.server_name = '%s:%d' % (server, port)
+        if port:
+            self.port = port
+        else:
+            self.port = PORTS_BY_SECURITY[is_secure]
+        self.server_name = '%s:%d' % (server, self.port)
         
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
@@ -97,33 +99,46 @@ class AWSAuthConnection:
             self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
         elif config.has_option('Credentials', 'aws_secret_access_key'):
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
-        
-        self.proxy = proxy
-        #This lowercase environment var is the same as used in urllib
-        if os.environ.has_key('http_proxy'): 
-            proxy_port_pair = os.environ['http_proxy'].split(':')
-            self.proxy = proxy_port_pair[0]
             
+        self.make_http_connection()
+        self._last_rs = None
+
+    def handle_proxy(self, proxy, proxy_port, proxy_user, proxy_pass):
+        self.proxy = proxy
+        self.proxy_port = proxy_port
+        self.proxy_user = proxy_user
+        self.proxy_pass = proxy_pass
+        if os.environ.has_key('http_proxy') and not self.proxy:
+            pattern = re.compile(
+                '(?:http://)?' \
+                '(?:(?P<user>\w+):(?P<pass>.*)@)?' \
+                '(?P<host>[\w\-\.]+)' \
+                '(?::(?P<port>\d+))?'
+            )
+            match = pattern.match(os.environ['http_proxy'])
+            if match:
+                self.proxy = match.group('host')
+                self.proxy_port = match.group('port')
+                self.proxy_user = match.group('user')
+                self.proxy_pass = match.group('pass')
+        else:
+            if not self.proxy:
+                self.proxy = config.get_value('Boto', 'proxy', None)
+            if not self.proxy_port:
+                self.proxy_port = config.get_value('Boto', 'proxy_port', None)
+            if not self.proxy_user:
+                self.proxy_user = config.get_value('Boto', 'proxy_user', None)
+            if not self.proxy_pass:
+                self.proxy_pass = config.get_value('Boto', 'proxy_pass', None)
+
+        if not self.proxy_port and self.proxy:
+            print "http_proxy environment variable does not specify " \
+                "a port, using default"
+            self.proxy_port = self.port
         self.use_proxy = (self.proxy != None)
         if (self.use_proxy and self.is_secure):
             raise AWSConnectionError("Unable to provide secure connection through proxy")
         
-        if proxy_port:
-            self.proxy_port = proxy_port
-        else:
-            if os.environ.has_key('http_proxy'):
-                proxy_port_pair = os.environ['http_proxy'].split(':')[1]
-                if len(proxy_port_pair) != 2:
-                    print "http_proxy env var does not specify port, using default"
-                    self.proxy_port = self.port
-                else:
-                    self.proxy_port = proxy_port_pair[1]
-            else:
-                self.proxy_port = None
-        
-        self.make_http_connection()
-        self._last_rs = None
-
     def make_http_connection(self):
         if (self.use_proxy):
             cnxn_point = self.proxy
@@ -152,6 +167,10 @@ class AWSAuthConnection:
         path = self.protocol + '://' + self.server + path
         return path
         
+    def get_proxy_auth_header(self):
+        auth = base64.encodestring(self.proxy_user+':'+self.proxy_pass)
+        return {'Proxy-Authorization': 'Basic %s' % auth}
+
     def make_request(self, method, path, headers=None, data='', metadata=None):
         if headers == None:
             headers = {'User-Agent' : UserAgent}
@@ -159,11 +178,13 @@ class AWSAuthConnection:
             metadata = {}
         if not headers.has_key('Content-Length'):
             headers['Content-Length'] = len(data)
+        if self.use_proxy:
+            path = self.prefix_proxy_to_path(path)
+            if self.proxy_user and self.proxy_pass:
+                headers.update(self.get_proxy_auth_header())
         final_headers = boto.utils.merge_meta(headers, metadata);
         # add auth header
         self.add_aws_auth_header(final_headers, method, path)
-        if self.use_proxy:
-            path = self.prefix_proxy_to_path(path)
         try:
             self.connection.request(method, path, data, final_headers)
             return self.connection.getresponse()
