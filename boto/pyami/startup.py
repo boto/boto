@@ -23,8 +23,9 @@ import os, sys
 import boto
 from boto.utils import find_class
 from boto import config
+from boto.pyami.scriptbase import ScriptBase
 
-class Startup:
+class Startup(ScriptBase):
 
     def load_packages(self):
         package_str = config.get_value('Pyami', 'packages')
