@@ -21,7 +21,7 @@
 
 from datetime import datetime
 from boto.s3.key import Key
-from boto.sdb.persist import revive_object_from_id
+from boto.sdb.persist import revive_object_from_id, get_s3_connection
 from boto.exception import SDBPersistanceError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
@@ -192,7 +192,7 @@ class S3KeyChecker(ValueChecker):
     def check(self, value):
         if value == None:
             return
-        if isinstance(value, str):
+        if isinstance(value, str) or isinstance(value, unicode):
             try:
                 bucket_name, key_name = value.split('/')
             except:
@@ -205,7 +205,7 @@ class S3KeyChecker(ValueChecker):
             return
         try:
             bucket_name, key_name = str_value.split('/')
-            s3 = Persistance.get_s3_connection()
+            s3 = get_s3_connection()
             bucket = s3.get_bucket(bucket_name)
             key = bucket.get_key(key_name)
             if not key:
@@ -216,6 +216,8 @@ class S3KeyChecker(ValueChecker):
 
     def to_string(self, value):
         self.check(value)
+        if isinstance(value, str) or isinstance(value, unicode):
+            return value
         if value == None:
             return None
         else:
@@ -236,7 +238,7 @@ class S3BucketChecker(ValueChecker):
         if not str_value:
             return
         try:
-            s3 = Persistance.get_s3_connection()
+            s3 = get_s3_connection()
             bucket = s3.get_bucket(str_value)
             return bucket
         except:
