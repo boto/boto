@@ -2,42 +2,36 @@ import os, sys, time, traceback
 import StringIO
 import smtplib
 from boto.utils import ShellCommand
-from boto.pyami.config import Config
+import boto
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class ScriptBase:
 
-    @classmethod
-    def GetConfig(cls):
-        """
-        Returns a Config object holding instance and user metadata for this server.
-        """
-        return Config()
-
-    def __init__(self, config=None):
+    def __init__(self):
         self.log_fp = StringIO.StringIO()
-        if config == None:
-            self.config = self.GetConfig()
-        self.instance_id = self.config.get_instance('instance-id', 'default')
+        self.instance_id = boto.config.get_instance('instance-id', 'default')
         self.ts = self.get_ts()
 
     def get_ts(self):
         return time.strftime(ISO8601, time.gmtime())
+
+    def log(self, message):
+        self.log_fp.write('\n%s\n' % message)
         
     def notify(self, subject):
-        to_string = self.config.get_value('Notification', 'smtp_to', None)
+        to_string = boto.config.get_value('Notification', 'smtp_to', None)
         if to_string:
             try:
-                from_string = self.config.get_value('Notification', 'smtp_from', 'boto')
+                from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
                 body = "From: %s\n" % from_string
                 body += "To: %s\n" % to_string
                 body += "Subject: %s\n\n" % subject
                 body += self.log_fp.getvalue()
-                smtp_host = self.config.get_value('Notification', 'smtp_host', 'localhost')
+                smtp_host = boto.config.get_value('Notification', 'smtp_host', 'localhost')
                 server = smtplib.SMTP(smtp_host)
-                smtp_user = self.config.get_value('Notification', 'smtp_user', '')
-                smtp_pass = self.config.get_value('Notification', 'smtp_pass', '')
+                smtp_user = boto.config.get_value('Notification', 'smtp_user', '')
+                smtp_pass = boto.config.get_value('Notification', 'smtp_pass', '')
                 server.login(smtp_user, smtp_pass)
                 server.sendmail(from_string, to_string, body)
                 server.quit()
@@ -46,7 +40,7 @@ class ScriptBase:
 
     def dump_instance_data(self):
         self.log_fp.write('Instance and Userdata...\n')
-        self.config.dump_safe(self.log_fp)
+        boto.config.dump_safe(self.log_fp)
         self.log_fp.write('\n')
 
     def mkdir(self, path):

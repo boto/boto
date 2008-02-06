@@ -27,6 +27,12 @@ from boto.pyami.scriptbase import ScriptBase
 
 class Startup(ScriptBase):
 
+    def install_os_package(self):
+        commands = config.get_value('Pyami', 'installer_commands')
+        if commands:
+            for command in commands.split(','):
+                self.run('apt-get -y %s' % command)
+
     def load_packages(self):
         package_str = config.get_value('Pyami', 'packages')
         if package_str:
@@ -63,8 +69,23 @@ class Startup(ScriptBase):
             s = cls(config)
             s.run()
 
+    def run_scripts(self):
+        scripts = config.get_value('Pyami', 'scripts')
+        if scripts:
+            for script in scripts:
+                try:
+                    self.log('Running Script: %s' % script)
+                    module_name, class_name = script.split('.')
+                    cls = find_class(self.module_name, class_name)
+                    s = cls(config)
+                    s.run()
+                except Exception, e:
+                    self.log('Problem Running Script: %s' % script)
+                    traceback.print_exc(None, self.log_fp)
+
     def main(self):
         self.load_packages()
+        self.run_scripts()
         self.get_script()
         self.run_script()
         self.notify('Startup Completed for %s' % config.get_instance('instance-id'))
