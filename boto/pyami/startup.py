@@ -67,7 +67,7 @@ class Startup(ScriptBase):
     def run_scripts(self):
         scripts = config.get_value('Pyami', 'scripts')
         if scripts:
-            for script in scripts.split(',')
+            for script in scripts.split(','):
                 try:
                     self.log('Running Script: %s' % script)
                     module_name, class_name = script.split(':')
