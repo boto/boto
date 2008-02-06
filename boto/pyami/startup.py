@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os, sys
+import os, sys, traceback
 import boto
 from boto.utils import find_class
 from boto import config
@@ -27,7 +27,7 @@ from boto.pyami.scriptbase import ScriptBase
 
 class Startup(ScriptBase):
 
-    def install_os_package(self):
+    def run_installer_commands(self):
         commands = config.get_value('Pyami', 'installer_commands')
         if commands:
             for command in commands.split(','):
@@ -72,11 +72,11 @@ class Startup(ScriptBase):
     def run_scripts(self):
         scripts = config.get_value('Pyami', 'scripts')
         if scripts:
-            for script in scripts:
+            for script in scripts.split(',')
                 try:
                     self.log('Running Script: %s' % script)
                     module_name, class_name = script.split(':')
-                    cls = find_class(self.module_name, class_name)
+                    cls = find_class(module_name, class_name)
                     s = cls(self.log_fp)
                     s.run()
                 except Exception, e:
@@ -84,6 +84,7 @@ class Startup(ScriptBase):
                     traceback.print_exc(None, self.log_fp)
 
     def main(self):
+        self.run_installer_commands()
         self.load_packages()
         self.run_scripts()
         self.get_script()
