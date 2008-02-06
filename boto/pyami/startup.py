@@ -53,21 +53,16 @@ class Startup(ScriptBase):
             print 'Fetching %s.%s' % (bucket.name, script.name)
             script_path = os.path.join(config.get_value('General', 'working_dir'), script_name)
             script.get_contents_to_filename(script_path)
-            self.module_name = config.get_value('Pyami', 'script_name')
+            module_name = config.get_value('Pyami', 'script_name')
             sys.path.append(config.get_value('General', 'working_dir'))
-        else:
-            self.module_name = config.get_value('Pyami', 'module_name')
-
-    def run_script(self):
-        debug = config.getint('Boto', 'debug')
-        # debug level greater than 1 means don't even startup the script
-        if debug > 1:
-            return
-        if self.module_name:
-            cls = find_class(self.module_name,
-                             config.get_value('Pyami', 'class_name'))
-            s = cls(config)
-            s.run()
+            debug = config.getint('Boto', 'debug')
+            # debug level greater than 1 means don't even startup the script
+            if debug > 1:
+                return
+            if module_name:
+                cls = find_class(module_name, config.get_value('Pyami', 'class_name'))
+                s = cls(config)
+                s.run()
 
     def run_scripts(self):
         scripts = config.get_value('Pyami', 'scripts')
@@ -88,7 +83,6 @@ class Startup(ScriptBase):
         self.load_packages()
         self.run_scripts()
         self.get_script()
-        self.run_script()
         self.notify('Startup Completed for %s' % config.get_instance('instance-id'))
 
 if __name__ == "__main__":
