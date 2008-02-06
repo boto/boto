@@ -8,8 +8,11 @@ ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class ScriptBase:
 
-    def __init__(self):
-        self.log_fp = StringIO.StringIO()
+    def __init__(self, log_fp=None):
+        if log_fp:
+            self.log_fp = log_fp
+        else:
+            self.log_fp = StringIO.StringIO()
         self.instance_id = boto.config.get_instance('instance-id', 'default')
         self.ts = self.get_ts()
 

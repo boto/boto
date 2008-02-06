@@ -75,9 +75,9 @@ class Startup(ScriptBase):
             for script in scripts:
                 try:
                     self.log('Running Script: %s' % script)
-                    module_name, class_name = script.split('.')
+                    module_name, class_name = script.split(':')
                     cls = find_class(self.module_name, class_name)
-                    s = cls(config)
+                    s = cls(self.log_fp)
                     s.run()
                 except Exception, e:
                     self.log('Problem Running Script: %s' % script)
