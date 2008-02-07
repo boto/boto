@@ -23,6 +23,6 @@ from boto.pyami.scriptbase import ScriptBase
 
 class HelloWorld(ScriptBase):
 
-    def run(self):
+    def main(self):
         self.log('Hello World!!!')
         

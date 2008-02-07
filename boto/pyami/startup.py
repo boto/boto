@@ -73,7 +73,7 @@ class Startup(ScriptBase):
                     module_name, class_name = script.split(':')
                     cls = find_class(module_name, class_name)
                     s = cls(self.log_fp)
-                    s.run()
+                    s.main()
                 except Exception, e:
                     self.log('Problem Running Script: %s' % script)
                     traceback.print_exc(None, self.log_fp)
