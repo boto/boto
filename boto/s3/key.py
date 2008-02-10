@@ -267,7 +267,7 @@ class Key:
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10):
         path = '/%s/%s' % (self.bucket.name, self.name)
-        path = urllib.quote(path)
+        path = urllib.quote(path.encode('utf-8'))
         resp = self.bucket.connection.make_request('GET', path, headers)
         if resp.status < 199 or resp.status > 299:
             raise S3ResponseError(resp.status, resp.reason)
