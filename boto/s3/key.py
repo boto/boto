@@ -96,10 +96,10 @@ class Key:
             setattr(self, name, value)
 
     def exists(self):
-        return bool(self.bucket.lookup(self.name))
+        return bool(self.bucket.lookup(self.name.encode('utf-8')))
 
     def delete(self):
-        return self.bucket.delete_key(self.name)
+        return self.bucket.delete_key(self.name.encode('utf-8'))
 
     def get_metadata(self, name):
         return self.metadata[name]
