@@ -58,6 +58,7 @@ class AWSAuthConnection:
                  aws_secret_access_key=None, is_secure=True, port=None,
                  proxy=None, proxy_port=None, proxy_user=None,
                  proxy_pass=None, debug=0, https_connection_factory=None):
+        self.num_retries = 5
         self.is_secure = is_secure
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
@@ -74,12 +75,7 @@ class AWSAuthConnection:
         else:
             self.protocol = 'http'
         self.server = server
-        self.debug = debug
-        if config.has_option('Boto', 'debug'):
-            try:
-                self.debug = config.getint('Boto', 'debug')
-            except:
-                print 'problem reading debug option in boto.cfg'
+        self.debug = config.getint('Boto', 'debug', debug)
         if port:
             self.port = port
         else:
@@ -171,6 +167,35 @@ class AWSAuthConnection:
         auth = base64.encodestring(self.proxy_user+':'+self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
+    def _mexe(self, method, path, data, headers):
+        """
+        mexe - Multi-execute inside a loop, retrying multiple times to handle
+               transient Internet errors by simply trying again
+               
+        This code was inspired by the S3Utils classes posted to the boto-users
+        Google group by Larry Bates.  Thanks!
+        """
+        num_retries = config.getint('Boto', 'num_retries', self.num_retries)
+        for i in range(0, num_retries):
+            try:
+                self.connection.request(method, path, data, headers)
+                response = self.connection.getresponse()
+                if response.status == 500 or response.status == 503:
+                    if 1 or self.debug:
+                        print 'received %d response, retrying in %d seconds' % (response.status, 2**i)
+                    body = response.read()
+                else:
+                    return response
+            except KeyboardInterrupt:
+                sys.exit('Keyboard Interrupt')
+            except self.http_exceptions, e:
+                if 1 or self.debug:
+                    print 'encountered %s exception, trying to recover' % \
+                        e.__class__.__name__
+                self.make_http_connection()
+            time.sleep(2**i)
+        return response
+
     def make_request(self, method, path, headers=None, data='', metadata=None):
         if headers == None:
             headers = {'User-Agent' : UserAgent}
@@ -185,16 +210,7 @@ class AWSAuthConnection:
         final_headers = boto.utils.merge_meta(headers, metadata);
         # add auth header
         self.add_aws_auth_header(final_headers, method, path)
-        try:
-            self.connection.request(method, path, data, final_headers)
-            return self.connection.getresponse()
-        except self.http_exceptions, e:
-            if self.debug:
-                print 'encountered %s exception, trying to recover' % \
-                    e.__class__.__name__
-            self.make_http_connection()
-            self.connection.request(method, path, data, final_headers)
-            return self.connection.getresponse()
+        return self._mexe(method, path, data, final_headers)
 
     def add_aws_auth_header(self, headers, method, path):
         if not headers.has_key('Date'):
@@ -246,17 +262,8 @@ class AWSQueryConnection(AWSAuthConnection):
         
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
-        
-        try:
-            self.connection.request(verb, qs, headers=headers)
-            return self.connection.getresponse()
-        except self.http_exceptions, e:
-            if self.debug:
-                print 'encountered %s exception, trying to recover' % \
-                    e.__class__.__name__
-            self.make_http_connection()
-            self.connection.request('GET', qs, headers=headers)
-            return self.connection.getresponse()
+
+        return self._mexe(verb, qs, None, headers)
 
     def build_list_params(self, params, items, label):
         for i in range(1, len(items)+1):
