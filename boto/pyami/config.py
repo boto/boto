@@ -58,10 +58,27 @@ class Config(ConfigParser.SafeConfigParser):
         return val
 
     def get_value(self, section, name, default=None):
+        return self.get(section, name, default)
+
+    def get(self, section, name, default=None):
         try:
-            val = self.get(section, name)
+            val = ConfigParser.SafeConfigParser.self.get(self, section, name)
         except:
             val = default
+        return val
+    
+    def getint(self, section, name, default=None):
+        try:
+            val = ConfigParser.SafeConfigParser.self.getint(self, section, name)
+        except:
+            val = int(default)
+        return val
+    
+    def getfloat(self, section, name, default=None):
+        try:
+            val = ConfigParser.SafeConfigParser.self.getfloat(self, section, name)
+        except:
+            val = float(default)
         return val
     
     def dump(self):
