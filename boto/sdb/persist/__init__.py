@@ -21,6 +21,7 @@
 
 import boto
 from boto.utils import find_class
+from boto.exception import SDBPersistanceError
 
 __sdb = None
 __domain = None
@@ -38,6 +39,8 @@ def set_domain(domain_name, aws_access_key_id=None, aws_secret_access_key=None):
         __domain = __sdb.create_domain(domain_name)
 
 def get_domain():
+    if __domain == None:
+        raise SDBPersistanceError('SimpleDB Domain for Persistence Not Set')
     return __domain
 
 def get_s3_connection():
