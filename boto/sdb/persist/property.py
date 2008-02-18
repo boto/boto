@@ -86,10 +86,47 @@ class StringProperty(ScalarProperty):
     def __init__(self, **params):
         ScalarProperty.__init__(self, StringChecker, **params)
 
+class SmallPositiveIntegerProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'small'
+        params['signed'] = False
+        ScalarProperty.__init__(self, IntegerChecker, **params)
+
+class SmallIntegerProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'small'
+        params['signed'] = True
+        ScalarProperty.__init__(self, IntegerChecker, **params)
+
 class PositiveIntegerProperty(ScalarProperty):
 
     def __init__(self, **params):
-        ScalarProperty.__init__(self, PositiveIntegerChecker, **params)
+        params['size'] = 'medium'
+        params['signed'] = False
+        ScalarProperty.__init__(self, IntegerChecker, **params)
+
+class IntegerProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'medium'
+        params['signed'] = True
+        ScalarProperty.__init__(self, IntegerChecker, **params)
+
+class LargePositiveIntegerProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'large'
+        params['signed'] = False
+        ScalarProperty.__init__(self, IntegerChecker, **params)
+
+class LargeIntegerProperty(ScalarProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'large'
+        params['signed'] = True
+        ScalarProperty.__init__(self, IntegerChecker, **params)
 
 class BooleanProperty(ScalarProperty):
 
@@ -207,10 +244,47 @@ class StringListProperty(MultiValueProperty):
     def __init__(self, **params):
         MultiValueProperty.__init__(self, StringChecker, **params)
 
+class SmallIntegerListProperty(MultiValueProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'small'
+        params['signed'] = True
+        MultiValueProperty.__init__(self, IntegerChecker, **params)
+
+class SmallPositiveIntegerListProperty(MultiValueProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'small'
+        params['signed'] = False
+        MultiValueProperty.__init__(self, IntegerChecker, **params)
+
+class IntegerListProperty(MultiValueProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'medium'
+        params['signed'] = True
+        MultiValueProperty.__init__(self, IntegerChecker, **params)
+
 class PositiveIntegerListProperty(MultiValueProperty):
 
     def __init__(self, **params):
-        MultiValueProperty.__init__(self, PositiveIntegerChecker, **params)
+        params['size'] = 'medium'
+        params['signed'] = False
+        MultiValueProperty.__init__(self, IntegerChecker, **params)
+
+class LargeIntegerListProperty(MultiValueProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'large'
+        params['signed'] = True
+        MultiValueProperty.__init__(self, IntegerChecker, **params)
+
+class LargePositiveIntegerListProperty(MultiValueProperty):
+
+    def __init__(self, **params):
+        params['size'] = 'large'
+        params['signed'] = False
+        MultiValueProperty.__init__(self, IntegerChecker, **params)
 
 class BooleanListProperty(MultiValueProperty):
 

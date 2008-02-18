@@ -79,29 +79,44 @@ class StringChecker(ValueChecker):
         self.check(value)
         return value
 
-class PositiveIntegerChecker(ValueChecker):
+class IntegerChecker(ValueChecker):
+
+    __sizes__ = { 'small' : (65535, 32767, -32768, 5),
+                  'medium' : (4294967295, 2147483647, -2147483648, 10),
+                  'Large' : (18446744073709551615, 9223372036854775807, -9223372036854775808, 20)}
 
     def __init__(self, **params):
-        if params.has_key('maxlength'):
-            self.maxlength = params['maxlength']
-        else:
-            self.maxlength = 10
-        if params.has_key('default'):
-            self.check(params['default'])
-            self.default = params['default']
-        else:
-            self.default = 0
-        self.format_string = '%%0%dd' % self.maxlength
+        self.size = params.get('size', 'medium')
+        if self.size not in self.__sizes__.keys():
+            raise ValueError, 'size must be one of %s' % self.__siz8es__.keys()
+        self.signed = params.get('signed', True)
+        self.default = params.get('default', 0)
+        self.format_string = '%%0%dd' % self.__sizes__[self.size][-1]
 
     def check(self, value):
-        if not isinstance(value, int):
-            raise TypeError, 'Expecting int, got %s' % type(value)
+        if not isinstance(value, int) and not isinstance(value, long):
+            raise TypeError, 'Expecting int or long, got %s' % type(value)
+        if self.signed:
+            min = self.__sizes__[self.size][2]
+            max = self.__sizes__[self.size][1]
+        else:
+            min = 0
+            max = self.__sizes__[self.size][0]
+        if value > max:
+            raise ValueError, 'Maximum value is %d' % max
+        if value < min:
+            raise ValueError, 'Minimum value is %d' % min
 
     def from_string(self, str_value):
-        return int(str_value)
+        val = int(str_value)
+        if self.signed:
+            val = val + self.__sizes__[self.size][2]
+        return val
 
     def to_string(self, value):
         self.check(value)
+        if self.signed:
+            value += -self.__sizes__[self.size][2]
         return self.format_string % value
     
 class BooleanChecker(ValueChecker):

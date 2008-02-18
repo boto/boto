@@ -14,6 +14,7 @@ class TestScalar(SDBObject):
     name = StringProperty()
     description = StringProperty()
     size = PositiveIntegerProperty()
+    offset = IntegerProperty()
     foo = BooleanProperty()
     date = DateTimeProperty()
     file = S3KeyProperty()
@@ -39,6 +40,7 @@ def test1():
     s.name = 'foo'
     s.description = 'This is foo'
     s.size = 42
+    s.offset = -100
     s.foo = True
     s.date = datetime.now()
     s.save()
@@ -95,6 +97,7 @@ def test(domain_name):
     assert s1.name == s2.name
     assert s1.description == s2.description
     assert s1.size == s2.size
+    assert s1.offset == s2.offset
     assert s1.foo == s2.foo
     #assert s1.date == s2.date
     print 'Call test2'
