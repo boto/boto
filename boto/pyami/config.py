@@ -23,6 +23,7 @@ import StringIO, os
 import ConfigParser
 
 BotoConfigPath = '/etc/boto.cfg'
+UserConfigPath = '~/.boto'
 
 class Config(ConfigParser.SafeConfigParser):
 
@@ -34,7 +35,31 @@ class Config(ConfigParser.SafeConfigParser):
         elif fp:
             self.readfp(fp)
         else:
-            self.read([BotoConfigPath, os.path.expanduser('~/boto.cfg'), os.path.expanduser('~/.boto/boto.cfg')])
+            self.read([BotoConfigPath, os.path.expanduser(UserConfigPath)])
+
+    def save_option(self, path, section, option, value):
+        """
+        Write the specified Section.Option to the config file specified by path.
+        Replace any previous value.  If the path doesn't exist, create it.
+        Also add the option the the in-memory config.
+        """
+        config = ConfigParser.SafeConfigParser()
+        config.read(path)
+        if not config.has_section(section):
+            config.add_section(section)
+        config.set(section, option, value)
+        fp = open(path, 'w')
+        config.write(fp)
+        fp.close()
+        if not self.has_section(section):
+            self.add_section(section)
+        self.set(section, option, value)
+
+    def save_user_option(self, section, option, value):
+        self.save_option(os.path.expanduser(UserConfigPath), section, option, value)
+
+    def save_system_option(self, section, option, value):
+        self.save_option(BotoConfigPath, section, option, value)
 
     def get_instance(self, name, default=None):
         try:
