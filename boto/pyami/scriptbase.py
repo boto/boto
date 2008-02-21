@@ -1,10 +1,8 @@
 import os, sys, time, traceback
 import StringIO
 import smtplib
-from boto.utils import ShellCommand
+from boto.utils import ShellCommand, get_ts
 import boto
-
-ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class ScriptBase:
 
@@ -14,10 +12,7 @@ class ScriptBase:
         else:
             self.log_fp = StringIO.StringIO()
         self.instance_id = boto.config.get_instance('instance-id', 'default')
-        self.ts = self.get_ts()
-
-    def get_ts(self):
-        return time.strftime(ISO8601, time.gmtime())
+        self.ts = get_ts()
 
     def log(self, message):
         self.log_fp.write('\n%s\n' % message)
