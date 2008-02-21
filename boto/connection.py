@@ -157,7 +157,8 @@ class AWSAuthConnection:
 
     def set_debug(self, debug=0):
         self.debug = debug
-        self.connection.set_debuglevel(debug)
+        if debug > 1:
+            self.connection.set_debuglevel(debug)
 
     def prefix_proxy_to_path(self, path):
         path = self.protocol + '://' + self.server + path
@@ -181,7 +182,7 @@ class AWSAuthConnection:
                 self.connection.request(method, path, data, headers)
                 response = self.connection.getresponse()
                 if response.status == 500 or response.status == 503:
-                    if 1 or self.debug:
+                    if self.debug:
                         print 'received %d response, retrying in %d seconds' % (response.status, 2**i)
                     body = response.read()
                 else:
@@ -189,7 +190,7 @@ class AWSAuthConnection:
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')
             except self.http_exceptions, e:
-                if 1 or self.debug:
+                if self.debug:
                     print 'encountered %s exception, trying to recover' % \
                         e.__class__.__name__
                 self.make_http_connection()
