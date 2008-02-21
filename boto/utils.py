@@ -43,6 +43,7 @@ import sha
 import urllib, urllib2
 import imp
 import popen2, os, StringIO
+import time
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -160,6 +161,11 @@ def get_instance_userdata_raw(version='latest'):
         print 'problem reading metadata'
     return user_data
     
+def get_ts(ts=None):
+    if not ts:
+        ts = time.gmtime()
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', ts)
+
 def find_class(module_name, class_name):
     modules = module_name.split('.')
     path = None
