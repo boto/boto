@@ -82,14 +82,21 @@ class Config(ConfigParser.SafeConfigParser):
         return val
 
     def getbool(self, section, name, default=False):
-        val = default
-        try:
+        if self.has_option(section, name):
             val = self.get(section, name)
             if val.lower() == 'true':
                 val = True
-        except:
-            pass
+            else:
+                val = False
+        else:
+            val = default
         return val
+    
+    def setbool(self, section, name, value):
+        if value:
+            self.set(section, name, 'true')
+        else:
+            self.set(section, name, 'false')
     
     def dump(self):
         s = StringIO.StringIO()
