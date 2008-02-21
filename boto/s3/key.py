@@ -32,7 +32,7 @@ import boto
 import boto.utils
 from boto.exception import S3ResponseError, S3DataError
 from boto.s3.user import User
-from boto import UserAgent
+from boto import UserAgent, config
 
 class Key:
 
@@ -144,54 +144,68 @@ class Key:
         #only the bucket and key
         if self.bucket.connection.use_proxy:
             path = self.bucket.connection.prefix_proxy_to_path(path)
-        try:
-            http_conn.putrequest('PUT', path)
-            for key in final_headers:
-                http_conn.putheader(key,final_headers[key])
-            http_conn.endheaders()
-            save_debug = self.bucket.connection.debug
-            if self.bucket.connection.debug == 1:
+        num_retries = config.getint('Boto', 'num_retries', self.bucket.connection.num_retries)
+        for i in range(0, num_retries):
+            try:
+                http_conn.putrequest('PUT', path)
+                for key in final_headers:
+                    http_conn.putheader(key,final_headers[key])
+                http_conn.endheaders()
+                save_debug = self.bucket.connection.debug
                 self.bucket.connection.set_debug(0)
-            if cb:
-                if num_cb > 2:
-                    cb_count = self.size / self.BufferSize / (num_cb-2)
-                else:
-                    cb_count = 0
-                i = total_bytes = 0
-                cb(total_bytes, self.size)
-            l = fp.read(self.BufferSize)
-            while len(l) > 0:
-                http_conn.send(l)
                 if cb:
-                    total_bytes += len(l)
-                    i += 1
-                    if i == cb_count:
-                        cb(total_bytes, self.size)
-                        i = 0
+                    if num_cb > 2:
+                        cb_count = self.size / self.BufferSize / (num_cb-2)
+                    else:
+                        cb_count = 0
+                    i = total_bytes = 0
+                    cb(total_bytes, self.size)
                 l = fp.read(self.BufferSize)
-            if cb:
-                cb(total_bytes, self.size)
-            response = http_conn.getresponse()
-            body = response.read()
-            self.bucket.connection.set_debug(save_debug)
-        except socket.error, (value, message):
-            if value in self.bucket.connection.socket_exception_values:
-                print 'Caught %d:%s socket error, aborting' % (value, message)
-                raise
-            print 'Caught a socket error, trying to recover'
-            self.bucket.connection.make_http_connection()
+                while len(l) > 0:
+                    http_conn.send(l)
+                    if cb:
+                        total_bytes += len(l)
+                        i += 1
+                        if i == cb_count:
+                            cb(total_bytes, self.size)
+                            i = 0
+                    l = fp.read(self.BufferSize)
+                if cb:
+                    cb(total_bytes, self.size)
+                response = http_conn.getresponse()
+                body = response.read()
+                self.bucket.connection.set_debug(save_debug)
+                if response.status == 500 or response.status == 503:
+                    if self.bucket.connection.debug:
+                        print 'key.py: received %d response, retrying in %d seconds' % (response.status, 2**i)
+                    time.sleep(2**i)
+                elif response.status >= 200 and response.status <= 299:
+                    self.etag = response.getheader('etag')
+                    if self.etag != '"%s"'  % self.md5:
+                        raise S3DataError('ETag from S3 did not match computed MD5')
+                    return
+                else:
+                    raise S3ResponseError(response.status, response.reason, body)
+            except socket.error, (value, message):
+                if value in self.bucket.connection.socket_exception_values:
+                    if self.bucket.connect.debug:
+                        print 'key.py: Caught %d:%s socket error, aborting' % (value, message)
+                    raise
+                if self.bucket.connection.debug:
+                    print 'key.py: Caught a socket error, trying to recover'
+                self.bucket.connection.make_http_connection()
+            except Exception, e:
+                if self.bucket.connection.debug:
+                    print 'key.py: Caught an unexpected exception'
+                self.bucket.connection.make_http_connection()
+                raise e
             fp.seek(0)
-            self.send_file(fp, headers)
-            return
-        except Exception, e:
-            print 'Caught an unexpected exception'
-            self.bucket.connection.make_http_connection()
-            raise e
-        if response.status != 200:
-            raise S3ResponseError(response.status, response.reason, body)
-        self.etag = response.getheader('etag')
-        if self.etag != '"%s"'  % self.md5:
-            raise S3DataError('Injected data did not return correct MD5')
+        #
+        # Fell out the botton of the loop exhausting the number of retries
+        # that were specified so we need to raise an S3ResponseError with the
+        # same status/reason as the last exception.
+        #
+        raise S3ResponseError(e.status, e.reason)
 
     def _compute_md5(self, fp):
         m = md5.new()
