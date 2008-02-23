@@ -144,6 +144,10 @@ class AWSAuthConnection:
             cnxn_port = self.port
         if self.debug:
             print 'establishing HTTP connection'
+        if hasattr(self, 'connection') and self.connection:
+            if self.debug:
+                print 'closing old HTTP connection'
+            self.connection.close()
         if (self.is_secure):
             if self.https_connection_factory:
                 self.connection = self.https_connection_factory("%s:%d" % (cnxn_point, cnxn_port))
