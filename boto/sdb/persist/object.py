@@ -86,8 +86,8 @@ class SDBObject(object):
         return object_lister(cls, rs)
 
     @classmethod
-    def list(cls):
-        domain = get_domain()
+    def list(cls, max_items=None):
+        domain = get_domain(query=None, max_items=max_items)
         rs = domain.query("['__type__' = '%s']" % cls.__name__)
         return object_lister(cls, rs)
 

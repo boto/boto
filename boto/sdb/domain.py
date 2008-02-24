@@ -55,8 +55,8 @@ class Domain:
     def delete_attributes(self, item_name, attributes=None):
         return self.connection.delete_attributes(self, item_name, attributes)
 
-    def query(self, query=''):
-        return iter(QueryResultSet(self, query))
+    def query(self, query='', max_items=None):
+        return iter(QueryResultSet(self, query, max_items))
 
     def get_item(self, item_name):
         item = self.get_attributes(item_name)
