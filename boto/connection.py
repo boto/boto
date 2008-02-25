@@ -199,6 +199,7 @@ class AWSAuthConnection:
                         e.__class__.__name__
                 self.make_http_connection()
             time.sleep(2**i)
+            i += 1
         return response
 
     def make_request(self, method, path, headers=None, data='', metadata=None):
