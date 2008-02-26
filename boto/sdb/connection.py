@@ -21,12 +21,28 @@
 
 import urllib
 import xml.sax
+import threading
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain
 from boto.sdb.item import Item
 from boto.exception import SDBResponseError
 from boto.resultset import ResultSet
+
+class ItemThread(threading.Thread):
+    
+    def __init__(self, name, domain_name, item_names):
+        threading.Thread.__init__(self, name=name)
+        print 'starting %s with %d items' % (name, len(item_names))
+        self.domain_name = domain_name
+        self.conn = SDBConnection()
+        self.item_names = item_names
+        self.items = []
+        
+    def run(self):
+        for item_name in self.item_names:
+            item = self.conn.get_attributes(self.domain_name, item_name)
+            self.items.append(item)
 
 class SDBConnection(AWSQueryConnection):
 
@@ -226,3 +242,33 @@ class SDBConnection(AWSQueryConnection):
             return rs
         else:
             raise SDBResponseError(response.status, response.reason, body)
+
+    def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
+        """
+        Returns a list of fully populated items that match the query provided.
+
+        The name/value pairs for all of the matching item names are retrieved in a number of separate
+        threads (specified by num_threads) to achieve maximum throughput.
+        The ResultSet that is returned has an attribute called next_token that can be used
+        to retrieve additional results for the same query.
+        """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
+        if max_items and num_threads > max_items:
+            num_threads = max_items
+        rs = self.query(domain_or_name, query, max_items, next_token)
+        threads = []
+        n = len(rs) / num_threads
+        for i in range(0, num_threads):
+            if i+1 == num_threads:
+                thread = ItemThread('Thread-%d' % i, domain_name, rs[n*i:])
+            else:
+                thread = ItemThread('Thread-%d' % i, domain_name, rs[n*i:n*(i+1)])
+            threads.append(thread)
+            thread.start()
+        del rs[0:]
+        for thread in threads:
+            thread.join()
+            for item in thread.items:
+                rs.append(item)
+        return rs
+
