@@ -78,3 +78,5 @@ class AWSConnectionError(BotoClientError):
 class S3DataError(BotoClientError):
     pass
 
+class FPSResponseError(BotoServerError):
+    pass

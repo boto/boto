@@ -42,4 +42,8 @@ def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sdb.connection import SDBConnection
     return SDBConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def connect_fps(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    from boto.fps.connection import FPSConnection
+    return FPSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
 
