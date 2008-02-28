@@ -47,7 +47,7 @@ class SDBObject(object):
     @classmethod
     def get(cls, id=None, **params):
         domain = get_domain()
-        if id:
+        if domain and id:
             a = domain.get_attributes(id, '__type__')
             if a.has_key('__type__'):
                 return cls(id)
@@ -82,13 +82,19 @@ class SDBObject(object):
                 raise SDBPersistanceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
         domain = get_domain()
-        rs = domain.query(query)
+        if domain:
+            rs = domain.query(query)
+        else:
+            rs = []
         return object_lister(cls, rs)
 
     @classmethod
     def list(cls, max_items=None):
         domain = get_domain()
-        rs = domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
+        if domain:
+            rs = domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
+        else:
+            rs = []
         return object_lister(cls, rs)
 
     @classmethod
@@ -109,9 +115,10 @@ class SDBObject(object):
         if self.id:
             self.auto_update = True
             domain = get_domain()
-            attrs = domain.get_attributes(self.id, '__type__')
-            if len(attrs.keys()) == 0:
-                raise SDBPersistanceError('Object %s: not found' % self.id)
+            if domain:
+                attrs = domain.get_attributes(self.id, '__type__')
+                if len(attrs.keys()) == 0:
+                    raise SDBPersistanceError('Object %s: not found' % self.id)
         else:
             self.id = str(uuid.uuid4())
             self.auto_update = False
@@ -125,18 +132,23 @@ class SDBObject(object):
         for property in self.find_properties():
             attrs[property.name] = property.to_string(self)
         domain = get_domain()
-        domain.put_attributes(self.id, attrs, replace=True)
-        self.auto_update = True
+        if domain:
+            domain.put_attributes(self.id, attrs, replace=True)
+            self.auto_update = True
         
     def delete(self):
         domain = get_domain()
-        domain.delete_attributes(self.id)
+        if domain:
+            domain.delete_attributes(self.id)
 
     def get_related_objects(self, ref_name, ref_cls=None):
         domain = get_domain()
-        query = "['%s' = '%s']" % (ref_name, self.id)
-        if ref_cls:
-            query += " intersection ['__type__'='%s']" % ref_cls.__name__
-        rs = domain.query(query)
+        if domain:
+            query = "['%s' = '%s']" % (ref_name, self.id)
+            if ref_cls:
+                query += " intersection ['__type__'='%s']" % ref_cls.__name__
+            rs = domain.query(query)
+        else:
+            rs = []
         return object_lister(ref_cls, rs)
 
