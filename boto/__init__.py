@@ -56,11 +56,9 @@ def check_extensions(module_name, module_path):
     """
     option_name = '%s_extend' % module_name
     version = config.get('Boto', option_name, None)
-    print version
     if version:
         dirname = module_path[0]
         path = os.path.join(dirname, version)
-        print path
         if os.path.isdir(path):
             if config.getint('Boto', 'debug', 0):
                 print 'extending module %s with: %s' % (module_name, path)
