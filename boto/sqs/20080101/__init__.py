@@ -20,13 +20,8 @@
 # IN THE SOFTWARE.
 #
 
-import os
-import boto
-
-boto.check_extensions(__name__, __path__)
-
-__all__ = ['Connection', 'Queue', 'Message', 'MHMessage']
-
 from connection import SQSConnection as Connection
 from queue import Queue
 from message import Message, MHMessage
+
+__all__ = ['Connection', 'Queue', 'Message', 'MHMessage']

@@ -18,15 +18,28 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
 
-import os
-import boto
+"""
+Represents an SQS Attribute Name/Value set
+"""
 
-boto.check_extensions(__name__, __path__)
+class Attributes(dict):
+    
+    def __init__(self):
+        self.current_key = None
+        self.current_value = None
 
-__all__ = ['Connection', 'Queue', 'Message', 'MHMessage']
+    def startElement(self, name, attrs, connection):
+        pass
 
-from connection import SQSConnection as Connection
-from queue import Queue
-from message import Message, MHMessage
+    def endElement(self, name, value, connection):
+        if name == 'Attribute':
+            self[self.current_key] = self.current_value
+        elif name == 'Name':
+            self.current_key = value
+        elif name == 'Value':
+            self.current_value = value
+        else:
+            setattr(self, name, value)
+
+        

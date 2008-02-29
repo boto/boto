@@ -184,7 +184,7 @@ class SQSQueryConnection(AWSQueryConnection):
 class SQSConnection(AWSAuthConnection):
     
     DefaultHost = 'queue.amazonaws.com'
-    DefaultVersion = '2007-05-01'
+    APIVersion = '2007-05-01'
     DefaultContentType = 'text/plain'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -202,7 +202,7 @@ class SQSConnection(AWSAuthConnection):
             headers = {}
 
         if not headers.has_key('AWS-Version'):
-            headers['AWS-Version'] = self.DefaultVersion
+            headers['AWS-Version'] = self.APIVersion
 
         if not headers.has_key('Content-Type'):
             headers['Content-Type'] = self.DefaultContentType
