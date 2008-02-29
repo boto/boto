@@ -46,4 +46,22 @@ def connect_fps(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.fps.connection import FPSConnection
     return FPSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def check_extensions(module_name, module_path):
+    """
+    This function checks for extensions to boto modules.  It should be called in the
+    __init__.py file of all boto modules.  See:
+    http://code.google.com/p/boto/wiki/ExtendModules
 
+    for details.
+    """
+    option_name = '%s_extend' % module_name
+    version = config.get('Boto', option_name, None)
+    print version
+    if version:
+        dirname = module_path[0]
+        path = os.path.join(dirname, version)
+        print path
+        if os.path.isdir(path):
+            if config.getint('Boto', 'debug', 0):
+                print 'extending module %s with: %s' % (module_name, path)
+            module_path.insert(0, path)
