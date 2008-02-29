@@ -50,7 +50,7 @@ class SQSConnectionTest (unittest.TestCase):
         queue_name = 'test%d' % int(time.time())
         timeout = 60
         queue = c.create_queue(queue_name, timeout)
-        time.sleep(10)
+        time.sleep(30)
         rs  = c.get_all_queues()
         i = 0
         for q in rs:
@@ -76,7 +76,7 @@ class SQSConnectionTest (unittest.TestCase):
         # now change the visibility timeout
         timeout = 45
         queue.set_timeout(timeout)
-        time.sleep(5)
+        time.sleep(30)
         t = queue.get_timeout()
         assert t == timeout, '%d != %d' % (t, timeout)
     
@@ -84,9 +84,9 @@ class SQSConnectionTest (unittest.TestCase):
         message_body = 'This is a test\n'
         message = queue.new_message(message_body)
         queue.write(message)
-        time.sleep(5)
+        time.sleep(30)
         assert queue.count_slow() == 1
-        time.sleep(10)
+        time.sleep(30)
 
         # now read the message from the queue with a 10 second timeout
         message = queue.read(visibility_timeout=10)
@@ -102,23 +102,23 @@ class SQSConnectionTest (unittest.TestCase):
         message = queue.read()
         assert message
 
-        # now terminate the visibility timeout for this message
-        message.change_visibility(0)
-
-        # now see if we can read it in the queue
-        message = queue.read()
-        assert message
+        if c.APIVersion == '2007-05-01':
+            # now terminate the visibility timeout for this message
+            message.change_visibility(0)
+            # now see if we can read it in the queue
+            message = queue.read()
+            assert message
 
         # now delete the message
         queue.delete_message(message)
-        time.sleep(5)
+        time.sleep(30)
         assert queue.count_slow() == 0
 
         # create another queue so we can test force deletion
         queue_name = 'test%d' % int(time.time())
         timeout = 60
         queue = c.create_queue(queue_name, timeout)
-        time.sleep(15)
+        time.sleep(30)
         
         # now add a couple of messages
         message_body = 'This is a test\n'
@@ -127,7 +127,7 @@ class SQSConnectionTest (unittest.TestCase):
         message_body = 'This is another test\n'
         message = queue.new_message(message_body)
         queue.write(message)
-        time.sleep(15)
+        time.sleep(30)
 
         # now delete that queue and messages
         c.delete_queue(queue, True)
