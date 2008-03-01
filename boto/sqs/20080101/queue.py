@@ -150,6 +150,9 @@ class Queue:
     def delete_message(self, message):
         return self.connection.delete_message(self.url, message.id, message.receipt_handle)
 
+    def delete(self):
+        return self.connection.delete_queue(self)
+
     def clear(self, page_size=100, vtimeout=10):
         """Utility function to remove all messages from a queue"""
         n = 0

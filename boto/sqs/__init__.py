@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-import os
 import boto
 
 boto.check_extensions(__name__, __path__)
