@@ -26,8 +26,44 @@ import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
+from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import S3ResponseError, S3CreateError
+
+
+class _CallingFormat:
+    def build_url_base(self, protocol, server, bucket, key=''):
+        url_base = '%s://' % protocol
+        url_base += self.build_host(server, bucket)
+        url_base += self.build_path_base(bucket, key)
+        return url_base
+
+    def build_host(self, server, bucket):
+        if bucket == '':
+            return server
+        else:
+            return self.get_bucket_server(server, bucket)
+
+    def build_auth_path(self, bucket, key=''):
+        path = ''
+        if bucket != '':
+            path = '/' + bucket
+        return path + '/%s' % urllib.quote_plus(key)
+
+    def build_path_base(self, bucket, key=''):
+        return '/%s' % urllib.quote_plus(key)
+
+class SubdomainCallingFormat(_CallingFormat):
+    def get_bucket_server(self, server, bucket):
+        return '%s.%s' % (bucket, server)
+
+class VHostCallingFormat(_CallingFormat):
+    def get_bucket_server(self, server, bucket):
+        return bucket
+
+class Location:
+    DEFAULT = ''
+    EU = 'EU'
 
 class S3Connection(AWSAuthConnection):
 
@@ -35,41 +71,39 @@ class S3Connection(AWSAuthConnection):
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0, https_connection_factory=None):
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 host=DefaultHost, debug=0, https_connection_factory=None,
+                 calling_format=SubdomainCallingFormat()):
+        self.calling_format = calling_format
         AWSAuthConnection.__init__(self, host,
-                                   aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port, debug,
-                                   https_connection_factory)
+                aws_access_key_id, aws_secret_access_key,
+                is_secure, port, proxy, proxy_port, debug=debug,
+                https_connection_factory=https_connection_factory)
 
     def __iter__(self):
         return self.get_all_buckets()
-    
-    def generate_url(self, expires_in, method, path,
+
+    def generate_url(self, expires_in, method, bucket='', key='',
                      headers=None, query_auth=True):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
-        canonical_str = boto.utils.canonical_string(method, path,
+        auth_path = self.calling_format.build_auth_path(bucket, key)
+        canonical_str = boto.utils.canonical_string(method, auth_path,
                                                     headers, expires)
         encoded_canonical = boto.utils.encode(self.aws_secret_access_key,
                                               canonical_str, True)
-        if '?' in path:
-            arg_div = '&'
-        elif query_auth:
-            arg_div = '?'
-        else:
-            arg_div = ''
+        path = self.calling_format.build_path_base(bucket, key)
         if query_auth:
-            query_part = self.QueryString % (encoded_canonical, expires,
+            query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                              self.aws_access_key_id)
         else:
             query_part = ''
-        return self.protocol + '://' + self.server_name + path  + arg_div + query_part
-    
+        return self.calling_format.build_url_base(self.protocol,
+                self.server_name, bucket, key) + query_part
+
     def get_all_buckets(self):
-        path = '/'
-        response = self.make_request('GET', urllib.quote(path))
+        response = self.make_request('GET')
         body = response.read()
         if response.status > 300:
             raise S3ResponseError(response.status, response.reason, body)
@@ -103,26 +137,49 @@ class S3Connection(AWSAuthConnection):
             bucket = None
         return bucket
 
-    def create_bucket(self, bucket_name, headers={}):
-        path = '/%s' % bucket_name
-        response = self.make_request('PUT', urllib.quote(path), headers)
+    def create_bucket(self, bucket_name, headers={}, location=Location.DEFAULT):
+        """
+        Creates a new located bucket. By default it's in the USA. You can pass
+        Location.EU to create an European bucket.
+        """
+        if location == Location.DEFAULT:
+            data = ''
+        else:
+            data = '<CreateBucketConstraint><LocationConstraint>' + \
+                    location + '</LocationConstraint></CreateBucketConstraint>'
+        response = self.make_request('PUT', bucket_name, headers=headers,
+                data=data)
         body = response.read()
         if response.status == 409:
              raise S3CreateError(response.status, response.reason, body)
         if response.status == 200:
-            b = Bucket(self, bucket_name)
-            return b
+            return Bucket(self, bucket_name)
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
     def delete_bucket(self, bucket):
-        if isinstance(bucket, Bucket):
-            bucket_name = bucket.name
-        else:
-            bucket_name = bucket
-        path = '/%s' % bucket_name
-        response = self.make_request('DELETE', urllib.quote(path))
+        response = self.make_request('DELETE', bucket)
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason, body)
 
+    def make_request(self, method, bucket='', key='', headers=None, data='',
+            query_args=None, sender=None):
+        if isinstance(bucket, Bucket):
+            bucket = bucket.name
+        if isinstance(key, Key):
+            key = key.name
+        path = self.calling_format.build_path_base(bucket, key)
+        auth_path = self.calling_format.build_auth_path(bucket, key)
+        host = self.calling_format.build_host(self.server, bucket)
+        if query_args:
+            path += '?' + query_args
+            auth_path += '?' + query_args
+        return AWSAuthConnection.make_request(self, method, path, headers,
+                data, host, auth_path, sender)
+
+#    def checked_request(self, method, bucket='', key='', headers=None, data='',
+#            query_args=None, sender=None, good_status=200):
+#        response = self.make_request(method, bucket, key, headers, data,
+#                query_args, sender)
+#        return check_s3_response(response, good_status)

@@ -44,7 +44,7 @@ import re
 import sha
 import sys
 import time
-import urllib
+import urllib, urlparse
 import os
 import xml.sax
 from boto.exception import AWSConnectionError
@@ -95,8 +95,10 @@ class AWSAuthConnection:
             self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
         elif config.has_option('Credentials', 'aws_secret_access_key'):
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
-            
-        self.make_http_connection()
+
+        # cache up to 20 connections
+        self._cache = boto.utils.LRUCache(20)
+        self.refresh_http_connection(self.server, self.is_secure)
         self._last_rs = None
 
     def handle_proxy(self, proxy, proxy_port, proxy_user, proxy_pass):
@@ -132,99 +134,131 @@ class AWSAuthConnection:
                 "a port, using default"
             self.proxy_port = self.port
         self.use_proxy = (self.proxy != None)
-        if (self.use_proxy and self.is_secure):
+        if self.use_proxy and self.is_secure:
             raise AWSConnectionError("Unable to provide secure connection through proxy")
-        
-    def make_http_connection(self):
-        if (self.use_proxy):
-            cnxn_point = self.proxy
-            cnxn_port = int(self.proxy_port)
-        else:
-            cnxn_point = self.server
-            cnxn_port = self.port
+
+    def get_http_connection(self, host, is_secure):
+        if host is None:
+            host = '%s:%d' % (self.server, self.port)
+        cached_name = is_secure and 'https://' or 'http://'
+        cached_name += host
+        if cached_name in self._cache:
+            return self._cache[cached_name]
+        return self.refresh_http_connection(host, is_secure)
+
+    def refresh_http_connection(self, host, is_secure):
+        if self.use_proxy:
+            host = '%s:%d' % (self.proxy, int(self.proxy_port))
+        if host is None:
+            host = '%s:%d' % (self.server, self.port)
         if self.debug:
             print 'establishing HTTP connection'
-        if hasattr(self, 'connection') and self.connection:
+        if is_secure:
+            if self.https_connection_factory:
+                connection = self.https_connection_factory(host)
+            else:
+                connection = httplib.HTTPSConnection(host)
+        else:
+            connection = httplib.HTTPConnection(host)
+        if self.debug > 1:
+            connection.set_debuglevel(self.debug)
+        cached_name = is_secure and 'https://' or 'http://'
+        cached_name += host
+        if cached_name in self._cache:
             if self.debug:
                 print 'closing old HTTP connection'
-            self.connection.close()
-        if (self.is_secure):
-            if self.https_connection_factory:
-                self.connection = self.https_connection_factory("%s:%d" % (cnxn_point, cnxn_port))
-            else:
-                self.connection = httplib.HTTPSConnection("%s:%d" % (cnxn_point,
-                                                                     cnxn_port))
-        else:
-            self.connection = httplib.HTTPConnection("%s:%d" % (cnxn_point,
-                                                                cnxn_port))
-        self.set_debug(self.debug)
+            self._cache[cached_name].close()
+        self._cache[cached_name] = connection
+        # update self.connection for backwards-compatibility
+        if host.split(':')[0] == self.server and is_secure == self.is_secure:
+            self.connection = connection
+        return connection
 
-    def set_debug(self, debug=0):
-        self.debug = debug
-        if debug > 1:
-            self.connection.set_debuglevel(debug)
-
-    def prefix_proxy_to_path(self, path):
-        path = self.protocol + '://' + self.server + path
+    def prefix_proxy_to_path(self, path, host=None):
+        path = self.protocol + '://' + (host or self.server) + path
         return path
-        
+
     def get_proxy_auth_header(self):
         auth = base64.encodestring(self.proxy_user+':'+self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
-    def _mexe(self, method, path, data, headers):
+    def _mexe(self, method, path, data, headers, host=None, sender=None):
         """
         mexe - Multi-execute inside a loop, retrying multiple times to handle
-               transient Internet errors by simply trying again
-               
+               transient Internet errors by simply trying again.
+               Also handles redirects.
+
         This code was inspired by the S3Utils classes posted to the boto-users
         Google group by Larry Bates.  Thanks!
         """
+        if self.debug:
+            print 'Method:', method
+            print 'Path:', path
+            print 'Data:', data
+            print 'Headers:', headers
+            print 'Host:', host
         num_retries = config.getint('Boto', 'num_retries', self.num_retries)
-        for i in range(0, num_retries):
+        i = 0
+        connection = self.get_http_connection(host, self.is_secure)
+        while i <= num_retries:
             try:
-                self.connection.request(method, path, data, headers)
-                response = self.connection.getresponse()
+                if callable(sender):
+                    response = sender(connection, method, path, data, headers)
+                else:
+                    connection.request(method, path, data, headers)
+                    response = connection.getresponse()
+                location = response.getheader('location')
                 if response.status == 500 or response.status == 503:
                     if self.debug:
                         print 'received %d response, retrying in %d seconds' % (response.status, 2**i)
                     body = response.read()
-                else:
+                elif response.status < 300 or response.status >= 400 or \
+                        not location:
                     return response
+                else:
+                    scheme, host, path, params, query, fragment = \
+                            urlparse.urlparse(location)
+                    if query:
+                        path += '?' + query
+                    if self.debug:
+                        print 'Redirecting:', scheme + '://' + host + path
+                    connection = self.get_http_connection(host,
+                            scheme == 'https')
+                    continue
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')
             except self.http_exceptions, e:
                 if self.debug:
-                    print 'encountered %s exception, trying to recover' % \
-                        e.__class__.__name__
-                self.make_http_connection()
+                    print 'encountered %s exception, reconnecting' % \
+                    e.__class__.__name__
+                connection = self.refresh_http_connection(host, self.secure)
             time.sleep(2**i)
+            i += 1
         return response
 
-    def make_request(self, method, path, headers=None, data='', metadata=None):
+    def make_request(self, method, path, headers=None, data='', host=None,
+            auth_path=None, sender=None):
         if headers == None:
             headers = {'User-Agent' : UserAgent}
-        if metadata == None:
-            metadata = {}
+        else:
+            headers = headers.copy()
         if not headers.has_key('Content-Length'):
             headers['Content-Length'] = len(data)
         if self.use_proxy:
-            path = self.prefix_proxy_to_path(path)
+            path = self.prefix_proxy_to_path(path, host)
             if self.proxy_user and self.proxy_pass:
                 headers.update(self.get_proxy_auth_header())
-        final_headers = boto.utils.merge_meta(headers, metadata);
-        # add auth header
-        self.add_aws_auth_header(final_headers, method, path)
-        return self._mexe(method, path, data, final_headers)
+        self.add_aws_auth_header(headers, method, auth_path or path)
+        return self._mexe(method, path, data, headers, host, sender)
 
     def add_aws_auth_header(self, headers, method, path):
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
-        
+
         c_string = boto.utils.canonical_string(method, path, headers)
         if self.debug:
-            print '\n\n%s\n\n' % c_string
+            print 'Canonical:', c_string
         headers['Authorization'] = \
             "AWS %s:%s" % (self.aws_access_key_id,
                            boto.utils.encode(self.aws_secret_access_key,
@@ -261,7 +295,7 @@ class AWSQueryConnection(AWSAuthConnection):
         for key in keys:
             h.update(key)
             h.update(str(params[key]))
-            qs += key + '=' + urllib.quote(str(params[key])) + '&'
+            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
         signature = base64.b64encode(h.digest())
         qs = path + '?' + qs + 'Signature=' + urllib.quote(signature)
         
@@ -273,5 +307,3 @@ class AWSQueryConnection(AWSAuthConnection):
     def build_list_params(self, params, items, label):
         for i in range(1, len(items)+1):
             params['%s.%d' % (label, i)] = items[i-1]
-
-
