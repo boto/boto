@@ -26,8 +26,8 @@ from boto.exception import S3ResponseError
 
 usage_string = """
 SYNOPSIS
-    s3put [-a access_key] [-s secret_key] -b bucket_name [-d debug_level]
-          [-p] [-q] path
+    s3put [-a access_key] [-s secret_key] -b bucket_name [-c num_cb]
+          [-d debug_level] [-i ignore_dirs] [-n] [-p prefix] [-q] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -46,10 +46,24 @@ SYNOPSIS
         debug_level - 0 means no debug output (default), 1 means normal
                       debug output from boto, and 2 means boto debug output
                       plus request/response output from httplib
+        ignore_dirs - a comma-separated list of directory names that will
+                      be ignored and not uploaded to S3.
+        num_cb - The number of progress callbacks to display.  The default
+                 is zero which means no callbacks.  If you supplied a value
+                 of "-c 10" for example, the progress callback would be
+                 called 10 times for each file transferred.
+        prefix - A file path prefix that will be stripped from the full
+                 path of the file when determining the key name in S3.
+                 For example, if the full path of a file is:
+                     /home/foo/bar/fie.baz
+                 and the prefix is specified as "-p /home/foo/" the
+                 resulting key name in S3 will be:
+                     /bar/fie.baz
+                 The prefix must end in a trailing separator and if it
+                 does not then one will be added.
 
-     If the -p option is provided, a progress callback will be used for
-     transfers to S3 and you will see messages printed to the console about
-     progress on the upload of individual files.
+     If the -n option is provided, no files will be transferred to S3 but
+     informational messages will be printed about what would happen.
 """
 def usage():
     print usage_string
@@ -58,10 +72,16 @@ def usage():
 def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
 
+def get_key_name(fullpath, prefix):
+    key_name = fullpath[len(prefix):]
+    l = key_name.split(os.sep)
+    return '/'.join(l)
+
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ab:d::hpqs:v',
-                                   ['access_key', 'bucket', 'debug', 'help', 'progress', 'quiet', 'secret_key'])
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:hi:np:qs:v',
+                                   ['access_key', 'bucket', 'callback', 'debug', 'help', 'ignore',
+                                    'no_op', 'prefix', 'quiet', 'secret_key'])
     except:
         usage()
     ignore_dirs = []
@@ -71,7 +91,10 @@ def main():
     total = 0
     debug = 0
     cb = None
+    num_cb = 0
     quiet = False
+    no_op = False
+    prefix = '/'
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
@@ -80,10 +103,19 @@ def main():
             aws_access_key_id = a
         if o in ('-b', '--bucket'):
             bucket_name = a
+        if o in ('-c', '--callback'):
+            num_cb = int(a)
+            cb = submit_cb
         if o in ('-d', '--debug'):
             debug = int(a)
-        if o in ('-p', '--progress'):
-            cb = submit_cb
+        if o in ('-i', '--ignore'):
+            ignore_dirs = a.split(',')
+        if o in ('-n', '--no_op'):
+            no_op = True
+        if o in ('-p', '--prefix'):
+            prefix = a
+            if prefix[-1] != os.sep:
+                prefix = prefix + os.sep
         if o in ('-q', '--quiet'):
             quiet = True
         if o in ('-s', '--secret_key'):
@@ -92,6 +124,7 @@ def main():
         print usage()
     path = os.path.expanduser(args[0])
     path = os.path.expandvars(path)
+    path = os.path.abspath(path)
     if bucket_name:
         c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
                             aws_secret_access_key=aws_secret_access_key)
@@ -104,10 +137,12 @@ def main():
                         dirs.remove(ignore)
                 for file in files:
                     fullpath = os.path.join(root, file)
+                    key_name = get_key_name(fullpath, prefix)
                     if not quiet:
-                        print 'Copying %s to %s' % (file, bucket_name)
-                    k = b.new_key(file)
-                    k.set_contents_from_filename(fullpath, cb=cb)
+                        print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
+                    if not no_op:
+                        k = b.new_key(file)
+                        k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb)
                     total += 1
         elif os.path.isfile(path):
             k = b.new_key(os.path.split(path)[1])
