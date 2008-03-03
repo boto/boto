@@ -231,7 +231,7 @@ class AWSAuthConnection:
                 if self.debug:
                     print 'encountered %s exception, reconnecting' % \
                     e.__class__.__name__
-                connection = self.refresh_http_connection(host, self.secure)
+                connection = self.refresh_http_connection(host, self.is_secure)
             time.sleep(2**i)
             i += 1
         return response
