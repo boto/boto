@@ -38,7 +38,7 @@ class Bootstrap(ScriptBase):
     def __init__(self):
         self.working_dir = '/mnt/pyami'
         self.write_metadata()
-        ScriptBase.__init__(self, self.config)
+        ScriptBase.__init__(self)
 
     def write_metadata(self):
         fp = open(os.path.expanduser(BotoConfigPath), 'w')
