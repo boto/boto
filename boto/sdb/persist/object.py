@@ -71,14 +71,18 @@ class SDBObject(object):
         if len(keys) > 4:
             raise SDBPersistanceError('Too many fields, max is 4')
         parts = ["['__type__' = '%s']" % cls.__name__]
+        properties = cls.find_properties()
         for key in keys:
-            if cls.__dict__.has_key(key):
-                if isinstance(cls.__dict__[key], ScalarProperty):
-                    checker = cls.__dict__[key].checker
-                    parts.append("['%s' = '%s']" % (key, checker.to_string(params[key])))
-                else:
-                    raise SDBPersistanceError('%s is not a searchable field' % key)
-            else:
+            found = False
+            for property in properties:
+                if property.name == key:
+                    found = True
+                    if isinstance(property, ScalarProperty):
+                        checker = property.checker
+                        parts.append("['%s' = '%s']" % (key, checker.to_string(params[key])))
+                    else:
+                        raise SDBPersistanceError('%s is not a searchable field' % key)
+            if not found:
                 raise SDBPersistanceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
         domain = get_domain()
