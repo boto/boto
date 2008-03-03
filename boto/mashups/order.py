@@ -97,6 +97,12 @@ class Item(IObject):
             self.config.add_section('Credentials')
             self.config.set('Credentials', 'aws_access_key_id', self.ec2.aws_access_key_id)
             self.config.set('Credentials', 'aws_secret_access_key', self.ec2.aws_secret_access_key)
+        if not self.config.has_section('Pyami'):
+            self.config.add_section('Pyami')
+        sdb_domain = get_domain()
+        if sdb_domain:
+            self.config.set('Pyami', 'server_sdb_domain', sdb_domain.name)
+            self.config.set('Pyami', 'server_sdb_name', self.name)
 
     def get_userdata_string(self):
         s = StringIO.StringIO()
