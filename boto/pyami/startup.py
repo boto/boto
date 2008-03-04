@@ -35,7 +35,7 @@ class Startup(ScriptBase):
 
     def fetch_s3_file(s3_file):
         try:
-            if s3_filename.startswith('s3:'):
+            if s3_file.startswith('s3:'):
                 bucket_name, key_name = s3_file[len('s3:'):].split('/')
                 c = boto.connect_s3()
                 bucket = c.get_bucket(bucket_name)
