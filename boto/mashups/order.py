@@ -109,19 +109,26 @@ class Item(IObject):
         self.config.write(s)
         return s.getvalue()
 
-    def enter(self, block=True):
+    def enter(self, **params):
+        self.name = params.get('name', self.name)
         if not self.name:
             self.set_name()
+        self.instance_type = params.get('instance_type', self.instance_type)
         if not self.instance_type:
             self.set_instance_type()
+        self.quantity = params.get('quantity', self.quantity)
         if not self.quantity:
             self.set_quantity()
+        self.ami = params.get('ami', self.ami)
         if not self.ami:
             self.set_ami()
+        self.groups = params.get('groups', self.groups)
         if not self.groups:
             self.add_group()
+        self.key = params.get('key', self.key)
         if not self.key:
             self.set_key()
+        self.config = params.get('config', self.config)
         if not self.config:
             self.set_config()
 
@@ -132,9 +139,9 @@ class Order(IObject):
         self.reservation = None
         self.ec2 = boto.connect_ec2()
 
-    def add_item(self):
+    def add_item(self, **params):
         item = Item(self.ec2)
-        item.enter()
+        item.enter(**params)
         self.items.append(item)
 
     def display(self):
@@ -142,8 +149,8 @@ class Order(IObject):
         print 
         print 'QTY\tNAME\tTYPE\nAMI\t\tGroups\t\t\tKeyPair'
         for item in self.items:
-            print '%s\t%s\t%s\t%s\t%s' % (item.quantity, item.name, item.instance_type,
-                                          item.ami.id, item.groups, item.key.name)
+            print '%s\t%s\t%s\t%s\t%s\t%s' % (item.quantity, item.name, item.instance_type,
+                                              item.ami.id, item.groups, item.key.name)
 
     def place(self, block=True):
         if get_domain() == None:
