@@ -54,7 +54,7 @@ class Startup(ScriptBase):
             packages = package_str.split(',')
             for package in packages:
                 if package.startswith('s3:'):
-                    package = fetch_s3_package(package)
+                    package = fetch_s3_file(package)
                 if package:
                     # if the "package" is really a .py file, it doesn't have to
                     # be installed, just being in the working dir is enough
