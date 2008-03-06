@@ -45,6 +45,12 @@ class SDBObject(object):
     __metaclass__ = SDBBase
 
     @classmethod
+    def get_lineage(cls):
+        l = [c.__name__ for c in cls.mro()]
+        l.reverse()
+        return '.'.join(l)
+    
+    @classmethod
     def get(cls, id=None, **params):
         domain = get_domain()
         if domain and id:
@@ -70,7 +76,7 @@ class SDBObject(object):
         keys = params.keys()
         if len(keys) > 4:
             raise SDBPersistanceError('Too many fields, max is 4')
-        parts = ["['__type__' = '%s']" % cls.__name__]
+        parts = ["['__type__'='%s' or '__lineage__'startswith'%s']" % (cls.__name__, cls.lineage)]
         properties = cls.find_properties()
         for key in keys:
             found = False
@@ -113,7 +119,7 @@ class SDBObject(object):
             else:
                 cls = None
         return properties
-        
+
     def __init__(self, id=None):
         self.id = id
         if self.id:
@@ -132,7 +138,8 @@ class SDBObject(object):
 
     def save(self):
         attrs = {'__type__' : self.__class__.__name__,
-                 '__module__' : self.__class__.__module__}
+                 '__module__' : self.__class__.__module__,
+                 '__lineage__' : self.get_lineage()}
         for property in self.find_properties():
             attrs[property.name] = property.to_string(self)
         domain = get_domain()
