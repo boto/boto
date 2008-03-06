@@ -64,6 +64,7 @@ class IObject(object):
                                                                     len(choices))
             else:
                 print "No objects matched your pattern"
+                search_str = ''
         return choice
 
     def get_string(self, prompt, validation_fn=None):
