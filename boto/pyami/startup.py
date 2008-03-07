@@ -53,8 +53,8 @@ class Startup(ScriptBase):
         if package_str:
             packages = package_str.split(',')
             for package in packages:
+                package = package.strip()
                 if package.startswith('s3:'):
-                    package = package.strip()
                     package = self.fetch_s3_file(package)
                 if package:
                     # if the "package" is really a .py file, it doesn't have to
@@ -66,6 +66,7 @@ class Startup(ScriptBase):
         scripts = config.get_value('Pyami', 'scripts')
         if scripts:
             for script in scripts.split(','):
+                script = script.strip(" ")
                 try:
                     self.log('Running Script: %s' % script)
                     module_name, class_name = script.split(':')
