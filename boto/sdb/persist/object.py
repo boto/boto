@@ -76,7 +76,7 @@ class SDBObject(object):
         keys = params.keys()
         if len(keys) > 4:
             raise SDBPersistanceError('Too many fields, max is 4')
-        parts = ["['__type__'='%s' or '__lineage__'startswith'%s']" % (cls.__name__, cls.get_lineage())]
+        parts = ["['__type__'='%s' or '__lineage__'starts-with'%s']" % (cls.__name__, cls.get_lineage())]
         properties = cls.find_properties()
         for key in keys:
             found = False
