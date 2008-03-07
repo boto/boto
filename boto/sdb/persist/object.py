@@ -96,7 +96,7 @@ class SDBObject(object):
             rs = domain.query(query)
         else:
             rs = []
-        return object_lister(cls, rs)
+        return object_lister(None, rs)
 
     @classmethod
     def list(cls, max_items=None):

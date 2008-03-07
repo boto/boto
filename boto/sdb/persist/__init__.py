@@ -51,7 +51,7 @@ def get_s3_connection():
 
 def revive_object_from_id(id):
     domain = get_domain()
-    attrs = domain.get_attributes(id, ['__module__', '__type__'])
+    attrs = domain.get_attributes(id, ['__module__', '__type__', '__lineage__'])
     cls = find_class(attrs['__module__'], attrs['__type__'])
     return cls(id)
 
