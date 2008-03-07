@@ -33,7 +33,7 @@ class Startup(ScriptBase):
             for command in commands.split(','):
                 self.run('apt-get -y %s' % command)
 
-    def fetch_s3_file(s3_file):
+    def fetch_s3_file(self, s3_file):
         try:
             if s3_file.startswith('s3:'):
                 bucket_name, key_name = s3_file[len('s3:'):].split('/')
@@ -54,7 +54,8 @@ class Startup(ScriptBase):
             packages = package_str.split(',')
             for package in packages:
                 if package.startswith('s3:'):
-                    package = fetch_s3_file(package)
+                    package = package.strip()
+                    package = self.fetch_s3_file(package)
                 if package:
                     # if the "package" is really a .py file, it doesn't have to
                     # be installed, just being in the working dir is enough
@@ -79,7 +80,6 @@ class Startup(ScriptBase):
         self.run_installer_commands()
         self.load_packages()
         self.run_scripts()
-        self.get_script()
         self.notify('Startup Completed for %s' % config.get_instance('instance-id'))
 
 if __name__ == "__main__":
