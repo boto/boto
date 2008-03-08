@@ -28,7 +28,7 @@ from boto.pyami.config import Config, BotoConfigPath
 from boto.mashups.interactive import interactive_shell
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
-import os, time, tempfile
+import os
 
 class ServerSet(list):
 
@@ -160,9 +160,6 @@ class Server(SDBObject):
 
     config = property(getConfig, setConfig, None,
                       'The instance data for this server')
-
-    def unregister(self):
-        boto.mashups.persistance.delete(self.name)
 
     def stop(self):
         self.instance.stop()
