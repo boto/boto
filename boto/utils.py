@@ -124,12 +124,13 @@ def get_instance_metadata(version='latest'):
     metadata = {}
     try:
         url = 'http://169.254.169.254/%s/meta-data/' % version
-        s = urllib.urlopen(url)
-        md_fields = s.read().split('\n')
+        req = urllib2.Request(url)
+        resp = urllib2.urlopen(req)
+        md_fields = resp.read().split('\n')
         for md in md_fields:
-            md_url = url + md
-            s = urllib.urlopen(md_url)
-            val = s.read()
+            req = urllib2.Request(url + md)
+            resp = urllib2.urlopen(req)
+            val = resp.read()
             if val.find('\n') > 0:
                 val = val.split('\n')
             metadata[md] = val
@@ -138,27 +139,22 @@ def get_instance_metadata(version='latest'):
     return metadata
 
 def get_instance_userdata(version='latest', sep=None):
-    user_data = None
-    try:
-        url = 'http://169.254.169.254/%s/user-data/' % version
-        s = urllib.urlopen(url)
-        user_data = s.read()
+    user_data = get_instance_userdata_raw(version)
+    if user_data:
         if sep:
             l = user_data.split(sep)
             user_data = {}
             for nvpair in l:
                 t = nvpair.split('=')
                 user_data[t[0].strip()] = t[1].strip()
-    except:
-        print 'problem reading metadata'
     return user_data
     
 def get_instance_userdata_raw(version='latest'):
-    user_data = None
+    user_data = ''
     try:
-        url = 'http://169.254.169.254/%s/user-data/' % version
-        s = urllib.urlopen(url)
-        user_data = s.read()
+        req = urllib2.Request('http://169.254.169.254/%s/user-data/' % version)
+        resp = urllib2.urlopen(req)
+        user_data = resp.read()
     except:
         print 'problem reading metadata'
     return user_data
