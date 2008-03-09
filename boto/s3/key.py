@@ -87,7 +87,7 @@ class Key:
         elif name == 'LastModified':
             self.last_modified = value
         elif name == 'Size':
-            self.size = value
+            self.size = int(value)
         elif name == 'StorageClass':
             self.storage_class = value
         elif name == 'Owner':
