@@ -123,7 +123,7 @@ def get_aws_metadata(headers):
     return metadata
 
 def retry_url(url):
-    while i in range(0, 10):
+    for i in range(0, 10):
         try:
             req = urllib2.Request(url)
             resp = urllib2.urlopen(req)
