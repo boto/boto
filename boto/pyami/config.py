@@ -22,8 +22,8 @@
 import StringIO, os
 import ConfigParser
 
-BotoConfigPath = '/etc/boto.cfg'
-UserConfigPath = '~/.boto'
+BotoConfigLocations = ['/etc/boto.cfg', '~/.boto']
+BotoConfigPath = BotoConfigLocations[0]
 
 class Config(ConfigParser.SafeConfigParser):
 
@@ -35,7 +35,7 @@ class Config(ConfigParser.SafeConfigParser):
         elif fp:
             self.readfp(fp)
         else:
-            self.read([BotoConfigPath, os.path.expanduser(UserConfigPath)])
+            self.read(BotoConfigLocations)
 
     def save_option(self, path, section, option, value):
         """
