@@ -44,6 +44,7 @@ import urllib, urllib2
 import imp
 import popen2, os, StringIO
 import time
+import logging.handlers
 import boto
 
 METADATA_PREFIX = 'x-amz-meta-'
@@ -121,26 +122,34 @@ def get_aws_metadata(headers):
             del headers[hkey]
     return metadata
 
+def retry_url(url):
+    while i in range(0, 10):
+        try:
+            req = urllib2.Request(url)
+            resp = urllib2.urlopen(req)
+            return resp.read()
+        except:
+            boto.log.exception('Caught exception reading instance data')
+            time.sleep(2**i)
+    boto.log.error('Unable to read instance data, giving up')
+    return ''
+    
 def get_instance_metadata(version='latest'):
     metadata = {}
-    try:
-        url = 'http://169.254.169.254/%s/meta-data/' % version
-        req = urllib2.Request(url)
-        resp = urllib2.urlopen(req)
-        md_fields = resp.read().split('\n')
+    url = 'http://169.254.169.254/%s/meta-data/' % version
+    data = retry_url(url)
+    if data:
+        md_fields = data.split('\n')
         for md in md_fields:
-            req = urllib2.Request(url + md)
-            resp = urllib2.urlopen(req)
-            val = resp.read()
+            val = retry_url(url + md)
             if val.find('\n') > 0:
                 val = val.split('\n')
             metadata[md] = val
-    except:
-        boto.log.error('problem reading metadata')
     return metadata
 
 def get_instance_userdata(version='latest', sep=None):
-    user_data = get_instance_userdata_raw(version)
+    url = 'http://169.254.169.254/%s/user-data/' % version
+    user_data = retry_url(url)
     if user_data:
         if sep:
             l = user_data.split(sep)
@@ -148,16 +157,6 @@ def get_instance_userdata(version='latest', sep=None):
             for nvpair in l:
                 t = nvpair.split('=')
                 user_data[t[0].strip()] = t[1].strip()
-    return user_data
-    
-def get_instance_userdata_raw(version='latest'):
-    user_data = ''
-    try:
-        req = urllib2.Request('http://169.254.169.254/%s/user-data/' % version)
-        resp = urllib2.urlopen(req)
-        user_data = resp.read()
-    except:
-        boto.log.error('problem reading metadata')
     return user_data
     
 def get_ts(ts=None):
@@ -193,7 +192,7 @@ class ShellCommand(object):
         self.run()
 
     def run(self):
-        boto.log.info('running:\n%s\n' % self.command)
+        boto.log.info('running:%s' % self.command)
         p = popen2.Popen4(self.command)
         status = p.wait()
         self.log_fp.write(p.fromchild.read())
@@ -214,6 +213,62 @@ class ShellCommand(object):
 
     output = property(getOutput, setReadOnly, None, 'The STDIN and STDERR output of the command')
 
+class AuthSMTPHandler(logging.handlers.SMTPHandler):
+    """
+    This class extends the SMTPHandler in the standard Python logging module
+    to accept a username and password on the constructor and to then use those
+    credentials to authenticate with the SMTP server.  To use this, you could
+    add something like this in your boto config file:
+    
+    [handler_hand07]
+    class=boto.utils.AuthSMTPHandler
+    level=WARN
+    formatter=form07
+    args=('localhost', 'username', 'password', 'from@abc', ['user1@abc', 'user2@xyz'], 'Logger Subject')
+    """
+
+    def __init__(self, mailhost, username, password, fromaddr, toaddrs, subject):
+        """
+        Initialize the handler.
+
+        We have extended the constructor to accept a username/password
+        for SMTP authentication.
+        """
+        logging.handlers.SMTPHandler.__init__(self, mailhost, fromaddr, toaddrs, subject)
+        self.username = username
+        self.password = password
+        
+    def emit(self, record):
+        """
+        Emit a record.
+
+        Format the record and send it to the specified addressees.
+        It would be really nice if I could add authorization to this class
+        without having to resort to cut and paste inheritance but, no.
+        """
+        try:
+            import smtplib
+            try:
+                from email.Utils import formatdate
+            except:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            smtp.login(self.username, self.password)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                            self.fromaddr,
+                            string.join(self.toaddrs, ","),
+                            self.getSubject(record),
+                            formatdate(), msg)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
 
 class LRUCache(dict):
     """A dictionary-like object that stores only a certain number of items, and
