@@ -40,12 +40,12 @@ class Startup(ScriptBase):
                 c = boto.connect_s3()
                 bucket = c.get_bucket(bucket_name)
                 key = bucket.get_key(key_name)
-                print 'Fetching %s/%s' % (bucket.name, key.name)
+                boto.log.info('Fetching %s/%s' % (bucket.name, key.name))
                 path = os.path.join(config.get_value('Pyami', 'working_dir'), key.name)
                 key.get_contents_to_filename(path)
         except:
             path = None
-            print 'Problem Retrieving file: %s' % s3_file
+            boto.log.error('Problem Retrieving file: %s' % s3_file)
         return path
 
     def load_packages(self):
@@ -68,13 +68,13 @@ class Startup(ScriptBase):
             for script in scripts.split(','):
                 script = script.strip(" ")
                 try:
-                    self.log('Running Script: %s' % script)
+                    boto.log.info('Running Script: %s' % script)
                     module_name, class_name = script.split(':')
                     cls = find_class(module_name, class_name)
                     s = cls(self.log_fp)
                     s.main()
                 except Exception, e:
-                    self.log('Problem Running Script: %s' % script)
+                    boto.log.error('Problem Running Script: %s' % script)
                     traceback.print_exc(None, self.log_fp)
 
     def main(self):

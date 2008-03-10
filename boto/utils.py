@@ -44,6 +44,7 @@ import urllib, urllib2
 import imp
 import popen2, os, StringIO
 import time
+import boto
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -135,7 +136,7 @@ def get_instance_metadata(version='latest'):
                 val = val.split('\n')
             metadata[md] = val
     except:
-        print 'problem reading metadata'
+        boto.log.error('problem reading metadata')
     return metadata
 
 def get_instance_userdata(version='latest', sep=None):
@@ -156,7 +157,7 @@ def get_instance_userdata_raw(version='latest'):
         resp = urllib2.urlopen(req)
         user_data = resp.read()
     except:
-        print 'problem reading metadata'
+        boto.log.error('problem reading metadata')
     return user_data
     
 def get_ts(ts=None):
@@ -185,21 +186,18 @@ def update_dme(username, password, dme_id, ip_address):
 
 class ShellCommand(object):
 
-    def __init__(self, command, log_fp=None):
+    def __init__(self, command):
         self.exit_code = 0
         self.command = command
-        if log_fp:
-            self.log_fp = log_fp
-        else:
-            self.log_fp = StringIO.StringIO()
+        self.log_fp = StringIO.StringIO()
         self.run()
 
     def run(self):
-        self.log_fp.write('running:\n%s\n' % self.command)
+        boto.log.info('running:\n%s\n' % self.command)
         p = popen2.Popen4(self.command)
         status = p.wait()
         self.log_fp.write(p.fromchild.read())
-        self.log_fp.write('\n')
+        boto.log.info(self.log_fp.getvalue())
         self.exit_code = os.WEXITSTATUS(status)
         return self.exit_code
 
