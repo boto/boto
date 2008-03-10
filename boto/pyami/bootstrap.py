@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 #
 import sys, os, pwd
-from boto.utils import get_instance_metadata, get_instance_userdata_raw
+from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config, BotoConfigPath
 from boto.pyami.scriptbase import ScriptBase
 
@@ -46,7 +46,7 @@ class Bootstrap(ScriptBase):
         inst_data = get_instance_metadata()
         for key in inst_data:
             fp.write('%s = %s\n' % (key, inst_data[key]))
-        user_data = get_instance_userdata_raw()
+        user_data = get_instance_userdata()
         fp.write('\n%s\n' % user_data)
         fp.write('[Pyami]\n')
         fp.write('working_dir = %s\n' % self.working_dir)
@@ -83,5 +83,11 @@ class Bootstrap(ScriptBase):
         self.notify('Bootstrap Completed for %s' % self.config.get_instance('instance-id'))
 
 if __name__ == "__main__":
+    # because bootstrap starts before any logging configuration can be loaded from
+    # the boto config files, we will manually enable logging to /var/log/boto.log
+    logging.basicConfig(level=logging.NOTSET,
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        filename='/var/log/boto.log',
+                        filemode='w')
     bs = Bootstrap()
     bs.main()

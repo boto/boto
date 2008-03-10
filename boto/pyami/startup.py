@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os, sys, traceback
+import os, sys, traceback, StringIO
 import boto
 from boto.utils import find_class
 from boto import config
@@ -44,8 +44,8 @@ class Startup(ScriptBase):
                 path = os.path.join(config.get_value('Pyami', 'working_dir'), key.name)
                 key.get_contents_to_filename(path)
         except:
+            boto.log.exception('Problem Retrieving file: %s' % s3_file)
             path = None
-            boto.log.error('Problem Retrieving file: %s' % s3_file)
         return path
 
     def load_packages(self):
@@ -71,11 +71,10 @@ class Startup(ScriptBase):
                     boto.log.info('Running Script: %s' % script)
                     module_name, class_name = script.split(':')
                     cls = find_class(module_name, class_name)
-                    s = cls(self.log_fp)
+                    s = cls()
                     s.main()
                 except Exception, e:
-                    boto.log.error('Problem Running Script: %s' % script)
-                    traceback.print_exc(None, self.log_fp)
+                    boto.log.exception('Problem Running Script: %s' % script)
 
     def main(self):
         self.run_installer_commands()

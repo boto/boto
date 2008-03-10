@@ -17,7 +17,7 @@ class ScriptBase:
                 body = "From: %s\n" % from_string
                 body += "To: %s\n" % to_string
                 body += "Subject: %s\n\n" % subject
-                body += self.log_fp.getvalue()
+                #body += self.log_fp.getvalue()
                 smtp_host = boto.config.get_value('Notification', 'smtp_host', 'localhost')
                 server = smtplib.SMTP(smtp_host)
                 smtp_user = boto.config.get_value('Notification', 'smtp_user', '')
@@ -26,7 +26,7 @@ class ScriptBase:
                 server.sendmail(from_string, to_string, body)
                 server.quit()
             except:
-                boto.log.error('\nnotify failed\n')
+                boto.log.error('notify failed')
 
     def mkdir(self, path):
         if not os.path.isdir(path):
