@@ -57,7 +57,7 @@ class Bootstrap(ScriptBase):
         self.config = Config()
 
     def create_working_dir(self):
-        print 'Working directory: %s' % self.working_dir
+        boto.log.info('Working directory: %s' % self.working_dir)
         if not os.path.exists(self.working_dir):
             os.mkdir(self.working_dir)
 
