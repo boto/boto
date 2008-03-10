@@ -1,22 +1,14 @@
 import os, sys, time, traceback
-import StringIO
 import smtplib
 from boto.utils import ShellCommand, get_ts
 import boto
 
 class ScriptBase:
 
-    def __init__(self, log_fp=None):
-        if log_fp:
-            self.log_fp = log_fp
-        else:
-            self.log_fp = StringIO.StringIO()
+    def __init__(self):
         self.instance_id = boto.config.get_instance('instance-id', 'default')
         self.ts = get_ts()
 
-    def log(self, message):
-        self.log_fp.write('\n%s\n' % message)
-        
     def notify(self, subject):
         to_string = boto.config.get_value('Notification', 'smtp_to', None)
         if to_string:
@@ -34,27 +26,21 @@ class ScriptBase:
                 server.sendmail(from_string, to_string, body)
                 server.quit()
             except:
-                self.log_fp.write('\nnotify failed\n')
-
-    def dump_instance_data(self):
-        self.log_fp.write('Instance and Userdata...\n')
-        boto.config.dump_safe(self.log_fp)
-        self.log_fp.write('\n')
+                boto.log.error('\nnotify failed\n')
 
     def mkdir(self, path):
         if not os.path.isdir(path):
             try:
                 os.mkdir(path)
             except:
-                self.notify('Error creating directory: %s' % path)
-                sys.exit(-1)
+                boto.log.error('Error creating directory: %s' % path)
 
     def umount(self, path):
         if os.path.ismount(path):
             self.run('umount %s' % path)
 
     def run(self, command, notify=False, exit_on_error=False):
-        self.last_command = ShellCommand(command, self.log_fp)
+        self.last_command = ShellCommand(command)
         if self.last_command.status != 0:
             if notify:
                 self.notify('Error encountered')
