@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import sys, os, pwd
+import sys, os, pwd, logging
 from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config, BotoConfigPath
 from boto.pyami.scriptbase import ScriptBase
