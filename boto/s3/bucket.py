@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto
 from boto import handler
 from boto.resultset import ResultSet
 from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
@@ -158,8 +159,7 @@ class Bucket:
         response = self.connection.make_request('GET', self.name,
                 headers=headers, query_args=s)
         body = response.read()
-        if self.connection.debug > 1:
-            print body
+        boto.log.debug(body)
         if response.status == 200:
             rs = ResultSet([('Contents', self.key_class),
                             ('CommonPrefixes', Prefix)])

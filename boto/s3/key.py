@@ -159,8 +159,7 @@ class Key:
             self.bucket.connection.debug = save_debug
             if response.status == 500 or response.status == 503 or \
                     response.getheader('location'):
-                if self.bucket.connection.debug:
-                    print 'key.py: received %d response, retrying in %d seconds' % (response.status, 2**i)
+                boto.log.info('key.py: received %d response, retrying in %d seconds' % (response.status, 2**i))
                 # we'll try again
                 return response
             elif response.status >= 200 and response.status <= 299:

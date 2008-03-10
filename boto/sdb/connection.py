@@ -22,6 +22,7 @@
 import urllib
 import xml.sax
 import threading
+import boto
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain
@@ -233,8 +234,7 @@ class SDBConnection(AWSQueryConnection):
             params['NextToken'] = next_token
         response = self.make_request('Query', params)
         body = response.read()
-        if self.debug > 1:
-            print body
+        boto.log.debug(body)
         if response.status == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)

@@ -19,12 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.pyami.config import Config
+from boto.pyami.config import Config, BotoConfigLocations
 import os, sys
+import logging
+import logging.config
 
 Version = '1.0a'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
+
+log = logging
+for file in BotoConfigLocations:
+    try:
+        logging.config.fileConfig(os.path.expanduser(file))
+    except:
+        pass
 
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sqs.connection import SQSConnection
@@ -60,6 +69,5 @@ def check_extensions(module_name, module_path):
         dirname = module_path[0]
         path = os.path.join(dirname, version)
         if os.path.isdir(path):
-            if config.getint('Boto', 'debug', 0):
-                print 'extending module %s with: %s' % (module_name, path)
+            log.info('extending module %s with: %s' % (module_name, path))
             module_path.insert(0, path)
