@@ -42,7 +42,7 @@ class Startup(ScriptBase):
                 key = bucket.get_key(key_name)
                 print 'Fetching %s/%s' % (bucket.name, key.name)
                 path = os.path.join(config.get_value('Pyami', 'working_dir'), key.name)
-                key.get_contents_to_filename(script_path)
+                key.get_contents_to_filename(path)
         except:
             path = None
             print 'Problem Retrieving file: %s' % s3_file
