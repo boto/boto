@@ -53,7 +53,7 @@ class ScriptBase:
         if os.path.ismount(path):
             self.run('umount %s' % path)
 
-    def run(self, command, notify=False, exit_on_error=True):
+    def run(self, command, notify=False, exit_on_error=False):
         self.last_command = ShellCommand(command, self.log_fp)
         if self.last_command.status != 0:
             if notify:

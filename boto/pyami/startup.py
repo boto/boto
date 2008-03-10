@@ -40,8 +40,8 @@ class Startup(ScriptBase):
                 c = boto.connect_s3()
                 bucket = c.get_bucket(bucket_name)
                 key = bucket.get_key(key_name)
-                print 'Fetching %s.%s' % (bucket.name, key.name)
-                path = os.path.join(config.get_value('General', 'working_dir'), key.name)
+                print 'Fetching %s/%s' % (bucket.name, key.name)
+                path = os.path.join(config.get_value('Pyami', 'working_dir'), key.name)
                 key.get_contents_to_filename(script_path)
         except:
             path = None
