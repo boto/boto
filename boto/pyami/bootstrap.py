@@ -77,10 +77,40 @@ class Bootstrap(ScriptBase):
             self.run('rm /usr/local/lib/python2.5/site-packages/boto')
             self.run('easy_install %s' % update)
 
+    def fetch_s3_file(self, s3_file):
+        try:
+            if s3_file.startswith('s3:'):
+                bucket_name, key_name = s3_file[len('s3:'):].split('/')
+                c = boto.connect_s3()
+                bucket = c.get_bucket(bucket_name)
+                key = bucket.get_key(key_name)
+                boto.log.info('Fetching %s/%s' % (bucket.name, key.name))
+                path = os.path.join(self.working_dir, key.name)
+                key.get_contents_to_filename(path)
+        except:
+            boto.log.exception('Problem Retrieving file: %s' % s3_file)
+            path = None
+        return path
+
+    def load_packages(self):
+        package_str = self.config.get_value('Pyami', 'packages')
+        if package_str:
+            packages = package_str.split(',')
+            for package in packages:
+                package = package.strip()
+                if package.startswith('s3:'):
+                    package = self.fetch_s3_file(package)
+                if package:
+                    # if the "package" is really a .py file, it doesn't have to
+                    # be installed, just being in the working dir is enough
+                    if not package.endswith('.py'):
+                        self.run('easy_install %s' % package, exit_on_error=False)
+
     def main(self):
         self.write_metadata()
         self.create_working_dir()
         self.load_boto()
+        self.load_packages()
         self.notify('Bootstrap Completed for %s' % self.config.get_instance('instance-id'))
 
 if __name__ == "__main__":
