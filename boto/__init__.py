@@ -28,12 +28,15 @@ Version = '1.0a'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
 
+def init_logging():
+    for file in BotoConfigLocations:
+        try:
+            logging.config.fileConfig(os.path.expanduser(file))
+        except:
+            pass
+
 log = logging
-for file in BotoConfigLocations:
-    try:
-        logging.config.fileConfig(os.path.expanduser(file))
-    except:
-        pass
+init_logging()
 
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sqs.connection import SQSConnection
