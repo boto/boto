@@ -55,7 +55,8 @@ class Bootstrap(ScriptBase):
         # This file has the AWS credentials, should we lock it down?
         # os.chmod(BotoConfigPath, stat.S_IREAD | stat.S_IWRITE)
         # now that we have written the file, read it into a pyami Config object
-        self.config = Config()
+        boto.config = Config()
+        boto.init_logging()
 
     def create_working_dir(self):
         boto.log.info('Working directory: %s' % self.working_dir)
@@ -63,14 +64,14 @@ class Bootstrap(ScriptBase):
             os.mkdir(self.working_dir)
 
     def load_boto(self):
-        update = self.config.get_value('Boto', 'boto_update', 'svn:HEAD')
+        update = boto.config.get('Boto', 'boto_update', 'svn:HEAD')
         if update.startswith('svn'):
             if update.find(':') >= 0:
                 method, version = update.split(':')
                 version = '-r%s' % version
             else:
                 version = '-rHEAD'
-            location = self.config.get_value('Boto', 'boto_location', '/usr/local/boto')
+            location = boto.config.get('Boto', 'boto_location', '/usr/local/boto')
             self.run('svn update %s %s' % (version, location))
         else:
             # first remove the symlink needed when running from subversion
@@ -93,7 +94,7 @@ class Bootstrap(ScriptBase):
         return path
 
     def load_packages(self):
-        package_str = self.config.get_value('Pyami', 'packages')
+        package_str = boto.config.get('Pyami', 'packages')
         if package_str:
             packages = package_str.split(',')
             for package in packages:
@@ -107,11 +108,10 @@ class Bootstrap(ScriptBase):
                         self.run('easy_install %s' % package, exit_on_error=False)
 
     def main(self):
-        self.write_metadata()
         self.create_working_dir()
         self.load_boto()
         self.load_packages()
-        self.notify('Bootstrap Completed for %s' % self.config.get_instance('instance-id'))
+        self.notify('Bootstrap Completed for %s' % boto.config.get_instance('instance-id'))
 
 if __name__ == "__main__":
     # because bootstrap starts before any logging configuration can be loaded from
