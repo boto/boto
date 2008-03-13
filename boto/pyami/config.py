@@ -22,7 +22,7 @@
 import StringIO, os
 import ConfigParser
 
-BotoConfigLocations = ['/etc/boto.cfg', '~/.boto']
+BotoConfigLocations = ['/etc/boto.cfg', os.path.expanduser('~/.boto')]
 BotoConfigPath = BotoConfigLocations[0]
 
 class Config(ConfigParser.SafeConfigParser):
