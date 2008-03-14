@@ -46,6 +46,7 @@ import popen2, os, StringIO
 import time
 import logging.handlers
 import boto
+import tempfile
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -182,6 +183,33 @@ def update_dme(username, password, dme_id, ip_address):
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
     s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
+
+def fetch_file(uri, file=None):
+    """
+    Fetch a file based on the URI provided. If you do not pass in a file pointer
+    a tempfile.NamedTemporaryFile, or None if the file could not be 
+    retrieved is returned.
+    The URI can be either an HTTP url, or "s3:bucket_name/key_name"
+    """
+    boto.log.info('Fetching %s' % uri)
+    if file == None:
+        file = tempfile.NamedTemporaryFile()
+    try:
+        working_dir = boto.config.get("General", "working_dir")
+        if uri.startswith('s3:'):
+            bucket_name, key_name = uri[len('s3:'):].split('/')
+            c = boto.connect_s3()
+            bucket = c.get_bucket(bucket_name)
+            key = bucket.get_key(key_name)
+            key.get_contents_to_file(file)
+        elif uri.startswith('http'):
+            s = urllib2.urlopen(uri)
+            file.write(s.read())
+        file.seek(0)
+    except:
+        boto.log.exception('Problem Retrieving file: %s' % uri)
+        file = None
+    return file
 
 class ShellCommand(object):
 
