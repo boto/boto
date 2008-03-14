@@ -24,7 +24,7 @@ import boto
 from boto.utils import find_class
 from boto import config
 from boto.pyami.scriptbase import ScriptBase
-import peak.util.imports
+from boto.utils import find_class
 
 class Startup(ScriptBase):
 
@@ -34,10 +34,16 @@ class Startup(ScriptBase):
             for script in scripts.split(','):
                 script = script.strip(" ")
                 try:
-                    boto.log.info('Running Script: %s' % script)
-                    cls = peak.util.imports.importString(script)
-                    s = cls()
-                    s.main()
+                    pos = script.rfind('.')
+                    if pos > 0:
+                        mod_name = script[0:pos]
+                        cls_name = script[pos+1:]
+                        cls = find_class(mod_name, cls_name)
+                        boto.log.info('Running Script: %s' % script)
+                        s = cls()
+                        s.main()
+                    else:
+                        boto.log.warning('Trouble parsing script: %s' % script)
                 except Exception, e:
                     boto.log.exception('Problem Running Script: %s' % script)
 

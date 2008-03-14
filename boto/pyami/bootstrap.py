@@ -105,7 +105,7 @@ class Bootstrap(ScriptBase):
                     # if the "package" is really a .py file, it doesn't have to
                     # be installed, just being in the working dir is enough
                     if not package.endswith('.py'):
-                        self.run('easy_install %s' % package, exit_on_error=False)
+                        self.run('easy_install -Z %s' % package, exit_on_error=False)
 
     def main(self):
         self.create_working_dir()
