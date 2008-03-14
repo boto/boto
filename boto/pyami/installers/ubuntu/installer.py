@@ -26,7 +26,7 @@ class Installer(boto.pyami.installers.Installer):
     """
     Base Installer class for Ubuntu-based AMI's
     """
-    def add_cron(self, name, minute, hour, mday, month, wday, who, command, env=None):
+    def add_cron(self, name, command, minute="*", hour="*", mday="*", month="*", wday="*", who="root", env=None):
         """
         Write a file to /etc/cron.d to schedule a command
             env is a dict containing environment variables you want to set in the file
@@ -61,6 +61,12 @@ class Installer(boto.pyami.installers.Installer):
 
     def start(self, service_name):
         self.run('/etc/init.d/%s start' % service_name)
+
+    def create_user(self, user):
+        """
+        Create a user on the local system
+        """
+        self.run("useradd %s" % user)
 
     def install(self):
         """
