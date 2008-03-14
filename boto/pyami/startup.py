@@ -29,7 +29,7 @@ from boto.utils import find_class
 class Startup(ScriptBase):
 
     def run_scripts(self):
-        scripts = config.get_value('Pyami', 'scripts')
+        scripts = config.get('Pyami', 'scripts')
         if scripts:
             for script in scripts.split(','):
                 script = script.strip(" ")
@@ -49,9 +49,9 @@ class Startup(ScriptBase):
 
     def main(self):
         self.run_scripts()
-        self.notify('Startup Completed for %s' % config.get_instance('instance-id'))
+        self.notify('Startup Completed for %s' % config.get('Instance', 'instance-id'))
 
 if __name__ == "__main__":
-    sys.path.append(config.get_value('General', 'working_dir'))
+    sys.path.append(config.get('Pyami', 'working_dir'))
     su = Startup()
     su.main()
