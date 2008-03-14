@@ -21,6 +21,7 @@
 #
 import boto.pyami.installers
 import os
+import boto
 
 class Installer(boto.pyami.installers.Installer):
     """
@@ -50,7 +51,7 @@ class Installer(boto.pyami.installers.Installer):
         For Ubuntu, the best place is /etc/environment.  Values placed here do
         not need to be exported.
         """
-        self.log('Adding env variable: %s=%s' % (key, value))
+        boto.log.info('Adding env variable: %s=%s' % (key, value))
         self.run('cp /etc/environment /etc/environment.orig', notify=False, exit_on_error=False)
         fp = open('/etc/environment', 'a')
         fp.write('\n%s=%s' % (key, value))
