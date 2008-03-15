@@ -162,10 +162,12 @@ class Server(SDBObject):
                       'The instance data for this server')
 
     def stop(self):
-        self.instance.stop()
+        if self.instance:
+            self.instance.stop()
 
     def reboot(self):
-        self.instance.reboot()
+        if self.instance:
+            self.instance.reboot()
 
     def get_ssh_client(self, key_file=None, host_key_file='~/.ssh/known_hosts',
                        uname='root'):
