@@ -40,7 +40,13 @@ def set_domain(domain_name, aws_access_key_id=None, aws_secret_access_key=None):
 
 def get_domain():
     if __domain == None:
-        print 'No SimpleDB domain set, persistance is disabled'
+        # check to see if a default domain is set in boto config
+        domain_name = boto.config.get('Persist', 'default_domain', None)
+        if domain_name:
+            boto.log.info('No SimpleDB domain set, using default_domain: %s' % domain_name)
+            set_domain(domain_name)
+        else:
+            boto.log.warning('No SimpleDB domain set, persistance is disabled')
     return __domain
 
 def get_s3_connection():
