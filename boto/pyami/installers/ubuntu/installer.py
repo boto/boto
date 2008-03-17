@@ -22,6 +22,7 @@
 import boto.pyami.installers
 import os
 import boto
+from pwd import getpwnam
 
 class Installer(boto.pyami.installers.Installer):
     """
@@ -33,11 +34,11 @@ class Installer(boto.pyami.installers.Installer):
             env is a dict containing environment variables you want to set in the file
             name will be used as the name of the file
         """
-        fp = open('/etc/cron.d/%s' % name)
+        fp = open('/etc/cron.d/%s' % name, "w")
         if env:
             for key, value in env.items():
                 fp.write('%s=%s\n' % (key, value))
-        fp.write('%s %s %s %s %d %s %s\n' % (minute, hour, mday, month, wday, who, command))
+        fp.write('%s %s %s %s %s %s %s\n' % (minute, hour, mday, month, wday, who, command))
         fp.close()
 
     def add_init_script(self, file):
@@ -68,6 +69,11 @@ class Installer(boto.pyami.installers.Installer):
         Create a user on the local system
         """
         self.run("useradd %s" % user)
+        usr =  getpwnam(user)
+        os.mkdir(usr[5])
+        os.chown(usr[5], usr[2], usr[3])
+        return usr
+
 
     def install(self):
         """
