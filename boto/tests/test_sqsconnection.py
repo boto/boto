@@ -28,6 +28,7 @@ Some unit tests for the SQSConnection
 import unittest
 import time
 from boto.sqs.connection import SQSConnection
+from boto.sqs.message import MHMessage
 from boto.exception import SQSError
 
 class SQSConnectionTest (unittest.TestCase):
@@ -115,19 +116,24 @@ class SQSConnectionTest (unittest.TestCase):
         assert queue.count_slow() == 0
 
         # create another queue so we can test force deletion
+        # we will also test MHMessage with this queue
         queue_name = 'test%d' % int(time.time())
         timeout = 60
         queue = c.create_queue(queue_name, timeout)
+        queue.set_message_class(MHMessage)
         time.sleep(30)
         
         # now add a couple of messages
-        message_body = 'This is a test\n'
-        message = queue.new_message(message_body)
+        message = queue.new_message()
+        message['foo'] = 'bar'
         queue.write(message)
-        message_body = 'This is another test\n'
-        message = queue.new_message(message_body)
+        message_body = {'fie' : 'baz', 'foo' : 'bar'}
+        message = queue.new_message(body=message_body)
         queue.write(message)
         time.sleep(30)
+
+        m = queue.read()
+        assert m['foo'] == 'bar'
 
         # now delete that queue and messages
         c.delete_queue(queue, True)
