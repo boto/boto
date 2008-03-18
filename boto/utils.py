@@ -213,25 +213,28 @@ def fetch_file(uri, file=None):
 
 class ShellCommand(object):
 
-    def __init__(self, command):
+    def __init__(self, command, wait=True):
         self.exit_code = 0
         self.command = command
         self.log_fp = StringIO.StringIO()
+        self.wait = wait
         self.run()
 
     def run(self):
         boto.log.info('running:%s' % self.command)
-        p = popen2.Popen4(self.command)
-        status = p.wait()
-        self.log_fp.write(p.fromchild.read())
-        boto.log.info(self.log_fp.getvalue())
-        self.exit_code = os.WEXITSTATUS(status)
-        return self.exit_code
+        self.process = popen2.Popen4(self.command)
+        if(self.wait):
+            return self.getStatus()
 
     def setReadOnly(self, value):
         raise AttributeError
 
     def getStatus(self):
+        if(not self.exit_code):
+            status = self.process.wait()
+            self.log_fp.write(self.process.fromchild.read())
+            boto.log.info(self.log_fp.getvalue())
+            self.exit_code = os.WEXITSTATUS(status)
         return self.exit_code
 
     status = property(getStatus, setReadOnly, None, 'The exit code for the command')
