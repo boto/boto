@@ -57,6 +57,7 @@ class Installer(boto.pyami.installers.Installer):
         fp = open('/etc/environment', 'a')
         fp.write('\n%s=%s' % (key, value))
         fp.close()
+        self.run("export %s=\"%s\"" % (key, value))
 
     def stop(self, service_name):
         self.run('/etc/init.d/%s stop' % service_name)
