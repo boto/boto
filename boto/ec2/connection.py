@@ -22,7 +22,7 @@
 import urllib
 import xml.sax
 import base64
-from boto import handler
+from boto import handler, config
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
@@ -40,6 +40,8 @@ class EC2Connection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  host='ec2.amazonaws.com', debug=0,
                  https_connection_factory=None):
+        if config.has_option('Boto', 'ec2_host'):
+            host = config.get('Boto', 'ec2_host')
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
