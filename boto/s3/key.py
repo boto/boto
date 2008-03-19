@@ -30,7 +30,7 @@ import time
 import base64
 import boto
 import boto.utils
-from boto.exception import S3ResponseError, S3DataError
+from boto.exception import S3ResponseError, S3DataError, BotoClientError
 from boto.s3.user import User
 from boto import UserAgent, config
 
@@ -53,6 +53,8 @@ class Key:
         self.md5 = None
         self.base64md5 = None
         self.path = None
+        self.resp = None
+        self.mode = None
 
     def __repr__(self):
         if self.bucket:
@@ -71,6 +73,80 @@ class Key:
             self.__dict__['name'] = value
         else:
             self.__dict__[name] = value
+
+    def __iter__(self):
+        return self
+
+    def open_read(self, headers=None):
+        if self.resp == None:
+            self.mode = 'r'
+            self.resp = self.bucket.connection.make_request('GET', self.bucket.name, self.name, headers)
+            if self.resp.status < 199 or self.resp.status > 299:
+                raise S3ResponseError(self.resp.status, self.resp.reason)
+            response_headers = self.resp.msg
+            self.metadata = boto.utils.get_aws_metadata(response_headers)
+            for name,value in response_headers.items():
+                if name.lower() == 'content-length':
+                    self.size = int(value)
+                elif name.lower() == 'etag':
+                    self.etag = value
+                elif name.lower() == 'content-type':
+                    self.content_type = value
+                elif name.lower() == 'last-modified':
+                    self.last_modified = value
+
+    def close_read(self):
+        self.resp.read()
+        self.resp = None
+        self.mode = None
+
+    def open_write(self, headers=None):
+        raise BotoClientError('Not Implemented')
+
+    def close_write(self):
+        raise BotoClientError('Not Implemented')
+
+    def open(self, mode='r', headers=None):
+        if mode == 'r':
+            self.open_read()
+        elif mode == 'w':
+            self.open_write()
+        else:
+            raise BotoClientError('Invalid mode: %s' % mode)
+
+    def close(self):
+        if mode == 'r':
+            self.close_read()
+        elif mode == 'w':
+            self.close_write()
+        else:
+            raise BotoClientError('Invalid mode: %s' % mode)
+    
+    def next(self):
+        """
+        By providing a next method, the key object supports use as an iterator.
+        For example, you can now say:
+
+        for bytes in key:
+            write bytes to a file or whatever
+
+        All of the HTTP connection stuff is handled for you.
+        """
+        self.open_read()
+        data = self.resp.read(self.BufferSize)
+        if not data:
+            self.close_read()
+            raise StopIteration
+        return data
+
+    def read(self, size=0):
+        if size == 0:
+            size = self.BufferSize
+        self.open_read()
+        data = self.resp.read(size)
+        if not data:
+            self.close_read()
+        return data
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -264,21 +340,6 @@ class Key:
         fp.close()
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10):
-        resp = self.bucket.connection.make_request('GET', self.bucket.name,
-                self.name, headers)
-        if resp.status < 199 or resp.status > 299:
-            raise S3ResponseError(resp.status, resp.reason)
-        response_headers = resp.msg
-        self.metadata = boto.utils.get_aws_metadata(response_headers)
-        for key in response_headers.keys():
-            if key.lower() == 'content-length':
-                self.size = int(response_headers[key])
-            elif key.lower() == 'etag':
-                self.etag = response_headers[key]
-            elif key.lower() == 'content-type':
-                self.content_type = response_headers[key]
-            elif key.lower() == 'last-modified':
-                self.last_modified = response_headers[key]
         if cb:
             if num_cb > 2:
                 cb_count = self.size / self.BufferSize / (num_cb-2)
@@ -289,19 +350,18 @@ class Key:
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
-        l = resp.read(self.BufferSize)
-        while len(l) > 0:
-            fp.write(l)
+        self.open('r', headers)
+        for bytes in self:
+            fp.write(bytes)
             if cb:
-                total_bytes += len(l)
+                total_bytes += len(bytes)
                 i += 1
                 if i == cb_count:
                     cb(total_bytes, self.size)
                     i = 0
-            l = resp.read(self.BufferSize)
         if cb:
             cb(total_bytes, self.size)
-        resp.read()
+        self.close()
         self.bucket.connection.debug = save_debug
 
     def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10):
