@@ -95,32 +95,24 @@ class Key:
                 elif name.lower() == 'last-modified':
                     self.last_modified = value
 
-    def close_read(self):
-        self.resp.read()
-        self.resp = None
-        self.mode = None
-
     def open_write(self, headers=None):
-        raise BotoClientError('Not Implemented')
-
-    def close_write(self):
         raise BotoClientError('Not Implemented')
 
     def open(self, mode='r', headers=None):
         if mode == 'r':
+            self.mode = 'r'
             self.open_read()
         elif mode == 'w':
+            self.mode = 'w'
             self.open_write()
         else:
             raise BotoClientError('Invalid mode: %s' % mode)
 
     def close(self):
-        if mode == 'r':
-            self.close_read()
-        elif mode == 'w':
-            self.close_write()
-        else:
-            raise BotoClientError('Invalid mode: %s' % mode)
+        if self.resp:
+            self.resp.read()
+        self.resp = None
+        self.mode = None
     
     def next(self):
         """
@@ -135,7 +127,7 @@ class Key:
         self.open_read()
         data = self.resp.read(self.BufferSize)
         if not data:
-            self.close_read()
+            self.close()
             raise StopIteration
         return data
 
@@ -145,7 +137,7 @@ class Key:
         self.open_read()
         data = self.resp.read(size)
         if not data:
-            self.close_read()
+            self.close()
         return data
 
     def startElement(self, name, attrs, connection):
