@@ -194,6 +194,8 @@ class AWSAuthConnection:
         boto.log.info('Data: %s' % data)
         boto.log.info('Headers: %s' % headers)
         boto.log.info('Host: %s' % host)
+        response = None
+        e = None
         num_retries = config.getint('Boto', 'num_retries', self.num_retries)
         i = 0
         connection = self.get_http_connection(host, self.is_secure)
@@ -228,7 +230,15 @@ class AWSAuthConnection:
                 connection = self.refresh_http_connection(host, self.is_secure)
             time.sleep(2**i)
             i += 1
-        return response
+        # If we made it here, it's because we have exhausted our retries and stil haven't
+        # succeeded.  So, if we have a response object, use it to raise an exception.
+        # Otherwise, raise the exception that must have already happened.
+        if response:
+            raise S3ResponseError(response.status, response.reason)
+        elif e:
+            raise e
+        else:
+            raise BotoClientError('Please report this exception as a Boto Issue!')
 
     def make_request(self, method, path, headers=None, data='', host=None,
             auth_path=None, sender=None):
