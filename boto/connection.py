@@ -47,7 +47,7 @@ import time
 import urllib, urlparse
 import os
 import xml.sax
-from boto.exception import AWSConnectionError
+from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 import boto.utils
 from boto import config, UserAgent
 
@@ -234,7 +234,7 @@ class AWSAuthConnection:
         # succeeded.  So, if we have a response object, use it to raise an exception.
         # Otherwise, raise the exception that must have already happened.
         if response:
-            raise S3ResponseError(response.status, response.reason)
+            raise BotoServerError(response.status, response.reason)
         elif e:
             raise e
         else:
