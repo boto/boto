@@ -195,6 +195,7 @@ class AWSAuthConnection:
         boto.log.info('Headers: %s' % headers)
         boto.log.info('Host: %s' % host)
         response = None
+        body = None
         e = None
         num_retries = config.getint('Boto', 'num_retries', self.num_retries)
         i = 0
@@ -234,7 +235,7 @@ class AWSAuthConnection:
         # succeeded.  So, if we have a response object, use it to raise an exception.
         # Otherwise, raise the exception that must have already happened.
         if response:
-            raise BotoServerError(response.status, response.reason)
+            raise BotoServerError(response.status, response.reason, body)
         elif e:
             raise e
         else:
