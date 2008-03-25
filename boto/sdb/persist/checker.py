@@ -181,8 +181,14 @@ class ObjectChecker(ValueChecker):
     def check(self, value):
         if value == None:
             return
-        if not isinstance(value, self.ref_class):
-            raise TypeError, 'Expecting %s, got %s' % (self.ref_class, type(value))
+        try:
+            obj_lineage = value.get_lineage()
+            cls_lineage = self.ref_class.get_lineage()
+            if obj_lineage.startswith(cls_lineage):
+                return
+            raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
+        except:
+            raise ValueError, '%s is not an SDBObject' % value
 
     def from_string(self, str_value):
         if not str_value:

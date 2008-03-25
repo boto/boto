@@ -24,9 +24,13 @@ class TestRef(SDBObject):
     name = StringProperty()
     ref = ObjectProperty(ref_class=TestScalar)
 
-class TestSubClass(TestRef):
+class TestSubClass1(TestRef):
 
     answer = PositiveIntegerProperty()
+
+class TestSubClass2(TestScalar):
+
+    flag = BooleanProperty()
 
 class TestList(SDBObject):
 
@@ -46,10 +50,11 @@ def test1():
     s.save()
     return s
 
-def test2(ref):
+def test2(ref_name):
     s = TestRef()
     s.name = 'testref'
-    s.ref = ref
+    rs = TestScalar.find(name=ref_name)
+    s.ref = rs.next()
     s.save()
     return s
 
@@ -78,9 +83,21 @@ def test4(ref1, ref2):
     return s
 
 def test5(ref):
-    s = TestSubClass()
+    s = TestSubClass1()
     s.answer = 42
     s.ref = ref
+    s.save()
+    return s
+
+def test6():
+    s = TestSubClass2()
+    s.name = 'fie'
+    s.description = 'This is fie'
+    s.size = 4200
+    s.offset = -820
+    s.foo = False
+    s.date = datetime.now()
+    s.flag = True
     s.save()
     return s
 
@@ -101,17 +118,19 @@ def test(domain_name):
     assert s1.foo == s2.foo
     #assert s1.date == s2.date
     print 'Call test2'
-    s2 = test2(s1)
+    s2 = test2(s1.name)
     print 'Call test3'
     s3 = test3(s1)
     print 'Call test4'
     s4 = test4(s1, s3)
     print 'Call test5'
-    s5 = test5(s1)
+    s6 = test6()
+    s5 = test5(s6)
     domain = get_domain()
     item1 = domain.get_item(s1.id)
     item2 = domain.get_item(s2.id)
     item3 = domain.get_item(s3.id)
     item4 = domain.get_item(s4.id)
     item5 = domain.get_item(s5.id)
-    return [(s1, item1), (s2, item2), (s3, item3), (s4, item4), (s5, item5)]
+    item6 = domain.get_item(s6.id)
+    return [(s1, item1), (s2, item2), (s3, item3), (s4, item4), (s5, item5), (s6, item6)]
