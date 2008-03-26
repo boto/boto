@@ -184,12 +184,8 @@ class SQSConnection(AWSQueryConnection):
         return rs
         
     def get_queue(self, queue_name):
-        i = 0
         rs = self.get_all_queues(queue_name)
-        for q in rs:
-            i += 1
-        if i != 1:
-            return None
-        else:
-            return q
+        if len(rs) == 1:
+            return rs[0]
+        return None
 
