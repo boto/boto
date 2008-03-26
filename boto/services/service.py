@@ -44,16 +44,15 @@ class Service(ScriptBase):
     ProcessingTime = 60
 
     def __init__(self):
+        ScriptBase.__init__(self)
         self.name = self.__class__.__name__
         self.working_dir = boto.config.get('Pyami', 'working_dir')
-        self.queue_cache = {}
-        self.bucket_cache = {}
+        self._aws_cache = {}
         self.create_connections()
 #        if mimetype_files:
 #            mimetypes.init(mimetype_files)
 
     def create_connections(self):
-        self.sqs_conn = boto.connect_sqs()
         queue_name = boto.config.get(self.name, 'input_queue_name', None)
         if queue_name:
             self.input_queue = self.get_queue(queue_name)
@@ -64,7 +63,11 @@ class Service(ScriptBase):
             self.output_queue = self.get_queue(queue_name)
         else:
             self.output_queue = None
-        self.s3_conn = boto.connect_s3()
+        domain_name = boto.config.get(self.name, 'output_domain', None)
+        if domain_name:
+            self.output_domain = self.get_domain(domain_name)
+        else:
+            self.output_domain = None
 
     def split_key(key):
         if key.find(';') < 0:
@@ -76,21 +79,43 @@ class Service(ScriptBase):
         return t
 
     def get_queue(self, queue_name):
-        if queue_name in self.queue_cache.keys():
-            return self.queue_cache[queue_name]
-        else:
-            queue = self.sqs_conn.create_queue(queue_name)
-            queue.set_message_class(ServiceMessage)
-            self.queue_cache[queue_name] = queue
-            return queue
+        return self.get_aws_object('sqs', queue_name)
+
+    def get_domain(self, domain_name):
+        return self.get_aws_object('sdb', domain_name)
 
     def get_bucket(self, bucket_name):
-        if bucket_name in self.bucket_cache.keys():
-            return self.bucket_cache[bucket_name]
-        else:
-            bucket = self.s3_conn.get_bucket(bucket_name)
-            self.bucket_cache[bucket_name] = bucket
-            return bucket
+        return self.get_aws_object('s3', bucket_name)
+
+    def get_aws_conn(self, service):
+        conn = self._aws_cache.get(service, None)
+        if not conn:
+            meth = getattr(boto, 'connect_'+service)
+            conn = meth()
+            self._aws_cache[service] = conn
+        return conn
+
+    def get_aws_object(self, service, name):
+        conn = self.get_aws_conn(service)
+        obj = self._aws_cache.get(service+name, None)
+        if not obj:
+            if service == 's3':
+                obj = conn.lookup(name)
+                if not obj:
+                    obj = conn.create_bucket(name)
+                self._aws_cache[service+name] = obj
+            elif service == 'sqs':
+                obj = conn.get_queue(name)
+                if not obj:
+                    obj = conn.create_queue(name)
+                self._aws_cache[service+name] = obj
+                obj.set_message_class(ServiceMessage)
+            elif service == 'sdb':
+                obj = conn.lookup(name)
+                if not obj:
+                    obj = conn.create_domain(name)
+                self._aws_cache[service+name] = obj
+        return obj
 
     def get_result(self, path, delete_msg=True, get_file=True):
         q = self.get_queue(self.output_queue_name)
@@ -158,16 +183,20 @@ class Service(ScriptBase):
             
     # write message to each output queue
     def write_message(self, message):
+        message['Service-Write'] = get_ts()
+        message['Server'] = self.name
+        if os.environ.has_key('HOSTNAME'):
+            message['Host'] = os.environ['HOSTNAME']
+        else:
+            message['Host'] = 'unknown'
+        message['Instance-ID'] = self.instance_id
         if self.output_queue:
-            boto.log.info('Writing message to %s' % self.output_queue.id)
-            message['Service-Write'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                                     time.gmtime())
-            message['Server'] = self.name
-            if os.environ.has_key('HOSTNAME'):
-                message['Host'] = os.environ['HOSTNAME']
-            else:
-                message['Host'] = 'unknown'
+            boto.log.info('Writing message to SQS queue: %s' % self.output_queue.id)
             self.output_queue.write(message)
+        if self.output_domain:
+            boto.log.info('Writing message to SDB domain: %s' % self.output_domain.name)
+            item_name = '/'.join([message['Service-Write'], message['Bucket'], message['InputKey']])
+            self.output_domain.put_attributes(item_name, message)
 
     # delete message from input queue
     def delete_message(self, message):
@@ -181,11 +210,10 @@ class Service(ScriptBase):
     def shutdown(self):
         on_completion = boto.config.get(self.name, 'on_completion', 'stay_alive')
         if on_completion == 'shutdown':
-            instance_id = boto.config.get('Instance', 'instance-id')
-            if instance_id:
+            if self.instance_id:
                 time.sleep(60)
                 c = boto.connect_ec2()
-                c.terminate_instances([instance_id])
+                c.terminate_instances([self.instance_id])
 
     def main(self, notify=False):
         self.notify('Service: %s Starting' % self.name)
