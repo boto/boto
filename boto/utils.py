@@ -47,6 +47,7 @@ import time
 import logging.handlers
 import boto
 import tempfile
+import md5
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -420,3 +421,23 @@ class LRUCache(dict):
         item.previous = None
         item.next = self.head
         self.head.previous = self.head = item
+
+class Password:
+    def __init__(self, str):
+        self.str = str
+
+    def set(self, value):
+        m = md5.new()
+        m.update(value)
+        self.str = m.hexdigest()
+   
+    def __str__(self):
+        return self.str
+   
+    def __eq__(self, other):
+        m = md5.new()
+        m.update(other)
+        return m.hexdigest() == self.str
+
+    def __len__(self):
+        return len(self.str)

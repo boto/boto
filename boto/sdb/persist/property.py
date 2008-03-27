@@ -22,6 +22,8 @@
 from boto.exception import SDBPersistanceError
 from boto.sdb.persist import get_domain
 from boto.sdb.persist.checker import *
+from boto.utils import Password
+import md5
 
 class Property(object):
 
@@ -85,6 +87,22 @@ class StringProperty(ScalarProperty):
 
     def __init__(self, **params):
         ScalarProperty.__init__(self, StringChecker, **params)
+
+class PasswordProperty(ScalarProperty):
+    """
+    MD5 Hashed password
+    """
+
+    def __init__(self, **params):
+        ScalarProperty.__init__(self, PasswordChecker, **params)
+
+    def __set__(self, obj, value):
+        p = Password()
+        p.set(value)
+        ScalarProperty.__set__(self, obj, p)
+
+    def __get__(self, obj, objtype):
+        return Password(ScalarProperty.__get__(self, obj, objtype))
 
 class SmallPositiveIntegerProperty(ScalarProperty):
 
@@ -189,38 +207,33 @@ class MultiValueProperty(Property):
 
     def __init__(self, checker_class, **params):
         Property.__init__(self, checker_class, **params)
-        self._list = None
-
-    def __repr__(self):
-        if self._list == None:
-            return '[]'
-        else:
-            return repr(self._list)
-
-    def append(self, value):
-        self.checker.check(value)
-        self._list.append(value)
-        domain = get_domain()
-        try:
-            domain.put_attributes(self.object.id, {self.name : self.checker.to_string(value)}, replace=False)
-        except:
-            print 'problem appending %s' % value
 
     def __get__(self, obj, objtype):
+        if obj:
+            try:
+                value = getattr(obj, self.slot_name)
+            except AttributeError:
+                if obj.auto_update:
+                    self.load(obj)
+                    value = getattr(obj, self.slot_name)
+                else:
+                    value = MultiValue(self, obj, [])
+                    setattr(obj, self.slot_name, value)
+        return value
+
+    def load(self, obj):
         if obj != None:
-            self.object = obj
-            if self._list == None:
-                self._list = []
-                domain = get_domain()
-                a = domain.get_attributes(obj.id, self.name)
-                if self.name in a:
-                    lst = a[self.name]
-                    if not isinstance(lst, list):
-                        lst = [lst]
-                    for value in lst:
-                        value = self.checker.from_string(value)
-                        self._list.append(value)
-        return self
+            _list = []
+            domain = get_domain()
+            a = domain.get_attributes(obj.id, self.name)
+            if self.name in a:
+                lst = a[self.name]
+                if not isinstance(lst, list):
+                    lst = [lst]
+                for value in lst:
+                    value = self.checker.from_string(value)
+                    _list.append(value)
+        setattr(obj, self.slot_name, MultiValue(self, obj, _list))
 
     def __set__(self, obj, value):
         if not isinstance(value, list):
@@ -234,10 +247,6 @@ class MultiValueProperty(Property):
             domain.put_attributes(obj.id, {self.name : str_list}, replace=True)
         except:
             print 'problem setting value: %s' % value
-
-    def __getitem__(self, key):
-        if self._list != None:
-            return self._list[key]
 
 class StringListProperty(MultiValueProperty):
 
@@ -305,4 +314,33 @@ class HasManyProperty(Property):
     def __get__(self, obj, objtype):
         return self
 
+
+class MultiValue:
+    """
+    Special Multi Value for boto persistence layer to allow us to do 
+    obj.list.append(foo)
+    """
+    def __init__(self, property, obj, _list):
+        self.checker = property.checker
+        self.name = property.name
+        self.object = obj
+        self._list = _list
+
+    def __repr__(self):
+        return repr(self._list)
+
+    def __getitem__(self, key):
+        return self._list.__getitem__(key)
+
+    def __delitem__(self, key):
+        item = self[key]
+        self._list.__delitem__(key)
+        domain = get_domain()
+        domain.delete_attributes(self.object.id, {self.name: [self.checker.to_string(item)]})
+
+    def append(self, value):
+        self.checker.check(value)
+        self._list.append(value)
+        domain = get_domain()
+        domain.put_attributes(self.object.id, {self.name: self.checker.to_string(value)}, replace=False)
 

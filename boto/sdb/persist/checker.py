@@ -23,6 +23,7 @@ from datetime import datetime
 from boto.s3.key import Key
 from boto.sdb.persist import revive_object_from_id, get_s3_connection
 from boto.exception import SDBPersistanceError
+from boto.utils import Password
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -78,6 +79,14 @@ class StringChecker(ValueChecker):
     def to_string(self, value):
         self.check(value)
         return value
+
+class PasswordChecker(StringChecker):
+    def check(self, value):
+        if isinstance(value, str) or isinstance(value, unicode) or isinstance(value, Password):
+            if len(value) > self.maxlength:
+                raise ValueError, 'Length of value greater than maxlength'
+        else:
+            raise TypeError, 'Expecting String, got %s' % type(value)
 
 class IntegerChecker(ValueChecker):
 

@@ -69,10 +69,8 @@ class Installer(boto.pyami.installers.Installer):
         """
         Create a user on the local system
         """
-        self.run("useradd %s" % user)
+        self.run("useradd -m %s" % user)
         usr =  getpwnam(user)
-        os.mkdir(usr[5])
-        os.chown(usr[5], usr[2], usr[3])
         return usr
 
 
