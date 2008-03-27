@@ -60,7 +60,7 @@ class SDBConnection(AWSQueryConnection):
                                     host, debug, https_connection_factory)
         self.box_usage = 0.0
 
-    def build_name_value_list(self, params, attributes, replace):
+    def build_name_value_list(self, params, attributes, replace=False):
         keys = attributes.keys()
         keys.sort()
         i = 1
