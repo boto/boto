@@ -206,11 +206,27 @@ class SDBConnection(AWSQueryConnection):
             raise SDBResponseError(response.status, response.reason, body)
         
     def delete_attributes(self, domain_or_name, item_name, attr_names=None):
+        """
+        Delete attributes from a given item in a domain.
+        Parameters:
+            domain__or_name - either a domain object or the name of a domain in SimpleDB
+            item_name - the name of the SDB item the attributes will be
+                        removed from
+            attributes - either a list containing attribute names which will cause
+                         all values associated with that attribute name to be deleted or
+                         a dict containing the attribute names and keys and list of values
+                         to delete as the value
+        Returns:
+            Boolean True or raises an exception
+        """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
                   'ItemName' : item_name}
         if attr_names:
-            self.build_name_list(params, attr_names)
+            if isinstance(attr_names, list):
+                self.build_name_list(params, attr_names)
+            elif isinstance(attr_names, dict):
+                self.build_name_value_list(params, attr_names)
         response = self.make_request('DeleteAttributes', params)
         body = response.read()
         if response.status == 200:
