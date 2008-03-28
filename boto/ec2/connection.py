@@ -93,7 +93,7 @@ class EC2Connection(AWSQueryConnection):
 
     # Image methods
         
-    def get_all_images(self, image_ids=None, owners=None, executable_by=None, image_type=None):
+    def get_all_images(self, image_ids=None, owners=None, executable_by=None):
         params = {}
         # if user passed in a single image_id, turn it into a list
         if image_ids:
@@ -102,8 +102,6 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, owners, 'Owner')
         if executable_by:
             self.build_list_params(params, executable_by, 'ExecutableBy')
-        if image_type:
-            params['ImageType'] = image_type
         return self.get_list('DescribeImages', params, Image)
 
     def register_image(self, image_location):
