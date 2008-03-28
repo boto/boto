@@ -100,10 +100,20 @@ class Image:
         return self.connection.reset_image_attribute(self.id,
                                                      'launchPermission')
 
+    def get_kernel(self):
+        img_attrs =self.connection.get_image_attribute(self.id, 'kernel')
+        return img_attrs.kernel
+
+    def get_ramdisk(self):
+        img_attrs = self.connection.get_image_attribute(self.id, 'ramdisk')
+        return img_attrs.ramdisk
+
 class ImageAttribute:
 
     def __init__(self, parent=None):
         self.name = None
+        self.kernel = None
+        self.ramdisk = None
         self.attrs = {}
 
     def startElement(self, name, attrs, connection):
@@ -129,5 +139,9 @@ class ImageAttribute:
             self.image_id = value
         elif name == 'productCode':
             self.attrs['product_codes'].append(value)
+        elif name == 'kernel':
+            self.kernel = value
+        elif name == 'ramdisk':
+            self.ramdisk = value
         else:
             setattr(self, name, value)

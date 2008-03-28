@@ -76,6 +76,9 @@ class Instance:
         self.instance_type = None
         self.launch_time = None
         self.image_id = None
+        self.placement = None
+        self.kernel = None
+        self.ramdisk = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -109,6 +112,12 @@ class Instance:
             self.instance_type = value
         elif name == 'launchTime':
             self.launch_time = value
+        elif name == 'availabilityZone':
+            self.placement = value
+        elif name == 'kernelId':
+            self.kernel = value
+        elif name == 'ramdiskId':
+            self.ramdisk = value
         else:
             setattr(self, name, value)
 
