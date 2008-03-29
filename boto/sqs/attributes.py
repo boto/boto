@@ -25,7 +25,8 @@ Represents an SQS Attribute Name/Value set
 
 class Attributes(dict):
     
-    def __init__(self):
+    def __init__(self, parent):
+        self.parent = parent
         self.current_key = None
         self.current_value = None
 

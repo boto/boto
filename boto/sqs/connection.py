@@ -44,6 +44,7 @@ class SQSConnection(AWSQueryConnection):
     APIVersion = '2008-01-01'
     SignatureVersion = '1'
     DefaultContentType = 'text/plain'
+    ResponseError = SQSError
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
@@ -57,14 +58,7 @@ class SQSConnection(AWSQueryConnection):
         params = {'QueueName': queue_name}
         if visibility_timeout:
             params['DefaultVisibilityTimeout'] = '%d' % (visibility_timeout,)
-        response = self.make_request('CreateQueue', params, '/')
-        body = response.read()
-        if response.status >= 300:
-            raise SQSError(response.status, response.reason, body)
-        q = Queue(self)
-        h = handler.XmlHandler(q, self)
-        xml.sax.parseString(body, h)
-        return q
+        return self.get_object('CreateQueue', params, Queue)
 
     def delete_queue(self, queue, force_deletion=False):
         """
@@ -83,105 +77,36 @@ class SQSConnection(AWSQueryConnection):
             should probably return a Boolean indicating success or
             failure.
         """
-        response = self.make_request('DeleteQueue', None, queue.id)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SQSError(response.status, response.reason, body)
+        return self.get_status('DeleteQueue', None, queue.id)
 
     def get_queue_attributes(self, queue_url, attribute='All'):
         params = {'AttributeName' : attribute}
-        response = self.make_request('GetQueueAttributes', params, queue_url)
-        body = response.read()
-        if response.status == 200:
-            attrs = Attributes()
-            h = handler.XmlHandler(attrs, self)
-            xml.sax.parseString(body, h)
-            return attrs
-        else:
-            raise SQSError(response.status, response.reason, body)
+        return self.get_object('GetQueueAttributes', params, Attributes, queue_url)
 
     def set_queue_attribute(self, queue_url, attribute, value):
         params = {'Attribute.Name' : attribute, 'Attribute.Value' : value}
-        response = self.make_request('SetQueueAttributes', params, queue_url)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SQSError(response.status, response.reason, body)
-
-    def change_message_visibility(self, queue_url, message_id, vtimeout):
-        params = {'MessageId' : message_id,
-                  'VisibilityTimeout' : vtimeout}
-        response = self.make_request('ChangeMessageVisibility', params,
-                                     queue_url)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SQSError(response.status, response.reason, body)
+        return self.get_status('SetQueueAttributes', params, queue_url)
 
     def receive_message(self, queue_url, number_messages=1,
                         visibility_timeout=None, message_class=Message):
         params = {'MaxNumberOfMessages' : number_messages}
         if visibility_timeout:
             params['VisibilityTimeout'] = visibility_timeout
-        response = self.make_request('ReceiveMessage', params, queue_url)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet([('Message', message_class)])
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SQSError(response.status, response.reason, body)
+        return self.get_list('ReceiveMessage', params, [('Message', message_class)], queue_url)
 
     def delete_message(self, queue_url, message_id, receipt_handle):
         params = {'ReceiptHandle' : receipt_handle}
-        response = self.make_request('DeleteMessage', params, queue_url)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SQSError(response.status, response.reason, body)
+        return self.get_status('DeleteMessage', params, queue_url)
 
     def send_message(self, queue_url, message_content):
         params = {'MessageBody' : message_content}
-        response = self.make_request('SendMessage', params, queue_url)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SQSError(response.status, response.reason, body)
+        return self.get_status('SendMessage', params, queue_url)
 
     def get_all_queues(self, prefix=''):
         params = {}
         if prefix:
             params['QueueNamePrefix'] = prefix
-        response = self.make_request('ListQueues', params)
-        body = response.read()
-        if response.status >= 300:
-            raise SQSError(response.status, response.reason, body)
-        rs = ResultSet([('QueueUrl', Queue)])
-        h = handler.XmlHandler(rs, self)
-        xml.sax.parseString(body, h)
-        return rs
+        return self.get_list('ListQueues', params, [('QueueUrl', Queue)])
         
     def get_queue(self, queue_name):
         rs = self.get_all_queues(queue_name)

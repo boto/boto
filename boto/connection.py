@@ -47,9 +47,11 @@ import time
 import urllib, urlparse
 import os
 import xml.sax
+import boto
 from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.resultset import ResultSet
 import boto.utils
-from boto import config, UserAgent
+from boto import config, UserAgent, handler
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -272,6 +274,7 @@ class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''
     SignatureVersion = '1'
+    ResponseError = BotoServerError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -313,3 +316,45 @@ class AWSQueryConnection(AWSAuthConnection):
             items = [items]
         for i in range(1, len(items)+1):
             params['%s.%d' % (label, i)] = items[i-1]
+            
+    # generics
+
+    def get_list(self, action, params, markers, path='/'):
+        response = self.make_request(action, params, path)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet(markers)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        
+    def get_object(self, action, params, cls, path='/'):
+        response = self.make_request(action, params, path)
+        body = response.read()
+        if response.status == 200:
+            obj = cls(self)
+            h = handler.XmlHandler(obj, self)
+            xml.sax.parseString(body, h)
+            return obj
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        
+    def get_status(self, action, params, path='/'):
+        response = self.make_request(action, params, path)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet()
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.status
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+

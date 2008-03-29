@@ -121,16 +121,6 @@ class RawMessage:
         """
         return self.encode(self._body)
     
-    def change_visibility(self, vtimeout):
-        """
-        Convenience function to allow you to directly change the
-        invisibility timeout for an individual message that has been
-        read from an SQS queue.  This won't affect the default visibility
-        timeout of the queue.
-        """
-        return self.queue.connection.change_message_visibility(self.queue.id,
-                                                               self.id,
-                                                               vtimeout)
 class Message(RawMessage):
     """
     The default Message class used for SQS queues.  This class automatically

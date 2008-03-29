@@ -23,7 +23,7 @@ import urllib
 import xml.sax
 import base64
 import boto
-from boto import handler, config
+from boto import config
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
@@ -38,6 +38,7 @@ class EC2Connection(AWSQueryConnection):
 
     APIVersion = '2008-02-01'
     SignatureVersion = '1'
+    ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -50,71 +51,22 @@ class EC2Connection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     host, debug, https_connection_factory)
 
-    # generics
-
-    def get_list(self, action, params, cls):
-        response = self.make_request(action, params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet([('item', cls)])
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise EC2ResponseError(response.status, response.reason, body)
-        
-    def get_object(self, action, params, cls):
-        response = self.make_request(action, params)
-        body = response.read()
-        if response.status == 200:
-            obj = cls(self)
-            h = handler.XmlHandler(obj, self)
-            xml.sax.parseString(body, h)
-            return obj
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise EC2ResponseError(response.status, response.reason, body)
-        
-    def get_status(self, action, params):
-        response = self.make_request(action, params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs.status
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise EC2ResponseError(response.status, response.reason, body)
-
     # Image methods
         
     def get_all_images(self, image_ids=None, owners=None, executable_by=None):
         params = {}
-        # if user passed in a single image_id, turn it into a list
         if image_ids:
             self.build_list_params(params, image_ids, 'ImageId')
         if owners:
             self.build_list_params(params, owners, 'Owner')
         if executable_by:
             self.build_list_params(params, executable_by, 'ExecutableBy')
-        return self.get_list('DescribeImages', params, Image)
+        return self.get_list('DescribeImages', params, [('item', Image)])
 
     def register_image(self, image_location):
         params = {'ImageLocation':image_location}
-        response = self.make_request('RegisterImage', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs.imageId
-        else:
-            raise EC2ResponseError(response.status, response.reason, body)
+        rs = self.get_object('RegisterImage', params, ResultSet)
+        return rs.imageId
         
     def deregister_image(self, image_id):
         return self.get_status('DeregisterImage', {'ImageId':image_id})
@@ -148,7 +100,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
-        return self.get_list('DescribeInstances', params, Reservation)
+        return self.get_list('DescribeInstances', params, [('item', Reservation)])
 
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,
@@ -181,7 +133,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
-        return self.get_list('TerminateInstances', params, Instance)
+        return self.get_list('TerminateInstances', params, [('item', Instance)])
 
     def get_console_output(self, instance_id):
         params = {}
@@ -197,15 +149,8 @@ class EC2Connection(AWSQueryConnection):
     def confirm_product_instance(self, product_code, instance_id):
         params = {'ProductCode' : product_code,
                   'InstanceId' : instance_id}
-        response = self.make_request('ConfirmProductInstance', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return (rs.status, rs.ownerId)
-        else:
-            raise EC2ResponseError(response.status, response.reason, body)
+        rs = self.get_object('ConfirmProductInstance', params, ResultSet)
+        return (rs.status, rs.ownerId)
 
     # Zone methods
 
@@ -213,7 +158,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if zones:
             self.build_list_params(params, zones, 'ZoneName')
-        return self.get_list('DescribeAvailabilityZones', params, Zone)
+        return self.get_list('DescribeAvailabilityZones', params, [('item', Zone)])
 
     # Address methods
 
@@ -221,7 +166,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if addresses:
             self.build_list_params(params, addresses, 'PublicIp')
-        return self.get_list('DescribeAddresses', params, Address)
+        return self.get_list('DescribeAddresses', params, [('item', Address)])
 
     def allocate_address(self):
         return self.get_object('AllocateAddress', None, Address)
@@ -244,7 +189,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if keynames:
             self.build_list_params(params, keynames, 'KeyName')
-        return self.get_list('DescribeKeyPairs', params, KeyPair)
+        return self.get_list('DescribeKeyPairs', params, [('item', KeyPair)])
         
     def create_key_pair(self, key_name):
         params = {'KeyName':key_name}
@@ -260,7 +205,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
-        return self.get_list('DescribeSecurityGroups', params, SecurityGroup)
+        return self.get_list('DescribeSecurityGroups', params, [('item', SecurityGroup)])
 
     def create_security_group(self, name, description):
         params = {'GroupName':name, 'GroupDescription':description}

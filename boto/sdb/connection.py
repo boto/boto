@@ -49,6 +49,7 @@ class SDBConnection(AWSQueryConnection):
 
     APIVersion = '2007-11-07'
     SignatureVersion = '1'
+    ResponseError = SDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
@@ -117,28 +118,13 @@ class SDBConnection(AWSQueryConnection):
             params['MaxNumberOfDomains'] = max_domains
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListDomains', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet([('DomainName', Domain)])
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
+        return self.get_list('ListDomains', params, [('DomainName', Domain)])
         
     def create_domain(self, domain_name):
         params = {'DomainName':domain_name}
-        response = self.make_request('CreateDomain', params)
-        body = response.read()
-        if response.status == 200:
-            domain = Domain(self)
-            domain.name = domain_name
-            h = handler.XmlHandler(domain, self)
-            xml.sax.parseString(body, h)
-            return domain
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
+        d = self.get_object('CreateDomain', params, Domain)
+        d.name = domain_name
+        return d
 
     def get_domain_and_name(self, domain_or_name):
         if (isinstance(domain_or_name, Domain)):
@@ -149,15 +135,7 @@ class SDBConnection(AWSQueryConnection):
     def delete_domain(self, domain_or_name):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
-        response = self.make_request('DeleteDomain', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return True
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
+        return self.get_status('DeleteDomain', params)
         
     def put_attributes(self, domain_or_name, item_name, attributes, replace=True):
         """
@@ -178,15 +156,7 @@ class SDBConnection(AWSQueryConnection):
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         self.build_name_value_list(params, attributes, replace)
-        response = self.make_request('PutAttributes', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return True
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
+        return self.get_status('PutAttributes', params)
 
     def get_attributes(self, domain_or_name, item_name, attribute_name=None, item=None):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
@@ -227,15 +197,7 @@ class SDBConnection(AWSQueryConnection):
                 self.build_name_list(params, attr_names)
             elif isinstance(attr_names, dict):
                 self.build_name_value_list(params, attr_names)
-        response = self.make_request('DeleteAttributes', params)
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return True
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
+        return self.get_status('DeleteAttributes', params)
         
     def query(self, domain_or_name, query='', max_items=None, next_token=None):
         """
@@ -248,16 +210,7 @@ class SDBConnection(AWSQueryConnection):
             params['MaxNumberOfItems'] = max_items
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('Query', params)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
+        return self.get_object('Query', params, ResultSet)
 
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """

@@ -145,7 +145,9 @@ class Queue:
 
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None):
-        return self.connection.receive_message(self.url, number_messages=num_messages, visibility_timeout=visibility_timeout, message_class=self.message_class)
+        return self.connection.receive_message(self.url, number_messages=num_messages,
+                                               visibility_timeout=visibility_timeout,
+                                               message_class=self.message_class)
 
     def delete_message(self, message):
         return self.connection.delete_message(self.url, message.id, message.receipt_handle)

@@ -47,6 +47,7 @@ class ResultSet(list):
         self.marker = None
         self.is_truncated = False
         self.next_token = None
+        self.status = True
 
     def __iter__(self):
         return self
