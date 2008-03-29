@@ -284,31 +284,57 @@ class AWSQueryConnection(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port, debug,
                                    https_connection_factory)
 
+    def calc_signature_0(self, params):
+        boto.log.debug('using calc_signature_0')
+        h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+        s = params['Action'] + params['Timestamp']
+        h.update(s)
+        keys = params.keys()
+        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        qs = ''
+        for key in keys:
+            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
+        return (qs, base64.b64encode(h.digest()))
+
+    def calc_signature_1(self, params):
+        boto.log.debug('using calc_signature_1')
+        h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+        keys = params.keys()
+        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        qs = ''
+        for key in keys:
+            h.update(key)
+            val = params[key]
+            if not isinstance(val, str) and not isinstance(val, unicode):
+                val = str(val)
+            h.update(val)
+            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
+        return (qs, base64.b64encode(h.digest()))
+
+    def get_signature(self, params):
+        if self.SignatureVersion == '1':
+            t = self.calc_signature_1(params)
+        elif self.SignatureVersion == '0':
+            t = self.calc_signature_0(params)
+        else:
+            raise BotoClientError('Unknown Signature Version: %s' % self.SignatureVersion)
+        return t
+
     def make_request(self, action, params=None, path=None, verb='GET'):
         headers = {'User-Agent' : UserAgent}
         if path == None:
             path = '/'
         if params == None:
             params = {}
-        h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
         params['Action'] = action
         params['Version'] = self.APIVersion
         params['AWSAccessKeyId'] = self.aws_access_key_id
         params['SignatureVersion'] = self.SignatureVersion
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
-        qs = ''
-        for key in keys:
-            h.update(key)
-            h.update(str(params[key]))
-            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
-        signature = base64.b64encode(h.digest())
+        qs, signature = self.get_signature(params)
         qs = path + '?' + qs + 'Signature=' + urllib.quote(signature)
-        
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
-
         return self._mexe(verb, qs, None, headers)
 
     def build_list_params(self, params, items, label):
