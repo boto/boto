@@ -52,16 +52,54 @@ class AWSConnection(object):
             "Operation":"ItemSearch",
             "SearchIndex":index,
             "Title":urllib.quote(query),
-            "Version":"2007-07-16"
+            "AssociateTag":self.AssociateTag,
+            "Version":"2008-03-03"
         }
-        f = urllib.urlopen(self.base_url % urllib.urlencode(parameters))
+        handler = urllib.urlopen(self.base_url % urllib.urlencode(parameters))
+        return self._ItemSearchFromHandler(handler)
+        
+    
+    def _ItemSearchFromHandler(self, handler):
+        tree = etree.parse(handler)
 
-        tree = etree.parse(f)
-
-        items = tree.xpath("/amazon:ItemSearchResponse/amazon:Items/amazon:Item", namespaces={'amazon':AMAZON_NAMESPACE})
+        items = tree.xpath("/amazon:ItemSearchResponse/amazon:Items/amazon:Item",
+                           namespaces={'amazon':AMAZON_NAMESPACE})
 
 
         result = SearchResult()
         result.items = [Item.fromXML(item) for item in items]
         return result
+
+    def ItemLookup(self, item_id):
         
+        parameters = {
+            "Service":"AWSECommerceService",
+            "AWSAccessKeyId":self.AccessKeyID,
+            "Operation":"ItemLookup",
+            "AssociateTag":self.AssociateTag,
+            "ItemId":item_id,
+            "Version":"2008-03-03"
+        }
+        handler = urllib.urlopen(self.base_url % urllib.urlencode(parameters))
+        return self._ItemLookupFromHandler(handler)
+    
+    def _ItemLookupFromHandler(self, handler):
+        tree = etree.parse(handler)
+
+        xml_item = tree.xpath("/amazon:ItemLookupResponse/amazon:Items/amazon:Item",
+                              namespaces={'amazon':AMAZON_NAMESPACE})
+
+        item = Item.fromXML(xml_item[0])
+        return item
+    
+    def SimilarityLookup(self, item_id):
+        parameters = {
+            "Service":"AWSECommerceService",
+            "AWSAccessKeyId":self.AccessKeyID,
+            "Operation":"SimilarityLookup",
+            "ItemId":item_id,
+            "Version":"2008-03-03"
+        }
+        f = urllib.urlopen(self.base_url % urllib.urlencode(parameters))
+        
+        print f.read()

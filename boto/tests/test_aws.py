@@ -27,11 +27,11 @@ Some unit tests for the AWS
 """
 
 import unittest
-import pmock
 import StringIO
 import os
 
 from boto.tests.aws_data import item_search_response_xml
+from boto.tests.aws_data import item_lookup_response_xml
 
 from boto.aws.connection import AWSConnection
 from boto.aws.item import Item
@@ -52,11 +52,8 @@ class AWSConnectionTest(unittest.TestCase):
         
         # Mock object for urllib
         import urllib
-        mock = pmock.Mock()
-        mock.expects(pmock.once()).method("urlopen").will(pmock.return_value(StringIO.StringIO(item_search_response_xml)))
-        urllib.urlopen = mock.urlopen
-        
-        result = connection.ItemSearch("Harry Potter", index="Books")
+        response_handler = StringIO.StringIO(item_search_response_xml)
+        result = connection._ItemSearchFromHandler(response_handler)
         
         self.assertEqual(len(result.items), 10)
         
@@ -81,6 +78,20 @@ class AWSConnectionTest(unittest.TestCase):
         self.assertEqual(third_item.ItemAttributes['ProductGroup'], u"Book")
         self.assertEqual(third_item.ItemAttributes['Title'], u"Harry Potter and the Half-Blood Prince (Book 6)")
 
+    def test_ItemLookup(self):
+        connection = AWSConnection(self.AccessKeyID, self.AssociateTag)
+        connection.ItemLookup("0321503619")
+        
+        response_handler = StringIO.StringIO(item_lookup_response_xml)
+        item = connection._ItemLookupFromHandler(response_handler)
+        
+        self.assertEqual(item.ASIN, "0321503619")
+        self.assertEqual(item.DetailPageURL, "http://www.amazon.com/gp/redirect.html%3FASIN=0321503619%26tag=simplercode-21%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0321503619%253FSubscriptionId=06Z1EY48VX81JPFG3082")
+        self.assertEqual(item.ItemAttributes['Author'], u"Aaron Hillegass")
+        self.assertEqual(item.ItemAttributes['Manufacturer'], u"Addison-Wesley Professional")
+        self.assertEqual(item.ItemAttributes['ProductGroup'], u"Book")
+        self.assertEqual(item.ItemAttributes['Title'], u"Cocoa(R) Programming for Mac(R) OS X (3rd Edition)")
+        
 if __name__ == '__main__':
     unittest.main()
 

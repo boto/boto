@@ -56,7 +56,7 @@ http://www.amazon.com/gp/redirect.html%3FASIN=0321503619%26tag=ws%26lcode=xm2%26
 </Item>""")
 
 item_search_response_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<ItemSearchResponse xmlns="http://webservices.amazon.com/AWSECommerceService/2007-07-16">
+<ItemSearchResponse xmlns="http://webservices.amazon.com/AWSECommerceService/2008-03-03">
   <OperationRequest>
     <HTTPHeaders>
       <Header Name="UserAgent" Value="Python-urllib/1.17"></Header>
@@ -116,4 +116,41 @@ item_search_response_xml = """<?xml version="1.0" encoding="UTF-8"?>
       </ItemAttributes>
     </Item>
     <Item><ASIN>0545044251</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0545044251%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0545044251%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J. K. Rowling</Author><Manufacturer>Arthur A. Levine Books</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter Boxset Books 1-7</Title></ItemAttributes></Item><Item><ASIN>0590353403</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0590353403%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0590353403%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J.K. Rowling</Author><Creator Role="Illustrator">Mary GrandPré</Creator><Manufacturer>Scholastic Press</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter and the Sorcerer's Stone (Book 1)</Title></ItemAttributes></Item><Item><ASIN>0439358078</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0439358078%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0439358078%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J. K. Rowling</Author><Author>Mary GrandPré</Author><Manufacturer>Scholastic Paperbacks</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter and the Order of the Phoenix (Book 5)</Title></ItemAttributes></Item><Item><ASIN>0439136350</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0439136350%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0439136350%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J.K. Rowling</Author><Creator Role="Illustrator">Mary GrandPré</Creator><Manufacturer>Scholastic</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter and the Prisoner of Azkaban (Book 3)</Title></ItemAttributes></Item><Item><ASIN>0439064864</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0439064864%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0439064864%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J.K. Rowling</Author><Creator Role="Illustrator">Mary GrandPré</Creator><Manufacturer>Arthur A. Levine Books</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter and the Chamber of Secrets (Book 2)</Title></ItemAttributes></Item><Item><ASIN>0439139597</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0439139597%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0439139597%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J.K. Rowling</Author><Creator Role="Illustrator">Mary GrandPré</Creator><Manufacturer>Scholastic Press</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter and the Goblet of Fire (Book 4)</Title></ItemAttributes></Item><Item><ASIN>043932162X</ASIN><DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=043932162X%26tag=ws%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/043932162X%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL><ItemAttributes><Author>J.K. Rowling</Author><Manufacturer>Arthur A. Levine Books</Manufacturer><ProductGroup>Book</ProductGroup><Title>Harry Potter Schoolbooks Box Set: From the Library of Hogwarts: Fantastic Beasts and Where To Find Them, Quidditch Through The Ages</Title></ItemAttributes></Item></Items></ItemSearchResponse>
+"""
+
+item_lookup_response_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<ItemLookupResponse xmlns="http://webservices.amazon.com/AWSECommerceService/2008-03-03">
+	<OperationRequest>
+		<HTTPHeaders>
+			<Header Name="UserAgent" Value="Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_2; fr-fr) AppleWebKit/525.13 (KHTML, like Gecko) Version/3.1 Safari/525.13"/>
+		</HTTPHeaders>
+		<RequestId>02QTX779K1PTJN361RVB</RequestId>
+		<Arguments>
+			<Argument Name="AssociateTag" Value="simplercode-21"/>
+			<Argument Name="ItemId" Value="0321503619"/>
+			<Argument Name="Service" Value="AWSECommerceService"/>
+			<Argument Name="Operation" Value="ItemLookup"/>
+			<Argument Name="AWSAccessKeyId" Value="06Z1EY48VX81JPFG3082"/>
+		</Arguments>
+		<RequestProcessingTime>0.0198698043823242</RequestProcessingTime>
+	</OperationRequest>
+	<Items>
+		<Request>
+			<IsValid>True</IsValid>
+			<ItemLookupRequest>
+				<ItemId>0321503619</ItemId>
+			</ItemLookupRequest>
+		</Request>
+		<Item>
+			<ASIN>0321503619</ASIN>
+			<DetailPageURL>http://www.amazon.com/gp/redirect.html%3FASIN=0321503619%26tag=simplercode-21%26lcode=xm2%26cID=2025%26ccmID=165953%26location=/o/ASIN/0321503619%253FSubscriptionId=06Z1EY48VX81JPFG3082</DetailPageURL>
+			<ItemAttributes>
+				<Author>Aaron Hillegass</Author>
+				<Manufacturer>Addison-Wesley Professional</Manufacturer>
+				<ProductGroup>Book</ProductGroup>
+				<Title>Cocoa(R) Programming for Mac(R) OS X (3rd Edition)</Title>
+			</ItemAttributes>
+		</Item>
+	</Items>
+</ItemLookupResponse>
 """

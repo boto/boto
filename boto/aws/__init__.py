@@ -20,4 +20,4 @@
 # IN THE SOFTWARE.
 #
 
-AMAZON_NAMESPACE = "http://webservices.amazon.com/AWSECommerceService/2007-07-16"
+AMAZON_NAMESPACE = "http://webservices.amazon.com/AWSECommerceService/2008-03-03"
