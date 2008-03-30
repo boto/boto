@@ -68,11 +68,11 @@ class Image:
 
     def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None,
-            addressing_type=None, instance_type='m1.small'):
+            addressing_type=None, instance_type='m1.small', placement=None):
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,
                                              user_data, addressing_type,
-                                             instance_type)
+                                             instance_type, placement)
 
     def deregister(self):
         return self.connection.deregister_image(self.id)
