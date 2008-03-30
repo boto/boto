@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os, pwd, logging
+import os, pwd
 import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config, BotoConfigPath
@@ -116,9 +116,6 @@ class Bootstrap(ScriptBase):
 if __name__ == "__main__":
     # because bootstrap starts before any logging configuration can be loaded from
     # the boto config files, we will manually enable logging to /var/log/boto.log
-    logging.basicConfig(level=logging.NOTSET,
-                        format='%(asctime)s %(levelname)s %(message)s',
-                        filename='/var/log/boto.log',
-                        filemode='w')
+    boto.set_file_logger('bootstrap', '/var/log/boto.log')
     bs = Bootstrap()
     bs.main()

@@ -24,7 +24,7 @@ import os, sys
 import logging
 import logging.config
 
-Version = '1.1c'
+Version = '1.2a'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
 
@@ -37,6 +37,20 @@ def init_logging():
 
 log = logging
 init_logging()
+
+# convenience function to set logging to a particular file
+def set_file_logger(name, filepath, level=logging.INFO, format_string=None):
+    global log
+    if not format_string:
+        format_string = "%(asctime)s %(name)s [%(levelname)s]:%(message)s"
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    fh = logging.FileHandler(filepath)
+    fh.setLevel(level)
+    formatter = logging.Formatter()
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    log = logger
 
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.sqs.connection import SQSConnection

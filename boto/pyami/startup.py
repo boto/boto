@@ -52,6 +52,8 @@ class Startup(ScriptBase):
         self.notify('Startup Completed for %s' % config.get('Instance', 'instance-id'))
 
 if __name__ == "__main__":
+    if not config.has_section('loggers'):
+        boto.set_file_logger('startup', '/var/log/boto.log')
     sys.path.append(config.get('Pyami', 'working_dir'))
     su = Startup()
     su.main()
