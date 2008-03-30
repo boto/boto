@@ -53,12 +53,12 @@ class Service(ScriptBase):
 #            mimetypes.init(mimetype_files)
 
     def create_connections(self):
-        queue_name = boto.config.get(self.name, 'input_queue_name', None)
+        queue_name = boto.config.get(self.name, 'input_queue', None)
         if queue_name:
             self.input_queue = self.get_queue(queue_name)
         else:
             self.input_queue = None
-        queue_name = boto.config.get(self.name, 'output_queue_name', None)
+        queue_name = boto.config.get(self.name, 'output_queue', None)
         if queue_name:
             self.output_queue = self.get_queue(queue_name)
         else:
