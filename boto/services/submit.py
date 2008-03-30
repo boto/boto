@@ -25,31 +25,42 @@ import time, os
 
 class Submitter:
 
-    def __init__(self, bucket_name, queue_name, message_cls=ServiceMessage):
+    def __init__(self, bucket_name, queue_name=None, message_cls=ServiceMessage):
         self.s3 = boto.connect_s3()
-        self.sqs = boto.connect_sqs()
         self.bucket = self.s3.get_bucket(bucket_name)
-        self.queue = self.sqs.get_queue(queue_name)
-        self.queue.set_message_class(message_cls)
+        if queue_name:
+            self.sqs = boto.connect_sqs()
+            self.queue = self.sqs.get_queue(queue_name)
+            self.queue.set_message_class(message_cls)
+        else:
+            self.queue = None
 
-    def submit_file(self, path, metadata=None, cb=None, num_cb=0):
+    def get_key_name(self, fullpath, prefix):
+        print 'fullpath=%s, prefix=%s' % (fullpath, prefix)
+        key_name = fullpath[len(prefix):]
+        l = key_name.split(os.sep)
+        return '/'.join(l)
+
+    def write_message(self, key, metadata):
+        if self.queue:
+            m = ServiceMessage()
+            m.for_key(key, metadata)
+            self.queue.write(m)
+
+    def submit_file(self, path, metadata=None, cb=None, num_cb=0, prefix='/'):
         if not metadata:
             metadata = {}
-        names = boto.config.get('Service', 'filenames', 'preserve')
-        if names == 'preserve':
-            key_name = os.path.split(path)[1]
-        elif names == 'preserve_full':
-            key_name = path
-        else:
-            key_name = None
+        key_name = self.get_key_name(path, prefix)
+        print 'key_name=%s' % key_name
         k = self.bucket.new_key(key_name)
         k.update_metadata(metadata)
         k.set_contents_from_filename(path, replace=False, cb=cb, num_cb=num_cb)
-        m = ServiceMessage()
-        m.for_key(k, metadata)
-        self.queue.write(m)
+        self.write_message(k, metadata)
 
-    def submit_path(self, path, tags=None, ignore_dirs=[], cb=None, num_cb=0, status=False):
+    def submit_path(self, path, tags=None, ignore_dirs=[], cb=None, num_cb=0, status=False, prefix='/'):
+        path = os.path.expanduser(path)
+        path = os.path.expandvars(path)
+        path = os.path.abspath(path)
         total = 0
         metadata = {}
         if tags:
@@ -67,7 +78,7 @@ class Submitter:
                     fullpath = os.path.join(root, file)
                     if status:
                         print 'Submitting %s' % fullpath
-                    self.submit_file(fullpath, metadata, cb, num_cb)
+                    self.submit_file(fullpath, metadata, cb, num_cb, prefix)
                     total += 1
         elif os.path.isfile(path):
             self.submit_file(path, metadata, cb, num_cb)
