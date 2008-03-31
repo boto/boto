@@ -32,9 +32,9 @@ class SonOfMMM(Service):
         self.log_path = os.path.join(self.working_dir, self.log_file)
         boto.set_file_logger(self.name, self.log_path)
         if boto.config.has_option('SonOfMMM', 'ffmpeg_args'):
-            self.command = 'ffmpeg ' + boto.config.get('SonOfMMM', 'ffmpeg_args')
+            self.command = '/usr/local/bin/ffmpeg ' + boto.config.get('SonOfMMM', 'ffmpeg_args')
         else:
-            self.command = 'ffmpeg -y -i %s %s'
+            self.command = '/usr/local/bin/ffmpeg -y -i %s %s'
         self.output_mimetype = boto.config.get('SonOfMMM', 'output_mimetype')
         if boto.config.has_option('SonOfMMM', 'output_ext'):
             self.output_ext = boto.config.get('SonOfMMM', 'output_ext')
