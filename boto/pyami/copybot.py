@@ -41,7 +41,7 @@ class CopyBot(ScriptBase):
         boto.log.info('dst=%s' % self.dst)
         try:
             for key in self.src:
-                boto.log.info('key=%s' % key.name)
+                boto.log.info('copying %d bytes from key=%s' % (key.size, key.name))
                 path = os.path.join(self.wdir, key.name)
                 key.get_contents_to_filename(path)
                 key.bucket = self.dst
