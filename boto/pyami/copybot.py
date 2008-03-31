@@ -28,19 +28,18 @@ class CopyBot(ScriptBase):
     def __init__(self):
         ScriptBase.__init__(self)
         self.wdir = boto.config.get('Pyami', 'working_dir')
-        self.instance_id = boto.config.get('Instance', 'instance-id')
         self.log_file = '%s.log' % self.instance_id
         self.log_path = os.path.join(self.wdir, self.log_file)
         boto.set_file_logger('CopyBot', self.log_path)
-        src_name = boto.config.get('CopyBot', 'src_bucket')
-        dst_name = boto.config.get('CopyBot', 'dst_bucket')
+        self.src_name = boto.config.get('CopyBot', 'src_bucket')
+        self.dst_name = boto.config.get('CopyBot', 'dst_bucket')
         self.s3 = boto.connect_s3()
-        self.src = self.s3.lookup(src_name)
+        self.src = self.s3.lookup(self.src_name)
         if not self.src:
-            boto.log.error('Source bucket does not exist: %s' % src_name)
-        self.dst = self.s3.lookup(dst_name)
+            boto.log.error('Source bucket does not exist: %s' % self.src_name)
+        self.dst = self.s3.lookup(self.dst_name)
         if not self.dst:
-            self.dst = self.s3.create_bucket(dst_name)
+            self.dst = self.s3.create_bucket(self.dst_name)
 
     def copy_keys(self):
         boto.log.info('src=%s' % self.src.name)
@@ -61,11 +60,14 @@ class CopyBot(ScriptBase):
         key.set_contents_from_filename(self.log_path)
         
     def main(self):
+        fp = StringIO.StringIO()
+        boto.config.dump_safe(fp)
+        self.notify('CopyBot (%s) Starting' % self.instance_id, fp.getvalue())
         if self.src and self.dst:
             self.copy_keys()
         if self.dst:
             self.copy_log()
-        boto.log.info('copy complete, shutting down')
+        self.notify('CopyBot (%s) Stopping' % self.instance_id, 'Complete')
         ec2 = boto.connect_ec2()
         ec2.terminate_instances([self.instance_id])
         
