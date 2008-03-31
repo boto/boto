@@ -25,7 +25,8 @@ import os
 
 class CopyBot(ScriptBase):
 
-    def __init__(self, config):
+    def __init__(self):
+        ScriptBase.__init__(self)
         self.wdir = boto.config.get('Pyami', 'working_dir')
         self.instance_id = boto.config.get('Instance', 'instance-id')
         self.log_file = '%s.log' % self.instance_id
