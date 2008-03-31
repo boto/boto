@@ -47,7 +47,7 @@ def set_file_logger(name, filepath, level=logging.INFO, format_string=None):
     logger.setLevel(level)
     fh = logging.FileHandler(filepath)
     fh.setLevel(level)
-    formatter = logging.Formatter()
+    formatter = logging.Formatter(format_string)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     log = logger
