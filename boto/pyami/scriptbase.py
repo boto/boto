@@ -22,7 +22,8 @@ class ScriptBase:
                 server = smtplib.SMTP(smtp_host)
                 smtp_user = boto.config.get_value('Notification', 'smtp_user', '')
                 smtp_pass = boto.config.get_value('Notification', 'smtp_pass', '')
-                server.login(smtp_user, smtp_pass)
+                if smtp_user:
+                    server.login(smtp_user, smtp_pass)
                 server.sendmail(from_string, to_string, msg)
                 server.quit()
             except:
