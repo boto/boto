@@ -30,9 +30,9 @@ class CopyBot(ScriptBase):
         self.wdir = boto.config.get('Pyami', 'working_dir')
         self.log_file = '%s.log' % self.instance_id
         self.log_path = os.path.join(self.wdir, self.log_file)
-        boto.set_file_logger('CopyBot', self.log_path)
-        self.src_name = boto.config.get('CopyBot', 'src_bucket')
-        self.dst_name = boto.config.get('CopyBot', 'dst_bucket')
+        boto.set_file_logger(self.name, self.log_path)
+        self.src_name = boto.config.get(self.name, 'src_bucket')
+        self.dst_name = boto.config.get(self.name, 'dst_bucket')
         self.s3 = boto.connect_s3()
         self.src = self.s3.lookup(self.src_name)
         if not self.src:
@@ -62,12 +62,14 @@ class CopyBot(ScriptBase):
     def main(self):
         fp = StringIO.StringIO()
         boto.config.dump_safe(fp)
-        self.notify('CopyBot (%s) Starting' % self.instance_id, fp.getvalue())
+        self.notify('%s (%s) Starting' % (self.name, self.instance_id), fp.getvalue())
         if self.src and self.dst:
             self.copy_keys()
         if self.dst:
             self.copy_log()
-        self.notify('CopyBot (%s) Stopping' % self.instance_id, 'Copy Operation Complete')
-        ec2 = boto.connect_ec2()
-        ec2.terminate_instances([self.instance_id])
+        self.notify('%s (%s) Stopping' % (self.name, self.instance_id),
+                    'Copy Operation Complete')
+        if boto.config.getbool(self.name, 'exit_on_completion', True):
+            ec2 = boto.connect_ec2()
+            ec2.terminate_instances([self.instance_id])
         
