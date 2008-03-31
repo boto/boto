@@ -32,13 +32,19 @@ class CopyBot(ScriptBase):
         self.log_file = '%s.log' % self.instance_id
         self.log_path = os.path.join(self.wdir, self.log_file)
         boto.set_file_logger('CopyBot', self.log_path)
+        src_name = boto.config.get('CopyBot', 'src_bucket')
+        dst_name = boto.config.get('CopyBot', 'dst_bucket')
         self.s3 = boto.connect_s3()
-        self.src = self.s3.get_bucket(boto.config.get('CopyBot', 'src_bucket'))
-        self.dst = self.s3.create_bucket(boto.config.get('CopyBot', 'dst_bucket'))
+        self.src = self.s3.lookup(src_name)
+        if not self.src:
+            boto.log.error('Source bucket does not exist: %s' % src_name)
+        self.dst = self.s3.lookup(dst_name)
+        if not self.dst:
+            self.dst = self.s3.create_bucket(dst_name)
 
-    def main(self):
-        boto.log.info('src=%s' % self.src)
-        boto.log.info('dst=%s' % self.dst)
+    def copy_keys(self):
+        boto.log.info('src=%s' % self.src.name)
+        boto.log.info('dst=%s' % self.dst.name)
         try:
             for key in self.src:
                 boto.log.info('copying %d bytes from key=%s' % (key.size, key.name))
@@ -47,10 +53,18 @@ class CopyBot(ScriptBase):
                 key.bucket = self.dst
                 key.set_contents_from_filename(path)
                 os.unlink(path)
-            key = self.dst.new_key(self.log_file)
-            key.set_contents_from_filename(self.log_path)
         except:
             boto.log.exception('Error copying key: %s' % key.name)
+
+    def copy_log(self):
+        key = self.dst.new_key(self.log_file)
+        key.set_contents_from_filename(self.log_path)
+        
+    def main(self):
+        if self.src and self.dst:
+            self.copy_keys()
+        if self.dst:
+            self.copy_log()
         boto.log.info('copy complete, shutting down')
         ec2 = boto.connect_ec2()
         ec2.terminate_instances([self.instance_id])
