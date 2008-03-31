@@ -48,7 +48,6 @@ def main():
         config.set('Credentials', 'aws_secret_access_key', ec2.aws_secret_access_key)
     s = StringIO.StringIO()
     config.write(s)
-    print s.getvalue()
     rs = ec2.get_all_images([ami])
     img = rs[0]
     r = img.run(user_data=s.getvalue(), key_name=keypair,

@@ -36,7 +36,6 @@ class Submitter:
             self.queue = None
 
     def get_key_name(self, fullpath, prefix):
-        print 'fullpath=%s, prefix=%s' % (fullpath, prefix)
         key_name = fullpath[len(prefix):]
         l = key_name.split(os.sep)
         return '/'.join(l)
