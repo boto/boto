@@ -153,7 +153,7 @@ class AWSAuthConnection:
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
             host = '%s:%d' % (self.server, self.port)
-        boto.log.info('establishing HTTP connection')
+        boto.log.debug('establishing HTTP connection')
         if is_secure:
             if self.https_connection_factory:
                 connection = self.https_connection_factory(host)
@@ -166,7 +166,7 @@ class AWSAuthConnection:
         cached_name = is_secure and 'https://' or 'http://'
         cached_name += host
         if cached_name in self._cache:
-            boto.log.info('closing old HTTP connection')
+            boto.log.debug('closing old HTTP connection')
             self._cache[cached_name].close()
         self._cache[cached_name] = connection
         # update self.connection for backwards-compatibility
@@ -191,11 +191,11 @@ class AWSAuthConnection:
         This code was inspired by the S3Utils classes posted to the boto-users
         Google group by Larry Bates.  Thanks!
         """
-        boto.log.info('Method: %s' % method)
-        boto.log.info('Path: %s' % path)
-        boto.log.info('Data: %s' % data)
-        boto.log.info('Headers: %s' % headers)
-        boto.log.info('Host: %s' % host)
+        boto.log.debug('Method: %s' % method)
+        boto.log.debug('Path: %s' % path)
+        boto.log.debug('Data: %s' % data)
+        boto.log.debug('Headers: %s' % headers)
+        boto.log.debug('Host: %s' % host)
         response = None
         body = None
         e = None
@@ -211,7 +211,7 @@ class AWSAuthConnection:
                     response = connection.getresponse()
                 location = response.getheader('location')
                 if response.status == 500 or response.status == 503:
-                    boto.log.info('received %d response, retrying in %d seconds' % (response.status, 2**i))
+                    boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2**i))
                     body = response.read()
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
@@ -221,14 +221,14 @@ class AWSAuthConnection:
                             urlparse.urlparse(location)
                     if query:
                         path += '?' + query
-                    boto.log.info('Redirecting: %s' % scheme + '://' + host + path)
+                    boto.log.debug('Redirecting: %s' % scheme + '://' + host + path)
                     connection = self.get_http_connection(host,
                             scheme == 'https')
                     continue
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')
             except self.http_exceptions, e:
-                boto.log.info('encountered %s exception, reconnecting' % \
+                boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
                 connection = self.refresh_http_connection(host, self.is_secure)
             time.sleep(2**i)
@@ -264,7 +264,7 @@ class AWSAuthConnection:
                                             time.gmtime())
 
         c_string = boto.utils.canonical_string(method, path, headers)
-        boto.log.info('Canonical: %s' % c_string)
+        boto.log.debug('Canonical: %s' % c_string)
         headers['Authorization'] = \
             "AWS %s:%s" % (self.aws_access_key_id,
                            boto.utils.encode(self.aws_secret_access_key,
