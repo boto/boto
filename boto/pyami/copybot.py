@@ -21,7 +21,7 @@
 #
 import boto
 from boto.pyami.scriptbase import ScriptBase
-import os
+import os, StringIO
 
 class CopyBot(ScriptBase):
 
@@ -67,7 +67,7 @@ class CopyBot(ScriptBase):
             self.copy_keys()
         if self.dst:
             self.copy_log()
-        self.notify('CopyBot (%s) Stopping' % self.instance_id, 'Complete')
+        self.notify('CopyBot (%s) Stopping' % self.instance_id, 'Copy Operation Complete')
         ec2 = boto.connect_ec2()
         ec2.terminate_instances([self.instance_id])
         
