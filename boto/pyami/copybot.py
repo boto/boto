@@ -39,16 +39,19 @@ class CopyBot(ScriptBase):
     def main(self):
         boto.log.info('src=%s' % self.src)
         boto.log.info('dst=%s' % self.dst)
-        for key in self.src:
-            boto.log.info('key=%s' % key.name)
-            path = os.path.join(self.wdir, key.name)
-            key.get_contents_to_filename(path)
-            key.bucket = self.dst
-            key.set_contents_from_filename(path)
-            os.unlink(path)
+        try:
+            for key in self.src:
+                boto.log.info('key=%s' % key.name)
+                path = os.path.join(self.wdir, key.name)
+                key.get_contents_to_filename(path)
+                key.bucket = self.dst
+                key.set_contents_from_filename(path)
+                os.unlink(path)
+            key = self.dst.new_key(self.log_file)
+            key.set_contents_from_filename(self.log_path)
+        except:
+            boto.log.exception('Error copying key: %s' % key.name)
         boto.log.info('copy complete, shutting down')
-        key = self.dst.new_key(self.log_file)
-        key.set_contents_from_filename(self.log_path)
         ec2 = boto.connect_ec2()
         ec2.terminate_instances([self.instance_id])
         
