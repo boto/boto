@@ -28,7 +28,9 @@ class SonOfMMM(Service):
 
     def __init__(self):
         Service.__init__(self)
-        self.boto_log = '/var/log/boto.log'
+        self.log_file = '%s.log' % self.intance_id
+        self.log_path = os.path.join(self.working_dir, self.log_file)
+        boto.set_file_logger(self.name, self.log_path)
         if boto.config.has_option('SonOfMMM', 'ffmpeg_args'):
             self.command = 'ffmpeg ' + boto.config.get('SonOfMMM', 'ffmpeg_args')
         else:
@@ -67,10 +69,8 @@ class SonOfMMM(Service):
             return []
 
     def shutdown(self):
-        if os.path.exists(self.boto_log):
+        if os.path.isfile(self.log_path):
             bucket = self.get_bucket(self.output_bucket_name)
-            instance_id = boto.config.get('Instance', 'instance-id')
-            key_name = instance_id + '.log'
-            key = bucket.new_key(key_name)
-            key.set_contents_from_filename(self.boto_log)
+            key = bucket.new_key(self.log_file)
+            key.set_contents_from_filename(self.log_path)
         Service.shutdown(self)
