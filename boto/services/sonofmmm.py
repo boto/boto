@@ -28,7 +28,7 @@ class SonOfMMM(Service):
 
     def __init__(self):
         Service.__init__(self)
-        self.log_file = '%s.log' % self.intance_id
+        self.log_file = '%s.log' % self.instance_id
         self.log_path = os.path.join(self.working_dir, self.log_file)
         boto.set_file_logger(self.name, self.log_path)
         if boto.config.has_option('SonOfMMM', 'ffmpeg_args'):

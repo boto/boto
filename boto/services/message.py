@@ -56,8 +56,4 @@ class ServiceMessage(MHMessage):
             self['Bucket'] = key.bucket.name
         self['InputKey'] = key.name
         self['Size'] = key.size
-        if boto.config.getbool('Service', 'preserve_filename', True):
-            self['PreserveFileName'] = 'true'
-        else:
-            self['PreserveFileName'] = 'false'
 
