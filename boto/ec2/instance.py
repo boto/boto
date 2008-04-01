@@ -24,6 +24,7 @@ Represents an EC2 Instance
 """
 
 from boto.resultset import ResultSet
+from boto.ec2.address import Address
 import base64
 
 class Reservation:
@@ -159,6 +160,11 @@ class Instance:
 
     def confirm_product(self, product_code):
         return self.connection.confirm_product_instance(self.id, product_code)
+
+    def use_ip(self, ip_address):
+        if isinstance(ip_address, Address):
+            ip_address = ip_address.public_ip
+        return self.connection.associate_address(self.id, ip_address)
 
 class Group:
 
