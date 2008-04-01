@@ -126,6 +126,13 @@ class Server(SDBObject):
     hostname = property(getHostname, setReadOnly, None,
                         'The public DNS name of the server')
 
+    def getLaunchTime(self):
+        if self.instance:
+            return self.instance.launch_time
+
+    launch_time = property(getLaunchTime, setReadOnly, None,
+                           'The time the Server was started')
+
     def getConsoleOutput(self):
         if self.instance:
             return self.instance.get_console_output()

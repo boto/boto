@@ -38,6 +38,7 @@ class Item(IObject):
         self.name = None
         self.instance_type = None
         self.quantity = 0
+        self.zone = None
         self.ami = None
         self.groups = []
         self.key = None
@@ -67,6 +68,13 @@ class Item(IObject):
             self.quantity = n
         else:
             self.quantity = self.get_int('Quantity')
+
+    def set_zone(self, zone=None):
+        if zone:
+            self.zone = zone
+        else:
+            l = [(z, z.name, z.state) for z in self.ec2.get_all_zones()]
+            self.zone = self.choose_from_list(l, prompt='Choose Availability Zone')
             
     def set_ami(self, ami=None):
         if ami:
@@ -116,6 +124,9 @@ class Item(IObject):
         self.instance_type = params.get('instance_type', self.instance_type)
         if not self.instance_type:
             self.set_instance_type()
+        self.zone = params.get('zone', self.zone)
+        if not self.zone:
+            self.set_zone()
         self.quantity = params.get('quantity', self.quantity)
         if not self.quantity:
             self.set_quantity()
@@ -161,7 +172,8 @@ class Order(IObject):
         for item in self.items:
             r = item.ami.run(min_count=1, max_count=item.quantity,
                              key_name=item.key.name, user_data=item.get_userdata_string(),
-                             security_groups=item.groups, instance_type=item.instance_type)
+                             security_groups=item.groups, instance_type=item.instance_type,
+                             placement=item.zone.name)
             if block:
                 states = [i.state for i in r.instances]
                 if states.count('running') != len(states):
