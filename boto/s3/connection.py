@@ -61,6 +61,16 @@ class VHostCallingFormat(_CallingFormat):
     def get_bucket_server(self, server, bucket):
         return bucket
 
+class OrdinaryCallingFormat(_CallingFormat):
+    def get_bucket_server(self, server, bucket):
+        return server
+
+    def build_path_base(self, bucket, key=''):
+        path_base = '/'
+        if bucket:
+            path_base += "%s/" % bucket
+        return path_base + urllib.quote_plus(key)
+
 class Location:
     DEFAULT = ''
     EU = 'EU'
