@@ -423,7 +423,7 @@ class LRUCache(dict):
         self.head.previous = self.head = item
 
 class Password:
-    def __init__(self, str):
+    def __init__(self, str=None):
         self.str = str
 
     def set(self, value):
@@ -432,7 +432,7 @@ class Password:
         self.str = m.hexdigest()
    
     def __str__(self):
-        return self.str
+        return str(self.str)
    
     def __eq__(self, other):
         m = md5.new()
