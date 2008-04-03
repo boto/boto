@@ -100,15 +100,6 @@ def canonical_string(method, path, headers, expires=None):
 
     return buf
 
-# computes the base64'ed hmac-sha hash of the canonical string and the secret
-# access key, optionally urlencoding the result
-def encode(aws_secret_access_key, str, urlencode=False):
-    b64_hmac = base64.encodestring(hmac.new(aws_secret_access_key, str, sha).digest()).strip()
-    if urlencode:
-        return urllib.quote_plus(b64_hmac)
-    else:
-        return b64_hmac
-
 def merge_meta(headers, metadata):
     final_headers = headers.copy()
     for k in metadata.keys():

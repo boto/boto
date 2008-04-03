@@ -98,6 +98,9 @@ class AWSAuthConnection:
         elif config.has_option('Credentials', 'aws_secret_access_key'):
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
+        # initialize an HMAC for signatures, make copies with each request
+        self.hmac = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+
         # cache up to 20 connections
         self._cache = boto.utils.LRUCache(20)
         self.refresh_http_connection(self.server, self.is_secure)
@@ -265,10 +268,10 @@ class AWSAuthConnection:
 
         c_string = boto.utils.canonical_string(method, path, headers)
         boto.log.debug('Canonical: %s' % c_string)
-        headers['Authorization'] = \
-            "AWS %s:%s" % (self.aws_access_key_id,
-                           boto.utils.encode(self.aws_secret_access_key,
-                                             c_string))
+        hmac = self.hmac.copy()
+        hmac.update(c_string)
+        b64_hmac = base64.encodestring(hmac.digest()).strip()
+        headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
 
 class AWSQueryConnection(AWSAuthConnection):
 
@@ -286,30 +289,30 @@ class AWSQueryConnection(AWSAuthConnection):
 
     def calc_signature_0(self, params):
         boto.log.debug('using calc_signature_0')
-        h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+        hmac = self.hmac.copy()
         s = params['Action'] + params['Timestamp']
-        h.update(s)
+        hmac.update(s)
         keys = params.keys()
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         qs = ''
         for key in keys:
             qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
-        return (qs, base64.b64encode(h.digest()))
+        return (qs, base64.b64encode(hmac.digest()))
 
     def calc_signature_1(self, params):
         boto.log.debug('using calc_signature_1')
-        h = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+        hmac = self.hmac.copy()
         keys = params.keys()
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         qs = ''
         for key in keys:
-            h.update(key)
+            hmac.update(key)
             val = params[key]
             if not isinstance(val, str) and not isinstance(val, unicode):
                 val = str(val)
-            h.update(val)
+            hmac.update(val)
             qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
-        return (qs, base64.b64encode(h.digest()))
+        return (qs, base64.b64encode(hmac.digest()))
 
     def get_signature(self, params):
         if self.SignatureVersion == '1':
