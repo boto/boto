@@ -36,7 +36,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = '2008-02-01'
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2008-02-01')
     SignatureVersion = '1'
     ResponseError = EC2ResponseError
 
