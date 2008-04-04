@@ -41,6 +41,16 @@ class CopyBot(ScriptBase):
         if not self.dst:
             self.dst = self.s3.create_bucket(self.dst_name)
 
+    def copy_bucket_acl(self):
+        if boto.config.get(self.name, 'copy_acls', True):
+            acl = self.src.get_xml_acl()
+            self.dst.set_xml_acl(acl)
+
+    def copy_key_acl(self, src, dst):
+        if boto.config.get(self.name, 'copy_acls', True):
+            acl = self.src.get_xml_acl()
+            self.dst.set_xml_acl(acl)
+
     def copy_keys(self):
         boto.log.info('src=%s' % self.src.name)
         boto.log.info('dst=%s' % self.dst.name)
@@ -49,8 +59,9 @@ class CopyBot(ScriptBase):
                 boto.log.info('copying %d bytes from key=%s' % (key.size, key.name))
                 path = os.path.join(self.wdir, key.name)
                 key.get_contents_to_filename(path)
-                key.bucket = self.dst
-                key.set_contents_from_filename(path)
+                new_key = self.dst.new_key(key.name)
+                new_key.set_contents_from_filename(path)
+                self.copy_key_acl(key, new_key)
                 os.unlink(path)
         except:
             boto.log.exception('Error copying key: %s' % key.name)

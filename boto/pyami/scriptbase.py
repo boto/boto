@@ -6,7 +6,7 @@ import boto
 class ScriptBase:
 
     def __init__(self):
-        self.instance_id = boto.config.get_instance('instance-id', 'default')
+        self.instance_id = boto.config.get('Instance', 'instance-id', 'default')
         self.name = self.__class__.__name__
         self.ts = get_ts()
 
