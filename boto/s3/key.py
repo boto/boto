@@ -187,6 +187,21 @@ class Key:
         if self.bucket != None:
             return self.bucket.get_acl(self.name)
 
+    def get_xml_acl(self):
+        if self.bucket != None:
+            return self.bucket.get_xml_acl(self.name)
+
+    def set_xml_acl(self, acl_str):
+        if self.bucket != None:
+            return self.bucket.set_xml_acl(acl_str, self.name)
+        
+    def make_public(self):
+        response = self.bucket.connection.make_request('PUT', self.bucket.name, self.name,
+                headers={'x-amz-acl': 'public-read'}, query_args='acl')
+        body = response.read()
+        if response.status != 200:
+            raise S3ResponseError(response.status, response.reason, body)
+
     def generate_url(self, expires_in, method='GET',
                      headers=None, query_auth=True):
         return self.bucket.connection.generate_url(expires_in, method,

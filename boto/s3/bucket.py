@@ -189,6 +189,14 @@ class Bucket:
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
+    def get_xml_acl(self, key_name=''):
+        response = self.connection.make_request('GET', self.name, key_name,
+                                                query_args='acl')
+        body = response.read()
+        if response.status != 200:
+            raise S3ResponseError(response.status, response.reason, body)
+        return body
+
     def set_xml_acl(self, acl_str, key_name=''):
         response = self.connection.make_request('PUT', self.name, key_name,
                 data=acl_str, query_args='acl')
