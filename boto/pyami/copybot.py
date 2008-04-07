@@ -48,8 +48,8 @@ class CopyBot(ScriptBase):
 
     def copy_key_acl(self, src, dst):
         if boto.config.get(self.name, 'copy_acls', True):
-            acl = self.src.get_xml_acl()
-            self.dst.set_xml_acl(acl)
+            acl = src.get_xml_acl()
+            dst.set_xml_acl(acl)
 
     def copy_keys(self):
         boto.log.info('src=%s' % self.src.name)
