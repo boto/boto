@@ -35,9 +35,11 @@ class MySQL(Installer):
             self.run('mysqladmin -u root password %s' % password)
 
     def change_data_dir(self):
+        created_mysql_dir = False;
         self.stop('mysql')
         if not os.path.exists('/mnt/mysql'):
             self.run('mkdir /mnt/mysql')
+            created_mysql_dir = True;
         self.run('chown -R mysql:mysql /mnt/mysql')
         fp = open('/etc/mysql/conf.d/use_mnt.cnf', 'w')
         fp.write('# created by pyami\n')
@@ -46,8 +48,10 @@ class MySQL(Installer):
         fp.write('datadir = /mnt/mysql\n')
         fp.write('log_bin = /mnt/mysql/mysql-bin.log\n')
         fp.close()
-        self.run('cp -pr /var/lib/mysql/* /mnt/mysql/')
-        self.run('cp -pr /var/log/mysql/* /mnt/mysql/')
+        if created_mysal_dir:
+            self.run('cp -pr /var/lib/mysql/* /mnt/mysql/')
+            self.run('cp -pr /var/log/mysql/* /mnt/mysql/')
+        #else assume the directory is there because of a backup restore.
         self.start('mysql')
 
     def main(self):
