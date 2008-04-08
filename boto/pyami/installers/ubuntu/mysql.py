@@ -24,6 +24,7 @@ import os
 import boto
 from ConfigParser import SafeConfigParser
 import subprocess
+import time
 
 class MySQL(Installer):
 
