@@ -22,6 +22,8 @@
 from boto.pyami.installers.ubuntu.installer import Installer
 import os
 import boto
+from ConfigParser import SafeConfigParser
+import subprocess
 
 class MySQL(Installer):
 
@@ -35,11 +37,11 @@ class MySQL(Installer):
             self.run('mysqladmin -u root password %s' % password)
 
     def change_data_dir(self):
-        created_mysql_dir = False;
+        fresh_install = False;
         self.stop('mysql')
         if not os.path.exists('/mnt/mysql'):
             self.run('mkdir /mnt/mysql')
-            created_mysql_dir = True;
+            fresh_install = True;
         self.run('chown -R mysql:mysql /mnt/mysql')
         fp = open('/etc/mysql/conf.d/use_mnt.cnf', 'w')
         fp.write('# created by pyami\n')
@@ -48,11 +50,21 @@ class MySQL(Installer):
         fp.write('datadir = /mnt/mysql\n')
         fp.write('log_bin = /mnt/mysql/mysql-bin.log\n')
         fp.close()
-        if created_mysal_dir:
+        if fresh_install:
             self.run('cp -pr /var/lib/mysql/* /mnt/mysql/')
             self.run('cp -pr /var/log/mysql/* /mnt/mysql/')
-        #else assume the directory is there because of a backup restore.
-        self.start('mysql')
+            self.start('mysql')
+        else:
+            #get the password ubuntu expects to use:
+            config_parser = SafeConfigParser()
+            config_parser.read('/etc/mysql/debian.cnf')
+            password = config_parser.get('client', 'password')
+            # start the mysql deamon, then mysql with the required grant statement piped into it:
+            mysqld_process = subprocess.Popen(["mysqld"])
+            time.sleep(1) #time for mysql to start
+            grant_command = "echo \"GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '%s' WITH GRANT OPTION;\" | mysql" % password
+            self.run(grant_command, notify = True)
+            # leave mysqld running
 
     def main(self):
         self.install()
