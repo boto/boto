@@ -42,7 +42,10 @@ class SonOfMMM(Service):
             self.output_ext = mimetypes.guess_extension(self.output_mimetype)
         self.output_bucket_name = boto.config.get('SonOfMMM', 'output_bucket', None)
         self.input_bucket_name = boto.config.get('SonOfMMM', 'input_bucket', None)
-        if self.input_bucket_name:
+        # check to see if there are any messages queue
+        # if not, create messages for all files in input_bucket
+        m = self.input_queue.read(1)
+        if not m:
             self.queue_files()
 
     ProcessingTime = 300
