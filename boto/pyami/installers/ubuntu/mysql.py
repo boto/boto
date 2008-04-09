@@ -29,6 +29,7 @@ import time
 class MySQL(Installer):
 
     def install(self):
+        self.run('apt-get update')
         self.run('apt-get -y install mysql-server', notify=True, exit_on_error=True)
 
     def set_root_password(self, password=None):
