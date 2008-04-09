@@ -114,3 +114,5 @@ class SQSConnection(AWSQueryConnection):
             return rs[0]
         return None
 
+    lookup = get_queue
+

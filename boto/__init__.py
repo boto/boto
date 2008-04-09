@@ -88,3 +88,24 @@ def check_extensions(module_name, module_path):
         if os.path.isdir(path):
             log.info('extending module %s with: %s' % (module_name, path))
             module_path.insert(0, path)
+
+_aws_cache = {}
+    
+def _get_aws_conn(service):
+    global _aws_cache
+    conn = _aws_cache.get(service)
+    if not conn:
+        meth = getattr(sys.modules[__name__], 'connect_'+service)
+        conn = meth()
+        _aws_cache[service] = conn
+    return conn
+
+def lookup(service, name):
+    global _aws_cache
+    conn = _get_aws_conn(service)
+    obj = _aws_cache.get('.'.join((service,name)), None)
+    if not obj:
+        obj = conn.lookup(name)
+        _aws_cache['.'.join((service,name))] = obj
+    return obj
+

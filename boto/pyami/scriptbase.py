@@ -5,10 +5,12 @@ import boto
 
 class ScriptBase:
 
-    def __init__(self):
+    def __init__(self, config_file=None):
         self.instance_id = boto.config.get('Instance', 'instance-id', 'default')
         self.name = self.__class__.__name__
         self.ts = get_ts()
+        if config_file:
+            boto.config.read(config_file)
 
     def notify(self, subject, body=''):
         to_string = boto.config.get_value('Notification', 'smtp_to', None)
