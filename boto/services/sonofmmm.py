@@ -26,22 +26,22 @@ import os, time, mimetypes
 
 class SonOfMMM(Service):
 
-    def __init__(self):
-        Service.__init__(self)
+    def __init__(self, config_file=None):
+        Service.__init__(self, config_file)
         self.log_file = '%s.log' % self.instance_id
         self.log_path = os.path.join(self.working_dir, self.log_file)
         boto.set_file_logger(self.name, self.log_path)
-        if boto.config.has_option('SonOfMMM', 'ffmpeg_args'):
-            self.command = '/usr/local/bin/ffmpeg ' + boto.config.get('SonOfMMM', 'ffmpeg_args')
+        if self.sd.has_option('ffmpeg_args'):
+            self.command = '/usr/local/bin/ffmpeg ' + self.sd.get('ffmpeg_args')
         else:
             self.command = '/usr/local/bin/ffmpeg -y -i %s %s'
-        self.output_mimetype = boto.config.get('SonOfMMM', 'output_mimetype')
-        if boto.config.has_option('SonOfMMM', 'output_ext'):
-            self.output_ext = boto.config.get('SonOfMMM', 'output_ext')
+        self.output_mimetype = self.sd.get('output_mimetype')
+        if self.sd.has_option('output_ext'):
+            self.output_ext = self.sd.get('output_ext')
         else:
             self.output_ext = mimetypes.guess_extension(self.output_mimetype)
-        self.output_bucket_name = boto.config.get('SonOfMMM', 'output_bucket', None)
-        self.input_bucket_name = boto.config.get('SonOfMMM', 'input_bucket', None)
+        self.output_bucket = self.sd.get_obj('output_bucket')
+        self.input_bucket = self.sd.get_obj('input_bucket')
         # check to see if there are any messages queue
         # if not, create messages for all files in input_bucket
         m = self.input_queue.read(1)
@@ -51,12 +51,15 @@ class SonOfMMM(Service):
     ProcessingTime = 300
 
     def queue_files(self):
-        boto.log.info('Queueing files from %s' % self.input_bucket_name)
-        bucket = self.get_bucket(self.input_bucket_name)
-        for key in bucket:
+        boto.log.info('Queueing files from %s' % self.input_bucket.name)
+        for key in self.input_bucket:
             boto.log.info('Queueing %s' % key.name)
             m = ServiceMessage()
-            m.for_key(key, {'OutputBucket' : self.output_bucket_name})
+            if self.output_bucket:
+                d = {'OutputBucket' : self.output_bucket.name}
+            else:
+                d = None
+            m.for_key(key, d)
             self.input_queue.write(m)
 
     def process_file(self, in_file_name, msg):
@@ -73,7 +76,7 @@ class SonOfMMM(Service):
 
     def shutdown(self):
         if os.path.isfile(self.log_path):
-            bucket = self.get_bucket(self.output_bucket_name)
-            key = bucket.new_key(self.log_file)
-            key.set_contents_from_filename(self.log_path)
+            if self.output_bucket:
+                key = self.output_bucket.new_key(self.log_file)
+                key.set_contents_from_filename(self.log_path)
         Service.shutdown(self)

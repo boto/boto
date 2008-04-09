@@ -21,8 +21,8 @@
 
 import boto
 from boto.services.message import ServiceMessage
+from boto.services.servicedef import ServiceDef
 from boto.pyami.scriptbase import ScriptBase
-from boto.s3.key import Key
 from boto.exception import S3ResponseError
 from boto.utils import get_ts
 import StringIO
@@ -43,31 +43,16 @@ class Service(ScriptBase):
     # Time required to process a transaction
     ProcessingTime = 60
 
-    def __init__(self):
-        ScriptBase.__init__(self)
+    def __init__(self, config_file=None, mimetype_files=None):
+        ScriptBase.__init__(self, config_file)
         self.name = self.__class__.__name__
         self.working_dir = boto.config.get('Pyami', 'working_dir')
-        self._aws_cache = {}
-        self.create_connections()
-#        if mimetype_files:
-#            mimetypes.init(mimetype_files)
-
-    def create_connections(self):
-        queue_name = boto.config.get(self.name, 'input_queue', None)
-        if queue_name:
-            self.input_queue = self.get_queue(queue_name)
-        else:
-            self.input_queue = None
-        queue_name = boto.config.get(self.name, 'output_queue', None)
-        if queue_name:
-            self.output_queue = self.get_queue(queue_name)
-        else:
-            self.output_queue = None
-        domain_name = boto.config.get(self.name, 'output_domain', None)
-        if domain_name:
-            self.output_domain = self.get_domain(domain_name)
-        else:
-            self.output_domain = None
+        self.sd = ServiceDef(config_file)
+        self.input_queue = self.sd.get_obj('input_queue')
+        self.output_queue = self.sd.get_obj('output_queue')
+        self.output_domain = self.sd.get_obj('output_domain')
+        if mimetype_files:
+            mimetypes.init(mimetype_files)
 
     def split_key(key):
         if key.find(';') < 0:
@@ -77,64 +62,6 @@ class Service(ScriptBase):
             label, mtype = type.split('=')
             t = (key, mtype)
         return t
-
-    def get_queue(self, queue_name):
-        return self.get_aws_object('sqs', queue_name)
-
-    def get_domain(self, domain_name):
-        return self.get_aws_object('sdb', domain_name)
-
-    def get_bucket(self, bucket_name):
-        return self.get_aws_object('s3', bucket_name)
-
-    def get_aws_conn(self, service):
-        conn = self._aws_cache.get(service, None)
-        if not conn:
-            meth = getattr(boto, 'connect_'+service)
-            conn = meth()
-            self._aws_cache[service] = conn
-        return conn
-
-    def get_aws_object(self, service, name):
-        conn = self.get_aws_conn(service)
-        obj = self._aws_cache.get(service+name, None)
-        if not obj:
-            if service == 's3':
-                obj = conn.lookup(name)
-                if not obj:
-                    obj = conn.create_bucket(name)
-                self._aws_cache[service+name] = obj
-            elif service == 'sqs':
-                obj = conn.get_queue(name)
-                if not obj:
-                    obj = conn.create_queue(name)
-                self._aws_cache[service+name] = obj
-                obj.set_message_class(ServiceMessage)
-            elif service == 'sdb':
-                obj = conn.lookup(name)
-                if not obj:
-                    obj = conn.create_domain(name)
-                self._aws_cache[service+name] = obj
-        return obj
-
-    def get_result(self, path, delete_msg=True, get_file=True):
-        q = self.get_queue(self.output_queue_name)
-        m = q.read()
-        if m:
-            if get_file:
-                outputs = m['OutputKey'].split(',')
-                for output in outputs:
-                    key_name, type = output.split(';')
-                    if type:
-                        mimetype = type.split('=')[1]
-                    bucket = self.get_bucket(m['Bucket'])
-                    key = bucket.lookup(key_name)
-                    file_name = os.path.join(path, key_name)
-                    print 'retrieving file: %s to %s' % (key_name, file_name)
-                    key.get_contents_to_filename(file_name)
-            if delete_msg:
-                q.delete_message(m)
-        return m
 
     def read_message(self):
         boto.log.info('read_message')
@@ -151,9 +78,8 @@ class Service(ScriptBase):
         key_name = message['InputKey']
         file_name = os.path.join(self.working_dir, message.get('OriginalFileName', 'in_file'))
         boto.log.info('get_file: %s/%s to %s' % (bucket_name, key_name, file_name))
-        bucket = self.get_bucket(bucket_name)
-        key = Key(bucket)
-        key.name = key_name
+        bucket = boto.lookup('s3', bucket_name)
+        key = bucket.new_key(key_name)
         key.get_contents_to_filename(os.path.join(self.working_dir, file_name))
         return file_name
 
@@ -164,7 +90,7 @@ class Service(ScriptBase):
     # store result file in S3
     def put_file(self, bucket_name, file_path, key_name=None):
         boto.log.info('putting file %s as %s.%s' % (file_path, bucket_name, key_name))
-        bucket = self.get_bucket(bucket_name)
+        bucket = boto.lookup('s3', bucket_name)
         key = bucket.new_key(key_name)
         key.set_contents_from_filename(file_path)
         return key
@@ -208,7 +134,7 @@ class Service(ScriptBase):
         pass
 
     def shutdown(self):
-        on_completion = boto.config.get(self.name, 'on_completion', 'stay_alive')
+        on_completion = boto.sd.get('on_completion', 'stay_alive')
         if on_completion == 'shutdown':
             if self.instance_id:
                 time.sleep(60)
