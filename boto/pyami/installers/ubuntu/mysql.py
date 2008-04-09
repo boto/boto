@@ -40,6 +40,7 @@ class MySQL(Installer):
 
     def change_data_dir(self):
         fresh_install = False;
+        time.sleep(2) #trying to stop mysql immediately after installing it fails
         self.stop('mysql')
         if not os.path.exists('/mnt/mysql'):
             self.run('mkdir /mnt/mysql')
@@ -62,10 +63,10 @@ class MySQL(Installer):
             config_parser.read('/etc/mysql/debian.cnf')
             password = config_parser.get('client', 'password')
             # start the mysql deamon, then mysql with the required grant statement piped into it:
-            mysqld_process = subprocess.Popen(["mysqld"])
+            self.start('mysql')
             time.sleep(1) #time for mysql to start
             grant_command = "echo \"GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '%s' WITH GRANT OPTION;\" | mysql" % password
-            self.run(grant_command, notify = True)
+            self.run(grant_command)
             # leave mysqld running
 
     def main(self):
