@@ -32,6 +32,8 @@ class ServiceDef(Config):
         script = Config.get(self, 'Pyami', 'scripts')
         if script:
             self.name = script.split('.')[-1]
+        else:
+            self.name = None
 
     def get(self, name, default=None):
         return Config.get(self, self.name, name, default)

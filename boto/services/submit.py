@@ -20,20 +20,16 @@
 # IN THE SOFTWARE.
 
 import boto
-from boto.services.message import ServiceMessage
 import time, os
 
 class Submitter:
 
-    def __init__(self, bucket_name, queue_name=None, message_cls=ServiceMessage):
-        self.s3 = boto.connect_s3()
-        self.bucket = self.s3.get_bucket(bucket_name)
-        if queue_name:
-            self.sqs = boto.connect_sqs()
-            self.queue = self.sqs.get_queue(queue_name)
-            self.queue.set_message_class(message_cls)
-        else:
-            self.queue = None
+    def __init__(self, sd):
+        self.sd = sd
+        self.input_bucket = self.sd.get_obj('input_bucket')
+        self.output_bucket = self.sd.get_obj('output_bucket')
+        self.output_domain = self.sd.get_obj('output_domain')
+        self.queue = self.sd.get_obj('input_queue')
 
     def get_key_name(self, fullpath, prefix):
         key_name = fullpath[len(prefix):]
@@ -42,21 +38,22 @@ class Submitter:
 
     def write_message(self, key, metadata):
         if self.queue:
-            m = ServiceMessage()
+            m = self.queue.new_message()
             m.for_key(key, metadata)
+            if self.output_bucket:
+                m['OutputBucket'] = self.output_bucket.name
             self.queue.write(m)
 
     def submit_file(self, path, metadata=None, cb=None, num_cb=0, prefix='/'):
         if not metadata:
             metadata = {}
         key_name = self.get_key_name(path, prefix)
-        print 'key_name=%s' % key_name
-        k = self.bucket.new_key(key_name)
+        k = self.input_bucket.new_key(key_name)
         k.update_metadata(metadata)
         k.set_contents_from_filename(path, replace=False, cb=cb, num_cb=num_cb)
         self.write_message(k, metadata)
 
-    def submit_path(self, path, tags=None, ignore_dirs=[], cb=None, num_cb=0, status=False, prefix='/'):
+    def submit_path(self, path, tags=None, ignore_dirs=None, cb=None, num_cb=0, status=False, prefix='/'):
         path = os.path.expanduser(path)
         path = os.path.expandvars(path)
         path = os.path.abspath(path)
@@ -68,11 +65,14 @@ class Submitter:
         for t in time.gmtime():
             l.append(str(t))
         metadata['Batch'] = '_'.join(l)
+        if self.output_domain:
+            self.output_domain.put_attributes(metadata['Batch'], {'type' : 'Batch'})
         if os.path.isdir(path):
             for root, dirs, files in os.walk(path):
-                for ignore in ignore_dirs:
-                    if ignore in dirs:
-                        dirs.remove(ignore)
+                if ignore_dirs:
+                    for ignore in ignore_dirs:
+                        if ignore in dirs:
+                            dirs.remove(ignore)
                 for file in files:
                     fullpath = os.path.join(root, file)
                     if status:
@@ -84,4 +84,4 @@ class Submitter:
             total += 1
         else:
             print 'problem with %s' % path
-        return total
+        return (metadata['Batch'], total)
