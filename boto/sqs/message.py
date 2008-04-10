@@ -119,7 +119,7 @@ class RawMessage:
         just calls get_body().  You probably shouldn't need to call this
         method in the normal course of events.
         """
-        return self.encode(self._body)
+        return self.encode(self.get_body())
     
 class Message(RawMessage):
     """
