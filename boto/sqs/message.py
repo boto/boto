@@ -88,7 +88,7 @@ class RawMessage:
 
     def endElement(self, name, value, connection):
         if name == 'Body':
-            self._body = self.decode(value)
+            self.set_body(self.decode(value))
         elif name == 'MessageId':
             self.id = value
         elif name == 'ReceiptHandle':
