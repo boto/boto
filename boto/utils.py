@@ -43,7 +43,7 @@ import sha
 import urllib, urllib2
 import imp
 import popen2, os, StringIO
-import time
+import time, datetime
 import logging.handlers
 import boto
 import tempfile
@@ -151,11 +151,16 @@ def get_instance_userdata(version='latest', sep=None):
                 t = nvpair.split('=')
                 user_data[t[0].strip()] = t[1].strip()
     return user_data
+
+ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
     
 def get_ts(ts=None):
     if not ts:
         ts = time.gmtime()
-    return time.strftime('%Y-%m-%dT%H:%M:%SZ', ts)
+    return time.strftime(ISO8601, ts)
+
+def parse_ts(ts):
+    return datetime.datetime.strptime(ts, ISO8601)
 
 def find_class(module_name, class_name):
     modules = module_name.split('.')
