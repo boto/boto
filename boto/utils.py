@@ -47,7 +47,7 @@ import time, datetime
 import logging.handlers
 import boto
 import tempfile
-import md5
+import hashlib
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -419,21 +419,23 @@ class LRUCache(dict):
         self.head.previous = self.head = item
 
 class Password:
+    """
+    Password object that stores itself as SHA512 hashed.
+    """
     def __init__(self, str=None):
+        """
+        Load the string from an initial value, this should be the raw SHA512 hashed password
+        """
         self.str = str
 
     def set(self, value):
-        m = md5.new()
-        m.update(value)
-        self.str = m.hexdigest()
+        self.str = hashlib.sha512(value).hexdigest()
    
     def __str__(self):
         return str(self.str)
    
     def __eq__(self, other):
-        m = md5.new()
-        m.update(other)
-        return m.hexdigest() == self.str
+        return str(hashlib.sha512(value).hexdigest()) == str(self.str)
 
     def __len__(self):
         return len(self.str)

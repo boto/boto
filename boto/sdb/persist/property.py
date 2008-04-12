@@ -23,7 +23,6 @@ from boto.exception import SDBPersistanceError
 from boto.sdb.persist import get_domain
 from boto.sdb.persist.checker import *
 from boto.utils import Password
-import md5
 
 class Property(object):
 
@@ -90,7 +89,7 @@ class StringProperty(ScalarProperty):
 
 class PasswordProperty(ScalarProperty):
     """
-    MD5 Hashed password
+    Hashed password
     """
 
     def __init__(self, **params):
