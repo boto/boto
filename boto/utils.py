@@ -47,7 +47,12 @@ import time, datetime
 import logging.handlers
 import boto
 import tempfile
-import hashlib
+try:
+    import hashlib
+    _hashfn = hashlib.sha512
+except ImportError:
+    import md5
+    _hashfn = md5.md5
 
 METADATA_PREFIX = 'x-amz-meta-'
 AMAZON_HEADER_PREFIX = 'x-amz-'
@@ -429,13 +434,13 @@ class Password:
         self.str = str
 
     def set(self, value):
-        self.str = hashlib.sha512(value).hexdigest()
+        self.str = _hashfn(value).hexdigest()
    
     def __str__(self):
         return str(self.str)
    
     def __eq__(self, other):
-        return str(hashlib.sha512(value).hexdigest()) == str(self.str)
+        return str(_hashfn(value).hexdigest()) == str(self.str)
 
     def __len__(self):
         return len(self.str)
