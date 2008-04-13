@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-import urllib
+import urllib, base64
 import time
 import boto.utils
 from boto.connection import AWSAuthConnection
@@ -111,8 +111,10 @@ class S3Connection(AWSAuthConnection):
         auth_path = self.calling_format.build_auth_path(bucket, key)
         canonical_str = boto.utils.canonical_string(method, auth_path,
                                                     headers, expires)
-        encoded_canonical = boto.utils.encode(self.aws_secret_access_key,
-                                              canonical_str, True)
+        hmac_copy = self.hmac.copy()
+        hmac_copy.update(canonical_str)
+        b64_hmac = base64.encodestring(hmac_copy.digest()).strip()
+        encoded_canonical = urllib.quote_plus(b64_hmac)
         path = self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
