@@ -292,12 +292,14 @@ class Bucket:
 #        return parse_xml_string(body, location, self)
 
     def enable_logging(self, target_bucket, target_prefix=''):
+        if isinstance(target_bucket, Bucket):
+            target_bucket = target_bucket.name
         body = self.BucketLoggingBody % (target_bucket, target_prefix)
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging')
         body = response.read()
         if response.status == 200:
-            return body
+            return True
         else:
             raise S3ResponseError(response.status, response.reason, body)
         
@@ -307,7 +309,7 @@ class Bucket:
                 query_args='logging')
         body = response.read()
         if response.status == 200:
-            return body
+            return True
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
