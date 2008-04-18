@@ -134,7 +134,7 @@ class Service(ScriptBase):
         pass
 
     def shutdown(self):
-        on_completion = boto.sd.get('on_completion', 'shutdown')
+        on_completion = self.sd.get('on_completion', 'shutdown')
         if on_completion == 'shutdown':
             if self.instance_id:
                 time.sleep(60)
