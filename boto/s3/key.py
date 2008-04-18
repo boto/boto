@@ -97,6 +97,13 @@ class Key:
                     self.last_modified = value
 
     def open_write(self, headers=None):
+        """
+        Open this key for writing. 
+        Not yet implemented
+        
+        @type headers: dict
+        @param headers: Headers to pass in the write request
+        """
         raise BotoClientError('Not Implemented')
 
     def open(self, mode='r', headers=None, query_args=None):
@@ -165,9 +172,18 @@ class Key:
             setattr(self, name, value)
 
     def exists(self):
+        """
+        Does this key exist?
+        
+        @rtype: bool
+        @return: Whether the key exists on S3
+        """
         return bool(self.bucket.lookup(self.name.encode('utf-8')))
 
     def delete(self):
+        """
+        Delete this key from S3
+        """
         return self.bucket.delete_key(self.name.encode('utf-8'))
 
     def get_metadata(self, name):
@@ -203,13 +219,42 @@ class Key:
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def generate_url(self, expires_in, method='GET',
-                     headers=None, query_auth=True):
+    def generate_url(self, expires_in, method='GET', headers=None, query_auth=True):
+        """
+        Generate a URL to access this key.
+        
+        @type expires_in: int
+        @param expires_in: How long the url is valid for
+        
+        @type method: string
+        @param method: The method to use for retrieving the file (default is GET)
+        
+        @type headers: dict
+        @param headers: Any headers to pass along in the request
+        
+        @type query_auth: bool
+        @param query_auth: 
+        
+        @rtype: string
+        @return: The URL to access the key
+        """
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
                                                    headers, query_auth)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10):
+        """
+        Upload a file to a key into a bucket on S3.
+        
+        @type fp: file
+        @param fp: The file pointer to upload
+        
+        @type headers: dict
+        @param headers: The headers to pass along with the PUT request
+        
+        @type cb: function
+        @param cb: The function to call on the data sent
+        """
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest('PUT', path)
             for key in headers:
