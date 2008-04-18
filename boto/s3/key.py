@@ -77,10 +77,11 @@ class Key:
     def __iter__(self):
         return self
 
-    def open_read(self, headers=None):
+    def open_read(self, headers=None, query_args=None):
         if self.resp == None:
             self.mode = 'r'
-            self.resp = self.bucket.connection.make_request('GET', self.bucket.name, self.name, headers)
+            
+            self.resp = self.bucket.connection.make_request('GET', self.bucket.name, self.name, headers, query_args=query_args)
             if self.resp.status < 199 or self.resp.status > 299:
                 raise S3ResponseError(self.resp.status, self.resp.reason)
             response_headers = self.resp.msg
@@ -98,13 +99,13 @@ class Key:
     def open_write(self, headers=None):
         raise BotoClientError('Not Implemented')
 
-    def open(self, mode='r', headers=None):
+    def open(self, mode='r', headers=None, query_args=None):
         if mode == 'r':
             self.mode = 'r'
-            self.open_read()
+            self.open_read(headers=headers, query_args=query_args)
         elif mode == 'w':
             self.mode = 'w'
-            self.open_write()
+            self.open_write(headers=headers)
         else:
             raise BotoClientError('Invalid mode: %s' % mode)
 
@@ -274,6 +275,13 @@ class Key:
                 self.name, headers, sender=sender)
 
     def _compute_md5(self, fp):
+        """
+        @type fp: file
+        @param fp: File pointer to the file to MD5 hash
+        
+        @rtype: string
+        @return: MD5 Hash of the file in fp
+        """
         m = md5.new()
         s = fp.read(self.BufferSize)
         while s:
@@ -286,8 +294,7 @@ class Key:
         self.size = fp.tell()
         fp.seek(0)
 
-    def set_contents_from_file(self, fp, headers=None, replace=True,
-                               cb=None, num_cb=10):
+    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None, num_cb=10):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -321,8 +328,7 @@ class Key:
                     return
             self.send_file(fp, headers, cb, num_cb)
 
-    def set_contents_from_filename(self, filename, headers=None,
-                                   replace=True, cb=None, num_cb=10):
+    def set_contents_from_filename(self, filename, headers=None, replace=True, cb=None, num_cb=10):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -333,8 +339,7 @@ class Key:
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
         fp.close()
 
-    def set_contents_from_string(self, s, headers=None,
-                                 replace=True, cb=None, num_cb=10):
+    def set_contents_from_string(self, s, headers=None, replace=True, cb=None, num_cb=10):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -345,7 +350,22 @@ class Key:
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
         fp.close()
 
-    def get_file(self, fp, headers=None, cb=None, num_cb=10):
+    def get_file(self, fp, headers=None, cb=None, num_cb=10, torrent=False):
+        """
+        Retrieves a file from an S3 Key
+        
+        @type fp: file
+        @param fp: File pointer to put the data into
+        
+        @type headers: string
+        @param: headers to send when retrieving the files
+        
+        @type cb: function
+        @param cb: Callback function to call on the data after it's retrieved
+        
+        @type torrent: bool
+        @param torrent: Flag for whether to get a torrent for the file
+        """
         if cb:
             if num_cb > 2:
                 cb_count = self.size / self.BufferSize / (num_cb-2)
@@ -356,7 +376,9 @@ class Key:
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
-        self.open('r', headers)
+        
+        if torrent: torrent = "torrent"
+        self.open('r', headers, query_args=torrent)
         for bytes in self:
             fp.write(bytes)
             if cb:
@@ -370,28 +392,45 @@ class Key:
         self.close()
         self.bucket.connection.debug = save_debug
 
-    def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10):
+    def get_torrent_file(self, fp, headers=None, cb=None, num_cb=10):
+        """
+        Get a torrent file (see to get_file)
+        
+        @type fp: file
+        @param fp: The file pointer of where to put the torrent
+        
+        @type headers: string
+        @param headers: Headers to be passed
+        
+        @type cb: function
+        @param cb: Callback function to call on retrieved data
+        
+        """
+        return self.get_file(fp, headers, cb, num_cb, torrent=True)
+    
+    def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10, torrent=False):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Write the contents of the object to the file pointed
         to by 'fp'.
         
-        Parameters:
+        @type fp: File -like object
+        @param fp:
         
-        fp - a File-like object.
-        headers - (optional) additional HTTP headers that will be
-                  sent with the GET request.
-        cb - (optional) a callback function that will be called to report
+        @type headers: string
+        @param headers: additional HTTP headers that will be sent with the GET request.
+        
+        @type cb: function
+        @param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
         """
         if self.bucket != None:
-            self.get_file(fp, headers, cb, num_cb)
+            self.get_file(fp, headers, cb, num_cb, torrent=torrent)
 
-    def get_contents_to_filename(self, filename, headers=None,
-                                 cb=None, num_cb=10):
+    def get_contents_to_filename(self, filename, headers=None, cb=None, num_cb=10, torrent=False):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Store contents of the object to a file named by 'filename'.
@@ -399,7 +438,7 @@ class Key:
         parameters.
         """
         fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers, cb, num_cb)
+        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
@@ -409,7 +448,7 @@ class Key:
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception, e: pass
 
-    def get_contents_as_string(self, headers=None, cb=None, num_cb=10):
+    def get_contents_as_string(self, headers=None, cb=None, num_cb=10, torrent=False):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -417,7 +456,7 @@ class Key:
         parameters.
         """
         fp = StringIO.StringIO()
-        self.get_contents_to_file(fp, headers, cb, num_cb)
+        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
         return fp.getvalue()
 
     def add_email_grant(self, permission, email_address):

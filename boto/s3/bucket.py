@@ -125,14 +125,21 @@ class Bucket:
         there are no more results.
         Called with no arguments, this will return an iterator object across
         all keys within the bucket.
-        The prefix parameter allows you to limit the listing to a particular
-        prefix.  For example, if you call the method with prefix='/foo/'
-        then the iterator will only cycle through the keys that begin with
-        the string '/foo/'.
-        The delimiter parameter can be used in conjunction with the prefix
-        to allow you to organize and browse your keys hierarchically. See:
-        http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
-        for more details.
+        
+        @type prefix: string
+        @param prefix: allows you to limit the listing to a particular
+                        prefix.  For example, if you call the method with prefix='/foo/'
+                        then the iterator will only cycle through the keys that begin with
+                        the string '/foo/'.
+                        
+        @type delimiter: string
+        @param delimiter: can be used in conjunction with the prefix
+                        to allow you to organize and browse your keys hierarchically. See:
+                        http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
+                        for more details.
+                        
+        @rtype: L{BucketListResultSet<boto.s3.bucketlistresultset.BucketListResultSet>}
+        @return: an instance of a BucketListResultSet that handles paging, etc
         """
         return BucketListResultSet(self, prefix, delimiter)
 
@@ -144,6 +151,22 @@ class Bucket:
         as defined in S3 Developer's Guide, however since max-keys is not
         a legal variable in Python you have to pass maxkeys and this
         method will munge it (Ugh!)
+        
+        @type maxkeys: int
+        @param maxkeys: The maximum number of keys to retrieve
+        
+        @type prefix: string
+        @param prefix: The prefix of the keys you want to retrieve
+        
+        @type marker: string
+        @param marker: The "marker" of where you are in the result set
+        
+        @type delimiter: string 
+        @param delimiter: "If this optional, Unicode string parameter is included with your request, then keys that contain the same string between the prefix and the first occurrence of the delimiter will be rolled up into a single result element in the CommonPrefixes collection. These rolled-up keys are not returned elsewhere in the response."
+
+        @rtype: ResultSet
+        @return: The result from S3 listing the keys requested
+        
         """
         l = []
         for k,v in params.items():
