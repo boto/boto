@@ -19,11 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-#
-# Exception classes - Subclassing allows you to check for specific errors
-#
+"""
+Exception classes - Subclassing allows you to check for specific errors
+"""
 
 class BotoClientError(Exception):
+    """
+    General Boto Client error (error accessing AWS)
+    """
     
     def __init__(self, reason):
         self.reason = reason
@@ -39,7 +42,9 @@ class SDBPersistanceError(Exception):
     pass
 
 class S3PermissionsError(BotoClientError):
-
+    """
+    Permissions error when accessing a bucket or key on S3.
+    """
     pass
     
 class BotoServerError(Exception):
@@ -58,24 +63,45 @@ class BotoServerError(Exception):
                                   self.status, self.reason, self.body)
 
 class S3CreateError(BotoServerError):
+    """
+    Error creating a bucket or key on S3.
+    """
     pass
 
 class SQSError(BotoServerError):
+    """
+    General Error on Simple Queue Service.
+    """
     pass
     
 class S3ResponseError(BotoServerError):
+    """
+    Error in response from S3.
+    """
     pass
 
 class EC2ResponseError(BotoServerError):
+    """
+    Error in response from EC2.
+    """
     pass
 
 class SDBResponseError(BotoServerError):
+    """
+    Error in respones from SDB.
+    """
     pass
 
 class AWSConnectionError(BotoClientError):
+    """
+    General error connecting to Amazon Web Services.
+    """
     pass
 
 class S3DataError(BotoClientError):
+    """
+    Error receiving data from S3.
+    """ 
     pass
 
 class FPSResponseError(BotoServerError):
