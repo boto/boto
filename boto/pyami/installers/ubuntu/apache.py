@@ -29,6 +29,8 @@ class Apache(Installer):
     def install(self):
         self.run('apt-get -y install apache2', notify=True, exit_on_error=True)
         self.run('apt-get -y install libapache2-mod-python', notify=True, exit_on_error=True)
+        self.run('a2enmod rewrite', notify=True, exit_on_error=True)
+        self.run('a2enmod ssl', notify=True, exit_on_error=True)
 
     def main(self):
         self.install()
