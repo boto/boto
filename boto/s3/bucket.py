@@ -213,6 +213,9 @@ class Bucket:
         
         @type key_name: string
         @param key_name: The name of the key to create
+        
+        @rtype: L{Key<boto.s3.key.Key>} or subclass
+        @returns: An instance of the newly created key object
         """
         return self.key_class(self, key_name)
 
