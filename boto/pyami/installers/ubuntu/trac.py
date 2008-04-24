@@ -47,6 +47,7 @@ class Trac(Installer):
 
 	def install(self):
 		self.run('apt-get -y install trac', notify=True, exit_on_error=True)
+		self.run('apt-get -y install libapache2-svn', notify=True, exit_on_error=True)
 		self.run("a2enmod ssl")
 		self.run("a2enmod python")
 		self.run("a2enmod dav_svn")
