@@ -34,12 +34,6 @@ import mimetypes
 
 class Service(ScriptBase):
 
-    # Number of times to retry queue read when no messages are available
-    MainLoopRetryCount = 5
-    
-    # Number of seconds to wait before retrying queue read in main loop
-    MainLoopDelay = 30
-
     # Time required to process a transaction
     ProcessingTime = 60
 
@@ -48,6 +42,9 @@ class Service(ScriptBase):
         self.name = self.__class__.__name__
         self.working_dir = boto.config.get('Pyami', 'working_dir')
         self.sd = ServiceDef(config_file)
+        self.retry_count = self.sd.get_int('retry_count', 5)
+        self.loop_delay = self.sd.get_int('loop_delay', 30)
+        self.processing_time = self.sd.get_int('processing_time', 60)
         self.input_queue = self.sd.get_obj('input_queue')
         self.output_queue = self.sd.get_obj('output_queue')
         self.output_domain = self.sd.get_obj('output_domain')
@@ -65,7 +62,7 @@ class Service(ScriptBase):
 
     def read_message(self):
         boto.log.info('read_message')
-        message = self.input_queue.read(self.ProcessingTime)
+        message = self.input_queue.read(self.processing_time)
         if message:
             boto.log.info(message.get_body())
             key = 'Service-Read'
@@ -144,7 +141,7 @@ class Service(ScriptBase):
     def main(self, notify=False):
         self.notify('Service: %s Starting' % self.name)
         empty_reads = 0
-        while empty_reads < self.MainLoopRetryCount:
+        while self.retry_count < 0 or empty_reads < self.retry_count:
             try:
                 input_message = self.read_message()
                 if input_message:
@@ -158,7 +155,7 @@ class Service(ScriptBase):
                     self.cleanup()
                 else:
                     empty_reads += 1
-                    time.sleep(self.MainLoopDelay)
+                    time.sleep(self.loop_delay)
             except Exception, e:
                 boto.log.exception('Service Failed')
                 empty_reads += 1

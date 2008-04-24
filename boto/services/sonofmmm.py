@@ -48,8 +48,6 @@ class SonOfMMM(Service):
         if not m:
             self.queue_files()
 
-    ProcessingTime = 300
-
     def queue_files(self):
         boto.log.info('Queueing files from %s' % self.input_bucket.name)
         for key in self.input_bucket:
