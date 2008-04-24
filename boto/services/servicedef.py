@@ -41,6 +41,12 @@ class ServiceDef(Config):
     def has_option(self, option):
         return Config.has_option(self, self.name, option)
 
+    def getint(self, name, default=0):
+        return Config.getint(self, self.name, name, default)
+        
+    def getbool(self, name, default=False):
+        return Config.getbool(self, self.name, name, default)
+        
     def get_obj(self, name):
         """
         Returns the AWS object associated with a given option.

@@ -42,9 +42,9 @@ class Service(ScriptBase):
         self.name = self.__class__.__name__
         self.working_dir = boto.config.get('Pyami', 'working_dir')
         self.sd = ServiceDef(config_file)
-        self.retry_count = self.sd.get_int('retry_count', 5)
-        self.loop_delay = self.sd.get_int('loop_delay', 30)
-        self.processing_time = self.sd.get_int('processing_time', 60)
+        self.retry_count = self.sd.getint('retry_count', 5)
+        self.loop_delay = self.sd.getint('loop_delay', 30)
+        self.processing_time = self.sd.getint('processing_time', 60)
         self.input_queue = self.sd.get_obj('input_queue')
         self.output_queue = self.sd.get_obj('output_queue')
         self.output_domain = self.sd.get_obj('output_domain')
