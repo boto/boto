@@ -141,7 +141,7 @@ def main():
                     if not quiet:
                         print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
                     if not no_op:
-                        k = b.new_key(file)
+                        k = b.new_key(key_name)
                         k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb)
                     total += 1
         elif os.path.isfile(path):
