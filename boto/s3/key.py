@@ -78,6 +78,15 @@ class Key:
         return self
 
     def open_read(self, headers=None, query_args=None):
+        """
+        Open this key for reading
+        
+        @type headers: dict
+        @param headers: Headers to pass in the web request
+        
+        @type query_args: string
+        @param query_args: Arguments to pass in the query string (ie, 'torrent')
+        """
         if self.resp == None:
             self.mode = 'r'
             
@@ -173,7 +182,7 @@ class Key:
 
     def exists(self):
         """
-        Does this key exist?
+        Returns True if the key exists
         
         @rtype: bool
         @return: Whether the key exists on S3
@@ -253,7 +262,11 @@ class Key:
         @param headers: The headers to pass along with the PUT request
         
         @type cb: function
-        @param cb: The function to call on the data sent
+        @param cb: a callback function that will be called to report
+                    progress on the upload.  The callback should accept two integer
+                    parameters, the first representing the number of bytes that have
+                    been successfully transmitted to S3 and the second representing
+                    the total number of bytes that need to be transmitted.
         """
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest('PUT', path)
@@ -345,21 +358,25 @@ class Key:
         key in S3 and the contents of the file pointed to by 'fp' as the
         contents.
         
-        Parameters:
+        @type fp: file
+        @param fp: the file whose contents to upload
         
-        fp - a File-like object.
-        headers - (optional) additional HTTP headers that will be
-                  sent with the PUT request.
-        replace - (optional) If this parameter is False, the method
-                  will first check to see if an object exists in the
-                  bucket with the same key.  If it does, it won't
-                  overwrite it.  The default value is True which will
-                  overwrite the object.
-        cb - (optional) a callback function that will be called to report
-             progress on the upload.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted to S3 and the second representing
-             the total number of bytes that need to be transmitted.
+        @type headers: dict
+        @param headers: additional HTTP headers that will be sent with the PUT request.
+
+        @type replace: bool
+        @param replace: If this parameter is False, the method
+                        will first check to see if an object exists in the
+                        bucket with the same key.  If it does, it won't
+                        overwrite it.  The default value is True which will
+                        overwrite the object.
+                    
+        @type cb: function
+        @param cb: a callback function that will be called to report
+                    progress on the upload.  The callback should accept two integer
+                    parameters, the first representing the number of bytes that have
+                    been successfully transmitted to S3 and the second representing
+                    the total number of bytes that need to be transmitted.
         """
         if hasattr(fp, 'name'):
             self.path = fp.name
@@ -379,6 +396,22 @@ class Key:
         key in S3 and the contents of the file named by 'filename'.
         See set_contents_from_file method for details about the
         parameters.
+        
+        @type filename: string
+        @param filename: The name of the file that you want to put onto S3
+        
+        @type headers: dict
+        @param headers: Additional headers to pass along with the request to AWS.
+        
+        @type replace: bool
+        @param replace: If True, replaces the contents of the file if it already exists.
+        
+        @type cb: function
+        @param cb: (optional) a callback function that will be called to report
+             progress on the download.  The callback should accept two integer
+             parameters, the first representing the number of bytes that have
+             been successfully transmitted from S3 and the second representing
+             the total number of bytes that need to be transmitted.        
         """
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
@@ -390,6 +423,19 @@ class Key:
         key in S3 and the string 's' as the contents.
         See set_contents_from_file method for details about the
         parameters.
+        
+        @type headers: dict
+        @param headers: Additional headers to pass along with the request to AWS.
+        
+        @type replace: bool
+        @param replace: If True, replaces the contents of the file if it already exists.
+        
+        @type cb: function
+        @param cb: (optional) a callback function that will be called to report
+             progress on the download.  The callback should accept two integer
+             parameters, the first representing the number of bytes that have
+             been successfully transmitted from S3 and the second representing
+             the total number of bytes that need to be transmitted.        
         """
         fp = StringIO.StringIO(s)
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
@@ -406,7 +452,11 @@ class Key:
         @param: headers to send when retrieving the files
         
         @type cb: function
-        @param cb: Callback function to call on the data after it's retrieved
+        @param cb: (optional) a callback function that will be called to report
+             progress on the download.  The callback should accept two integer
+             parameters, the first representing the number of bytes that have
+             been successfully transmitted from S3 and the second representing
+             the total number of bytes that need to be transmitted.
         
         @type torrent: bool
         @param torrent: Flag for whether to get a torrent for the file
@@ -444,7 +494,7 @@ class Key:
         @type fp: file
         @param fp: The file pointer of where to put the torrent
         
-        @type headers: string
+        @type headers: dict
         @param headers: Headers to be passed
         
         @type cb: function
@@ -462,7 +512,7 @@ class Key:
         @type fp: File -like object
         @param fp:
         
-        @type headers: string
+        @type headers: dict
         @param headers: additional HTTP headers that will be sent with the GET request.
         
         @type cb: function
@@ -471,6 +521,10 @@ class Key:
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
+             
+        @type torrent: bool
+        @param torrent: If True, returns the contents of a torrent file as a string.
+
         """
         if self.bucket != None:
             self.get_file(fp, headers, cb, num_cb, torrent=torrent)
@@ -481,6 +535,23 @@ class Key:
         key in S3.  Store contents of the object to a file named by 'filename'.
         See get_contents_to_file method for details about the
         parameters.
+        
+        @type filename: string
+        @param filename: The filename of where to put the file contents
+        
+        @type headers: dict
+        @param headers: Any additional headers to send in the request
+        
+        @type cb: function
+        @param cb: (optional) a callback function that will be called to report
+             progress on the download.  The callback should accept two integer
+             parameters, the first representing the number of bytes that have
+             been successfully transmitted from S3 and the second representing
+             the total number of bytes that need to be transmitted.
+             
+        @type torrent: bool
+        @param torrent: If True, returns the contents of a torrent file as a string.
+        
         """
         fp = open(filename, 'wb')
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
@@ -499,6 +570,22 @@ class Key:
         key in S3.  Return the contents of the object as a string.
         See get_contents_to_file method for details about the
         parameters.
+        
+        @type headers: dict
+        @param headers: Any additional headers to send in the request
+        
+        @type cb: function
+        @param cb: (optional) a callback function that will be called to report
+             progress on the download.  The callback should accept two integer
+             parameters, the first representing the number of bytes that have
+             been successfully transmitted from S3 and the second representing
+             the total number of bytes that need to be transmitted.
+             
+        @type torrent: bool
+        @param torrent: If True, returns the contents of a torrent file as a string.
+        
+        @rtype: string
+        @returns: The contents of the file as a string
         """
         fp = StringIO.StringIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
@@ -509,15 +596,16 @@ class Key:
         Convenience method that provides a quick way to add an email grant to a key.
         This method retrieves the current ACL, creates a new grant based on the parameters
         passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
-        Inputs:
-            permission - The permission being granted.  Should be one of:
-                         READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
-                         See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
-                         for more details on permissions.
-            email_address - The email address associated with the AWS account your are granting
-                            the permission to.
-        Returns:
-            Nothing
+        
+        @type permission: string
+        @param permission: The permission being granted.  Should be one of:
+                            READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
+                            See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
+                            for more details on permissions.
+        
+        @type email_address: string
+        @param email_address: The email address associated with the AWS account your are granting
+                                the permission to.
         """
         policy = self.get_acl()
         policy.acl.add_email_grant(permission, email_address)
@@ -528,15 +616,16 @@ class Key:
         Convenience method that provides a quick way to add a canonical user grant to a key.
         This method retrieves the current ACL, creates a new grant based on the parameters
         passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
-        Inputs:
-            permission - The permission being granted.  Should be one of:
-                         READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
-                         See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
-                         for more details on permissions.
-            user_id - The canonical user id associated with the AWS account your are granting
-                      the permission to.
-        Returns:
-            Nothing
+        
+        @type permission: string
+        @param permission: The permission being granted.  Should be one of:
+                            READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
+                            See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
+                            for more details on permissions.
+        
+        @type user_id: string
+        @param user_id: The canonical user id associated with the AWS account your are granting
+                        the permission to.
         """
         policy = self.get_acl()
         policy.acl.add_user_grant(permission, user_id)
