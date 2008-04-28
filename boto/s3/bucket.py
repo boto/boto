@@ -275,6 +275,12 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
+    def make_public(self, recursive=False):
+        self.set_canned_acl('public-read')
+        if recursive:
+            for key in self:
+                self.set_canned_acl('public-read', key.name)
+
     def add_email_grant(self, permission, email_address, recursive=False):
         """
         Convenience method that provides a quick way to add an email grant to a bucket.
