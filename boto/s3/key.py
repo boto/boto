@@ -187,13 +187,13 @@ class Key:
         @rtype: bool
         @return: Whether the key exists on S3
         """
-        return bool(self.bucket.lookup(self.name.encode('utf-8')))
+        return bool(self.bucket.lookup(self.name))
 
     def delete(self):
         """
         Delete this key from S3
         """
-        return self.bucket.delete_key(self.name.encode('utf-8'))
+        return self.bucket.delete_key(self.name)
 
     def get_metadata(self, name):
         return self.metadata.get(name)
