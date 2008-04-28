@@ -166,7 +166,7 @@ class Key:
 
     def endElement(self, name, value, connection):
         if name == 'Key':
-            self.name = value
+            self.name = value.encode('utf-8')
         elif name == 'ETag':
             self.etag = value
         elif name == 'LastModified':
