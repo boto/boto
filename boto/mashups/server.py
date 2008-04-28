@@ -65,7 +65,7 @@ class Server(SDBObject):
         persisted in the db
         """
         l = ServerSet()
-        rs = cls.list()
+        rs = cls.find()
         for server in rs:
             l.append(server)
         return l
