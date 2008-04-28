@@ -58,13 +58,19 @@ def get_s3_connection():
 def revive_object_from_id(id):
     domain = get_domain()
     attrs = domain.get_attributes(id, ['__module__', '__type__', '__lineage__'])
-    cls = find_class(attrs['__module__'], attrs['__type__'])
-    return cls(id)
+    try:
+        cls = find_class(attrs['__module__'], attrs['__type__'])
+        return cls(id)
+    except ImportError:
+        return None
 
 def object_lister(cls, query_lister):
     for item in query_lister:
         if cls:
             yield cls(item.name)
         else:
-            yield revive_object_from_id(item.name)
+            o = revive_object_from_id(item.name)
+            if o:
+                yield o
+                
 

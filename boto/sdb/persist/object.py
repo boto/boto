@@ -77,7 +77,7 @@ class SDBObject(object):
         if len(keys) > 4:
             raise SDBPersistanceError('Too many fields, max is 4')
         parts = ["['__type__'='%s'] union ['__lineage__'starts-with'%s']" % (cls.__name__, cls.get_lineage())]
-        properties = cls.find_properties()
+        properties = cls.properties()
         for key in keys:
             found = False
             for property in properties:
@@ -108,7 +108,7 @@ class SDBObject(object):
         return object_lister(cls, rs)
 
     @classmethod
-    def find_properties(cls):
+    def properties(cls):
         properties = []
         while cls:
             for key in cls.__dict__.keys():
@@ -119,6 +119,9 @@ class SDBObject(object):
             else:
                 cls = None
         return properties
+
+    # for backwards compatibility
+    find_properties = properties
 
     def __init__(self, id=None):
         self.id = id
@@ -140,7 +143,7 @@ class SDBObject(object):
         attrs = {'__type__' : self.__class__.__name__,
                  '__module__' : self.__class__.__module__,
                  '__lineage__' : self.get_lineage()}
-        for property in self.find_properties():
+        for property in self.properties():
             attrs[property.name] = property.to_string(self)
         domain = get_domain()
         if domain:
