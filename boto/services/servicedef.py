@@ -35,17 +35,31 @@ class ServiceDef(Config):
         else:
             self.name = None
 
+
     def get(self, name, default=None):
         return Config.get(self, self.name, name, default)
 
     def has_option(self, option):
         return Config.has_option(self, self.name, option)
 
-    def getint(self, name, default=0):
-        return Config.getint(self, self.name, name, default)
+    def getint(self, option, default=0):
+        try:
+            val = Config.get(self, self.name, option)
+            val = int(val)
+        except:
+            val = int(default)
+        return val
         
-    def getbool(self, name, default=False):
-        return Config.getbool(self, self.name, name, default)
+    def getbool(self, option, default=False):
+        try:
+            val = Config.get(self, self.name, option)
+            if val.lower() == 'true':
+                val = True
+            else:
+                val = False
+        except:
+            val = default
+        return val
         
     def get_obj(self, name):
         """
