@@ -118,7 +118,7 @@ class Bucket:
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.last_modified = response.getheader('last-modified')
-            k.size = response.getheader('content-length')
+            k.size = int(response.getheader('content-length'))
             k.name = key_name
             return k
         else:
