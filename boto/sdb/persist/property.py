@@ -343,3 +343,10 @@ class MultiValue:
         domain = get_domain()
         domain.put_attributes(self.object.id, {self.name: self.checker.to_string(value)}, replace=False)
 
+    def index(self, value):
+        for x in self._list:
+            if x.id == value.id:
+                return self._list.index(x)
+
+    def remove(self, value):
+        del(self[self.index(value)])
