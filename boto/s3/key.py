@@ -267,6 +267,12 @@ class Key:
                     parameters, the first representing the number of bytes that have
                     been successfully transmitted to S3 and the second representing
                     the total number of bytes that need to be transmitted.
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
         """
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest('PUT', path)
@@ -377,6 +383,12 @@ class Key:
                     parameters, the first representing the number of bytes that have
                     been successfully transmitted to S3 and the second representing
                     the total number of bytes that need to be transmitted.
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
         """
         if hasattr(fp, 'name'):
             self.path = fp.name
@@ -412,6 +424,12 @@ class Key:
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.        
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
         """
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
@@ -436,6 +454,12 @@ class Key:
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.        
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
         """
         fp = StringIO.StringIO(s)
         self.set_contents_from_file(fp, headers, replace, cb, num_cb)
@@ -458,6 +482,12 @@ class Key:
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
         
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
         @type torrent: bool
         @param torrent: Flag for whether to get a torrent for the file
         """
@@ -500,6 +530,11 @@ class Key:
         @type cb: function
         @param cb: Callback function to call on retrieved data
         
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
         """
         return self.get_file(fp, headers, cb, num_cb, torrent=True)
     
@@ -521,6 +556,12 @@ class Key:
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
+             
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
              
         @type torrent: bool
         @param torrent: If True, returns the contents of a torrent file as a string.
@@ -548,6 +589,12 @@ class Key:
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
+             
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
              
         @type torrent: bool
         @param torrent: If True, returns the contents of a torrent file as a string.
@@ -580,6 +627,17 @@ class Key:
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
+
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
+             
+                    
+        @type cb: int
+        @param num_cb: (optional) If a callback is specified with the cb parameter
+             this parameter determines the granularity of the callback by defining
+             the maximum number of times the callback will be called during the file transfer.  
              
         @type torrent: bool
         @param torrent: If True, returns the contents of a torrent file as a string.
