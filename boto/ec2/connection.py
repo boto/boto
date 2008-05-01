@@ -328,6 +328,21 @@ class EC2Connection(AWSQueryConnection):
         if keynames:
             self.build_list_params(params, keynames, 'KeyName')
         return self.get_list('DescribeKeyPairs', params, [('item', KeyPair)])
+    
+    def get_key_pair(self, keyname):
+        """
+        Convenience method to retrieve a specific keypair (KeyPair).
+        
+        @type image_id: string
+        @param image_id: the ID of the Image to retrieve
+        
+        @rtype: L{KeyPair<boto.ec2.keypair.KeyPair>}
+        @return: The KeyPair specified or None if it is not found
+        """
+        try:
+            return self.get_all_key_pairs(keynames=[keyname])[0]
+        except IndexError: # None of those images available
+            return None
         
     def create_key_pair(self, key_name):
         """
