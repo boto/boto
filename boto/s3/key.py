@@ -158,6 +158,29 @@ class Key:
             self.close()
         return data
 
+    def copy(self, dst_bucket, dst_key, metadata=None):
+        """
+        Copy this Key to another bucket.
+
+        @type dst_bucket: string
+        @param dst_bucket: The name of the destination bucket
+
+        @type dst_key: string
+        @param dst_key: The name of the destinatino key
+        
+        @type metadata: dict
+        @param metadata: Metadata to be associated with new key.
+                         If metadata is supplied, it will replace the
+                         metadata of the source key being copied.
+                         If no metadata is supplied, the source key's
+                         metadata will be copied to the new key.
+
+        @rtype: L{Key<boto.s3.key.Key>} or subclass
+        @returns: An instance of the newly created key object
+        """
+        dst_bucket = self.bucket.connection.lookup(dst_bucket)
+        return dst_bucket.copy_key(dst_key, self.bucket.name, self.name, metadata)
+
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
             self.owner = User(self)
