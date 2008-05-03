@@ -68,6 +68,12 @@ class S3CreateError(BotoServerError):
     """
     pass
 
+class S3CopyError(BotoServerError):
+    """
+    Error copying a key on S3.
+    """
+    pass
+
 class SQSError(BotoServerError):
     """
     General Error on Simple Queue Service.

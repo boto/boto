@@ -26,7 +26,7 @@ from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
-from boto.exception import S3ResponseError, S3PermissionsError
+from boto.exception import S3ResponseError, S3PermissionsError, S3CopyError
 from boto.s3.bucketlistresultset import BucketListResultSet
 import boto.utils
 import xml.sax
@@ -232,6 +232,48 @@ class Bucket:
         response = self.connection.make_request('DELETE', self.name, key_name)
         body = response.read()
         if response.status != 204:
+            raise S3ResponseError(response.status, response.reason, body)
+
+    def copy_key(self, new_key_name, src_bucket_name, src_key_name, metadata=None):
+        """
+        Create a new key in the bucket by copying another existing key.
+
+        @type new_key_name: string
+        @param new_key_name: The name of the new key
+
+        @type src_bucket_name: string
+        @param src_bucket_name: The name of the source bucket
+
+        @type src_key_name: string
+        @param src_key_name: The name of the source key
+
+        @type metadata: dict
+        @param metadata: Metadata to be associated with new key.
+                         If metadata is supplied, it will replace the
+                         metadata of the source key being copied.
+                         If no metadata is supplied, the source key's
+                         metadata will be copied to the new key.
+
+        @rtype: L{Key<boto.s3.key.Key>} or subclass
+        @returns: An instance of the newly created key object
+        """
+        if metadata:
+            headers = metadata.copy()
+            headers['x-amz-metadata-directive'] = 'REPLACE'
+        else:
+            headers = {'x-amz-copy-source' : '%s/%s' % (src_bucket_name, src_key_name),
+                       'x-amz-metadata-directive' : 'COPY'}
+        response = self.connection.make_request('PUT', self.name, new_key_name,
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            key = self.new_key(new_key_name)
+            h = handler.XmlHandler(key, self)
+            xml.sax.parseString(body, h)
+            if hasattr(key, 'Error'):
+                raise S3CopyError(key.Code, key.Message, body)
+            return key
+        else:
             raise S3ResponseError(response.status, response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name=''):

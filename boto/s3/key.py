@@ -55,6 +55,7 @@ class Key:
         self.path = None
         self.resp = None
         self.mode = None
+        self.size = None
 
     def __repr__(self):
         if self.bucket:
