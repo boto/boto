@@ -159,11 +159,29 @@ class S3Connection(AWSAuthConnection):
             bucket = None
         return bucket
 
-    def create_bucket(self, bucket_name, headers={}, location=Location.DEFAULT):
+    def create_bucket(self, bucket_name, headers=None, location=Location.DEFAULT, policy=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
         Location.EU to create an European bucket.
+
+        @type bucket_name: string
+        @param bucket_name: The name of the new bucket
+        
+        @type headers: dict
+        @param headers: Additional headers to pass along with the request to AWS.
+
+        @type location: L{Location<boto.s3.connection.Location>}
+        @param location: The location of the new bucket
+        
+        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        @param policy: A canned ACL policy that will be applied to the new key in S3.
+             
         """
+        if policy:
+            if headers:
+                headers['x-amz-acl'] = policy
+            else:
+                headers = {'x-amz-acl' : policy}
         if location == Location.DEFAULT:
             data = ''
         else:

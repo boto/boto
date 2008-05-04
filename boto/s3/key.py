@@ -382,7 +382,7 @@ class Key:
         self.size = fp.tell()
         fp.seek(0)
 
-    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None, num_cb=10):
+    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None, num_cb=10, policy=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -411,9 +411,17 @@ class Key:
         @type cb: int
         @param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
+             the maximum number of times the callback will be called during the file transfer.
+
+        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        @param policy: A canned ACL policy that will be applied to the new key in S3.
              
         """
+        if policy:
+            if headers:
+                headers['x-amz-acl'] = policy
+            else:
+                headers = {'x-amz-acl' : policy}
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
@@ -426,7 +434,7 @@ class Key:
                     return
             self.send_file(fp, headers, cb, num_cb)
 
-    def set_contents_from_filename(self, filename, headers=None, replace=True, cb=None, num_cb=10):
+    def set_contents_from_filename(self, filename, headers=None, replace=True, cb=None, num_cb=10, policy=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -454,12 +462,15 @@ class Key:
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
+        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        @param policy: A canned ACL policy that will be applied to the new key in S3.
+             
         """
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb)
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
         fp.close()
 
-    def set_contents_from_string(self, s, headers=None, replace=True, cb=None, num_cb=10):
+    def set_contents_from_string(self, s, headers=None, replace=True, cb=None, num_cb=10, policy=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -484,9 +495,12 @@ class Key:
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
+        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        @param policy: A canned ACL policy that will be applied to the new key in S3.
+             
         """
         fp = StringIO.StringIO(s)
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb)
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
         fp.close()
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10, torrent=False):
