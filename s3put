@@ -27,7 +27,8 @@ from boto.exception import S3ResponseError
 usage_string = """
 SYNOPSIS
     s3put [-a access_key] [-s secret_key] -b bucket_name [-c num_cb]
-          [-d debug_level] [-i ignore_dirs] [-n] [-p prefix] [-q] path
+          [-d debug_level] [-i ignore_dirs] [-n] [-p prefix] [-q]
+          [-g grant] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -61,6 +62,10 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
+        grant - A canned ACL policy that will be granted on each file
+                transferred to S3.  The value of provided must be one
+                of the "canned" ACL policies supported by S3:
+                private|public-read|public-read-write|authenticated-read
 
      If the -n option is provided, no files will be transferred to S3 but
      informational messages will be printed about what would happen.
@@ -79,9 +84,9 @@ def get_key_name(fullpath, prefix):
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:hi:np:qs:v',
-                                   ['access_key', 'bucket', 'callback', 'debug', 'help', 'ignore',
-                                    'no_op', 'prefix', 'quiet', 'secret_key'])
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:np:qs:v',
+                                   ['access_key', 'bucket', 'callback', 'debug', 'help', 'grant',
+                                    'ignore', 'no_op', 'prefix', 'quiet', 'secret_key'])
     except:
         usage()
     ignore_dirs = []
@@ -95,6 +100,7 @@ def main():
     quiet = False
     no_op = False
     prefix = '/'
+    grant = None
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
@@ -108,6 +114,8 @@ def main():
             cb = submit_cb
         if o in ('-d', '--debug'):
             debug = int(a)
+        if o in ('-g', '--grant'):
+            grant = a
         if o in ('-i', '--ignore'):
             ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
@@ -142,11 +150,12 @@ def main():
                         print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
                     if not no_op:
                         k = b.new_key(key_name)
-                        k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb)
+                        k.set_contents_from_filename(fullpath, cb=cb,
+                                                     num_cb=num_cb, policy=grant)
                     total += 1
         elif os.path.isfile(path):
             k = b.new_key(os.path.split(path)[1])
-            k.set_contents_from_filename(path)
+            k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant)
     else:
         print usage()
 
