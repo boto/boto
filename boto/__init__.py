@@ -35,7 +35,7 @@ def init_logging():
         except:
             pass
 
-log = logging
+log = logging.getLogger('boto')
 init_logging()
 
 # convenience function to set logging to a particular file
