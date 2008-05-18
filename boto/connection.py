@@ -109,7 +109,10 @@ class AWSAuthConnection:
         else:
             self.protocol = 'http'
         self.server = server
-        self.debug = config.getint('Boto', 'debug', debug)
+        if debug:
+            self.debug = debug
+        else:
+            self.debug = config.getint('Boto', 'debug', debug)
         if port:
             self.port = port
         else:
