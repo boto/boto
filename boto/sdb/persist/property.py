@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.exception import SDBPersistanceError
+from boto.sdb.persist import get_domain
 from boto.sdb.persist.checker import *
 from boto.utils import Password
 
@@ -37,13 +38,15 @@ class Property(object):
 class ScalarProperty(Property):
 
     def save(self, obj):
-        obj.context.domain.put_attributes(obj.id, {self.name : self.to_string(obj)}, replace=True)
+        domain = get_domain()
+        domain.put_attributes(obj.id, {self.name : self.to_string(obj)}, replace=True)
 
     def to_string(self, obj):
         return self.checker.to_string(getattr(obj, self.name))
 
     def load(self, obj):
-        a = obj.context.domain.get_attributes(obj.id, self.name)
+        domain = get_domain()
+        a = domain.get_attributes(obj.id, self.name)
         # try to get the attribute value from SDB
         if self.name in a:
             value = self.checker.from_string(a[self.name])
@@ -220,7 +223,8 @@ class MultiValueProperty(Property):
     def load(self, obj):
         if obj != None:
             _list = []
-            a = obj.context.domain.get_attributes(obj.id, self.name)
+            domain = get_domain()
+            a = domain.get_attributes(obj.id, self.name)
             if self.name in a:
                 lst = a[self.name]
                 if not isinstance(lst, list):
@@ -237,8 +241,9 @@ class MultiValueProperty(Property):
         str_list = []
         for value in self._list:
             str_list.append(self.checker.to_string(value))
+        domain = get_domain()
         try:
-            obj.context.domain.put_attributes(obj.id, {self.name : str_list}, replace=True)
+            domain.put_attributes(obj.id, {self.name : str_list}, replace=True)
         except:
             print 'problem setting value: %s' % value
 
@@ -329,14 +334,14 @@ class MultiValue:
     def __delitem__(self, key):
         item = self[key]
         self._list.__delitem__(key)
-        self.object.context.domain.delete_attributes(self.object.id,
-                                                     {self.name: [self.checker.to_string(item)]})
+        domain = get_domain()
+        domain.delete_attributes(self.object.id, {self.name: [self.checker.to_string(item)]})
 
     def append(self, value):
         self.checker.check(value)
         self._list.append(value)
-        self.object.context.domain.put_attributes(self.object.id,
-                                                  {self.name: self.checker.to_string(value)}, replace=False)
+        domain = get_domain()
+        domain.put_attributes(self.object.id, {self.name: self.checker.to_string(value)}, replace=False)
 
     def index(self, value):
         for x in self._list:
