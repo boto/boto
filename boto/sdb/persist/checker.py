@@ -20,8 +20,9 @@
 # IN THE SOFTWARE.
 
 from datetime import datetime
+import boto
 from boto.s3.key import Key
-from boto.sdb.persist import revive_object_from_id, get_s3_connection
+from boto.sdb.persist import revive_object_from_id
 from boto.exception import SDBPersistanceError
 from boto.utils import Password
 
@@ -235,8 +236,7 @@ class S3KeyChecker(ValueChecker):
             return
         try:
             bucket_name, key_name = str_value.split('/')
-            s3 = get_s3_connection()
-            bucket = s3.get_bucket(bucket_name)
+            bucket = boto.lookup('s3', bucket_name)
             key = bucket.get_key(key_name)
             if not key:
                 key = bucket.new_key(key_name)
@@ -268,8 +268,7 @@ class S3BucketChecker(ValueChecker):
         if not str_value:
             return
         try:
-            s3 = get_s3_connection()
-            bucket = s3.get_bucket(str_value)
+            bucket = boto.lookup('s3', str_value)
             return bucket
         except:
             raise ValueError

@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.exception import SDBPersistanceError
-from boto.sdb.persist import get_domain, object_lister
+from boto.sdb.persist import get_context, object_lister
 from boto.sdb.persist.property import *
 import uuid
 
@@ -51,12 +51,13 @@ class SDBObject(object):
         return '.'.join(l)
     
     @classmethod
-    def get(cls, id=None, **params):
-        domain = get_domain()
-        if domain and id:
-            a = domain.get_attributes(id, '__type__')
+    def get(cls, id=None, context=None, **params):
+        if not context:
+            context = get_context()
+        if context.domain and id:
+            a = context.domain.get_attributes(id, '__type__')
             if a.has_key('__type__'):
-                return cls(id)
+                return cls(id, context)
             else:
                 raise SDBPersistanceError('%s object with id=%s does not exist' % (cls.__name__, id))
         else:
@@ -72,7 +73,7 @@ class SDBObject(object):
             raise SDBPersistanceError('Query matched more than 1 item')
 
     @classmethod
-    def find(cls, **params):
+    def find(cls, context=None, **params):
         keys = params.keys()
         if len(keys) > 4:
             raise SDBPersistanceError('Too many fields, max is 4')
@@ -91,21 +92,23 @@ class SDBObject(object):
             if not found:
                 raise SDBPersistanceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
-        domain = get_domain()
-        if domain:
-            rs = domain.query(query)
+        if not context:
+            context = get_context()
+        if context.domain:
+            rs = context.domain.query(query)
         else:
             rs = []
-        return object_lister(None, rs)
+        return object_lister(None, rs, context)
 
     @classmethod
-    def list(cls, max_items=None):
-        domain = get_domain()
-        if domain:
-            rs = domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
+    def list(cls, max_items=None, context=None):
+        if not context:
+            context = get_context()
+        if context.domain:
+            rs = context.domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
         else:
             rs = []
-        return object_lister(cls, rs)
+        return object_lister(cls, rs, context)
 
     @classmethod
     def properties(cls):
@@ -123,13 +126,15 @@ class SDBObject(object):
     # for backwards compatibility
     find_properties = properties
 
-    def __init__(self, id=None):
+    def __init__(self, id=None, context=None):
         self.id = id
+        self.context = context
+        if not self.context:
+            self.context = get_context()
         if self.id:
             self.auto_update = True
-            domain = get_domain()
-            if domain:
-                attrs = domain.get_attributes(self.id, '__type__')
+            if self.context.domain:
+                attrs = self.context.domain.get_attributes(self.id, '__type__')
                 if len(attrs.keys()) == 0:
                     raise SDBPersistanceError('Object %s: not found' % self.id)
         else:
@@ -145,24 +150,20 @@ class SDBObject(object):
                  '__lineage__' : self.get_lineage()}
         for property in self.properties():
             attrs[property.name] = property.to_string(self)
-        domain = get_domain()
-        if domain:
-            domain.put_attributes(self.id, attrs, replace=True)
+        if self.context.domain:
+            self.context.domain.put_attributes(self.id, attrs, replace=True)
             self.auto_update = True
         
     def delete(self):
-        domain = get_domain()
-        if domain:
-            domain.delete_attributes(self.id)
+        if self.context.domain:
+            self.context.domain.delete_attributes(self.id)
 
     def get_related_objects(self, ref_name, ref_cls=None):
-        domain = get_domain()
-        if domain:
+        rs = []
+        if self.context.domain:
             query = "['%s' = '%s']" % (ref_name, self.id)
             if ref_cls:
                 query += " intersection ['__type__'='%s']" % ref_cls.__name__
             rs = domain.query(query)
-        else:
-            rs = []
-        return object_lister(ref_cls, rs)
+        return object_lister(ref_cls, rs, self.context)
 

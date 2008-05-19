@@ -1,6 +1,6 @@
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
-from boto.sdb.persist import set_domain, get_domain
+from boto.sdb.persist import get_context
 from datetime import datetime
 import time
 
@@ -39,8 +39,8 @@ class TestList(SDBObject):
     bools = BooleanListProperty()
     objects = ObjectListProperty(ref_class=TestScalar)
     
-def test1():
-    s = TestScalar()
+def test1(ctx):
+    s = TestScalar(context=ctx)
     s.name = 'foo'
     s.description = 'This is foo'
     s.size = 42
@@ -50,16 +50,16 @@ def test1():
     s.save()
     return s
 
-def test2(ref_name):
-    s = TestRef()
+def test2(ctx, ref_name):
+    s = TestRef(context=ctx)
     s.name = 'testref'
-    rs = TestScalar.find(name=ref_name)
+    rs = TestScalar.find(name=ref_name, context=ctx)
     s.ref = rs.next()
     s.save()
     return s
 
 def test3(ref):
-    s = TestScalar()
+    s = TestScalar(context=ref.context)
     s.name = 'bar'
     s.description = 'This is bar'
     s.size = 24
@@ -83,14 +83,14 @@ def test4(ref1, ref2):
     return s
 
 def test5(ref):
-    s = TestSubClass1()
+    s = TestSubClass1(context=ref.context)
     s.answer = 42
     s.ref = ref
     s.save()
     return s
 
-def test6():
-    s = TestSubClass2()
+def test6(ctx):
+    s = TestSubClass2(context=ctx)
     s.name = 'fie'
     s.description = 'This is fie'
     s.size = 4200
@@ -103,14 +103,14 @@ def test6():
 
 def test(domain_name):
     print 'Initialize the Persistance system'
-    set_domain(domain_name)
+    ctx = get_context(domain_name)
     print 'Call test1'
-    s1 = test1()
+    s1 = test1(ctx)
     # now create a new instance and read the saved data from SDB
     print 'Now sleep to wait for things to converge'
     time.sleep(5)
     print 'Now lookup the object and compare the fields'
-    s2 = TestScalar(s1.id)
+    s2 = TestScalar(s1.id, ctx)
     assert s1.name == s2.name
     assert s1.description == s2.description
     assert s1.size == s2.size
@@ -118,19 +118,18 @@ def test(domain_name):
     assert s1.foo == s2.foo
     #assert s1.date == s2.date
     print 'Call test2'
-    s2 = test2(s1.name)
+    s2 = test2(ctx, s1.name)
     print 'Call test3'
     s3 = test3(s1)
     print 'Call test4'
     s4 = test4(s1, s3)
     print 'Call test5'
-    s6 = test6()
+    s6 = test6(ctx)
     s5 = test5(s6)
-    domain = get_domain()
-    item1 = domain.get_item(s1.id)
-    item2 = domain.get_item(s2.id)
-    item3 = domain.get_item(s3.id)
-    item4 = domain.get_item(s4.id)
-    item5 = domain.get_item(s5.id)
-    item6 = domain.get_item(s6.id)
+    item1 = ctx.domain.get_item(s1.id)
+    item2 = ctx.domain.get_item(s2.id)
+    item3 = ctx.domain.get_item(s3.id)
+    item4 = ctx.domain.get_item(s4.id)
+    item5 = ctx.domain.get_item(s5.id)
+    item6 = ctx.domain.get_item(s6.id)
     return [(s1, item1), (s2, item2), (s3, item3), (s4, item4), (s5, item5), (s6, item6)]
