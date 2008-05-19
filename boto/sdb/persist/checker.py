@@ -21,6 +21,7 @@
 
 from datetime import datetime
 from boto.s3.key import Key
+from boto.s3.bucket import Bucket
 from boto.sdb.persist import revive_object_from_id, get_s3_connection
 from boto.exception import SDBPersistanceError
 from boto.utils import Password
@@ -261,8 +262,10 @@ class S3BucketChecker(ValueChecker):
     def check(self, value):
         if value == None:
             return
-        if not isinstance(value, str):
-            raise TypeError
+        if isinstance(value, str) or isinstance(value, unicode):
+            return
+        elif not isinstance(value, Bucket):
+            raise TypeError, 'Expecting Bucket, got %s' % type(value)
 
     def from_string(self, str_value):
         if not str_value:
@@ -279,5 +282,5 @@ class S3BucketChecker(ValueChecker):
         if value == None:
             return None
         else:
-            return '%s' % value.bucket.name
+            return '%s' % value.name
 
