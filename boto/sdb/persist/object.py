@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.exception import SDBPersistanceError
-from boto.sdb.persist import get_domain, object_lister
+from boto.sdb.persist import get_manager, object_lister
 from boto.sdb.persist.property import *
 import uuid
 
@@ -44,6 +44,8 @@ class SDBBase(type):
 class SDBObject(object):
     __metaclass__ = SDBBase
 
+    manager = get_manager()
+
     @classmethod
     def get_lineage(cls):
         l = [c.__name__ for c in cls.mro()]
@@ -52,9 +54,8 @@ class SDBObject(object):
     
     @classmethod
     def get(cls, id=None, **params):
-        domain = get_domain()
-        if domain and id:
-            a = domain.get_attributes(id, '__type__')
+        if cls.manager.domain and id:
+            a = cls.manager.domain.get_attributes(id, '__type__')
             if a.has_key('__type__'):
                 return cls(id)
             else:
@@ -91,21 +92,19 @@ class SDBObject(object):
             if not found:
                 raise SDBPersistanceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
-        domain = get_domain()
-        if domain:
-            rs = domain.query(query)
+        if cls.manager.domain:
+            rs = cls.manager.domain.query(query)
         else:
             rs = []
-        return object_lister(None, rs)
+        return object_lister(None, rs, cls.manager)
 
     @classmethod
     def list(cls, max_items=None):
-        domain = get_domain()
-        if domain:
-            rs = domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
+        if cls.manager.domain:
+            rs = cls.manager.domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
         else:
             rs = []
-        return object_lister(cls, rs)
+        return object_lister(cls, rs, cls.manager)
 
     @classmethod
     def properties(cls):
@@ -127,9 +126,8 @@ class SDBObject(object):
         self.id = id
         if self.id:
             self.auto_update = True
-            domain = get_domain()
-            if domain:
-                attrs = domain.get_attributes(self.id, '__type__')
+            if self.manager.domain:
+                attrs = self.manager.domain.get_attributes(self.id, '__type__')
                 if len(attrs.keys()) == 0:
                     raise SDBPersistanceError('Object %s: not found' % self.id)
         else:
@@ -145,24 +143,21 @@ class SDBObject(object):
                  '__lineage__' : self.get_lineage()}
         for property in self.properties():
             attrs[property.name] = property.to_string(self)
-        domain = get_domain()
-        if domain:
-            domain.put_attributes(self.id, attrs, replace=True)
+        if self.manager.domain:
+            self.manager.domain.put_attributes(self.id, attrs, replace=True)
             self.auto_update = True
         
     def delete(self):
-        domain = get_domain()
-        if domain:
-            domain.delete_attributes(self.id)
+        if self.manager.domain:
+            self.manager.domain.delete_attributes(self.id)
 
     def get_related_objects(self, ref_name, ref_cls=None):
-        domain = get_domain()
-        if domain:
+        if self.manager.domain:
             query = "['%s' = '%s']" % (ref_name, self.id)
             if ref_cls:
                 query += " intersection ['__type__'='%s']" % ref_cls.__name__
-            rs = domain.query(query)
+            rs = self.manager.domain.query(query)
         else:
             rs = []
-        return object_lister(ref_cls, rs)
+        return object_lister(ref_cls, rs, self.manager)
 

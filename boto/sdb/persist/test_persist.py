@@ -1,6 +1,6 @@
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
-from boto.sdb.persist import set_domain, get_domain
+from boto.sdb.persist import Manager
 from datetime import datetime
 import time
 
@@ -103,7 +103,7 @@ def test6():
 
 def test(domain_name):
     print 'Initialize the Persistance system'
-    set_domain(domain_name)
+    Manager.DefaultDomainName = domain_name
     print 'Call test1'
     s1 = test1()
     # now create a new instance and read the saved data from SDB
@@ -126,7 +126,7 @@ def test(domain_name):
     print 'Call test5'
     s6 = test6()
     s5 = test5(s6)
-    domain = get_domain()
+    domain = s5.manager.domain
     item1 = domain.get_item(s1.id)
     item2 = domain.get_item(s2.id)
     item3 = domain.get_item(s3.id)
