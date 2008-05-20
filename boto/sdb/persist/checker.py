@@ -39,7 +39,7 @@ class ValueChecker:
         """
         raise TypeError
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         """
         Takes a string as input and returns the type-specific value represented by that string.
 
@@ -75,7 +75,7 @@ class StringChecker(ValueChecker):
         else:
             raise TypeError, 'Expecting String, got %s' % type(value)
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         return str_value
 
     def to_string(self, value):
@@ -118,7 +118,7 @@ class IntegerChecker(ValueChecker):
         if value < min:
             raise ValueError, 'Minimum value is %d' % min
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         val = int(str_value)
         if self.signed:
             val = val + self.__sizes__[self.size][2]
@@ -142,7 +142,7 @@ class BooleanChecker(ValueChecker):
         if not isinstance(value, bool):
             raise TypeError, 'Expecting bool, got %s' % type(value)
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         if str_value.lower() == 'true':
             return True
         else:
@@ -171,7 +171,7 @@ class DateTimeChecker(ValueChecker):
         if not isinstance(value, datetime):
             raise TypeError, 'Expecting datetime, got %s' % type(value)
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         try:
             return datetime.strptime(str_value, ISO8601)
         except:
@@ -201,11 +201,11 @@ class ObjectChecker(ValueChecker):
         except:
             raise ValueError, '%s is not an SDBObject' % value
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         if not str_value:
             return None
         try:
-            return revive_object_from_id(str_value)
+            return revive_object_from_id(str_value, obj.manager)
         except:
             raise ValueError
 
@@ -232,7 +232,7 @@ class S3KeyChecker(ValueChecker):
         elif not isinstance(value, Key):
             raise TypeError, 'Expecting Key, got %s' % type(value)
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         if not str_value:
             return None
         try:
@@ -269,7 +269,7 @@ class S3BucketChecker(ValueChecker):
         elif not isinstance(value, Bucket):
             raise TypeError, 'Expecting Bucket, got %s' % type(value)
 
-    def from_string(self, str_value, obj=None):
+    def from_string(self, str_value, obj):
         if not str_value:
             return None
         try:
