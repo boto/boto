@@ -122,7 +122,9 @@ class SDBObject(object):
     # for backwards compatibility
     find_properties = properties
 
-    def __init__(self, id=None):
+    def __init__(self, id=None, manager=None):
+        if manager:
+            self.manager = manager
         self.id = id
         if self.id:
             self.auto_update = True

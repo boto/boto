@@ -60,11 +60,12 @@ def set_domain(domain_name):
     Manager.DefaultDomainName = domain_name
 
 def revive_object_from_id(id, manager):
-    if manager.domain:
-        attrs = manager.domain.get_attributes(id, ['__module__', '__type__', '__lineage__'])
+    if not manager.domain:
+        return None
+    attrs = manager.domain.get_attributes(id, ['__module__', '__type__', '__lineage__'])
     try:
         cls = find_class(attrs['__module__'], attrs['__type__'])
-        return cls(id)
+        return cls(id, manager=manager)
     except ImportError:
         return None
 
