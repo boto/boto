@@ -226,7 +226,7 @@ class S3KeyChecker(ValueChecker):
             return
         if isinstance(value, str) or isinstance(value, unicode):
             try:
-                bucket_name, key_name = value.split('/')
+                bucket_name, key_name = value.split('/', 1)
             except:
                 raise ValueError
         elif not isinstance(value, Key):
@@ -236,7 +236,7 @@ class S3KeyChecker(ValueChecker):
         if not str_value:
             return None
         try:
-            bucket_name, key_name = str_value.split('/')
+            bucket_name, key_name = str_value.split('/', 1)
             if obj:
                 s3 = obj.manager.get_s3_connection()
                 bucket = s3.get_bucket(bucket_name)
