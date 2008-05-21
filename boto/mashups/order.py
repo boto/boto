@@ -106,7 +106,7 @@ class Item(IObject):
             self.config.add_section('Pyami')
         sdb_domain = get_domain()
         if sdb_domain:
-            self.config.set('Pyami', 'server_sdb_domain', sdb_domain.name)
+            self.config.set('Pyami', 'server_sdb_domain', sdb_domain)
             self.config.set('Pyami', 'server_sdb_name', self.name)
 
     def set_config(self, config_path=None):

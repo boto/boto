@@ -79,8 +79,8 @@ class Server(SDBObject):
         s.save()
         return s
 
-    def __init__(self, id=None):
-        SDBObject.__init__(self, id)
+    def __init__(self, id=None, manager=None):
+        SDBObject.__init__(self, id, manager)
         self.reservation = None
         self._instance = None
         self._ssh_client = None
@@ -125,6 +125,13 @@ class Server(SDBObject):
 
     hostname = property(getHostname, setReadOnly, None,
                         'The public DNS name of the server')
+
+    def getPrivateHostname(self):
+        if self.instance:
+            return self.instance.private_dns_name
+
+    private_hostname = property(getPrivateHostname, setReadOnly, None,
+                                'The private DNS name of the server')
 
     def getLaunchTime(self):
         if self.instance:
