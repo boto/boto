@@ -63,19 +63,17 @@ class SQSConnection(AWSQueryConnection):
     def delete_queue(self, queue, force_deletion=False):
         """
         Delete an SQS Queue.
-        Inputs:
-            queue - a Queue object representing the SQS queue to be deleted.
-            force_deletion - (Optional) Normally, SQS will not delete a
-                             queue that contains messages.  However, if
-                             the force_deletion argument is True, the
-                             queue will be deleted regardless of whether
-                             there are messages in the queue or not.
-                             USE WITH CAUTION.  This will delete all
-                             messages in the queue as well.
-        Returns:
-            An empty ResultSet object.  Not sure why, actually.  It
-            should probably return a Boolean indicating success or
-            failure.
+
+        @type queue: A Queue object
+        @param queue: The SQS queue to be deleted
+        @type force_deletion: Boolean
+        @param force_deletion: Normally, SQS will not delete a queue that contains messages.
+                               However, if the force_deletion argument is True, the
+                               queue will be deleted regardless of whether there are messages in
+                               the queue or not.  USE WITH CAUTION.  This will delete all
+                               messages in the queue as well.
+        @rtype: Boolean
+        @return: True if the command succeeded, False otherwise
         """
         return self.get_status('DeleteQueue', None, queue.id)
 
