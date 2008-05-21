@@ -192,14 +192,22 @@ class ObjectChecker(ValueChecker):
     def check(self, value):
         if value == None:
             return
-        try:
-            obj_lineage = value.get_lineage()
-            cls_lineage = self.ref_class.get_lineage()
-            if obj_lineage.startswith(cls_lineage):
-                return
-            raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
-        except:
-            raise ValueError, '%s is not an SDBObject' % value
+        if isinstance(value, str) or isinstance(value, unicode):
+            # ugly little hack - sometimes I want to just stick a UUID string
+            # in here rather than instantiate an object. 
+            # This does a bit of hand waving to "type check" the string
+            t = value.split('-')
+            if len(t) != 5:
+                raise ValueError
+        else:
+            try:
+                obj_lineage = value.get_lineage()
+                cls_lineage = self.ref_class.get_lineage()
+                if obj_lineage.startswith(cls_lineage):
+                    return
+                raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
+            except:
+                raise ValueError, '%s is not an SDBObject' % value
 
     def from_string(self, str_value, obj):
         if not str_value:
@@ -211,6 +219,8 @@ class ObjectChecker(ValueChecker):
 
     def to_string(self, value):
         self.check(value)
+        if isinstance(value, str) or isinstance(value, unicode):
+            return value
         if value == None:
             return ''
         else:
