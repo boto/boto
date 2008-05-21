@@ -59,6 +59,9 @@ def get_manager(domain_name=None, aws_access_key_id=None, aws_secret_access_key=
 def set_domain(domain_name):
     Manager.DefaultDomainName = domain_name
 
+def get_domain():
+    return Manager.DefaultDomainName
+
 def revive_object_from_id(id, manager):
     if not manager.domain:
         return None
