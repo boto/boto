@@ -333,7 +333,7 @@ class MultiValue:
     def __delitem__(self, key):
         item = self[key]
         self._list.__delitem__(key)
-        domain = obj.manager.domain
+        domain = self.object.manager.domain
         domain.delete_attributes(self.object.id, {self.name: [self.checker.to_string(item)]})
 
     def append(self, value):
