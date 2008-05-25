@@ -81,7 +81,7 @@ class Server(SDBObject):
 
     def __init__(self, id=None, manager=None):
         SDBObject.__init__(self, id, manager)
-        self.reservation = None
+        self._reservation = None
         self._instance = None
         self._ssh_client = None
         self._pkey = None
@@ -89,6 +89,7 @@ class Server(SDBObject):
 
     name = StringProperty()
     instance_id = StringProperty()
+    config_uri = StringProperty()
     description = StringProperty()
 
     def setReadOnly(self, value):
@@ -99,8 +100,8 @@ class Server(SDBObject):
             if self.instance_id:
                 rs = self.ec2.get_all_instances([self.instance_id])
                 if len(rs) > 0:
-                    self.reservation = rs[0]
-                    self._instance = self.reservation.instances[0]
+                    self._reservation = rs[0]
+                    self._instance = self._reservation.instances[0]
         return self._instance
 
     instance = property(getInstance, setReadOnly, None, 'The Instance for the server')
@@ -148,8 +149,8 @@ class Server(SDBObject):
                               'Retrieve the console output for server')
 
     def getGroups(self):
-        if self.reservation:
-            return self.reservation.groups
+        if self._reservation:
+            return self._reservation.groups
         else:
             return None
 
@@ -241,7 +242,7 @@ class Server(SDBObject):
             pass
         command = 'ec2-bundle-vol '
         command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
-        command += '-u %s ' % self.reservation.owner_id
+        command += '-u %s ' % self._reservation.owner_id
         command += '-p %s ' % prefix
         command += '-s %d ' % size
         command += '-d /mnt '
