@@ -192,14 +192,29 @@ class Server(SDBObject):
         ami = ec2.get_all_images(image_ids = [str(self.ami_id)])[0]
         groups = ec2.get_all_security_groups(groupnames=[str(self.security_group)])
         if not self._config:
-            self._config = boto.utils.fetch_file(self.config_uri).read()
+            self._config = Config(fp=boto.utils.fetch_file(self.config_uri))
+        if not self._config.has_section("Credentials"):
+            self._config.add_section("Credentials")
+            self._config.set("Credentials", "aws_access_key_id", ec2.aws_access_key_id)
+            self._config.set("Credentials", "aws_secret_access_key", ec2.aws_secret_access_key)
+
+        if not self._config.has_section("Pyami"):
+            self._config.add_section("Pyami")
+
+        if self.manager.domain:
+            self._config.set('Pyami', 'server_sdb_domain', self.manager.domain)
+            self._config.set("Pyami", 'server_sdb_name', self.name)
+
+        cfg = StringIO.StringIO()
+        self._config.write(cfg)
+        cfg = cfg.getvalue()
         r = ami.run(min_count=1,
                     max_count=1,
                     key_name=self.key_name,
                     security_groups = groups,
                     instance_type = self.instance_type,
                     placement = self.zone,
-                    user_data = self._config)
+                    user_data = cfg)
         i = r.instances.next()
         self.instance_id = i.id
         if self.elastic_ip:
