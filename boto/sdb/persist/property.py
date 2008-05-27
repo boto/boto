@@ -235,7 +235,7 @@ class MultiValueProperty(Property):
 
     def __set__(self, obj, value):
         if not isinstance(value, list):
-            raise SDBPersistanceError('Value must be a list')
+            raise SDBPersistenceError('Value must be a list')
         self._list = value
         str_list = []
         for value in self._list:

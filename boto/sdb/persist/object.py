@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.exception import SDBPersistanceError
+from boto.exception import SDBPersistenceError
 from boto.sdb.persist import get_manager, object_lister
 from boto.sdb.persist.property import *
 import uuid
@@ -59,24 +59,24 @@ class SDBObject(object):
             if a.has_key('__type__'):
                 return cls(id)
             else:
-                raise SDBPersistanceError('%s object with id=%s does not exist' % (cls.__name__, id))
+                raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
         else:
             rs = cls.find(**params)
             try:
                 obj = rs.next()
             except StopIteration:
-                raise SDBPersistanceError('%s object matching query does not exist' % cls.__name__)
+                raise SDBPersistenceError('%s object matching query does not exist' % cls.__name__)
             try:
                 rs.next()
             except StopIteration:
                 return obj
-            raise SDBPersistanceError('Query matched more than 1 item')
+            raise SDBPersistenceError('Query matched more than 1 item')
 
     @classmethod
     def find(cls, **params):
         keys = params.keys()
         if len(keys) > 4:
-            raise SDBPersistanceError('Too many fields, max is 4')
+            raise SDBPersistenceError('Too many fields, max is 4')
         parts = ["['__type__'='%s'] union ['__lineage__'starts-with'%s']" % (cls.__name__, cls.get_lineage())]
         properties = cls.properties()
         for key in keys:
@@ -88,9 +88,9 @@ class SDBObject(object):
                         checker = property.checker
                         parts.append("['%s' = '%s']" % (key, checker.to_string(params[key])))
                     else:
-                        raise SDBPersistanceError('%s is not a searchable field' % key)
+                        raise SDBPersistenceError('%s is not a searchable field' % key)
             if not found:
-                raise SDBPersistanceError('%s is not a valid field' % key)
+                raise SDBPersistenceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
         if cls.manager.domain:
             rs = cls.manager.domain.query(query)
@@ -131,7 +131,7 @@ class SDBObject(object):
             if self.manager.domain:
                 attrs = self.manager.domain.get_attributes(self.id, '__type__')
                 if len(attrs.keys()) == 0:
-                    raise SDBPersistanceError('Object %s: not found' % self.id)
+                    raise SDBPersistenceError('Object %s: not found' % self.id)
         else:
             self.id = str(uuid.uuid4())
             self.auto_update = False

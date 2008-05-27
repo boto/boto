@@ -24,7 +24,7 @@ import boto
 from boto.s3.key import Key
 from boto.s3.bucket import Bucket
 from boto.sdb.persist import revive_object_from_id
-from boto.exception import SDBPersistanceError
+from boto.exception import SDBPersistenceError
 from boto.utils import Password
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
@@ -187,7 +187,7 @@ class ObjectChecker(ValueChecker):
         self.default = None
         self.ref_class = params.get('ref_class', None)
         if self.ref_class == None:
-            raise SDBPersistanceError('ref_class parameter is required')
+            raise SDBPersistenceError('ref_class parameter is required')
 
     def check(self, value):
         if value == None:
