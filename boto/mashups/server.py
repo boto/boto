@@ -29,6 +29,7 @@ from boto.mashups.interactive import interactive_shell
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
 import os
+import StringIO
 
 class ServerSet(list):
 
@@ -202,7 +203,7 @@ class Server(SDBObject):
             self._config.add_section("Pyami")
 
         if self.manager.domain:
-            self._config.set('Pyami', 'server_sdb_domain', self.manager.domain)
+            self._config.set('Pyami', 'server_sdb_domain', self.manager.domain.name)
             self._config.set("Pyami", 'server_sdb_name', self.name)
 
         cfg = StringIO.StringIO()
