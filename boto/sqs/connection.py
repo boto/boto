@@ -72,33 +72,46 @@ class SQSConnection(AWSQueryConnection):
                                queue will be deleted regardless of whether there are messages in
                                the queue or not.  USE WITH CAUTION.  This will delete all
                                messages in the queue as well.
-        @rtype: Boolean
+        @rtype: bool
         @return: True if the command succeeded, False otherwise
         """
-        return self.get_status('DeleteQueue', None, queue.id)
+        return self.get_status('DeleteQueue', None, queue.url)
 
-    def get_queue_attributes(self, queue_url, attribute='All'):
+    def get_queue_attributes(self, queue, attribute='All'):
         params = {'AttributeName' : attribute}
-        return self.get_object('GetQueueAttributes', params, Attributes, queue_url)
+        return self.get_object('GetQueueAttributes', params, Attributes, queue.url)
 
-    def set_queue_attribute(self, queue_url, attribute, value):
+    def set_queue_attribute(self, queue, attribute, value):
         params = {'Attribute.Name' : attribute, 'Attribute.Value' : value}
-        return self.get_status('SetQueueAttributes', params, queue_url)
+        return self.get_status('SetQueueAttributes', params, queue.url)
 
-    def receive_message(self, queue_url, number_messages=1,
-                        visibility_timeout=None, message_class=Message):
+    def receive_message(self, queue, number_messages=1,
+                        visibility_timeout=None):
+        """
+        Read messages from an SQS Queue.
+
+        @type queue: A Queue object or a queue URL.
+        @param queue: The Queue from which messages are read.
+        @type number_messages: int
+        @param number_messages: The maximum number of messages to read (default=1)
+        @type visibility_timeout: int
+        @param visibility_timeout: The number of seconds the message should remain invisible
+                                   to other queue readers (default=None which uses the Queues default)
+        
+        """
         params = {'MaxNumberOfMessages' : number_messages}
         if visibility_timeout:
             params['VisibilityTimeout'] = visibility_timeout
-        return self.get_list('ReceiveMessage', params, [('Message', message_class)], queue_url)
+        return self.get_list('ReceiveMessage', params, [('Message', queue.message_class)],
+                             queue.url, queue)
 
-    def delete_message(self, queue_url, message_id, receipt_handle):
-        params = {'ReceiptHandle' : receipt_handle}
-        return self.get_status('DeleteMessage', params, queue_url)
+    def delete_message(self, queue, message):
+        params = {'ReceiptHandle' : message.receipt_handle}
+        return self.get_status('DeleteMessage', params, queue.url)
 
-    def send_message(self, queue_url, message_content):
+    def send_message(self, queue, message_content):
         params = {'MessageBody' : message_content}
-        return self.get_status('SendMessage', params, queue_url)
+        return self.get_status('SendMessage', params, queue.url)
 
     def get_all_queues(self, prefix=''):
         params = {}

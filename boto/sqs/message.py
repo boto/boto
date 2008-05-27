@@ -114,12 +114,14 @@ class RawMessage:
     def get_body_encoded(self):
         """
         This method is really a semi-private method used by the Queue.write
-        method when writing the contents of the message to SQS.  The
-        RawMessage class does not encode the message in any way so this
-        just calls get_body().  You probably shouldn't need to call this
-        method in the normal course of events.
+        method when writing the contents of the message to SQS.
+        You probably shouldn't need to call this method in the normal course of events.
         """
         return self.encode(self.get_body())
+
+    def delete(self):
+        if self.queue:
+            return self.queue.delete_message(self)
     
 class Message(RawMessage):
     """

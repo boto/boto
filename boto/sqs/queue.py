@@ -56,10 +56,9 @@ class Queue:
         Set the message class that should be used when instantiating messages read
         from the queue.  By default, the class boto.sqs.message.Message is used but
         this can be overriden with any class that behaves like a message.
-        Inputs:
-            message_class - The new message class
-        Returns:
-            Nothing
+
+        @type message_class: Message-like class
+        @param message_class:  The new Message class
         """
         self.message_class = message_class
 
@@ -67,37 +66,40 @@ class Queue:
         """
         Retrieves attributes about this queue object and returns
         them in an Attribute instance (subclass of a Dictionary).
-        Inputs:
-            attributes - A string containing
-                         All|ApproximateNumberOfMessages|VisibilityTimeout
-                         Default value is "All"
-        Returns:
-            An Attribute object which is a mapping type holding the
-            requested name/value pairs
+
+        @type attributes: string
+        @param attributes: String containing one of
+                           All|ApproximateNumberOfMessages|VisibilityTimeout
+                           Default value is "All"
+        @rtype: Attribute object
+        @return: An Attribute object which is a mapping type holding the
+                 requested name/value pairs
         """
-        return self.connection.get_queue_attributes(self.id, attributes)
+        return self.connection.get_queue_attributes(self, attributes)
 
     def set_attribute(self, attribute, value):
         """
         Set a new value for an attribute of the Queue.
-        Inputs:
-            attribute - The name of the attribute you want to set.  The
-                        only valid value at this time is: VisibilityTimeout
-                value - The new value for the attribute.
-                        For VisibilityTimeout the value must be an
-                        integer number of seconds from 0 to 86400.
-        Returns:
-            Boolean True if successful, otherwise False.
+        
+        @type attribute: String
+        @param attribute: The name of the attribute you want to set.  The
+                           only valid value at this time is: VisibilityTimeout
+        @type value: int
+        @param value: The new value for the attribute.
+                      For VisibilityTimeout the value must be an
+                      integer number of seconds from 0 to 86400.
+
+        @rtype: bool
+        @return: True if successful, otherwise False.
         """
-        return self.connection.set_queue_attribute(self.id, attribute, value)
+        return self.connection.set_queue_attribute(self, attribute, value)
 
     def get_timeout(self):
         """
         Get the visibility timeout for the queue.
-        Inputs:
-            None
-        Returns:
-            The number of seconds as an integer.
+        
+        @rtype: int
+        @return: The number of seconds as an integer.
         """
         a = self.get_attributes('VisibilityTimeout')
         return int(a['VisibilityTimeout'])
@@ -105,10 +107,9 @@ class Queue:
     def set_timeout(self, visibility_timeout):
         """
         Set the visibility timeout for the queue.
-        Inputs:
-            visibility_timeout - The desired timeout in seconds
-        Returns:
-            Nothing
+
+        @type visibility_timeout: int
+        @param visibility_timeout: The desired timeout in seconds
         """
         retval = self.set_attribute('VisibilityTimeout', visibility_timeout)
         if retval:
@@ -118,10 +119,12 @@ class Queue:
     def read(self, visibility_timeout=None):
         """
         Read a single message from the queue.
-        Inputs:
-            visibility_timeout - The timeout for this message in seconds
-        Returns:
-            A single message or None if queue is empty
+        
+        @type visibility_timeout: int
+        @param visibility_timeout: The timeout for this message in seconds
+
+        @rtype: Message
+        @return: A single message or None if queue is empty
         """
         rs = self.get_messages(1, visibility_timeout)
         if len(rs) == 1:
@@ -132,27 +135,56 @@ class Queue:
     def write(self, message):
         """
         Add a single message to the queue.
-        Inputs:
-            message - The message to be written to the queue
-        Returns:
-            None
+
+        @type message: Message
+        @param message: The message to be written to the queue
         """
-        self.connection.send_message(self.url, message.get_body_encoded())
+        self.connection.send_message(self, message.get_body_encoded())
         return None
 
     def new_message(self, body=''):
-        return self.message_class(self, body)
+        """
+        Create new message of appropriate class.
+
+        @type body: message body
+        @param body: The body of the newly created message (optional).
+        """
+        m = self.message_class(self, body)
+        m.queue = self
+        return m
 
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None):
-        return self.connection.receive_message(self.url, number_messages=num_messages,
-                                               visibility_timeout=visibility_timeout,
-                                               message_class=self.message_class)
+        """
+        Get a variable number of messages.
+
+        @type num_messages: int
+        @param num_messages: The maximum number of messages to read from the queue.
+        @type visibility_timeout: int
+        @param visibility_timeout: The VisibilityTimeout for the messages read.
+
+        @rtype: list
+        @return: A list of messages.
+        """
+        return self.connection.receive_message(self, number_messages=num_messages,
+                                               visibility_timeout=visibility_timeout)
 
     def delete_message(self, message):
-        return self.connection.delete_message(self.url, message.id, message.receipt_handle)
+        """
+        Delete a message from the queue.
+
+        @type message: Message
+        @param message: The message object to delete.
+
+        @rtype: bool
+        @return: True if successful, False otherwise
+        """
+        return self.connection.delete_message(self, message)
 
     def delete(self):
+        """
+        Delete the queue.
+        """
         return self.connection.delete_queue(self)
 
     def clear(self, page_size=10, vtimeout=10):
