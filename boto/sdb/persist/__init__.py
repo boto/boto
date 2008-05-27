@@ -21,7 +21,6 @@
 
 import boto
 from boto.utils import find_class
-from boto.exception import SDBPersistanceError
 
 class Manager(object):
 
