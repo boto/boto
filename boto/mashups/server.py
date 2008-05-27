@@ -191,14 +191,15 @@ class Server(SDBObject):
         ec2 = boto.connect_ec2()
         ami = ec2.get_all_images(image_ids = [str(self.ami_id)])[0]
         groups = ec2.get_all_security_groups(groupnames=[str(self.security_group)])
-        conf = boto.utils.fetch_file(self.config_uri)
+        if not self._config:
+            self._config = boto.utils.fetch_file(self.config_uri).read()
         r = ami.run(min_count=1,
                     max_count=1,
                     key_name=self.key_name,
                     security_groups = groups,
                     instance_type = self.instance_type,
                     placement = self.zone,
-                    user_data = conf.read())
+                    user_data = self._config)
         i = r.next()
         self.instance_id = i.id
         if self.elastic_ip:
