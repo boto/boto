@@ -201,6 +201,8 @@ class Server(SDBObject):
                     user_data = conf.read())
         i = r.next()
         self.instance_id = i.id
+        if self.elastic_ip:
+            ec2.associate_address(self.instance_id, self.elastic_ip)
 
     def reboot(self):
         if self.instance:
