@@ -251,6 +251,13 @@ class AWSAuthConnection:
                 if response.status == 500 or response.status == 503:
                     boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2**i))
                     body = response.read()
+                elif response.status == 408:
+                    body = response.read()
+                    print '-------------------------'
+                    print '         4 0 8           '
+                    print 'path=%s' % path
+                    print body
+                    print '-------------------------'
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
                     return response
@@ -383,12 +390,14 @@ class AWSQueryConnection(AWSAuthConnection):
             
     # generics
 
-    def get_list(self, action, params, markers, path='/'):
+    def get_list(self, action, params, markers, path='/', parent=None):
+        if not parent:
+            parent = self
         response = self.make_request(action, params, path)
         body = response.read()
         if response.status == 200:
             rs = ResultSet(markers)
-            h = handler.XmlHandler(rs, self)
+            h = handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
             return rs
         else:
@@ -396,12 +405,14 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
         
-    def get_object(self, action, params, cls, path='/'):
+    def get_object(self, action, params, cls, path='/', parent=None):
+        if not parent:
+            parent = self
         response = self.make_request(action, params, path)
         body = response.read()
         if response.status == 200:
-            obj = cls(self)
-            h = handler.XmlHandler(obj, self)
+            obj = cls(parent)
+            h = handler.XmlHandler(obj, parent)
             xml.sax.parseString(body, h)
             return obj
         else:
@@ -409,12 +420,14 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
         
-    def get_status(self, action, params, path='/'):
+    def get_status(self, action, params, path='/', parent=None):
+        if not parent:
+            parent = self
         response = self.make_request(action, params, path)
         body = response.read()
         if response.status == 200:
             rs = ResultSet()
-            h = handler.XmlHandler(rs, self)
+            h = handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
             return rs.status
         else:
