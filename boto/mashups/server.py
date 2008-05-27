@@ -22,7 +22,7 @@
 """
 High-level abstraction of an EC2 server
 """
-import boto
+import boto, boto.utils
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config, BotoConfigPath
 from boto.mashups.interactive import interactive_shell
@@ -90,6 +90,12 @@ class Server(SDBObject):
     name = StringProperty()
     instance_id = StringProperty()
     config_uri = StringProperty()
+    ami_id = StringProperty()
+    zone = StringProperty()
+    security_group = StringProperty()
+    key_name = StringProperty()
+    elastic_ip = StringProperty()
+    instance_type = StringProperty()
     description = StringProperty()
 
     def setReadOnly(self, value):
@@ -179,6 +185,22 @@ class Server(SDBObject):
     def stop(self):
         if self.instance:
             self.instance.stop()
+
+    def start(self):
+        self.stop()
+        ec2 = boto.connect_ec2()
+        ami = ec2.get_all_images(image_ids = [str(self.ami_id)])[0]
+        groups = ec2.get_all_security_groups(groupnames=[str(self.security_group)])
+        conf = boto.utils.fetch_file(self.config_uri)
+        r = ami.run(min_count=1,
+                    max_count=1,
+                    key_name=self.key_name,
+                    security_groups = groups,
+                    instance_type = self.instance_type,
+                    placement = self.zone,
+                    user_data = conf.read())
+        i = r.next()
+        self.instance_id = i.id
 
     def reboot(self):
         if self.instance:
