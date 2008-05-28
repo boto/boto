@@ -336,6 +336,9 @@ class MultiValue:
         domain = self.object.manager.domain
         domain.delete_attributes(self.object.id, {self.name: [self.checker.to_string(item)]})
 
+    def __len__(self):
+        return len(self._list)
+
     def append(self, value):
         self.checker.check(value)
         self._list.append(value)

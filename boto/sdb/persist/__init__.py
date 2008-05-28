@@ -27,7 +27,6 @@ class Manager(object):
     DefaultDomainName = boto.config.get('Persist', 'default_domain', None)
 
     def __init__(self, domain_name=None, aws_access_key_id=None, aws_secret_access_key=None):
-        print 'creating a Manager instance'
         self.domain_name = domain_name
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
