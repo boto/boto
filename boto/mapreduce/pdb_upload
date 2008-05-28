@@ -131,7 +131,6 @@ class Upload:
         c = Client('localhost')
         
     def main(self):
-        print 'prog_name: %s' % self.prog_name
         if self.options.help_commands:
             self.print_command_help()
             sys.exit(0)

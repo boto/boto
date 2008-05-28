@@ -63,6 +63,7 @@ class Server:
     def serve(self):
         args = {'pdb_id' : self.pdb.id}
         rs = self.pdb.get_related_objects('pdb')
+        self.pdb.delete()
         s = LQSServer('', PersistHandler, rs, args)
         s.serve_forever()
     
