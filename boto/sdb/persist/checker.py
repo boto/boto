@@ -175,7 +175,7 @@ class DateTimeChecker(ValueChecker):
         try:
             return datetime.strptime(str_value, ISO8601)
         except:
-            raise ValueError
+            raise ValueError, 'Unable to convert %s to DateTime' % str_value
 
     def to_string(self, value):
         self.check(value)
@@ -215,7 +215,7 @@ class ObjectChecker(ValueChecker):
         try:
             return revive_object_from_id(str_value, obj.manager)
         except:
-            raise ValueError
+            raise ValueError, 'Unable to convert %s to Object' % str_value
 
     def to_string(self, value):
         self.check(value)
@@ -245,6 +245,8 @@ class S3KeyChecker(ValueChecker):
     def from_string(self, str_value, obj):
         if not str_value:
             return None
+        if str_value == 'None':
+            return None
         try:
             bucket_name, key_name = str_value.split('/', 1)
             if obj:
@@ -255,14 +257,14 @@ class S3KeyChecker(ValueChecker):
                     key = bucket.new_key(key_name)
                 return key
         except:
-            raise ValueError
+            raise ValueError, 'Unable to convert %s to S3Key' % str_value
 
     def to_string(self, value):
         self.check(value)
         if isinstance(value, str) or isinstance(value, unicode):
             return value
         if value == None:
-            return None
+            return ''
         else:
             return '%s/%s' % (value.bucket.name, value.name)
 
@@ -282,18 +284,20 @@ class S3BucketChecker(ValueChecker):
     def from_string(self, str_value, obj):
         if not str_value:
             return None
+        if str_value == 'None':
+            return None
         try:
             if obj:
                 s3 = obj.manager.get_s3_connection()
                 bucket = s3.get_bucket(str_value)
                 return bucket
         except:
-            raise ValueError
+            raise ValueError, 'Unable to convert %s to S3Bucket' % str_value
 
     def to_string(self, value):
         self.check(value)
         if value == None:
-            return None
+            return ''
         else:
             return '%s' % value.name
 

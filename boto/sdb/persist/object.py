@@ -139,6 +139,9 @@ class SDBObject(object):
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
 
+    def _get_sdb_item(self):
+        return self.manager.domain.get_item(self.id)
+
     def save(self):
         attrs = {'__type__' : self.__class__.__name__,
                  '__module__' : self.__class__.__module__,
