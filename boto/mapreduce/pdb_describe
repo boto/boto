@@ -73,7 +73,11 @@ class Describe:
             pdb = PartitionDB.get(name=pdb_name)
             i = 0
             for v in pdb.versions:
-                print '%s\t%s' % (v.id, v.name)
+                if v.date:
+                    ds = v.date.isoformat()
+                else:
+                    ds = 'unknown'
+                print '%s\t%s\t%s' % (v.id, v.name, ds)
                 i += 1
                 if i == self.options.num_entries:
                     break

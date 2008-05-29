@@ -20,32 +20,33 @@
 # IN THE SOFTWARE.
 #
 
-import random, time, os
+import random, time, os, datetime
 import boto
 from boto.sdb.persist.object import SDBObject
 from boto.sdb.persist.property import *
 
-class TimeStamp(object):
+class Identifier(object):
 
     _hex_digits = '0123456789abcdef'
 
     @classmethod
-    def gen(cls):
-        ts = str(int(time.time()))
+    def gen(cls, prefix):
         suffix = ''
         for i in range(0,8):
             suffix += random.choice(cls._hex_digits)
-        return ts + '_' + suffix
+        return ts + '-' + suffix
     
 class Version(SDBObject):
 
     name = StringProperty()
     pdb = ObjectProperty(ref_class=SDBObject)
+    date = DateTimeProperty()
     
     def __init__(self, id=None, manager=None):
         SDBObject.__init__(self, id, manager)
         if id == None:
-            self.name = TimeStamp.gen()
+            self.name = Identifier.gen('v')
+            self.date = datetime.datetime.now()
             print 'created Version %s' % self.name
 
     def partitions(self):
@@ -58,6 +59,15 @@ class Version(SDBObject):
         return self.get_related_objects('version', Partition)
 
     def add_partition(self, name=None):
+        """
+        Add a new Partition to this Version.
+
+        @type name: string
+        @param name: The name of the new Partition (optional)
+
+        @rtype: L{Partition<boto.mapreduce.partitiondb.Partition>}
+        @return: The new Partition object
+        """
         p = Partition(manager=self.manager, name=name)
         p.version = self
         p.pdb = self.pdb
