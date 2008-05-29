@@ -287,7 +287,7 @@ class Server(SDBObject):
         command += '-p %s ' % prefix
         command += '-s %d ' % size
         command += '-d /mnt '
-        if self.instance.instance_type == 'm1.small':
+        if self.instance.instance_type == 'm1.small' or self.instance_type == 'c1.medium':
             command += '-r i386'
         else:
             command += '-r x86_64'

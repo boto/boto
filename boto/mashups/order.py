@@ -30,7 +30,7 @@ from boto.pyami.config import Config
 from boto.sdb.persist import get_domain, set_domain
 import time, StringIO
 
-InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge']
+InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
 
 class Item(IObject):
     
