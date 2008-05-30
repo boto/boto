@@ -213,7 +213,7 @@ class ObjectChecker(ValueChecker):
         if not str_value:
             return None
         try:
-            return revive_object_from_id(str_value, obj.manager)
+            return revive_object_from_id(str_value, obj._manager)
         except:
             raise ValueError, 'Unable to convert %s to Object' % str_value
 
@@ -250,7 +250,7 @@ class S3KeyChecker(ValueChecker):
         try:
             bucket_name, key_name = str_value.split('/', 1)
             if obj:
-                s3 = obj.manager.get_s3_connection()
+                s3 = obj._manager.get_s3_connection()
                 bucket = s3.get_bucket(bucket_name)
                 key = bucket.get_key(key_name)
                 if not key:
@@ -288,7 +288,7 @@ class S3BucketChecker(ValueChecker):
             return None
         try:
             if obj:
-                s3 = obj.manager.get_s3_connection()
+                s3 = obj._manager.get_s3_connection()
                 bucket = s3.get_bucket(str_value)
                 return bucket
         except:

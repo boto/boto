@@ -58,14 +58,13 @@ def test2(ref_name):
     s.save()
     return s
 
-def test3(ref):
+def test3():
     s = TestScalar()
     s.name = 'bar'
     s.description = 'This is bar'
     s.size = 24
     s.foo = False
     s.date = datetime.now()
-    s.ref = ref
     s.save()
     return s
 
@@ -87,6 +86,9 @@ def test5(ref):
     s.answer = 42
     s.ref = ref
     s.save()
+    # test out free form attribute
+    s.fiddlefaddle = 'this is fiddlefaddle'
+    s._fiddlefaddle = 'this is not fiddlefaddle'
     return s
 
 def test6():
@@ -120,13 +122,13 @@ def test(domain_name):
     print 'Call test2'
     s2 = test2(s1.name)
     print 'Call test3'
-    s3 = test3(s1)
+    s3 = test3()
     print 'Call test4'
     s4 = test4(s1, s3)
     print 'Call test5'
     s6 = test6()
     s5 = test5(s6)
-    domain = s5.manager.domain
+    domain = s5._manager.domain
     item1 = domain.get_item(s1.id)
     item2 = domain.get_item(s2.id)
     item3 = domain.get_item(s3.id)

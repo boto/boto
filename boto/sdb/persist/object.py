@@ -36,6 +36,11 @@ class SDBBase(type):
                     if isinstance(dict[key], Property):
                         property = dict[key]
                         property.set_name(key)
+                prop_names = []
+                props = cls.properties()
+                for prop in props:
+                    prop_names.append(prop.name)
+                setattr(cls, '_prop_names', prop_names)
         except NameError:
             # 'SDBObject' isn't defined yet, meaning we're looking at our own
             # SDBObject class, defined below.
@@ -44,7 +49,7 @@ class SDBBase(type):
 class SDBObject(object):
     __metaclass__ = SDBBase
 
-    manager = get_manager()
+    _manager = get_manager()
 
     @classmethod
     def get_lineage(cls):
@@ -54,8 +59,8 @@ class SDBObject(object):
     
     @classmethod
     def get(cls, id=None, **params):
-        if cls.manager.domain and id:
-            a = cls.manager.domain.get_attributes(id, '__type__')
+        if cls._manager.domain and id:
+            a = cls._manager.domain.get_attributes(id, '__type__')
             if a.has_key('__type__'):
                 return cls(id)
             else:
@@ -92,19 +97,19 @@ class SDBObject(object):
             if not found:
                 raise SDBPersistenceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
-        if cls.manager.domain:
-            rs = cls.manager.domain.query(query)
+        if cls._manager.domain:
+            rs = cls._manager.domain.query(query)
         else:
             rs = []
-        return object_lister(None, rs, cls.manager)
+        return object_lister(None, rs, cls._manager)
 
     @classmethod
     def list(cls, max_items=None):
-        if cls.manager.domain:
-            rs = cls.manager.domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
+        if cls._manager.domain:
+            rs = cls._manager.domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
         else:
             rs = []
-        return object_lister(cls, rs, cls.manager)
+        return object_lister(cls, rs, cls._manager)
 
     @classmethod
     def properties(cls):
@@ -124,23 +129,46 @@ class SDBObject(object):
 
     def __init__(self, id=None, manager=None):
         if manager:
-            self.manager = manager
+            self._manager = manager
         self.id = id
         if self.id:
-            self.auto_update = True
-            if self.manager.domain:
-                attrs = self.manager.domain.get_attributes(self.id, '__type__')
+            self._auto_update = True
+            if self._manager.domain:
+                attrs = self._manager.domain.get_attributes(self.id, '__type__')
                 if len(attrs.keys()) == 0:
                     raise SDBPersistenceError('Object %s: not found' % self.id)
         else:
             self.id = str(uuid.uuid4())
-            self.auto_update = False
+            self._auto_update = False
+
+    def __setattr__(self, name, value):
+        if name in self._prop_names:
+            object.__setattr__(self, name, value)
+        elif name.startswith('_'):
+            object.__setattr__(self, name, value)
+        elif name == 'id':
+            object.__setattr__(self, name, value)
+        else:
+            self._persist_attribute(name, value)
+            object.__setattr__(self, name, value)
+
+    def __getattr__(self, name):
+        if not name.startswith('_'):
+            a = self._manager.domain.get_attributes(self.id, name)
+            if a.has_key(name):
+                object.__setattr__(self, name, a[name])
+                return a[name]
+        raise AttributeError
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
 
+    def _persist_attribute(self, name, value):
+        if self.id:
+            self._manager.domain.put_attributes(self.id, {name : value}, replace=True)
+
     def _get_sdb_item(self):
-        return self.manager.domain.get_item(self.id)
+        return self._manager.domain.get_item(self.id)
 
     def save(self):
         attrs = {'__type__' : self.__class__.__name__,
@@ -148,21 +176,21 @@ class SDBObject(object):
                  '__lineage__' : self.get_lineage()}
         for property in self.properties():
             attrs[property.name] = property.to_string(self)
-        if self.manager.domain:
-            self.manager.domain.put_attributes(self.id, attrs, replace=True)
-            self.auto_update = True
+        if self._manager.domain:
+            self._manager.domain.put_attributes(self.id, attrs, replace=True)
+            self._auto_update = True
         
     def delete(self):
-        if self.manager.domain:
-            self.manager.domain.delete_attributes(self.id)
+        if self._manager.domain:
+            self._manager.domain.delete_attributes(self.id)
 
     def get_related_objects(self, ref_name, ref_cls=None):
-        if self.manager.domain:
+        if self._manager.domain:
             query = "['%s' = '%s']" % (ref_name, self.id)
             if ref_cls:
                 query += " intersection ['__type__'='%s']" % ref_cls.__name__
-            rs = self.manager.domain.query(query)
+            rs = self._manager.domain.query(query)
         else:
             rs = []
-        return object_lister(ref_cls, rs, self.manager)
+        return object_lister(ref_cls, rs, self._manager)
 

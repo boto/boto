@@ -26,7 +26,7 @@ class Manager(object):
 
     DefaultDomainName = boto.config.get('Persist', 'default_domain', None)
 
-    def __init__(self, domain_name=None, aws_access_key_id=None, aws_secret_access_key=None):
+    def __init__(self, domain_name=None, aws_access_key_id=None, aws_secret_access_key=None, debug=0):
         self.domain_name = domain_name
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
@@ -41,7 +41,8 @@ class Manager(object):
             boto.log.warning('No SimpleDB domain set, persistance is disabled')
         if self.domain_name:
             self.sdb = boto.connect_sdb(aws_access_key_id=self.aws_access_key_id,
-                                        aws_secret_access_key=self.aws_secret_access_key)
+                                        aws_secret_access_key=self.aws_secret_access_key,
+                                        debug=debug)
             self.domain = self.sdb.lookup(self.domain_name)
             if not self.domain:
                 self.domain = self.sdb.create_domain(self.domain_name)
@@ -51,8 +52,8 @@ class Manager(object):
             self.s3 = boto.connect_s3(self.aws_access_key_id, self.aws_secret_access_key)
         return self.s3
 
-def get_manager(domain_name=None, aws_access_key_id=None, aws_secret_access_key=None):
-    return Manager(domain_name, aws_access_key_id, aws_secret_access_key)
+def get_manager(domain_name=None, aws_access_key_id=None, aws_secret_access_key=None, debug=0):
+    return Manager(domain_name, aws_access_key_id, aws_secret_access_key, debug=debug)
 
 def set_domain(domain_name):
     Manager.DefaultDomainName = domain_name
