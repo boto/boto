@@ -32,6 +32,10 @@ class Image:
         self.state = None
         self.ownerId = None
         self.is_public = False
+        self.architecture = None
+        self.type = None
+        self.kernel_id = None
+        self.ramdisk_id = None
         self.product_codes = []
 
     def __repr__(self):
@@ -49,6 +53,12 @@ class Image:
             self.state = value
         elif name == 'imageOwnerId':
             self.ownerId = value
+        elif name == 'imageType':
+            self.type = value
+        elif name == 'kernelId':
+            self.kernel_id = value
+        elif name == 'ramdiskId':
+            self.ramdisk_id = value
         elif name == 'isPublic':
             if value == 'false':
                 self.is_public = False

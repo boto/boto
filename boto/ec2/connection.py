@@ -86,6 +86,48 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, executable_by, 'ExecutableBy')
         return self.get_list('DescribeImages', params, [('item', Image)])
 
+    def get_all_kernels(self, kernel_ids=None, owners=None):
+        """
+        Retrieve all the EC2 kernels available on your account.  Simply filters the list returned
+        by get_all_images because EC2 does not provide a way to filter server-side.
+        
+        @type kernel_ids: list
+        @param kernel_ids: A list of strings with the image IDs wanted
+        
+        @type owners: list
+        @param owners: A list of owner IDs
+        
+        @rtype: list
+        @return: A list of L{Images<boto.ec2.image.Image>}
+        """
+        rs = self.get_all_images(kernel_ids, owners)
+        kernels = []
+        for image in rs:
+            if image.type == 'kernel':
+                kernels.append(image)
+        return kernels
+
+    def get_all_ramdisks(self, ramdisk_ids=None, owners=None):
+        """
+        Retrieve all the EC2 ramdisks available on your account.  Simply filters the list returned
+        by get_all_images because EC2 does not provide a way to filter server-side.
+        
+        @type ramdisk_ids: list
+        @param ramdisk_ids: A list of strings with the image IDs wanted
+        
+        @type owners: list
+        @param owners: A list of owner IDs
+        
+        @rtype: list
+        @return: A list of L{Images<boto.ec2.image.Image>}
+        """
+        rs = self.get_all_images(ramdisk_ids, owners)
+        ramdisks = []
+        for image in rs:
+            if image.type == 'ramdisk':
+                ramdisks.append(image)
+        return ramdisks
+
     def get_image(self, image_id):
         """
         Shortcut method to retrieve a specific image (AMI).
@@ -197,15 +239,40 @@ class EC2Connection(AWSQueryConnection):
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,
                       user_data=None, addressing_type=None,
-                      instance_type='m1.small', placement=None):
+                      instance_type='m1.small', placement=None,
+                      kernel_id=None, ramdisk_id=None):
         """
         Runs an image on EC2.
         
         @type image_id: string
         @param image_id: The ID of the image to run
         
+        @type min_count: int
+        @param min_count: The minimum number of instances to launch
+        
+        @type max_count: int
+        @param max_count: The maximum number of instances to launch
+        
+        @type key_name: string
+        @param key_name: The name of the key pair with which to launch instances
+        
+        @type security_groups: list of strings
+        @param security_groups: The names of the security groups with which to associate instances
+        
+        @type user_data: string
+        @param user_data: The user data passed to the launched instances
+        
         @type instance_type: string
         @param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+        
+        @type placement: string
+        @param placement: The availability zone in which to launch the instances
+        
+        @type kernel_id: string
+        @param kernel_id: The ID of the kernel with which to launch the instances
+        
+        @type ramdisk_id: string
+        @param ramdisk_id: The ID of the RAM disk with which to launch the instances
         
         @rtype: Reservation
         @return: The L{Reservation<boto.ec2.instance.Reservation>} associated with the request for machines
@@ -231,6 +298,10 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceType'] = instance_type
         if placement:
             params['Placement.AvailabilityZone'] = placement
+        if kernel_id:
+            params['KernelId'] = placement
+        if ramdisk_id:
+            params['RamdiskId'] = placement
         return self.get_object('RunInstances', params, Reservation)
         
     def terminate_instances(self, instance_ids=None):
