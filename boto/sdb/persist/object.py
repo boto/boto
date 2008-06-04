@@ -116,7 +116,7 @@ class SDBObject(object):
         properties = []
         while cls:
             for key in cls.__dict__.keys():
-                if isinstance(cls.__dict__[key], ScalarProperty):
+                if isinstance(cls.__dict__[key], Property):
                     properties.append(cls.__dict__[key])
             if len(cls.__bases__) > 0:
                 cls = cls.__bases__[0]
@@ -175,7 +175,8 @@ class SDBObject(object):
                  '__module__' : self.__class__.__module__,
                  '__lineage__' : self.get_lineage()}
         for property in self.properties():
-            attrs[property.name] = property.to_string(self)
+            if isinstance(cls.__dict__[key], Property):
+                attrs[property.name] = property.to_string(self)
         if self._manager.domain:
             self._manager.domain.put_attributes(self.id, attrs, replace=True)
             self._auto_update = True
