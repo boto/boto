@@ -251,6 +251,7 @@ class MultiValueProperty(Property):
             print 'problem setting value: %s' % value
 
     def __delete__(self, obj):
+        domain = obj._manager.domain
         domain.delete_attributes(obj.id, [self.name])
 
 class StringListProperty(MultiValueProperty):
