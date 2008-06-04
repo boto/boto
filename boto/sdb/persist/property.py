@@ -242,9 +242,16 @@ class MultiValueProperty(Property):
             str_list.append(self.checker.to_string(value))
         domain = obj._manager.domain
         try:
+            self.__delete__(obj)
+        except:
+            pass
+        try:
             domain.put_attributes(obj.id, {self.name : str_list}, replace=True)
         except:
             print 'problem setting value: %s' % value
+
+    def __delete__(self, obj):
+        domain.delete_attributes(obj.id, [self.name])
 
 class StringListProperty(MultiValueProperty):
 
