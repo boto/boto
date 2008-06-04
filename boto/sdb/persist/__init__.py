@@ -37,8 +37,8 @@ class Manager(object):
             self.domain_name = self.DefaultDomainName
             if self.domain_name:
                 boto.log.info('No SimpleDB domain set, using default_domain: %s' % self.domain_name)
-        else:
-            boto.log.warning('No SimpleDB domain set, persistance is disabled')
+            else:
+                boto.log.warning('No SimpleDB domain set, persistance is disabled')
         if self.domain_name:
             self.sdb = boto.connect_sdb(aws_access_key_id=self.aws_access_key_id,
                                         aws_secret_access_key=self.aws_secret_access_key,
