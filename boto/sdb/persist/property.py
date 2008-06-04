@@ -237,9 +237,7 @@ class MultiValueProperty(Property):
         if not isinstance(value, list):
             raise SDBPersistenceError('Value must be a list')
         self._list = value
-        str_list = []
-        for value in self._list:
-            str_list.append(self.checker.to_string(value))
+        str_list = self.to_string(obj)
         domain = obj._manager.domain
         try:
             self.__delete__(obj)
@@ -253,6 +251,12 @@ class MultiValueProperty(Property):
     def __delete__(self, obj):
         domain = obj._manager.domain
         domain.delete_attributes(obj.id, [self.name])
+
+    def to_string(self, obj):
+        str_list = []
+        for value in self._list:
+            str_list.append(self.checker.to_string(value))
+        return str_list
 
 class StringListProperty(MultiValueProperty):
 
