@@ -175,7 +175,7 @@ class SDBObject(object):
                  '__module__' : self.__class__.__module__,
                  '__lineage__' : self.get_lineage()}
         for property in self.properties():
-            if isinstance(cls.__dict__[key], ScalarProperty):
+            if isinstance(property, ScalarProperty):
                 attrs[property.name] = property.to_string(self)
         if self._manager.domain:
             self._manager.domain.put_attributes(self.id, attrs, replace=True)
