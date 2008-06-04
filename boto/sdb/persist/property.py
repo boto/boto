@@ -236,25 +236,29 @@ class MultiValueProperty(Property):
     def __set__(self, obj, value):
         if not isinstance(value, list):
             raise SDBPersistenceError('Value must be a list')
-        self._list = value
+        setattr(obj, self.slot_name, MultiValue(self, obj, value))
         str_list = self.to_string(obj)
         domain = obj._manager.domain
-        try:
-            self.__delete__(obj)
-        except:
-            pass
-        try:
-            domain.put_attributes(obj.id, {self.name : str_list}, replace=True)
-        except:
-            print 'problem setting value: %s' % value
+        if obj._auto_update:
+            if len(str_list) == 1:
+                domain.put_attributes(obj.id, {self.name : str_list[0]}, replace=True)
+            else:
+                try:
+                    self.__delete__(obj)
+                except:
+                    pass
+                domain.put_attributes(obj.id, {self.name : str_list}, replace=True)
+                setattr(obj, self.slot_name, MultiValue(self, obj, value))
 
     def __delete__(self, obj):
-        domain = obj._manager.domain
-        domain.delete_attributes(obj.id, [self.name])
+        if obj._auto_update:
+            domain = obj._manager.domain
+            domain.delete_attributes(obj.id, [self.name])
+        setattr(obj, self.slot_name, MultiValue(self, obj, []))
 
     def to_string(self, obj):
         str_list = []
-        for value in self._list:
+        for value in self.__get__(obj, type(obj)):
             str_list.append(self.checker.to_string(value))
         return str_list
 
