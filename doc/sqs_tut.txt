@@ -96,37 +96,12 @@ class.  So, first we need to create a Message object:
 >>> from boto.sqs.message import Message
 >>> m = Message()
 >>> m.set_body('This is my first message.')
->>> rs = q.write(m)
+>>> status = q.write(m)
 
-The value returned by the write method of a queue object is a ResultSet.  In
-fact, most method calls return a ResultSet object.  The purpose of the
-ResultSet is to communicate both status and results from an operation.  In
-this case, there are no results returned because we are storing a message
-in the queue rather than asking for data from the queue.  However, the
-ResultSet does contain some potentially useful status information.  For
-example:
-
->>> rs.MessageId
-u'0ZPEY5AD356SP2WMFHYA|3H4AA8J7EJKM0DQZR7E1|FDDWV0TXFGBY4SK1E171'
->>> rs.RequestId
-u'3370b6fd-2be3-47e4-80b3-a1f08798e560'
->>> rs.StatusCode
-u'Success'
-
-The MessageId attribute is the unique identifier assigned by SQS to this
-particular message.  This value is also available in the Message object as
-the id attribute, once the message has actually been written to queue:
-
->>> m.id
-u'0ZPEY5AD356SP2WMFHYA|3H4AA8J7EJKM0DQZR7E1|FDDWV0TXFGBY4SK1E171'
-
-The RequestId is a unique identifier assigned by Amazon Web Services
-to this particular request.  If you ever experience problems with SQS
-or have specific questions about a request, this information is critical
-because it allows AWS to track down the specific request.  Finally, the
-StatusCode attribute is just the status code returned in the response.  All
-of these attributes map directly to elements in the XML response returned
-by SQS.
+The write method returns a True if everything went well.  If the write
+didn't succeed it will either return a False (meaning SQS simply chose
+not to write the message for some reason) or an exception if there was
+some sort of problem with the request.
 
 Reading Messages
 ----------------
