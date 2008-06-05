@@ -139,11 +139,10 @@ class Queue:
         @type message: Message
         @param message: The message to be written to the queue
 
-        @rtype: None
-        @return: None if successful or raises exception on error
+        @rtype: bool
+        @return: True if successful, False if not
         """
-        self.connection.send_message(self, message.get_body_encoded())
-        return None
+        return self.connection.send_message(self, message.get_body_encoded())
 
     def new_message(self, body=''):
         """
