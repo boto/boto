@@ -138,6 +138,9 @@ class Queue:
 
         @type message: Message
         @param message: The message to be written to the queue
+
+        @rtype: None
+        @return: None if successful or raises exception on error
         """
         self.connection.send_message(self, message.get_body_encoded())
         return None
@@ -148,6 +151,9 @@ class Queue:
 
         @type body: message body
         @param body: The body of the newly created message (optional).
+
+        @rtype: Message
+        @return: A new Message object
         """
         m = self.message_class(self, body)
         m.queue = self
