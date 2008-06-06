@@ -202,8 +202,8 @@ class Server(SDBObject):
         if not self._config.has_section("Pyami"):
             self._config.add_section("Pyami")
 
-        if self.manager.domain:
-            self._config.set('Pyami', 'server_sdb_domain', self.manager.domain.name)
+        if self._manager.domain:
+            self._config.set('Pyami', 'server_sdb_domain', self._manager.domain.name)
             self._config.set("Pyami", 'server_sdb_name', self.name)
 
         cfg = StringIO.StringIO()
