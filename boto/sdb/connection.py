@@ -86,25 +86,38 @@ class SDBConnection(AWSQueryConnection):
             i += 1
 
     def get_usage(self):
+        """
+        Returns the BoxUsage accumulated on this SDBConnection object.
+
+        @rtype: float
+        @return: The accumulated BoxUsage of all requests made on the connection.
+        """
         return self.box_usage
 
     def print_usage(self):
+        """
+        Print the BoxUsage and approximate costs of all requests made on this connection.
+        """
         print 'Total Usage: %f compute seconds' % self.box_usage
         cost = self.box_usage * 0.14
         print 'Approximate Cost: $%f' % cost
 
     def get_domain(self, domain_name, validate=True):
-        """
-        Returns a Domain object for a given domain_name.
-        If the validate parameter is True, the domain_name is validated
-        by performing a query (returning a max of 1 item) against the domain.
-        """
         domain = Domain(self, domain_name)
         if validate:
             self.query(domain, '', max_items=1)
         return domain
 
     def lookup(self, domain_name):
+        """
+        Lookup an existing SimpleDB domain
+
+        @type domain_name: string
+        @param domain_name: The name of the new domain
+
+        @rtype: L{Domain<boto.sdb.domain.Domain>} object or None
+        @return: The Domain object or None if the domain does not exist.
+        """
         try:
             domain = self.get_domain(domain_name)
         except:
@@ -120,6 +133,15 @@ class SDBConnection(AWSQueryConnection):
         return self.get_list('ListDomains', params, [('DomainName', Domain)])
         
     def create_domain(self, domain_name):
+        """
+        Create a SimpleDB domain.
+
+        @type domain_name: string
+        @param domain_name: The name of the new domain
+
+        @rtype: L{Domain<boto.sdb.domain.Domain>} object
+        @return: The newly created domain
+        """
         params = {'DomainName':domain_name}
         d = self.get_object('CreateDomain', params, Domain)
         d.name = domain_name
@@ -132,6 +154,17 @@ class SDBConnection(AWSQueryConnection):
             return (self.get_domain(domain_or_name), domain_or_name)
         
     def delete_domain(self, domain_or_name):
+        """
+        Delete a SimpleDB domain.
+
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @rtype: bool
+        @return: True if successful
+        
+        B{Note:} This will delete the domain and all items within the domain.
+        """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
         return self.get_status('DeleteDomain', params)
@@ -139,17 +172,23 @@ class SDBConnection(AWSQueryConnection):
     def put_attributes(self, domain_or_name, item_name, attributes, replace=True):
         """
         Store attributes for a given item in a domain.
-        Parameters:
-            domain__or_name - either a domain object or the name of a domain in SimpleDB
-            item_name - the name of the SDB item the attributes will be
-                        associated with
-            attributes - a dict containing the name/value pairs to store
-                         as attributes
-            replace - a boolean value that determines whether the attribute
-                      values passed in will replace any existing values or will
-                      be added as additional values.  Defaults to True.
-        Returns:
-            Boolean True or raises an exception
+
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @type item_name: string
+        @param item_name: The name of the item whose attributes are being stored.
+
+        @type attribute_names: dict or dict-like object
+        @param attribute_names: The name/value pairs to store as attributes
+
+        @type replace: bool
+        @param replace: Whether the attribute values passed in will replace
+                        existing values or will be added as addition values.
+                        Defaults to True.
+
+        @rtype: bool
+        @return: True if successful
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
@@ -157,12 +196,31 @@ class SDBConnection(AWSQueryConnection):
         self.build_name_value_list(params, attributes, replace)
         return self.get_status('PutAttributes', params)
 
-    def get_attributes(self, domain_or_name, item_name, attribute_name=None, item=None):
+    def get_attributes(self, domain_or_name, item_name, attribute_names=None, item=None):
+        """
+        Retrieve attributes for a given item in a domain.
+
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @type item_name: string
+        @param item_name: The name of the item whose attributes are being retrieved.
+
+        @type attribute_names: string or list of strings
+        @param attribute_names: An attribute name or list of attribute names.  This
+                                parameter is optional.  If not supplied, all attributes
+                                will be retrieved for the item.
+
+        @rtype: L{Item<boto.sdb.item.Item>}
+        @return: An Item mapping type containing the requested attribute name/values
+        """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
-        if attribute_name:
-            params['AttributeName'] = attribute_name
+        if attribute_names:
+            if not isinstance(attribute_names, list):
+                attribute_names = [attribute_names]
+            self.build_list_params(params, attribute_names, 'AttributeName')
         response = self.make_request('GetAttributes', params)
         body = response.read()
         if response.status == 200:
@@ -177,16 +235,22 @@ class SDBConnection(AWSQueryConnection):
     def delete_attributes(self, domain_or_name, item_name, attr_names=None):
         """
         Delete attributes from a given item in a domain.
-        Parameters:
-            domain__or_name - either a domain object or the name of a domain in SimpleDB
-            item_name - the name of the SDB item the attributes will be
-                        removed from
-            attributes - either a list containing attribute names which will cause
-                         all values associated with that attribute name to be deleted or
-                         a dict containing the attribute names and keys and list of values
-                         to delete as the value
-        Returns:
-            Boolean True or raises an exception
+
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @type item_name: string
+        @param item_name: The name of the item whose attributes are being deleted.
+
+        @type attributes: dict or dict-like object
+        @param attributes: either a list containing attribute names which will cause
+                           all values associated with that attribute name to be deleted or
+                           a dict containing the attribute names and keys and list of values
+                           to delete as the value.  If not value is supplied, all attribute
+                           name/values for the item will be deleted.
+                           
+        @rtype: bool
+        @return: True if successful
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
@@ -201,6 +265,20 @@ class SDBConnection(AWSQueryConnection):
     def query(self, domain_or_name, query='', max_items=None, next_token=None):
         """
         Returns a list of item names within domain_name that match the query.
+        
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @type query: string
+        @param query: The SimpleDB query to be performed.
+
+        @type max_items: int
+        @param max_items: The maximum number of items to return.  If not
+                          supplied, the default is None which returns all
+                          items matching the query.
+
+        @rtype: ResultSet
+        @return: An iterator containing the results.
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
