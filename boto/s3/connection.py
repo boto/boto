@@ -141,8 +141,9 @@ class S3Connection(AWSAuthConnection):
         request on the service which returns all buckets associated with the account.  As part
         of that response, the canonical userid is returned.  This method simply does all of
         that and then returns just the user id.
-        Returns:
-            A string containing the canonical user id.
+
+        @rtype: string
+        @return: A string containing the canonical user id.
         """
         rs = self.get_all_buckets()
         return rs.ID
