@@ -40,8 +40,15 @@ class MySQL(Installer):
 
     def change_data_dir(self):
         fresh_install = False;
-        time.sleep(2) #trying to stop mysql immediately after installing it fails
+        time.sleep(10) #trying to stop mysql immediately after installing it fails
         self.stop('mysql')
+        time.sleep(5)
+        # Sometimes asking nicely doesn't get it to stop
+        try:
+            self.run("killall -9 mysqld_safe")
+        except:
+            pass
+        time.sleep(2)
         if not os.path.exists('/mnt/mysql'):
             self.run('mkdir /mnt/mysql')
             fresh_install = True;
