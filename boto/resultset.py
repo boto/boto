@@ -93,6 +93,8 @@ class ResultSet(list):
                 connection.box_usage += float(value)
             except:
                 pass
+        elif name == 'IsValid':
+            self.status = self.to_boolean(value, 'True')
         else:
             setattr(self, name, value)
         

@@ -229,8 +229,9 @@ class Queue:
             l = self.get_messages(page_size, vtimeout)
         return n
     
-    def dump(self, file_name, page_size=100, vtimeout=10, sep='\n'):
-        """Utility function to dump the messages in a queue to a file"""
+    def dump(self, file_name, page_size=10, vtimeout=10, sep='\n'):
+        """Utility function to dump the messages in a queue to a file
+        NOTE: Page size must be < 10 else SQS errors"""
         fp = open(file_name, 'wb')
         n = 0
         l = self.get_messages(page_size, vtimeout)

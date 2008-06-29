@@ -19,14 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class Question:
+class Question(object):
     
-    QUESTION_XML_TEMPLATE = """<Question><QuestionIdentifier>%s</QuestionIdentifier>%s%s</Question>"""
+    QUESTION_XML_TEMPLATE = """<Question><QuestionIdentifier>%s</QuestionIdentifier>%s<IsRequired>%s</IsRequired>%s%s</Question>"""
+    DISPLAY_NAME_XML_TEMPLATE = """<DisplayName>%s</DisplayName>"""
     
-    def __init__(self, identifier, content, answer_spec): #amount=0.0, currency_code='USD'):
+    def __init__(self, identifier, content, answer_spec, is_required=False, display_name=None): #amount=0.0, currency_code='USD'):
         self.identifier = identifier
         self.content = content
         self.answer_spec = answer_spec
+        self.is_required = is_required
+        self.display_name = display_name
     
     def get_as_params(self, label='Question', identifier=None):
         
@@ -36,10 +39,20 @@ class Question:
         return { label : self.get_as_xml() }
     
     def get_as_xml(self):
-        ret = Question.QUESTION_XML_TEMPLATE % (self.identifier, self.content.get_as_xml(), self.answer_spec.get_as_xml())
+        # add the display name if required
+        display_name_xml = ''
+        if self.display_name:
+            display_name_xml = self.DISPLAY_NAME_XML_TEMPLATE %(self.display_name)
+
+        ret = Question.QUESTION_XML_TEMPLATE % (self.identifier, 
+                                                display_name_xml,
+                                                str(self.is_required).lower(),
+                                                self.content.get_as_xml(), 
+                                                self.answer_spec.get_as_xml())
+
         return ret
 
-class QuestionForm:
+class QuestionForm(object):
     
     QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
     QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s">%s</QuestionForm>""" # % (ns, questions_xml)
@@ -68,13 +81,21 @@ class QuestionForm:
     #    
     #    pass # What's this method for?  I don't get it.
 
-class QuestionContent:
+class QuestionContent(object):
     
-    def __init__(self, title=None, text=None, bulleted_list=None, binary=None, application=None, formatted_content=None):
+    def __init__(self, title=None, text=None, bulleted_list=None, 
+                 binary=None, binary_type=None, binary_subtype=None, binary_alttext=None,
+                 application=None, formatted_content=None):
+        if binary:
+            # TODO: attempt to auto-detect mimetype from binary url
+            assert (binary_type and binary_subtype and binary_alttext), "Type, subtype and alttext are required for binary alements"
         self.title = title
         self.text = text
         self.bulleted_list = bulleted_list
         self.binary = binary
+        self.binary_type = binary_type
+        self.binary_subtype = binary_subtype
+        self.binary_alttext = binary_alttext
         self.application = application
         self.formatted_content = formatted_content
         
@@ -108,7 +129,15 @@ class QuestionContent:
         if self.binary is None:
             return ''
         else:
-            raise NotImplementedError("Binary question content is not yet supported.")
+            return """
+<Binary>
+  <MimeType>
+    <Type>%s</Type>
+    <SubType>%s</SubType>
+  </MimeType>
+  <DataURL>%s</DataURL>
+  <AltText>%s</AltText>
+</Binary>""" %(self.binary_type, self.binary_subtype, self.binary, self.binary_alttext )
     
     def get_application_xml(self):
         if self.application is None:
@@ -126,7 +155,7 @@ class QuestionContent:
         children = self.get_title_xml() + self.get_text_xml() + self.get_bulleted_list_xml() + self.get_binary_xml() + self.get_application_xml() + self.get_formatted_content_xml()
         return "<QuestionContent>%s</QuestionContent>" % children
 
-class AnswerSpecification:
+class AnswerSpecification(object):
     
     ANSWERSPECIFICATION_XML_TEMPLATE = """<AnswerSpecification>%s</AnswerSpecification>"""
     
@@ -136,21 +165,22 @@ class AnswerSpecification:
         values = () # TODO
         return AnswerSpecification.ANSWERSPECIFICATION_XML_TEMPLATE % self.spec.get_as_xml()
 
-class FreeTextAnswer:
+class FreeTextAnswer(object):
     
     FREETEXTANSWER_XML_TEMPLATE = """<FreeTextAnswer>%s%s</FreeTextAnswer>""" # (constraints, default)
-    FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE = """<Constraints>%s%s</Constraints>""" # (is_numeric_xml, length_xml)
+    FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE = """<Constraints>%s%s%s</Constraints>""" # (is_numeric_xml, length_xml, regex_xml)
     FREETEXTANSWER_LENGTH_XML_TEMPLATE = """<Length %s %s />""" # (min_length_attr, max_length_attr)
     FREETEXTANSWER_ISNUMERIC_XML_TEMPLATE = """<IsNumeric %s %s />""" # (min_value_attr, max_value_attr)
     FREETEXTANSWER_DEFAULTTEXT_XML_TEMPLATE = """<DefaultText>%s</DefaultText>""" # (default)
     
-    def __init__(self, default=None, min_length=None, max_length=None, is_numeric=False, min_value=None, max_value=None):
+    def __init__(self, default=None, min_length=None, max_length=None, is_numeric=False, min_value=None, max_value=None, format_regex=None):
         self.default = default
         self.min_length = min_length
         self.max_length = max_length
         self.is_numeric = is_numeric
         self.min_value = min_value
         self.max_value = max_value
+        self.format_regex = format_regex
     
     def get_as_xml(self):
         is_numeric_xml = ""
@@ -172,18 +202,32 @@ class FreeTextAnswer:
             if self.max_length:
                 max_length_attr = """maxLength="%d" """
             length_xml = FreeTextAnswer.FREETEXTANSWER_LENGTH_XML_TEMPLATE % (min_length_attr, max_length_attr)
-        
+
+        regex_xml = ""
+        if self.format_regex:
+            format_regex_attribs = '''regex="%s"''' %self.format_regex['regex']
+
+            error_text = self.format_regex.get('error_text', None)
+            if error_text:
+                format_regex_attribs += ' errorText="%s"' %error_text
+
+            flags = self.format_regex.get('flags', None)
+            if flags:
+                format_regex_attribs += ' flags="%s"' %flags
+
+            regex_xml = """<AnswerFormatRegex %s/>""" %format_regex_attribs
+            
         constraints_xml = ""
-        if is_numeric_xml != "" or length_xml != "":
-            constraints_xml = FreeTextAnswer.FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE % (is_numeric_xml, length_xml)
+        if is_numeric_xml or length_xml or regex_xml:
+            constraints_xml = FreeTextAnswer.FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE % (is_numeric_xml, length_xml, regex_xml)
         
         default_xml = ""
         if self.default is not None:
             default_xml = FreeTextAnswer.FREETEXTANSWER_DEFAULTTEXT_XML_TEMPLATE % self.default
-        
+            
         return FreeTextAnswer.FREETEXTANSWER_XML_TEMPLATE % (constraints_xml, default_xml)
 
-class FileUploadAnswer:
+class FileUploadAnswer(object):
     FILEUPLOADANSWER_XML_TEMLPATE = """<FileUploadAnswer><MinFileSizeInBytes>%d</MinFileSizeInBytes><MaxFileSizeInBytes>%d</MaxFileSizeInBytes></FileUploadAnswer>""" # (min, max)
     DEFAULT_MIN_SIZE = 1024 # 1K (completely arbitrary!)
     DEFAULT_MAX_SIZE = 5 * 1024 * 1024 # 5MB (completely arbitrary!)
@@ -199,16 +243,19 @@ class FileUploadAnswer:
     def get_as_xml(self):
         return FileUploadAnswer.FILEUPLOADANSWER_XML_TEMLPATE % (self.min, self.max)
 
-class SelectionAnswer:
+class SelectionAnswer(object):
     """
     A class to generate SelectionAnswer XML data structures.
     Does not yet implement Binary selection options.
     """
-    SELECTIONANSWER_XML_TEMPLATE = """<SelectionAnswer>%s<Selections>%s</Selections></SelectionAnswer>""" # % (style_xml, selections_xml)
+    SELECTIONANSWER_XML_TEMPLATE = """<SelectionAnswer>%s%s<Selections>%s</Selections></SelectionAnswer>""" # % (count_xml, style_xml, selections_xml)
     SELECTION_XML_TEMPLATE = """<Selection><SelectionIdentifier>%s</SelectionIdentifier>%s</Selection>""" # (identifier, value_xml)
     SELECTION_VALUE_XML_TEMPLATE = """<%s>%s</%s>""" # (type, value, type)
     STYLE_XML_TEMPLATE = """<StyleSuggestion>%s</StyleSuggestion>""" # (style)
+    MIN_SELECTION_COUNT_XML_TEMPLATE = """<MinSelectionCount>%s</MinSelectionCount>""" # count
+    MAX_SELECTION_COUNT_XML_TEMPLATE = """<MaxSelectionCount>%s</MaxSelectionCount>""" # count
     ACCEPTED_STYLES = ['radiobutton', 'dropdown', 'checkbox', 'list', 'combobox', 'multichooser']
+    OTHER_SELECTION_ELEMENT_NAME = 'OtherSelection'
     
     def __init__(self, min=1, max=1, style=None, selections=None, type='text', other=False):
         
@@ -221,7 +268,7 @@ class SelectionAnswer:
             self.style_suggestion = None
         
         if selections is None:
-            raise ValueError("SelectionAnswer.__init__(): selections must be a non-empty list of tuples")
+            raise ValueError("SelectionAnswer.__init__(): selections must be a non-empty list of (content, identifier) tuples")
         else:
             self.selections = selections
         
@@ -252,16 +299,26 @@ class SelectionAnswer:
             selections_xml += selection_xml
         
         if self.other:
-            # add <OtherSelection> element
-            selections_xml += "<OtherSelection />"
+            # add OtherSelection element as xml if available
+            if hasattr(self.other, 'get_as_xml'):
+                assert type(self.other) == FreeTextAnswer, 'OtherSelection can only be a FreeTextAnswer'
+                selections_xml += self.other.get_as_xml().replace('FreeTextAnswer', 'OtherSelection')
+            else:
+                selections_xml += "<OtherSelection />"
         
         if self.style_suggestion is not None:
             style_xml = SelectionAnswer.STYLE_XML_TEMPLATE % self.style_suggestion
         else:
             style_xml = ""
+
+        if self.style_suggestion != 'radiobutton':
+            count_xml = SelectionAnswer.MIN_SELECTION_COUNT_XML_TEMPLATE %self.min_selections
+            count_xml += SelectionAnswer.MAX_SELECTION_COUNT_XML_TEMPLATE %self.max_selections
+        else:
+            count_xml = ""
         
-        ret = SelectionAnswer.SELECTIONANSWER_XML_TEMPLATE % (style_xml, selections_xml)
-        
+        ret = SelectionAnswer.SELECTIONANSWER_XML_TEMPLATE % (count_xml, style_xml, selections_xml)
+
         # return XML
         return ret
         

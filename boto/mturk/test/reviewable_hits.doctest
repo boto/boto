@@ -1,0 +1,71 @@
+>>> from boto.mturk.connection import MTurkConnection
+>>> conn = MTurkConnection(host='mechanicalturk.sandbox.amazonaws.com')
+
+# should have some reviewable HIT's returned, especially if returning all HIT type's
+# NOTE: but only if your account has existing HIT's in the reviewable state
+>>> reviewable_rs = conn.get_reviewable_hits()
+
+# this is a valid request
+>>> reviewable_rs.status
+True
+
+>>> len(reviewable_rs) > 1
+True
+
+# should contain at least one HIT object
+>>> reviewable_rs # doctest: +ELLIPSIS
+[<boto.mturk.connection.HIT instance at ...]
+
+>>> hit_id = reviewable_rs[0].HITId
+
+# check that we can retrieve the assignments for a HIT
+>>> assignments_rs = conn.get_assignments(hit_id)
+
+# this is a valid request
+>>> assignments_rs.status
+True
+
+>>> assignments_rs.NumResults >= 1
+True
+
+>>> len(assignments_rs) == int(assignments_rs.NumResults)
+True
+
+>>> assignments_rs.PageNumber
+u'1'
+
+>>> assignments_rs.TotalNumResults >= 1
+True
+
+# should contain at least one Assignment object
+>>> assignments_rs # doctest: +ELLIPSIS
+[<boto.mturk.connection.Assignment instance at ...]
+
+# should have returned assignments for the requested HIT id
+>>> assignment = assignments_rs[0]
+
+>>> assignment.HITId == hit_id
+True
+
+# should have a valid status
+>>> assignment.AssignmentStatus in ['Submitted', 'Approved', 'Rejected']
+True
+
+# should have returned at least one answer
+>>> len(assignment.answers) > 0
+True
+
+# should contain at least one set of QuestionFormAnswer objects
+>>> assignment.answers # doctest: +ELLIPSIS
+[[<boto.mturk.connection.QuestionFormAnswer instance at ...]]
+
+>>> answer = assignment.answers[0][0]
+
+# answer should be a FreeTextAnswer
+>>> answer.FreeText # doctest: +ELLIPSIS
+u'...'
+
+# question identifier should be a unicode string
+>>> answer.QuestionIdentifier # doctest: +ELLIPSIS
+u'...'
+
