@@ -32,7 +32,7 @@ from boto.exception import S3ResponseError, S3CreateError, BotoClientError
 
 def assert_case_insensitive(f):
     def wrapper(*args, **kwargs):
-        if len(args) == 3 and not args[2].islower():
+        if len(args) == 3 and not (args[2].islower() or args[2].isalnum()):
             raise BotoClientError("Bucket names cannot contain upper-case " \
 	        "characters when using either the sub-domain or virtual " \
 		"hosting calling format.")
