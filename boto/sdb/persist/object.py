@@ -59,10 +59,14 @@ class SDBObject(object):
     
     @classmethod
     def get(cls, id=None, **params):
-        if cls._manager.domain and id:
+        if params.has_key('manager'):
+            manager = params['manager']
+        else:
+            manager = cls._manager
+        if manager.domain and id:
             a = cls._manager.domain.get_attributes(id, '__type__')
             if a.has_key('__type__'):
-                return cls(id)
+                return cls(id, manager)
             else:
                 raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
         else:
@@ -79,6 +83,11 @@ class SDBObject(object):
 
     @classmethod
     def find(cls, **params):
+        if params.has_key('manager'):
+            manager = params['manager']
+            del params['manager']
+        else:
+            manager = cls._manager
         keys = params.keys()
         if len(keys) > 4:
             raise SDBPersistenceError('Too many fields, max is 4')
@@ -97,19 +106,21 @@ class SDBObject(object):
             if not found:
                 raise SDBPersistenceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
-        if cls._manager.domain:
-            rs = cls._manager.domain.query(query)
+        if manager.domain:
+            rs = manager.domain.query(query)
         else:
             rs = []
-        return object_lister(None, rs, cls._manager)
+        return object_lister(None, rs, manager)
 
     @classmethod
-    def list(cls, max_items=None):
-        if cls._manager.domain:
-            rs = cls._manager.domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
+    def list(cls, max_items=None, manager=None):
+        if not manager:
+            manager = cls._manager
+        if manager.domain:
+            rs = manager.domain.query("['__type__' = '%s']" % cls.__name__, max_items=max_items)
         else:
             rs = []
-        return object_lister(cls, rs, cls._manager)
+        return object_lister(cls, rs, manager)
 
     @classmethod
     def properties(cls):
