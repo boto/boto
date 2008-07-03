@@ -95,7 +95,7 @@ class ResultProcessor:
     def get_results_from_queue(self, path, get_file=True, delete_msg=True):
         m = self.queue.read()
         while m:
-            if m['Batch'] == self.batch:
+            if m.has_key('Batch') and m['Batch'] == self.batch:
                 self.process_record(m, path, get_file)
                 if delete_msg:
                     self.queue.delete_message(m)
