@@ -258,8 +258,9 @@ class Bucket:
         @returns: An instance of the newly created key object
         """
         if metadata:
-            headers = metadata.copy()
-            headers['x-amz-metadata-directive'] = 'REPLACE'
+            headers = {'x-amz-copy-source' : '%s/%s' % (src_bucket_name, src_key_name),
+                       'x-amz-metadata-directive' : 'REPLACE'}
+            headers = boto.utils.merge_meta(headers, metadata)
         else:
             headers = {'x-amz-copy-source' : '%s/%s' % (src_bucket_name, src_key_name),
                        'x-amz-metadata-directive' : 'COPY'}
