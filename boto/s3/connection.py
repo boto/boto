@@ -23,6 +23,7 @@ import xml.sax
 import urllib, base64
 import time
 import boto.utils
+import types
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
@@ -102,6 +103,99 @@ class S3Connection(AWSAuthConnection):
 
     def __iter__(self):
         return self.get_all_buckets()
+
+
+    def build_post_policy(self, expiration_time, conditions):
+        """
+        Taken from the AWS book Python examples and modified for use with boto
+        """
+        if type(expiration_time) != time.struct_time:
+            raise 'Policy document must include a valid expiration Time object'
+
+        # Convert conditions object mappings to condition statements
+
+        return '{"expiration": "%s",\n"conditions": [%s]}' % \
+            (time.strftime(boto.utils.ISO8601, expiration_time), ",".join(conditions))
+
+
+    def build_post_form(self, bucket_name, key, expires_in = 6000,
+                        acl = None, success_action_redirect = None, max_content_length = None,
+                        extra_fields = {}, http_method = "http"):
+        """
+        Taken from the AWS book Python examples and modified for use with boto
+        @param bucket_name: Bucket to submit to
+        @param key: Key name, optionally add ${filename} to the end to attach the submitted filename
+        @param expires_in: Time (in seconds) before this expires, defaults to 6000
+        @param acl: ACL rule to use, if any
+        @param success_action_redirect: URL to redirect to on success
+        @param max_content_length: Maximum size for this file
+        @param extra_fields: any extra fields to submit with this form
+        @param http_method: HTTP Method to use, "http" or "https"
+        """
+        fields = []
+        conditions = []
+        expiration = time.gmtime(int(time.time() + expires_in))
+
+        # Generate policy document
+        conditions.append('{"bucket": "%s"}' % bucket_name)
+        if key.endswith("${filename}"):
+            conditions.append('["starts-with", "$key", "%s"]' % key[:-len("${filename}")])
+        else:
+            conditions.append('{"key": "%s"}' % key)
+        if acl:
+            conditions.append('{"acl": "%s"}' % acl)
+            fields.append('<input type="hidden" name="acl" value="%s"/>' % acl)
+        if success_action_redirect:
+            conditions.append('{"success_action_redirect": "%s"}' % success_action_redirect)
+            fields.append('<input type="hidden" name="success_action_redirect" value="%s"/>' % success_action_redirect)
+        if content_length_range:
+            conditions.append('{"content-length-range": "%s"}' % content_length_range)
+            fields.append('<input type="hidden" name="content-length-range" value="%s"/>' % content_length_range)
+
+        policy = self.build_post_policy(expiration, conditions)
+
+        # Add the base64-encoded policy document as the 'policy' field
+        policy_b64 = base64.b64encode(policy)
+        fields.append('<input type="hidden" name="policy" value="%s">' % policy_b64)
+
+        # Add the AWS access key as the 'AWSAccessKeyId' field
+        fields.append('<input type="hidden" name="AWSAccessKeyId" value="%s">' % self.aws_access_key_id)
+
+        # Add signature for encoded policy document as the 'AWSAccessKeyId' field
+        hmac_copy = self.hmac.copy()
+        hmac_copy.update(policy_b64)
+        signature = base64.encodestring(hmac_copy.digest()).strip()
+        fields.append('<input type="hidden" name="signature" value="%s">' % signature)
+
+        # Include any additional fields
+        for n in extra_fields:
+            v = extra_fields[n]
+
+            if not v:
+                # Allow users to provide their own <input> fields as text.
+                fields.append(n)
+            else:
+                fields.append('<input type="hidden" name="%s" value="%s">' % (n, v))
+
+        # Add the vital 'file' input item, which may be a textarea or file.
+        fields.append('<input name="file" type="file">')
+
+        # Construct a sub-domain URL to refer to the target bucket. The
+        # HTTPS protocol will be used if the secure HTTP option is enabled.
+        url = '%s://%s.s3.amazonaws.com/' % (http_method, bucket_name)
+
+        # Construct the entire form.
+        form = """
+            <form action="%s" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="key" value="%s">
+                %s
+                <br>
+                <input type="submit" value="Upload to Amazon S3">
+            </form>
+        """ % (url, key, "\n".join(fields))
+
+        return form
+
 
     def generate_url(self, expires_in, method, bucket='', key='',
                      headers=None, query_auth=True):
