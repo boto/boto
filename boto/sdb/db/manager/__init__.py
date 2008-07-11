@@ -22,10 +22,29 @@ from sdbmanager import SDBManager
 import boto
 
 def get_manager(cls_name):
+    """
+    Returns the appropriate Manager class for a given Model class.  It does this by
+    looking in the boto config for a section like this:
+        [DB]
+        db_type = SimpleDB
+        db_user = <aws access key id>
+        db_passwd = <aws secret access key>
+        db_table = my_domain
+        [DB_TestBasic]
+        db_type = SimpleDB
+        db_user = <another aws access key id>
+        db_passwd = <another aws secret access key>
+        db_table = my_domain
+        db_port = 1111
+    The values in the DB section are "generic values" that will be used if nothing more
+    specific is found.  You can also create a section for a specific Model class that
+    gives the db info for that class.  In the example above, TestBasic is a Model subclass.
+    """
     db_user = boto.config.get('DB', 'db_user', None)
     db_passwd = boto.config.get('DB', 'db_passwd', None)
     db_type = boto.config.get('DB', 'db_type', 'SimpleDB')
     db_table = boto.config.get('DB', 'db_table', None)
+    db_port = boto.config.get('DB', 'db_port', None)
     debug = boto.config.getint('DB', 'debug', 0)
     db_section = 'DB_' + cls_name
     if boto.config.has_section(db_section):
@@ -33,7 +52,8 @@ def get_manager(cls_name):
         db_passwd = boto.config.get(db_section, 'db_passwd', db_passwd)
         db_type = boto.config.get(db_section, 'db_type', db_type)
         db_table = boto.config.get(db_section, 'db_table', db_table)
-        debug = boto.config.getint('DB', 'debug', debug)
+        db_port = boto.config.get(db_section, 'db_port', None)
+        debug = boto.config.getint(db_section, 'debug', debug)
     if db_type == 'SimpleDB':
         return SDBManager(db_table, db_user, db_passwd, debug=debug)
     else:

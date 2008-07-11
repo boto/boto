@@ -134,9 +134,6 @@ class Model(object):
     def delete(self):
         self._manager.delete_obj(self)
 
-    def get_related_objects(self, ref_name, ref_cls=None):
-        return self._manager.get_related_objects(self, ref_name, ref_cls)
-
     def key(self):
         return Key(obj=self)
 
