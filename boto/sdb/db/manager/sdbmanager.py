@@ -205,7 +205,7 @@ class SDBManager(object):
         return self.Converter.encode(self, prop, value)
 
     def set_property(self, prop, obj, name, value):
-        value = self.encode_value(self, prop, value)
+        value = self.encode_value(prop, value)
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
     def decode_value(self, prop, value):
