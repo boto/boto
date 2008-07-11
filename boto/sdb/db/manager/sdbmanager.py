@@ -35,6 +35,7 @@ def object_lister(cls, query_lister, manager):
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class SDBManager(object):
+    DefaultDomainName = boto.config.get('Persist', 'default_domain', None)
 
     def __init__(self, domain_name=None, aws_access_key_id=None, aws_secret_access_key=None, debug=0):
         self.domain_name = domain_name
