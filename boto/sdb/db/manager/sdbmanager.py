@@ -180,17 +180,14 @@ class SDBManager(object):
             raise SDBPersistenceError('Too many filters, max is 4')
         parts = ["['__type__'='%s'] union ['__lineage__'starts-with'%s']" % (cls.__name__, cls.get_lineage())]
         properties = cls.properties()
-        for filter in filters:
+        for filter, value in filters:
             name, op = filter.strip().split()
             found = False
             for property in properties:
-                if property.name == key:
+                if property.name == name:
                     found = True
-                    if isinstance(property, ScalarProperty):
-                        checker = property.checker
-                        parts.append("['%s' %s '%s']" % (name, op, checker.to_string(params[key])))
-                    else:
-                        raise SDBPersistenceError('%s is not a searchable field' % key)
+                    value = self.encode_value(property, value)
+                    parts.append("['%s' %s '%s']" % (name, op, value))
             if not found:
                 raise SDBPersistenceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
@@ -202,7 +199,8 @@ class SDBManager(object):
                  '__module__' : obj.__class__.__module__,
                  '__lineage__' : obj.get_lineage()}
         for property in obj.properties():
-            attrs[property.name] = property.get_value_for_datastore(obj)
+            if not property.__class__.__name__.startswith('_'):
+                attrs[property.name] = property.get_value_for_datastore(obj)
         self.domain.put_attributes(obj.id, attrs, replace=True)
 
     def delete_object(self, obj):

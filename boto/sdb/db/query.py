@@ -30,6 +30,7 @@ class Query(object):
         
     def filter(self, property_operator, value):
         self.filters.append((property_operator, value))
+        return self
 
     def fetch(self, limit, offset=0):
         raise NotImplementedError, "fetch mode is not currently supported"

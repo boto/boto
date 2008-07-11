@@ -21,6 +21,7 @@
 
 import datetime
 from key import Key
+from boto.sdb.db.query import Query
 
 class Property(object):
 
@@ -62,14 +63,15 @@ class Property(object):
                 setattr(obj, self.slot_name, old_value)
                 raise
 
+    def __property_config__(self, model_class, property_name):
+        self.model_class = model_class
+        self.name = property_name
+        self.slot_name = '__' + self.name
+
     def default_validator(self, value):
         if not isinstance(value, self.data_type):
             raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
                                       
-    def set_name(self, name):
-        self.name = name
-        self.slot_name = '__' + self.name
-
     def default_value(self):
         return self.default
 
@@ -158,11 +160,24 @@ class ReferenceProperty(Property):
 
     data_type = Key
 
-    def __init__(self, reference_class=None, verbose_name=None, name=None, default=None,
-                 required=False, validator=None, choices=None):
+    def __init__(self, reference_class=None, collection_name=None,
+                 verbose_name=None, name=None, default=None, required=False, validator=None, choices=None):
         Property.__init__(self, verbose_name, name, default, required, validator, choices)
         self.reference_class = reference_class
+        self.collection_name = collection_name
         
+    def __property_config__(self, model_class, property_name):
+        Property.__property_config__(self, model_class, property_name)
+        if self.collection_name is None:
+            self.collection_name = '%s_set' % (model_class.__name__.lower())
+        if hasattr(self.reference_class, self.collection_name):
+            raise ValueError, 'duplicate property: %s' % self.collection_name
+#             raise DuplicatePropertyError('Class %s already has property %s'
+#                                          % (self.reference_class.__name__,
+#                                             self.collection_name))
+        setattr(self.reference_class, self.collection_name,
+                _ReverseReferenceProperty(model_class, property_name))
+
     def validate(self, value):
         if self.required and value==None:
             raise ValueError, '%s is a required property' % self.name
@@ -184,4 +199,23 @@ class ReferenceProperty(Property):
                 raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
             except:
                 raise ValueError, '%s is not a Model' % value
+        
+class _ReverseReferenceProperty(Property):
+
+    def __init__(self, model, prop):
+        self.__model = model
+        self.__property = prop
+
+    def __get__(self, model_instance, model_class):
+        """Fetches collection of model instances of this collection property."""
+        if model_instance is not None:
+            query = Query(self.__model)
+            return query.filter(self.__property + ' =', model_instance)
+        else:
+            return self
+
+    def __set__(self, model_instance, value):
+        """Not possible to set a new collection."""
+        raise ValueError, 'Virtual property is read-only'
+
         

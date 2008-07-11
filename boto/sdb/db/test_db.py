@@ -22,7 +22,7 @@ class TestRequired(Model):
 
 class TestReference(Model):
 
-    ref = ReferenceProperty(reference_class=TestBasic)
+    ref = ReferenceProperty(reference_class=TestBasic, collection_name='refs')
 
 class TestSubClass(TestBasic):
 
@@ -56,6 +56,9 @@ def test_reference(t=None):
     tt = TestReference()
     tt.ref = t
     tt.put()
+    time.sleep(5)
+    for o in t.refs:
+        print o
     return tt
 
 def test_subclass():

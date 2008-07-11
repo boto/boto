@@ -22,6 +22,7 @@
 from boto.sdb.db.manager import get_manager
 from boto.sdb.db.property import *
 from boto.sdb.db.key import Key
+from boto.sdb.db.query import Query
 import boto
 import uuid
 
@@ -37,11 +38,12 @@ class ModelMeta(type):
                 for key in dict.keys():
                     if isinstance(dict[key], Property):
                         property = dict[key]
-                        property.set_name(key)
+                        property.__property_config__(cls, key)
                 prop_names = []
                 props = cls.properties()
                 for prop in props:
-                    prop_names.append(prop.name)
+                    if not prop.__class__.__name__.startswith('_'):
+                        prop_names.append(prop.name)
                 setattr(cls, '_prop_names', prop_names)
         except NameError:
             # 'Model' isn't defined yet, meaning we're looking at our own
@@ -81,8 +83,10 @@ class Model(object):
 
     @classmethod
     def find(cls, **params):
-        manager = params.get('manager', cls._manager)
-        return manager.find(cls, **params)
+        q = Query(cls)
+        for key, value in params.items():
+            q.filter('%s =' % key, value)
+        return q
 
     @classmethod
     def all(cls, max_items=None):
