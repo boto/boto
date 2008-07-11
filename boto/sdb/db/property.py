@@ -21,6 +21,7 @@
 
 import datetime
 from key import Key
+from boto.utils import Password
 from boto.sdb.db.query import Query
 
 class Property(object):
@@ -111,6 +112,33 @@ class StringProperty(Property):
     def __init__(self, verbose_name=None, name=None, default='', required=False,
                  validator=validate_string, choices=None):
         Property.__init__(self, verbose_name, name, default, required, validator, choices)
+
+def validate_password(value):
+    if isinstance(value, Password):
+        if len(value) > 1024:
+            raise ValueError, 'Length of value greater than maxlength'
+    else:
+        raise TypeError, 'Expecting Password, got %s' % type(value)
+
+class PasswordProperty(StringProperty):
+    """
+    Hashed property who's original value can not be
+    retrieved, but still can be compaired.
+    """
+    def __init__(self, verbose_name=None, name=None, default='', required=False,
+                 validator=validate_password, choices=None):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices)
+
+
+    def __set__(self, obj, value):
+        p = Password()
+        p.set(value)
+        Property.__set__(self, obj, p)
+
+    def __get__(self, obj, objtype):
+        return Password(Property.__get__(self, obj, objtype))
+
+
 
 class IntegerProperty(Property):
 
