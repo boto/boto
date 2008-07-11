@@ -35,28 +35,20 @@ def object_lister(cls, query_lister, manager):
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class SDBManager(object):
-    DefaultDomainName = boto.config.get('Persist', 'default_domain', None)
-
-    def __init__(self, domain_name=None, aws_access_key_id=None, aws_secret_access_key=None, debug=0):
+    
+    def __init__(self, domain_name, aws_access_key_id=None, aws_secret_access_key=None, debug=0):
         self.domain_name = domain_name
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.domain = None
         self.sdb = None
         self.s3 = None
-        if not self.domain_name:
-            self.domain_name = self.DefaultDomainName
-            if self.domain_name:
-                boto.log.info('No SimpleDB domain set, using default_domain: %s' % self.domain_name)
-            else:
-                boto.log.warning('No SimpleDB domain set, persistance is disabled')
-        if self.domain_name:
-            self.sdb = boto.connect_sdb(aws_access_key_id=self.aws_access_key_id,
-                                        aws_secret_access_key=self.aws_secret_access_key,
-                                        debug=debug)
-            self.domain = self.sdb.lookup(self.domain_name)
-            if not self.domain:
-                self.domain = self.sdb.create_domain(self.domain_name)
+        self.sdb = boto.connect_sdb(aws_access_key_id=self.aws_access_key_id,
+                                    aws_secret_access_key=self.aws_secret_access_key,
+                                    debug=debug)
+        self.domain = self.sdb.lookup(self.domain_name)
+        if not self.domain:
+            self.domain = self.sdb.create_domain(self.domain_name)
 
     class Converter:
         """
