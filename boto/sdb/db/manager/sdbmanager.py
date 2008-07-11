@@ -73,27 +73,31 @@ class SDBManager(object):
         def encode(cls, manager, prop, value):
             if hasattr(prop, 'reference_class'):
                 return cls.encode_reference(manager, value)
-            if isinstance(value, str) or isinstance(value, unicode):
+            elif isinstance(value, str) or isinstance(value, unicode):
                 return value
-            if isinstance(value, int) or isinstance(value, long):
+            elif isinstance(value, int) or isinstance(value, long):
                 return cls.encode_int(manager, value)
-            if isinstance(value, bool):
+            elif isinstance(value, bool):
                 return cls.encode_bool(manager, value)
-            if isinstance(value, datetime.datetime):
+            elif isinstance(value, datetime.datetime):
                 return cls.encode_datetime(manager, value)
+            else:
+                return str(value)
 
         @classmethod
         def decode(cls, manager, prop, value):
             if isinstance(prop.data_type, str) or isinstance(prop.data_type, unicode):
                 return value
-            if isinstance(prop.data_type, int) or isinstance(prop.data_type, long):
+            elif isinstance(prop.data_type, int) or isinstance(prop.data_type, long):
                 return cls.decode_int(manager, value)
-            if isinstance(prop.data_type, bool):
+            elif isinstance(prop.data_type, bool):
                 return cls.decode_bool(manager, value)
-            if isinstance(prop.data_type, datetime.datetime):
+            elif isinstance(prop.data_type, datetime.datetime):
                 return cls.decode_datetime(manager, value)
-            if isinstance(prop.data_type, Key):
+            elif isinstance(prop.data_type, Key):
                 return cls.decode_reference(manager, value)
+            else:
+                return value
 
         @classmethod
         def encode_int(cls, manager, value):

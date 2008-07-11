@@ -127,7 +127,7 @@ class PasswordProperty(StringProperty):
     """
     def __init__(self, verbose_name=None, name=None, default='', required=False,
                  validator=validate_password, choices=None):
-        Property.__init__(self, verbose_name, name, default, required, validator, choices)
+        StringProperty.__init__(self, verbose_name, name, default, required, validator, choices)
 
 
     def __set__(self, obj, value):
@@ -136,7 +136,7 @@ class PasswordProperty(StringProperty):
         Property.__set__(self, obj, p)
 
     def __get__(self, obj, objtype):
-        return Password(Property.__get__(self, obj, objtype))
+        return Password(StringProperty.__get__(self, obj, objtype))
 
 
 
