@@ -29,12 +29,12 @@ def get_manager(cls_name):
         db_type = SimpleDB
         db_user = <aws access key id>
         db_passwd = <aws secret access key>
-        db_table = my_domain
+        db_name = my_domain
         [DB_TestBasic]
         db_type = SimpleDB
         db_user = <another aws access key id>
         db_passwd = <another aws secret access key>
-        db_table = my_domain
+        db_name = basic_domain
         db_port = 1111
     The values in the DB section are "generic values" that will be used if nothing more
     specific is found.  You can also create a section for a specific Model class that
@@ -43,6 +43,7 @@ def get_manager(cls_name):
     db_user = boto.config.get('DB', 'db_user', None)
     db_passwd = boto.config.get('DB', 'db_passwd', None)
     db_type = boto.config.get('DB', 'db_type', 'SimpleDB')
+    db_name = boto.config.get('DB', 'db_name', None)
     db_table = boto.config.get('DB', 'db_table', None)
     db_port = boto.config.get('DB', 'db_port', None)
     debug = boto.config.getint('DB', 'debug', 0)
@@ -51,11 +52,12 @@ def get_manager(cls_name):
         db_user = boto.config.get(db_section, 'db_user', db_user)
         db_passwd = boto.config.get(db_section, 'db_passwd', db_passwd)
         db_type = boto.config.get(db_section, 'db_type', db_type)
+        db_name = boto.config.get(db_section, 'db_name', None)
         db_table = boto.config.get(db_section, 'db_table', db_table)
         db_port = boto.config.get(db_section, 'db_port', None)
         debug = boto.config.getint(db_section, 'debug', debug)
     if db_type == 'SimpleDB':
-        return SDBManager(db_table, db_user, db_passwd, debug=debug)
+        return SDBManager(db_name, db_user, db_passwd, debug=debug)
     else:
         raise ValueError, 'Unknown db_type: %s' % db_type
 
