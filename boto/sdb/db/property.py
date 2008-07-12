@@ -113,23 +113,11 @@ class StringProperty(Property):
                  validator=validate_string, choices=None):
         Property.__init__(self, verbose_name, name, default, required, validator, choices)
 
-def validate_password(value):
-    if isinstance(value, Password):
-        if len(value) > 1024:
-            raise ValueError, 'Length of value greater than maxlength'
-    else:
-        raise TypeError, 'Expecting Password, got %s' % type(value)
-
 class PasswordProperty(StringProperty):
     """
     Hashed property who's original value can not be
     retrieved, but still can be compaired.
     """
-    def __init__(self, verbose_name=None, name=None, default='', required=False,
-                 validator=validate_password, choices=None):
-        StringProperty.__init__(self, verbose_name, name, default, required, validator, choices)
-
-
     def __set__(self, obj, value):
         p = Password()
         p.set(value)
@@ -138,7 +126,13 @@ class PasswordProperty(StringProperty):
     def __get__(self, obj, objtype):
         return Password(StringProperty.__get__(self, obj, objtype))
 
-
+    def validate(self, value):
+        value = Property.validate(self, value)
+        if isinstance(value, Password):
+            if len(value) > 1024:
+                raise ValueError, 'Length of value greater than maxlength'
+        else:
+            raise TypeError, 'Expecting Password, got %s' % type(value)
 
 class IntegerProperty(Property):
 
