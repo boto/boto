@@ -18,7 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from sdbmanager import SDBManager
 import boto
 
 def get_manager(cls_name):
@@ -45,6 +44,7 @@ def get_manager(cls_name):
     db_type = boto.config.get('DB', 'db_type', 'SimpleDB')
     db_name = boto.config.get('DB', 'db_name', None)
     db_table = boto.config.get('DB', 'db_table', None)
+    db_host = boto.config.get('DB', 'db_host', None)
     db_port = boto.config.get('DB', 'db_port', None)
     debug = boto.config.getint('DB', 'debug', 0)
     db_section = 'DB_' + cls_name
@@ -52,12 +52,15 @@ def get_manager(cls_name):
         db_user = boto.config.get(db_section, 'db_user', db_user)
         db_passwd = boto.config.get(db_section, 'db_passwd', db_passwd)
         db_type = boto.config.get(db_section, 'db_type', db_type)
-        db_name = boto.config.get(db_section, 'db_name', None)
+        db_name = boto.config.get(db_section, 'db_name', db_name)
         db_table = boto.config.get(db_section, 'db_table', db_table)
-        db_port = boto.config.get(db_section, 'db_port', None)
+        db_host = boto.config.get(db_section, 'db_host', db_host)
+        db_port = boto.config.getint(db_section, 'db_port', db_port)
         debug = boto.config.getint(db_section, 'debug', debug)
     if db_type == 'SimpleDB':
+        from sdbmanager import SDBManager
         return SDBManager(db_name, db_user, db_passwd, debug=debug)
     else:
+        from pgmanager import PGManager
         raise ValueError, 'Unknown db_type: %s' % db_type
 
