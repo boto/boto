@@ -119,7 +119,7 @@ class PasswordProperty(StringProperty):
     retrieved, but still can be compaired.
     """
     def __init__(self, verbose_name=None, name=None, default='', required=False,
-                 validator=validate_password, choices=None):
+                 validator=None, choices=None):
         StringProperty.__init__(self, verbose_name, name, default, required, validator, choices)
 
     def __set__(self, obj, value):
