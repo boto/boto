@@ -45,7 +45,7 @@ def get_manager(cls_name):
     db_name = boto.config.get('DB', 'db_name', None)
     db_table = boto.config.get('DB', 'db_table', None)
     db_host = boto.config.get('DB', 'db_host', None)
-    db_port = boto.config.get('DB', 'db_port', None)
+    db_port = boto.config.getint('DB', 'db_port', None)
     debug = boto.config.getint('DB', 'debug', 0)
     db_section = 'DB_' + cls_name
     if boto.config.has_section(db_section):
