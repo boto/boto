@@ -60,7 +60,9 @@ def get_manager(cls_name):
     if db_type == 'SimpleDB':
         from sdbmanager import SDBManager
         return SDBManager(db_name, db_user, db_passwd, debug=debug)
-    else:
+    elif db_type == 'PostgreSQL':
         from pgmanager import PGManager
+        return PGManager(db_name, db_user, db_password, db_host, db_port)
+    else:
         raise ValueError, 'Unknown db_type: %s' % db_type
 
