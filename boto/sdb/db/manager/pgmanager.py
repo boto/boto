@@ -1,3 +1,23 @@
+# Copyright (c) 2006,2007,2008 Mitch Garnaat http://garnaat.org/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 from boto.sdb.db.key import Key
 import psycopg2
 import uuid
@@ -13,8 +33,7 @@ class PGManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
-        self.connection = None
-        self.connect()
+        self._connect()
 
     class Converter:
         """
@@ -63,11 +82,11 @@ class PGManager(object):
         return cs % (self.db_name, self.db_user, self.db_passwd,
                      self.db_host, self.db_port)
 
-    def connect(self):
+    def _connect(self):
         self.connection = psycopg2.connect(self._build_connect_string())
         self.cursor = self.connection.cursor()
 
-    def object_lister(self, cursor):
+    def _object_lister(self, cursor):
         try:
             for row in cursor:
                 yield self._object_from_row(row, cursor.description)
@@ -91,15 +110,6 @@ class PGManager(object):
         obj._auto_update = True
         return obj
 
-    def get_object(self, id):
-        qs = """SELECT * FROM "%s" WHERE id='%s';""" % (self.db_table, id)
-        self.cursor.execute(qs, None)
-        if self.cursor.rowcount == 1:
-            row = self.cursor.fetchone()
-            return self._object_from_row(row, self.cursor.description)
-        else:
-            raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
-        
         
     def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)
@@ -108,9 +118,7 @@ class PGManager(object):
     def query(self, cls, filters=None):
         parts = []
         qs = 'SELECT * FROM "%s"' % self.db_table
-        if not filters:
-            qs += ';'
-        else:
+        if filters:
             properties = cls.properties()
             for filter, value in filters:
                 name, op = filter.strip().split()
@@ -123,10 +131,11 @@ class PGManager(object):
                 if not found:
                     raise SDBPersistenceError('%s is not a valid field' % key)
             qs += ','.join(parts)
+        qs += ';'
         print qs
         cursor = self.connection.cursor()
         cursor.execute(qs)
-        return self.object_lister(cursor)
+        return self._object_lister(cursor)
 
     def _build_insert_qs(self, obj):
         fields = [p.name for p in obj.properties(hidden=False)]
@@ -136,7 +145,7 @@ class PGManager(object):
         qs += ','.join(fields)
         qs += ") VALUES ('%s'," % obj.id
         qs += ','.join(values)
-        qs += ')'
+        qs += ');'
         return qs
 
     def get_property(self, prop, obj, name):
@@ -159,13 +168,28 @@ class PGManager(object):
         qs = 'UPDATE "%s" SET ' % self.db_table
         qs += "%s='%s'" % (name, self.encode_value(prop, value))
         qs += " WHERE id='%s'" % obj.id
+        qs += ';'
         print qs
         self.cursor.execute(qs)
         self.connection.commit()
 
+    def get_object(self, id):
+        qs = """SELECT * FROM "%s" WHERE id='%s';""" % (self.db_table, id)
+        self.cursor.execute(qs, None)
+        if self.cursor.rowcount == 1:
+            row = self.cursor.fetchone()
+            return self._object_from_row(row, self.cursor.description)
+        else:
+            raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
+        
     def save_object(self, obj):
-        obj.id = str(uuid.uuid4())
         qs = self._build_insert_qs(obj)
+        print qs
+        self.cursor.execute(qs)
+        self.connection.commit()
+
+    def delete_object(self, obj):
+        qs = """DELETE FROM "%s" WHERE id='%s';""" % (self.db_table, obj.id)
         print qs
         self.cursor.execute(qs)
         self.connection.commit()

@@ -134,7 +134,7 @@ class Model(object):
     save = put
         
     def delete(self):
-        self._manager.delete_obj(self)
+        self._manager.delete_object(self)
 
     def key(self):
         return Key(obj=self)
