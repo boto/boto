@@ -33,7 +33,7 @@ class ModelMeta(type):
         # Make sure this is a subclass of Model - mainly copied from django ModelBase (thanks!)
         try:
             if filter(lambda b: issubclass(b, Model), bases):
-                cls._manager = get_manager(name)
+                cls._manager = get_manager(cls)
                 # look for all of the Properties and set their names
                 for key in dict.keys():
                     if isinstance(dict[key], Property):
@@ -97,12 +97,14 @@ class Model(object):
         raise NotImplementedError, "get_or_insert not currently supported"
             
     @classmethod
-    def properties(cls):
+    def properties(cls, hidden=True):
         properties = []
         while cls:
             for key in cls.__dict__.keys():
-                if isinstance(cls.__dict__[key], Property):
-                    properties.append(cls.__dict__[key])
+                prop = cls.__dict__[key]
+                if isinstance(prop, Property):
+                    if hidden or not prop.__class__.__name__.startswith('_'):
+                        properties.append(cls.__dict__[key])
             if len(cls.__bases__) > 0:
                 cls = cls.__bases__[0]
             else:
