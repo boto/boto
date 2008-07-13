@@ -67,21 +67,28 @@ class PGManager(object):
         self.conn = psycopg2.connect(self._build_connect_string())
         self.cursor = self.conn.cursor()
 
+    def _dict_from_row(self, row):
+        d = {}
+        for i in range(0, len(row)):
+            d[self.cursor.description[i][0]] = row[i]
+        return d
+
+    def _object_from_result(self, row):
+        d = self._dict_from_row(row)
+        obj = self.cls(d['id'])
+        obj._auto_update = False
+        for prop in obj.properties(hidden=False):
+            v = self.decode_value(prop, d[prop.name])
+            setattr(obj, prop.name, v)
+        obj._auto_update = True
+        return obj
+
     def get_object(self, id):
         qs = """SELECT * FROM "%s" WHERE id='%s';""" % (self.db_table, id)
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
-            obj = self.cls(id)
-            obj._auto_update = False
-            rs = self.cursor.fetchone()
-            data = {}
-            for i in range(0, len(rs)):
-                data[self.cursor.description[i][0]] = rs[i]
-            for prop in obj.properties(hidden=False):
-                v = self.decode_value(prop, data[prop.name])
-                setattr(obj, prop.name, v)
-            obj._auto_update = True
-            return obj
+            row = self.cursor.fetchone()
+            return self._object_from_result(row)
         else:
             raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
         
@@ -91,40 +98,41 @@ class PGManager(object):
         return self.cursor.fetchall()
 
     def find(self, cls, **params):
-        qs = 'SELECT * FROM "%s" WHERE ' % cls.table()
+        qs = 'SELECT * FROM "%s" WHERE ' % self._db_table
         selectors = ["%s='%s'" % (i[0], i[1]) for i in params.items()]
         qs += ','.join(selectors)
         print qs
         self.cursor.execute(qs)
         results = self.cursor.fetchall()
         objs = []
-        for result in results:
-            obj = cls()
-            self._obj_from_result(obj, result)
-            objs.append(obj)
+        for row in results:
+            objs.append(self._object_from_result(row))
         return objs
 
-    def query(self, cls, filters):
+    def query(self, cls, filters=None):
         parts = []
-        qs = 'SELECT * FROM "%s" WHERE ' % cls.table()
-        properties = cls.properties()
-        for filter, value in filters:
-            name, op = filter.strip().split()
-            found = False
-            for property in properties:
-                if property.name == name:
-                    found = True
-                    value = self.encode_value(property, value)
-                    parts.append("%s%s'%s'" % (name, op, value))
-            if not found:
-                raise SDBPersistenceError('%s is not a valid field' % key)
-        qs += ','.join(parts)
+        qs = 'SELECT * FROM "%s"' % self.db_table
+        if not filters:
+            qs += ';'
+        else:
+            properties = cls.properties()
+            for filter, value in filters:
+                name, op = filter.strip().split()
+                found = False
+                for property in properties:
+                    if property.name == name:
+                        found = True
+                        value = self.encode_value(property, value)
+                        parts.append("%s%s'%s'" % (name, op, value))
+                if not found:
+                    raise SDBPersistenceError('%s is not a valid field' % key)
+            qs += ','.join(parts)
+        print qs
+        self.cursor.execute(qs)
         results = self.cursor.fetchall()
         objs = []
-        for result in results:
-            obj = cls()
-            self._obj_from_result(obj, result)
-            objs.append(obj)
+        for row in results:
+            objs.append(self._object_from_result(row))
         return objs
 
     def _build_insert_qs(self, obj):
