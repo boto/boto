@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 import boto
 
-def get_manager(cls_name):
+def get_manager(cls):
     """
     Returns the appropriate Manager class for a given Model class.  It does this by
     looking in the boto config for a section like this:
@@ -47,7 +47,7 @@ def get_manager(cls_name):
     db_host = boto.config.get('DB', 'db_host', None)
     db_port = boto.config.getint('DB', 'db_port', None)
     debug = boto.config.getint('DB', 'debug', 0)
-    db_section = 'DB_' + cls_name
+    db_section = 'DB_' + cls.__name__
     if boto.config.has_section(db_section):
         db_user = boto.config.get(db_section, 'db_user', db_user)
         db_passwd = boto.config.get(db_section, 'db_passwd', db_passwd)
@@ -63,7 +63,8 @@ def get_manager(cls_name):
     elif db_type == 'PostgreSQL':
         from pgmanager import PGManager
         if db_table:
-            return PGManager(db_name, db_user, db_passwd, db_host, db_port)
+            return PGManager(cls, db_name, db_user, db_passwd,
+                             db_host, db_port, db_table)
         else:
             return None
     else:
