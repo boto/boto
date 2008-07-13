@@ -13,7 +13,7 @@ class PGManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
-        self.conn = None
+        self.connection = None
         self.connect()
 
     class Converter:
@@ -64,17 +64,25 @@ class PGManager(object):
                      self.db_host, self.db_port)
 
     def connect(self):
-        self.conn = psycopg2.connect(self._build_connect_string())
-        self.cursor = self.conn.cursor()
+        self.connection = psycopg2.connect(self._build_connect_string())
+        self.cursor = self.connection.cursor()
 
-    def _dict_from_row(self, row):
+    def object_lister(self, cursor):
+        try:
+            for row in cursor:
+                yield self._object_from_row(row, cursor.description)
+        except StopIteration:
+            cursor.close()
+            raise StopIteration
+                
+    def _dict_from_row(self, row, description):
         d = {}
         for i in range(0, len(row)):
-            d[self.cursor.description[i][0]] = row[i]
+            d[description[i][0]] = row[i]
         return d
 
-    def _object_from_result(self, row):
-        d = self._dict_from_row(row)
+    def _object_from_row(self, row, description):
+        d = self._dict_from_row(row, description)
         obj = self.cls(d['id'])
         obj._auto_update = False
         for prop in obj.properties(hidden=False):
@@ -88,26 +96,14 @@ class PGManager(object):
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
             row = self.cursor.fetchone()
-            return self._object_from_result(row)
+            return self._object_from_row(row, self.cursor.description)
         else:
             raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
         
         
-    def query(self, query, vars=None):
+    def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)
         return self.cursor.fetchall()
-
-    def find(self, cls, **params):
-        qs = 'SELECT * FROM "%s" WHERE ' % self._db_table
-        selectors = ["%s='%s'" % (i[0], i[1]) for i in params.items()]
-        qs += ','.join(selectors)
-        print qs
-        self.cursor.execute(qs)
-        results = self.cursor.fetchall()
-        objs = []
-        for row in results:
-            objs.append(self._object_from_result(row))
-        return objs
 
     def query(self, cls, filters=None):
         parts = []
@@ -128,12 +124,9 @@ class PGManager(object):
                     raise SDBPersistenceError('%s is not a valid field' % key)
             qs += ','.join(parts)
         print qs
-        self.cursor.execute(qs)
-        results = self.cursor.fetchall()
-        objs = []
-        for row in results:
-            objs.append(self._object_from_result(row))
-        return objs
+        cursor = self.connection.cursor()
+        cursor.execute(qs)
+        return self.object_lister(cursor)
 
     def _build_insert_qs(self, obj):
         fields = [p.name for p in obj.properties(hidden=False)]
@@ -168,13 +161,13 @@ class PGManager(object):
         qs += " WHERE id='%s'" % obj.id
         print qs
         self.cursor.execute(qs)
-        self.conn.commit()
+        self.connection.commit()
 
     def save_object(self, obj):
         obj.id = str(uuid.uuid4())
         qs = self._build_insert_qs(obj)
         print qs
         self.cursor.execute(qs)
-        self.conn.commit()
+        self.connection.commit()
 
             
