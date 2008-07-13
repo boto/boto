@@ -89,6 +89,10 @@ class Model(object):
         return q
 
     @classmethod
+    def lookup(cls, name, value):
+        return cls._manager.lookup(cls, name, value)
+
+    @classmethod
     def all(cls, max_items=None):
         return cls.find()
 

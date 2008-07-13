@@ -71,12 +71,6 @@ class PGManager(object):
             except:
                 raise ValueError, 'Unable to convert %s to Object' % str_value
 
-    def encode_value(self, prop, value):
-        return self.Converter.encode(self, prop, value)
-
-    def decode_value(self, prop, value):
-        return self.Converter.decode(self, prop, value)
-
     def _build_connect_string(self):
         cs = 'dbname=%s user=%s password=%s host=%s port=%d'
         return cs % (self.db_name, self.db_user, self.db_passwd,
@@ -110,15 +104,55 @@ class PGManager(object):
         obj._auto_update = True
         return obj
 
-        
+    def _build_insert_qs(self, obj):
+        fields = [p.name for p in obj.properties(hidden=False)]
+        values = ["'%s'" % p.get_value_for_datastore(obj)
+                  for p in obj.properties(hidden=False)]
+        qs = 'INSERT INTO "%s" (id,' % self.db_table
+        qs += ','.join(fields)
+        qs += ") VALUES ('%s'," % obj.id
+        qs += ','.join(values)
+        qs += ');'
+        return qs
+
+    def encode_value(self, prop, value):
+        return self.Converter.encode(self, prop, value)
+
+    def decode_value(self, prop, value):
+        return self.Converter.decode(self, prop, value)
+
     def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)
         return self.cursor.fetchall()
+
+    def lookup(self, cls, name, value):
+        parts = []
+        qs = 'SELECT * FROM "%s" WHERE ' % self.db_table
+        properties = cls.properties()
+        found = False
+        for property in properties:
+            if property.name == name:
+                found = True
+                value = self.encode_value(property, value)
+                qs += "%s='%s'" % (name, value)
+        if not found:
+            raise SDBPersistenceError('%s is not a valid field' % key)
+        qs += ';'
+        print qs
+        self.cursor.execute(qs)
+        if self.cursor.rowcount == 1:
+            row = self.cursor.fetchone()
+            return self._object_from_row(row, self.cursor.description)
+        elif self.cursor.rowcount == 0:
+            raise KeyError, 'Object not found'
+        else:
+            raise LookupError, 'Multiple Objects Found'
 
     def query(self, cls, filters=None):
         parts = []
         qs = 'SELECT * FROM "%s"' % self.db_table
         if filters:
+            qs += ' WHERE '
             properties = cls.properties()
             for filter, value in filters:
                 name, op = filter.strip().split()
@@ -136,17 +170,6 @@ class PGManager(object):
         cursor = self.connection.cursor()
         cursor.execute(qs)
         return self._object_lister(cursor)
-
-    def _build_insert_qs(self, obj):
-        fields = [p.name for p in obj.properties(hidden=False)]
-        values = ["'%s'" % p.get_value_for_datastore(obj)
-                  for p in obj.properties(hidden=False)]
-        qs = 'INSERT INTO "%s" (id,' % self.db_table
-        qs += ','.join(fields)
-        qs += ") VALUES ('%s'," % obj.id
-        qs += ','.join(values)
-        qs += ');'
-        return qs
 
     def get_property(self, prop, obj, name):
         qs = """SELECT %s FROM "%s" WHERE id='%s';""" % (name, self.db_table, id)
