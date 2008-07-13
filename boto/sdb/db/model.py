@@ -104,7 +104,7 @@ class Model(object):
                 prop = cls.__dict__[key]
                 if isinstance(prop, Property):
                     if hidden or not prop.__class__.__name__.startswith('_'):
-                        properties.append(cls.__dict__[key])
+                        properties.append(prop)
             if len(cls.__bases__) > 0:
                 cls = cls.__bases__[0]
             else:
