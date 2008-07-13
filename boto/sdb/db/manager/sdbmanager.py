@@ -23,32 +23,20 @@ from boto.utils import find_class
 import datetime
 from boto.sdb.db.key import Key
 
-def object_lister(cls, query_lister, manager):
-    for item in query_lister:
-        if cls:
-            yield cls(item.name)
-        else:
-            o = manager.get_object_from_id(item.name)
-            if o:
-                yield o
-                
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class SDBManager(object):
     
-    def __init__(self, domain_name, aws_access_key_id=None, aws_secret_access_key=None, debug=0):
-        self.domain_name = domain_name
-        self.aws_access_key_id = aws_access_key_id
-        self.aws_secret_access_key = aws_secret_access_key
-        self.domain = None
-        self.sdb = None
+    def __init__(self, cls, db_name, db_user, db_passwd, db_host, db_port, db_table):
+        self.cls = cls
+        self.db_name = db_name
+        self.db_user = db_user
+        self.db_passwd = db_passwd
+        self.db_host = db_host
+        self.db_port = db_port
+        self.db_table = db_table
         self.s3 = None
-        self.sdb = boto.connect_sdb(aws_access_key_id=self.aws_access_key_id,
-                                    aws_secret_access_key=self.aws_secret_access_key,
-                                    debug=debug)
-        self.domain = self.sdb.lookup(self.domain_name)
-        if not self.domain:
-            self.domain = self.sdb.create_domain(self.domain_name)
+        self._connect()
 
     class Converter:
         """
@@ -147,6 +135,28 @@ class SDBManager(object):
             except:
                 raise ValueError, 'Unable to convert %s to Object' % str_value
 
+    def _object_lister(self, cls, query_lister):
+        for item in query_lister:
+            if cls:
+                yield cls(item.name)
+            else:
+                o = self.get_object_from_id(item.name)
+                if o:
+                    yield o
+
+    def _connect(self):
+        self.sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
+                                    aws_secret_access_key=self.db_passwd)
+        self.domain = self.sdb.lookup(self.db_name)
+        if not self.domain:
+            self.domain = self.sdb.create_domain(self.db_name)
+
+    def encode_value(self, prop, value):
+        return self.Converter.encode(self, prop, value)
+
+    def decode_value(self, prop, value):
+        return self.Converter.decode(self, prop, value)
+
     def get_s3_connection(self):
         if not self.s3:
             self.s3 = boto.connect_s3(self.aws_access_key_id, self.aws_secret_access_key)
@@ -184,7 +194,10 @@ class SDBManager(object):
                 raise SDBPersistenceError('%s is not a valid field' % key)
         query = ' intersection '.join(parts)
         rs = self.domain.query(query)
-        return object_lister(cls, rs, self)
+        return self._object_lister(cls, rs)
+
+    def query_gql(self, query_string, *args, **kwds):
+        raise NotImplementedError, "GQL queries not supported in SimpleDB"
 
     def save_object(self, obj):
         attrs = {'__type__' : obj.__class__.__name__,
@@ -198,15 +211,9 @@ class SDBManager(object):
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)
 
-    def encode_value(self, prop, value):
-        return self.Converter.encode(self, prop, value)
-
     def set_property(self, prop, obj, name, value):
         value = self.encode_value(prop, value)
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
-
-    def decode_value(self, prop, value):
-        return self.Converter.decode(self, prop, value)
 
     def get_property(self, prop, obj, name):
         a = self.domain.get_attributes(obj.id, name)
