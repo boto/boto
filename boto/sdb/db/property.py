@@ -118,6 +118,8 @@ class PasswordProperty(StringProperty):
     Hashed property who's original value can not be
     retrieved, but still can be compaired.
     """
+    data_type = Password
+
     def __init__(self, verbose_name=None, name=None, default='', required=False,
                  validator=None, choices=None):
         StringProperty.__init__(self, verbose_name, name, default, required, validator, choices)
