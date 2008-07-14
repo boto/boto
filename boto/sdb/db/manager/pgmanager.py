@@ -45,6 +45,12 @@ class PGManager(object):
         def encode(cls, manager, prop, value):
             if hasattr(prop, 'reference_class'):
                 return cls.encode_reference(manager, value)
+            if isinstance(value, list):
+                s = "{"
+                value = ['"%s"' % v for v in value]
+                s += ','.join(value)
+                s += "}"
+                return s
             return value
 
         @classmethod
