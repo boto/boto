@@ -211,10 +211,14 @@ class PGManager(object):
             raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
         
     def save_object(self, obj):
+        obj._auto_update = False
+        if not obj.id:
+            obj.id = str(uuid.uuid4())
         qs = self._build_insert_qs(obj)
         print qs
         self.cursor.execute(qs)
         self.connection.commit()
+        obj._auto_update = True
 
     def delete_object(self, obj):
         qs = """DELETE FROM "%s" WHERE id='%s';""" % (self.db_table, obj.id)

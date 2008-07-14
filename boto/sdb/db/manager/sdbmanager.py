@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 import boto
 from boto.utils import find_class
-import datetime
+import datetime, uuid
 from boto.sdb.db.key import Key
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
@@ -202,6 +202,9 @@ class SDBManager(object):
         raise NotImplementedError, "GQL queries not supported in SimpleDB"
 
     def save_object(self, obj):
+        obj._auto_update = False
+        if not obj.id:
+            obj.id = str(uuid.uuid4())
         attrs = {'__type__' : obj.__class__.__name__,
                  '__module__' : obj.__class__.__module__,
                  '__lineage__' : obj.get_lineage()}
@@ -209,6 +212,7 @@ class SDBManager(object):
             if not property.__class__.__name__.startswith('_'):
                 attrs[property.name] = property.get_value_for_datastore(obj)
         self.domain.put_attributes(obj.id, attrs, replace=True)
+        obj._auto_update = True
 
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)

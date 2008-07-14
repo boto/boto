@@ -24,7 +24,6 @@ from boto.sdb.db.property import *
 from boto.sdb.db.key import Key
 from boto.sdb.db.query import Query
 import boto
-import uuid
 
 class ModelMeta(type):
     "Metaclass for all Models"
@@ -119,11 +118,7 @@ class Model(object):
         if kw.has_key('manager'):
             self._manager = kw['manager']
         self.id = id
-        if self.id:
-            self._auto_update = True
-        else:
-            self._auto_update = False
-            self.id = str(uuid.uuid4())
+        self._auto_update = True
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
