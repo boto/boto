@@ -118,7 +118,7 @@ class Model(object):
         if kw.has_key('manager'):
             self._manager = kw['manager']
         self.id = id
-        self._auto_update = True
+        self._auto_update = False
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)

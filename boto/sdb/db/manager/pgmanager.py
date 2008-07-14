@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 from boto.sdb.db.key import Key
 import psycopg2
-import uuid
+import uuid, sys, os
 
 class PGManager(object):
 
@@ -121,6 +121,33 @@ class PGManager(object):
         qs += ');'
         return qs
 
+    def _build_update_qs(self, obj):
+        fields = [""""%s"='%s'""" % (p.name, p.get_value_for_datastore(obj))
+                  for p in obj.properties(hidden=False)]
+        qs = 'UPDATE "%s" SET ' % self.db_table
+        qs += ','.join(fields)
+        qs += """ WHERE "id" = '%s';""" % obj.id
+        return qs
+
+    def _get_ddl(self):
+        m = sys.modules[self.cls.__module__]
+        path = m.__file__
+        path = os.path.split(path)[0]
+        path = os.path.join(path, 'models')
+        path = os.path.join(path, self.cls.__name__ + '.ddl')
+        fp = open(path)
+        ddl = fp.read()
+        fp.close()
+        return ddl
+
+    def delete_table(self):
+        self.cursor.execute('DROP TABLE "%s";' % self.db_table)
+        self.cursor.commit()
+
+    def create_table(self):
+        self.cursor.execute(self._get_ddl())
+        self.cursor.execute()
+
     def encode_value(self, prop, value):
         return self.Converter.encode(self, prop, value)
 
@@ -214,7 +241,9 @@ class PGManager(object):
         obj._auto_update = False
         if not obj.id:
             obj.id = str(uuid.uuid4())
-        qs = self._build_insert_qs(obj)
+            qs = self._build_insert_qs(obj)
+        else:
+            qs = self._build_update_qs(obj)
         print qs
         self.cursor.execute(qs)
         self.connection.commit()
