@@ -105,7 +105,7 @@ class PGManager(object):
         return obj
 
     def _build_insert_qs(self, obj):
-        fields = [p.name for p in obj.properties(hidden=False)]
+        fields = ['"%s"' % p.name for p in obj.properties(hidden=False)]
         values = ["'%s'" % p.get_value_for_datastore(obj)
                   for p in obj.properties(hidden=False)]
         qs = 'INSERT INTO "%s" (id,' % self.db_table
@@ -128,9 +128,8 @@ class PGManager(object):
     def lookup(self, cls, name, value):
         parts = []
         qs = 'SELECT * FROM "%s" WHERE ' % self.db_table
-        properties = cls.properties()
         found = False
-        for property in properties:
+        for property in cls.properties(hidden=False):
             if property.name == name:
                 found = True
                 value = self.encode_value(property, value)
@@ -161,7 +160,7 @@ class PGManager(object):
                     if property.name == name:
                         found = True
                         value = self.encode_value(property, value)
-                        parts.append("%s%s'%s'" % (name, op, value))
+                        parts.append(""""%s"%s'%s'""" % (name, op, value))
                 if not found:
                     raise SDBPersistenceError('%s is not a valid field' % key)
             qs += ','.join(parts)
@@ -172,7 +171,7 @@ class PGManager(object):
         return self._object_lister(cursor)
 
     def get_property(self, prop, obj, name):
-        qs = """SELECT %s FROM "%s" WHERE id='%s';""" % (name, self.db_table, id)
+        qs = """SELECT "%s" FROM "%s" WHERE id='%s';""" % (name, self.db_table, id)
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
             obj._auto_update = False
@@ -196,7 +195,7 @@ class PGManager(object):
         self.cursor.execute(qs)
         self.connection.commit()
 
-    def get_object(self, id):
+    def get_object(self, cls, id):
         qs = """SELECT * FROM "%s" WHERE id='%s';""" % (self.db_table, id)
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
