@@ -31,6 +31,11 @@ class TestSubClass(TestBasic):
 class TestPassword(Model):
     password = PasswordProperty()
 
+class TestList(Model):
+
+    name = StringProperty()
+    nums = ListProperty(int)
+
 def test_basic():
     t = TestBasic()
     t.name = 'simple'

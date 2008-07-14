@@ -62,6 +62,8 @@ class SDBManager(object):
                 return cls.encode_bool(manager, value)
             elif isinstance(value, datetime.datetime):
                 return cls.encode_datetime(manager, value)
+            elif isinstance(value, list):
+                return value
             else:
                 return str(value)
 

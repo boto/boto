@@ -245,3 +245,41 @@ class _ReverseReferenceProperty(Property):
         raise ValueError, 'Virtual property is read-only'
 
         
+class ListProperty(Property):
+    
+    data_type = list
+
+    def __init__(self, item_type, verbose_name=None, name=None, default=None, **kwds):
+        if not isinstance(item_type, type):
+            raise TypeError('Item type should be a type object')
+        if default is None:
+            default = []
+        self.item_type = item_type
+        Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
+
+    def validate(self, value):
+        value = super(ListProperty, self).validate(value)
+        if value is not None:
+            if not isinstance(value, list):
+                raise ValueError, 'Property %s must be a list' % self.name
+
+        if self.item_type in (int, long):
+            item_type = (int, long)
+        else:
+            item_type = self.item_type
+
+        for item in value:
+            if not isinstance(item, item_type):
+                if item_type == (int, long):
+                    raise ValueError, 'Items in the %s list must all be integers.' % self.name
+                else:
+                    raise ValueError('Items in the %s list must all be %s instances' %
+                                     (self.name, self.item_type.__name__))
+        return value
+
+    def empty(self, value):
+        return value is None
+
+    def default_value(self):
+        return list(super(ListProperty, self).default_value())
+
