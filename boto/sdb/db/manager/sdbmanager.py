@@ -20,8 +20,9 @@
 # IN THE SOFTWARE.
 import boto
 from boto.utils import find_class
-import datetime, uuid
+import uuid
 from boto.sdb.db.key import Key
+from datetime import datetime
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -62,7 +63,7 @@ class SDBManager(object):
                 return cls.encode_bool(manager, value)
             elif isinstance(value, int) or isinstance(value, long):
                 return cls.encode_int(manager, value)
-            elif isinstance(value, datetime.datetime):
+            elif isinstance(value, datetime):
                 return cls.encode_datetime(manager, value)
             elif isinstance(value, list):
                 return value
@@ -79,7 +80,7 @@ class SDBManager(object):
                 return cls.decode_bool(manager, value)
             elif prop.data_type == int or prop.data_type == long:
                 return cls.decode_int(manager, value)
-            elif prop.data_type == datetime.datetime:
+            elif prop.data_type == datetime:
                 return cls.decode_datetime(manager, value)
             elif prop.data_type == Key:
                 return cls.decode_reference(manager, value)
@@ -121,7 +122,7 @@ class SDBManager(object):
             try:
                 return datetime.strptime(value, ISO8601)
             except:
-                raise ValueError, 'Unable to convert %s to DateTime' % str_value
+                raise ValueError, 'Unable to convert %s to DateTime' % value
 
         @classmethod
         def encode_reference(cls, manager, value):
@@ -139,7 +140,7 @@ class SDBManager(object):
             try:
                 return manager.get_object_from_id(value)
             except:
-                raise ValueError, 'Unable to convert %s to Object' % str_value
+                raise ValueError, 'Unable to convert %s to Object' % value
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
