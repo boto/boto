@@ -183,12 +183,7 @@ class SDBManager(object):
         return obj
         
     def get_object_from_id(self, id):
-        attrs = self.domain.get_attributes(id, ['__module__', '__type__', '__lineage__'])
-        try:
-            cls = find_class(attrs['__module__'], attrs['__type__'])
-            return cls(id, manager=self)
-        except ImportError:
-            return None
+        return self.get_object(self.cls, id)
 
     def query(self, cls, filters):
         if len(filters) > 4:
