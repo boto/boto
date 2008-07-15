@@ -36,6 +36,11 @@ class TestList(Model):
     name = StringProperty()
     nums = ListProperty(int)
 
+class TestAutoNow(Model):
+
+    create_date = DateTimeProperty(auto_now_add=True)
+    modified_date = DateTimeProperty(auto_now=True)
+
 def test_basic():
     t = TestBasic()
     t.name = 'simple'

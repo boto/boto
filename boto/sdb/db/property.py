@@ -46,7 +46,7 @@ class Property(object):
                 if obj._auto_update:
                     value = obj._manager.get_property(self, obj, self.name)
                 else:
-                    value = self.default
+                    value = self.default_value()
                 setattr(obj, self.slot_name, value)
         return value
 
@@ -188,6 +188,22 @@ class DateTimeProperty(Property):
         self.auto_now = auto_now
         self.auto_now_add = auto_now_add
 
+    def default_value(self):
+        if self.auto_now or self.auto_now_add:
+            return self.now()
+        return Property.default_value(self)
+
+    def get_value_for_datastore(self, model_instance):
+        if self.auto_now:
+            save = model_instance._auto_update
+            model_instance._auto_update = False
+            setattr(model_instance, self.name, self.now())
+            model_instance._auto_update = save
+        return Property.get_value_for_datastore(self, model_instance)
+
+    def now(self):
+        return datetime.datetime.now()
+
 class ReferenceProperty(Property):
 
     data_type = Key
@@ -204,9 +220,6 @@ class ReferenceProperty(Property):
             self.collection_name = '%s_set' % (model_class.__name__.lower())
         if hasattr(self.reference_class, self.collection_name):
             raise ValueError, 'duplicate property: %s' % self.collection_name
-#             raise DuplicatePropertyError('Class %s already has property %s'
-#                                          % (self.reference_class.__name__,
-#                                             self.collection_name))
         setattr(self.reference_class, self.collection_name,
                 _ReverseReferenceProperty(model_class, property_name))
 
