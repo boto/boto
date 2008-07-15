@@ -148,10 +148,12 @@ class IntegerProperty(Property):
                  validator=None, choices=None):
         Property.__init__(self, verbose_name, name, default, required, validator, choices)
 
-    def validate(self, value):
-        value = Property.validate(self, value)
+    def default_validator(self, value):
         if not isinstance(value, int) and not isinstance(value, long):
             raise TypeError, 'Expecting int or long, got %s' % type(value)
+                                      
+    def validate(self, value):
+        value = Property.validate(self, value)
         min = -9223372036854775808
         max = 9223372036854775807
         if value > max:

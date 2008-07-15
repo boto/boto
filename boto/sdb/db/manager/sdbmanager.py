@@ -56,10 +56,12 @@ class SDBManager(object):
                 return cls.encode_reference(manager, value)
             elif isinstance(value, str) or isinstance(value, unicode):
                 return value
-            elif isinstance(value, int) or isinstance(value, long):
-                return cls.encode_int(manager, value)
+            # make sure the check for bool comes before the check for int because
+            # a bool is actually considered an instance of int!!
             elif isinstance(value, bool):
                 return cls.encode_bool(manager, value)
+            elif isinstance(value, int) or isinstance(value, long):
+                return cls.encode_int(manager, value)
             elif isinstance(value, datetime.datetime):
                 return cls.encode_datetime(manager, value)
             elif isinstance(value, list):
@@ -69,15 +71,17 @@ class SDBManager(object):
 
         @classmethod
         def decode(cls, manager, prop, value):
-            if isinstance(prop.data_type, str) or isinstance(prop.data_type, unicode):
+            if prop.data_type == str or prop.data_type == unicode:
                 return value
-            elif isinstance(prop.data_type, int) or isinstance(prop.data_type, long):
-                return cls.decode_int(manager, value)
-            elif isinstance(prop.data_type, bool):
+            # make sure the check for bool comes before the check for int because
+            # a bool is actually considered an instance of int!!
+            elif prop.data_type == bool:
                 return cls.decode_bool(manager, value)
-            elif isinstance(prop.data_type, datetime.datetime):
+            elif prop.data_type == int or prop.data_type == long:
+                return cls.decode_int(manager, value)
+            elif prop.data_type == datetime.datetime:
                 return cls.decode_datetime(manager, value)
-            elif isinstance(prop.data_type, Key):
+            elif prop.data_type == Key:
                 return cls.decode_reference(manager, value)
             else:
                 return value
@@ -165,11 +169,17 @@ class SDBManager(object):
         return self.s3
 
     def get_object(self, cls, id):
-        a = self.domain.get_attributes(id, '__type__')
-        if a.has_key('__type__'):
-            return cls(id)
-        else:
+        a = self.domain.get_attributes(id)
+        if not a.has_key('__type__'):
             raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
+        obj = cls(id)
+        obj.auto_update = False
+        for prop in obj.properties(hidden=False):
+            if a.has_key(prop.name):
+                v = self.decode_value(prop, a[prop.name])
+                setattr(obj, prop.name, v)
+        obj.auto_update = True
+        return obj
         
     def get_object_from_id(self, id):
         attrs = self.domain.get_attributes(id, ['__module__', '__type__', '__lineage__'])
@@ -208,11 +218,12 @@ class SDBManager(object):
         attrs = {'__type__' : obj.__class__.__name__,
                  '__module__' : obj.__class__.__module__,
                  '__lineage__' : obj.get_lineage()}
-        for property in obj.properties():
-            if not property.__class__.__name__.startswith('_'):
-                attrs[property.name] = property.get_value_for_datastore(obj)
+        for property in obj.properties(hidden=False):
+            value = property.get_value_for_datastore(obj)
+            if value:
+                attrs[property.name] = value
         self.domain.put_attributes(obj.id, attrs, replace=True)
-        obj._auto_update = True
+        obj._uto_update = True
 
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)
