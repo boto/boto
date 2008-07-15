@@ -224,14 +224,15 @@ class S3Connection(AWSAuthConnection):
         rs = self.get_all_buckets()
         return rs.ID
 
-    def get_bucket(self, bucket_name):
+    def get_bucket(self, bucket_name, validate=True):
         bucket = Bucket(self, bucket_name)
-        rs = bucket.get_all_keys(None, maxkeys=0)
+        if validate:
+            rs = bucket.get_all_keys(None, maxkeys=0)
         return bucket
 
-    def lookup(self, bucket_name):
+    def lookup(self, bucket_name, validate=True):
         try:
-            bucket = self.get_bucket(bucket_name)
+            bucket = self.get_bucket(bucket_name, validate)
         except:
             bucket = None
         return bucket
