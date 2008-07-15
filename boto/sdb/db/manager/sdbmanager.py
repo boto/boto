@@ -122,7 +122,7 @@ class SDBManager(object):
             try:
                 return datetime.strptime(value, ISO8601)
             except:
-                raise ValueError, 'Unable to convert %s to DateTime' % value
+                return None
 
         @classmethod
         def encode_reference(cls, manager, value):
@@ -142,15 +142,6 @@ class SDBManager(object):
             except:
                 raise ValueError, 'Unable to convert %s to Object' % value
 
-    def _object_lister(self, cls, query_lister):
-        for item in query_lister:
-            if cls:
-                yield cls(item.name)
-            else:
-                o = self.get_object_from_id(item.name)
-                if o:
-                    yield o
-
     def _connect(self):
         self.sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
                                     aws_secret_access_key=self.db_passwd)
@@ -158,6 +149,10 @@ class SDBManager(object):
         if not self.domain:
             self.domain = self.sdb.create_domain(self.db_name)
 
+    def _object_lister(self, cls, query_lister):
+        for item in query_lister:
+            yield self.get_object_from_id(item.name)
+            
     def encode_value(self, prop, value):
         return self.Converter.encode(self, prop, value)
 
