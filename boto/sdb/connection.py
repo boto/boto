@@ -70,6 +70,8 @@ class SDBConnection(AWSQueryConnection):
                 for v in value:
                     params['Attribute.%d.Name'%i] = key
                     params['Attribute.%d.Value'%i] = v
+                    if replace:
+                        params['Attribute.%d.Replace'%i] = 'true'
                     i += 1
             else:
                 params['Attribute.%d.Name'%i] = key
@@ -108,7 +110,7 @@ class SDBConnection(AWSQueryConnection):
             self.query(domain, '', max_items=1)
         return domain
 
-    def lookup(self, domain_name):
+    def lookup(self, domain_name, validate=True):
         """
         Lookup an existing SimpleDB domain
 
@@ -119,7 +121,7 @@ class SDBConnection(AWSQueryConnection):
         @return: The Domain object or None if the domain does not exist.
         """
         try:
-            domain = self.get_domain(domain_name)
+            domain = self.get_domain(domain_name, validate)
         except:
             domain = None
         return domain
