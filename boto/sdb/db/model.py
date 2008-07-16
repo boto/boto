@@ -154,15 +154,15 @@ class Expando(Model):
         elif name == 'id':
             object.__setattr__(self, name, value)
         else:
-            self._manager.store_key_value(self, name, value)
+            self._manager.set_key_value(self, name, value)
             object.__setattr__(self, name, value)
 
     def __getattr__(self, name):
         if not name.startswith('_'):
             value = self._manager.get_key_value(self, name)
             if value:
-                object.__setattr__(self, name, a[name])
-                return a[name]
+                object.__setattr__(self, name, value)
+                return value
         raise AttributeError
 
     
