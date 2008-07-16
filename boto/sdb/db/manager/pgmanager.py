@@ -105,8 +105,10 @@ class PGManager(object):
         obj = self.cls(d['id'])
         obj._auto_update = False
         for prop in obj.properties(hidden=False):
-            v = self.decode_value(prop, d[prop.name])
-            setattr(obj, prop.name, v)
+            if prop.data_type != Key:
+                v = self.decode_value(prop, d[prop.name])
+                v = prop.make_value_from_datastore(value)
+                setattr(obj, prop.name, v)
         obj._auto_update = True
         return obj
 

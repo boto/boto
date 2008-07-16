@@ -171,9 +171,11 @@ class SDBManager(object):
         obj = cls(id)
         obj.auto_update = False
         for prop in obj.properties(hidden=False):
-            if a.has_key(prop.name):
-                v = self.decode_value(prop, a[prop.name])
-                setattr(obj, prop.name, v)
+            if prop.data_type != Key:
+                if a.has_key(prop.name):
+                    value = self.decode_value(prop, a[prop.name])
+                    value = prop.make_value_from_datastore(value)
+                    setattr(obj, prop.name, value)
         obj.auto_update = True
         return obj
         
@@ -212,14 +214,16 @@ class SDBManager(object):
         for property in obj.properties(hidden=False):
             value = property.get_value_for_datastore(obj)
             if value:
+                value = self.encode_value(property, value)
                 attrs[property.name] = value
         self.domain.put_attributes(obj.id, attrs, replace=True)
-        obj._uto_update = True
+        obj._auto_update = True
 
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)
 
     def set_property(self, prop, obj, name, value):
+        value = prop.get_value_for_datastore(obj)
         value = self.encode_value(prop, value)
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
@@ -227,7 +231,8 @@ class SDBManager(object):
         a = self.domain.get_attributes(obj.id, name)
         # try to get the attribute value from SDB
         if name in a:
-            return self.decode_value(prop, a[name])
+            value = self.decode_value(prop, a[name])
+            return prop.make_value_from_datastore(value)
         raise AttributeError, '%s not found' % name
 
     def set_key_value(self, obj, name, value):

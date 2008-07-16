@@ -93,11 +93,7 @@ class Property(object):
         return not value
 
     def get_value_for_datastore(self, model_instance):
-        value = getattr(model_instance, self.name)
-        if self.empty(value):
-            return None
-        else:
-            return model_instance._manager.encode_value(self, getattr(model_instance, self.slot_name))
+        return getattr(model_instance, self.name)
 
     def make_value_from_datastore(self, value):
         return value
