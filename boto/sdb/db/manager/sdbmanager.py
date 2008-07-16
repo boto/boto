@@ -238,6 +238,9 @@ class SDBManager(object):
     def set_key_value(self, obj, name, value):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
+    def delete_key_value(self, obj, name):
+        self.domain.delete_attributes(obj.id, name)
+
     def get_key_value(self, obj, name):
         a = self.domain.get_attributes(obj.id, name)
         if a.has_key(name):
