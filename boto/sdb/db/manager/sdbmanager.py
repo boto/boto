@@ -23,6 +23,7 @@ from boto.utils import find_class
 import uuid
 from boto.sdb.db.key import Key
 from datetime import datetime
+from boto.exception import *
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 

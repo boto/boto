@@ -122,10 +122,20 @@ class PasswordProperty(StringProperty):
                  validator=None, choices=None):
         StringProperty.__init__(self, verbose_name, name, default, required, validator, choices)
 
+    def make_value_from_datastore(self, value):
+        p = Password(value)
+        return p
+
+    def get_value_for_datastore(self, model_instance):
+        value = StringProperty.get_value_for_datastore(self, model_instance)
+        return str(value)
+
     def __set__(self, obj, value):
-        p = Password()
-        p.set(value)
-        Property.__set__(self, obj, p)
+        if not isinstance(value, Password):
+            p = Password()
+            p.set(value)
+            value = p
+        Property.__set__(self, obj, value)
 
     def __get__(self, obj, objtype):
         return Password(StringProperty.__get__(self, obj, objtype))
@@ -273,13 +283,14 @@ class ListProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
-        value = super(ListProperty, self).validate(value)
         if value is not None:
             if not isinstance(value, list):
-                raise ValueError, 'Property %s must be a list' % self.name
+                value = [value]
 
         if self.item_type in (int, long):
             item_type = (int, long)
+        elif self.item_type in (str, unicode):
+            item_type = (str, unicode)
         else:
             item_type = self.item_type
 
