@@ -22,6 +22,61 @@ from boto.sdb.db.key import Key
 import psycopg2
 import uuid, sys, os
 
+class PGConverter:
+    
+    def __init__(self, manager):
+        self.manager = manager
+        self.type_map = {Key : (self.encode_reference, self.decode_reference)}
+
+    def encode(self, type, value):
+        if type in self.type_map:
+            encode = self.type_map[type][0]
+            return encode(value)
+        return value
+
+    def decode(self, type, value):
+        if type in self.type_map:
+            decode = self.type_map[type][1]
+            return decode(value)
+        return value
+
+    def encode_prop(self, prop, value):
+        if isinstance(value, list):
+            s = "{"
+            value = ['"%s"' % self.encode(getattr(prop, 'item_type'), v) for v in value]
+            s += ','.join(value)
+            s += "}"
+            return s
+        return self.encode(prop.data_type, value)
+
+    def decode_prop(self, prop, value):
+        if isinstance(value, list):
+            if hasattr(prop, 'item_type'):
+                new_value = []
+                for v in value:
+                    new_value.append(self.decode(getattr(prop, 'item_type'), v))
+                return new_value
+            else:
+                return value
+        else:
+            return self.decode(prop.data_type, value)
+
+    def encode_reference(self, value):
+        if isinstance(value, str) or isinstance(value, unicode):
+            return value
+        if value == None:
+            return ''
+        else:
+            return value.id
+
+    def decode_reference(self, value):
+        if not value:
+            return None
+        try:
+            return self.manager.get_object_from_id(value)
+        except:
+            raise ValueError, 'Unable to convert %s to Object' % value
+
 class PGManager(object):
 
     def __init__(self, cls, db_name, db_user, db_passwd,
@@ -33,49 +88,8 @@ class PGManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
+        self.converter = PGManager(self)
         self._connect()
-
-    class Converter:
-        """
-        Responsible for converting base Python types to format compatible with
-        underlying database.
-        """
-
-        @classmethod
-        def encode(cls, manager, prop, value):
-            if hasattr(prop, 'reference_class'):
-                return cls.encode_reference(manager, value)
-            if isinstance(value, list):
-                s = "{"
-                value = ['"%s"' % v for v in value]
-                s += ','.join(value)
-                s += "}"
-                return s
-            return value
-
-        @classmethod
-        def decode(cls, manager, prop, value):
-            if isinstance(prop.data_type, Key):
-                return cls.decode_reference(manager, value)
-            return value
-
-        @classmethod
-        def encode_reference(cls, manager, value):
-            if isinstance(value, str) or isinstance(value, unicode):
-                return value
-            if value == None:
-                return ''
-            else:
-                return value.id
-
-        @classmethod
-        def decode_reference(cls, manager, value):
-            if not value:
-                return None
-            try:
-                return manager.get_object_from_id(value)
-            except:
-                raise ValueError, 'Unable to convert %s to Object' % str_value
 
     def _build_connect_string(self):
         cs = 'dbname=%s user=%s password=%s host=%s port=%d'
@@ -151,10 +165,10 @@ class PGManager(object):
         self.cursor.execute()
 
     def encode_value(self, prop, value):
-        return self.Converter.encode(self, prop, value)
+        return self.converter.encode(prop, value)
 
     def decode_value(self, prop, value):
-        return self.Converter.decode(self, prop, value)
+        return self.converter.decode_prop(prop, value)
 
     def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)

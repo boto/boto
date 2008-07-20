@@ -4,6 +4,8 @@ from boto.sdb.db.manager import get_manager
 from datetime import datetime
 import time
 
+_objects = {}
+
 #
 # This will eventually be moved to the boto.tests module and become a real unit test
 # but for now it will live here.  It shows examples of each of the Property types in
@@ -42,70 +44,94 @@ class TestAutoNow(Model):
     modified_date = DateTimeProperty(auto_now=True)
 
 def test_basic():
+    global _objects
     t = TestBasic()
     t.name = 'simple'
     t.size = -42
     t.foo = True
     t.date = datetime.now()
     t.put()
+    _objects['test_basic_t'] = t
     print 'saving object'
     time.sleep(5)
     print 'now try retrieving it'
     tt = TestBasic.get_by_ids(t.id)
+    _objects['test_basic_tt'] = tt
     assert tt.id == t.id
     l = TestBasic.get_by_ids([t.id])
     assert len(l) == 1
     assert l[0].id == t.id
+    assert t.size == tt.size
+    assert t.foo == tt.foo
+    assert t.name == tt.name
+    #assert t.date == tt.date
     return t
     
 def test_required():
+    global _objects
     t = TestRequired()
+    _objects['test_required_t'] = t
     t.put()
     return t
 
 def test_reference(t=None):
+    global _objects
     if not t:
         t = test_basic()
     tt = TestReference()
+    _objects['test_required_tt'] = tt
     tt.ref = t
     tt.put()
     time.sleep(5)
     for o in t.refs:
         print o
-    return tt
 
 def test_subclass():
+    global _objects
     t = TestSubClass()
+    _objects['test_subclass_t'] = t
     t.name = 'a subclass'
     t.size = -489
     t.save()
-    return t
 
 def test_password():
+    global _objects
     t = TestPassword()
+    _objects['test_password_t'] = t
     t.password = "foo"
     t.save()
     time.sleep(5)
     # Make sure it stored ok
     tt = TestPassword.get_by_ids(t.id)
+    _objects['test_password_tt'] = tt
     #Testing password equality
     assert tt.password == "foo"
     #Testing password not stored as string
     assert str(tt.password) != "foo"
-    return t
+
+def test_list():
+    global _objects
+    t = TestList()
+    _objects['test_list_t'] = t
+    t.name = 'a list of ints'
+    t.nums = [1,2,3,4,5]
+    t.put()
+    tt = TestList.get_by_ids(t.id)
+    _objects['test_list_tt'] = tt
+    assert tt.name == t.name
+    for n in tt.nums:
+        assert isinstance(n, int)
 
 def test():
     print 'test_basic'
     t1 = test_basic()
     print 'test_required'
-    t2 = test_required()
+    test_required()
     print 'test_reference'
-    t3 = test_reference(t1)
+    test_reference(t1)
     print 'test_subclass'
-    t4 = test_subclass()
-    domain = t4._manager.domain
-    item1 = domain.get_item(t1.id)
-    item2 = domain.get_item(t2.id)
-    item3 = domain.get_item(t3.id)
-    item4 = domain.get_item(t4.id)
-    return [(t1, item1), (t2, item2), (t3, item3), (t4, item4)]
+    test_subclass()
+    print 'test_password'
+    test_password()
+    print 'test_list'
+    test_list()
