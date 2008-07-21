@@ -88,7 +88,7 @@ class PGManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
-        self.converter = PGManager(self)
+        self.converter = PGConverter(self)
         self._connect()
 
     def _build_connect_string(self):
@@ -121,7 +121,7 @@ class PGManager(object):
         for prop in obj.properties(hidden=False):
             if prop.data_type != Key:
                 v = self.decode_value(prop, d[prop.name])
-                v = prop.make_value_from_datastore(value)
+                v = prop.make_value_from_datastore(v)
                 setattr(obj, prop.name, v)
         obj._auto_update = True
         return obj
