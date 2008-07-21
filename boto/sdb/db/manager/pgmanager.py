@@ -128,8 +128,12 @@ class PGManager(object):
 
     def _build_insert_qs(self, obj):
         fields = ['"%s"' % p.name for p in obj.properties(hidden=False)]
-        values = ["'%s'" % p.get_value_for_datastore(obj)
-                  for p in obj.properties(hidden=False)]
+        values = []
+        for property in obj.properties(hidden=False):
+            value = property.get_value_for_datastore(obj)
+            if value:
+                value = self.encode_value(property, value)
+                values.append("'%s'" % value)
         qs = 'INSERT INTO "%s" (id,' % self.db_table
         qs += ','.join(fields)
         qs += ") VALUES ('%s'," % obj.id
@@ -138,8 +142,12 @@ class PGManager(object):
         return qs
 
     def _build_update_qs(self, obj):
-        fields = [""""%s"='%s'""" % (p.name, p.get_value_for_datastore(obj))
-                  for p in obj.properties(hidden=False)]
+        fields = []
+        for property in obj.properties(hidden=False):
+            value = property.get_value_for_datastore(obj)
+            if value:
+                value = self.encode_value(property, value)
+                fields.append(""""%s"='%s'""" % (property.name, value))
         qs = 'UPDATE "%s" SET ' % self.db_table
         qs += ','.join(fields)
         qs += """ WHERE "id" = '%s';""" % obj.id
@@ -165,7 +173,7 @@ class PGManager(object):
         self.cursor.execute()
 
     def encode_value(self, prop, value):
-        return self.converter.encode(prop, value)
+        return self.converter.encode_prop(prop, value)
 
     def decode_value(self, prop, value):
         return self.converter.decode_prop(prop, value)
