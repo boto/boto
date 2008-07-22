@@ -36,7 +36,7 @@ class Property(object):
         self.required = required
         self.validator = validator
         self.choices = choices
-        self.slot_name = '__'
+        self.slot_name = '_'
         
     def __get__(self, obj, objtype):
         if obj:
@@ -67,7 +67,7 @@ class Property(object):
     def __property_config__(self, model_class, property_name):
         self.model_class = model_class
         self.name = property_name
-        self.slot_name = '__' + self.name
+        self.slot_name = '_' + self.name
 
     def default_validator(self, value):
         if value == self.default_value():

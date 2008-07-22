@@ -21,6 +21,7 @@
 from boto.sdb.db.key import Key
 import psycopg2
 import uuid, sys, os
+from boto.exception import *
 
 class PGConverter:
     
@@ -73,7 +74,7 @@ class PGConverter:
         if not value:
             return None
         try:
-            return self.manager.get_object_from_id(value)
+            return self.manager.get_object(None, value)
         except:
             raise ValueError, 'Unable to convert %s to Object' % value
 
@@ -122,18 +123,22 @@ class PGManager(object):
             if prop.data_type != Key:
                 v = self.decode_value(prop, d[prop.name])
                 v = prop.make_value_from_datastore(v)
-                setattr(obj, prop.name, v)
+                if not prop.empty(v):
+                    setattr(obj, prop.name, v)
+                else:
+                    setattr(obj, prop.name, prop.default_value())
         obj._auto_update = True
         return obj
 
     def _build_insert_qs(self, obj):
-        fields = ['"%s"' % p.name for p in obj.properties(hidden=False)]
+        fields = []
         values = []
         for property in obj.properties(hidden=False):
             value = property.get_value_for_datastore(obj)
             if value:
                 value = self.encode_value(property, value)
                 values.append("'%s'" % value)
+                fields.append('"%s"' % property.name)
         qs = 'INSERT INTO "%s" (id,' % self.db_table
         qs += ','.join(fields)
         qs += ") VALUES ('%s'," % obj.id
@@ -228,7 +233,7 @@ class PGManager(object):
         return self._object_lister(cursor)
 
     def get_property(self, prop, obj, name):
-        qs = """SELECT "%s" FROM "%s" WHERE id='%s';""" % (name, self.db_table, id)
+        qs = """SELECT "%s" FROM "%s" WHERE id='%s';""" % (name, self.db_table, obj.id)
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
             obj._auto_update = False
@@ -236,10 +241,11 @@ class PGManager(object):
             for prop in obj.properties(hidden=False):
                 if prop.name == name:
                     v = self.decode_value(prop, rs[0])
-                    setattr(obj, prop.name, v)
+                    if not prop.empty(v):
+                        setattr(obj, prop.name, v)
             obj._auto_update = True
         else:
-            raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
+            raise SDBPersistenceError('problem getting %s' % (prop.name))
 
     def set_property(self, prop, obj, name, value):
         pass

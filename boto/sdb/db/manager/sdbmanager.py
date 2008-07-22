@@ -175,7 +175,9 @@ class SDBManager(object):
     def get_object(self, cls, id):
         a = self.domain.get_attributes(id)
         if not a.has_key('__type__'):
-            raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
+            raise SDBPersistenceError('object %s does not exist' % id)
+        if not cls:
+            cls = find_class(a['__module__'], a['__type__'])
         obj = cls(id)
         obj.auto_update = False
         for prop in obj.properties(hidden=False):
@@ -188,7 +190,7 @@ class SDBManager(object):
         return obj
         
     def get_object_from_id(self, id):
-        return self.get_object(self.cls, id)
+        return self.get_object(None, id)
 
     def query(self, cls, filters):
         if len(filters) > 4:
