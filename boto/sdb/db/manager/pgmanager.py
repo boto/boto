@@ -59,6 +59,8 @@ class PGConverter:
                 return new_value
             else:
                 return value
+        elif prop.data_type == Key:
+            return self.decode_reference(prop, value)
         else:
             return self.decode(prop.data_type, value)
 
@@ -70,11 +72,11 @@ class PGConverter:
         else:
             return value.id
 
-    def decode_reference(self, value):
+    def decode_reference(self, prop, value):
         if not value:
             return None
         try:
-            return self.manager.get_object(None, value)
+            return prop.reference_class._manager.get_object(None, value)
         except:
             raise ValueError, 'Unable to convert %s to Object' % value
 
@@ -236,14 +238,11 @@ class PGManager(object):
         qs = """SELECT "%s" FROM "%s" WHERE id='%s';""" % (name, self.db_table, obj.id)
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
-            obj._auto_update = False
             rs = self.cursor.fetchone()
             for prop in obj.properties(hidden=False):
                 if prop.name == name:
                     v = self.decode_value(prop, rs[0])
-                    if not prop.empty(v):
-                        setattr(obj, prop.name, v)
-            obj._auto_update = True
+                    return v
         else:
             raise SDBPersistenceError('problem getting %s' % (prop.name))
 
