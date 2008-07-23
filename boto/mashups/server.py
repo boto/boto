@@ -26,8 +26,8 @@ import boto, boto.utils
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config, BotoConfigPath
 from boto.mashups.interactive import interactive_shell
-from boto.sdb.persist.object import SDBObject
-from boto.sdb.persist.property import *
+from boto.sdb.db.model import Model
+from boto.sdb.db.property import *
 import os
 import StringIO
 
@@ -55,7 +55,7 @@ class ServerSet(list):
             results.append(fn(*args))
         return results
 
-class Server(SDBObject):
+class Server(Model):
 
     ec2 = boto.connect_ec2()
 
@@ -80,8 +80,8 @@ class Server(SDBObject):
         s.save()
         return s
 
-    def __init__(self, id=None, manager=None):
-        SDBObject.__init__(self, id, manager)
+    def __init__(self, id=None, **kw):
+        Model.__init__(self, id, **kw)
         self._reservation = None
         self._instance = None
         self._ssh_client = None
