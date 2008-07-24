@@ -196,7 +196,7 @@ class SDBManager(object):
         if len(filters) > 4:
             raise SDBPersistenceError('Too many filters, max is 4')
         parts = ["['__type__'='%s'] union ['__lineage__'starts-with'%s']" % (cls.__name__, cls.get_lineage())]
-        properties = cls.properties()
+        properties = cls.properties(hidden=False)
         for filter, value in filters:
             name, op = filter.strip().split()
             found = False

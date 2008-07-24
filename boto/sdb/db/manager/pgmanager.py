@@ -216,7 +216,7 @@ class PGManager(object):
         qs = 'SELECT * FROM "%s"' % self.db_table
         if filters:
             qs += ' WHERE '
-            properties = cls.properties()
+            properties = cls.properties(hidden=False)
             for filter, value in filters:
                 name, op = filter.strip().split()
                 found = False
