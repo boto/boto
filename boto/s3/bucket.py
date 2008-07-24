@@ -61,6 +61,9 @@ class Bucket:
     def __iter__(self):
         return iter(BucketListResultSet(self))
 
+    def __contains__(self, key_name):
+       return not (self.get_key(key_name) is None)
+
     def startElement(self, name, attrs, connection):
         return None
 

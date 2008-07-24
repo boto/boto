@@ -104,6 +104,8 @@ class S3Connection(AWSAuthConnection):
     def __iter__(self):
         return self.get_all_buckets()
 
+    def __contains__(self, bucket_name):
+       return not (self.lookup(bucket_name) is None)
 
     def build_post_policy(self, expiration_time, conditions):
         """
