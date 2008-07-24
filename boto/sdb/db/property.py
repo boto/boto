@@ -27,6 +27,7 @@ from boto.sdb.db.query import Query
 class Property(object):
 
     data_type = str
+    name = None
 
     def __init__(self, verbose_name=None, name=None, default=None, required=False,
                  validator=None, choices=None):
