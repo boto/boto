@@ -38,6 +38,11 @@ class TestList(Model):
     name = StringProperty()
     nums = ListProperty(int)
 
+class TestListReference(Model):
+
+    name = StringProperty()
+    basics = ListProperty(TestBasic)
+
 class TestAutoNow(Model):
 
     create_date = DateTimeProperty(auto_now_add=True)
@@ -121,6 +126,20 @@ def test_list():
     assert tt.name == t.name
     for n in tt.nums:
         assert isinstance(n, int)
+
+def test_list_reference():
+    global _objects
+    t = TestBasic()
+    t.put()
+    _objects['test_list_ref_t'] = t
+    tt = TestListReference()
+    tt.name = "foo"
+    tt.basics = [t]
+    tt.put()
+    _objects['test_list_ref_tt'] = tt
+    ttt = TestListReference.get_by_ids(tt.id)
+    assert ttt.basics[0].id == t.id
+
 
 def test():
     print 'test_basic'

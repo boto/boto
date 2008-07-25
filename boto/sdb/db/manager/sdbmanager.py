@@ -66,7 +66,10 @@ class SDBConverter:
             if hasattr(prop, 'item_type'):
                 new_value = []
                 for v in value:
-                    new_value.append(self.encode(getattr(prop, 'item_type'), v))
+                    item_type = getattr(prop, "item_type")
+                    if Model in item_type.mro():
+                        item_type = Model
+                    new_value.append(self.encode(item_type, v))
                 return new_value
             else:
                 return value
@@ -78,7 +81,11 @@ class SDBConverter:
             if not isinstance(value, list):
                 value = [value]
             if hasattr(prop, 'item_type'):
-                value = [self.decode(getattr(prop, 'item_type'), v) for v in value]
+                item_type = getattr(prop, "item_type")
+                if Model in item_type.mro():
+                    item_type = Model
+                print item_type
+                value = [self.decode(item_type, v) for v in value]
                 return value
             else:
                 return value
