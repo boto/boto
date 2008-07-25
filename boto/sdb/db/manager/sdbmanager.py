@@ -22,6 +22,7 @@ import boto
 from boto.utils import find_class
 import uuid
 from boto.sdb.db.key import Key
+from boto.sdb.db.model import Model
 from datetime import datetime
 from boto.exception import *
 
@@ -44,6 +45,7 @@ class SDBConverter:
         self.type_map = { bool : (self.encode_bool, self.decode_bool),
                           int : (self.encode_int, self.decode_int),
                           long : (self.encode_long, self.decode_long),
+                          Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime)}
 
@@ -72,7 +74,9 @@ class SDBConverter:
             return self.encode(prop.data_type, value)
 
     def decode_prop(self, prop, value):
-        if isinstance(value, list):
+        if prop.data_type == list:
+            if not isinstance(value, list):
+                value = [value]
             if hasattr(prop, 'item_type'):
                 value = [self.decode(getattr(prop, 'item_type'), v) for v in value]
                 return value

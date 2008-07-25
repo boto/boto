@@ -299,8 +299,6 @@ class ListProperty(Property):
     data_type = list
 
     def __init__(self, item_type, verbose_name=None, name=None, default=None, **kwds):
-        if not isinstance(item_type, type):
-            raise TypeError('Item type should be a type object')
         if default is None:
             default = []
         self.item_type = item_type
