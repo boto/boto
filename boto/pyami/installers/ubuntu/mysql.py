@@ -62,7 +62,6 @@ class MySQL(Installer):
         fp.close()
         if fresh_install:
             self.run('cp -pr /var/lib/mysql/* /mnt/mysql/')
-            self.run('cp -pr /var/log/mysql/* /mnt/mysql/')
             self.start('mysql')
         else:
             #get the password ubuntu expects to use:
