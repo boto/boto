@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 from boto.sdb.db.key import Key
 import psycopg2
-import uuid, sys, os
+import uuid, sys, os, string
 from boto.exception import *
 
 class PGConverter:
@@ -83,7 +83,7 @@ class PGConverter:
 class PGManager(object):
 
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table):
+                 db_host, db_port, db_table, ddl_dir):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user
@@ -91,6 +91,7 @@ class PGManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
+        self.ddl_dir = ddl_dir
         self.converter = PGConverter(self)
         self._connect()
 
@@ -160,24 +161,25 @@ class PGManager(object):
         qs += """ WHERE "id" = '%s';""" % obj.id
         return qs
 
-    def _get_ddl(self):
-        m = sys.modules[self.cls.__module__]
-        path = m.__file__
-        path = os.path.split(path)[0]
-        path = os.path.join(path, 'models')
-        path = os.path.join(path, self.cls.__name__ + '.ddl')
-        fp = open(path)
-        ddl = fp.read()
-        fp.close()
+    def _get_ddl(self, mapping=None):
+        ddl = None
+        if self.ddl_dir:
+            path = os.path.join(self.ddl_dir, self.cls.__name__ + '.ddl')
+            if os.path.isfile(path):
+                fp = open(path)
+                ddl = fp.read()
+                fp.close()
+                t = string.Template(ddl)
+                ddl = t.safe_substitute(mapping)
         return ddl
 
     def delete_table(self):
         self.cursor.execute('DROP TABLE "%s";' % self.db_table)
-        self.cursor.commit()
+        self.connection.commit()
 
-    def create_table(self):
-        self.cursor.execute(self._get_ddl())
-        self.cursor.execute()
+    def create_table(self, mapping=None):
+        self.cursor.execute(self._get_ddl(mapping))
+        self.connection.commit()
 
     def encode_value(self, prop, value):
         return self.converter.encode_prop(prop, value)

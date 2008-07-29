@@ -144,6 +144,14 @@ class Model(object):
     def set_manager(self, manager):
         self._manager = manager
 
+    def to_dict(self):
+        props = {}
+        for prop in self.properties(hidden=False):
+            props[prop.name] = getattr(self, prop.name)
+        obj = {'properties' : props,
+               'id' : self.id}
+        return {self.__class__.__name__ : obj}
+
 class Expando(Model):
 
     def __setattr__(self, name, value):

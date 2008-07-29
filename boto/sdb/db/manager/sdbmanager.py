@@ -149,7 +149,8 @@ class SDBConverter:
 
 class SDBManager(object):
     
-    def __init__(self, cls, db_name, db_user, db_passwd, db_host, db_port, db_table):
+    def __init__(self, cls, db_name, db_user, db_passwd,
+                 db_host, db_port, db_table, ddl_dir):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user
@@ -157,6 +158,7 @@ class SDBManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
+        self.ddl_dir = ddl_dir
         self.s3 = None
         self.converter = SDBConverter(self)
         self._connect()

@@ -46,6 +46,7 @@ def get_manager(cls):
     db_table = boto.config.get('DB', 'db_table', None)
     db_host = boto.config.get('DB', 'db_host', None)
     db_port = boto.config.getint('DB', 'db_port', 0)
+    ddl_dir = boto.config.get('DB', 'ddl_dir', None)
     debug = boto.config.getint('DB', 'debug', 0)
     db_section = 'DB_' + cls.__name__
     if boto.config.has_section(db_section):
@@ -60,12 +61,12 @@ def get_manager(cls):
     if db_type == 'SimpleDB':
         from sdbmanager import SDBManager
         return SDBManager(cls, db_name, db_user, db_passwd,
-                          db_host, db_port, db_table)
+                          db_host, db_port, db_table, ddl_dir)
     elif db_type == 'PostgreSQL':
         from pgmanager import PGManager
         if db_table:
             return PGManager(cls, db_name, db_user, db_passwd,
-                             db_host, db_port, db_table)
+                             db_host, db_port, db_table, ddl_dir)
         else:
             return None
     else:
