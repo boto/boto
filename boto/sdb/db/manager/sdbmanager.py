@@ -84,7 +84,6 @@ class SDBConverter:
                 item_type = getattr(prop, "item_type")
                 if Model in item_type.mro():
                     item_type = Model
-                print item_type
                 value = [self.decode(item_type, v) for v in value]
                 return value
             else:
