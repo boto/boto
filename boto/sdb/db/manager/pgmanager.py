@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 from boto.sdb.db.key import Key
+from boto.sdb.db.model import Model
 import psycopg2
 import uuid, sys, os, string
 from boto.exception import *
@@ -27,7 +28,8 @@ class PGConverter:
     
     def __init__(self, manager):
         self.manager = manager
-        self.type_map = {Key : (self.encode_reference, self.decode_reference)}
+        self.type_map = {Key : (self.encode_reference, self.decode_reference),
+                         Model : (self.encode_reference, self.decode_reference)}
 
     def encode(self, type, value):
         if type in self.type_map:
@@ -43,11 +45,19 @@ class PGConverter:
 
     def encode_prop(self, prop, value):
         if isinstance(value, list):
-            s = "{"
-            value = ['"%s"' % self.encode(getattr(prop, 'item_type'), v) for v in value]
-            s += ','.join(value)
-            s += "}"
-            return s
+            if hasattr(prop, 'item_type'):
+                s = "{"
+                new_value = []
+                for v in value:
+                    item_type = getattr(prop, 'item_type')
+                    if Model in item_type.mro():
+                        item_type = Model
+                    new_value.append(self.encode(item_type, v))
+                s += ','.join(new_value)
+                s += "}"
+                return s
+            else:
+                return value
         return self.encode(prop.data_type, value)
 
     def decode_prop(self, prop, value):
@@ -55,7 +65,10 @@ class PGConverter:
             if hasattr(prop, 'item_type'):
                 new_value = []
                 for v in value:
-                    new_value.append(self.decode(getattr(prop, 'item_type'), v))
+                    item_type = getattr(prop, "item_type")
+                    if Model in item_type.mro():
+                        item_type = Model
+                    new_value.append(self.encode(item_type, v))
                 return new_value
             else:
                 return value
