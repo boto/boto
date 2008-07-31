@@ -24,6 +24,10 @@ from key import Key
 from boto.utils import Password
 from boto.sdb.db.query import Query
 
+import re
+import boto
+import boto.s3.key
+
 class Property(object):
 
     data_type = str
@@ -148,6 +152,23 @@ class PasswordProperty(StringProperty):
                 raise ValueError, 'Length of value greater than maxlength'
         else:
             raise TypeError, 'Expecting Password, got %s' % type(value)
+
+class S3KeyProperty(Property):
+    data_type = boto.s3.key.Key
+    s3 = boto.connect_s3()
+
+    def make_value_from_datastore(self, value):
+        match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value)
+        if match:
+            bucket = self.s3.get_bucket(match.group(1))
+            return bucket.get_key(match.group(2))
+        else:
+            return None
+    
+    def get_value_for_datastore(self, model_instance):
+        value = Property.get_value_for_datastore(self, model_instance)
+        return "s3://%s/%s" % (value.bucket.name, value.name)
+
 
 class IntegerProperty(Property):
 
