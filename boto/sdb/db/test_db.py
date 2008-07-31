@@ -84,15 +84,14 @@ def test_reference(t=None):
     if not t:
         t = test_basic()
     tt = TestReference()
-    _objects['test_required_tt'] = tt
     tt.ref = t
     tt.put()
     time.sleep(5)
-    i = 0
+    tt = TestReference.get_by_ids(tt.id)
+    _objects['test_reference_tt'] = tt
+    assert tt.ref.id == t.id
     for o in t.refs:
-        i += 1
         print o
-    assert i == 1
 
 def test_subclass():
     global _objects

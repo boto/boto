@@ -88,6 +88,12 @@ class SDBConverter:
                 return value
             else:
                 return value
+        elif hasattr(prop, 'reference_class'):
+            ref_class = getattr(prop, 'reference_class')
+            if ref_class != self.manager.cls:
+                return ref_class._manager.decode_value(prop, value)
+            else:
+                return self.decode(prop.data_type, value)
         else:
             return self.decode(prop.data_type, value)
 
