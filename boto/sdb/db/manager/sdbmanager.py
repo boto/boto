@@ -83,9 +83,11 @@ class SDBConverter:
             if hasattr(prop, 'item_type'):
                 item_type = getattr(prop, "item_type")
                 if Model in item_type.mro():
-                    item_type = Model
-                value = [self.decode(item_type, v) for v in value]
-                return value
+                    if item_type != self.manager.cls:
+                        return item_type._manager.decode_value(prop, value)
+                    else:
+                        item_type = Model
+                return [self.decode(item_type, v) for v in value]
             else:
                 return value
         elif hasattr(prop, 'reference_class'):

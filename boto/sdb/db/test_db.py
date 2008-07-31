@@ -138,6 +138,7 @@ def test_list_reference():
     tt.name = "foo"
     tt.basics = [t]
     tt.put()
+    time.sleep(5)
     _objects['test_list_ref_tt'] = tt
     ttt = TestListReference.get_by_ids(tt.id)
     assert ttt.basics[0].id == t.id
@@ -156,3 +157,5 @@ def test():
     test_password()
     print 'test_list'
     test_list()
+    print 'test_list_reference'
+    test_list_reference()
