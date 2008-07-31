@@ -88,8 +88,11 @@ def test_reference(t=None):
     tt.ref = t
     tt.put()
     time.sleep(5)
+    i = 0
     for o in t.refs:
+        i += 1
         print o
+    assert i == 1
 
 def test_subclass():
     global _objects

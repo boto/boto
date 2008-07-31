@@ -44,9 +44,9 @@ class Property(object):
             try:
                 value = getattr(obj, self.slot_name)
             except AttributeError:
-                if obj._auto_update:
+                try:
                     value = obj._manager.get_property(self, obj, self.name)
-                else:
+                except AttributeError:
                     value = self.default_value()
                 setattr(obj, self.slot_name, value)
         return value
