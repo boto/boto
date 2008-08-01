@@ -91,11 +91,11 @@ class PGConverter:
         else:
             return value.id
 
-    def decode_reference(self, prop, value):
+    def decode_reference(self, value):
         if not value:
             return None
         try:
-            return prop.reference_class._manager.get_object(None, value)
+            return self.manager.get_object_from_id(value)
         except:
             raise ValueError, 'Unable to convert %s to Object' % value
 
@@ -287,6 +287,9 @@ class PGManager(object):
         else:
             raise SDBPersistenceError('%s object with id=%s does not exist' % (cls.__name__, id))
         
+    def get_object_from_id(self, id):
+        return self.get_object(self.cls, id)
+
     def save_object(self, obj):
         obj._auto_update = False
         if not obj.id:
