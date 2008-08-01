@@ -24,7 +24,7 @@ import uuid
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from datetime import datetime
-from boto.exception import *
+from boto.exception import SDBPersistenceError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
