@@ -27,7 +27,10 @@ class Query(object):
 
     def __iter__(self):
         return iter(self.model_class._manager.query(self.model_class, self.filters))
-        
+
+    def next(self):
+        return self.__iter__().next()
+
     def filter(self, property_operator, value):
         self.filters.append((property_operator, value))
         return self
