@@ -61,19 +61,25 @@ class PGConverter:
         return self.encode(prop.data_type, value)
 
     def decode_prop(self, prop, value):
-        if isinstance(value, list):
+        if prop.data_type == list:
+            if not isinstance(value, list):
+                value = [value]
             if hasattr(prop, 'item_type'):
-                new_value = []
-                for v in value:
-                    item_type = getattr(prop, "item_type")
-                    if Model in item_type.mro():
+                item_type = getattr(prop, "item_type")
+                if Model in item_type.mro():
+                    if item_type != self.manager.cls:
+                        return item_type._manager.decode_value(prop, value)
+                    else:
                         item_type = Model
-                    new_value.append(self.encode(item_type, v))
-                return new_value
+                return [self.decode(item_type, v) for v in value]
             else:
                 return value
-        elif prop.data_type == Key:
-            return self.decode_reference(prop, value)
+        elif hasattr(prop, 'reference_class'):
+            ref_class = getattr(prop, 'reference_class')
+            if ref_class != self.manager.cls:
+                return ref_class._manager.decode_value(prop, value)
+            else:
+                return self.decode(prop.data_type, value)
         else:
             return self.decode(prop.data_type, value)
 
