@@ -320,6 +320,31 @@ class _ReverseReferenceProperty(Property):
         raise ValueError, 'Virtual property is read-only'
 
         
+class CalculatedProperty(Property):
+
+    def __init__(self, verbose_name=None, name=None, default=None,
+                 required=False, validator=None, choices=None,
+                 calculated_type=int):
+        Property.__init__(self, verbose_name, name, default, required,
+                          validator, choices)
+        self.calculated_type = calculated_type
+        
+    def __get__(self, obj, objtype):
+        value = self.default_value()
+        if obj:
+            try:
+                value = getattr(obj, self.slot_name)
+            except AttributeError:
+                pass
+        return value
+
+    def __set__(self, obj, value):
+        """Not possible to set a new AutoID."""
+        pass
+
+    def _set_direct(self, obj, value):
+        setattr(obj, self.slot_name, value)
+
 class ListProperty(Property):
     
     data_type = list

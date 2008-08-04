@@ -152,32 +152,51 @@ class PGManager(object):
         obj._auto_update = True
         return obj
 
-    def _build_insert_qs(self, obj):
+    def _build_insert_qs(self, obj, calculated):
         fields = []
         values = []
+        id_calculated = [p for p in calculated if p.name == 'id']
         for property in obj.properties(hidden=False):
-            value = property.get_value_for_datastore(obj)
-            if value:
-                value = self.encode_value(property, value)
-                values.append("'%s'" % value)
-                fields.append('"%s"' % property.name)
-        qs = 'INSERT INTO "%s" (id,' % self.db_table
+            if property not in calculated:
+                value = property.get_value_for_datastore(obj)
+                if value:
+                    value = self.encode_value(property, value)
+                    values.append("'%s'" % value)
+                    fields.append('"%s"' % property.name)
+        qs = 'INSERT INTO "%s" (' % self.db_table
+        if len(id_calculated) == 0:
+            qs += '"id",'
         qs += ','.join(fields)
-        qs += ") VALUES ('%s'," % obj.id
+        qs += ") VALUES ("
+        if len(id_calculated) == 0:
+            qs += "'%s'," % id
         qs += ','.join(values)
-        qs += ');'
+        qs += ')'
+        if calculated:
+            qs += ' RETURNING ('
+            calc_values = ['"%s"' % p.name for p in calculated]
+            qs += ','.join(calc_values)
+            qs += ')'
+        qs += ';'
         return qs
 
-    def _build_update_qs(self, obj):
+    def _build_update_qs(self, obj, calculated):
         fields = []
         for property in obj.properties(hidden=False):
-            value = property.get_value_for_datastore(obj)
-            if value:
-                value = self.encode_value(property, value)
-                fields.append(""""%s"='%s'""" % (property.name, value))
+            if property not in calculated:
+                value = property.get_value_for_datastore(obj)
+                if value:
+                    value = self.encode_value(property, value)
+                    fields.append(""""%s"='%s'""" % (property.name, value))
         qs = 'UPDATE "%s" SET ' % self.db_table
         qs += ','.join(fields)
-        qs += """ WHERE "id" = '%s';""" % obj.id
+        qs += """ WHERE "id" = '%s'""" % obj.id
+        if calculated:
+            qs += ' RETURNING ('
+            calc_values = ['"%s"' % p.name for p in calculated]
+            qs += ','.join(calc_values)
+            qs += ')'
+        qs += ';'
         return qs
 
     def _get_ddl(self, mapping=None):
@@ -205,6 +224,10 @@ class PGManager(object):
 
     def decode_value(self, prop, value):
         return self.converter.decode_prop(prop, value)
+
+    def execute_sql(self, query):
+        self.cursor.execute(query, None)
+        self.connection.commit()
 
     def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)
@@ -265,7 +288,7 @@ class PGManager(object):
                     v = self.decode_value(prop, rs[0])
                     return v
         else:
-            raise SDBPersistenceError('problem getting %s' % (prop.name))
+            return prop.default_value()
 
     def set_property(self, prop, obj, name, value):
         pass
@@ -290,15 +313,24 @@ class PGManager(object):
     def get_object_from_id(self, id):
         return self.get_object(self.cls, id)
 
+    def _find_calculated_props(self, obj):
+        return [p for p in obj.properties() if hasattr(p, 'calculated_type')]
+
     def save_object(self, obj):
         obj._auto_update = False
+        calculated = self._find_calculated_props(obj)
         if not obj.id:
             obj.id = str(uuid.uuid4())
-            qs = self._build_insert_qs(obj)
+            qs = self._build_insert_qs(obj, calculated)
         else:
-            qs = self._build_update_qs(obj)
+            qs = self._build_update_qs(obj, calculated)
         print qs
         self.cursor.execute(qs)
+        if calculated:
+            calc_values = self.cursor.fetchone()
+            for i in range(0, len(calculated)):
+                prop = calculated[i]
+                prop._set_direct(obj, calc_values[i])
         self.connection.commit()
         obj._auto_update = True
 
