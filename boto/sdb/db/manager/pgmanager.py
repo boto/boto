@@ -169,7 +169,7 @@ class PGManager(object):
         qs += ','.join(fields)
         qs += ") VALUES ("
         if len(id_calculated) == 0:
-            qs += "'%s'," % id
+            qs += "'%s'," % obj.id
         qs += ','.join(values)
         qs += ')'
         if calculated:
