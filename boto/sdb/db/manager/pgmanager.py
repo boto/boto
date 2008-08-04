@@ -80,6 +80,9 @@ class PGConverter:
                 return ref_class._manager.decode_value(prop, value)
             else:
                 return self.decode(prop.data_type, value)
+        elif hasattr(prop, 'calculated_type'):
+            calc_type = getattr(prop, 'calculated_type')
+            return self.decode(calc_type, value)
         else:
             return self.decode(prop.data_type, value)
 
@@ -145,7 +148,9 @@ class PGManager(object):
             if prop.data_type != Key:
                 v = self.decode_value(prop, d[prop.name])
                 v = prop.make_value_from_datastore(v)
-                if not prop.empty(v):
+                if hasattr(prop, 'calculated_type'):
+                    prop._set_direct(obj, v)
+                elif not prop.empty(v):
                     setattr(obj, prop.name, v)
                 else:
                     setattr(obj, prop.name, prop.default_value())
