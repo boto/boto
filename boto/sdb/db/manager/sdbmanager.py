@@ -243,7 +243,7 @@ class SDBManager(object):
                  '__lineage__' : obj.get_lineage()}
         for property in obj.properties(hidden=False):
             value = property.get_value_for_datastore(obj)
-            if value:
+            if value is not None:
                 value = self.encode_value(property, value)
                 attrs[property.name] = value
         self.domain.put_attributes(obj.id, attrs, replace=True)
