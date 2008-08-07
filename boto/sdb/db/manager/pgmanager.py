@@ -169,7 +169,7 @@ class PGManager(object):
             if property not in calculated:
                 print '_build_insert_qs: ', property.name
                 value = property.get_value_for_datastore(obj)
-                if value:
+                if value != None:
                     value = self.encode_value(property, value)
                     values.append("'%s'" % value)
                     fields.append('"%s"' % property.name)
@@ -194,7 +194,7 @@ class PGManager(object):
         for property in obj.properties(hidden=False):
             if property not in calculated:
                 value = property.get_value_for_datastore(obj)
-                if value:
+                if value != None:
                     value = self.encode_value(property, value)
                     fields.append(""""%s"='%s'""" % (property.name, value))
         qs = 'UPDATE "%s" SET ' % self.db_table

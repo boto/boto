@@ -21,12 +21,16 @@
 
 class Query(object):
 
-    def __init__(self, model_class):
+    def __init__(self, model_class, manager=None):
         self.model_class = model_class
+        if manager:
+            self.manager = manager
+        else:
+            self.manager = self.model_class._manager
         self.filters = []
 
     def __iter__(self):
-        return iter(self.model_class._manager.query(self.model_class, self.filters))
+        return iter(self.manager.query(self.model_class, self.filters))
 
     def next(self):
         return self.__iter__().next()
