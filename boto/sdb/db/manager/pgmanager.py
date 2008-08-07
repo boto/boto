@@ -165,14 +165,13 @@ class PGManager(object):
         fields = []
         values = []
         id_calculated = [p for p in calculated if p.name == 'id']
-        for property in obj.properties(hidden=False):
-            if property not in calculated:
-                print '_build_insert_qs: ', property.name
-                value = property.get_value_for_datastore(obj)
-                if value != None:
-                    value = self.encode_value(property, value)
+        for prop in obj.properties(hidden=False):
+            if prop not in calculated:
+                value = prop.get_value_for_datastore(obj)
+                if value != prop.default_value() or prop.required:
+                    value = self.encode_value(prop, value)
                     values.append("'%s'" % value)
-                    fields.append('"%s"' % property.name)
+                    fields.append('"%s"' % prop.name)
         qs = 'INSERT INTO "%s" (' % self.db_table
         if len(id_calculated) == 0:
             qs += '"id",'
@@ -191,12 +190,12 @@ class PGManager(object):
 
     def _build_update_qs(self, obj, calculated):
         fields = []
-        for property in obj.properties(hidden=False):
-            if property not in calculated:
-                value = property.get_value_for_datastore(obj)
-                if value != None:
-                    value = self.encode_value(property, value)
-                    fields.append(""""%s"='%s'""" % (property.name, value))
+        for prop in obj.properties(hidden=False):
+            if prop not in calculated:
+                value = prop.get_value_for_datastore(obj)
+                if value != prop.default_value() or prop.required:
+                    value = self.encode_value(prop, value)
+                    fields.append(""""%s"='%s'""" % (prop.name, value))
         qs = 'UPDATE "%s" SET ' % self.db_table
         qs += ','.join(fields)
         qs += """ WHERE "id" = '%s'""" % obj.id
@@ -218,6 +217,9 @@ class PGManager(object):
                 t = string.Template(ddl)
                 ddl = t.safe_substitute(mapping)
         return ddl
+
+    def commit(self):
+        self.connection.commit()
 
     def delete_table(self):
         self.cursor.execute('DROP TABLE "%s";' % self.db_table)
