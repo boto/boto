@@ -52,7 +52,7 @@ class PGConverter:
                     item_type = getattr(prop, 'item_type')
                     if Model in item_type.mro():
                         item_type = Model
-                    new_value.append(self.encode(item_type, v))
+                    new_value.append('%s' % self.encode(item_type, v))
                 s += ','.join(new_value)
                 s += "}"
                 return s
@@ -62,18 +62,18 @@ class PGConverter:
 
     def decode_prop(self, prop, value):
         if prop.data_type == list:
-            if not isinstance(value, list):
-                value = [value]
-            if hasattr(prop, 'item_type'):
-                item_type = getattr(prop, "item_type")
-                if Model in item_type.mro():
-                    if item_type != self.manager.cls:
-                        return item_type._manager.decode_value(prop, value)
-                    else:
-                        item_type = Model
-                return [self.decode(item_type, v) for v in value]
-            else:
-                return value
+            if value != None:
+                if not isinstance(value, list):
+                    value = [value]
+                if hasattr(prop, 'item_type'):
+                    item_type = getattr(prop, "item_type")
+                    if Model in item_type.mro():
+                        if item_type != self.manager.cls:
+                            return item_type._manager.decode_value(prop, value)
+                        else:
+                            item_type = Model
+                    return [self.decode(item_type, v) for v in value]
+            return value
         elif hasattr(prop, 'reference_class'):
             ref_class = getattr(prop, 'reference_class')
             if ref_class != self.manager.cls:
@@ -140,7 +140,11 @@ class PGManager(object):
             d[description[i][0]] = row[i]
         return d
 
-    def _object_from_row(self, row, description):
+    def _object_from_row(self, row, description=None):
+        if not description:
+            description = self.cursor.description
+        print row
+        print description
         d = self._dict_from_row(row, description)
         obj = self.cls(d['id'])
         obj._auto_update = False
@@ -163,6 +167,7 @@ class PGManager(object):
         id_calculated = [p for p in calculated if p.name == 'id']
         for property in obj.properties(hidden=False):
             if property not in calculated:
+                print '_build_insert_qs: ', property.name
                 value = property.get_value_for_datastore(obj)
                 if value:
                     value = self.encode_value(property, value)
@@ -178,10 +183,9 @@ class PGManager(object):
         qs += ','.join(values)
         qs += ')'
         if calculated:
-            qs += ' RETURNING ('
+            qs += ' RETURNING '
             calc_values = ['"%s"' % p.name for p in calculated]
             qs += ','.join(calc_values)
-            qs += ')'
         qs += ';'
         return qs
 
@@ -197,10 +201,9 @@ class PGManager(object):
         qs += ','.join(fields)
         qs += """ WHERE "id" = '%s'""" % obj.id
         if calculated:
-            qs += ' RETURNING ('
+            qs += ' RETURNING '
             calc_values = ['"%s"' % p.name for p in calculated]
             qs += ','.join(calc_values)
-            qs += ')'
         qs += ';'
         return qs
 
@@ -285,6 +288,7 @@ class PGManager(object):
 
     def get_property(self, prop, obj, name):
         qs = """SELECT "%s" FROM "%s" WHERE id='%s';""" % (name, self.db_table, obj.id)
+        print qs
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
             rs = self.cursor.fetchone()
@@ -292,8 +296,7 @@ class PGManager(object):
                 if prop.name == name:
                     v = self.decode_value(prop, rs[0])
                     return v
-        else:
-            return prop.default_value()
+        raise AttributeError, '%s not found' % name
 
     def set_property(self, prop, obj, name, value):
         pass
@@ -333,6 +336,8 @@ class PGManager(object):
         self.cursor.execute(qs)
         if calculated:
             calc_values = self.cursor.fetchone()
+            print calculated
+            print calc_values
             for i in range(0, len(calculated)):
                 prop = calculated[i]
                 prop._set_direct(obj, calc_values[i])

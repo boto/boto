@@ -48,10 +48,12 @@ class Property(object):
             try:
                 value = getattr(obj, self.slot_name)
             except AttributeError:
-                try:
-                    value = obj._manager.get_property(self, obj, self.name)
-                except AttributeError:
-                    value = self.default_value()
+                value = self.default_value()
+                if obj.id:
+                    try:
+                        value = obj._manager.get_property(self, obj, self.name)
+                    except AttributeError:
+                        pass
                 setattr(obj, self.slot_name, value)
         return value
 
