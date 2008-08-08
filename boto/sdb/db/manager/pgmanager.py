@@ -164,14 +164,16 @@ class PGManager(object):
     def _build_insert_qs(self, obj, calculated):
         fields = []
         values = []
+        templs = []
         id_calculated = [p for p in calculated if p.name == 'id']
         for prop in obj.properties(hidden=False):
             if prop not in calculated:
                 value = prop.get_value_for_datastore(obj)
                 if value != prop.default_value() or prop.required:
                     value = self.encode_value(prop, value)
-                    values.append("'%s'" % value)
+                    values.append(value)
                     fields.append('"%s"' % prop.name)
+                    templs.append('%s')
         qs = 'INSERT INTO "%s" (' % self.db_table
         if len(id_calculated) == 0:
             qs += '"id",'
@@ -179,23 +181,25 @@ class PGManager(object):
         qs += ") VALUES ("
         if len(id_calculated) == 0:
             qs += "'%s'," % obj.id
-        qs += ','.join(values)
+        qs += ','.join(templs)
         qs += ')'
         if calculated:
             qs += ' RETURNING '
             calc_values = ['"%s"' % p.name for p in calculated]
             qs += ','.join(calc_values)
         qs += ';'
-        return qs
+        return qs, values
 
     def _build_update_qs(self, obj, calculated):
         fields = []
+        values = []
         for prop in obj.properties(hidden=False):
             if prop not in calculated:
                 value = prop.get_value_for_datastore(obj)
                 if value != prop.default_value() or prop.required:
                     value = self.encode_value(prop, value)
-                    fields.append(""""%s"='%s'""" % (prop.name, value))
+                    value.append(value)
+                    fields.append(""""%s"=%s""" % (prop.name, value))
         qs = 'UPDATE "%s" SET ' % self.db_table
         qs += ','.join(fields)
         qs += """ WHERE "id" = '%s'""" % obj.id
@@ -204,7 +208,7 @@ class PGManager(object):
             calc_values = ['"%s"' % p.name for p in calculated]
             qs += ','.join(calc_values)
         qs += ';'
-        return qs
+        return qs, values
 
     def _get_ddl(self, mapping=None):
         ddl = None
@@ -244,19 +248,21 @@ class PGManager(object):
         return self.cursor.fetchall()
 
     def lookup(self, cls, name, value):
-        parts = []
+        values = []
         qs = 'SELECT * FROM "%s" WHERE ' % self.db_table
         found = False
         for property in cls.properties(hidden=False):
             if property.name == name:
                 found = True
                 value = self.encode_value(property, value)
-                qs += "%s='%s'" % (name, value)
+                values.append(value)
+                qs += "%s=" % name
+                qs += "%s"
         if not found:
             raise SDBPersistenceError('%s is not a valid field' % key)
         qs += ';'
         print qs
-        self.cursor.execute(qs)
+        self.cursor.execute(qs, values)
         if self.cursor.rowcount == 1:
             row = self.cursor.fetchone()
             return self._object_from_row(row, self.cursor.description)
@@ -331,11 +337,11 @@ class PGManager(object):
         calculated = self._find_calculated_props(obj)
         if not obj.id:
             obj.id = str(uuid.uuid4())
-            qs = self._build_insert_qs(obj, calculated)
+            qs, values = self._build_insert_qs(obj, calculated)
         else:
-            qs = self._build_update_qs(obj, calculated)
+            qs, values = self._build_update_qs(obj, calculated)
         print qs
-        self.cursor.execute(qs)
+        self.cursor.execute(qs, values)
         if calculated:
             calc_values = self.cursor.fetchone()
             print calculated
