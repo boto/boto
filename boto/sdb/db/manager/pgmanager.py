@@ -143,8 +143,6 @@ class PGManager(object):
     def _object_from_row(self, row, description=None):
         if not description:
             description = self.cursor.description
-        print row
-        print description
         d = self._dict_from_row(row, description)
         obj = self.cls(d['id'])
         obj._auto_update = False
