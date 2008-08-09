@@ -118,6 +118,16 @@ class StringProperty(Property):
                  validator=validate_string, choices=None):
         Property.__init__(self, verbose_name, name, default, required, validator, choices)
 
+def validate_text(value):
+    if not isinstance(value, str) and not isinstance(value, unicode):
+        raise TypeError, 'Expecting Text, got %s' % type(value)
+
+class TextProperty(Property):
+    
+    def __init__(self, verbose_name=None, name=None, default='', required=False,
+                 validator=validate_text, choices=None):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices)
+
 class PasswordProperty(StringProperty):
     """
     Hashed property who's original value can not be
