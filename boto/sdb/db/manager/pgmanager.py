@@ -225,6 +225,9 @@ class PGManager(object):
     def commit(self):
         self.connection.commit()
 
+    def rollback(self):
+        self.connection.rollback()
+
     def delete_table(self):
         self.cursor.execute('DROP TABLE "%s";' % self.db_table)
         self.connection.commit()
@@ -240,8 +243,13 @@ class PGManager(object):
         return self.converter.decode_prop(prop, value)
 
     def execute_sql(self, query):
-        self.cursor.execute(query, None)
-        self.connection.commit()
+        try:
+            self.cursor.execute(query, None)
+            self.connection.commit()
+        except psycopg2.ProgrammingError, err:
+            print 'Postgresql Error, rolling back', self.cursor.mogrify(query, None)
+            self.connection.rollback()
+            raise err
 
     def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)
