@@ -114,6 +114,7 @@ class PGManager(object):
         self.db_port = db_port
         self.db_table = db_table
         self.ddl_dir = ddl_dir
+        self.in_transaction = False
         self.converter = PGConverter(self)
         self._connect()
 
@@ -220,19 +221,34 @@ class PGManager(object):
                 ddl = t.safe_substitute(mapping)
         return ddl
 
+    def start_transaction(self):
+        self.in_transaction = True
+
+    def end_transaction(self):
+        self.in_transaction = False
+        self.commit()
+
     def commit(self):
-        self.connection.commit()
+        print '!!commit on %s' % self.db_table
+        if not self.in_transaction:
+            try:
+                self.connection.commit()
+                
+            except psycopg2.ProgrammingError, err:
+                self.connection.rollback()
+                raise err
 
     def rollback(self):
+        print '!!rollback on %s' % self.db_table
         self.connection.rollback()
 
     def delete_table(self):
         self.cursor.execute('DROP TABLE "%s";' % self.db_table)
-        self.connection.commit()
+        self.commit()
 
     def create_table(self, mapping=None):
         self.cursor.execute(self._get_ddl(mapping))
-        self.connection.commit()
+        self.commit()
 
     def encode_value(self, prop, value):
         return self.converter.encode_prop(prop, value)
@@ -241,13 +257,8 @@ class PGManager(object):
         return self.converter.decode_prop(prop, value)
 
     def execute_sql(self, query):
-        try:
-            self.cursor.execute(query, None)
-            self.connection.commit()
-        except psycopg2.ProgrammingError, err:
-            print 'Postgresql Error, rolling back', self.cursor.mogrify(query, None)
-            self.connection.rollback()
-            raise err
+        self.cursor.execute(query, None)
+        self.commit()
 
     def query_sql(self, query, vars=None):
         self.cursor.execute(query, vars)
@@ -321,7 +332,7 @@ class PGManager(object):
         qs += ';'
         print qs
         self.cursor.execute(qs)
-        self.connection.commit()
+        self.commit()
 
     def get_object(self, cls, id):
         qs = """SELECT * FROM "%s" WHERE id='%s';""" % (self.db_table, id)
@@ -355,13 +366,13 @@ class PGManager(object):
             for i in range(0, len(calculated)):
                 prop = calculated[i]
                 prop._set_direct(obj, calc_values[i])
-        self.connection.commit()
+        self.commit()
         obj._auto_update = True
 
     def delete_object(self, obj):
         qs = """DELETE FROM "%s" WHERE id='%s';""" % (self.db_table, obj.id)
         print qs
         self.cursor.execute(qs)
-        self.connection.commit()
+        self.commit()
 
             
