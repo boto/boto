@@ -197,8 +197,10 @@ class PGManager(object):
                 value = prop.get_value_for_datastore(obj)
                 if value != prop.default_value() or prop.required:
                     value = self.encode_value(prop, value)
-                    value.append(value)
-                    fields.append(""""%s"=%s""" % (prop.name, value))
+                    values.append(value)
+                    field = '"%s"=' % prop.name
+                    field += '%s'
+                    fields.append(field)
         qs = 'UPDATE "%s" SET ' % self.db_table
         qs += ','.join(fields)
         qs += """ WHERE "id" = '%s'""" % obj.id
@@ -222,15 +224,17 @@ class PGManager(object):
         return ddl
 
     def start_transaction(self):
+        print 'start_transaction'
         self.in_transaction = True
 
     def end_transaction(self):
+        print 'end_transaction'
         self.in_transaction = False
         self.commit()
 
     def commit(self):
-        print '!!commit on %s' % self.db_table
         if not self.in_transaction:
+            print '!!commit on %s' % self.db_table
             try:
                 self.connection.commit()
                 
