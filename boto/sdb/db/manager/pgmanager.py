@@ -105,7 +105,7 @@ class PGConverter:
 class PGManager(object):
 
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table, ddl_dir):
+                 db_host, db_port, db_table, sql_dir):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user
@@ -113,7 +113,7 @@ class PGManager(object):
         self.db_host = db_host
         self.db_port = db_port
         self.db_table = db_table
-        self.ddl_dir = ddl_dir
+        self.sql_dir = sql_dir
         self.in_transaction = False
         self.converter = PGConverter(self)
         self._connect()
@@ -211,17 +211,19 @@ class PGManager(object):
         qs += ';'
         return qs, values
 
-    def _get_ddl(self, mapping=None):
-        ddl = None
-        if self.ddl_dir:
-            path = os.path.join(self.ddl_dir, self.cls.__name__ + '.ddl')
+    def _get_sql(self, mapping=None):
+        print '_get_sql'
+        sql = None
+        if self.sql_dir:
+            path = os.path.join(self.sql_dir, self.cls.__name__ + '.sql')
+            print path
             if os.path.isfile(path):
                 fp = open(path)
-                ddl = fp.read()
+                sql = fp.read()
                 fp.close()
-                t = string.Template(ddl)
-                ddl = t.safe_substitute(mapping)
-        return ddl
+                t = string.Template(sql)
+                sql = t.safe_substitute(mapping)
+        return sql
 
     def start_transaction(self):
         print 'start_transaction'
@@ -251,7 +253,7 @@ class PGManager(object):
         self.commit()
 
     def create_table(self, mapping=None):
-        self.cursor.execute(self._get_ddl(mapping))
+        self.cursor.execute(self._get_sql(mapping))
         self.commit()
 
     def encode_value(self, prop, value):
