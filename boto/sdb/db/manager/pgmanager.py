@@ -21,8 +21,11 @@
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 import psycopg2
+import psycopg2.extensions
 import uuid, sys, os, string
 from boto.exception import *
+
+psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 
 class PGConverter:
     
@@ -125,6 +128,7 @@ class PGManager(object):
 
     def _connect(self):
         self.connection = psycopg2.connect(self._build_connect_string())
+        self.connection.set_client_encoding('UTF8')
         self.cursor = self.connection.cursor()
 
     def _object_lister(self, cursor):
