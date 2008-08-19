@@ -126,11 +126,13 @@ class Key:
         else:
             raise BotoClientError('Invalid mode: %s' % mode)
 
+    closed = False
     def close(self):
         if self.resp:
             self.resp.read()
         self.resp = None
         self.mode = None
+        self.closed = True
     
     def next(self):
         """
