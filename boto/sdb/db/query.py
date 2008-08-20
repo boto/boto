@@ -28,9 +28,10 @@ class Query(object):
         else:
             self.manager = self.model_class._manager
         self.filters = []
+        self.limit = None
 
     def __iter__(self):
-        return iter(self.manager.query(self.model_class, self.filters))
+        return iter(self.manager.query(self.model_class, self.filters, self.limit))
 
     def next(self):
         return self.__iter__().next()

@@ -298,7 +298,7 @@ class PGManager(object):
         else:
             raise LookupError, 'Multiple Objects Found'
 
-    def query(self, cls, filters=None):
+    def query(self, cls, filters=None, limit=None):
         parts = []
         qs = 'SELECT * FROM "%s"' % self.db_table
         if filters:
