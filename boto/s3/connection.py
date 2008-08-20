@@ -57,10 +57,10 @@ class _CallingFormat:
         path = ''
         if bucket != '':
             path = '/' + bucket
-        return path + '/%s' % urllib.quote_plus(key)
+        return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
-        return '/%s' % urllib.quote_plus(key)
+        return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
     @assert_case_insensitive
@@ -80,7 +80,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
-        return path_base + urllib.quote_plus(key)
+        return path_base + urllib.quote(key)
 
 class Location:
     DEFAULT = ''
