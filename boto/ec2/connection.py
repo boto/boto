@@ -419,7 +419,7 @@ class EC2Connection(AWSQueryConnection):
         """
         if isinstance(zone, Zone):
             zone = zone.name
-        params = {'Size': size, 'Zone' : zone}
+        params = {'Size': size, 'AvailabilityZone' : zone}
         if snapshot:
             if isinstance(snapshot, Snapshot):
                 snapshot = snapshot.id
@@ -430,7 +430,7 @@ class EC2Connection(AWSQueryConnection):
         params = {'VolumeId': volume_id}
         return self.get_status('DeleteVolume', params)
 
-    def attach_volume(self, volume_id, instance_id, device=''):
+    def attach_volume(self, volume_id, instance_id, device):
         params = {'InstanceId' : instance_id,
                   'VolumeId' : volume_id,
                   'Device' : device}
