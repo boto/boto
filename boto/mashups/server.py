@@ -331,6 +331,35 @@ class Server(Model):
         self.image_id = self.ec2.register_image('%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
+    def attatch_volume(self, volume, device="/dev/sdp"):
+        """
+        Attach an EBS volume to this server
+
+        @param volume: EBS Volume to attach
+        @type volume: boto.ec2.volume.Volume
+
+        @param device: Device to attach to (default to /dev/sdp)
+        @type device: string
+        """
+        if hasattr(volume, "id"):
+            volume_id = volume.id
+        else:
+            volume_id = volume
+        return self.ec2.attach_volume(volume_id=volume_id, instance_id=self.instance_id, device=device)
+
+    def detach_volume(self, volume):
+        """
+        Detach an EBS volume from this server
+
+        @param volume: EBS Volume to detach
+        @type volume: boto.ec2.volume.Volume
+        """
+        if hasattr(volume, "id"):
+            volume_id = volume.id
+        else:
+            volume_id = volume
+        return self.ec2.detach_volume(volume_id=volume_id, instance_id=self.instance_id)
+
     def install_package(self, package_name):
         print 'installing %s...' % package_name
         command = 'yum -y install %s' % package_name
