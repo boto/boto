@@ -34,13 +34,15 @@ from boto.ec2.image import Image, ImageAttribute
 from boto.ec2.instance import Reservation, Instance, ConsoleOutput
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
+from boto.ec2.volume import Volume
+from boto.ec2.snapshot import Snapshot
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
 from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2008-02-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2008-05-05')
     SignatureVersion = '1'
     ResponseError = EC2ResponseError
 
@@ -382,6 +384,81 @@ class EC2Connection(AWSQueryConnection):
     def disassociate_address(self, public_ip):
         params = {'PublicIp' : public_ip}
         return self.get_status('DisassociateAddress', params)
+
+    # Volume methods
+
+    def get_all_volumes(self, volume_ids=None):
+        """
+        Get all Volumes associated with the current credentials.
+
+        @type volume_ids: list
+        @param volume_ids: Optional list of volume ids.  If this list is present,
+                           only the volumes associated with these volume ids
+                           will be returned.
+
+        @rtype: list of L{boto.ec2.volume.Volume}
+        @return: The requested Volume objects
+        """
+        params = {}
+        if volume_ids:
+            self.build_list_params(params, volume_ids, 'VolumeId')
+        return self.get_list('DescribeVolumes', params, [('item', Volume)])
+        
+    def create_volume(self, size, zone, snapshot=None):
+        """
+        Create a new EBS Volume.
+
+        @type size: int
+        @param size: The size of the new volume, in GiB
+
+        @type zone: string or L{boto.ec2.zone.Zone}
+        @param zone: The availability zone in which the Volume will be created.
+
+        @type snapshot: string or L{boto.ec2.snapshot.Snapshot}
+        @param snapshot: The snapshot from which the new Volume will be created.
+        """
+        if isinstance(zone, Zone):
+            zone = zone.name
+        params = {'Size': size, 'Zone' : zone}
+        if snapshot:
+            if isinstance(snapshot, Snapshot):
+                snapshot = snapshot.id
+            params['SnapshotId'] = snapshot
+        return self.get_object('CreateVolume', params, Volume)
+        
+    def delete_volume(self, volume_id):
+        params = {'VolumeId': volume_id}
+        return self.get_status('DeleteVolume', params)
+
+    def attach_volume(self, volume_id, instance_id, device=''):
+        params = {'InstanceId' : instance_id,
+                  'VolumeId' : volume_id,
+                  'Device' : device}
+        return self.get_status('AttachVolume', params)
+
+    def detach_volume(self, volume_id, instance_id, device='', force=False):
+        params = {'InstanceId' : instance_id,
+                  'VolumeId' : volume_id,
+                  'Device' : device}
+        if force:
+            params['Force'] = 'true'
+        return self.get_status('DetachVolume', params)
+
+    # Snapshot methods
+
+    def get_all_snapshots(self, snapshot_ids=None):
+        params = {}
+        if snapshot_ids:
+            self.build_list_params(params, snapshot_ids, 'SnapshotId')
+        return self.get_list('DescribeSnapshots', params, [('item', Snapshot)])
+        
+    def create_snapshot(self, volume_id):
+        params = {'VolumeId' : volume_id}
+        return self.get_object('CreateSnapshot', params, Snapshot)
+        
+    def delete_snapshot(self, snapshot_id):
+        params = {'SnapshotId': snapshot_id}
+        return self.get_status('DeleteSnapshot', params)
 
     # Keypair methods
         
