@@ -41,14 +41,13 @@ class MySQL(Installer):
     def change_data_dir(self):
         fresh_install = False;
         time.sleep(10) #trying to stop mysql immediately after installing it fails
-        self.stop('mysql')
-        time.sleep(5)
-        # Sometimes asking nicely doesn't get it to stop
-        try:
-            self.run("killall -9 mysqld_safe")
-        except:
-            pass
-        time.sleep(2)
+        # We need to wait until mysql creates the root account before we kill it
+        # or bad things will happen
+        while self.run("echo 'quit' | mysql -u root") != 0:
+            time.sleep(5)
+        if self.run('/etc/init.d/mysql stop') != 0:
+            self.run("killall -9 mysql")
+
         if not os.path.exists('/mnt/mysql'):
             self.run('mkdir /mnt/mysql')
             fresh_install = True;
