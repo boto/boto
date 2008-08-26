@@ -69,9 +69,10 @@ class MySQL(Installer):
             password = config_parser.get('client', 'password')
             # start the mysql deamon, then mysql with the required grant statement piped into it:
             self.start('mysql')
-            time.sleep(1) #time for mysql to start
+            time.sleep(10) #time for mysql to start
             grant_command = "echo \"GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '%s' WITH GRANT OPTION;\" | mysql" % password
-            self.run(grant_command)
+            while self.run(grant_command) != 0:
+                time.sleep(5)
             # leave mysqld running
 
     def main(self):
