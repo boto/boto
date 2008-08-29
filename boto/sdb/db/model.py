@@ -124,7 +124,7 @@ class Model(object):
         return '%s<%s>' % (self.__class__.__name__, self.id)
 
     def __str__(self):
-        return self.id
+        return str(self.id)
 
     def _get_raw_item(self):
         return self._manager.get_raw_item(self)
