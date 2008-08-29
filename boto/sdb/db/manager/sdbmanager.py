@@ -152,7 +152,7 @@ class SDBConverter:
         try:
             return self.manager.get_object_from_id(value)
         except:
-            raise ValueError, 'Unable to convert %s to Object' % value
+            return None
 
 class SDBManager(object):
     
