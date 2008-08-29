@@ -29,9 +29,10 @@ class Query(object):
             self.manager = self.model_class._manager
         self.filters = []
         self.limit = None
+        self.sort_by = None
 
     def __iter__(self):
-        return iter(self.manager.query(self.model_class, self.filters, self.limit))
+        return iter(self.manager.query(self.model_class, self.filters, self.limit, self.sort_by))
 
     def next(self):
         return self.__iter__().next()
@@ -45,3 +46,7 @@ class Query(object):
 
     def count(self, limit):
         raise NotImplementedError, "count is not currently supported"
+
+    def order(self, key):
+        self.sort_by = key
+        return self

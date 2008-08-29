@@ -212,10 +212,10 @@ class SDBManager(object):
     def get_object_from_id(self, id):
         return self.get_object(None, id)
 
-    def query(self, cls, filters, limit=None):
+    def query(self, cls, filters, limit=None, order_by=None):
         if len(filters) > 4:
             raise SDBPersistenceError('Too many filters, max is 4')
-        parts = ["['__type__'='%s'] union ['__lineage__'starts-with'%s']" % (cls.__name__, cls.get_lineage())]
+        parts = ["['__lineage__'starts-with'%s']" % (cls.get_lineage())]
         properties = cls.properties(hidden=False)
         for filter, value in filters:
             name, op = filter.strip().split()
@@ -227,6 +227,14 @@ class SDBManager(object):
                     parts.append("['%s' %s '%s']" % (name, op, value))
             if not found:
                 raise SDBPersistenceError('%s is not a valid field' % key)
+        if order_by:
+            if order_by.startswith("-"):
+                key = order_by[1:]
+                type = "desc"
+            else:
+                key = order_by
+                type = "asc"
+            parts.append("['%s' starts-with ''] sort '%s' %s" % (key, key, type))
         query = ' intersection '.join(parts)
         rs = self.domain.query(query, max_items=limit)
         return self._object_lister(cls, rs)
