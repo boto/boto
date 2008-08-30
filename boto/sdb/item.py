@@ -35,8 +35,11 @@ class Item(DictMixin):
         self.active = active
         self.request_id = None
         self.encoding = None
+        self.in_attribute = False
 
     def startElement(self, name, attrs, connection):
+        if name == 'Attribute':
+            self.in_attribute = True
         self.encoding = attrs.get('encoding', None)
         return None
 
@@ -51,7 +54,10 @@ class Item(DictMixin):
         if name == 'ItemName':
             self.name = self.decode_value(value)
         elif name == 'Name':
-            self.last_key = self.decode_value(value)
+            if self.in_attribute:
+                self.last_key = self.decode_value(value)
+            else:
+                self.name = self.decode_value(value)
         elif name == 'Value':
             if self._dict == None:
                 self._dict = {}
@@ -68,12 +74,13 @@ class Item(DictMixin):
                 pass
         elif name == 'RequestId':
             self.request_id = value
+        elif name == 'Attribute':
+            self.in_attribute = False
         else:
             setattr(self, name, value)
 
     def load(self):
-        if self._dict == None:
-            self._dict = {}
+        self._dict = {}
         self.domain.get_attributes(self.name, item=self)
 
     def save(self, replace=True):

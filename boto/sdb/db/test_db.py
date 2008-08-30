@@ -86,7 +86,7 @@ def test_reference(t=None):
     tt = TestReference()
     tt.ref = t
     tt.put()
-    time.sleep(5)
+    time.sleep(10)
     tt = TestReference.get_by_ids(tt.id)
     _objects['test_reference_tt'] = tt
     assert tt.ref.id == t.id

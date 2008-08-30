@@ -259,7 +259,7 @@ class SDBConnection(AWSQueryConnection):
                   'ItemName' : item_name}
         if attr_names:
             if isinstance(attr_names, list):
-                self.build_name_list(params, attr_names)
+                self.build_list_params(params, attr_names, 'AttributeName')
             elif isinstance(attr_names, dict):
                 self.build_name_value_list(params, attr_names)
         return self.get_status('DeleteAttributes', params)
@@ -290,6 +290,41 @@ class SDBConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         return self.get_object('Query', params, ResultSet)
+
+    def query_with_attributes(self, domain_or_name, query='', attr_names=None,
+                              max_items=None, next_token=None):
+        """
+        Returns a set of Attributes for item names within domain_name that match the query.
+        
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @type query: string
+        @param query: The SimpleDB query to be performed.
+
+        @type attr_names: list
+        @param attr_names: The name of the attributes to be returned.
+                           If no attributes are specified, all attributes
+                           will be returned.
+
+        @type max_items: int
+        @param max_items: The maximum number of items to return.  If not
+                          supplied, the default is None which returns all
+                          items matching the query.
+
+        @rtype: ResultSet
+        @return: An iterator containing the results.
+        """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
+        params = {'DomainName':domain_name,
+                  'QueryExpression' : query}
+        if max_items:
+            params['MaxNumberOfItems'] = max_items
+        if next_token:
+            params['NextToken'] = next_token
+        if attr_names:
+            self.build_list_params(params, attr_names, 'AttributeName')
+        return self.get_list('QueryWithAttributes', params, [('Item', Item)])
 
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """

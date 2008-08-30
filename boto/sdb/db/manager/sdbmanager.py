@@ -179,7 +179,7 @@ class SDBManager(object):
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
-            yield self.get_object_from_id(item.name)
+            yield self.get_object(None, item.name, item)
             
     def encode_value(self, prop, value):
         return self.converter.encode_prop(prop, value)
@@ -192,8 +192,9 @@ class SDBManager(object):
             self.s3 = boto.connect_s3(self.aws_access_key_id, self.aws_secret_access_key)
         return self.s3
 
-    def get_object(self, cls, id):
-        a = self.domain.get_attributes(id)
+    def get_object(self, cls, id, a=None):
+        if not a:
+            a = self.domain.get_attributes(id)
         if not a.has_key('__type__'):
             raise SDBPersistenceError('object %s does not exist' % id)
         if not cls:

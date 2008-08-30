@@ -55,9 +55,30 @@ class Domain:
     def delete_attributes(self, item_name, attributes=None):
         return self.connection.delete_attributes(self, item_name, attributes)
 
-    def query(self, query='', max_items=None):
-        return iter(QueryResultSet(self, query, max_items))
+    def query(self, query='', max_items=None, attr_names=None):
+        """
+        Returns a list of items within domain that match the query.
+        
+        @type query: string
+        @param query: The SimpleDB query to be performed.
 
+        @type max_items: int
+        @param max_items: The maximum number of items to return.  If not
+                          supplied, the default is None which returns all
+                          items matching the query.
+
+        @type attr_names: list
+        @param attr_names: Either None, meaning return all attributes
+                           or a list of attribute names which means to return
+                           only those attributes.
+
+        @rtype: iter
+        @return: An iterator containing the results.  This is actually a generator
+                 function that will iterate across all search results, not just the
+                 first page.
+        """
+        return iter(QueryResultSet(self, query, max_items, attr_names))
+    
     def get_item(self, item_name):
         item = self.get_attributes(item_name)
         if item:
