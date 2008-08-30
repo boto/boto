@@ -96,7 +96,7 @@ class AWSAuthConnection:
         self.is_secure = is_secure
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
-        self.http_exceptions = (httplib.HTTPException, socket.error, socket.gaierror)
+        self.http_exceptions = [httplib.HTTPException, socket.error, socket.gaierror]
         # define values in socket exceptions we don't want to catch
         self.socket_exception_values = (errno.EINTR,)
         if https_connection_factory is not None:
