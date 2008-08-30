@@ -438,3 +438,6 @@ class Bucket:
         policy.acl.add_grant(g1)
         policy.acl.add_grant(g2)
         self.set_acl(policy)
+
+    def delete(self):
+        return self.connection.delete_bucket(self.name)
