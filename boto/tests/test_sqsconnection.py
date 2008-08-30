@@ -51,7 +51,7 @@ class SQSConnectionTest (unittest.TestCase):
         queue_name = 'test%d' % int(time.time())
         timeout = 60
         queue = c.create_queue(queue_name, timeout)
-        time.sleep(30)
+        time.sleep(60)
         rs  = c.get_all_queues()
         i = 0
         for q in rs:
@@ -77,7 +77,7 @@ class SQSConnectionTest (unittest.TestCase):
         # now change the visibility timeout
         timeout = 45
         queue.set_timeout(timeout)
-        time.sleep(30)
+        time.sleep(60)
         t = queue.get_timeout()
         assert t == timeout, '%d != %d' % (t, timeout)
     

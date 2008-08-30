@@ -33,13 +33,18 @@ class CopyBot(ScriptBase):
         boto.set_file_logger(self.name, self.log_path)
         self.src_name = boto.config.get(self.name, 'src_bucket')
         self.dst_name = boto.config.get(self.name, 'dst_bucket')
-        self.s3 = boto.connect_s3()
-        self.src = self.s3.lookup(self.src_name)
+        self.replace = boto.config.getbool(self.name, 'replace_dst', True)
+        s3 = boto.connect_s3()
+        self.src = s3.lookup(self.src_name)
         if not self.src:
             boto.log.error('Source bucket does not exist: %s' % self.src_name)
-        self.dst = self.s3.lookup(self.dst_name)
+        dest_access_key = boto.config.get(self.name, 'dest_aws_access_key_id', None)
+        if dest_access_key:
+            dest_secret_key = boto.config.get(self.name, 'dest_aws_secret_access_key', None)
+            s3 = boto.connect(dest_access_key, dest_secret_key)
+        self.dst = s3.lookup(self.dst_name)
         if not self.dst:
-            self.dst = self.s3.create_bucket(self.dst_name)
+            self.dst = s3.create_bucket(self.dst_name)
 
     def copy_bucket_acl(self):
         if boto.config.get(self.name, 'copy_acls', True):
@@ -56,6 +61,11 @@ class CopyBot(ScriptBase):
         boto.log.info('dst=%s' % self.dst.name)
         try:
             for key in self.src:
+                if not self.replace:
+                    exists = self.dst.lookup(key.name)
+                    if exists:
+                        boto.log.info('key=%s already exists in %s, skipping' % (key.name, self.dst.name))
+                        continue
                 boto.log.info('copying %d bytes from key=%s' % (key.size, key.name))
                 path = os.path.join(self.wdir, key.name)
                 key.get_contents_to_filename(path)
