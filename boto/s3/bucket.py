@@ -120,6 +120,7 @@ class Bucket:
             k.metadata = boto.utils.get_aws_metadata(response.msg)
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
+            k.content_encoding = response.getheader('content-encoding')
             k.last_modified = response.getheader('last-modified')
             k.size = int(response.getheader('content-length'))
             k.name = key_name

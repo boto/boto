@@ -19,16 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import urllib
-import socket
 import mimetypes
 import md5
 import os
 import rfc822
 import StringIO
-import time
 import base64
-import boto
 import boto.utils
 from boto.exception import S3ResponseError, S3DataError, BotoClientError
 from boto.s3.user import User
@@ -45,6 +41,7 @@ class Key:
         self.name = name
         self.metadata = {}
         self.content_type = self.DefaultContentType
+        self.content_encoding = None
         self.filename = None
         self.etag = None
         self.last_modified = None
@@ -103,6 +100,8 @@ class Key:
                     self.etag = value
                 elif name.lower() == 'content-type':
                     self.content_type = value
+                elif name.lower() == 'content-encoding':
+                    self.content_encoding = value
                 elif name.lower() == 'last-modified':
                     self.last_modified = value
 
@@ -301,7 +300,7 @@ class Key:
              
         """
         def sender(http_conn, method, path, data, headers):
-            http_conn.putrequest('PUT', path)
+            http_conn.putrequest(method, path)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
@@ -649,7 +648,7 @@ class Key:
                 modified_tuple = rfc822.parsedate_tz(self.last_modified)
                 modified_stamp = int(rfc822.mktime_tz(modified_tuple))
                 os.utime(fp.name, (modified_stamp, modified_stamp))
-            except Exception, e: pass
+            except Exception: pass
 
     def get_contents_as_string(self, headers=None, cb=None, num_cb=10, torrent=False):
         """
