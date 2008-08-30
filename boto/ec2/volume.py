@@ -60,7 +60,7 @@ class Volume:
         return self.connection.delete_volume(self.id)
 
     def detach(self):
-        return self.connection.detach_value(self.id, self.instance_id)
+        return self.connection.detach_volume(self.id, self.instance_id)
 
     def create_snapshot(self):
         return self.connection.create_snapshot(self.id)

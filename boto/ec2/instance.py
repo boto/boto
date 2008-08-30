@@ -80,6 +80,7 @@ class Instance:
         self.placement = None
         self.kernel = None
         self.ramdisk = None
+        self.product_codes = []
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -119,6 +120,8 @@ class Instance:
             self.kernel = value
         elif name == 'ramdiskId':
             self.ramdisk = value
+        elif name == 'productCode':
+            self.product_codes.append(value)
         else:
             setattr(self, name, value)
 
