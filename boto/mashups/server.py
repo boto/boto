@@ -216,7 +216,7 @@ class Server(Model):
                     instance_type = self.instance_type,
                     placement = self.zone,
                     user_data = cfg)
-        i = r.instances.next()
+        i = r.instances[0]
         self.instance_id = i.id
         if self.elastic_ip:
             ec2.associate_address(self.instance_id, self.elastic_ip)
