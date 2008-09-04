@@ -134,7 +134,7 @@ class AWSAuthConnection:
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
         # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(key=self.aws_secret_access_key, digestmod=sha)
+        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
 
         # cache up to 20 connections
         self._cache = boto.utils.LRUCache(20)
@@ -349,9 +349,7 @@ class AWSQueryConnection(AWSAuthConnection):
         qs = ''
         for key in keys:
             hmac.update(key)
-            val = params[key]
-            if not isinstance(val, str) and not isinstance(val, unicode):
-                val = str(val)
+            val = unicode(params[key]).encode('utf-8')
             hmac.update(val)
             qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
         return (qs, base64.b64encode(hmac.digest()))
