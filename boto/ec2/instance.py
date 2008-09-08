@@ -116,6 +116,8 @@ class Instance:
             self.launch_time = value
         elif name == 'availabilityZone':
             self.placement = value
+        elif name == 'placement':
+            pass
         elif name == 'kernelId':
             self.kernel = value
         elif name == 'ramdiskId':

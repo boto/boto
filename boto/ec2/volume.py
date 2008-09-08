@@ -59,6 +59,9 @@ class Volume:
     def delete(self):
         return self.connection.delete_volume(self.id)
 
+    def attach(self, instance_id, device):
+        return self.connection.delete_volume(self.id, instance_id, device)
+
     def detach(self):
         return self.connection.detach_volume(self.id, self.instance_id)
 

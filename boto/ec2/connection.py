@@ -301,9 +301,9 @@ class EC2Connection(AWSQueryConnection):
         if placement:
             params['Placement.AvailabilityZone'] = placement
         if kernel_id:
-            params['KernelId'] = placement
+            params['KernelId'] = kernel_id
         if ramdisk_id:
-            params['RamdiskId'] = placement
+            params['RamdiskId'] = ramdisk_id
         return self.get_object('RunInstances', params, Reservation)
         
     def terminate_instances(self, instance_ids=None):
