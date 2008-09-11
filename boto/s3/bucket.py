@@ -136,7 +136,7 @@ class Bucket:
             else:
                 raise S3ResponseError(response.status, response.reason, body)
 
-    def list(self, prefix="", delimiter=""):
+    def list(self, prefix='', delimiter='', marker=''):
         """
         List key objects within a bucket.  This returns an instance of an
         BucketListResultSet that automatically handles all of the result
@@ -157,19 +157,19 @@ class Bucket:
                         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
                         for more details.
                         
+        @type marker: string
+        @param marker: The "marker" of where you are in the result set
+        
         @rtype: L{BucketListResultSet<boto.s3.bucketlistresultset.BucketListResultSet>}
         @return: an instance of a BucketListResultSet that handles paging, etc
         """
-        return BucketListResultSet(self, prefix, delimiter)
+        return BucketListResultSet(self, prefix, delimiter, marker)
 
     def get_all_keys(self, headers=None, **params):
         """
-        Deprecated: This is better handled now by list method.
-        
-        params can be one of: prefix, marker, max-keys, delimiter
-        as defined in S3 Developer's Guide, however since max-keys is not
-        a legal variable in Python you have to pass maxkeys and this
-        method will munge it (Ugh!)
+        A lower-level method for listing contents of a bucket.  This closely models the actual S3
+        API and requires you to manually handle the paging of results.  For a higher-level method
+        that handles the details of paging for you, you can use the list method.
         
         @type maxkeys: int
         @param maxkeys: The maximum number of keys to retrieve

@@ -19,12 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-def bucket_lister(bucket, prefix='', delimiter=''):
+def bucket_lister(bucket, prefix='', delimiter='', marker=''):
     """
     A generator function for listing keys in a bucket.
     """
     more_results = True
-    marker = ''
     k = None
     while more_results:
         rs = bucket.get_all_keys(prefix=prefix, marker=marker,
@@ -44,12 +43,14 @@ class BucketListResultSet:
     keys in a reasonably efficient manner.
     """
 
-    def __init__(self, bucket=None, prefix='', delimiter=''):
+    def __init__(self, bucket=None, prefix='', delimiter='', marker=''):
         self.bucket = bucket
         self.prefix = prefix
         self.delimiter = delimiter
+        self.marker = marker
 
     def __iter__(self):
-        return bucket_lister(self.bucket, self.prefix, self.delimiter)
+        return bucket_lister(self.bucket, prefix=self.prefix,
+                             delimiter=self.delimiter, marker=self.marker)
 
     
