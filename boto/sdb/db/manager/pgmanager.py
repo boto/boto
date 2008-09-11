@@ -150,6 +150,7 @@ class PGManager(object):
             description = self.cursor.description
         d = self._dict_from_row(row, description)
         obj = self.cls(d['id'])
+        obj._manager = self
         obj._auto_update = False
         for prop in obj.properties(hidden=False):
             if prop.data_type != Key:
