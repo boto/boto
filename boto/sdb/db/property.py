@@ -185,7 +185,10 @@ class S3KeyProperty(Property):
     
     def get_value_for_datastore(self, model_instance):
         value = Property.get_value_for_datastore(self, model_instance)
-        return "s3://%s/%s" % (value.bucket.name, value.name)
+        if value:
+            return "s3://%s/%s" % (value.bucket.name, value.name)
+        else:
+            return None
 
 class IntegerProperty(Property):
 
@@ -393,4 +396,3 @@ class ListProperty(Property):
 
     def default_value(self):
         return list(super(ListProperty, self).default_value())
-
