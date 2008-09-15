@@ -88,7 +88,7 @@ class Server(Model):
         self._pkey = None
         self._config = None
 
-    name = StringProperty()
+    name = StringProperty(unique=True)
     instance_id = StringProperty()
     config_uri = StringProperty()
     ami_id = StringProperty()
