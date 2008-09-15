@@ -247,6 +247,7 @@ class SDBManager(object):
         obj._auto_update = False
         if not obj.id:
             obj.id = str(uuid.uuid4())
+
         attrs = {'__type__' : obj.__class__.__name__,
                  '__module__' : obj.__class__.__module__,
                  '__lineage__' : obj.get_lineage()}
@@ -255,6 +256,13 @@ class SDBManager(object):
             if value is not None:
                 value = self.encode_value(property, value)
                 attrs[property.name] = value
+            if property.unique:
+                try:
+                    args = {property.name: value}
+                    obj.find(**args).next()
+                    raise SDBPersistenceError("Error: %s must be unique!" % property.name)
+                except(StopIteration):
+                    pass
         self.domain.put_attributes(obj.id, attrs, replace=True)
         obj._auto_update = True
 
@@ -264,6 +272,13 @@ class SDBManager(object):
     def set_property(self, prop, obj, name, value):
         value = prop.get_value_for_datastore(obj)
         value = self.encode_value(prop, value)
+        if prop.unique:
+            try:
+                args = {prop.name: value}
+                obj.find(**args).next()
+                raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
+            except(StopIteration):
+                pass
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
     def get_property(self, prop, obj, name):

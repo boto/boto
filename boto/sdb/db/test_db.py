@@ -3,6 +3,7 @@ from boto.sdb.db.property import *
 from boto.sdb.db.manager import get_manager
 from datetime import datetime
 import time
+from boto.exception import SDBPersistenceError
 
 _objects = {}
 
@@ -47,6 +48,9 @@ class TestAutoNow(Model):
 
     create_date = DateTimeProperty(auto_now_add=True)
     modified_date = DateTimeProperty(auto_now=True)
+
+class TestUnique(Model):
+    name = StringProperty(unique=True)
 
 def test_basic():
     global _objects
@@ -142,6 +146,21 @@ def test_list_reference():
     _objects['test_list_ref_tt'] = tt
     ttt = TestListReference.get_by_ids(tt.id)
     assert ttt.basics[0].id == t.id
+
+def test_unique():
+    global _objects
+    t = TestUnique()
+    t.name = "foo"
+    t.put()
+    _objects['test_unique_t'] = t
+    tt = TestUnique()
+    _objects['test_unique_tt'] = tt
+    tt.name = "foo"
+    try:
+        tt.put()
+        assert False
+    except(SDBPersistenceError):
+        pass
 
 
 def test():
