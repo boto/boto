@@ -259,8 +259,9 @@ class SDBManager(object):
             if property.unique:
                 try:
                     args = {property.name: value}
-                    obj.find(**args).next()
-                    raise SDBPersistenceError("Error: %s must be unique!" % property.name)
+                    obj2 = obj.find(**args).next()
+                    if obj2.id != obj.id:
+                        raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
                     pass
         self.domain.put_attributes(obj.id, attrs, replace=True)
@@ -275,8 +276,9 @@ class SDBManager(object):
         if prop.unique:
             try:
                 args = {prop.name: value}
-                obj.find(**args).next()
-                raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
+                obj2 = obj.find(**args).next()
+                if obj2.id != obj.id:
+                    raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
             except(StopIteration):
                 pass
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
