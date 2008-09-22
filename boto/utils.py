@@ -47,6 +47,7 @@ import time, datetime
 import logging.handlers
 import boto
 import tempfile
+import smtplib
 try:
     import hashlib
     _hashfn = hashlib.sha512
@@ -455,3 +456,24 @@ class Password:
 
     def __len__(self):
         return len(self.str)
+
+def notify(subject, body=''):
+    to_string = boto.config.get_value('Notification', 'smtp_to', None)
+    if to_string:
+        try:
+            from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
+            msg = "From: %s\n" % from_string
+            msg += "To: %s\n" % to_string
+            msg += "Subject: %s\n\n" % subject
+            msg += body
+            smtp_host = boto.config.get_value('Notification', 'smtp_host', 'localhost')
+            server = smtplib.SMTP(smtp_host)
+            smtp_user = boto.config.get_value('Notification', 'smtp_user', '')
+            smtp_pass = boto.config.get_value('Notification', 'smtp_pass', '')
+            if smtp_user:
+                server.login(smtp_user, smtp_pass)
+            server.sendmail(from_string, to_string, msg)
+            server.quit()
+        except:
+            boto.log.error('notify failed')
+
