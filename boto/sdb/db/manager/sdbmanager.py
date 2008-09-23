@@ -227,7 +227,7 @@ class SDBManager(object):
                     value = self.encode_value(property, value)
                     parts.append("['%s' %s '%s']" % (name, op, value))
             if not found:
-                raise SDBPersistenceError('%s is not a valid field' % key)
+                raise SDBPersistenceError('%s is not a valid field' % name)
         if order_by:
             if order_by.startswith("-"):
                 key = order_by[1:]
