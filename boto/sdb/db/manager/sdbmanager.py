@@ -49,15 +49,15 @@ class SDBConverter:
                           Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime)}
 
-    def encode(self, type, value):
-        if type in self.type_map:
-            encode = self.type_map[type][0]
+    def encode(self, item_type, value):
+        if item_type in self.type_map:
+            encode = self.type_map[item_type][0]
             return encode(value)
         return value
 
-    def decode(self, type, value):
-        if type in self.type_map:
-            decode = self.type_map[type][1]
+    def decode(self, item_type, value):
+        if item_type in self.type_map:
+            decode = self.type_map[item_type][1]
             return decode(value)
         return value
 
@@ -214,6 +214,7 @@ class SDBManager(object):
         return self.get_object(None, id)
 
     def query(self, cls, filters, limit=None, order_by=None):
+        import types
         if len(filters) > 4:
             raise SDBPersistenceError('Too many filters, max is 4')
         parts = ["['__lineage__'starts-with'%s']" % (cls.get_lineage())]
@@ -224,8 +225,15 @@ class SDBManager(object):
             for property in properties:
                 if property.name == name:
                     found = True
-                    value = self.encode_value(property, value)
-                    parts.append("['%s' %s '%s']" % (name, op, value))
+                    if types.TypeType(value) == types.ListType:
+                        filter_parts = []
+                        for val in value:
+                            val = self.encode_value(property, val)
+                            filter_parts.append("'%s' %s '%s'" % (name, op, val))
+                        parts.append("[%s]" % " OR ".join(filter_parts))
+                    else:
+                        value = self.encode_value(property, value)
+                        parts.append("['%s' %s '%s']" % (name, op, value))
             if not found:
                 raise SDBPersistenceError('%s is not a valid field' % name)
         if order_by:
