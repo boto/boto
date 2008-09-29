@@ -338,7 +338,7 @@ class AWSQueryConnection(AWSAuthConnection):
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         qs = ''
         for key in keys:
-            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
+            qs += key + '=' + urllib.quote(unicode(params[key], 'utf-8')) + '&'
         return (qs, base64.b64encode(hmac.digest()))
 
     def calc_signature_1(self, params):
@@ -349,9 +349,9 @@ class AWSQueryConnection(AWSAuthConnection):
         qs = ''
         for key in keys:
             hmac.update(key)
-            val = unicode(params[key]).encode('utf-8')
+            val = unicode(params[key], 'utf-8')
             hmac.update(val)
-            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
+            qs += key + '=' + urllib.quote(unicode(params[key], 'utf-8')) + '&'
         return (qs, base64.b64encode(hmac.digest()))
 
     def get_signature(self, params):
