@@ -100,6 +100,7 @@ class SDBConverter:
             return self.decode(prop.data_type, value)
 
     def encode_int(self, value):
+        value = int(value)
         value += 2147483648
         return '%010d' % value
 
@@ -109,6 +110,7 @@ class SDBConverter:
         return int(value)
 
     def encode_long(self, value):
+        value = long(value)
         value += 9223372036854775808
         return '%020d' % value
 
