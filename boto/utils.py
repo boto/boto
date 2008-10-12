@@ -39,7 +39,6 @@ Some handy utility functions used by several classes.
 import base64
 import hmac
 import re
-import sha
 import urllib, urllib2
 import imp
 import popen2, os, StringIO
@@ -109,7 +108,10 @@ def canonical_string(method, path, headers, expires=None):
 def merge_meta(headers, metadata):
     final_headers = headers.copy()
     for k in metadata.keys():
-        final_headers[METADATA_PREFIX + k] = metadata[k]
+        if k.lower() in ['content-md5', 'content-type', 'date']:
+            final_headers[k] = metadata[k]
+        else:
+            final_headers[METADATA_PREFIX + k] = metadata[k]
 
     return final_headers
 
