@@ -114,6 +114,21 @@ class Model(object):
                 cls = None
         return properties
 
+    @classmethod
+    def find_property(cls, prop_name):
+        property = None
+        while cls:
+            for key in cls.__dict__.keys():
+                prop = cls.__dict__[key]
+                if isinstance(prop, Property):
+                    if prop_name == prop.name:
+                        property = prop
+            if len(cls.__bases__) > 0:
+                cls = cls.__bases__[0]
+            else:
+                cls = None
+        return property
+
     def __init__(self, id=None, **kw):
         if kw.has_key('manager'):
             self._manager = kw['manager']
