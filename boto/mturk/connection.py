@@ -119,7 +119,7 @@ class MTurkConnection(AWSQueryConnection):
     def create_hit(self, hit_type=None, question=None, lifetime=60*60*24*7, max_assignments=1, 
                    title=None, description=None, keywords=None, reward=None,
                    duration=60*60*24*7, approval_delay=None, annotation=None, qual_req=None, 
-                   questions=None, response_groups=None):
+                   questions=None, qualifications=None, response_groups=None):
         """
         Creates a new HIT.
         Returns a ResultSet
@@ -167,6 +167,10 @@ class MTurkConnection(AWSQueryConnection):
         if annotation is not None:
             params['RequesterAnnotation'] = annotation
                
+        # Add the Qualifications if specified
+        if qualifications is not None:
+            params.update(qualifications.get_as_params())
+
         # Handle optional response groups argument
         if response_groups:
             self.build_list_params(params, response_groups, 'ResponseGroup')
