@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 import mimetypes
-import md5
+import hashlib
 import os
 import rfc822
 import StringIO
@@ -253,7 +253,7 @@ class Key:
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def generate_url(self, expires_in, method='GET', headers=None, query_auth=True):
+    def generate_url(self, expires_in, method='GET', headers=None, query_auth=True, force_http=False):
         """
         Generate a URL to access this key.
         
@@ -274,7 +274,7 @@ class Key:
         """
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
-                                                   headers, query_auth)
+                                                   headers, query_auth, force_http)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10):
         """
@@ -371,7 +371,7 @@ class Key:
         @rtype: string
         @return: MD5 Hash of the file in fp
         """
-        m = md5.new()
+        m = hashlib.md5()
         s = fp.read(self.BufferSize)
         while s:
             m.update(s)

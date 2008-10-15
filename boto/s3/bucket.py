@@ -223,8 +223,9 @@ class Bucket:
         """
         return self.key_class(self, key_name)
 
-    def generate_url(self, expires_in, method='GET', headers=None):
-        return self.connection.generate_url(expires_in, method, self.name, headers=headers)
+    def generate_url(self, expires_in, method='GET', headers=None, force_http=False):
+        return self.connection.generate_url(expires_in, method, self.name, headers=headers,
+                                            force_http=force_http)
 
     def delete_key(self, key_name):
         """

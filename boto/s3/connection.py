@@ -182,7 +182,7 @@ class S3Connection(AWSAuthConnection):
 
 
     def generate_url(self, expires_in, method, bucket='', key='',
-                     headers=None, query_auth=True):
+                     headers=None, query_auth=True, force_http=False):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
@@ -199,8 +199,14 @@ class S3Connection(AWSAuthConnection):
                                              self.aws_access_key_id)
         else:
             query_part = ''
-        return self.calling_format.build_url_base(self.protocol,
-                self.server_name, bucket, key) + query_part
+        if force_http:
+            protocol = 'http'
+            server_name = self.server
+        else:
+            protocol = self.protocol
+            server_name = self.server_name
+        return self.calling_format.build_url_base(protocol,
+                server_name, bucket, key) + query_part
 
     def get_all_buckets(self):
         response = self.make_request('GET')
