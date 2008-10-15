@@ -24,7 +24,6 @@ import datetime
 
 from boto import handler
 from boto.mturk.price import Price
-from boto.mturk.question import QuestionForm
 import boto.mturk.notification
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
@@ -133,11 +132,9 @@ class MTurkConnection(AWSQueryConnection):
         if question is not None and questions is None:
             questions = [question]
         
-        # Set up QuestionForm data structure
-        qf = QuestionForm(questions=questions)
         
         # Handle basic required arguments and set up params dict
-        params = {'Question': qf.get_as_xml(),
+        params = {'Question': question.get_as_xml(),
                   'LifetimeInSeconds' : lifetime,
                   'MaxAssignments' : max_assignments,
                   }

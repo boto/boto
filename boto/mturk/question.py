@@ -52,6 +52,26 @@ class Question(object):
 
         return ret
 
+class ExternalQuestion(object):
+    
+    EXTERNAL_QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd"
+    EXTERNAL_QUESTION_XML_TEMPLATE = """<ExternalQuestion xmlns="%s"><ExternalURL>%s</ExternalURL><FrameHeight>%s</FrameHeight></ExternalQuestion>"""
+    
+    def __init__(self, external_url, frame_height):
+        self.external_url = external_url
+        self.frame_height = frame_height
+    
+    def get_as_params(self, label='ExternalQuestion'):
+        return { label : self.get_as_xml() }
+    
+    def get_as_xml(self):
+        ret = ExternalQuestion.EXTERNAL_QUESTION_XML_TEMPLATE % (ExternalQuestion.EXTERNAL_QUESTIONFORM_SCHEMA_LOCATION,
+                                                self.external_url,
+                                                self.frame_height)
+        return ret
+
+
+
 class QuestionForm(object):
     
     QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
