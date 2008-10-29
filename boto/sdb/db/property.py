@@ -340,16 +340,19 @@ class CalculatedProperty(Property):
 
     def __init__(self, verbose_name=None, name=None, default=None,
                  required=False, validator=None, choices=None,
-                 calculated_type=int, unique=False):
+                 calculated_type=int, unique=False, use_method=False):
         Property.__init__(self, verbose_name, name, default, required,
                           validator, choices, unique)
         self.calculated_type = calculated_type
+        self.use_method = use_method
         
     def __get__(self, obj, objtype):
         value = self.default_value()
         if obj:
             try:
                 value = getattr(obj, self.slot_name)
+                if self.use_method:
+                    value = value()
             except AttributeError:
                 pass
         return value
@@ -359,7 +362,11 @@ class CalculatedProperty(Property):
         pass
 
     def _set_direct(self, obj, value):
-        setattr(obj, self.slot_name, value)
+        if not self.use_method:
+            setattr(obj, self.slot_name, value)
+
+    def get_value_for_datastore(self, model_instance):
+        return None
 
 class ListProperty(Property):
     
