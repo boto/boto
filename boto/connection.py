@@ -41,7 +41,7 @@ import hmac
 import httplib
 import socket, errno
 import re
-import sha
+import hashlib
 import sys
 import time
 import urllib, urlparse
@@ -134,7 +134,7 @@ class AWSAuthConnection:
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
         # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
+        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=hashlib.sha1)
 
         # cache up to 20 connections
         self._cache = boto.utils.LRUCache(20)
@@ -248,6 +248,11 @@ class AWSAuthConnection:
                     connection.request(method, path, data, headers)
                     response = connection.getresponse()
                 location = response.getheader('location')
+                # -- gross hack --
+                # httplib gets confused with chunked responses to HEAD requests
+                # so I have to fake it out
+                if method == 'HEAD' and response.chunked:
+                    response.chunked = 0
                 if response.status == 500 or response.status == 503:
                     boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2**i))
                     body = response.read()
@@ -329,6 +334,14 @@ class AWSQueryConnection(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                    debug,  https_connection_factory)
 
+    def get_utf8_value(self, value):
+        if not isinstance(value, str) and not isinstance(value, unicode):
+            value = str(value)
+        if isinstance(value, unicode):
+            return value.encode('utf-8')
+        else:
+            return unicode(value, encoding='utf-8')
+
     def calc_signature_0(self, params):
         boto.log.debug('using calc_signature_0')
         hmac = self.hmac.copy()
@@ -338,7 +351,8 @@ class AWSQueryConnection(AWSAuthConnection):
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         qs = ''
         for key in keys:
-            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
+            val = self.get_utf8_value(params[key])
+            qs += key + '=' + urllib.quote(val) + '&'
         return (qs, base64.b64encode(hmac.digest()))
 
     def calc_signature_1(self, params):
@@ -349,9 +363,9 @@ class AWSQueryConnection(AWSAuthConnection):
         qs = ''
         for key in keys:
             hmac.update(key)
-            val = unicode(params[key]).encode('utf-8')
+            val = self.get_utf8_value(params[key])
             hmac.update(val)
-            qs += key + '=' + urllib.quote(unicode(params[key]).encode('utf-8')) + '&'
+            qs += key + '=' + urllib.quote(val) + '&'
         return (qs, base64.b64encode(hmac.digest()))
 
     def get_signature(self, params):

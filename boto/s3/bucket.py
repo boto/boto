@@ -114,10 +114,6 @@ class Bucket:
         @returns: A Key object from this bucket.
         """
         response = self.connection.make_request('HEAD', self.name, key_name)
-        # -- gross hack --
-        # httplib gets confused with chunked responses to HEAD requests
-        # so I have to fake it out
-        response.chunked = 0
         if response.status == 200:
             body = response.read()
             k = self.key_class(self)
@@ -130,8 +126,8 @@ class Bucket:
             k.name = key_name
             return k
         else:
-            body = response.read()
             if response.status == 404:
+                body = response.read()
                 return None
             else:
                 raise S3ResponseError(response.status, response.reason, body)
