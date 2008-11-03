@@ -130,7 +130,7 @@ class Bucket:
                 body = response.read()
                 return None
             else:
-                raise S3ResponseError(response.status, response.reason, body)
+                raise S3ResponseError(response.status, response.reason, '')
 
     def list(self, prefix='', delimiter='', marker=''):
         """
@@ -189,7 +189,8 @@ class Bucket:
                 k = 'max-keys'
             if isinstance(v, unicode):
                 v = v.encode('utf-8')
-            l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
+            if v:
+                l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
         if len(l):
             s = '&'.join(l)
         else:
