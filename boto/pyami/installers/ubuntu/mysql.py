@@ -45,8 +45,8 @@ class MySQL(Installer):
         # or bad things will happen
         while self.run("echo 'quit' | mysql -u root") != 0:
             time.sleep(5)
-        if self.run('/etc/init.d/mysql stop') != 0:
-            self.run("killall -9 mysql")
+        self.run('/etc/init.d/mysql stop')
+        self.run("pkill -9 mysql")
 
         if not os.path.exists('/mnt/mysql'):
             self.run('mkdir /mnt/mysql')
