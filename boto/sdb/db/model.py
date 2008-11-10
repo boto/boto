@@ -140,6 +140,9 @@ class Model(object):
 
     def __str__(self):
         return str(self.id)
+    
+    def __eq__(self, other):
+        return other and isinstance(other, Model) and self.id == other.id
 
     def _get_raw_item(self):
         return self._manager.get_raw_item(self)
