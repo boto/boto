@@ -27,11 +27,15 @@ import boto
 
 class ModelMeta(type):
     "Metaclass for all Models"
+
     def __init__(cls, name, bases, dict):
         super(ModelMeta, cls).__init__(name, bases, dict)
         # Make sure this is a subclass of Model - mainly copied from django ModelBase (thanks!)
+        cls.__sub_classes__ = []
         try:
             if filter(lambda b: issubclass(b, Model), bases):
+                for base in bases:
+                    base.__sub_classes__.append(cls)
                 cls._manager = get_manager(cls)
                 # look for all of the Properties and set their names
                 for key in dict.keys():

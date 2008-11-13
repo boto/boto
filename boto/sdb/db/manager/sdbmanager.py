@@ -219,7 +219,11 @@ class SDBManager(object):
         import types
         if len(filters) > 4:
             raise SDBPersistenceError('Too many filters, max is 4')
-        parts = ["['__lineage__'starts-with'%s']" % (cls.get_lineage())]
+        s = "['__type__'='%s'" % cls.__name__
+        for subclass in cls.__sub_classes__:
+            s += " OR '__type__'='%s'" % subclass.__name__
+        s += "]"
+        parts = [s]
         properties = cls.properties(hidden=False)
         for filter, value in filters:
             name, op = filter.strip().split()
