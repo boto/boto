@@ -177,12 +177,15 @@ def find_class(module_name, class_name=None):
     path = None
     c = None
 
-    for m in modules[1:]:
-        if c:
-            c = getattr(c, m)
-        else:
-            c = getattr(__import__(".".join(modules[0:-1])), m)
-    return c
+    try:
+        for m in modules[1:]:
+            if c:
+                c = getattr(c, m)
+            else:
+                c = getattr(__import__(".".join(modules[0:-1])), m)
+        return c
+    except:
+        return None
     
 def update_dme(username, password, dme_id, ip_address):
     """
@@ -437,7 +440,7 @@ class LRUCache(dict):
         item.next = self.head
         self.head.previous = self.head = item
 
-class Password:
+class Password(object):
     """
     Password object that stores itself as SHA512 hashed.
     """
@@ -460,6 +463,7 @@ class Password:
         return len(self.str)
 
 def notify(subject, body=''):
+    subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
     to_string = boto.config.get_value('Notification', 'smtp_to', None)
     if to_string:
         try:
