@@ -21,6 +21,7 @@
 #
 import boto.pyami.installers
 import os
+import os.path
 import boto
 from pwd import getpwnam
 
@@ -53,9 +54,10 @@ class Installer(boto.pyami.installers.Installer):
         not need to be exported.
         """
         boto.log.info('Adding env variable: %s=%s' % (key, value))
-        self.run('cp /etc/environment /etc/environment.orig', notify=False, exit_on_error=False)
+        if not os.path.exists("/etc/environment.orig"):
+            self.run('cp /etc/environment /etc/environment.orig', notify=False, exit_on_error=False)
         fp = open('/etc/environment', 'a')
-        fp.write('\n%s=%s' % (key, value))
+        fp.write('\n%s="%s"' % (key, value))
         fp.close()
         os.environ[key] = value
 
