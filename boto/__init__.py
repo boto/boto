@@ -24,7 +24,7 @@ import os, sys
 import logging
 import logging.config
 
-Version = '1.5a'
+Version = '1.5b'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
 
@@ -121,6 +121,20 @@ def connect_fps(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     from boto.fps.connection import FPSConnection
     return FPSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+def connect_cloudfront(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    @type aws_access_key_id: string
+    @param aws_access_key_id: Your AWS Access Key ID
+    
+    @type aws_secret_access_key: string
+    @param aws_secret_access_key: Your AWS Secret Access Key
+    
+    @rtype: L{FPSConnection<boto.fps.connection.FPSConnection>}
+    @return: A connection to FPS
+    """
+    from boto.cloudfront import CloudFrontConnection
+    return CloudFrontConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def check_extensions(module_name, module_path):
     """

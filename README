@@ -1,4 +1,4 @@
-boto 1.5a
+boto 1.5b
 18-Nov-2008
 
 Copyright (c) 2006-2008 Mitch Garnaat <mitch@garnaat.org>
@@ -13,6 +13,7 @@ At the moment, boto supports:
  * EC2 (Elastic Compute Cloud) via the Query API
  * Mechanical Turk via the Query API
  * SimpleDB via the Query API.
+ * CloudFront via the REST API
 
 The intent is to support additional services in the future.
 
