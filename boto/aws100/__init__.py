@@ -26,11 +26,11 @@ import time
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
-from boto.aws100.distribution import Distribution, DistributionConfig, DistributionSummary
+from boto.cloudfront.distribution import Distribution, DistributionConfig, DistributionSummary
 from boto.resultset import ResultSet
-from boto.aws100.exception import AWS100ServerError
+from boto.cloudfront.exception import CloudFrontServerError
 
-class AWS100Connection(AWSAuthConnection):
+class CloudFrontConnection(AWSAuthConnection):
 
     DefaultHost = 'cloudfront.amazonaws.com'
     Version = '2008-06-30'
@@ -46,7 +46,7 @@ class AWS100Connection(AWSAuthConnection):
         response = self.make_request('GET', '/%s/distribution' % self.Version)
         body = response.read()
         if response.status >= 300:
-            raise AWS100ServerError(response.status, response.reason, body)
+            raise CloudFrontServerError(response.status, response.reason, body)
         rs = ResultSet([('DistributionSummary', DistributionSummary)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
@@ -56,7 +56,7 @@ class AWS100Connection(AWSAuthConnection):
         response = self.make_request('GET', '/%s/distribution/%s' % (self.Version, distribution_id))
         body = response.read()
         if response.status >= 300:
-            raise AWS100ServerError(response.status, response.reason, body)
+            raise CloudFrontServerError(response.status, response.reason, body)
         d = Distribution(connection=self)
         response_headers = response.msg
         for key in response_headers.keys():
@@ -70,7 +70,7 @@ class AWS100Connection(AWSAuthConnection):
         response = self.make_request('GET', '/%s/distribution/%s/config' % (self.Version, distribution_id))
         body = response.read()
         if response.status >= 300:
-            raise AWS100ServerError(response.status, response.reason, body)
+            raise CloudFrontServerError(response.status, response.reason, body)
         d = DistributionConfig(connection=self)
         response_headers = response.msg
         for key in response_headers.keys():
@@ -85,7 +85,7 @@ class AWS100Connection(AWSAuthConnection):
                                      {'If-Match' : etag, 'Content-Type' : 'text/xml'}, config.to_xml())
         body = response.read()
         if response.status != 200:
-            raise AWS100ServerError(response.status, response.reason, body)
+            raise CloudFrontServerError(response.status, response.reason, body)
     
     def create_distribution(self, origin, enabled, caller_reference='', cnames=None, comment=''):
         config = DistributionConfig(origin=origin, enabled=enabled,
@@ -100,14 +100,14 @@ class AWS100Connection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return d
         else:
-            raise AWS100ServerError(response.status, response.reason, body)
+            raise CloudFrontServerError(response.status, response.reason, body)
         
     def delete_distribution(self, distribution_id, etag):
         response = self.make_request('DELETE', '/%s/distribution/%s' % (self.Version, distribution_id),
                                      {'If-Match' : etag})
         body = response.read()
         if response.status != 204:
-            raise AWS100ServerError(response.status, response.reason, body)
+            raise CloudFrontServerError(response.status, response.reason, body)
 
     def add_aws_auth_header(self, headers, method, path):
         if not headers.has_key('Date'):

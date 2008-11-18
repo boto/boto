@@ -1,7 +1,7 @@
-A Crash Course in AWS100 in Boto
+A Crash Course in CloudFront in Boto
 --------------------------------
 
-This new boto module provides an interface to Amazon's new Content Service, AWS100.
+This new boto module provides an interface to Amazon's new Content Service, CloudFront.
 
 Caveats:
 
@@ -9,12 +9,12 @@ This module is not well tested.  Paging of distributions is not yet
 supported.  CNAME support is completely untested.  Use with caution.
 Feedback and bug reports are greatly appreciated.
 
-The following shows the main features of the aws100 module from an interactive shell:
+The following shows the main features of the cloudfront module from an interactive shell:
 
-Create an AWS100 connection:
+Create an cloudfront connection:
 
->>> from boto.aws100 import AWS100Connection
->>> c = AWS100Connection()
+>>> from boto.cloudfront import CloudFrontConnection
+>>> c = CloudFrontConnection()
 
 Create a new Distribution:
 
@@ -41,8 +41,8 @@ To get a listing of all current distributions:
 
 >>> rs = c.get_all_distributions()
 >>> rs
-[<boto.aws100.distribution.DistributionSummary instance at 0xe8d4e0>,
- <boto.aws100.distribution.DistributionSummary instance at 0xe8d788>]
+[<boto.cloudfront.distribution.DistributionSummary instance at 0xe8d4e0>,
+ <boto.cloudfront.distribution.DistributionSummary instance at 0xe8d788>]
 
 This returns a list of DistributionSummary objects.  Note that paging
 is not yet supported!  To get a DistributionObject from a

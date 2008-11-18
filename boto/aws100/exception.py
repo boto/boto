@@ -21,6 +21,6 @@
 
 from boto.exception import BotoServerError
 
-class AWS100ServerError(BotoServerError):
+class CloudFrontServerError(BotoServerError):
 
     pass
