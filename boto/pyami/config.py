@@ -25,6 +25,7 @@ import boto
 
 BotoConfigLocations = ['/etc/boto.cfg', os.path.expanduser('~/.boto')]
 BotoConfigPath = BotoConfigLocations[0]
+UserConfigPath = BotoConfigLocations[1]
 
 class Config(ConfigParser.SafeConfigParser):
 
@@ -58,7 +59,7 @@ class Config(ConfigParser.SafeConfigParser):
         self.set(section, option, value)
 
     def save_user_option(self, section, option, value):
-        self.save_option(os.path.expanduser(UserConfigPath), section, option, value)
+        self.save_option(UserConfigPath, section, option, value)
 
     def save_system_option(self, section, option, value):
         self.save_option(BotoConfigPath, section, option, value)
