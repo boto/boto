@@ -272,8 +272,8 @@ class Server(Model):
         sftp_client = ssh_client.open_sftp()
         return sftp_client.listdir(remotepath)
 
-    def shell(self):
-        ssh_client = self.get_ssh_client()
+    def shell(self, key_file=None):
+        ssh_client = self.get_ssh_client(key_file)
         channel = ssh_client.invoke_shell()
         interactive_shell(channel)
 
