@@ -88,16 +88,17 @@ class Server(Model):
         self._pkey = None
         self._config = None
 
-    name = StringProperty(unique=True)
-    instance_id = StringProperty()
+    name = StringProperty(unique=True, verbose_name="Name")
+    instance_id = StringProperty(verbose_name="Instance ID")
     config_uri = StringProperty()
-    ami_id = StringProperty()
-    zone = StringProperty()
-    security_group = StringProperty()
-    key_name = StringProperty()
-    elastic_ip = StringProperty()
-    instance_type = StringProperty()
-    description = StringProperty()
+    ami_id = StringProperty(verbose_name="AMI ID")
+    zone = StringProperty(verbose_name="Availability Zone")
+    security_group = StringProperty(verbose_name="Security Group", default="default")
+    key_name = StringProperty(verbose_name="Key Name")
+    elastic_ip = StringProperty(verbose_name="Elastic IP")
+    instance_type = StringProperty(verbose_name="Instance Type")
+    description = StringProperty(verbose_name="Description")
+    log = StringProperty()
 
     def setReadOnly(self, value):
         raise AttributeError
@@ -183,6 +184,17 @@ class Server(Model):
     config = property(getConfig, setConfig, None,
                       'The instance data for this server')
 
+    def set_config(self, config):
+        """
+        Set SDB based config
+        """
+        self._config = config
+        self._config.dump_to_sdb("botoConfigs", self.id)
+
+    def load_config(self):
+        self._config = Config(do_load=False)
+        self._config.load_from_sdb("botoConfigs", self.id)
+
     def stop(self):
         if self.instance:
             self.instance.stop()
@@ -193,7 +205,7 @@ class Server(Model):
         ami = ec2.get_all_images(image_ids = [str(self.ami_id)])[0]
         groups = ec2.get_all_security_groups(groupnames=[str(self.security_group)])
         if not self._config:
-            self._config = Config(fp=boto.utils.fetch_file(self.config_uri))
+            self.load_config()
         if not self._config.has_section("Credentials"):
             self._config.add_section("Credentials")
             self._config.set("Credentials", "aws_access_key_id", ec2.aws_access_key_id)
@@ -218,6 +230,7 @@ class Server(Model):
                     user_data = cfg)
         i = r.instances[0]
         self.instance_id = i.id
+        self.put()
         if self.elastic_ip:
             ec2.associate_address(self.instance_id, self.elastic_ip)
 
@@ -370,5 +383,3 @@ class Server(Model):
         print '\t%s' % response
         print '\t%s' % t[2].read()
         print '...complete!'
-
-    
