@@ -114,9 +114,9 @@ class DistributionConfig:
             self.comment = value
         elif name == 'Enabled':
             if value.lower == 'true':
-                self.status = True
+                self.enabled = True
             else:
-                self.status = False
+                self.enabled = False
         elif name == 'CallerReference':
             self.caller_reference = value
         else:
@@ -159,9 +159,9 @@ class DistributionSummary:
             self.comment = value
         elif name == 'Enabled':
             if value.lower == 'true':
-                self.status = True
+                self.enabled = True
             else:
-                self.status = False
+                self.enabled = False
         else:
             setattr(self, name, value)
 
