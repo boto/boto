@@ -65,6 +65,13 @@ class CloudFrontConnection(AWSAuthConnection):
         h = handler.XmlHandler(d, self)
         xml.sax.parseString(body, h)
         return d
+
+    def get_etag(self, response):
+        response_headers = response.msg
+        for key in response_headers.keys():
+            if key.lower() == 'etag':
+                return response_headers[key]
+        return None
     
     def get_distribution_config(self, distribution_id):
         response = self.make_request('GET', '/%s/distribution/%s/config' % (self.Version, distribution_id))
@@ -72,10 +79,7 @@ class CloudFrontConnection(AWSAuthConnection):
         if response.status >= 300:
             raise CloudFrontServerError(response.status, response.reason, body)
         d = DistributionConfig(connection=self)
-        response_headers = response.msg
-        for key in response_headers.keys():
-            if key.lower() == 'etag':
-                d.etag = response_headers[key]
+        d.etag = self.get_etag(response)
         h = handler.XmlHandler(d, self)
         xml.sax.parseString(body, h)
         return d
@@ -84,6 +88,7 @@ class CloudFrontConnection(AWSAuthConnection):
         response = self.make_request('PUT', '/%s/distribution/%s/config' % (self.Version, distribution_id),
                                      {'If-Match' : etag, 'Content-Type' : 'text/xml'}, config.to_xml())
         body = response.read()
+        return self.get_etag(response)
         if response.status != 200:
             raise CloudFrontServerError(response.status, response.reason, body)
     
