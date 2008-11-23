@@ -65,6 +65,12 @@ class Distribution:
         self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
 
+    def enable(self):
+        self.update(enabled=True)
+
+    def disable(self):
+        self.update(enabled=False)
+
     def delete(self):
         self.connection.delete_distribution(self.id, self.etag)
             

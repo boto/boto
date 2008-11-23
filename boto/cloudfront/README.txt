@@ -31,6 +31,8 @@ u'My new distribution'
 u'mybucket.s3.amazonaws.com'
 >>> d.config.caller_reference
 u'31b8d9cf-a623-4a28-b062-a91856fac6d0'
+>>> d.config.enabled
+False
 
 Note that a new caller reference is created automatically, using
 uuid.uuid4().  The Distribution, DistributionConfig and
@@ -60,6 +62,15 @@ u'My new distribution'
 >>> distro.update(comment='This is a much better comment')
 >>> distro.comment
 'This is a much better comment'
+
+You can also enable/disable a distribution using the following
+convenience methods:
+
+>>> distro.enable()  # just calls distro.update(enabled=True)
+
+or 
+
+>>> distro.disable()  # just calls distro.update(enabled=False)
 
 The only attributes that can be updated for a Distribution are
 comment, enabled and cnames.
