@@ -94,12 +94,12 @@ class IntegerChecker(ValueChecker):
 
     __sizes__ = { 'small' : (65535, 32767, -32768, 5),
                   'medium' : (4294967295, 2147483647, -2147483648, 10),
-                  'Large' : (18446744073709551615, 9223372036854775807, -9223372036854775808, 20)}
+                  'large' : (18446744073709551615, 9223372036854775807, -9223372036854775808, 20)}
 
     def __init__(self, **params):
         self.size = params.get('size', 'medium')
         if self.size not in self.__sizes__.keys():
-            raise ValueError, 'size must be one of %s' % self.__siz8es__.keys()
+            raise ValueError, 'size must be one of %s' % self.__sizes__.keys()
         self.signed = params.get('signed', True)
         self.default = params.get('default', 0)
         self.format_string = '%%0%dd' % self.__sizes__[self.size][-1]
