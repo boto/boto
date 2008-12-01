@@ -1,5 +1,5 @@
-boto 1.5b
-18-Nov-2008
+boto 1.5c
+01-Dec-2008
 
 Copyright (c) 2006-2008 Mitch Garnaat <mitch@garnaat.org>
 
@@ -26,7 +26,9 @@ of my ability.  Patches and contributions are welcome!
 
 Boto was written using Python 2.5.1 on Mac OSX.  It has also been tested
 on Linux Ubuntu using Python 2.5.1.  Boto requires no additional
-libraries or packages other than those that are distributed with Python 2.4.1.
+libraries or packages other than those that are distributed with Python 2.5.1.
+Efforts are made to keep boto compatible with Python 2.4.x but no
+guarantees are made.
 
 There is some documentation for boto, mainly in the form of tutorials.
 Check in the doc directory of the distribution.  You can also check out
