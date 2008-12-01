@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 
 import mimetypes
-import hashlib
 import os
 import rfc822
 import StringIO
@@ -29,6 +28,10 @@ import boto.utils
 from boto.exception import S3ResponseError, S3DataError, BotoClientError
 from boto.s3.user import User
 from boto import UserAgent, config
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 class Key:
 
@@ -371,7 +374,7 @@ class Key:
         @rtype: string
         @return: MD5 Hash of the file in fp
         """
-        m = hashlib.md5()
+        m = md5()
         s = fp.read(self.BufferSize)
         while s:
             m.update(s)

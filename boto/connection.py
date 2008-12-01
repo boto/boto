@@ -41,7 +41,6 @@ import hmac
 import httplib
 import socket, errno
 import re
-import hashlib
 import sys
 import time
 import urllib, urlparse
@@ -52,6 +51,10 @@ from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 from boto.resultset import ResultSet
 import boto.utils
 from boto import config, UserAgent, handler
+try:
+    from hashlib import sha1 as sha
+except ImportError:
+    from sha import sha
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -134,7 +137,7 @@ class AWSAuthConnection:
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
         # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=hashlib.sha1)
+        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
 
         # cache up to 20 connections
         self._cache = boto.utils.LRUCache(20)

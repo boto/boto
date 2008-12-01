@@ -29,7 +29,6 @@ import StringIO
 import time
 import os
 import sys, traceback
-import md5
 import mimetypes
 
 class Service(ScriptBase):
