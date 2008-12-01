@@ -324,7 +324,7 @@ class SDBConnection(AWSQueryConnection):
             params['NextToken'] = next_token
         if attr_names:
             self.build_list_params(params, attr_names, 'AttributeName')
-        return self.get_list('QueryWithAttributes', params, [('Item', Item)])
+        return self.get_list('QueryWithAttributes', params, [('Item', Item)], parent=domain)
 
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """
