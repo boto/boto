@@ -46,7 +46,7 @@ class Item(DictMixin):
     def decode_value(self, value):
         if self.encoding == 'base64':
             self.encoding = None
-            return base64.decode(value)
+            return base64.decodestring(value)
         else:
             return value
 
