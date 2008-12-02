@@ -25,7 +25,7 @@ import threading
 import boto
 from boto import handler
 from boto.connection import AWSQueryConnection
-from boto.sdb.domain import Domain
+from boto.sdb.domain import Domain, DomainMetaData
 from boto.sdb.item import Item
 from boto.exception import SDBResponseError
 from boto.resultset import ResultSet
@@ -170,6 +170,22 @@ class SDBConnection(AWSQueryConnection):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
         return self.get_status('DeleteDomain', params)
+        
+    def domain_metadata(self, domain_or_name):
+        """
+        Get the Metadata for a SimpleDB domain.
+
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @rtype: L{DomainMetaData<boto.sdb.domain.DomainMetaData>} object
+        @return: The newly created domain metadata object
+        """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
+        params = {'DomainName':domain_name}
+        d = self.get_object('DomainMetadata', params, DomainMetaData)
+        d.domain = domain
+        return d
         
     def put_attributes(self, domain_or_name, item_name, attributes, replace=True):
         """

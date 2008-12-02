@@ -30,6 +30,7 @@ class Domain:
     def __init__(self, connection=None, name=None):
         self.connection = connection
         self.name = name
+        self._metadata = None
 
     def __repr__(self):
         return 'Domain:%s' % self.name
@@ -46,6 +47,11 @@ class Domain:
         else:
             setattr(self, name, value)
 
+    def get_metadata(self):
+        if not self._metadata:
+            self._metadata = self.connection.domain_metadata(self)
+        return self._metadata
+    
     def put_attributes(self, item_name, attributes, replace=True):
         return self.connection.put_attributes(self, item_name, attributes, replace)
 
@@ -92,4 +98,36 @@ class Domain:
 
     def delete_item(self, item):
         self.delete_attributes(item.name)
+
+class DomainMetaData:
     
+    def __init__(self, domain=None):
+        self.domain = domain
+        self.item_count = None
+        self.item_names_size = None
+        self.attr_name_count = None
+        self.attr_names_size = None
+        self.attr_value_count = None
+        self.attr_values_size = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'ItemCount':
+            self.item_count = int(value)
+        elif name == 'ItemNamesSizeBytes':
+            self.item_names_size = int(value)
+        elif name == 'AttributeNameCount':
+            self.attr_name_count = int(value)
+        elif name == 'AttributeNamesSizeBytes':
+            self.attr_names_size = int(value)
+        elif name == 'AttributeValueCount':
+            self.attr_value_count = int(value)
+        elif name == 'AttributeValuesSizeBytes':
+            self.attr_values_size = int(value)
+        elif name == 'Timestamp':
+            self.timestamp = value
+        else:
+            setattr(self, name, value)
+
