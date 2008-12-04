@@ -179,7 +179,7 @@ class S3KeyProperty(Property):
     def make_value_from_datastore(self, value):
         match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value)
         if match:
-            bucket = self.s3.get_bucket(match.group(1))
+            bucket = self.s3.get_bucket(match.group(1), validate=False)
             return bucket.get_key(match.group(2))
         else:
             return None
