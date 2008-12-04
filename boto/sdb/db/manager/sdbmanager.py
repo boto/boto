@@ -202,7 +202,7 @@ class SDBManager(object):
         if not cls:
             cls = find_class(a['__module__'], a['__type__'])
         obj = cls(id)
-        obj.auto_update = False
+        obj._auto_update = False
         for prop in obj.properties(hidden=False):
             if prop.data_type != Key:
                 if a.has_key(prop.name):
