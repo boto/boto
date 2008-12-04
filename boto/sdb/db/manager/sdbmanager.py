@@ -209,7 +209,7 @@ class SDBManager(object):
                     value = self.decode_value(prop, a[prop.name])
                     value = prop.make_value_from_datastore(value)
                     setattr(obj, prop.name, value)
-        obj.auto_update = True
+        obj._auto_update = True
         return obj
         
     def get_object_from_id(self, id):
