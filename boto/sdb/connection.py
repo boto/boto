@@ -260,12 +260,12 @@ class SDBConnection(AWSQueryConnection):
         @type item_name: string
         @param item_name: The name of the item whose attributes are being deleted.
 
-        @type attributes: dict or dict-like object
-        @param attributes: either a list containing attribute names which will cause
+        @type attributes: dict, list or L{Item<boto.sdb.item.Item>}
+        @param attributes: Either a list containing attribute names which will cause
                            all values associated with that attribute name to be deleted or
-                           a dict containing the attribute names and keys and list of values
-                           to delete as the value.  If not value is supplied, all attribute
-                           name/values for the item will be deleted.
+                           a dict or Item containing the attribute names and keys and list
+                           of values to delete as the value.  If no value is supplied,
+                           all attribute name/values for the item will be deleted.
                            
         @rtype: bool
         @return: True if successful
@@ -275,8 +275,8 @@ class SDBConnection(AWSQueryConnection):
                   'ItemName' : item_name}
         if attr_names:
             if isinstance(attr_names, list):
-                self.build_list_params(params, attr_names, 'AttributeName')
-            elif isinstance(attr_names, dict):
+                self.build_name_list(params, attr_names)
+            elif isinstance(attr_names, dict) or isinstance(attr_names, Item):
                 self.build_name_value_list(params, attr_names)
         return self.get_status('DeleteAttributes', params)
         
