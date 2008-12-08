@@ -54,7 +54,7 @@ from boto import config, UserAgent, handler
 try:
     from hashlib import sha1 as sha
 except ImportError:
-    from sha import sha
+    import sha
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
