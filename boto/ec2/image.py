@@ -19,14 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Represents an EC2 Image
-"""
+from boto.ec2.ec2object import EC2Object
 
-class Image:
+class Image(EC2Object):
+    """
+    Represents an EC2 Image
+    """
     
     def __init__(self, connection=None):
-        self.connection = connection
+        EC2Object.__init__(self, connection)
         self.id = None
         self.location = None
         self.state = None
@@ -40,9 +41,6 @@ class Image:
 
     def __repr__(self):
         return 'Image:%s' % self.id
-
-    def startElement(self, name, attrs, connection):
-        return None
 
     def endElement(self, name, value, connection):
         if name == 'imageId':

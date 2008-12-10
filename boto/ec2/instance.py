@@ -1,4 +1,4 @@
-# Copyright (c) 2006, 2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,14 +23,15 @@
 Represents an EC2 Instance
 """
 
+from boto.ec2.ec2object import EC2Object
 from boto.resultset import ResultSet
 from boto.ec2.address import Address
 import base64
 
-class Reservation:
+class Reservation(EC2Object):
     
     def __init__(self, connection=None):
-        self.connection = connection
+        EC2Object.__init__(self, connection)
         self.id = None
         self.owner_id = None
         self.groups = []
@@ -61,10 +62,10 @@ class Reservation:
         for instance in self.instances:
             instance.stop()
             
-class Instance:
+class Instance(EC2Object):
     
     def __init__(self, connection=None):
-        self.connection = connection
+        EC2Object.__init__(self, connection)
         self.id = None
         self.dns_name = None
         self.public_dns_name = None
@@ -85,9 +86,6 @@ class Instance:
     def __repr__(self):
         return 'Instance:%s' % self.id
     
-    def startElement(self, name, attrs, connection):
-        return None
-
     def endElement(self, name, value, connection):
         if name == 'instanceId':
             self.id = value

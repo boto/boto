@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,18 +23,18 @@
 Represents an EC2 Elastic IP Address
 """
 
-class Address:
+from boto.ec2.ec2object import EC2Object
+
+class Address(EC2Object):
     
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, public_ip=None, instance_id=None):
+        EC2Object.__init__(self, connection)
         self.connection = connection
-        self.public_ip = None
-        self.instance_id = None
+        self.public_ip = public_ip
+        self.instance_id = instance_id
 
     def __repr__(self):
         return 'Address:%s' % self.public_ip
-
-    def startElement(self, name, attrs, connection):
-        return None
 
     def endElement(self, name, value, connection):
         if name == 'publicIp':

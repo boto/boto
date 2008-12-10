@@ -32,6 +32,9 @@ class IObject(object):
     
     def choose_from_list(self, item_list, search_str='',
                          prompt='Enter Selection'):
+        if not item_list:
+            print 'No Choices Available'
+            return
         choice = None
         while not choice:
             n = 1

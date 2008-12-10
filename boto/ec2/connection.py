@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -38,28 +38,46 @@ from boto.ec2.volume import Volume
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
+from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2008-05-05')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2008-12-01')
+    DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
+    DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
+                                            'us-east-1.ec2.amazonaws.com')
     SignatureVersion = '1'
     ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, host='ec2.amazonaws.com', debug=0,
-                 https_connection_factory=None):
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None):
         """
         Init method to create a new connection to EC2.
         
         B{Note:} The host argument is overridden by the host specified in the boto configuration file.        
         """
-        if config.has_option('Boto', 'ec2_host'):
-            host = config.get('Boto', 'ec2_host')
+        if not region:
+            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+        self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory)
+                                    self.region.endpoint, debug, https_connection_factory)
+
+    def get_params(self):
+        """
+        Returns a dictionary containing the value of of all of the keyword
+        arguments passed when constructing this connection.
+        """
+        param_names = ['aws_access_key_id', 'aws_secret_access_key', 'is_secure',
+                       'port', 'proxy', 'proxy_port', 'proxy_user', 'proxy_pass',
+                       'debug', 'https_connection_factory']
+        params = {}
+        for name in param_names:
+            params[name] = getattr(self, name)
+        return params
 
     # Image methods
         
@@ -146,11 +164,29 @@ class EC2Connection(AWSQueryConnection):
             return None
 
     def register_image(self, image_location):
+        """
+        Register an image.
+
+        @type image_location: string
+        @param image_location: Full path to your AMI manifest in Amazon S3 storage.
+
+        @rtype: string
+        @return: The new image id
+        """
         params = {'ImageLocation':image_location}
         rs = self.get_object('RegisterImage', params, ResultSet)
         return rs.imageId
         
     def deregister_image(self, image_id):
+        """
+        Unregister an AMI.
+        
+        @type image_id: string
+        @param image_id: the ID of the Image to unregister
+        
+        @rtype: bool
+        @return: True if successful
+        """
         return self.get_status('DeregisterImage', {'ImageId':image_id})
         
     # ImageAttribute methods
@@ -205,7 +241,7 @@ class EC2Connection(AWSQueryConnection):
 
     def reset_image_attribute(self, image_id, attribute='launchPermission'):
         """
-        Rresets an attribute of an AMI to its default value.
+        Resets an attribute of an AMI to its default value.
         See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-ResetImageAttribute.html
         
         @type image_id: string
@@ -357,6 +393,17 @@ class EC2Connection(AWSQueryConnection):
     # Zone methods
 
     def get_all_zones(self, zones=None):
+        """
+        Get all Availability Zones associated with the current region.
+
+        @type zones: list
+        @param zones: Optional list of zones.  If this list is present,
+                      only the Zones associated with these zone names
+                      will be returned.
+
+        @rtype: list of L{boto.ec2.zone.Zone}
+        @return: The requested Zone objects
+        """
         params = {}
         if zones:
             self.build_list_params(params, zones, 'ZoneName')
@@ -365,25 +412,72 @@ class EC2Connection(AWSQueryConnection):
     # Address methods
 
     def get_all_addresses(self, addresses=None):
+        """
+        Get all EIP's associated with the current credentials.
+
+        @type addresses: list
+        @param addresses: Optional list of addresses.  If this list is present,
+                           only the Addresses associated with these addresses
+                           will be returned.
+
+        @rtype: list of L{boto.ec2.address.Address}
+        @return: The requested Address objects
+        """
         params = {}
         if addresses:
             self.build_list_params(params, addresses, 'PublicIp')
         return self.get_list('DescribeAddresses', params, [('item', Address)])
 
     def allocate_address(self):
+        """
+        Allocate a new Elastic IP address and associate it with your account.
+
+        @rtype: L{boto.ec2.address.Address}
+        @return: The newly allocated Address
+        """
         return self.get_object('AllocateAddress', None, Address)
 
-    def release_address(self, public_ip):
-        params = {'PublicIp' : public_ip}
-        return self.get_status('ReleaseAddress', params)
-
     def associate_address(self, instance_id, public_ip):
+        """
+        Associate an Elastic IP address with a currently running instance.
+
+        @type instance_id: string
+        @param instance_id: The ID of the instance
+
+        @type public_ip: string
+        @param public_ip: The public IP address
+
+        @rtype: bool
+        @return: True if successful
+        """
         params = {'InstanceId' : instance_id, 'PublicIp' : public_ip}
         return self.get_status('AssociateAddress', params)
 
     def disassociate_address(self, public_ip):
+        """
+        Disassociate an Elastic IP address from a currently running instance.
+
+        @type public_ip: string
+        @param public_ip: The public IP address
+
+        @rtype: bool
+        @return: True if successful
+        """
         params = {'PublicIp' : public_ip}
         return self.get_status('DisassociateAddress', params)
+
+    def release_address(self, public_ip):
+        """
+        Free up an Elastic IP address
+
+        @type public_ip: string
+        @param public_ip: The public IP address
+
+        @rtype: bool
+        @return: True if successful
+        """
+        params = {'PublicIp' : public_ip}
+        return self.get_status('ReleaseAddress', params)
 
     # Volume methods
 
@@ -447,6 +541,17 @@ class EC2Connection(AWSQueryConnection):
     # Snapshot methods
 
     def get_all_snapshots(self, snapshot_ids=None):
+        """
+        Get all EBS Snapshots associated with the current credentials.
+
+        @type snapshot_ids: list
+        @param snapshot_ids: Optional list of snapshot ids.  If this list is present,
+                           only the Snapshots associated with these snapshot ids
+                           will be returned.
+
+        @rtype: list of L{boto.ec2.snapshot.Snapshot}
+        @return: The requested Snapshot objects
+        """
         params = {}
         if snapshot_ids:
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
@@ -467,7 +572,8 @@ class EC2Connection(AWSQueryConnection):
         Get all key pairs associated with your account.
         
         @type keynames: list
-        @param keynames: A list of the names of keypairs to retrieve
+        @param keynames: A list of the names of keypairs to retrieve.
+                         If not provided, all key pairs will be returned.
         
         @rtype: list
         @return: A list of L{KeyPairs<boto.ec2.keypair.KeyPair>}
@@ -489,18 +595,22 @@ class EC2Connection(AWSQueryConnection):
         """
         try:
             return self.get_all_key_pairs(keynames=[keyname])[0]
-        except IndexError: # None of those images available
+        except IndexError: # None of those key pairs available
             return None
         
     def create_key_pair(self, key_name):
         """
         Create a new key pair for your account.
+        This will create the key pair within the region you
+        are currently connected to.
         
         @type key_name: string
         @param key_name: The name of the new keypair
         
-        @rtype: KeyPair
-        @return: The newly created L{KeyPair<boto.ec2.keypair.KeyPair>}
+        @rtype: L{KeyPair<boto.ec2.keypair.KeyPair>}
+        @return: The newly created L{KeyPair<boto.ec2.keypair.KeyPair>}.
+                 The material attribute of the new KeyPair object
+                 will contain the the unencrypted PEM encoded RSA private key.
         """
         params = {'KeyName':key_name}
         return self.get_object('CreateKeyPair', params, KeyPair)
@@ -518,12 +628,36 @@ class EC2Connection(AWSQueryConnection):
     # SecurityGroup methods
         
     def get_all_security_groups(self, groupnames=None):
+        """
+        Get all security groups associated with your account in a region.
+        
+        @type groupnames: list
+        @param groupnames: A list of the names of security groups to retrieve.
+                           If not provided, all security groups will be returned.
+        
+        @rtype: list
+        @return: A list of L{SecurityGroups<boto.ec2.securitygroup.SecurityGroup>}
+        """
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
         return self.get_list('DescribeSecurityGroups', params, [('item', SecurityGroup)])
 
     def create_security_group(self, name, description):
+        """
+        Create a new security group for your account.
+        This will create the security group within the region you
+        are currently connected to.
+        
+        @type name: string
+        @param name: The name of the new security group
+        
+        @type description: string
+        @param description: The description of the new security group
+        
+        @rtype: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>}
+        @return: The newly created L{KeyPair<boto.ec2.keypair.KeyPair>}.
+        """
         params = {'GroupName':name, 'GroupDescription':description}
         group = self.get_object('CreateSecurityGroup', params, SecurityGroup)
         group.name = name
@@ -531,6 +665,12 @@ class EC2Connection(AWSQueryConnection):
         return group
 
     def delete_security_group(self, name):
+        """
+        Delete a security group from your account.
+        
+        @type key_name: string
+        @param key_name: The name of the keypair to delete
+        """
         params = {'GroupName':name}
         return self.get_status('DeleteSecurityGroup', params)
 
@@ -538,6 +678,41 @@ class EC2Connection(AWSQueryConnection):
                                  src_security_group_owner_id=None,
                                  ip_protocol=None, from_port=None, to_port=None,
                                  cidr_ip=None):
+        """
+        Add a new rule to an existing security group.
+        You need to pass in either src_security_group_name and
+        src_security_group_owner_id OR ip_protocol, from_port, to_port,
+        and cidr_ip.  In other words, either you are authorizing another
+        group or you are authorizing some ip-based rule.
+        
+        @type group_name: string
+        @param group_name: The name of the security group you are adding
+                           the rule to.
+                           
+        @type src_security_group_name: string
+        @param src_security_group_name: The name of the security group you are 
+                                        granting access to.
+                                        
+        @type src_security_group_owner_id: string
+        @param src_security_group_owner_id: The ID of the owner of the security group you are 
+                                            granting access to.
+                                            
+        @type ip_protocol: string
+        @param ip_protocol: Either tcp | udp | icmp
+
+        @type from_port: int
+        @param from_port: The beginning port number you are enabling
+
+        @type to_port: int
+        @param to_port: The ending port number you are enabling
+
+        @type to_port: string
+        @param to_port: The CIDR block you are providing access to.
+                        See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
+
+        @rtype: bool
+        @return: True if successful.
+        """
         params = {'GroupName':group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
@@ -557,6 +732,41 @@ class EC2Connection(AWSQueryConnection):
                               src_security_group_owner_id=None,
                               ip_protocol=None, from_port=None, to_port=None,
                               cidr_ip=None):
+        """
+        Remove an existing rule from an existing security group.
+        You need to pass in either src_security_group_name and
+        src_security_group_owner_id OR ip_protocol, from_port, to_port,
+        and cidr_ip.  In other words, either you are revoking another
+        group or you are revoking some ip-based rule.
+        
+        @type group_name: string
+        @param group_name: The name of the security group you are removing
+                           the rule from.
+                           
+        @type src_security_group_name: string
+        @param src_security_group_name: The name of the security group you are 
+                                        revoking access to.
+                                        
+        @type src_security_group_owner_id: string
+        @param src_security_group_owner_id: The ID of the owner of the security group you are 
+                                            revoking access to.
+                                            
+        @type ip_protocol: string
+        @param ip_protocol: Either tcp | udp | icmp
+
+        @type from_port: int
+        @param from_port: The beginning port number you are disabling
+
+        @type to_port: int
+        @param to_port: The ending port number you are disabling
+
+        @type to_port: string
+        @param to_port: The CIDR block you are revoking access to.
+                        See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
+                        
+        @rtype: bool
+        @return: True if successful.
+        """
         params = {'GroupName':group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
@@ -571,4 +781,18 @@ class EC2Connection(AWSQueryConnection):
         if cidr_ip:
             params['CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress', params)
+
+    #
+    # Regions
+    #
+
+    def get_all_regions(self):
+        """
+        Get all available regions for the EC2 service.
+        
+        @rtype: list
+        @return: A list of L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+        """
+        return self.get_list('DescribeRegions', None, [('item', RegionInfo)])
+
 

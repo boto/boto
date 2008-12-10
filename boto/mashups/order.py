@@ -24,6 +24,7 @@ High-level abstraction of an EC2 order for servers
 """
 
 import boto
+import boto.ec2
 from boto.mashups.server import Server, ServerSet
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config
@@ -34,7 +35,8 @@ InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
 
 class Item(IObject):
     
-    def __init__(self, ec2_conn):
+    def __init__(self):
+        self.region = None
         self.name = None
         self.instance_type = None
         self.quantity = 0
@@ -42,7 +44,7 @@ class Item(IObject):
         self.ami = None
         self.groups = []
         self.key = None
-        self.ec2 = ec2_conn
+        self.ec2 = None
         self.config = None
 
     def set_userdata(self, key, value):
@@ -50,6 +52,13 @@ class Item(IObject):
 
     def get_userdata(self, key):
         return self.userdata[key]
+
+    def set_region(self, region=None):
+        if region:
+            self.region = region
+        else:
+            l = [(r, r.name, r.url) for r in boto.ec2.regions()]
+            self.region = self.choose_from_list(l, prompt='Choose Region')
 
     def set_name(self, name=None):
         if name:
@@ -120,6 +129,10 @@ class Item(IObject):
         return s.getvalue()
 
     def enter(self, **params):
+        self.region = params.get('region', self.region)
+        if not self.region:
+            self.set_region()
+        self.ec2 = self.region.connect()
         self.name = params.get('name', self.name)
         if not self.name:
             self.set_name()
@@ -151,10 +164,9 @@ class Order(IObject):
     def __init__(self):
         self.items = []
         self.reservation = None
-        self.ec2 = boto.connect_ec2()
 
     def add_item(self, **params):
-        item = Item(self.ec2)
+        item = Item()
         item.enter(**params)
         self.items.append(item)
 

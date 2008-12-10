@@ -18,23 +18,24 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
-"""
-This module provides an interface to the Elastic Compute Cloud (EC2)
-service from AWS.
-"""
-from boto.ec2.connection import EC2Connection
 
-def regions(**kw_params):
-    """
-    Get all available regions for the EC2 service.
-    You may pass any of the arguments accepted by the EC2Connection
-    object's constructor as keyword arguments and they will be
-    passed along to the EC2Connection object.
-        
-    @rtype: list
-    @return: A list of L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
-    """
-    c = EC2Connection(**kw_params)
-    return c.get_all_regions()
+"""
+Represents an EC2 Object
+"""
+
+class EC2Object(object):
+
+    def __init__(self, connection=None):
+        self.connection = connection
+        if self.connection:
+            self.region = connection.region
+        else:
+            self.region = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        setattr(self, name, value)
+
     

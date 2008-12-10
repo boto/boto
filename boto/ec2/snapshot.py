@@ -22,11 +22,12 @@
 """
 Represents an EC2 Elastic IP Snapshot
 """
+from boto.ec2.ec2object import EC2Object
 
-class Snapshot:
+class Snapshot(EC2Object):
     
     def __init__(self, connection=None):
-        self.connection = connection
+        EC2Object.__init__(self, connection)
         self.id = None
         self.progress = None
         self.start_time = None
@@ -34,9 +35,6 @@ class Snapshot:
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
-
-    def startElement(self, name, attrs, connection):
-        return None
 
     def endElement(self, name, value, connection):
         if name == 'snapshotId':

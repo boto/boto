@@ -22,11 +22,12 @@
 """
 Represents an EC2 Elastic IP Volume
 """
+from boto.ec2.ec2object import EC2Object
 
-class Volume:
+class Volume(EC2Object):
     
     def __init__(self, connection=None):
-        self.connection = connection
+        EC2Object.__init__(self, connection)
         self.id = None
         self.instance_id = None
         self.snapshot_id = None
@@ -36,9 +37,6 @@ class Volume:
 
     def __repr__(self):
         return 'Volume:%s' % self.id
-
-    def startElement(self, name, attrs, connection):
-        return None
 
     def endElement(self, name, value, connection):
         if name == 'volumeId':

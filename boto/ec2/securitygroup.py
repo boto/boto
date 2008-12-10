@@ -22,12 +22,13 @@
 """
 Represents an EC2 Security Group
 """
+from boto.ec2.ec2object import EC2Object
 
-class SecurityGroup:
+class SecurityGroup(EC2Object):
     
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None):
-        self.connection = connection
+        EC2Object.__init__(self, connection)
         self.owner_id = owner_id
         self.name = name
         self.description = description
@@ -89,8 +90,8 @@ class SecurityGroup:
                         target_rule = rule
                         target_grant = None
                         for grant in rule.grants:
-                            if grant.group_name == src_group_name:
-                                if grant.user_id == src_group_owner_id:
+                            if grant.name == src_group_name:
+                                if grant.owner_id == src_group_owner_id:
                                     if grant.cidr_ip == cidr_ip:
                                         target_grant = grant
                         if target_grant:
@@ -100,7 +101,41 @@ class SecurityGroup:
 
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
                   cidr_ip=None, src_group=None):
+        """
+        Add a new rule to this security group.
+        You need to pass in either src_group_name
+        OR ip_protocol, from_port, to_port,
+        and cidr_ip.  In other words, either you are authorizing another
+        group or you are authorizing some ip-based rule.
+        
+        @type src_security_group_owner_id: string
+        @param src_security_group_owner_id: The ID of the owner of the security group you are 
+                                            granting access to.
+                                            
+        @type ip_protocol: string
+        @param ip_protocol: Either tcp | udp | icmp
+
+        @type from_port: int
+        @param from_port: The beginning port number you are enabling
+
+        @type to_port: int
+        @param to_port: The ending port number you are enabling
+
+        @type to_port: string
+        @param to_port: The CIDR block you are providing access to.
+                        See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
+
+        @type src_group: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>} or
+                         L{GroupOrCIDR<boto.ec2.securitygroup.GroupOrCIDR}
+                         
+        @rtype: bool
+        @return: True if successful.
+        """
         if src_group:
+            from_port = None
+            to_port = None
+            cidr_ip = None
+            ip_protocol = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
         else:
@@ -121,6 +156,10 @@ class SecurityGroup:
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
                cidr_ip=None, src_group=None):
         if src_group:
+            from_port=None
+            to_port=None
+            cidr_ip=None
+            ip_protocol = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
         else:
@@ -137,6 +176,40 @@ class SecurityGroup:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
                              src_group_owner_id, cidr_ip)
         return status
+
+    def copy_to_region(self, region, name=None):
+        """
+        Create a copy of this security group in another region.
+        Note that the new security group will be a separate entity
+        and will not stay in sync automatically after the copy
+        operation.
+
+        @type region: L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+        @param region: The region to which this security group will be copied.
+
+        @type name: string
+        @param name: The name of the copy.  If not supplied, the copy
+                     will have the same name as this security group.
+        
+        @rtype: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>}
+        @return: The new security group.
+        """
+        if region.name == self.region:
+            raise BotoClientError('Unable to copy to the same Region')
+        conn_params = self.connection.get_params()
+        rconn = region.connect(**conn_params)
+        sg = rconn.create_security_group(name or self.name, self.description)
+        source_groups = []
+        for rule in self.rules:
+            grant = rule.grants[0]
+            if grant.name:
+                if grant.name not in source_groups:
+                    source_groups.append(grant.name)
+                    sg.authorize(None, None, None, None, grant)
+            else:
+                sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
+                             grant.cidr_ip)
+        return sg
 
 class IPPermissions:
 
@@ -167,10 +240,10 @@ class IPPermissions:
         else:
             setattr(self, name, value)
 
-    def add_grant(self, user_id=None, group_name=None, cidr_ip=None):
+    def add_grant(self, owner_id=None, name=None, cidr_ip=None):
         grant = GroupOrCIDR(self)
-        grant.user_id = user_id
-        grant.group_name = group_name
+        grant.owner_id = owner_id
+        grant.name = name
         grant.cidr_ip = cidr_ip
         self.grants.append(grant)
         return grant
@@ -178,24 +251,24 @@ class IPPermissions:
 class GroupOrCIDR:
 
     def __init__(self, parent=None):
-        self.user_id = None
-        self.group_name = None
+        self.owner_id = None
+        self.name = None
         self.cidr_ip = None
 
     def __repr__(self):
         if self.cidr_ip:
             return '%s' % self.cidr_ip
         else:
-            return '%s-%s' % (self.group_name, self.user_id)
+            return '%s-%s' % (self.name, self.owner_id)
 
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
         if name == 'userId':
-            self.user_id = value
+            self.owner_id = value
         elif name == 'groupName':
-            self.group_name = value
+            self.name = value
         if name == 'cidrIp':
             self.cidr_ip = value
         else:

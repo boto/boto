@@ -19,29 +19,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Represents an EC2 Availability Zone
-"""
-from boto.ec2.ec2object import EC2Object
-
-class Zone(EC2Object):
+class RegionInfo(object):
+    """
+    Represents an EC2 Region
+    """
     
-    def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
-        self.name = None
-        self.state = None
+    def __init__(self, connection=None, name=None, endpoint=None):
+        self.connection = connection
+        self.name = name
+        self.endpoint = endpoint
 
     def __repr__(self):
-        return 'Zone:%s' % self.name
+        return 'RegionInfo:%s' % self.name
+
+    def startElement(self, name, attrs, connection):
+        return None
 
     def endElement(self, name, value, connection):
-        if name == 'zoneName':
+        if name == 'regionName':
             self.name = value
-        elif name == 'zoneState':
-            self.state = value
+        elif name == 'regionEndpoint':
+            self.endpoint = value
         else:
             setattr(self, name, value)
 
-
+    def connect(self, **kw_params):
+        """
+        Connect to this Region's endpoint. Returns an EC2Connection
+        object pointing to the endpoint associated with this region.
+        You may pass any of the arguments accepted by the EC2Connection
+        object's constructor as keyword arguments and they will be
+        passed along to the EC2Connection object.
+        
+        @rtype: L{EC2Connection<boto.ec2.connection.EC2Connection}
+        @return: The connection to this regions endpoint
+        """
+        from boto.ec2.connection import EC2Connection
+        return EC2Connection(region=self, **kw_params)
 
 
