@@ -33,6 +33,102 @@ that may provide a slightly easier means of creating a connection:
 In either case, conn will point to an EC2Connection object which we will
 use throughout the remainder of this tutorial.
 
+A Note About Regions
+--------------------
+The 2008-12-01 version of the EC2 API introduced the idea of Regions.
+A Region is geographically distinct and is completely isolated from
+other EC2 Regions.  At the time of the launch of the 2008-12-01 API
+there were two available regions, us-east-1 and eu-west-1.  Each
+Region has it's own service endpoint and therefore would require
+it's own EC2Connection object in boto.
+
+The default behavior in boto, as shown above, is to connect you with
+the us-east-1 region which is exactly the same as the behavior prior
+to the introduction of Regions.
+
+However, if you would like to connect to a region other than us-east-1,
+there are a couple of ways to accomplish that.  The first way, is to
+as EC2 to provide a list of currently supported regions.  You can do
+that using the regions function in the boto.ec2 module:
+
+>>> import boto.ec2
+>>> regions = boto.ec2.regions()
+>>> regions
+[RegionInfo:eu-west-1, RegionInfo:us-east-1]
+>>> 
+
+As you can see, a list of available regions is returned.  Each region
+is represented by a RegionInfo object.  A RegionInfo object has two
+attributes; a name and an endpoint.
+
+>>> eu = regions[0]
+>>> eu.name
+u'eu-west-1'
+>>> eu.endpoint
+u'eu-west-1.ec2.amazonaws.com'
+>>>
+
+You can easily create a connection to a region by using the connect
+method of the RegionInfo object:
+
+>>> conn_eu = eu.connect()
+>>> conn_eu
+<boto.ec2.connection.EC2Connection instance at 0xccaaa8>
+>>> 
+
+The variable conn_eu is now bound to an EC2Connection object connected
+to the endpoint of the eu-west-1 region and all operations performed via
+that connection and all objects created by that connection will be scoped
+to the eu-west-1 region.  You can always tell which region a connection
+is associated with by accessing it's region attribute:
+
+>>> conn_eu.region
+RegionInfo:eu-west-1
+>>>
+
+Supporting EC2 objects such as SecurityGroups, KeyPairs, Addresses,
+Volumes, Images and SnapShots are local to a particular region.  So
+don't expect to find the security groups you created in the us-east-1
+region to be available in the eu-west-1 region.
+
+Some objects in boto, such as SecurityGroup, have a new method called
+copy_to_region which will attempt to create a copy of the object in
+another region.  For example:
+
+>>> regions
+[RegionInfo:eu-west-1, RegionInfo:us-east-1]
+>>> conn_us = regions[1].connect()
+>>> groups = conn_us.get_all_security_groups()
+>>> groups
+[SecurityGroup:alfresco, SecurityGroup:apache, SecurityGroup:vnc,
+SecurityGroup:appserver2, SecurityGroup:FTP, SecurityGroup:webserver,
+SecurityGroup:default, SecurityGroup:test-1228851996]
+>>> us_group = groups[0]
+>>> us_group
+SecurityGroup:alfresco
+>>> us_group.rules
+[IPPermissions:tcp(22-22), IPPermissions:tcp(80-80), IPPermissions:tcp(1445-1445)]
+>>> eu_group = us_group.copy_to_region(eu)
+>>> eu_group.rules
+[IPPermissions:tcp(22-22), IPPermissions:tcp(80-80), IPPermissions:tcp(1445-1445)]
+
+In the above example, we chose one of the security groups available
+in the us-east-1 region (the group alfresco) and copied that security
+group to the eu-west-1 region.  All of the rules associated with the
+original security group will be copied as well.
+
+If you would like your default region to be something other than
+us-east-1, you can override that default in your boto config file
+(either ~/.boto for personal settings or /etc/boto.cfg for system-wide
+settings).  For example:
+
+[Boto]
+ec2_region_name = eu-west-1
+ec2_region_endpoint = eu-west-1.ec2.amazonaws.com
+
+The above lines added to either boto config file would set the default
+region to be eu-west-1.
+
 Images & Instances
 ------------------
 
