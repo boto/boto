@@ -108,10 +108,6 @@ class SecurityGroup(EC2Object):
         and cidr_ip.  In other words, either you are authorizing another
         group or you are authorizing some ip-based rule.
         
-        @type src_security_group_owner_id: string
-        @param src_security_group_owner_id: The ID of the owner of the security group you are 
-                                            granting access to.
-                                            
         @type ip_protocol: string
         @param ip_protocol: Either tcp | udp | icmp
 
