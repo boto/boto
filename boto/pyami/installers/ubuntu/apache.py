@@ -35,5 +35,9 @@ class Apache(Installer):
         self.run('a2enmod proxy', notify=True, exit_on_error=True)
         self.run('a2enmod proxy_ajp', notify=True, exit_on_error=True)
 
+        # Hard reboot the apache2 server to enable these module
+        self.stop("apache2")
+        self.start("apache2")
+
     def main(self):
         self.install()
