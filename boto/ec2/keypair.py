@@ -77,7 +77,7 @@ class KeyPair(EC2Object):
         """
         if self.material:
             file_path = os.path.join(directory_path, '%s.pem' % self.name)
-            if os.exists(file_path):
+            if os.path.exists(file_path):
                 raise BotoClientError('%s already exists, it will not be overwritten' % file_path)
             fp = open(file_path, 'wb')
             fp.write(self.material)
