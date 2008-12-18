@@ -53,8 +53,10 @@ import boto.utils
 from boto import config, UserAgent, handler
 try:
     from hashlib import sha1 as sha
+    from hashlib import sha256 as sha256
 except ImportError:
     import sha
+    sha256 = None
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -77,7 +79,10 @@ class AWSAuthConnection:
         @param is_secure: Whether the connection is over SSL
         
         @type https_connection_factory: list or tuple
-        @param https_connection_factory: A pair of an HTTP connection factory and the exceptions to catch. The factory should have a similar interface to L{httplib.HTTPSConnection}.
+        @param https_connection_factory: A pair of an HTTP connection
+                                         factory and the exceptions to catch.
+                                         The factory should have a similar
+                                         interface to L{httplib.HTTPSConnection}.
         
         @type proxy:
         @param proxy:
@@ -120,7 +125,10 @@ class AWSAuthConnection:
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
-        self.server_name = '%s:%d' % (server, self.port)
+        if self.port == 80:
+            self.server_name = server
+        else:
+            self.server_name = '%s:%d' % (server, self.port)
         
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
@@ -138,6 +146,10 @@ class AWSAuthConnection:
 
         # initialize an HMAC for signatures, make copies with each request
         self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
+        if sha256:
+            self.hmac_256 = hmac.new(self.aws_secret_access_key, digestmod=sha256)
+        else:
+            self.hmac_256 = None
 
         # cache up to 20 connections
         self._cache = boto.utils.LRUCache(20)
@@ -182,7 +194,7 @@ class AWSAuthConnection:
 
     def get_http_connection(self, host, is_secure):
         if host is None:
-            host = '%s:%d' % (self.server, self.port)
+            host = self.server_name
         cached_name = is_secure and 'https://' or 'http://'
         cached_name += host
         if cached_name in self._cache:
@@ -193,7 +205,7 @@ class AWSAuthConnection:
         if self.use_proxy:
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
-            host = '%s:%d' % (self.server, self.port)
+            host = self.server_name
         boto.log.debug('establishing HTTP connection')
         if is_secure:
             if self.https_connection_factory:
@@ -352,10 +364,11 @@ class AWSQueryConnection(AWSAuthConnection):
         hmac.update(s)
         keys = params.keys()
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
-        qs = ''
+        pairs = []
         for key in keys:
             val = self.get_utf8_value(params[key])
-            qs += key + '=' + urllib.quote(val) + '&'
+            pairs.append(key + '=' + urllib.quote(val))
+        qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
     def calc_signature_1(self, params):
@@ -363,19 +376,45 @@ class AWSQueryConnection(AWSAuthConnection):
         hmac = self.hmac.copy()
         keys = params.keys()
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
-        qs = ''
+        pairs = []
         for key in keys:
             hmac.update(key)
             val = self.get_utf8_value(params[key])
             hmac.update(val)
-            qs += key + '=' + urllib.quote(val) + '&'
+            pairs.append(key + '=' + urllib.quote(val))
+        qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
-    def get_signature(self, params):
-        if self.SignatureVersion == '1':
-            t = self.calc_signature_1(params)
-        elif self.SignatureVersion == '0':
+    def calc_signature_2(self, params, verb, path):
+        boto.log.debug('using calc_signature_2')
+        string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name.lower(),
+                                           path or '/')
+        if self.hmac_256:
+            hmac = self.hmac_256.copy()
+            params['SignatureMethod'] = 'HmacSHA256'
+        else:
+            hmac = self.hmac.copy()
+            params['SignatureMethod'] = 'HmacSHA1'
+        keys = params.keys()
+        keys.sort()
+        pairs = []
+        for key in keys:
+            val = self.get_utf8_value(params[key])
+            pairs.append(urllib.quote(key, safe='') + '=' + urllib.quote(val, safe=''))
+        qs = '&'.join(pairs)
+        boto.log.debug('query string: %s' % qs)
+        string_to_sign += qs
+        boto.log.debug('string_to_sign: %s' % string_to_sign)
+        hmac.update(string_to_sign)
+        return (qs, base64.b64encode(hmac.digest()))
+
+    def get_signature(self, params, verb, path):
+        if self.SignatureVersion == '0':
             t = self.calc_signature_0(params)
+        elif self.SignatureVersion == '1':
+            t = self.calc_signature_1(params)
+        elif self.SignatureVersion == '2':
+            t = self.calc_signature_2(params, verb, path)
         else:
             raise BotoClientError('Unknown Signature Version: %s' % self.SignatureVersion)
         return t
@@ -391,8 +430,8 @@ class AWSQueryConnection(AWSAuthConnection):
         params['AWSAccessKeyId'] = self.aws_access_key_id
         params['SignatureVersion'] = self.SignatureVersion
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        qs, signature = self.get_signature(params)
-        qs = path + '?' + qs + 'Signature=' + urllib.quote(signature)
+        qs, signature = self.get_signature(params, verb, path)
+        qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
         return self._mexe(verb, qs, None, headers)

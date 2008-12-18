@@ -42,12 +42,12 @@ class SQSConnection(AWSQueryConnection):
     
     DefaultHost = 'queue.amazonaws.com'
     APIVersion = '2008-01-01'
-    SignatureVersion = '1'
+    SignatureVersion = '2'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=DefaultHost, debug=0,
                  https_connection_factory=None):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
@@ -75,15 +75,15 @@ class SQSConnection(AWSQueryConnection):
         @rtype: bool
         @return: True if the command succeeded, False otherwise
         """
-        return self.get_status('DeleteQueue', None, queue.url)
+        return self.get_status('DeleteQueue', None, queue.id)
 
     def get_queue_attributes(self, queue, attribute='All'):
         params = {'AttributeName' : attribute}
-        return self.get_object('GetQueueAttributes', params, Attributes, queue.url)
+        return self.get_object('GetQueueAttributes', params, Attributes, queue.id)
 
     def set_queue_attribute(self, queue, attribute, value):
         params = {'Attribute.Name' : attribute, 'Attribute.Value' : value}
-        return self.get_status('SetQueueAttributes', params, queue.url)
+        return self.get_status('SetQueueAttributes', params, queue.id)
 
     def receive_message(self, queue, number_messages=1,
                         visibility_timeout=None):
@@ -103,15 +103,15 @@ class SQSConnection(AWSQueryConnection):
         if visibility_timeout:
             params['VisibilityTimeout'] = visibility_timeout
         return self.get_list('ReceiveMessage', params, [('Message', queue.message_class)],
-                             queue.url, queue)
+                             queue.id, queue)
 
     def delete_message(self, queue, message):
         params = {'ReceiptHandle' : message.receipt_handle}
-        return self.get_status('DeleteMessage', params, queue.url)
+        return self.get_status('DeleteMessage', params, queue.id)
 
     def send_message(self, queue, message_content):
         params = {'MessageBody' : message_content}
-        return self.get_status('SendMessage', params, queue.url)
+        return self.get_status('SendMessage', params, queue.id)
 
     def get_all_queues(self, prefix=''):
         params = {}

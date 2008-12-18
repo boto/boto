@@ -48,11 +48,11 @@ class ItemThread(threading.Thread):
 class SDBConnection(AWSQueryConnection):
 
     APIVersion = '2007-11-07'
-    SignatureVersion = '1'
+    SignatureVersion = '2'
     ResponseError = SDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='sdb.amazonaws.com', debug=0,
                  https_connection_factory=None):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
