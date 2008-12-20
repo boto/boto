@@ -69,6 +69,10 @@ def get_manager(cls):
                              db_host, db_port, db_table, sql_dir)
         else:
             return None
+    elif db_type == 'XML':
+        from xmlmanager import XMLManager
+        return XMLManager(cls, db_name, db_user, db_passwd,
+                          db_host, db_port, db_table, sql_dir)
     else:
         raise ValueError, 'Unknown db_type: %s' % db_type
 

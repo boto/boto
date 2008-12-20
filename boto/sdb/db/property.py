@@ -31,7 +31,7 @@ import boto.s3.key
 class Property(object):
 
     data_type = str
-    name = None
+    type_name = ''
 
     def __init__(self, verbose_name=None, name=None, default=None, required=False,
                  validator=None, choices=None, unique=False):
@@ -115,6 +115,8 @@ def validate_string(value):
 
 class StringProperty(Property):
 
+    type_name = 'String'
+    
     def __init__(self, verbose_name=None, name=None, default='', required=False,
                  validator=validate_string, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
@@ -124,6 +126,8 @@ def validate_text(value):
         raise TypeError, 'Expecting Text, got %s' % type(value)
 
 class TextProperty(Property):
+    
+    type_name = 'Text'
     
     def __init__(self, verbose_name=None, name=None, default='', required=False,
                  validator=validate_text, choices=None, unique=False):
@@ -135,6 +139,7 @@ class PasswordProperty(StringProperty):
     retrieved, but still can be compaired.
     """
     data_type = Password
+    type_name = 'Password'
 
     def __init__(self, verbose_name=None, name=None, default='', required=False,
                  validator=None, choices=None, unique=False):
@@ -169,6 +174,7 @@ class PasswordProperty(StringProperty):
 class S3KeyProperty(Property):
     
     data_type = boto.s3.key.Key
+    type_name = 'S3Key'
 
     def __init__(self, verbose_name=None, name=None, default=None,
                  required=False, validator=None, choices=None, unique=False):
@@ -194,6 +200,7 @@ class S3KeyProperty(Property):
 class IntegerProperty(Property):
 
     data_type = int
+    type_name = 'Integer'
 
     def __init__(self, verbose_name=None, name=None, default=0, required=False,
                  validator=None, choices=None, unique=False):
@@ -218,6 +225,7 @@ class IntegerProperty(Property):
 class LongProperty(Property):
 
     data_type = long
+    type_name = 'Long'
 
     def __init__(self, verbose_name=None, name=None, default=0, required=False,
                  validator=None, choices=None, unique=False):
@@ -242,6 +250,7 @@ class LongProperty(Property):
 class BooleanProperty(Property):
 
     data_type = bool
+    type_name = 'Boolean'
 
     def __init__(self, verbose_name=None, name=None, default=False, required=False,
                  validator=None, choices=None, unique=False):
@@ -253,6 +262,7 @@ class BooleanProperty(Property):
 class DateTimeProperty(Property):
 
     data_type = datetime.datetime
+    type_name = 'DateTime'
 
     def __init__(self, verbose_name=None, auto_now=False, auto_now_add=False, name=None,
                  default=None, required=False, validator=None, choices=None, unique=False):
@@ -279,6 +289,7 @@ class DateTimeProperty(Property):
 class ReferenceProperty(Property):
 
     data_type = Key
+    type_name = 'Reference'
 
     def __init__(self, reference_class=None, collection_name=None,
                  verbose_name=None, name=None, default=None, required=False, validator=None, choices=None, unique=False):
@@ -371,6 +382,7 @@ class CalculatedProperty(Property):
 class ListProperty(Property):
     
     data_type = list
+    type_name = 'List'
 
     def __init__(self, item_type, verbose_name=None, name=None, default=None, **kwds):
         if default is None:

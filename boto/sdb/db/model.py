@@ -125,13 +125,26 @@ class Model(object):
             for key in cls.__dict__.keys():
                 prop = cls.__dict__[key]
                 if isinstance(prop, Property):
-                    if prop_name == prop.name:
+                    if not prop.__class__.__name__.startswith('_') and prop_name == prop.name:
                         property = prop
             if len(cls.__bases__) > 0:
                 cls = cls.__bases__[0]
             else:
                 cls = None
         return property
+
+    @classmethod
+    def get_xmlmanager(cls):
+        if not hasattr(cls, '_xmlmanager'):
+            from boto.sdb.db.manager.xmlmanager import XMLManager
+            cls._xmlmanager = XMLManager(cls, None, None, None,
+                                         None, None, None, None)
+        return cls._xmlmanager
+
+    @classmethod
+    def from_xml(cls, fp):
+        xmlmanager = cls.get_xmlmanager()
+        return xmlmanager.unmarshal_object(fp)
 
     def __init__(self, id=None, **kw):
         if kw.has_key('manager'):
@@ -173,6 +186,11 @@ class Model(object):
         obj = {'properties' : props,
                'id' : self.id}
         return {self.__class__.__name__ : obj}
+
+    def to_xml(self):
+        xmlmanager = self.get_xmlmanager()
+        doc = xmlmanager.marshal_object(self)
+        return doc
 
 class Expando(Model):
 
