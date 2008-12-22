@@ -276,8 +276,9 @@ class XMLManager(object):
                     prop_node.appendChild(text_node)
             obj_node.appendChild(prop_node)
 
-    def marshal_object(self, obj):
-        doc = self.new_doc()
+    def marshal_object(self, obj, doc=None):
+        if not doc:
+            doc = self.new_doc()
         self.save_object(obj, doc)
         return doc
 

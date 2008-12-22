@@ -187,9 +187,9 @@ class Model(object):
                'id' : self.id}
         return {self.__class__.__name__ : obj}
 
-    def to_xml(self):
+    def to_xml(self, doc=None):
         xmlmanager = self.get_xmlmanager()
-        doc = xmlmanager.marshal_object(self)
+        doc = xmlmanager.marshal_object(self, doc)
         return doc
 
 class Expando(Model):
