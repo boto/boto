@@ -198,7 +198,7 @@ class SDBManager(object):
         if not a:
             a = self.domain.get_attributes(id)
         if not a.has_key('__type__'):
-            raise SDBPersistenceError('object %s does not exist' % id)
+            return None
         if not cls:
             cls = find_class(a['__module__'], a['__type__'])
         obj = cls(id)
