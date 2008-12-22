@@ -165,11 +165,19 @@ class XMLManager(object):
         self.ddl_dir = ddl_dir
         self.s3 = None
         self.converter = XMLConverter(self)
+        self.opener = None
         self._connect()
 
     def _connect(self):
         self.impl = getDOMImplementation()
         self.doc = self.impl.createDocument(None, 'objects', None)
+        if self.db_host:
+            import urllib2
+            password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            if self.db_user and self.db_password:
+                password_mgr.add_password(None, self.db_host, self.db_user, self.db_passwd)
+            handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+            self.opener = urllib2.build_opener(handler)
 
     def new_doc(self):
         return self.impl.createDocument(None, 'objects', None)
@@ -210,7 +218,7 @@ class XMLManager(object):
             values.append(value)
         return values
 
-    def get_object(self, cls, id, doc):
+    def get_object_from_doc(self, cls, id, doc):
         obj_node = doc.getElementsByTagName('object')[0]
         if not cls:
             class_name = obj_node.getAttribute('class')
@@ -233,8 +241,14 @@ class XMLManager(object):
         obj._auto_update = True
         return obj
         
-    def get_object_from_id(self, id):
-        return self.get_object(None, id)
+    def get_object(self, cls, id):
+        if self.opener:
+            url = "%s/%s/%s" % (self.db_host, self.db_name, id)
+            print url
+            doc = parse(self.opener.open(url))
+            return self.get_object_from_doc(cls, id, doc)
+        else:
+            return None
 
     def query(self, cls, filters, limit=None, order_by=None):
         raise NotImplementedError, "queries not supported in XML"
@@ -287,7 +301,7 @@ class XMLManager(object):
             doc = parseString(fp)
         else:
             doc = parse(fp)
-        return self.get_object(None, None, doc)
+        return self.get_object_from_doc(None, None, doc)
 
     def delete_object(self, obj):
         raise NotImplementedError, "delete not supported in XML"
