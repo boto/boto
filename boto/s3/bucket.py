@@ -184,17 +184,13 @@ class Bucket:
         
         """
         l = []
-        print params
         for k,v in params.items():
-            print k, v
             if  k == 'maxkeys':
                 k = 'max-keys'
             if isinstance(v, unicode):
                 v = v.encode('utf-8')
-            print v
             if v is not None:
                 l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
-        print l
         if len(l):
             s = '&'.join(l)
         else:
