@@ -300,7 +300,12 @@ class XMLManager(object):
             raise NotImplementedError("Can't query without a database connection")
 
         from urllib import urlencode
-        url = "/%s?query=%s" % (self.db_name, urlencode(filters))
+
+        query = str(self._build_query(cls, filters, limit, order_by))
+        if query:
+            url = "/%s?%s" % (self.db_name, urlencode({"query": query}))
+        else: 
+            url = "/%s" % self.db_name
         resp = self._make_request('GET', url)
         if resp.status == 200:
             doc = parse(resp)
@@ -308,6 +313,38 @@ class XMLManager(object):
             raise Exception("Error: %s" % resp.status)
         return self._object_lister(cls, doc)
 
+    def _build_query(self, cls, filters, limit, order_by):
+        import types
+        if len(filters) > 4:
+            raise Exception('Too many filters, max is 4')
+        parts = []
+        properties = cls.properties(hidden=False)
+        for filter, value in filters:
+            name, op = filter.strip().split()
+            found = False
+            for property in properties:
+                if property.name == name:
+                    found = True
+                    if types.TypeType(value) == types.ListType:
+                        filter_parts = []
+                        for val in value:
+                            val = self.encode_value(property, val)
+                            filter_parts.append("'%s' %s '%s'" % (name, op, val))
+                        parts.append("[%s]" % " OR ".join(filter_parts))
+                    else:
+                        value = self.encode_value(property, value)
+                        parts.append("['%s' %s '%s']" % (name, op, value))
+            if not found:
+                raise Exception('%s is not a valid field' % name)
+        if order_by:
+            if order_by.startswith("-"):
+                key = order_by[1:]
+                type = "desc"
+            else:
+                key = order_by
+                type = "asc"
+            parts.append("['%s' starts-with ''] sort '%s' %s" % (key, key, type))
+        return ' intersection '.join(parts)
 
     def query_gql(self, query_string, *args, **kwds):
         raise NotImplementedError, "GQL queries not supported in XML"
