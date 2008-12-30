@@ -23,10 +23,12 @@ import datetime
 from key import Key
 from boto.utils import Password
 from boto.sdb.db.query import Query
+from tempfile import TemporaryFile
 
 import re
 import boto
 import boto.s3.key
+from boto.sdb.db.blob import Blob
 
 class Property(object):
 
@@ -170,6 +172,21 @@ class PasswordProperty(StringProperty):
                 raise ValueError, 'Length of value greater than maxlength'
         else:
             raise TypeError, 'Expecting Password, got %s' % type(value)
+
+class BlobProperty(Property):
+    data_type = Blob
+    type_name = "blob"
+
+    def __set__(self, obj, value):
+        if not isinstance(value, Blob):
+            b = Blob(value = str(value))
+            value = b
+        old_value = self.__get__(obj, type(obj))
+        if old_value:
+            value.id = old_value.id
+        Property.__set__(self, obj, value)
+    
+
 
 class S3KeyProperty(Property):
     

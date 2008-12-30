@@ -108,7 +108,7 @@ class PGConverter:
 class PGManager(object):
 
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table, sql_dir):
+                 db_host, db_port, db_table, sql_dir, enable_ssl):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user

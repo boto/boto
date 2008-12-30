@@ -19,12 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import boto
+import re
 from boto.utils import find_class
 import uuid
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
+from boto.sdb.db.blob import Blob
 from datetime import datetime
 from boto.exception import SDBPersistenceError
+from tempfile import TemporaryFile
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -47,7 +50,9 @@ class SDBConverter:
                           long : (self.encode_long, self.decode_long),
                           Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
-                          datetime : (self.encode_datetime, self.decode_datetime)}
+                          datetime : (self.encode_datetime, self.decode_datetime),
+                          Blob: (self.encode_blob, self.decode_blob),
+                      }
 
     def encode(self, item_type, value):
         if item_type in self.type_map:
@@ -156,10 +161,43 @@ class SDBConverter:
         except:
             return None
 
+    def encode_blob(self, value):
+        if not value:
+            return None
+
+        if not value.id:
+            key = self.manager.bucket.new_key(str(uuid.uuid4()))
+            value.id = "s3://%s/%s" % (key.bucket.name, key.name)
+        else:
+            match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value.id)
+            if match:
+                bucket = self.manager.s3.get_bucket(match.group(1), validate=False)
+                key = bucket.get_key(match.group(2))
+            else:
+                raise SDBPersistenceError("Invalid Blob ID: %s" % value.id)
+
+        key.set_contents_from_string(value.value)
+        return value.id
+
+
+    def decode_blob(self, value):
+        if not value:
+            return None
+        match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value)
+        if match:
+            bucket = self.manager.s3.get_bucket(match.group(1), validate=False)
+            key = bucket.get_key(match.group(2))
+        else:
+            return None
+        if key:
+            return Blob(value=key.get_contents_as_string(), id="s3://%s/%s" % (key.bucket.name, key.name))
+        else:
+            return None
+
 class SDBManager(object):
     
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table, ddl_dir):
+                 db_host, db_port, db_table, ddl_dir, enable_ssl):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user
@@ -169,6 +207,7 @@ class SDBManager(object):
         self.db_table = db_table
         self.ddl_dir = ddl_dir
         self.s3 = None
+        self.bucket = None
         self.converter = SDBConverter(self)
         self._connect()
 
@@ -178,6 +217,16 @@ class SDBManager(object):
         self.domain = self.sdb.lookup(self.db_name)
         if not self.domain:
             self.domain = self.sdb.create_domain(self.db_name)
+        if not self.s3:
+            self.s3 = boto.connect_s3(aws_access_key_id=self.db_user,
+                                    aws_secret_access_key=self.db_passwd)
+        if not self.bucket:
+            bucket_name = "%s-%s" % (self.s3.aws_access_key_id, self.domain.name)
+            bucket_name = bucket_name.lower()
+            try:
+                self.bucket = self.s3.get_bucket(bucket_name)
+            except:
+                self.bucket = self.s3.create_bucket(bucket_name)
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
@@ -202,14 +251,12 @@ class SDBManager(object):
         if not cls:
             cls = find_class(a['__module__'], a['__type__'])
         obj = cls(id)
-        obj._auto_update = False
         for prop in obj.properties(hidden=False):
             if prop.data_type != Key:
                 if a.has_key(prop.name):
                     value = self.decode_value(prop, a[prop.name])
                     value = prop.make_value_from_datastore(value)
                     setattr(obj, prop.name, value)
-        obj._auto_update = True
         return obj
         
     def get_object_from_id(self, id):
@@ -258,7 +305,6 @@ class SDBManager(object):
         raise NotImplementedError, "GQL queries not supported in SimpleDB"
 
     def save_object(self, obj):
-        obj._auto_update = False
         if not obj.id:
             obj.id = str(uuid.uuid4())
 
@@ -279,7 +325,6 @@ class SDBManager(object):
                 except(StopIteration):
                     pass
         self.domain.put_attributes(obj.id, attrs, replace=True)
-        obj._auto_update = True
 
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)

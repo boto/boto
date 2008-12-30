@@ -154,8 +154,10 @@ class XMLConverter:
 class XMLManager(object):
     
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table, ddl_dir):
+                 db_host, db_port, db_table, ddl_dir, enable_ssl):
         self.cls = cls
+        if not db_name:
+            db_name = cls.__name__.lower()
         self.db_name = db_name
         self.db_user = db_user
         self.db_passwd = db_passwd
@@ -165,25 +167,63 @@ class XMLManager(object):
         self.ddl_dir = ddl_dir
         self.s3 = None
         self.converter = XMLConverter(self)
-        self.opener = None
-        self._connect()
-
-    def _connect(self):
         self.impl = getDOMImplementation()
         self.doc = self.impl.createDocument(None, 'objects', None)
+
+        self.connection = None
+        self.enable_ssl = enable_ssl
+        self.auth_header = None
+        if self.db_user:
+            import base64
+            base64string = base64.encodestring('%s:%s' % (self.db_user, self.db_passwd))[:-1]
+            authheader =  "Basic %s" % base64string
+            self.auth_header = authheader
+
+    def _connect(self):
         if self.db_host:
-            import urllib2
-            password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            if self.db_user and self.db_password:
-                password_mgr.add_password(None, self.db_host, self.db_user, self.db_passwd)
-            handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-            self.opener = urllib2.build_opener(handler)
+            if self.enable_ssl:
+                from httplib import HTTPSConnection as Connection
+            else:
+                from httplib import HTTPConnection as Connection
+
+            self.connection = Connection(self.db_host, self.db_port)
+
+    def _make_request(self, method, url, post_data=None, body=None):
+        """
+        Make a request on this connection
+        """
+        if not self.connection:
+            self._connect()
+        headers = {}
+        if self.auth_header:
+            headers["Authorization"] = self.auth_header
+        self.connection.request(method, url, body, headers)
+        return self.connection.getresponse()
 
     def new_doc(self):
         return self.impl.createDocument(None, 'objects', None)
 
-    def _object_lister(self, cls, query_lister):
-        pass
+    def _object_lister(self, cls, doc):
+        for obj_node in doc.getElementsByTagName('object'):
+            if not cls:
+                class_name = obj_node.getAttribute('class')
+                cls = find_class(class_name)
+            id = obj_node.getAttribute('id')
+            obj = cls(id)
+            obj._auto_update = False
+            for prop_node in obj_node.getElementsByTagName('property'):
+                prop_name = prop_node.getAttribute('name')
+                prop = obj.find_property(prop_name)
+                if prop.data_type != Key:
+                    if hasattr(prop, 'item_type'):
+                        value = self.get_list(prop_node, prop.item_type)
+                    else:
+                        prop_value = self.get_text_value(prop_node)
+                        value = self.decode_value(prop, prop_value)
+                        value = prop.make_value_from_datastore(value)
+                    setattr(obj, prop.name, value)
+            obj._auto_update = True
+            yield obj
 
     def reset(self):
         self._connect()
@@ -242,16 +282,32 @@ class XMLManager(object):
         return obj
         
     def get_object(self, cls, id):
-        if self.opener:
-            url = "%s/%s/%s" % (self.db_host, self.db_name, id)
-            print url
-            doc = parse(self.opener.open(url))
+        if self.connection:
+            url = "/%s/%s" % (self.db_name, id)
+            if resp.status == 200:
+                doc = parse(resp)
+            else:
+                raise Exception("Error: %s" % resp.status)
             return self.get_object_from_doc(cls, id, doc)
         else:
             return None
 
     def query(self, cls, filters, limit=None, order_by=None):
-        raise NotImplementedError, "queries not supported in XML"
+        if not self.connection:
+            self._connect()
+
+        if not self.connection:
+            raise NotImplementedError("Can't query without a database connection")
+
+        from urllib import urlencode
+        url = "/%s?query=%s" % (self.db_name, urlencode(filters))
+        resp = self._make_request('GET', url)
+        if resp.status == 200:
+            doc = parse(resp)
+        else:
+            raise Exception("Error: %s" % resp.status)
+        return self._object_lister(cls, doc)
+
 
     def query_gql(self, query_string, *args, **kwds):
         raise NotImplementedError, "GQL queries not supported in XML"
@@ -265,7 +321,19 @@ class XMLManager(object):
             text_node = doc.createTextNode(item)
             item_node.appendChild(text_node)
 
-    def save_object(self, obj, doc=None):
+    def save_object(self, obj):
+        """
+        Marshal the object and do a PUT
+        """
+        doc = self.marshal_object(obj)
+        url = "/%s/%s" % (self.db_name, obj.id)
+        self._make_request("PUT", url, body=doc.toxml())
+        return doc
+
+
+    def marshal_object(self, obj, doc=None):
+        if not doc:
+            doc = self.new_doc()
         if not obj.id:
             obj.id = str(uuid.uuid4())
         if not doc:
@@ -286,14 +354,10 @@ class XMLManager(object):
                 if isinstance(value, list):
                     self.save_list(doc, value, prop_node)
                 else:
-                    text_node = doc.createTextNode(value)
+                    text_node = doc.createTextNode(str(value))
                     prop_node.appendChild(text_node)
             obj_node.appendChild(prop_node)
 
-    def marshal_object(self, obj, doc=None):
-        if not doc:
-            doc = self.new_doc()
-        self.save_object(obj, doc)
         return doc
 
     def unmarshal_object(self, fp):

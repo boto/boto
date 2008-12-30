@@ -138,7 +138,7 @@ class Model(object):
         if not hasattr(cls, '_xmlmanager'):
             from boto.sdb.db.manager.xmlmanager import XMLManager
             cls._xmlmanager = XMLManager(cls, None, None, None,
-                                         None, None, None, None)
+                                         None, None, None, None, False)
         return cls._xmlmanager
 
     @classmethod
