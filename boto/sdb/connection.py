@@ -342,6 +342,23 @@ class SDBConnection(AWSQueryConnection):
             self.build_list_params(params, attr_names, 'AttributeName')
         return self.get_list('QueryWithAttributes', params, [('Item', Item)], parent=domain)
 
+    def select(self, query='', next_token=None):
+        """
+        Returns a set of Attributes for item names within domain_name that match the query.
+        The query must be expressed in using the SELECT style syntax rather than the
+        original SimpleDB query language.
+        
+        @type query: string
+        @param query: The SimpleDB query to be performed.
+
+        @rtype: ResultSet
+        @return: An iterator containing the results.
+        """
+        params = {'SelectExpression' : query}
+        if next_token:
+            params['NextToken'] = next_token
+        return self.get_list('Select', params, [('Item', Item)])
+
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """
         Returns a list of fully populated items that match the query provided.
