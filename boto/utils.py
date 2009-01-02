@@ -102,6 +102,8 @@ def canonical_string(method, path, headers, expires=None):
         buf += "?torrent"
     elif re.search("[&?]location($|=|&)", path):
         buf += "?location"
+    elif re.search("[&?]requestPayment($|=|&)", path):
+        buf += "?requestPayment"
 
     return buf
 

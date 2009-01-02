@@ -50,6 +50,11 @@ class Bucket:
 
     LoggingGroup = 'http://acs.amazonaws.com/groups/s3/LogDelivery'
 
+    BucketPaymentBody = """<?xml version="1.0" encoding="UTF-8"?>
+       <RequestPaymentConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+         <Payer>%s</Payer>
+       </RequestPaymentConfiguration>"""
+
     def __init__(self, connection=None, name=None, key_class=Key):
         self.name = name
         self.connection = connection
@@ -437,5 +442,34 @@ class Bucket:
         policy.acl.add_grant(g2)
         self.set_acl(policy)
 
+    def disable_logging(self):
+        body = self.EmptyBucketLoggingBody
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='logging')
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+
+    def get_request_payment(self):
+        response = self.connection.make_request('GET', self.name,
+                query_args='requestPayment')
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+
+    def set_request_payment(self, payer='BucketOwner'):
+        body = self.BucketPaymentBody % payer
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='requestPayment')
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+        
     def delete(self):
         return self.connection.delete_bucket(self.name)
