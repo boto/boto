@@ -25,7 +25,7 @@ from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from datetime import datetime
 from boto.exception import SDBPersistenceError
-from xml.dom.minidom import getDOMImplementation, parse, parseString
+from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -50,6 +50,13 @@ class XMLConverter:
                           Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime)}
 
+    def get_text_value(self, parent_node):
+        value = ''
+        for node in parent_node.childNodes:
+            if node.nodeType == node.TEXT_NODE:
+                value += node.data
+        return value
+
     def encode(self, item_type, value):
         if item_type in self.type_map:
             encode = self.type_map[item_type][0]
@@ -60,6 +67,8 @@ class XMLConverter:
         if item_type in self.type_map:
             decode = self.type_map[item_type][1]
             return decode(value)
+        else:
+            value = self.get_text_value(value)
         return value
 
     def encode_prop(self, prop, value):
@@ -90,13 +99,7 @@ class XMLConverter:
                         item_type = Model
                 return [self.decode(item_type, v) for v in value]
             else:
-                return value
-        elif hasattr(prop, 'reference_class'):
-            ref_class = getattr(prop, 'reference_class')
-            if ref_class != self.manager.cls:
-                return ref_class._manager.decode_value(prop, value)
-            else:
-                return self.decode(prop.data_type, value)
+                return self.get_text_value(value)
         else:
             return self.decode(prop.data_type, value)
 
@@ -105,6 +108,7 @@ class XMLConverter:
         return '%d' % value
 
     def decode_int(self, value):
+        value = self.get_text_value(value)
         return int(value)
 
     def encode_long(self, value):
@@ -112,6 +116,7 @@ class XMLConverter:
         return '%d' % value
 
     def decode_long(self, value):
+        value = self.get_text_value(value)
         return long(value)
 
     def encode_bool(self, value):
@@ -121,6 +126,7 @@ class XMLConverter:
             return 'false'
 
     def decode_bool(self, value):
+        value = self.get_text_value(value)
         if value.lower() == 'true':
             return True
         else:
@@ -130,6 +136,7 @@ class XMLConverter:
         return value.strftime(ISO8601)
 
     def decode_datetime(self, value):
+        value = self.get_text_value(value)
         try:
             return datetime.strptime(value, ISO8601)
         except:
@@ -141,13 +148,20 @@ class XMLConverter:
         if value == None:
             return ''
         else:
-            return value.id
+            val_node = self.manager.doc.createElement("object")
+            val_node.setAttribute('id', value.id)
+            val_node.setAttribute('class', '%s.%s' % (value.__class__.__module__, value.__class__.__name__))
+            return val_node
 
     def decode_reference(self, value):
         if not value:
             return None
         try:
-            return self.manager.get_object_from_id(value)
+            value = value.childNodes[0]
+            class_name = value.getAttribute("class")
+            id = value.getAttribute("id")
+            cls = find_class(class_name)
+            return cls.get_by_ids(id)
         except:
             return None
 
@@ -210,19 +224,16 @@ class XMLManager(object):
                 cls = find_class(class_name)
             id = obj_node.getAttribute('id')
             obj = cls(id)
-            obj._auto_update = False
             for prop_node in obj_node.getElementsByTagName('property'):
                 prop_name = prop_node.getAttribute('name')
                 prop = obj.find_property(prop_name)
-                if prop.data_type != Key:
+                if prop:
                     if hasattr(prop, 'item_type'):
                         value = self.get_list(prop_node, prop.item_type)
                     else:
-                        prop_value = self.get_text_value(prop_node)
-                        value = self.decode_value(prop, prop_value)
+                        value = self.decode_value(prop, prop_node)
                         value = prop.make_value_from_datastore(value)
                     setattr(obj, prop.name, value)
-            obj._auto_update = True
             yield obj
 
     def reset(self):
@@ -242,19 +253,11 @@ class XMLManager(object):
             self.s3 = boto.connect_s3(self.aws_access_key_id, self.aws_secret_access_key)
         return self.s3
 
-    def get_text_value(self, parent_node):
-        value = ''
-        for node in parent_node.childNodes:
-            if node.nodeType == node.TEXT_NODE:
-                value += node.data
-        return value
-
     def get_list(self, prop_node, item_type):
         values = []
         items_node = prop_node.getElementsByTagName('items')[0]
         for item_node in items_node.getElementsByTagName('item'):
-            item_value = self.get_text_value(item_node)
-            value = self.converter.decode(item_type, item_value)
+            value = self.converter.decode(item_type, item_node)
             values.append(value)
         return values
 
@@ -266,7 +269,6 @@ class XMLManager(object):
         if not id:
             id = obj_node.getAttribute('id')
         obj = cls(id)
-        obj._auto_update = False
         for prop_node in obj_node.getElementsByTagName('property'):
             prop_name = prop_node.getAttribute('name')
             prop = obj.find_property(prop_name)
@@ -274,23 +276,24 @@ class XMLManager(object):
                 if hasattr(prop, 'item_type'):
                     value = self.get_list(prop_node, prop.item_type)
                 else:
-                    prop_value = self.get_text_value(prop_node)
-                    value = self.decode_value(prop, prop_value)
+                    value = self.decode_value(prop, prop_node)
                     value = prop.make_value_from_datastore(value)
                 setattr(obj, prop.name, value)
-        obj._auto_update = True
         return obj
         
     def get_object(self, cls, id):
-        if self.connection:
-            url = "/%s/%s" % (self.db_name, id)
-            if resp.status == 200:
-                doc = parse(resp)
-            else:
-                raise Exception("Error: %s" % resp.status)
-            return self.get_object_from_doc(cls, id, doc)
+        if not self.connection:
+            self._connect()
+
+        if not self.connection:
+            raise NotImplementedError("Can't query without a database connection")
+        url = "/%s/%s" % (self.db_name, id)
+        resp = self._make_request('GET', url)
+        if resp.status == 200:
+            doc = parse(resp)
         else:
-            return None
+            raise Exception("Error: %s" % resp.status)
+        return self.get_object_from_doc(cls, id, doc)
 
     def query(self, cls, filters, limit=None, order_by=None):
         if not self.connection:
@@ -390,6 +393,8 @@ class XMLManager(object):
                 value = self.encode_value(property, value)
                 if isinstance(value, list):
                     self.save_list(doc, value, prop_node)
+                elif isinstance(value, Node):
+                    prop_node.appendChild(value)
                 else:
                     text_node = doc.createTextNode(str(value))
                     prop_node.appendChild(text_node)
@@ -406,27 +411,6 @@ class XMLManager(object):
 
     def delete_object(self, obj):
         raise NotImplementedError, "delete not supported in XML"
-
-    def set_property(self, prop, obj, name, value):
-        value = prop.get_value_for_datastore(obj)
-        value = self.encode_value(prop, value)
-        if prop.unique:
-            try:
-                args = {prop.name: value}
-                obj2 = obj.find(**args).next()
-                if obj2.id != obj.id:
-                    raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
-            except(StopIteration):
-                pass
-        self.domain.put_attributes(obj.id, {name : value}, replace=True)
-
-    def get_property(self, prop, obj, name):
-        a = self.domain.get_attributes(obj.id, name)
-        # try to get the attribute value from SDB
-        if name in a:
-            value = self.decode_value(prop, a[name])
-            return prop.make_value_from_datastore(value)
-        raise AttributeError, '%s not found' % name
 
     def set_key_value(self, obj, name, value):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
