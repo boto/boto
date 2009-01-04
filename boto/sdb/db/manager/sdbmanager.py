@@ -190,7 +190,7 @@ class SDBConverter:
         else:
             return None
         if key:
-            return Blob(value=key.get_contents_as_string(), id="s3://%s/%s" % (key.bucket.name, key.name))
+            return Blob(file=key, id="s3://%s/%s" % (key.bucket.name, key.name))
         else:
             return None
 

@@ -23,12 +23,15 @@ class Blob(object):
     """
     Blob object
     """
-    def __init__(self, value=None, id=None):
-        self.value = value
+    def __init__(self, value=None, file=None, id=None):
+        self.file = file
         self.id = id
+        self.value = value
 
     def __str__(self):
-        return str(self.value)
+        return self.read()
 
     def read(self):
+        if not self.value:
+            self.value = self.file.read()
         return str(self.value)
