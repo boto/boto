@@ -400,7 +400,7 @@ class AWSQueryConnection(AWSAuthConnection):
         pairs = []
         for key in keys:
             val = self.get_utf8_value(params[key])
-            pairs.append(urllib.quote(key, safe='') + '=' + urllib.quote(val, safe=''))
+            pairs.append(urllib.quote(key, safe='') + '=' + urllib.quote(val, safe='-_~'))
         qs = '&'.join(pairs)
         boto.log.debug('query string: %s' % qs)
         string_to_sign += qs
