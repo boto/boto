@@ -255,7 +255,10 @@ class XMLManager(object):
 
     def get_list(self, prop_node, item_type):
         values = []
-        items_node = prop_node.getElementsByTagName('items')[0]
+        try:
+            items_node = prop_node.getElementsByTagName('items')[0]
+        except:
+            return []
         for item_node in items_node.getElementsByTagName('item'):
             value = self.converter.decode(item_type, item_node)
             values.append(value)
@@ -278,7 +281,8 @@ class XMLManager(object):
                 else:
                     value = self.decode_value(prop, prop_node)
                     value = prop.make_value_from_datastore(value)
-                setattr(obj, prop.name, value)
+                if value != None:
+                    setattr(obj, prop.name, value)
         return obj
         
     def get_object(self, cls, id):
@@ -427,4 +431,10 @@ class XMLManager(object):
     
     def get_raw_item(self, obj):
         return self.domain.get_item(obj.id)
-        
+
+    def set_property(self, prop, obj, name, value):
+        pass
+
+    def get_property(self, prop, obj, name):
+        pass
+

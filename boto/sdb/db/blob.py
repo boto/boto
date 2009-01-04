@@ -29,3 +29,6 @@ class Blob(object):
 
     def __str__(self):
         return str(self.value)
+
+    def read(self):
+        return str(self.value)
