@@ -275,14 +275,13 @@ class XMLManager(object):
         for prop_node in obj_node.getElementsByTagName('property'):
             prop_name = prop_node.getAttribute('name')
             prop = obj.find_property(prop_name)
-            if prop.data_type != Key:
-                if hasattr(prop, 'item_type'):
-                    value = self.get_list(prop_node, prop.item_type)
-                else:
-                    value = self.decode_value(prop, prop_node)
-                    value = prop.make_value_from_datastore(value)
-                if value != None:
-                    setattr(obj, prop.name, value)
+            if hasattr(prop, 'item_type'):
+                value = self.get_list(prop_node, prop.item_type)
+            else:
+                value = self.decode_value(prop, prop_node)
+                value = prop.make_value_from_datastore(value)
+            if value != None:
+                setattr(obj, prop.name, value)
         return obj
         
     def get_object(self, cls, id):
