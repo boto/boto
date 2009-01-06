@@ -342,22 +342,29 @@ class SDBConnection(AWSQueryConnection):
             self.build_list_params(params, attr_names, 'AttributeName')
         return self.get_list('QueryWithAttributes', params, [('Item', Item)], parent=domain)
 
-    def select(self, query='', next_token=None):
+    def select(self, domain_or_name, query='', next_token=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
         original SimpleDB query language.
+        Even though the select request does not require a domain object, a domain
+        object must be passed into this method so the Item objects returned can
+        point to the appropriate domain.
         
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
         @type query: string
         @param query: The SimpleDB query to be performed.
 
         @rtype: ResultSet
         @return: An iterator containing the results.
         """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'SelectExpression' : query}
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('Select', params, [('Item', Item)])
+        return self.get_list('Select', params, [('Item', Item)], parent=domain)
 
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """
