@@ -31,6 +31,21 @@ class Policy:
         self.parent = parent
         self.acl = None
 
+    def __repr__(self):
+        grants = []
+        for g in self.acl.grants:
+            if g.id == self.owner.id:
+                grants.append("%s (owner) = %s" % (g.display_name, g.permission))
+            else:
+                if g.type == 'CanonicalUser':
+                    u = g.display_name
+                elif g.type == 'Group':
+                    u = g.uri
+                else:
+                    u = g.email
+                grants.append("%s = %s" % (u, g.permission))
+        return "<Policy: %s>" % ", ".join(grants)
+
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
             self.owner = User(self)
