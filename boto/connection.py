@@ -52,12 +52,14 @@ from boto.resultset import ResultSet
 import boto.utils
 from boto import config, UserAgent, handler
 try:
-    from hashlib import sha1 as sha
-    from hashlib import sha256 as sha256
-except ImportError:
+    import hashlib
+except ImportError: # Python version < 2.5
     import sha
-    sha256 = None
-
+    _sha1 = sha.new
+else:
+    _sha1 = hashlib.sha1
+    _sha256 = hashlib.sha256
+    
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 class AWSAuthConnection:
@@ -145,9 +147,9 @@ class AWSAuthConnection:
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
         # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
-        if sha256:
-            self.hmac_256 = hmac.new(self.aws_secret_access_key, digestmod=sha256)
+        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=_sha1)
+        if _sha256:
+            self.hmac_256 = hmac.new(self.aws_secret_access_key, digestmod=_sha256)
         else:
             self.hmac_256 = None
 
