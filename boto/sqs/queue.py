@@ -229,7 +229,7 @@ class Queue:
             l = self.get_messages(page_size, vtimeout)
         return n
     
-    def dump(self, file_name, page_size=10, vtimeout=10, sep='\n'):
+    def dump_(self, file_name, page_size=10, vtimeout=10, sep='\n'):
         """Utility function to dump the messages in a queue to a file
         NOTE: Page size must be < 10 else SQS errors"""
         fp = open(file_name, 'wb')
@@ -245,15 +245,14 @@ class Queue:
         fp.close()
         return n
 
-    def save(self, file_name, sep='\n'):
+    def save_to_file(self, fp, sep='\n'):
         """
-        Read all messages from the queue and persist them to local file.
+        Read all messages from the queue and persist them to file-like object.
         Messages are written to the file and the 'sep' string is written
         in between messages.  Messages are deleted from the queue after
         being written to the file.
         Returns the number of messages saved.
         """
-        fp = open(file_name, 'wb')
         n = 0
         m = self.read()
         while m:
@@ -263,8 +262,23 @@ class Queue:
                 fp.write(sep)
             self.delete_message(m)
             m = self.read()
+        return n
+    
+    def save_to_filename(self, file_name, sep='\n'):
+        """
+        Read all messages from the queue and persist them to local file.
+        Messages are written to the file and the 'sep' string is written
+        in between messages.  Messages are deleted from the queue after
+        being written to the file.
+        Returns the number of messages saved.
+        """
+        fp = open(file_name, 'wb')
+        n = self.save_to_file(fp, sep)
         fp.close()
         return n
+
+    # for backwards compatibility
+    save = save_to_filename
 
     def save_to_s3(self, bucket):
         """
@@ -300,9 +314,8 @@ class Queue:
             self.write(m)
         return n
 
-    def load(self, file_name, sep='\n'):
-        """Utility function to load messages from a file to a queue"""
-        fp = open(file_name, 'rb')
+    def load_from_file(self, fp, sep='\n'):
+        """Utility function to load messages from a file-like object to a queue"""
         n = 0
         body = ''
         l = fp.readline()
@@ -316,7 +329,15 @@ class Queue:
             else:
                 body = body + l
             l = fp.readline()
-        fp.close()
         return n
     
+    def load_from_filename(self, file_name, sep='\n'):
+        """Utility function to load messages from a local filename to a queue"""
+        fp = open(file_name, 'rb')
+        n = self.load_file_file(fp, sep)
+        fp.close()
+        return n
+
+    # for backward compatibility
+    load = load_from_filename
     
