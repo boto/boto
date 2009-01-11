@@ -55,7 +55,8 @@ try:
     import hashlib
 except ImportError: # Python version < 2.5
     import sha
-    _sha1 = sha.new
+    _sha1 = sha
+    _sha256 = None
 else:
     _sha1 = hashlib.sha1
     _sha256 = hashlib.sha256
