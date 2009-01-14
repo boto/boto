@@ -51,16 +51,36 @@ from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 from boto.resultset import ResultSet
 import boto.utils
 from boto import config, UserAgent, handler
+
+#
+# the following is necessary because of the incompatibilities
+# between Python 2.4, 2.5, and 2.6 as well as the fact that some
+# people running 2.4 have installed hashlib as a separate module
+# this fix was provided by boto user mccormix.
+# see: http://code.google.com/p/boto/issues/detail?id=172
+# for more details.
+#
 try:
-    import hashlib
-except ImportError: # Python version < 2.5
-    import sha
-    _sha1 = sha
-    _sha256 = None
-else:
-    _sha1 = hashlib.sha1
-    _sha256 = hashlib.sha256
+    from hashlib import sha1 as sha
+    from hashlib import sha256 as sha256
     
+    if sys.version[:3] == "2.4":
+        # we are using an hmac that expects a .new() method.
+        class Faker:
+            def __init__(self, which):
+                self.which = which
+                self.digest_size = self.which().digest_size
+            
+            def new(self, *args, **kwargs):
+                return self.which(*args, **kwargs)
+        
+        sha = Faker(sha)
+        sha256 = Faker(sha256)
+
+except ImportError:
+    import sha
+    sha256 = None
+
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 class AWSAuthConnection:
@@ -148,9 +168,9 @@ class AWSAuthConnection:
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
         # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=_sha1)
-        if _sha256:
-            self.hmac_256 = hmac.new(self.aws_secret_access_key, digestmod=_sha256)
+        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
+        if sha256:
+            self.hmac_256 = hmac.new(self.aws_secret_access_key, digestmod=sha256)
         else:
             self.hmac_256 = None
 
