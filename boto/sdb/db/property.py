@@ -187,21 +187,32 @@ class S3KeyProperty(Property):
     
     data_type = boto.s3.key.Key
     type_name = 'S3Key'
+    validate_regex = "^s3:\/\/([^\/]*)\/(.*)$"
 
     def __init__(self, verbose_name=None, name=None, default=None,
                  required=False, validator=None, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required,
                           validator, choices, unique)
-        
-    def make_value_from_datastore(self, value):
-        match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value)
+
+    def validate(self, value):
+        if value == self.default_value or value == str(self.default_value):
+            return self.default_value
+        match = re.match(self.validate_regex, value)
         if match:
-            s3 = boto.connect_s3()
-            bucket = s3.get_bucket(match.group(1), validate=False)
-            return bucket.get_key(match.group(2))
+            return
+        raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+
+    def __get__(self, obj, objtype):
+        value = Property.__get__(self, obj, objtype)
+        if value:
+            match = re.match(self.validate_regex, value)
+            if match:
+                s3 = obj._manager.get_s3_connection()
+                bucket = s3.get_bucket(match.group(1), validate=False)
+                return bucket.get_key(match.group(2))
         else:
-            return None
-    
+            return value
+        
     def get_value_for_datastore(self, model_instance):
         value = Property.get_value_for_datastore(self, model_instance)
         if value:
