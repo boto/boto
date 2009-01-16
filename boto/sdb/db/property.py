@@ -52,11 +52,6 @@ class Property(object):
                 value = getattr(obj, self.slot_name)
             except AttributeError:
                 value = self.default_value()
-                if obj.id:
-                    try:
-                        value = obj._manager.get_property(self, obj, self.name)
-                    except AttributeError:
-                        pass
                 setattr(obj, self.slot_name, value)
         return value
 
@@ -197,12 +192,12 @@ class S3KeyProperty(Property):
                  required=False, validator=None, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required,
                           validator, choices, unique)
-        self.s3 = boto.connect_s3()
         
     def make_value_from_datastore(self, value):
         match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value)
         if match:
-            bucket = self.s3.get_bucket(match.group(1), validate=False)
+            s3 = boto.connect_s3()
+            bucket = s3.get_bucket(match.group(1), validate=False)
             return bucket.get_key(match.group(2))
         else:
             return None

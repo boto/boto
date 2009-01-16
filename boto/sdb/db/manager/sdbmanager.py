@@ -166,12 +166,14 @@ class SDBConverter:
             return None
 
         if not value.id:
-            key = self.manager.bucket.new_key(str(uuid.uuid4()))
+            bucket = self.manager.get_blob_bucket()
+            key = bucket.new_key(str(uuid.uuid4()))
             value.id = "s3://%s/%s" % (key.bucket.name, key.name)
         else:
             match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value.id)
             if match:
-                bucket = self.manager.s3.get_bucket(match.group(1), validate=False)
+                s3 = self.manager.get_s3_connection()
+                bucket = s3.get_bucket(match.group(1), validate=False)
                 key = bucket.get_key(match.group(2))
             else:
                 raise SDBPersistenceError("Invalid Blob ID: %s" % value.id)
@@ -185,7 +187,8 @@ class SDBConverter:
             return None
         match = re.match("^s3:\/\/([^\/]*)\/(.*)$", value)
         if match:
-            bucket = self.manager.s3.get_bucket(match.group(1), validate=False)
+            s3 = self.manager.get_s3_connection()
+            bucket = s3.get_bucket(match.group(1), validate=False)
             key = bucket.get_key(match.group(2))
         else:
             return None
@@ -214,19 +217,13 @@ class SDBManager(object):
     def _connect(self):
         self.sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
                                     aws_secret_access_key=self.db_passwd)
-        self.domain = self.sdb.lookup(self.db_name)
+        # This assumes that the domain has already been created
+        # It's much more efficient to do it this way rather than
+        # having this make a roundtrip each time to validate.
+        # The downside is that if the domain doesn't exist, it breaks
+        self.domain = self.sdb.lookup(self.db_name, validate=False)
         if not self.domain:
             self.domain = self.sdb.create_domain(self.db_name)
-        if not self.s3:
-            self.s3 = boto.connect_s3(aws_access_key_id=self.db_user,
-                                    aws_secret_access_key=self.db_passwd)
-        if not self.bucket:
-            bucket_name = "%s-%s" % (self.s3.aws_access_key_id, self.domain.name)
-            bucket_name = bucket_name.lower()
-            try:
-                self.bucket = self.s3.get_bucket(bucket_name)
-            except:
-                self.bucket = self.s3.create_bucket(bucket_name)
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
@@ -243,6 +240,15 @@ class SDBManager(object):
             self.s3 = boto.connect_s3(self.aws_access_key_id, self.aws_secret_access_key)
         return self.s3
 
+    def get_blob_bucket(self, bucket_name=None):
+        s3 = self.get_s3_connection()
+        bucket_name = "%s-%s" % (s3.aws_access_key_id, self.domain.name)
+        bucket_name = bucket_name.lower()
+        try:
+            self.bucket = s3.get_bucket(bucket_name)
+        except:
+            self.bucket = s3.create_bucket(bucket_name)
+            
     def get_object(self, cls, id, a=None):
         if not a:
             a = self.domain.get_attributes(id)
