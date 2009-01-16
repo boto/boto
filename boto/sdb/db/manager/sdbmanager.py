@@ -237,7 +237,7 @@ class SDBManager(object):
 
     def get_s3_connection(self):
         if not self.s3:
-            self.s3 = boto.connect_s3(self.aws_access_key_id, self.aws_secret_access_key)
+            self.s3 = boto.connect_s3(self.db_user, self.db_passwd)
         return self.s3
 
     def get_blob_bucket(self, bucket_name=None):
