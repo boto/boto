@@ -52,6 +52,11 @@ class Property(object):
                 value = getattr(obj, self.slot_name)
             except AttributeError:
                 value = self.default_value()
+                if obj.id:
+                    try:
+                        value = obj._manager.get_property(self, obj, self.name)
+                    except AttributeError:
+                        pass
                 setattr(obj, self.slot_name, value)
         return value
 
@@ -197,6 +202,8 @@ class S3KeyProperty(Property):
     def validate(self, value):
         if value == self.default_value or value == str(self.default_value):
             return self.default_value
+        if isinstance(value, self.data_type):
+            return
         match = re.match(self.validate_regex, value)
         if match:
             return
@@ -205,6 +212,8 @@ class S3KeyProperty(Property):
     def __get__(self, obj, objtype):
         value = Property.__get__(self, obj, objtype)
         if value:
+            if isinstance(value, self.data_type):
+                return value
             match = re.match(self.validate_regex, value)
             if match:
                 s3 = obj._manager.get_s3_connection()
