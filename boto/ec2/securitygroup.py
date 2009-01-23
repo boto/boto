@@ -207,6 +207,15 @@ class SecurityGroup(EC2Object):
                              grant.cidr_ip)
         return sg
 
+    def instances(self):
+        instances = []
+        rs = self.connection.get_all_instances()
+        for reservation in rs:
+            uses_group = [g.id for g in reservation.groups if g.id == self.name]
+            if uses_group:
+                instances.extend(reservation.instances)
+        return instances
+
 class IPPermissions:
 
     def __init__(self, parent=None):
