@@ -64,10 +64,10 @@ def test_basic():
     print 'saving object'
     time.sleep(5)
     print 'now try retrieving it'
-    tt = TestBasic.get_by_ids(t.id)
+    tt = TestBasic.get_by_id(t.id)
     _objects['test_basic_tt'] = tt
     assert tt.id == t.id
-    l = TestBasic.get_by_ids([t.id])
+    l = TestBasic.get_by_id([t.id])
     assert len(l) == 1
     assert l[0].id == t.id
     assert t.size == tt.size
@@ -91,7 +91,7 @@ def test_reference(t=None):
     tt.ref = t
     tt.put()
     time.sleep(10)
-    tt = TestReference.get_by_ids(tt.id)
+    tt = TestReference.get_by_id(tt.id)
     _objects['test_reference_tt'] = tt
     assert tt.ref.id == t.id
     for o in t.refs:
@@ -113,7 +113,7 @@ def test_password():
     t.save()
     time.sleep(5)
     # Make sure it stored ok
-    tt = TestPassword.get_by_ids(t.id)
+    tt = TestPassword.get_by_id(t.id)
     _objects['test_password_tt'] = tt
     #Testing password equality
     assert tt.password == "foo"
@@ -127,7 +127,7 @@ def test_list():
     t.name = 'a list of ints'
     t.nums = [1,2,3,4,5]
     t.put()
-    tt = TestList.get_by_ids(t.id)
+    tt = TestList.get_by_id(t.id)
     _objects['test_list_tt'] = tt
     assert tt.name == t.name
     for n in tt.nums:
@@ -144,7 +144,7 @@ def test_list_reference():
     tt.put()
     time.sleep(5)
     _objects['test_list_ref_tt'] = tt
-    ttt = TestListReference.get_by_ids(tt.id)
+    ttt = TestListReference.get_by_id(tt.id)
     assert ttt.basics[0].id == t.id
 
 def test_unique():

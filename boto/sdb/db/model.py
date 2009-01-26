@@ -73,12 +73,14 @@ class Model(object):
         return manager.get_object(cls, id)
             
     @classmethod
-    def get_by_ids(cls, ids=None, parent=None):
+    def get_by_id(cls, ids=None, parent=None):
         if isinstance(ids, list):
             objs = [cls._get_by_id(id) for id in ids]
             return objs
         else:
             return cls._get_by_id(ids)
+
+    get_by_ids = get_by_id
 
     @classmethod
     def get_by_key_name(cls, key_names, parent=None):
@@ -166,7 +168,6 @@ class Model(object):
 
     def put(self):
         self._manager.save_object(self)
-        self._auto_update = True
 
     save = put
         
