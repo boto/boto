@@ -109,7 +109,11 @@ class XMLConverter:
 
     def decode_int(self, value):
         value = self.get_text_value(value)
-        return int(value)
+        if value:
+            value = int(value)
+        else:
+            value = None
+        return value
 
     def encode_long(self, value):
         value = long(value)
@@ -281,7 +285,10 @@ class XMLManager(object):
                 value = self.decode_value(prop, prop_node)
                 value = prop.make_value_from_datastore(value)
             if value != None:
-                setattr(obj, prop.name, value)
+                try:
+                    setattr(obj, prop.name, value)
+                except:
+                    pass
         return obj
         
     def get_object(self, cls, id):
@@ -369,20 +376,30 @@ class XMLManager(object):
         Marshal the object and do a PUT
         """
         doc = self.marshal_object(obj)
-        url = "/%s/%s" % (self.db_name, obj.id)
-        self._make_request("PUT", url, body=doc.toxml())
-        return doc
+        if obj.id:
+            url = "/%s/%s" % (self.db_name, obj.id)
+        else:
+            url = "/%s" % (self.db_name)
+        resp = self._make_request("PUT", url, body=doc.toxml())
+        new_obj = self.get_object_from_doc(obj.__class__, None, parse(resp))
+        obj.id = new_obj.id
+        for prop in obj.properties():
+            value = getattr(new_obj, prop.name)
+            if value:
+                setattr(obj, prop.name, value)
+        return obj
 
 
     def marshal_object(self, obj, doc=None):
         if not doc:
             doc = self.new_doc()
-        if not obj.id:
-            obj.id = str(uuid.uuid4())
         if not doc:
             doc = self.doc
         obj_node = doc.createElement('object')
-        obj_node.setAttribute('id', obj.id)
+
+        if obj.id:
+            obj_node.setAttribute('id', obj.id)
+
         obj_node.setAttribute('class', '%s.%s' % (obj.__class__.__module__,
                                                   obj.__class__.__name__))
         root = doc.documentElement
