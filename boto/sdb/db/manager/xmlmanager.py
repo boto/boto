@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import boto
-from boto.utils import find_class
+from boto.utils import find_class, Password
 import uuid
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
@@ -48,6 +48,7 @@ class XMLConverter:
                           long : (self.encode_long, self.decode_long),
                           Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
+                          Password : (self.encode_password, self.decode_password),
                           datetime : (self.encode_datetime, self.decode_datetime)}
 
     def get_text_value(self, parent_node):
@@ -168,6 +169,14 @@ class XMLConverter:
             return cls.get_by_ids(id)
         except:
             return None
+
+    def encode_password(self, value):
+        return str(value)
+
+    def decode_password(self, value):
+        value = self.get_text_value(value)
+        return Password(value)
+
 
 class XMLManager(object):
     
@@ -384,9 +393,14 @@ class XMLManager(object):
         new_obj = self.get_object_from_doc(obj.__class__, None, parse(resp))
         obj.id = new_obj.id
         for prop in obj.properties():
-            value = getattr(new_obj, prop.name)
-            if value:
-                setattr(obj, prop.name, value)
+            try:
+                propname = prop.name
+            except AttributeError:
+                propname = None
+            if propname:
+                value = getattr(new_obj, prop.name)
+                if value:
+                    setattr(obj, prop.name, value)
         return obj
 
 
