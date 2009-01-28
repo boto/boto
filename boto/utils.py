@@ -41,7 +41,7 @@ import hmac
 import re
 import urllib, urllib2
 import imp
-import popen2, os, StringIO
+import subprocess, os, StringIO
 import time, datetime
 import logging.handlers
 import boto
@@ -243,19 +243,22 @@ class ShellCommand(object):
 
     def run(self):
         boto.log.info('running:%s' % self.command)
-        self.process = popen2.Popen4(self.command)
+        self.process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if(self.wait):
-            return self.getStatus()
+            while self.process.poll() == None:
+                time.sleep(1)
+                t = self.process.communicate()
+                self.log_fp.write(t[0])
+                self.log_fp.write(t[1])
+            boto.log.info(self.log_fp.getvalue())
+            self.exit_code = self.process.returncode
+            return self.exit_code
 
     def setReadOnly(self, value):
         raise AttributeError
 
     def getStatus(self):
-        if(not self.exit_code):
-            status = self.process.wait()
-            self.log_fp.write(self.process.fromchild.read())
-            boto.log.info(self.log_fp.getvalue())
-            self.exit_code = os.WEXITSTATUS(status)
         return self.exit_code
 
     status = property(getStatus, setReadOnly, None, 'The exit code for the command')
