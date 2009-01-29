@@ -200,8 +200,8 @@ class S3KeyProperty(Property):
                           validator, choices, unique)
 
     def validate(self, value):
-        if value == self.default_value or value == str(self.default_value):
-            return self.default_value
+        if value == self.default_value() or value == str(self.default_value()):
+            return self.default_value()
         if isinstance(value, self.data_type):
             return
         match = re.match(self.validate_regex, value)
