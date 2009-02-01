@@ -377,8 +377,11 @@ class XMLManager(object):
         for item in items:
             item_node = doc.createElement('item')
             items_node.appendChild(item_node)
-            text_node = doc.createTextNode(item)
-            item_node.appendChild(text_node)
+            if isinstance(item, Node):
+                item_node.appendChild(item)
+            else:
+                text_node = doc.createTextNode(item)
+                item_node.appendChild(text_node)
 
     def save_object(self, obj):
         """
