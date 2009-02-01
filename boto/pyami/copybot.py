@@ -67,7 +67,8 @@ class CopyBot(ScriptBase):
                         boto.log.info('key=%s already exists in %s, skipping' % (key.name, self.dst.name))
                         continue
                 boto.log.info('copying %d bytes from key=%s' % (key.size, key.name))
-                path = os.path.join(self.wdir, key.name)
+                prefix, base = os.path.split(key.name)
+                path = os.path.join(self.wdir, base)
                 key.get_contents_to_filename(path)
                 new_key = self.dst.new_key(key.name)
                 new_key.set_contents_from_filename(path)
