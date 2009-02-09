@@ -34,6 +34,7 @@ class Property(object):
 
     data_type = str
     type_name = ''
+    name = ''
 
     def __init__(self, verbose_name=None, name=None, default=None, required=False,
                  validator=None, choices=None, unique=False):
