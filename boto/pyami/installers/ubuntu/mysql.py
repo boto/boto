@@ -57,8 +57,10 @@ class MySQL(Installer):
         time.sleep(10) #trying to stop mysql immediately after installing it fails
         # We need to wait until mysql creates the root account before we kill it
         # or bad things will happen
-        while self.run("echo 'quit' | mysql -u root") != 0:
+        i = 0
+        while self.run("echo 'quit' | mysql -u root") != 0 and i<5:
             time.sleep(5)
+            i += 1
         self.run('/etc/init.d/mysql stop')
         self.run("pkill -9 mysql")
 
