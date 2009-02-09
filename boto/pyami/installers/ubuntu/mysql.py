@@ -45,13 +45,14 @@ class MySQL(Installer):
         self.run('apt-get update')
         self.run('apt-get -y install mysql-server', notify=True, exit_on_error=True)
 
-    def set_root_password(self, password=None):
-        if not password:
-            password = boto.config.get('MySQL', 'root_password')
-        if password:
-            self.run('mysqladmin -u root password %s' % password)
+#    def set_root_password(self, password=None):
+#        if not password:
+#            password = boto.config.get('MySQL', 'root_password')
+#        if password:
+#            self.run('mysqladmin -u root password %s' % password)
+#        return password
 
-    def change_data_dir(self):
+    def change_data_dir(self, password=None):
         data_dir = boto.config.get('MySQL', 'data_dir', '/mnt')
         fresh_install = False;
         time.sleep(10) #trying to stop mysql immediately after installing it fails
@@ -60,7 +61,6 @@ class MySQL(Installer):
         i = 0
         while self.run("echo 'quit' | mysql -u root") != 0 and i<5:
             time.sleep(5)
-            i += 1
         self.run('/etc/init.d/mysql stop')
         self.run("pkill -9 mysql")
 
@@ -94,6 +94,8 @@ class MySQL(Installer):
 
     def main(self):
         self.install()
-        self.set_root_password()
+        # change_data_dir runs 'mysql -u root' which assumes there is no mysql password, i
+        # and changing that is too ugly to be worth it:
+        #self.set_root_password()
         self.change_data_dir()
         
