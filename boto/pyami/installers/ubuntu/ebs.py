@@ -123,8 +123,9 @@ class EBSInstaller(Installer):
                     # something is already mounted at the mount point
                     if t[0] != self.device:
                         self.run('umount %s' % self.mount_point)
-                        new_dir = self.get_dir_name(self.mount_point)
-                        self.run('mount %s %s' % (t[0], new_dir))
+                        #new_dir = self.get_dir_name(self.mount_point)
+                        #self.run('mount %s %s' % (t[0], new_dir))
+                        self.run('mount %s /tmp' % t[0])
                         break
         # Mount up our new EBS volume onto mount_point
         self.run("mount %s %s" % (self.device, self.mount_point))
