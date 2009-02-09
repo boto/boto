@@ -61,6 +61,7 @@ class MySQL(Installer):
         i = 0
         while self.run("echo 'quit' | mysql -u root") != 0 and i<5:
             time.sleep(5)
+            i = i + 1
         self.run('/etc/init.d/mysql stop')
         self.run("pkill -9 mysql")
 
