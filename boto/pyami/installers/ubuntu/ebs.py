@@ -25,9 +25,8 @@ This installer assumes that you want the volume formatted as
 an XFS file system.  To drive this installer, you need the
 following section in the boto config passed to the new instance.
 If there is already a device mounted at the specified mount point,
-the installer will unmount it and remount it to a newly created
-directory.  The name of the directory is based on the base name
-of the mount point with a time stamp appended for uniqueness.
+the installer assumes that it is the ephemeral drive and unmounts
+it, remounts it as /tmp and chmods it to 777.
 
 [EBS]
 volume_id = <the id of the EBS volume, should look like vol-xxxxxxxx>
@@ -101,12 +100,6 @@ class EBSInstaller(Installer):
         fp.close()
         self.run('chmod +x /usr/local/bin/ebs_backup')
 
-    def get_dir_name(self, base_name):
-        suffix = int(time.time())
-        dir_name = '%s_%d' % (base_name, suffix)
-        os.mkdir(dir_name)
-        return dir_name
-
     def handle_mount_point(self):
         boto.log.info('handle_mount_point')
         if not os.path.isdir(self.mount_point):
@@ -121,11 +114,11 @@ class EBSInstaller(Installer):
                 t = line.split()
                 if t and t[2] == self.mount_point:
                     # something is already mounted at the mount point
+                    # unmount that and mount it as /tmp
                     if t[0] != self.device:
                         self.run('umount %s' % self.mount_point)
-                        #new_dir = self.get_dir_name(self.mount_point)
-                        #self.run('mount %s %s' % (t[0], new_dir))
                         self.run('mount %s /tmp' % t[0])
+                        self.run('chmod 777 /tmp')
                         break
         # Mount up our new EBS volume onto mount_point
         self.run("mount %s %s" % (self.device, self.mount_point))
