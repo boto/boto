@@ -323,7 +323,7 @@ class AWSAuthConnection:
                 # -- gross hack --
                 # httplib gets confused with chunked responses to HEAD requests
                 # so I have to fake it out
-                if method == 'HEAD' and response.chunked:
+                if method == 'HEAD' and getattr(response, 'chunked', False):
                     response.chunked = 0
                 if response.status == 500 or response.status == 503:
                     boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2**i))
@@ -372,7 +372,7 @@ class AWSAuthConnection:
         else:
             headers = headers.copy()
         if not headers.has_key('Content-Length'):
-            headers['Content-Length'] = len(data)
+            headers['Content-Length'] = str(len(data))
         if self.use_proxy:
             path = self.prefix_proxy_to_path(path, host)
             if self.proxy_user and self.proxy_pass and not self.is_secure:

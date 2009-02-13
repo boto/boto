@@ -360,7 +360,7 @@ class Key:
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
-        headers['Content-Length'] = self.size
+        headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata)
         return self.bucket.connection.make_request('PUT', self.bucket.name,
