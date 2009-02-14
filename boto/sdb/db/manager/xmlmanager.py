@@ -221,11 +221,17 @@ class XMLManager(object):
         """
         if not self.connection:
             self._connect()
+        try:
+            self.connection.close()
+        except:
+            pass
+        self.connection.connect()
         headers = {}
         if self.auth_header:
             headers["Authorization"] = self.auth_header
         self.connection.request(method, url, body, headers)
-        return self.connection.getresponse()
+        resp = self.connection.getresponse()
+        return resp
 
     def new_doc(self):
         return self.impl.createDocument(None, 'objects', None)
