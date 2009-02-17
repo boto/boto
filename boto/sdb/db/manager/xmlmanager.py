@@ -445,12 +445,12 @@ class XMLManager(object):
 
         return doc
 
-    def unmarshal_object(self, fp):
+    def unmarshal_object(self, fp, cls=None, id=None):
         if isinstance(fp, str) or isinstance(fp, unicode):
             doc = parseString(fp)
         else:
             doc = parse(fp)
-        return self.get_object_from_doc(None, None, doc)
+        return self.get_object_from_doc(cls, id, doc)
 
     def delete_object(self, obj):
         raise NotImplementedError, "delete not supported in XML"
