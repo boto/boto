@@ -23,10 +23,13 @@ import StringIO, os
 import ConfigParser
 import boto
 
-BotoConfigLocations = ['/etc/boto.cfg',
-                       os.path.expanduser('~/.boto') if 'HOME' in os.environ else '']
-BotoConfigPath = BotoConfigLocations[0]
-UserConfigPath = BotoConfigLocations[1]
+BotoConfigPath = '/etc/boto.cfg'
+BotoConfigLocations = [BotoConfigPath]
+if 'HOME' in os.environ:
+    UserConfigPath = os.path.expanduser('~/.boto')
+    BotoConfigLocations.append(UserConfigPath)
+else:
+    UserConfigPath = None
 
 class Config(ConfigParser.SafeConfigParser):
 
