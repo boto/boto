@@ -89,16 +89,15 @@ class XMLConverter:
 
     def decode_prop(self, prop, value):
         if prop.data_type == list:
-            if not isinstance(value, list):
-                value = [value]
             if hasattr(prop, 'item_type'):
                 item_type = getattr(prop, "item_type")
                 if Model in item_type.mro():
-                    if item_type != self.manager.cls:
-                        return item_type._manager.decode_value(prop, value)
-                    else:
-                        item_type = Model
-                return [self.decode(item_type, v) for v in value]
+                    item_type = Model
+                values = []
+                for item_node in value.getElementsByTagName('item'):
+                    value = self.decode(item_type, item_node)
+                    values.append(value)
+                return values
             else:
                 return self.get_text_value(value)
         else:
@@ -294,11 +293,8 @@ class XMLManager(object):
         for prop_node in obj_node.getElementsByTagName('property'):
             prop_name = prop_node.getAttribute('name')
             prop = obj.find_property(prop_name)
-            if hasattr(prop, 'item_type'):
-                value = self.get_list(prop_node, prop.item_type)
-            else:
-                value = self.decode_value(prop, prop_node)
-                value = prop.make_value_from_datastore(value)
+            value = self.decode_value(prop, prop_node)
+            value = prop.make_value_from_datastore(value)
             if value != None:
                 try:
                     setattr(obj, prop.name, value)
