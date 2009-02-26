@@ -366,27 +366,33 @@ class Key:
         return self.bucket.connection.make_request('PUT', self.bucket.name,
                 self.name, headers, sender=sender)
 
-    def _compute_md5(self, fp):
+    def compute_md5(self, fp):
         """
         @type fp: file
-        @param fp: File pointer to the file to MD5 hash
+        @param fp: File pointer to the file to MD5 hash.  The file pointer will be
+                   reset to the beginning of the file before the method returns.
         
-        @rtype: string
-        @return: MD5 Hash of the file in fp
+        @rtype: tuple
+        @return: A tuple containing the hex digest version of the MD5 hash
+                 as the first element and the base64 encoded version of the
+                 plain digest as the second element.
         """
         m = md5()
+        fp.seek(0)
         s = fp.read(self.BufferSize)
         while s:
             m.update(s)
             s = fp.read(self.BufferSize)
-        self.md5 = m.hexdigest()
-        self.base64md5 = base64.encodestring(m.digest())
-        if self.base64md5[-1] == '\n':
-            self.base64md5 = self.base64md5[0:-1]
+        hex_md5 = m.hexdigest()
+        base64md5 = base64.encodestring(m.digest())
+        if base64md5[-1] == '\n':
+            base64md5 = base64md5[0:-1]
         self.size = fp.tell()
         fp.seek(0)
+        return (hex_md5, base64md5)
 
-    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None, num_cb=10, policy=None):
+    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None, num_cb=10,
+                               policy=None, md5=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -420,6 +426,13 @@ class Key:
         @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
         @param policy: A canned ACL policy that will be applied to the new key in S3.
              
+        @type md5: A tuple containing the hexdigest version of the MD5 checksum of the
+                   file as the first element and the Base64-encoded version of the plain
+                   checksum as the second element.  This is the same format returned by
+                   the compute_md5 method.
+        @param md5: If you need to compute the MD5 for any reason prior to upload,
+                    it's silly to have to do it twice so this param, if present, will be
+                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
         if policy:
             if headers:
@@ -429,7 +442,10 @@ class Key:
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
-            self._compute_md5(fp)
+            if not md5:
+                md5 = self.compute_md5(fp)
+            self.md5 = md5[0]
+            self.base64md5 = md5[1]
             if self.name == None:
                 self.name = self.md5
             if not replace:
@@ -438,7 +454,8 @@ class Key:
                     return
             self.send_file(fp, headers, cb, num_cb)
 
-    def set_contents_from_filename(self, filename, headers=None, replace=True, cb=None, num_cb=10, policy=None):
+    def set_contents_from_filename(self, filename, headers=None, replace=True, cb=None, num_cb=10,
+                                   policy=None, md5=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -469,12 +486,20 @@ class Key:
         @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
         @param policy: A canned ACL policy that will be applied to the new key in S3.
              
+        @type md5: A tuple containing the hexdigest version of the MD5 checksum of the
+                   file as the first element and the Base64-encoded version of the plain
+                   checksum as the second element.  This is the same format returned by
+                   the compute_md5 method.
+        @param md5: If you need to compute the MD5 for any reason prior to upload,
+                    it's silly to have to do it twice so this param, if present, will be
+                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
         fp.close()
 
-    def set_contents_from_string(self, s, headers=None, replace=True, cb=None, num_cb=10, policy=None):
+    def set_contents_from_string(self, s, headers=None, replace=True, cb=None, num_cb=10,
+                                 policy=None, md5=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -502,6 +527,13 @@ class Key:
         @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
         @param policy: A canned ACL policy that will be applied to the new key in S3.
              
+        @type md5: A tuple containing the hexdigest version of the MD5 checksum of the
+                   file as the first element and the Base64-encoded version of the plain
+                   checksum as the second element.  This is the same format returned by
+                   the compute_md5 method.
+        @param md5: If you need to compute the MD5 for any reason prior to upload,
+                    it's silly to have to do it twice so this param, if present, will be
+                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
         fp = StringIO.StringIO(s)
         self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
