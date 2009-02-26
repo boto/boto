@@ -152,7 +152,16 @@ class AWSAuthConnection:
         if self.port == 80:
             self.server_name = server
         else:
-            self.server_name = '%s:%d' % (server, self.port)
+            # This unfortunate little hack can be attributed to
+            # a difference in the 2.6 version of httplib.  In old
+            # versions, it would append ":443" to the hostname sent
+            # in the Host header and so we needed to make sure we
+            # did the same when calculating the signature.  In 2.6
+            # it no longer does that.  Hence, this kludge.
+            if sys.version[:3] == "2.6":
+                self.server_name = server
+            else:
+                self.server_name = '%s:%d' % (server, self.port)
         
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
@@ -465,7 +474,10 @@ class AWSQueryConnection(AWSAuthConnection):
         string_to_sign += qs
         boto.log.debug('string_to_sign: %s' % string_to_sign)
         hmac.update(string_to_sign)
-        return (qs, base64.b64encode(hmac.digest()))
+        b64 = base64.b64encode(hmac.digest())
+        boto.log.debug('len(b64)=%d' % len(b64))
+        boto.log.debug('base64 encoded digest: %s' % b64)
+        return (qs, b64)
 
     def get_signature(self, params, verb, path):
         if self.SignatureVersion == '0':
