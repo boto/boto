@@ -227,7 +227,7 @@ class SDBManager(object):
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
-            yield self.get_object(None, item.name, item)
+            yield self.get_object(cls, item.name, item)
             
     def encode_value(self, prop, value):
         return self.converter.encode_prop(prop, value)
@@ -248,6 +248,7 @@ class SDBManager(object):
             self.bucket = s3.get_bucket(bucket_name)
         except:
             self.bucket = s3.create_bucket(bucket_name)
+        return self.bucket
             
     def get_object(self, cls, id, a=None):
         if not a:
