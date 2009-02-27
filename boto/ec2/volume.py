@@ -29,28 +29,33 @@ class Volume(EC2Object):
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.id = None
-        self.instance_id = None
-        self.snapshot_id = None
-        self.size = None
         self.create_time = None
-        self.attach_time = None
+        self.status = None
+        self.size = None
+        self.snapshot_id = None
+        self.attach_data = None
 
     def __repr__(self):
         return 'Volume:%s' % self.id
 
+    def startElement(self, name, attrs, connection):
+        if name == 'attachmentSet':
+            self.attach_data = AttachmentSet()
+            return self.attach_data
+        else:
+            return None
+
     def endElement(self, name, value, connection):
         if name == 'volumeId':
             self.id = value
-        elif name == 'instanceId':
-            self.instance_id = value
-        elif name == 'snapshotId':
-            self.snapshot_id = value
         elif name == 'createTime':
             self.create_time = value
-        elif name == 'attachTime':
-            self.attach_time = value
+        elif name == 'status':
+            self.status = value
         elif name == 'size':
             self.size = int(value)
+        elif name == 'snapshotId':
+            self.snapshot_id = value
         else:
             setattr(self, name, value)
 
@@ -65,3 +70,33 @@ class Volume(EC2Object):
 
     def create_snapshot(self):
         return self.connection.create_snapshot(self.id)
+
+class AttachmentSet(object):
+    
+    def __init__(self):
+        self.id = None
+        self.instance_id = None
+        self.status = None
+        self.attach_time = None
+        self.device = None
+
+    def __repr__(self):
+        return 'AttachmentSet:%s' % self.id
+
+    def startElement(self, name, attrs, connection):
+        pass
+    
+    def endElement(self, name, value, connection):
+        if name == 'volumeId':
+            self.id = value
+        elif name == 'instanceId':
+            self.instance_id = value
+        elif name == 'status':
+            self.status = value
+        elif name == 'attachTime':
+            self.attach_time = value
+        elif name == 'device':
+            self.device = value
+        else:
+            setattr(self, name, value)
+
