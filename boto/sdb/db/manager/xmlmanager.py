@@ -452,7 +452,8 @@ class XMLManager(object):
         return self.get_object_from_doc(cls, id, doc)
 
     def delete_object(self, obj):
-        raise NotImplementedError, "delete not supported in XML"
+        url = "/%s/%s" % (self.db_name, obj.id)
+        return self._make_request("DELETE", url)
 
     def set_key_value(self, obj, name, value):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
