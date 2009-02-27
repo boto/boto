@@ -170,7 +170,10 @@ class XMLConverter:
             return None
 
     def encode_password(self, value):
-        return str(value)
+        if value and len(value) > 0:
+            return str(value)
+        else:
+            return None
 
     def decode_password(self, value):
         value = self.get_text_value(value)

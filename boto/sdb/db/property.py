@@ -154,7 +154,10 @@ class PasswordProperty(StringProperty):
 
     def get_value_for_datastore(self, model_instance):
         value = StringProperty.get_value_for_datastore(self, model_instance)
-        return str(value)
+        if value and len(value):
+            return str(value)
+        else:
+            return None
 
     def __set__(self, obj, value):
         if not isinstance(value, Password):
