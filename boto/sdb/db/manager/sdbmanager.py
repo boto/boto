@@ -227,7 +227,9 @@ class SDBManager(object):
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
-            yield self.get_object(cls, item.name, item)
+            obj = self.get_object(cls, item.name, item)
+            if obj:
+                yield obj
             
     def encode_value(self, prop, value):
         return self.converter.encode_prop(prop, value)
@@ -251,19 +253,23 @@ class SDBManager(object):
         return self.bucket
             
     def get_object(self, cls, id, a=None):
+        obj = None
         if not a:
             a = self.domain.get_attributes(id)
-        if not a.has_key('__type__'):
-            return None
-        if not cls:
-            cls = find_class(a['__module__'], a['__type__'])
-        obj = cls(id)
-        for prop in obj.properties(hidden=False):
-            if prop.data_type != Key:
-                if a.has_key(prop.name):
-                    value = self.decode_value(prop, a[prop.name])
-                    value = prop.make_value_from_datastore(value)
-                    setattr(obj, prop.name, value)
+        if a.has_key('__type__'):
+            if not cls:
+                cls = find_class(a['__module__'], a['__type__'])
+            if cls:
+                obj = cls(id)
+                for prop in obj.properties(hidden=False):
+                    if prop.data_type != Key:
+                        if a.has_key(prop.name):
+                            value = self.decode_value(prop, a[prop.name])
+                            value = prop.make_value_from_datastore(value)
+                            setattr(obj, prop.name, value)
+            else:
+                s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])
+                boto.log.info('sdbmanager: %s' % s)
         return obj
         
     def get_object_from_id(self, id):

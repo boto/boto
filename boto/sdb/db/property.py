@@ -53,11 +53,6 @@ class Property(object):
                 value = getattr(obj, self.slot_name)
             except AttributeError:
                 value = self.default_value()
-                if obj.id:
-                    try:
-                        value = obj._manager.get_property(self, obj, self.name)
-                    except AttributeError:
-                        pass
                 setattr(obj, self.slot_name, value)
         return value
 
@@ -333,6 +328,20 @@ class ReferenceProperty(Property):
         self.reference_class = reference_class
         self.collection_name = collection_name
         
+    def __get__(self, obj, objtype):
+        if obj:
+            try:
+                value = getattr(obj, self.slot_name)
+            except AttributeError:
+                value = self.default_value()
+                if obj.id:
+                    try:
+                        value = obj._manager.get_property(self, obj, self.name)
+                    except AttributeError:
+                        pass
+                setattr(obj, self.slot_name, value)
+        return value
+    
     def __property_config__(self, model_class, property_name):
         Property.__property_config__(self, model_class, property_name)
         if self.collection_name is None:
