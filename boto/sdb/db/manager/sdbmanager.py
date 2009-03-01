@@ -260,13 +260,14 @@ class SDBManager(object):
             if not cls:
                 cls = find_class(a['__module__'], a['__type__'])
             if cls:
-                obj = cls(id)
-                for prop in obj.properties(hidden=False):
+                params = {}
+                for prop in cls.properties(hidden=False):
                     if prop.data_type != Key:
                         if a.has_key(prop.name):
                             value = self.decode_value(prop, a[prop.name])
                             value = prop.make_value_from_datastore(value)
-                            setattr(obj, prop.name, value)
+                            params[prop.name] = value
+                obj = cls(id, **params)
             else:
                 s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])
                 boto.log.info('sdbmanager: %s' % s)

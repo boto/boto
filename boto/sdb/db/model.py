@@ -153,6 +153,9 @@ class Model(object):
             self._manager = kw['manager']
         self.id = id
         self._auto_update = False
+        for key in kw:
+            if key != 'manager':
+                setattr(self, key, kw[key])
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
