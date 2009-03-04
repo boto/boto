@@ -104,6 +104,11 @@ class Property(object):
     def make_value_from_datastore(self, value):
         return value
 
+    def get_choices(self):
+        if callable(self.choices):
+            return self.choices()
+        return self.choices
+
 def validate_string(value):
     if isinstance(value, str) or isinstance(value, unicode):
         if len(value) > 1024:
@@ -237,11 +242,8 @@ class IntegerProperty(Property):
                  validator=None, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
-    def default_validator(self, value):
-        if not isinstance(value, int):
-            raise TypeError, 'Expecting int, got %s' % type(value)
-                                      
     def validate(self, value):
+        value = int(value)
         value = Property.validate(self, value)
         min = -2147483648
         max = 2147483647
@@ -249,6 +251,7 @@ class IntegerProperty(Property):
             raise ValueError, 'Maximum value is %d' % max
         if value < min:
             raise ValueError, 'Minimum value is %d' % min
+        return value
     
     def empty(self, value):
         return value is None
@@ -262,11 +265,8 @@ class LongProperty(Property):
                  validator=None, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
-    def default_validator(self, value):
-        if not isinstance(value, long):
-            raise TypeError, 'Expecting long, got %s' % type(value)
-                                      
     def validate(self, value):
+        value = long(value)
         value = Property.validate(self, value)
         min = -9223372036854775808
         max = 9223372036854775807
@@ -274,6 +274,7 @@ class LongProperty(Property):
             raise ValueError, 'Maximum value is %d' % max
         if value < min:
             raise ValueError, 'Minimum value is %d' % min
+        return value
         
     def empty(self, value):
         return value is None
