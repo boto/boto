@@ -209,6 +209,7 @@ class SDBManager(object):
         self.db_port = db_port
         self.db_table = db_table
         self.ddl_dir = ddl_dir
+        self.enable_ssl = enable_ssl
         self.s3 = None
         self.bucket = None
         self.converter = SDBConverter(self)
@@ -216,7 +217,11 @@ class SDBManager(object):
 
     def _connect(self):
         self.sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
-                                    aws_secret_access_key=self.db_passwd)
+                                    aws_secret_access_key=self.db_passwd,
+                                    port=self.db_port,
+                                    host=self.db_host,
+                                    is_secure=self.enable_ssl
+                                    )
         # This assumes that the domain has already been created
         # It's much more efficient to do it this way rather than
         # having this make a roundtrip each time to validate.
