@@ -71,6 +71,15 @@ class Volume(EC2Object):
     def create_snapshot(self):
         return self.connection.create_snapshot(self.id)
 
+    def volume_state(self):
+        return self.status
+
+    def attachment_state(self):
+        state = None
+        if self.attach_data:
+            state = self.attach_data.status
+        return state
+
 class AttachmentSet(object):
     
     def __init__(self):

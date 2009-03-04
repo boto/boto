@@ -37,4 +37,10 @@ def regions(**kw_params):
     """
     c = EC2Connection(**kw_params)
     return c.get_all_regions()
+
+def connect_to_region(region_name):
+    for region in regions():
+        if region.name == region_name:
+            return region.connect()
+    return None
     
