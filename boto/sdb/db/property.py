@@ -52,9 +52,14 @@ class Property(object):
             try:
                 value = getattr(obj, self.slot_name)
             except AttributeError:
-                value = self.default_value()
+                if obj.id:
+                    try:
+                        value = obj._manager.get_property(self, obj, self.name)
+                    except AttributeError:
+                        value = self.default_value()
                 setattr(obj, self.slot_name, value)
         return value
+
 
     def __set__(self, obj, value):
         self.validate(value)

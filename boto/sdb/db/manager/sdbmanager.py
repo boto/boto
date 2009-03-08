@@ -88,19 +88,13 @@ class SDBConverter:
             if hasattr(prop, 'item_type'):
                 item_type = getattr(prop, "item_type")
                 if Model in item_type.mro():
-                    if item_type != self.manager.cls:
-                        return item_type._manager.decode_value(prop, value)
-                    else:
-                        item_type = Model
+                    return [item_type(id=v) for v in value]
                 return [self.decode(item_type, v) for v in value]
             else:
                 return value
         elif hasattr(prop, 'reference_class'):
             ref_class = getattr(prop, 'reference_class')
-            if ref_class != self.manager.cls:
-                return ref_class._manager.decode_value(prop, value)
-            else:
-                return self.decode(prop.data_type, value)
+            return ref_class(id=value)
         else:
             return self.decode(prop.data_type, value)
 
@@ -267,11 +261,12 @@ class SDBManager(object):
             if cls:
                 params = {}
                 for prop in cls.properties(hidden=False):
-                    if prop.data_type != Key:
-                        if a.has_key(prop.name):
-                            value = self.decode_value(prop, a[prop.name])
-                            value = prop.make_value_from_datastore(value)
-                            params[prop.name] = value
+                    if a.has_key(prop.name):
+                        value = self.decode_value(prop, a[prop.name])
+                        value = prop.make_value_from_datastore(value)
+                        params[prop.name] = value
+                    else:
+                         params[prop.name] = prop.default_value()
                 obj = cls(id, **params)
             else:
                 s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])
@@ -363,6 +358,20 @@ class SDBManager(object):
 
     def get_property(self, prop, obj, name):
         a = self.domain.get_attributes(obj.id, name)
+
+        # Cache all these properties
+        for prop in obj.__class__.properties(hidden=False):
+            save = obj._auto_update
+            obj._auto_update = False
+
+            if a.has_key(prop.name):
+                value = self.decode_value(prop, a[prop.name])
+                value = prop.make_value_from_datastore(value)
+                setattr(obj, prop.name, value)
+            else:
+                setattr(obj, prop.name, prop.default_value())
+
+        obj._auto_update = save
         # try to get the attribute value from SDB
         if name in a:
             value = self.decode_value(prop, a[name])
