@@ -360,16 +360,16 @@ class SDBManager(object):
         a = self.domain.get_attributes(obj.id, name)
 
         # Cache all these properties
-        for prop in obj.__class__.properties(hidden=False):
+        for p in obj.__class__.properties(hidden=False):
             save = obj._auto_update
             obj._auto_update = False
 
-            if a.has_key(prop.name):
-                value = self.decode_value(prop, a[prop.name])
-                value = prop.make_value_from_datastore(value)
-                setattr(obj, prop.name, value)
+            if a.has_key(p.name):
+                value = self.decode_value(p, a[p.name])
+                value = p.make_value_from_datastore(value)
+                setattr(obj, p.name, value)
             else:
-                setattr(obj, prop.name, prop.default_value())
+                setattr(obj, p.name, p.default_value())
 
         obj._auto_update = save
         # try to get the attribute value from SDB
