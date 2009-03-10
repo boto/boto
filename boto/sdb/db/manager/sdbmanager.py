@@ -49,7 +49,6 @@ class SDBConverter:
                           int : (self.encode_int, self.decode_int),
                           long : (self.encode_long, self.decode_long),
                           Model : (self.encode_reference, self.decode_reference),
-                          Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime),
                           Blob: (self.encode_blob, self.decode_blob),
                       }
@@ -357,7 +356,7 @@ class SDBManager(object):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
     def get_property(self, prop, obj, name):
-        a = self.domain.get_attributes(obj.id, name)
+        a = self.domain.get_attributes(obj.id)
 
         # Cache all these properties
         for p in obj.__class__.properties(hidden=False):
