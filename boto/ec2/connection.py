@@ -39,11 +39,12 @@ from boto.ec2.snapshot import Snapshot
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
 from boto.ec2.regioninfo import RegionInfo
+from boto.ec2.reservedinstance import ReservedInstanceOffering, ReservedInstance
 from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2008-12-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-03-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'us-east-1.ec2.amazonaws.com')
@@ -795,4 +796,82 @@ class EC2Connection(AWSQueryConnection):
         """
         return self.get_list('DescribeRegions', None, [('item', RegionInfo)])
 
+    #
+    # Reservation methods
+    #
+
+    def get_all_reserved_instances_offerings(self, reserved_instances_id=None,
+                                             instance_type=None,
+                                             availability_zone=None,
+                                             product_description=None):
+        """
+        Describes Reserved Instance offerings that are available for purchase.
+        
+        @type reserved_instances_id: str
+        @param reserved_instances_id: Displays Reserved Instances with the specified offering IDs.
+        
+        @type instance_type: str
+        @param instance_type: Displays Reserved Instances of the specified instance type.
+        
+        @type availability_zone: str
+        @param availability_zone: Displays Reserved Instances within the specified Availability Zone.
+        
+        @type product_description: str
+        @param product_description: Displays Reserved Instances with the specified product description.
+        
+        @rtype: list
+        @return: A list of L{ReservedInstanceOffering<boto.ec2.reservedinstance.ReservedInstanceOffering>}
+        """
+        params = {}
+        if reserved_instances_id:
+            param['ReservedInstancesId'] = reserved_instances_id
+        if instance_type:
+            param['InstanceType'] = instance_type
+        if availability_zone:
+            param['AvailabilityZone'] = availability_zone
+        if product_description:
+            param['ProductDescription'] = product_description
+
+        return self.get_list('DescribeReservedInstancesOfferings',
+                             params, [('item', ReservedInstanceOffering)])
+
+    def get_all_reserved_instances(self, reserved_instances_id=None):
+        """
+        Describes Reserved Instance offerings that are available for purchase.
+        
+        @type reserved_instance_ids: list
+        @param reserved_instance_ids: A list of the reserved instance ids that will be returned.
+                                      If not provided, all reserved instances will be returned.
+        
+        @rtype: list
+        @return: A list of L{ReservedInstance<boto.ec2.reservedinstance.ReservedInstance>}
+        """
+        params = {}
+        if reserved_instances_id:
+            self.build_list_params(params, reserved_instances_id, 'ReservedInstancesId')
+        return self.get_list('DescribeReservedInstances',
+                             params, [('item', ReservedInstance)])
+
+    def purchase_reserved_instance_offering(self, reserved_instance_offering_id,
+                                            instance_count=1):
+        """
+        Purchase a Reserved Instance for use with your account.
+        ** CAUTION **
+        This request can result in large amounts of money being charged to your
+        AWS account.  Use with caution!
+        
+        @type reserved_instance_offering_id: string
+        @param reserved_instance_offering_id: The offering ID of the Reserved
+                                              Instance to purchase
+        
+        @type instance_count: int
+        @param instance_count: The number of Reserved Instances to purchase.
+                               Default value is 1.
+        
+        @rtype: L{ReservedInstance<boto.ec2.reservedinstance.ReservedInstance>}
+        @return: The newly created Reserved Instance
+        """
+        params = {'ReservedInstanceOfferingId' : reserved_instance_offering_id,
+                  'InstanceCount' : instance_count}
+        return self.get_object('PurchaseReservedInstancesOffering', params, ReservedInstance)
 
