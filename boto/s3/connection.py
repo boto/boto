@@ -202,12 +202,11 @@ class S3Connection(AWSAuthConnection):
             query_part = ''
         if force_http:
             protocol = 'http'
-            server_name = self.server
         else:
             protocol = self.protocol
-            server_name = self.server_name
-        return self.calling_format.build_url_base(protocol,
-                server_name, bucket, key) + query_part
+        server_name = self.server_name
+        return self.calling_format.build_url_base(protocol, server_name,
+                                                  bucket, key) + query_part
 
     def get_all_buckets(self):
         response = self.make_request('GET')
@@ -298,15 +297,10 @@ class S3Connection(AWSAuthConnection):
             key = key.name
         path = self.calling_format.build_path_base(bucket, key)
         auth_path = self.calling_format.build_auth_path(bucket, key)
-        host = self.calling_format.build_host(self.server, bucket)
+        host = self.calling_format.build_host(self.server_name, bucket)
         if query_args:
             path += '?' + query_args
             auth_path += '?' + query_args
         return AWSAuthConnection.make_request(self, method, path, headers,
                 data, host, auth_path, sender)
 
-#    def checked_request(self, method, bucket='', key='', headers=None, data='',
-#            query_args=None, sender=None, good_status=200):
-#        response = self.make_request(method, bucket, key, headers, data,
-#                query_args, sender)
-#        return check_s3_response(response, good_status)
