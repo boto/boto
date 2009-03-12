@@ -49,6 +49,7 @@ class SDBConverter:
                           int : (self.encode_int, self.decode_int),
                           long : (self.encode_long, self.decode_long),
                           Model : (self.encode_reference, self.decode_reference),
+                          Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime),
                           Blob: (self.encode_blob, self.decode_blob),
                       }
