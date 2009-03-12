@@ -232,7 +232,7 @@ class Queue:
         an 'approximate' count of the number of messages in a queue.
         """
         a = self.get_attributes('ApproximateNumberOfMessages')
-        return a['ApproximateNumberOfMessages']
+        return int(a['ApproximateNumberOfMessages'])
     
     def count_slow(self, page_size=100, vtimeout=10):
         """
