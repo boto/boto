@@ -85,7 +85,7 @@ class Domain:
         """
         return iter(QueryResultSet(self, query, max_items, attr_names))
     
-    def select(self, domain_or_name, query='', next_token=None):
+    def select(self, query='', next_token=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
