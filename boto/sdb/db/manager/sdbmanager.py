@@ -397,23 +397,12 @@ class SDBManager(object):
     def get_property(self, prop, obj, name):
         a = self.domain.get_attributes(obj.id)
 
-        # Cache all these properties
-        for p in obj.__class__.properties(hidden=False):
-            save = obj._auto_update
-            obj._auto_update = False
-
-            if a.has_key(p.name):
-                value = self.decode_value(p, a[p.name])
-                value = p.make_value_from_datastore(value)
-                setattr(obj, p.name, value)
-            else:
-                setattr(obj, p.name, p.default_value())
-
-        obj._auto_update = save
         # try to get the attribute value from SDB
         if name in a:
             value = self.decode_value(prop, a[name])
-            return prop.make_value_from_datastore(value)
+            value = prop.make_value_from_datastore(value)
+            setattr(obj, prop.name, value)
+            return value
         raise AttributeError, '%s not found' % name
 
     def set_key_value(self, obj, name, value):
