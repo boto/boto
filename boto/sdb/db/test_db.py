@@ -178,3 +178,6 @@ def test():
     test_list()
     print 'test_list_reference'
     test_list_reference()
+
+if __name__ == "__main__":
+    test()

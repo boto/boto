@@ -315,6 +315,44 @@ class SDBManager(object):
         rs = self.domain.query(query, max_items=limit)
         return self._object_lister(cls, rs)
 
+    def count(self, cls, filters):
+        """
+        Get the number of results that would
+        be returned in this query
+        """
+        query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
+        count =  int(self.domain.select(query)[0]["Count"])
+        return count
+
+    def _build_filter_part(self, cls, filters):
+        """
+        Build the filter part
+        """
+        import types
+        query_parts = []
+        for filter in filters:
+            (name, op) = filter[0].split(" ")
+            value = filter[1].replace("'", "''")
+            property = cls.find_property(name)
+            if types.TypeType(value) == types.ListType:
+                filter_parts = []
+                for val in value:
+                    val = self.encode_value(property, val)
+                    filter_parts.append("`%s` %s '%s'" % (name, op, val))
+                query_parts.append("(%s)" % (" or ".join(filter_parts)))
+            else:
+                val = self.encode_value(property, value)
+                query_parts.append("`%s` %s '%s'" % (name, op, val))
+
+        type_query = "(`__type__` = '%s'" % cls.__name__
+        for subclass in cls.__sub_classes__:
+            type_query += " or `__type__` = '%s'" % subclass.__name__
+        type_query +=")"
+        query_parts.append(type_query)
+
+        return "where %s" % (" and ".join(query_parts))
+
+
     def query_gql(self, query_string, *args, **kwds):
         raise NotImplementedError, "GQL queries not supported in SimpleDB"
 

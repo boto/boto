@@ -44,8 +44,8 @@ class Query(object):
     def fetch(self, limit, offset=0):
         raise NotImplementedError, "fetch mode is not currently supported"
 
-    def count(self, limit):
-        raise NotImplementedError, "count is not currently supported"
+    def count(self):
+        return self.manager.count(self.model_class, self.filters)
 
     def order(self, key):
         self.sort_by = key
