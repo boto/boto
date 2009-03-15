@@ -93,8 +93,12 @@ class SDBConverter:
             else:
                 return value
         elif hasattr(prop, 'reference_class'):
-            ref_class = getattr(prop, 'reference_class')
-            return ref_class(id=value)
+            # This may not look right but it is 8^)
+            # We don't want to create the object in a reference property
+            # until it is actually referenced.  This cuts down greatly
+            # on the calls to SimpleDB.  There is code in the ReferenceProperty
+            # to create the object upon first reference.
+            return value
         else:
             return self.decode(prop.data_type, value)
 
@@ -265,8 +269,6 @@ class SDBManager(object):
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         params[prop.name] = value
-                    else:
-                         params[prop.name] = prop.default_value()
                 obj = cls(id, **params)
             else:
                 s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])

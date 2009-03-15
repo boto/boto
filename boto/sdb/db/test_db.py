@@ -59,9 +59,9 @@ def test_basic():
     t.size = -42
     t.foo = True
     t.date = datetime.now()
+    print 'saving object'
     t.put()
     _objects['test_basic_t'] = t
-    print 'saving object'
     time.sleep(5)
     print 'now try retrieving it'
     tt = TestBasic.get_by_id(t.id)

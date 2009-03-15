@@ -149,10 +149,12 @@ class Model(object):
         return xmlmanager.unmarshal_object(fp)
 
     def __init__(self, id=None, **kw):
+        # first iniialize all properties to their default values
+        for prop in self.properties(hidden=False):
+            setattr(self, prop.name, prop.default_value())
         if kw.has_key('manager'):
             self._manager = kw['manager']
         self.id = id
-        self._auto_update = False
         for key in kw:
             if key != 'manager':
                 setattr(self, key, kw[key])

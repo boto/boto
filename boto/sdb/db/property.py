@@ -49,31 +49,13 @@ class Property(object):
         
     def __get__(self, obj, objtype):
         if obj:
-            try:
-                value = getattr(obj, self.slot_name)
-            except AttributeError:
-                if obj.id:
-                    try:
-                        value = obj._manager.get_property(self, obj, self.name)
-                    except AttributeError:
-                        value = self.default_value()
-                setattr(obj, self.slot_name, value)
-        return value
-
+            return getattr(obj, self.slot_name)
+        else:
+            return None
 
     def __set__(self, obj, value):
         self.validate(value)
-        try:
-            old_value = getattr(obj, self.slot_name)
-        except:
-            old_value = self.default
         setattr(obj, self.slot_name, value)
-        if obj._auto_update:
-            try:
-                obj._manager.set_property(self, obj, self.name, value)
-            except:
-                setattr(obj, self.slot_name, old_value)
-                raise
 
     def __property_config__(self, model_class, property_name):
         self.model_class = model_class
@@ -314,10 +296,7 @@ class DateTimeProperty(Property):
 
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
-            save = model_instance._auto_update
-            model_instance._auto_update = False
             setattr(model_instance, self.name, self.now())
-            model_instance._auto_update = save
         return Property.get_value_for_datastore(self, model_instance)
 
     def now(self):
@@ -336,17 +315,16 @@ class ReferenceProperty(Property):
         
     def __get__(self, obj, objtype):
         if obj:
-            try:
-                value = getattr(obj, self.slot_name)
-            except AttributeError:
-                value = self.default_value()
-                if obj.id:
-                    try:
-                        value = obj._manager.get_property(self, obj, self.name)
-                    except AttributeError:
-                        pass
-                setattr(obj, self.slot_name, value)
-        return value
+            value = getattr(obj, self.slot_name)
+            if value == self.default_value():
+                return value
+            # If the value is still the UUID for the referenced object, we need to create
+            # the object now that is the attribute has actually been accessed.  This lazy
+            # instantiation saves unnecessary roundtrips to SimpleDB
+            if isinstance(value, str) or isinstance(value, unicode):
+                value = self.reference_class._manager.get_object(self.reference_class, value)
+                setattr(obj, self.name, value)
+            return value
     
     def __property_config__(self, model_class, property_name):
         Property.__property_config__(self, model_class, property_name)
@@ -357,27 +335,31 @@ class ReferenceProperty(Property):
         setattr(self.reference_class, self.collection_name,
                 _ReverseReferenceProperty(model_class, property_name))
 
+    def check_uuid(self, value):
+        # This does a bit of hand waving to "type check" the string
+        t = value.split('-')
+        if len(t) != 5:
+            raise ValueError
+
+    def check_instance(self, value):
+        try:
+            obj_lineage = value.get_lineage()
+            cls_lineage = self.reference_class.get_lineage()
+            if obj_lineage.startswith(cls_lineage):
+                return
+            raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
+        except:
+            raise ValueError, '%s is not a Model' % value
+            
     def validate(self, value):
         if self.required and value==None:
             raise ValueError, '%s is a required property' % self.name
-        if value == None:
+        if value == self.default_value():
             return
         if isinstance(value, str) or isinstance(value, unicode):
-            # ugly little hack - sometimes I want to just stick a UUID string
-            # in here rather than instantiate an object. 
-            # This does a bit of hand waving to "type check" the string
-            t = value.split('-')
-            if len(t) != 5:
-                raise ValueError
+            self.check_uuid(value)
         else:
-            try:
-                obj_lineage = value.get_lineage()
-                cls_lineage = self.reference_class.get_lineage()
-                if obj_lineage.startswith(cls_lineage):
-                    return
-                raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
-            except:
-                raise ValueError, '%s is not a Model' % value
+            self.check_instance(value)
         
 class _ReverseReferenceProperty(Property):
 
