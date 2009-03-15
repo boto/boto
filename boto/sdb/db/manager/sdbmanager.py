@@ -346,17 +346,17 @@ class SDBManager(object):
         query_parts = []
         for filter in filters:
             (name, op) = filter[0].split(" ")
-            value = filter[1].replace("'", "''")
+            value = filter[1]
             property = cls.find_property(name)
             if types.TypeType(value) == types.ListType:
                 filter_parts = []
                 for val in value:
                     val = self.encode_value(property, val)
-                    filter_parts.append("`%s` %s '%s'" % (name, op, val))
+                    filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
                 query_parts.append("(%s)" % (" or ".join(filter_parts)))
             else:
                 val = self.encode_value(property, value)
-                query_parts.append("`%s` %s '%s'" % (name, op, val))
+                query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
 
         type_query = "(`__type__` = '%s'" % cls.__name__
         for subclass in cls.__sub_classes__:
