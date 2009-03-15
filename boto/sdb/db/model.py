@@ -149,7 +149,8 @@ class Model(object):
         return xmlmanager.unmarshal_object(fp)
 
     def __init__(self, id=None, **kw):
-        # first iniialize all properties to their default values
+        self._loaded = False
+        # first initialize all properties to their default values
         for prop in self.properties(hidden=False):
             setattr(self, prop.name, prop.default_value())
         if kw.has_key('manager'):
@@ -170,6 +171,10 @@ class Model(object):
 
     def _get_raw_item(self):
         return self._manager.get_raw_item(self)
+
+    def load(self):
+        if not self._loaded:
+            self._manager.load_object(self)
 
     def put(self):
         self._manager.save_object(self)

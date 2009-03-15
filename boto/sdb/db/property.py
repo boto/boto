@@ -49,6 +49,7 @@ class Property(object):
         
     def __get__(self, obj, objtype):
         if obj:
+            obj.load()
             return getattr(obj, self.slot_name)
         else:
             return None

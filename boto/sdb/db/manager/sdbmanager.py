@@ -98,7 +98,7 @@ class SDBConverter:
             # until it is actually referenced.  This cuts down greatly
             # on the calls to SimpleDB.  There is code in the ReferenceProperty
             # to create the object upon first reference.
-            return value
+            return prop.reference_class(id=value)
         else:
             return self.decode(prop.data_type, value)
 
@@ -255,6 +255,17 @@ class SDBManager(object):
             self.bucket = s3.create_bucket(bucket_name)
         return self.bucket
             
+    def load_object(self, obj):
+        if not obj._loaded:
+            a = self.domain.get_attributes(obj.id)
+            if a.has_key('__type__'):
+                for prop in obj.properties(hidden=False):
+                    if a.has_key(prop.name):
+                        value = self.decode_value(prop, a[prop.name])
+                        value = prop.make_value_from_datastore(value)
+                        setattr(obj, prop.name, value)
+            obj._loaded = True
+        
     def get_object(self, cls, id, a=None):
         obj = None
         if not a:
@@ -270,6 +281,7 @@ class SDBManager(object):
                         value = prop.make_value_from_datastore(value)
                         params[prop.name] = value
                 obj = cls(id, **params)
+                obj._loaded = True
             else:
                 s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])
                 boto.log.info('sdbmanager: %s' % s)
