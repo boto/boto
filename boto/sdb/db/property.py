@@ -356,9 +356,7 @@ class ReferenceProperty(Property):
             raise ValueError, '%s is a required property' % self.name
         if value == self.default_value():
             return
-        if isinstance(value, str) or isinstance(value, unicode):
-            self.check_uuid(value)
-        else:
+        if not isinstance(value, str) and not isinstance(value, unicode):
             self.check_instance(value)
         
 class _ReverseReferenceProperty(Property):
