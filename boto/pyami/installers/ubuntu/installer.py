@@ -22,6 +22,7 @@
 import boto.pyami.installers
 import os
 import os.path
+import stat
 import boto
 from pwd import getpwnam
 
