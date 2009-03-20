@@ -42,10 +42,16 @@ class Installer(boto.pyami.installers.Installer):
         fp.write('%s %s %s %s %s %s %s\n' % (minute, hour, mday, month, wday, who, command))
         fp.close()
 
-    def add_init_script(self, file):
+    def add_init_script(self, file, name):
         """
         Add this file to the init.d directory
         """
+        f_path = os.path.join("/etc/init.d", name)
+        f = open(f_path, "w")
+        f.write(file)
+        f.close()
+        os.chmod(f_path, stat.S_IREAD| stat.S_IWRITE | stat.S_IEXEC)
+        self.run("/usr/sbin/update-rc.d %s defaults", name)
 
     def add_env(self, key, value):
         """
