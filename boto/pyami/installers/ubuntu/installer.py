@@ -52,7 +52,7 @@ class Installer(boto.pyami.installers.Installer):
         f.write(file)
         f.close()
         os.chmod(f_path, stat.S_IREAD| stat.S_IWRITE | stat.S_IEXEC)
-        self.run("/usr/sbin/update-rc.d %s defaults", name)
+        self.run("/usr/sbin/update-rc.d %s defaults" % name)
 
     def add_env(self, key, value):
         """
