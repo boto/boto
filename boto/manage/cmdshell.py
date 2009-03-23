@@ -114,16 +114,10 @@ class SSHClient(object):
 
 class LocalClient(object):
 
-    def __init__(self, server, host_key_file='~/.ssh/known_hosts', uname='root'):
+    def __init__(self, server, host_key_file=None, uname='root'):
         self.server = server
         self.host_key_file = host_key_file
         self.uname = uname
-        self._pkey = paramiko.RSAKey.from_private_key_file(server.ssh_key_file)
-        self._ssh_client = paramiko.SSHClient()
-        self._ssh_client.load_system_host_keys()
-        self._ssh_client.load_host_keys(os.path.expanduser(host_key_file))
-        self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self._ssh_client.connect(self.server.hostname, username=uname, pkey=self._pkey)
 
     def get_file(self, src, dst):
         shutil.copyfile(src, dst)
@@ -148,14 +142,12 @@ class LocalClient(object):
         log_fp = StringIO.StringIO()
         process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while self.process.poll() == None:
+        while process.poll() == None:
             time.sleep(1)
-            t = self.process.communicate()
+            t = process.communicate()
             log_fp.write(t[0])
             log_fp.write(t[1])
         boto.log.info(log_fp.getvalue())
-        t[0].close()
-        t[1].close()
         boto.log.info('output: %s' % log_fp.getvalue())
         return (process.returncode, log_fp.getvalue())
 
