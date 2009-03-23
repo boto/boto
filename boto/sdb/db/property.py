@@ -174,9 +174,6 @@ class BlobProperty(Property):
             if not isinstance(value, Blob):
                 b = Blob(value=value)
                 value = b
-            old_value = self.__get__(obj, type(obj))
-            if old_value:
-                value.id = old_value.id
         Property.__set__(self, obj, value)
 
 class S3KeyProperty(Property):
