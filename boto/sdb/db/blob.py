@@ -29,9 +29,9 @@ class Blob(object):
         self.value = value
 
     def __str__(self):
-        return self.read()
+        return str(self.read())
 
     def read(self):
         if not self.value:
             self.value = self.file.read()
-        return str(self.value)
+        return self.value

@@ -170,15 +170,14 @@ class BlobProperty(Property):
     type_name = "blob"
 
     def __set__(self, obj, value):
-        if not isinstance(value, Blob):
-            b = Blob(value = str(value))
-            value = b
-        old_value = self.__get__(obj, type(obj))
-        if old_value:
-            value.id = old_value.id
+        if value != self.default_value():
+            if not isinstance(value, Blob):
+                b = Blob(value=value)
+                value = b
+            old_value = self.__get__(obj, type(obj))
+            if old_value:
+                value.id = old_value.id
         Property.__set__(self, obj, value)
-    
-
 
 class S3KeyProperty(Property):
     

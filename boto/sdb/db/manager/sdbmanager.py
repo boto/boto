@@ -271,7 +271,7 @@ class SDBManager(object):
         if not a:
             a = self.domain.get_attributes(id)
         if a.has_key('__type__'):
-            if not cls:
+            if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
             if cls:
                 params = {}
