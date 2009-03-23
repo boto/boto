@@ -423,7 +423,7 @@ class AWSQueryConnection(AWSAuthConnection):
         if isinstance(value, unicode):
             return value.encode('utf-8')
         else:
-            return unicode(value, encoding='utf-8')
+            return value
 
     def calc_signature_0(self, params):
         boto.log.debug('using calc_signature_0')
@@ -520,6 +520,7 @@ class AWSQueryConnection(AWSAuthConnection):
             parent = self
         response = self.make_request(action, params, path)
         body = response.read()
+        boto.log.debug(body)
         if response.status == 200:
             rs = ResultSet(markers)
             h = handler.XmlHandler(rs, parent)
@@ -535,6 +536,7 @@ class AWSQueryConnection(AWSAuthConnection):
             parent = self
         response = self.make_request(action, params, path)
         body = response.read()
+        boto.log.debug(body)
         if response.status == 200:
             obj = cls(parent)
             h = handler.XmlHandler(obj, parent)
@@ -550,6 +552,7 @@ class AWSQueryConnection(AWSAuthConnection):
             parent = self
         response = self.make_request(action, params, path)
         body = response.read()
+        boto.log.debug(body)
         if response.status == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, parent)
