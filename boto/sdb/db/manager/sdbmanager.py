@@ -311,7 +311,7 @@ class SDBManager(object):
         import types
         query_parts = []
         for filter in filters:
-            (name, op) = filter[0].split(" ")
+            (name, op) = filter[0].strip().split(" ")
             value = filter[1]
             property = cls.find_property(name)
             if types.TypeType(value) == types.ListType:
