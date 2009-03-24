@@ -291,42 +291,8 @@ class SDBManager(object):
         return self.get_object(None, id)
 
     def query(self, cls, filters, limit=None, order_by=None):
-        import types
-        if len(filters) > 4:
-            raise SDBPersistenceError('Too many filters, max is 4')
-        s = "['__type__'='%s'" % cls.__name__
-        for subclass in cls.__sub_classes__:
-            s += " OR '__type__'='%s'" % subclass.__name__
-        s += "]"
-        parts = [s]
-        properties = cls.properties(hidden=False)
-        for filter, value in filters:
-            name, op = filter.strip().split()
-            found = False
-            for property in properties:
-                if property.name == name:
-                    found = True
-                    if types.TypeType(value) == types.ListType:
-                        filter_parts = []
-                        for val in value:
-                            val = self.encode_value(property, val)
-                            filter_parts.append("'%s' %s '%s'" % (name, op, val))
-                        parts.append("[%s]" % " OR ".join(filter_parts))
-                    else:
-                        value = self.encode_value(property, value)
-                        parts.append("['%s' %s '%s']" % (name, op, value))
-            if not found:
-                raise SDBPersistenceError('%s is not a valid field' % name)
-        if order_by:
-            if order_by.startswith("-"):
-                key = order_by[1:]
-                type = "desc"
-            else:
-                key = order_by
-                type = "asc"
-            parts.append("['%s' starts-with ''] sort '%s' %s" % (key, key, type))
-        query = ' intersection '.join(parts)
-        rs = self.domain.query(query, max_items=limit)
+        query = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
+        rs = self.domain.select(query)
         return self._object_lister(cls, rs)
 
     def count(self, cls, filters):
