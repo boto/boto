@@ -291,7 +291,7 @@ class SDBManager(object):
         return self.get_object(None, id)
 
     def query(self, cls, filters, limit=None, order_by=None):
-        query = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
+        query = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters, order_by))
         rs = self.domain.select(query)
         return self._object_lister(cls, rs)
 
@@ -304,16 +304,26 @@ class SDBManager(object):
         count =  int(self.domain.select(query)[0]["Count"])
         return count
 
-    def _build_filter_part(self, cls, filters):
+    def _build_filter_part(self, cls, filters, order_by=None):
         """
         Build the filter part
         """
         import types
         query_parts = []
+        order_by_filtered = False
+        if order_by:
+            if order_by[0] == "-":
+                order_by_method = "desc";
+                order_by = order_by[1:]
+            else:
+                order_by_method = "asc";
+
         for filter in filters:
             (name, op) = filter[0].strip().split(" ")
             value = filter[1]
             property = cls.find_property(name)
+            if name == order_by:
+                order_by_filtered = True
             if types.TypeType(value) == types.ListType:
                 filter_parts = []
                 for val in value:
@@ -330,7 +340,16 @@ class SDBManager(object):
         type_query +=")"
         query_parts.append(type_query)
 
-        return "where %s" % (" and ".join(query_parts))
+        order_by_query = ""
+        if order_by:
+            if not order_by_filtered:
+                query_parts.append("`%s` like '%%'" % order_by)
+            order_by_query = " order by `%s` %s" % (order_by, order_by_method)
+
+        if len(query_parts) > 0:
+            return "where %s %s" % (" and ".join(query_parts), order_by_query)
+        else:
+            return ""
 
 
     def query_gql(self, query_string, *args, **kwds):
