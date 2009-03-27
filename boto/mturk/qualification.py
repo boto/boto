@@ -31,15 +31,13 @@ class Qualifications:
         params = {}
         assert(len(self.requirements) <= 10)
         for n, req in enumerate(self.requirements):
-            params["QualificationRequirement.%s.QualificationTypeId" % (n+1)] = req.qualification_type_id
-            params["QualificationRequirement.%s.Comparator" % (n+1)] = req.comparator
-            params["QualificationRequirement.%s.IntegerValue" % (n+1)] = req.integer_value
-            if req.required_to_preview:
-                params["QualificationRequirement.%s.RequiredToPreview" % (n+1)] = "true"
+            reqparams = req.get_as_params()
+            for rp in reqparams:
+                params['QualificationRequirement.%s.%s' % ((n+1),rp) ] = reqparams[rp]
         return params
 
 
-class Requirement:
+class Requirement(object):
     """
     Representation of a single requirement
     """
@@ -49,6 +47,16 @@ class Requirement:
         self.comparator = comparator
         self.integer_value = integer_value
         self.required_to_preview = required_to_preview
+    
+    def get_as_params(self):
+        params =  {
+            "QualificationTypeId": self.qualification_type_id,
+            "Comparator": self.comparator,
+            "IntegerValue": self.integer_value,
+        }
+        if self.required_to_preview:
+            params['RequiredToPreview'] = "true"
+        return params
 
 class PercentAssignmentsSubmittedRequirement(Requirement):
     """
@@ -89,3 +97,22 @@ class PercentAssignmentsRejectedRequirement(Requirement):
 
     def __init__(self, comparator, integer_value, required_to_preview=False):
         Requirement.__init__(self, qualification_type_id="000000000000000000S0", comparator=comparator, integer_value=integer_value, required_to_preview=required_to_preview)
+
+class LocaleRequirement(Requirement):
+    """
+    A Qualification requirement based on the Worker's location. The Worker's location is specified by the Worker to Mechanical Turk when the Worker creates his account.
+    """
+
+    def __init__(self, comparator, locale, required_to_preview=False):
+        Requirement.__init__(self, qualification_type_id="00000000000000000071", comparator=comparator, integer_value=None, required_to_preview=required_to_preview)
+        self.locale = locale
+
+    def get_as_params(self):
+        params =  {
+            "QualificationTypeId": self.qualification_type_id,
+            "Comparator": self.comparator,
+            'LocaleValue.Country': self.locale,
+        }
+        if self.required_to_preview:
+            params['RequiredToPreview'] = "true"
+        return params
