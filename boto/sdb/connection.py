@@ -80,6 +80,31 @@ class SDBConnection(AWSQueryConnection):
                     params['Attribute.%d.Replace'%i] = 'true'
             i += 1
 
+    def build_batch_list(self, params, items, replace=False):
+        item_names = items.keys()
+        i = 0
+        for item_name in item_names:
+            j = 0
+            item = items[item_name]
+            attr_names = item.keys()
+            params['Item.%d.ItemName' % i] = item_name
+            for attr_name in attr_names:
+                value = item[attr_name]
+                if isinstance(value, list):
+                    for v in value:
+                        params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
+                        params['Item.%d.Attribute.%d.Value' % (i,j)] = v
+                        if replace:
+                            params['Item.%d.Attribute.%d.Replace' % (i,j)] = 'true'
+                        j += 1
+                else:
+                    params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
+                    params['Item.%d.Attribute.%d.Value' % (i,j)] = value
+                    if replace:
+                        params['Item.%d.Attribute.%d.Replace' % (i,j)] = 'true'
+                    j += 1
+            i += 1
+
     def build_name_list(self, params, attribute_names):
         i = 1
         attribute_names.sort()
@@ -213,6 +238,33 @@ class SDBConnection(AWSQueryConnection):
                   'ItemName' : item_name}
         self.build_name_value_list(params, attributes, replace)
         return self.get_status('PutAttributes', params)
+
+    def batch_put_attributes(self, domain_or_name, items, replace=True):
+        """
+        Store attributes for a given item in a domain.
+
+        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
+        @param domain_or_name: Either the name of a domain or a Domain object
+
+        @type items: dict or dict-like object
+        @param items: A dictionary-like object.  The keys of the dictionary are
+                      the item names and the values are themselves dictionaries
+                      of attribute names/values, exactly the same as the
+                      attribute_names parameter of the scalar put_attributes
+                      call.
+
+        @type replace: bool
+        @param replace: Whether the attribute values passed in will replace
+                        existing values or will be added as addition values.
+                        Defaults to True.
+
+        @rtype: bool
+        @return: True if successful
+        """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
+        params = {'DomainName' : domain_name}
+        self.build_batch_list(params, items, replace)
+        return self.get_status('BatchPutAttributes', params)
 
     def get_attributes(self, domain_or_name, item_name, attribute_names=None, item=None):
         """
