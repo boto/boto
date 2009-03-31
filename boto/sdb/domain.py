@@ -22,7 +22,7 @@
 """
 Represents an SDB Domain
 """
-from boto.sdb.queryresultset import QueryResultSet
+from boto.sdb.queryresultset import QueryResultSet, SelectResultSet
 from boto.sdb.item import Item
 
 class Domain:
@@ -94,10 +94,12 @@ class Domain:
         @type query: string
         @param query: The SimpleDB query to be performed.
 
-        @rtype: ResultSet
-        @return: An iterator containing the results.
+        @rtype: iter
+        @return: An iterator containing the results.  This is actually a generator
+                 function that will iterate across all search results, not just the
+                 first page.
         """
-        return self.connection.select(self, query, next_token)
+        return iter(SelectResultSet(self, query))
     
     def get_item(self, item_name):
         item = self.get_attributes(item_name)

@@ -48,5 +48,24 @@ class QueryResultSet:
     def __iter__(self):
         return query_lister(self.domain, self.query, self.max_items, self.attr_names)
 
+def select_lister(domain, query=''):
+    more_results = True
+    next_token = None
+    while more_results:
+        rs = domain.connection.select(domain, query, next_token=next_token)
+        for item in rs:
+            yield item
+        next_token = rs.next_token
+        more_results = next_token != None
+        
+class SelectResultSet:
+
+    def __init__(self, domain=None, query=''):
+        self.domain = domain
+        self.query = query
+
+    def __iter__(self):
+        return select_lister(self.domain, self.query)
+
 
     
