@@ -59,6 +59,18 @@ class ReservedInstanceOffering(EC2Object):
         else:
             setattr(self, name, value)
 
+    def describe(self):
+        print 'ID=%s' % self.id
+        print '\tInstance Type=%s' % self.instance_type
+        print '\tZone=%s' % self.availability_zone
+        print '\tDuration=%s' % self.duration
+        print '\tFixed Price=%s' % self.fixed_price
+        print '\tUsage Price=%s' % self.usage_price
+        print '\tDescription=%s' % self.description
+
+    def purchase(self, instance_count=1):
+        return self.connection.purchase_reserved_instance_offering(self.id, instance_count)
+
 class ReservedInstance(ReservedInstanceOffering):
 
     def __init__(self, connection=None, id=None, instance_type=None,

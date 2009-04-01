@@ -824,13 +824,13 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
         if reserved_instances_id:
-            param['ReservedInstancesId'] = reserved_instances_id
+            params['ReservedInstancesId'] = reserved_instances_id
         if instance_type:
-            param['InstanceType'] = instance_type
+            params['InstanceType'] = instance_type
         if availability_zone:
-            param['AvailabilityZone'] = availability_zone
+            params['AvailabilityZone'] = availability_zone
         if product_description:
-            param['ProductDescription'] = product_description
+            params['ProductDescription'] = product_description
 
         return self.get_list('DescribeReservedInstancesOfferings',
                              params, [('item', ReservedInstanceOffering)])
