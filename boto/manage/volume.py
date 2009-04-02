@@ -27,6 +27,7 @@ from boto.manage import propget
 import boto.ec2
 import time, traceback
 from contextlib import closing
+import dateutil.parser
 
 class CommandLineGetter(object):
     
@@ -106,6 +107,20 @@ class Volume(Model):
         v.region_name = region.name
         v.put()
         return v
+
+    @classmethod
+    def create_from_volume_id(cls, region_name, volume_id, name):
+        vol = None
+        ec2 = boto.ec2.connect_to_region(region_name)
+        rs = ec2.get_all_volumes([volume_id])
+        if len(rs) == 1:
+            v = rs[0]
+            vol = cls()
+            vol.volume_id = v.id
+            vol.name = name
+            vol.region_name = v.region.name
+            vol.put()
+        return vol
     
     def get_ec2_connection(self):
         if self.server:
@@ -134,6 +149,21 @@ class Volume(Model):
     def install_xfs(self):
         if self.server:
             self.server.install('xfsprogs xfsdump')
+
+    def get_snapshots(self):
+        """
+        Returns a list of all completed snapshots for this volume ID.
+        """
+        ec2 = self.get_ec2_connection()
+        rs = ec2.get_all_snapshots()
+        snaps = []
+        for snapshot in rs:
+            if snapshot.volume_id == self.volume_id:
+                if snapshot.progress == '100%':
+                    snapshot.date = dateutil.parser.parse(snapshot.start_time)
+                    snapshot.keep = True
+                    snaps.append(snapshot)
+        return snaps
 
     def attach(self, server=None):
         if self.attachment_state == 'attached':
@@ -249,6 +279,35 @@ class Volume(Model):
         finally:
             status = self.unfreeze()
             return status
+
+    def trim_snapshots(self, keep_recent=4, keep_monthly=2, delete=True):
+        """
+        Trim the number of snapshots for this volume.  This method always
+        keeps the oldest snapshot.  It then uses the parameters passed in
+        to determine how many others should be kept.
+        """
+        snaps = self.get_snapshots()
+        snaps.reverse()
+        num_snaps = len(snaps)
+        # if number of snaps is less than the number of current snaps we want
+        # to keep plus the oldest snap which we always keep, do nothing
+        if keep_recent+1 >= num_snaps:
+            return snaps
+        end = len(snaps) - 2
+        i = keep_recent
+        while i < end:
+            current_month = snaps[i].date.month
+            l = [s for s in snaps[i:end] if s.date.month == current_month]
+            interval = int((len(l) / float(keep_monthly)) + 0.5)
+            for j in range(0, len(l)):
+                if not j % interval == 0:
+                    l[j].keep = False
+            i += len(l)
+        if delete:
+            for snap in snaps:
+                if not snap.keep:
+                    snap.delete()
+        return snaps
                 
     def grow(self, size):
         pass

@@ -108,13 +108,15 @@ class TaskPoller:
         self.sqs = boto.connect_sqs()
         self.queue = self.sqs.lookup(queue_name)
 
-    def poll(self):
+    def poll(self, wait=60):
         while 1:
             m = self.queue.read(60*5)
             if m:
                 task = Task.get_by_id(m.get_body())
                 if task:
                     task.check(m)
+            else:
+                time.sleep(wait)
 
         
 
