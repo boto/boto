@@ -21,7 +21,7 @@
 
 from boto.ec2.ec2object import EC2Object
 
-class ReservedInstanceOffering(EC2Object):
+class ReservedInstancesOffering(EC2Object):
     
     def __init__(self, connection=None, id=None, instance_type=None,
                  availability_zone=None, duration=None, fixed_price=None,
@@ -71,7 +71,7 @@ class ReservedInstanceOffering(EC2Object):
     def purchase(self, instance_count=1):
         return self.connection.purchase_reserved_instance_offering(self.id, instance_count)
 
-class ReservedInstance(ReservedInstanceOffering):
+class ReservedInstance(ReservedInstancesOffering):
 
     def __init__(self, connection=None, id=None, instance_type=None,
                  availability_zone=None, duration=None, fixed_price=None,

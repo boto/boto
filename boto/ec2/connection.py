@@ -39,7 +39,7 @@ from boto.ec2.snapshot import Snapshot
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
 from boto.ec2.regioninfo import RegionInfo
-from boto.ec2.reservedinstance import ReservedInstanceOffering, ReservedInstance
+from boto.ec2.reservedinstance import ReservedInstancesOffering, ReservedInstance
 from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
@@ -820,7 +820,7 @@ class EC2Connection(AWSQueryConnection):
         @param product_description: Displays Reserved Instances with the specified product description.
         
         @rtype: list
-        @return: A list of L{ReservedInstanceOffering<boto.ec2.reservedinstance.ReservedInstanceOffering>}
+        @return: A list of L{ReservedInstancesOffering<boto.ec2.reservedinstance.ReservedInstancesOffering>}
         """
         params = {}
         if reserved_instances_id:
@@ -833,7 +833,7 @@ class EC2Connection(AWSQueryConnection):
             params['ProductDescription'] = product_description
 
         return self.get_list('DescribeReservedInstancesOfferings',
-                             params, [('item', ReservedInstanceOffering)])
+                             params, [('item', ReservedInstancesOffering)])
 
     def get_all_reserved_instances(self, reserved_instances_id=None):
         """
