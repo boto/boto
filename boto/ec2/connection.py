@@ -852,7 +852,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeReservedInstances',
                              params, [('item', ReservedInstance)])
 
-    def purchase_reserved_instance_offering(self, reserved_instance_offering_id,
+    def purchase_reserved_instance_offering(self, reserved_instances_offering_id,
                                             instance_count=1):
         """
         Purchase a Reserved Instance for use with your account.
@@ -860,9 +860,9 @@ class EC2Connection(AWSQueryConnection):
         This request can result in large amounts of money being charged to your
         AWS account.  Use with caution!
         
-        @type reserved_instance_offering_id: string
-        @param reserved_instance_offering_id: The offering ID of the Reserved
-                                              Instance to purchase
+        @type reserved_instances_offering_id: string
+        @param reserved_instances_offering_id: The offering ID of the Reserved
+                                               Instance to purchase
         
         @type instance_count: int
         @param instance_count: The number of Reserved Instances to purchase.
@@ -871,7 +871,7 @@ class EC2Connection(AWSQueryConnection):
         @rtype: L{ReservedInstance<boto.ec2.reservedinstance.ReservedInstance>}
         @return: The newly created Reserved Instance
         """
-        params = {'ReservedInstanceOfferingId' : reserved_instance_offering_id,
+        params = {'ReservedInstancesOfferingId' : reserved_instance_offering_id,
                   'InstanceCount' : instance_count}
         return self.get_object('PurchaseReservedInstancesOffering', params, ReservedInstance)
 
