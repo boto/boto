@@ -285,6 +285,35 @@ class Volume(Model):
         Trim the number of snapshots for this volume.  This method always
         keeps the oldest snapshot.  It then uses the parameters passed in
         to determine how many others should be kept.
+
+        The basic approach is to first grab a list of all snapshots
+        related to this volume, let's call this S.  That list is
+        returned from AWS sorted by date so the last item in the list
+        will be the newest snapshot.  This list is reversed, giving us
+        a new list R.  We then trim R by ignoring the oldest snapshot
+        (which is never deleted) and the N most recent snapshots where
+        N is defined by the value of the keep_recent parameter.  This
+        gives us yet another list called T.  We then take the first
+        element of T (the oldest usable snapshot) and we determine the
+        month for that snapshot by looking at it's timestamp.  We then
+        collect all adjoining snapshots in T that have the same month
+        associated with them and produce a list of snapshots from that
+        month called M.  The task now is to choose K snapshots in this
+        list of monthlies that we will keep.  The value of K is based
+        on the parameter keep_monthly.  All other snapshots in the
+        list M will be deleted.  To determine which snapshots we keep,
+        we compute an interval value like this:
+
+            I = int((len(M) / float(K)) + 0.5)
+
+        We then need to keep every Ith snapshot in the list M.  We
+        determine this by computing ordinal modulus I (integer
+        remainder). If this value is zero (no remainder) then we keep
+        the snapshot in that ordinal position.  If not, it is deleted.
+
+        We then proceed to the next value of M until we have exhausted
+        the list of trimmed list snapshots, T.
+
         """
         snaps = self.get_snapshots()
         snaps.reverse()
@@ -296,12 +325,13 @@ class Volume(Model):
         end = len(snaps) - 2
         i = keep_recent
         while i < end:
-            current_month = snaps[i].date.month
-            l = [s for s in snaps[i:end] if s.date.month == current_month]
-            interval = int((len(l) / float(keep_monthly)) + 0.5)
-            for j in range(0, len(l)):
-                if not j % interval == 0:
-                    l[j].keep = False
+            current = (snaps[i].date.month, snaps.i.date.year)
+            l = [s for s in snaps[i:end] if (s.date.month, s.date.year) == current]
+            if len(l) > keep_monthly:
+                interval = int((len(l) / float(keep_monthly)) + 0.5)
+                for j in range(0, len(l)):
+                    if not j % interval == 0:
+                        l[j].keep = False
             i += len(l)
         if delete:
             for snap in snaps:
