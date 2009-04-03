@@ -871,7 +871,7 @@ class EC2Connection(AWSQueryConnection):
         @rtype: L{ReservedInstance<boto.ec2.reservedinstance.ReservedInstance>}
         @return: The newly created Reserved Instance
         """
-        params = {'ReservedInstancesOfferingId' : reserved_instance_offering_id,
+        params = {'ReservedInstancesOfferingId' : reserved_instances_offering_id,
                   'InstanceCount' : instance_count}
         return self.get_object('PurchaseReservedInstancesOffering', params, ReservedInstance)
 
