@@ -156,13 +156,15 @@ class Volume(Model):
         """
         ec2 = self.get_ec2_connection()
         rs = ec2.get_all_snapshots()
+        all_vols = [self.volume_id] + self.past_volume_ids
         snaps = []
         for snapshot in rs:
-            if snapshot.volume_id == self.volume_id:
+            if snapshot.volume_id in all_vols:
                 if snapshot.progress == '100%':
                     snapshot.date = dateutil.parser.parse(snapshot.start_time)
                     snapshot.keep = True
                     snaps.append(snapshot)
+        snaps.sort(cmp=lambda x,y: cmp(x.date, y.date))
         return snaps
 
     def attach(self, server=None):
@@ -280,62 +282,81 @@ class Volume(Model):
             status = self.unfreeze()
             return status
 
-    def trim_snapshots(self, keep_recent=4, keep_monthly=2, delete=True):
+    def get_snapshot_range(self, snaps, start_date=None, end_date=None):
+        l = []
+        for snap in snaps:
+            if start_date and end_date:
+                if snap.date >= start_date and snap.date <= end_date:
+                    l.append(snap)
+            elif start_date:
+                if snap.date >= start_date:
+                    l.append(snap)
+            elif end_date:
+                if snap.date <= end_date:
+                    l.append(snap)
+            else:
+                l.append(snap)
+        return l
+
+    def trim_snapshots(self, delete=False):
         """
         Trim the number of snapshots for this volume.  This method always
         keeps the oldest snapshot.  It then uses the parameters passed in
         to determine how many others should be kept.
 
-        The basic approach is to first grab a list of all snapshots
-        related to this volume, let's call this S.  That list is
-        returned from AWS sorted by date so the last item in the list
-        will be the newest snapshot.  This list is reversed, giving us
-        a new list R.  We then trim R by ignoring the oldest snapshot
-        (which is never deleted) and the N most recent snapshots where
-        N is defined by the value of the keep_recent parameter.  This
-        gives us yet another list called T.  We then take the first
-        element of T (the oldest usable snapshot) and we determine the
-        month for that snapshot by looking at it's timestamp.  We then
-        collect all adjoining snapshots in T that have the same month
-        associated with them and produce a list of snapshots from that
-        month called M.  The task now is to choose K snapshots in this
-        list of monthlies that we will keep.  The value of K is based
-        on the parameter keep_monthly.  All other snapshots in the
-        list M will be deleted.  To determine which snapshots we keep,
-        we compute an interval value like this:
-
-            I = int((len(M) / float(K)) + 0.5)
-
-        We then need to keep every Ith snapshot in the list M.  We
-        determine this by computing ordinal modulus I (integer
-        remainder). If this value is zero (no remainder) then we keep
-        the snapshot in that ordinal position.  If not, it is deleted.
-
-        We then proceed to the next value of M until we have exhausted
-        the list of trimmed list snapshots, T.
+        The algorithm is to keep all snapshots from the current day.  Then
+        it will keep the first snapshot of the day for the previous seven days.
+        Then, it will keep the first snapshot of the week for the previous
+        four weeks.  After than, it will keep the first snapshot of the month
+        for as many months as there are.
 
         """
         snaps = self.get_snapshots()
-        snaps.reverse()
-        num_snaps = len(snaps)
-        # if number of snaps is less than the number of current snaps we want
-        # to keep plus the oldest snap which we always keep, do nothing
-        if keep_recent+1 >= num_snaps:
+        # Always keep the oldest and the newest
+        if len(snaps) <= 2:
             return snaps
-        end = len(snaps) - 2
-        i = keep_recent
-        while i < end:
-            current = (snaps[i].date.month, snaps.i.date.year)
-            l = [s for s in snaps[i:end] if (s.date.month, s.date.year) == current]
-            if len(l) > keep_monthly:
-                interval = int((len(l) / float(keep_monthly)) + 0.5)
-                for j in range(0, len(l)):
-                    if not j % interval == 0:
-                        l[j].keep = False
-            i += len(l)
+        snaps = snaps[1:-1]
+        now = datetime.datetime.now(snaps[0].date.tzinfo)
+        midnight = datetime.datetime(year=now.year, month=now.month,
+                                     day=now.day, tzinfo=now.tzinfo)
+        # Keep the first snapshot from each day of the previous week
+        one_week = datetime.timedelta(days=7, seconds=60*60)
+        previous_week = self.get_snapshot_range(snaps, midnight-one_week, midnight)
+        current_day = None
+        for snap in previous_week:
+            if current_day and current_day == snap.date.day:
+                snap.keep = False
+            else:
+                current_day = snap.date.day
+        # Get ourselves onto the next full week boundary
+        week_boundary = previous_week[0].date
+        if week_boundary.weekday() != 0:
+            delta = datetime.timedelta(days=week_boundary.weekday())
+            week_boundary = week_boundary - delta
+        # Keep one within this partial week
+        partial_week = self.get_snapshot_range(snaps, week_boundary, previous_week[0].date)
+        if len(partial_week) > 1:
+            for snap in partial_week[1:]:
+                snap.keep = False
+        # Keep the first snapshot of each week for the previous 4 weeks
+        for i in range(0,4):
+            weeks_worth = self.get_snapshot_range(snaps, week_boundary-one_week, week_boundary)
+            if len(weeks_worth) > 1:
+                for snap in weeks_worth[1:]:
+                    snap.keep = False
+            week_boundary = week_boundary - one_week
+        # Now look through all remaining snaps and keep one per month
+        remainder = self.get_snapshot_range(snaps, end_date=week_boundary)
+        current_month = None
+        for snap in remainder:
+            if current_month and current_month == snap.date.month:
+                snap.keep = False
+            else:
+                current_month = snap.date.month
         if delete:
             for snap in snaps:
                 if not snap.keep:
+                    boto.log.info('Deleting %s(%s) for %s' % (snap, snap.date, self.name)
                     snap.delete()
         return snaps
                 
