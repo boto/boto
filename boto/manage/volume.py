@@ -356,7 +356,7 @@ class Volume(Model):
         if delete:
             for snap in snaps:
                 if not snap.keep:
-                    boto.log.info('Deleting %s(%s) for %s' % (snap, snap.date, self.name)
+                    boto.log.info('Deleting %s(%s) for %s' % (snap, snap.date, self.name))
                     snap.delete()
         return snaps
                 
