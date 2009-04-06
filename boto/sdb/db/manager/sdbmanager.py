@@ -301,7 +301,7 @@ class SDBManager(object):
         be returned in this query
         """
         query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
-        count =  int(self.domain.select(query)[0]["Count"])
+        count =  int(self.domain.select(query).next()["Count"])
         return count
 
     def _build_filter_part(self, cls, filters, order_by=None):
