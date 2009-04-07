@@ -100,7 +100,7 @@ class Task(Model):
         boto.log.info(log_fp.getvalue())
         boto.log.info('output: %s' % log_fp.getvalue())
         self.last_status = process.returncode
-        self.last_log = log_fp.getvalue()[0:1023]
+        self.last_output = log_fp.getvalue()[0:1023]
 
 class TaskPoller:
 
