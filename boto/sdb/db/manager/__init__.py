@@ -49,7 +49,11 @@ def get_manager(cls):
     enable_ssl = boto.config.getbool('DB', 'enable_ssl', True)
     sql_dir = boto.config.get('DB', 'sql_dir', None)
     debug = boto.config.getint('DB', 'debug', 0)
-    db_section = 'DB_' + cls.__name__
+    # first see if there is a fully qualified section name in the Boto config file
+    module_name = cls.__module__.replace('.', '_')
+    db_section = 'DB_' + module_name + '_' + cls.__name__
+    if not boto.config.has_section(db_section):
+        db_section = 'DB_' + cls.__name__
     if boto.config.has_section(db_section):
         db_user = boto.config.get(db_section, 'db_user', db_user)
         db_passwd = boto.config.get(db_section, 'db_passwd', db_passwd)
