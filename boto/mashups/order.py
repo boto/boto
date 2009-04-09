@@ -57,7 +57,7 @@ class Item(IObject):
         if region:
             self.region = region
         else:
-            l = [(r, r.name, r.url) for r in boto.ec2.regions()]
+            l = [(r, r.name, r.endpoint) for r in boto.ec2.regions()]
             self.region = self.choose_from_list(l, prompt='Choose Region')
 
     def set_name(self, name=None):

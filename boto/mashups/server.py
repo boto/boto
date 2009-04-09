@@ -347,7 +347,7 @@ class Server(Model):
         self.image_id = self.ec2.register_image('%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
-    def attatch_volume(self, volume, device="/dev/sdp"):
+    def attach_volume(self, volume, device="/dev/sdp"):
         """
         Attach an EBS volume to this server
 
