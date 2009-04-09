@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2006 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the

@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -24,7 +24,7 @@ import os, sys
 import logging
 import logging.config
 
-Version = '1.6b'
+Version = '1.7a'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
 
