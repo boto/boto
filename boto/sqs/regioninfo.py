@@ -20,26 +20,21 @@
 # IN THE SOFTWARE.
 #
 
-import boto
+from boto.ec2.regioninfo import RegionInfo
 
-boto.check_extensions(__name__, __path__)
+class SQSRegionInfo(RegionInfo):
 
-from queue import Queue
-from message import Message, MHMessage
-from regioninfo import SQSRegionInfo
-
-def regions():
-    """
-    Get all available regions for the SQS service.
+    def connect(self, **kw_params):
+        """
+        Connect to this Region's endpoint. Returns an SQSConnection
+        object pointing to the endpoint associated with this region.
+        You may pass any of the arguments accepted by the SQSConnection
+        object's constructor as keyword arguments and they will be
+        passed along to the SQSConnection object.
         
-    @rtype: list
-    @return: A list of L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
-    """
-    return [SQSRegionInfo(name='us-east-1', endpoint='queue.amazonaws.com'),
-            SQSRegionInfo(name='eu-west-1', endpoint='eu-west-1.queue.amazonaws.com')]
+        @rtype: L{SQSConnection<boto.sqs.connection.SQSConnection}
+        @return: The connection to this regions endpoint
+        """
+        from boto.sqs.connection import SQSConnection
+        return SQSConnection(region=self, **kw_params)
 
-def connect_to_region(region_name):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect()
-    return None

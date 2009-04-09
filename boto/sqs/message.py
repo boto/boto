@@ -65,6 +65,7 @@ in the format in which it would be stored in SQS.
 
 import base64
 import StringIO
+from boto.sqs.attributes import Attributes
 
 class RawMessage:
     """
@@ -79,11 +80,15 @@ class RawMessage:
         self.set_body(body)
         self.id = None
         self.receipt_handle = None
+        self.md5 = None
+        self.attributes = Attributes(self)
 
     def __len__(self):
         return len(self.encode(self._body))
 
     def startElement(self, name, attrs, connection):
+        if name == 'Attribute':
+            return self.attributes
         return None
 
     def endElement(self, name, value, connection):
@@ -93,6 +98,8 @@ class RawMessage:
             self.id = value
         elif name == 'ReceiptHandle':
             self.receipt_handle = value
+        elif name == 'MD5OfBody':
+            self.md5 = value
         else:
             setattr(self, name, value)
 
@@ -159,6 +166,7 @@ class MHMessage(Message):
         Message.__init__(self, queue, body)
 
     def decode(self, value):
+        value = base64.b64decode(value)
         msg = {}
         fp = StringIO.StringIO(value)
         line = fp.readline()
@@ -174,7 +182,7 @@ class MHMessage(Message):
         s = ''
         for item in value.items():
             s = s + '%s: %s\n' % (item[0], item[1])
-        return s
+        return base64.b64encode(s)
 
     def __getitem__(self, key):
         if self._body.has_key(key):
