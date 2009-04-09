@@ -158,7 +158,7 @@ class AWSAuthConnection:
             # in the Host header and so we needed to make sure we
             # did the same when calculating the signature.  In 2.6
             # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] == "2.6":
+            if sys.version[:3] == "2.6" and self.port in [80, 443]:
                 self.server_name = server
             else:
                 self.server_name = '%s:%d' % (server, self.port)
