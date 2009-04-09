@@ -59,8 +59,8 @@ class BotoServerError(Exception):
         self.reason = reason
         self.body = body or ''
         self.request_id = None
-        self.error_code = None
-        self.error_message = None
+        self.code = None
+        self.message = None
         self.box_usage = None
 
         # Attempt to parse the error response. If body isn't present,
@@ -125,7 +125,15 @@ class S3CreateError(BotoServerError):
     """
     Error creating a bucket or key on S3.
     """
-    pass
+    def __init__(self, status, reason, body=None):
+        self.bucket = None
+        BotoServerError.__init__(self, status, reason, body)
+
+    def endElement(self, name, value, connection):
+        if name == 'BucketName':
+            self.bucket = value
+        else:
+            return BotoServerError.endElement(self, name, value, connection)
 
 class S3CopyError(BotoServerError):
     """
