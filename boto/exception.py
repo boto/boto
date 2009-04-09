@@ -59,6 +59,9 @@ class BotoServerError(Exception):
         self.reason = reason
         self.body = body or ''
         self.request_id = None
+        self.error_code = None
+        self.error_message = None
+        self.box_usage = None
 
         # Attempt to parse the error response. If body isn't present,
         # then just ignore the error response.
@@ -87,6 +90,12 @@ class BotoServerError(Exception):
     def endElement(self, name, value, connection):
         if name in ('RequestId', 'RequestID'):
             self.request_id = value
+        elif name == 'Code':
+            self.code = value
+        elif name == 'Message':
+            self.message = value
+        elif name == 'BoxUsage':
+            self.box_usage = value
         return None
 
     def _cleanupParsedProperties(self):
