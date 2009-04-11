@@ -173,7 +173,7 @@ class Model(object):
         return self._manager.get_raw_item(self)
 
     def load(self):
-        if not self._loaded:
+        if self.id and not self._loaded:
             self._manager.load_object(self)
 
     def put(self):
