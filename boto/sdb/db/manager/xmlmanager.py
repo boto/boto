@@ -304,6 +304,29 @@ class XMLManager(object):
                 except:
                     pass
         return obj
+
+    def get_props_from_doc(self, cls, id, doc):
+        """
+        Pull out the properties from this document
+        Returns the class, the properties in a hash, and the id if provided as a tuple
+        @return: (cls, props, id)
+        """
+        obj_node = doc.getElementsByTagName('object')[0]
+        if not cls:
+            class_name = obj_node.getAttribute('class')
+            cls = find_class(class_name)
+        if not id:
+            id = obj_node.getAttribute('id')
+        props = {}
+        for prop_node in obj_node.getElementsByTagName('property'):
+            prop_name = prop_node.getAttribute('name')
+            prop = cls.find_property(prop_name)
+            value = self.decode_value(prop, prop_node)
+            value = prop.make_value_from_datastore(value)
+            if value != None:
+                props[prop.name] = value
+        return (cls, props, id)
+        
         
     def get_object(self, cls, id):
         if not self.connection:
@@ -450,6 +473,17 @@ class XMLManager(object):
         else:
             doc = parse(fp)
         return self.get_object_from_doc(cls, id, doc)
+
+    def unmarshal_props(self, fp, cls=None, id=None):
+        """
+        Same as unmarshalling an object, except it returns
+        from "get_props_from_doc"
+        """
+        if isinstance(fp, str) or isinstance(fp, unicode):
+            doc = parseString(fp)
+        else:
+            doc = parse(fp)
+        return self.get_props_from_doc(cls, id, doc)
 
     def delete_object(self, obj):
         url = "/%s/%s" % (self.db_name, obj.id)
