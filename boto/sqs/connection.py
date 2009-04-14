@@ -121,7 +121,8 @@ class SQSConnection(AWSQueryConnection):
         params = {'Attribute.Name' : attribute, 'Attribute.Value' : value}
         return self.get_status('SetQueueAttributes', params, queue.id)
 
-    def receive_message(self, queue, number_messages=1, visibility_timeout=None):
+    def receive_message(self, queue, number_messages=1, visibility_timeout=None,
+                        attributes=None):
         """
         Read messages from an SQS Queue.
 
@@ -134,11 +135,17 @@ class SQSConnection(AWSQueryConnection):
         @type visibility_timeout: int
         @param visibility_timeout: The number of seconds the message should remain invisible
                                    to other queue readers (default=None which uses the Queues default)
+
+        @type attributes: list of strings
+        @param attributes: A list of additional attributes that will be returned
+                           with the response.  Valid values: SenderId | SentTimestamp.
         
         """
         params = {'MaxNumberOfMessages' : number_messages}
         if visibility_timeout:
             params['VisibilityTimeout'] = visibility_timeout
+        if attributes:
+            self.build_list_params(self, params, attributes, 'AttributeName')
         return self.get_list('ReceiveMessage', params, [('Message', queue.message_class)],
                              queue.id, queue)
 

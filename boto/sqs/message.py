@@ -129,6 +129,12 @@ class RawMessage:
     def delete(self):
         if self.queue:
             return self.queue.delete_message(self)
+
+    def change_visibility(self, visibility_timeout):
+        if self.queue:
+            self.queue.connection.change_message_visibility(self.queue,
+                                                            self.receipt_handle,
+                                                            visibility_timeout)
     
 class Message(RawMessage):
     """
@@ -166,7 +172,6 @@ class MHMessage(Message):
         Message.__init__(self, queue, body)
 
     def decode(self, value):
-        value = base64.b64decode(value)
         msg = {}
         fp = StringIO.StringIO(value)
         line = fp.readline()
@@ -182,7 +187,7 @@ class MHMessage(Message):
         s = ''
         for item in value.items():
             s = s + '%s: %s\n' % (item[0], item[1])
-        return base64.b64encode(s)
+        return s
 
     def __getitem__(self, key):
         if self._body.has_key(key):
@@ -212,3 +217,24 @@ class MHMessage(Message):
 
     def get(self, key, default=None):
         return self._body.get(key, default)
+
+class EncodedMHMessage(MHMessage):
+    """
+    The EncodedMHMessage class provides a message that provides RFC821-like
+    headers like this:
+
+    HeaderName: HeaderValue
+
+    This variation encodes/decodes the body of the message in base64 automatically.
+    The message instance can be treated like a mapping object,
+    i.e. m['HeaderName'] would return 'HeaderValue'.
+    """
+
+    def decode(self, value):
+        value = base64.b64decode(value)
+        return MHMessage.decode(value)
+
+    def encode(self, value):
+        value = MHMessage.encode(value)
+        return base64.b64encode(value)
+    
