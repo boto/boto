@@ -261,7 +261,7 @@ class Key:
         Generate a URL to access this key.
         
         @type expires_in: int
-        @param expires_in: How long the url is valid for
+        @param expires_in: How long the url is valid for, in seconds
         
         @type method: string
         @param method: The method to use for retrieving the file (default is GET)
