@@ -93,7 +93,8 @@ class Task(Model):
             msg.delete()
             self.schedule(q)
         elif self.hour == '*':
-            boto.log.info('seconds_to_add: %s' % seconds_to_add-vtimeout)
+            seconds_to_add -= vtimeout
+            boto.log.info('seconds_to_add: %d' % seconds_to_add)
             msg.change_visibility(seconds_to_add)
             
     def schedule(self, queue):
