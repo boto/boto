@@ -52,7 +52,7 @@ class Task(Model):
     last_status = IntegerProperty()
     last_output = StringProperty()
 
-    def check(self, msg):
+    def check(self, msg, vtimeout):
         """
         Determine if the Task needs to run right now or not.  If it does, run it and if it
         doesn't, do nothing.
@@ -60,45 +60,64 @@ class Task(Model):
         need_to_run = False
         # get current time in UTC
         now = datetime.datetime.utcnow()
+        boto.log.info('checking Task[%s]' % self.name)
+        boto.log.info('now=%s' % now)
+        boto.log.info('last_executed=%s' % self.last_executed)
         if self.hour == '*':
-            # run the task hourly
-            # if it's never been run before, run it now
+            # An hourly task.
+            # If it's never been run before, run it now.
             if not self.last_executed:
                 need_to_run = True
             else:
                 delta = now - self.last_executed
+                print 'delta=', delta
                 if delta.seconds >= 60*60:
                     need_to_run = True
+                else:
+                    seconds_to_add = 60*60 - delta.seconds
         else:
             hour = int(self.hour)
-            next = datetime.datetime(now.year, now.month, now.day, hour)
-            delta = now - next
-            if delta.days >= 0:
-                need_to_run = True
+            if hour == now.hour:
+                if self.last_executed:
+                    delta = now - self.last_executed
+                    boto.log.info('delta=%s' % delta)
+                    if delta.days >= 1:
+                        need_to_run = True
+                else:
+                    need_to_run = True
         if need_to_run:
-            self.run()
+            self.run(msg, vtimeout)
             self.last_executed = now
             self.put()
             q = msg.queue
             msg.delete()
             self.schedule(q)
-
+        elif self.hour == '*':
+            boto.log.info('seconds_to_add: %s' % seconds_to_add-vtimeout)
+            msg.change_visibility(seconds_to_add)
+            
     def schedule(self, queue):
         msg = queue.new_message(self.id)
         queue.write(msg)
         
-    def run(self):
-        boto.log.info('running:%s' % self.command)
+    def run(self, msg, vtimeout=60):
+        boto.log.info('Task[%s] - running:%s' % (self.name, self.command))
         log_fp = StringIO.StringIO()
         process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        nsecs = 5
         while process.poll() == None:
-            time.sleep(1)
-            t = process.communicate()
-            log_fp.write(t[0])
-            log_fp.write(t[1])
-        boto.log.info(log_fp.getvalue())
-        boto.log.info('output: %s' % log_fp.getvalue())
+            boto.log.info('nsecs=%s, vtimeout=%s' % (nsecs, vtimeout))
+            if nsecs >= vtimeout:
+                boto.log.info('Task[%s] - extending timeout by %d seconds' % (self.name, vtimeout))
+                msg.change_visibility(vtimeout)
+                nsecs = 5
+            time.sleep(5)
+            nsecs += 5
+        t = process.communicate()
+        log_fp.write(t[0])
+        log_fp.write(t[1])
+        boto.log.info('Task[%s] - output: %s' % (self.name, log_fp.getvalue()))
         self.last_status = process.returncode
         self.last_output = log_fp.getvalue()[0:1023]
 
@@ -108,13 +127,14 @@ class TaskPoller:
         self.sqs = boto.connect_sqs()
         self.queue = self.sqs.lookup(queue_name)
 
-    def poll(self, wait=60):
+    def poll(self, wait=60, vtimeout=60):
         while 1:
-            m = self.queue.read(60*5)
+            m = self.queue.read(vtimeout)
             if m:
                 task = Task.get_by_id(m.get_body())
                 if task:
-                    task.check(m)
+                    boto.log.info('Task[%s] - calling check' % task.name)
+                    task.check(m, vtimeout)
             else:
                 time.sleep(wait)
 
