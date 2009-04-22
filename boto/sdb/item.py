@@ -28,7 +28,7 @@ import base64
 
 class Item(DictMixin):
     
-    def __init__(self, domain, name='', active=True):
+    def __init__(self, domain, name='', active=False):
         self.domain = domain
         self.name = name
         self._dict = None
@@ -104,6 +104,13 @@ class Item(DictMixin):
         if self.active:
             self.domain.delete_attributes(self.name, [key])
         del self._dict[key]
+
+    def update(self, other_dict):
+        if self._dict == None:
+            self.load()
+        if self.active:
+            self.domain.put_attributes(self.name, self, replace)
+        self._dict.update(other_dict)
 
     def keys(self):
         if self._dict == None:
