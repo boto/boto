@@ -142,7 +142,10 @@ class Queue:
         @rtype: bool
         @return: True if successful, False if not
         """
-        return self.connection.send_message(self, message.get_body_encoded())
+        new_msg = self.connection.send_message(self, message.get_body_encoded())
+        message.id = new_msg.id
+        message.md5 = new_msg.md5
+        return message
 
     def new_message(self, body=''):
         """

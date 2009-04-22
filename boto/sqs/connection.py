@@ -155,7 +155,7 @@ class SQSConnection(AWSQueryConnection):
 
     def send_message(self, queue, message_content):
         params = {'MessageBody' : message_content}
-        return self.get_status('SendMessage', params, queue.id)
+        return self.get_object('SendMessage', params, Message, queue.id)
 
     def change_message_visibility(self, queue, receipt_handle, visibility_timeout):
         """

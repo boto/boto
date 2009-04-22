@@ -98,7 +98,7 @@ class RawMessage:
             self.id = value
         elif name == 'ReceiptHandle':
             self.receipt_handle = value
-        elif name == 'MD5OfBody':
+        elif name == 'MD5OfMessageBody':
             self.md5 = value
         else:
             setattr(self, name, value)
