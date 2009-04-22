@@ -241,7 +241,7 @@ class SDBConnection(AWSQueryConnection):
 
     def batch_put_attributes(self, domain_or_name, items, replace=True):
         """
-        Store attributes for a given item in a domain.
+        Store attributes for multiple items in a domain.
 
         @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
         @param domain_or_name: Either the name of a domain or a Domain object
