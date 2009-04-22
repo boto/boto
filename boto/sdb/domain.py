@@ -36,7 +36,7 @@ class Domain:
         return 'Domain:%s' % self.name
 
     def __iter__(self):
-        return iter(QueryResultSet(self))
+        return iter(SelectResultSet(self))
 
     def startElement(self, name, attrs, connection):
         return None
@@ -53,12 +53,80 @@ class Domain:
         return self._metadata
     
     def put_attributes(self, item_name, attributes, replace=True):
+        """
+        Store attributes for a given item.
+
+        @type item_name: string
+        @param item_name: The name of the item whose attributes are being stored.
+
+        @type attribute_names: dict or dict-like object
+        @param attribute_names: The name/value pairs to store as attributes
+
+        @type replace: bool
+        @param replace: Whether the attribute values passed in will replace
+                        existing values or will be added as addition values.
+                        Defaults to True.
+
+        @rtype: bool
+        @return: True if successful
+        """
+        return self.connection.put_attributes(self, item_name, attributes, replace)
+
+    def batch_put_attributes(self, items, replace=True):
+        """
+        Store attributes for multiple items.
+
+        @type items: dict or dict-like object
+        @param items: A dictionary-like object.  The keys of the dictionary are
+                      the item names and the values are themselves dictionaries
+                      of attribute names/values, exactly the same as the
+                      attribute_names parameter of the scalar put_attributes
+                      call.
+
+        @type replace: bool
+        @param replace: Whether the attribute values passed in will replace
+                        existing values or will be added as addition values.
+                        Defaults to True.
+
+        @rtype: bool
+        @return: True if successful
+        """
         return self.connection.put_attributes(self, item_name, attributes, replace)
 
     def get_attributes(self, item_name, attribute_name=None, item=None):
+        """
+        Retrieve attributes for a given item.
+
+        @type item_name: string
+        @param item_name: The name of the item whose attributes are being retrieved.
+
+        @type attribute_names: string or list of strings
+        @param attribute_names: An attribute name or list of attribute names.  This
+                                parameter is optional.  If not supplied, all attributes
+                                will be retrieved for the item.
+
+        @rtype: L{Item<boto.sdb.item.Item>}
+        @return: An Item mapping type containing the requested attribute name/values
+        """
         return self.connection.get_attributes(self, item_name, attribute_name, item)
 
     def delete_attributes(self, item_name, attributes=None):
+        """
+        Delete attributes from a given item.
+
+        @type item_name: string
+        @param item_name: The name of the item whose attributes are being deleted.
+
+        @type attributes: dict, list or L{Item<boto.sdb.item.Item>}
+        @param attributes: Either a list containing attribute names which will cause
+                           all values associated with that attribute name to be deleted or
+                           a dict or Item containing the attribute names and keys and list
+                           of values to delete as the value.  If no value is supplied,
+                           all attribute name/values for the item will be deleted.
+                           
+        @rtype: bool
+        @return: True if successful
+        """
         return self.connection.delete_attributes(self, item_name, attributes)
 
     def query(self, query='', max_items=None, attr_names=None):
