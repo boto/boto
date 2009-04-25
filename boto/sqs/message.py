@@ -232,9 +232,9 @@ class EncodedMHMessage(MHMessage):
 
     def decode(self, value):
         value = base64.b64decode(value)
-        return MHMessage.decode(value)
+        return MHMessage.decode(self, value)
 
     def encode(self, value):
         value = MHMessage.encode(value)
-        return base64.b64encode(value)
+        return base64.b64encode(self, value)
     

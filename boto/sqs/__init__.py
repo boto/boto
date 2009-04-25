@@ -25,7 +25,7 @@ import boto
 boto.check_extensions(__name__, __path__)
 
 from queue import Queue
-from message import Message, MHMessage
+from message import Message, MHMessage, EncodedMHMessage
 from regioninfo import SQSRegionInfo
 
 def regions():
