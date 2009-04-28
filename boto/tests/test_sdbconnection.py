@@ -82,6 +82,20 @@ class SDBConnectionTest (unittest.TestCase):
         stat = domain.delete_attributes(item_1)
         assert stat
 
+        # now try a batch put operation on the domain
+        item3 = {'name3_1' : 'value3_1',
+                 'name3_2' : 'value3_2',
+                 'name3_3' : ['value3_3_1', 'value3_3_2']}
+
+        item4 = {'name4_1' : 'value4_1',
+                 'name4_2' : ['value4_2_1', 'value4_2_2'],
+                 'name4_3' : 'value4_3'}
+        items = {'item3' : item3, 'item4' : item4}
+        domain.batch_put_attributes(items)
+        time.sleep(10)
+        item = domain.get_attributes('item3')
+        assert item['name3_2'] == 'value3_2'
+        
         # now delete the domain
         stat = c.delete_domain(domain)
         assert stat
