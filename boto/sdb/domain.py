@@ -91,7 +91,7 @@ class Domain:
         @rtype: bool
         @return: True if successful
         """
-        return self.connection.put_attributes(self, items, replace)
+        return self.connection.batch_put_attributes(self, items, replace)
 
     def get_attributes(self, item_name, attribute_name=None, item=None):
         """
