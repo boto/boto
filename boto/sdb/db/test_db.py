@@ -150,19 +150,19 @@ def test_list_reference():
 def test_unique():
     global _objects
     t = TestUnique()
-    t.name = "foo"
+    name = 'foo' + str(int(time.time()))
+    t.name = name
     t.put()
     _objects['test_unique_t'] = t
+    time.sleep(10)
     tt = TestUnique()
     _objects['test_unique_tt'] = tt
-    tt.name = "foo"
+    tt.name = name
     try:
         tt.put()
         assert False
     except(SDBPersistenceError):
         pass
-    finally:
-        t.delete()
 
 def test_datetime():
     global _objects
@@ -171,11 +171,7 @@ def test_datetime():
     _objects['test_datetime_t'] = t
     time.sleep(5)
     tt = TestAutoNow.get_by_id(t.id)
-    try:
-        assert tt.create_date.timetuple() == t.create_date.timetuple()
-    finally:
-        t.delete()
-
+    assert tt.create_date.timetuple() == t.create_date.timetuple()
 
 def test():
     print 'test_basic'
@@ -194,6 +190,8 @@ def test():
     test_list_reference()
     print "test_datetime"
     test_datetime()
+    print 'test_unique'
+    test_unique()
 
 if __name__ == "__main__":
     test()
