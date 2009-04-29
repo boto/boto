@@ -36,7 +36,7 @@ class Domain:
         return 'Domain:%s' % self.name
 
     def __iter__(self):
-        return iter(SelectResultSet(self))
+        return self.select("SELECT * FROM %s" % self.name)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -262,7 +262,7 @@ class DomainDumpParser(ContentHandler):
         self.items = []
         self.item = None
         self.attribute = None
-        self.value = None
+        self.value = ""
         self.domain = domain
 
     def startElement(self, name, attrs):
@@ -279,5 +279,7 @@ class DomainDumpParser(ContentHandler):
     def endElement(self, name):
         if name == "value":
             if self.value and self.attribute:
-                self.item.add_value(self.attribute, self.value)
+                self.item.add_value(self.attribute, self.value.strip())
+        elif name == "Item":
+            self.item.save()
 
