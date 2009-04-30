@@ -331,8 +331,11 @@ class SDBManager(object):
                     filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
                 query_parts.append("(%s)" % (" or ".join(filter_parts)))
             else:
-                val = self.encode_value(property, value)
-                query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
+                if op == 'is' and val == None:
+                    query_parts.append("`%s` is null" % name)
+                else:
+                    val = self.encode_value(property, value)
+                    query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
 
         type_query = "(`__type__` = '%s'" % cls.__name__
         for subclass in cls.__sub_classes__:
