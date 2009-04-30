@@ -331,7 +331,7 @@ class SDBManager(object):
                     filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
                 query_parts.append("(%s)" % (" or ".join(filter_parts)))
             else:
-                if op == 'is' and val == None:
+                if op == 'is' and value == None:
                     query_parts.append("`%s` is null" % name)
                 else:
                     val = self.encode_value(property, value)
