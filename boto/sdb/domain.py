@@ -203,7 +203,7 @@ class Domain:
 
                 for value in values:
                     value_node = doc.createElement("value")
-                    value_node.appendChild(doc.createTextNode(str(value)))
+                    value_node.appendChild(doc.createTextNode(str(value.encode('utf-8'))))
                     attr_node.appendChild(value_node)
 
                 obj_node.appendChild(attr_node)
