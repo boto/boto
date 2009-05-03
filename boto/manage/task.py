@@ -51,55 +51,56 @@ class Task(Model):
     last_executed = DateTimeProperty()
     last_status = IntegerProperty()
     last_output = StringProperty()
+    message_id = StringProperty()
 
+    def __init__(self, id=None, **kw):
+        Model.__init__(self, id, **kw)
+        self.hourly = self.hour == '*'
+        self.daily = self.hour != '*'
+        self.now = datetime.datetime.utcnow()
+        
     def check(self, msg, vtimeout):
         """
-        Determine if the Task needs to run right now or not.  If it does, run it and if it
-        doesn't, do nothing.
+        Determine if the Task needs to run right now or not.
+        If it's an hourly task and it's never been run, run it now.
+        If it's a daily task and it's never been run and the hour is right, run it now.        
         """
         need_to_run = False
-        # get current time in UTC
-        now = datetime.datetime.utcnow()
-        boto.log.info('checking Task[%s]' % self.name)
-        boto.log.info('now=%s' % now)
-        boto.log.info('last_executed=%s' % self.last_executed)
-        if self.hour == '*':
-            # An hourly task.
-            # If it's never been run before, run it now.
-            if not self.last_executed:
+        new_vtimeout = 0
+        boto.log.info('checking Task[%s]-now=%s, last=%s' % (self.name, self.now, self.last_executed))
+
+        if self.hourly and not self.last_executed:
+            need_to_run = True
+        elif self.daily and not self.last_executed:
+            if int(self.hour) == self.now.hour:
                 need_to_run = True
-            else:
-                delta = now - self.last_executed
-                print 'delta=', delta
+        else:
+            delta = self.now - self.last_executed
+            if self.hourly:
                 if delta.seconds >= 60*60:
                     need_to_run = True
                 else:
-                    seconds_to_add = 60*60 - delta.seconds
-        else:
-            hour = int(self.hour)
-            if hour == now.hour:
-                if self.last_executed:
-                    delta = now - self.last_executed
-                    boto.log.info('delta=%s' % delta)
-                    if delta.days >= 1:
-                        need_to_run = True
-                else:
+                    new_vtimeout = 60*60 - delta.seconds
+            else:
+                if delta.days >= 1:
                     need_to_run = True
+                else:
+                    new_vtimeout = min(60*60*24-delta.seconds, 43200)
         if need_to_run:
             self.run(msg, vtimeout)
-            self.last_executed = now
-            self.put()
+            self.last_executed = self.now
             q = msg.queue
-            msg.delete()
             self.schedule(q)
-        elif self.hour == '*':
-            seconds_to_add -= vtimeout
-            boto.log.info('seconds_to_add: %d' % seconds_to_add)
-            msg.change_visibility(seconds_to_add)
+            msg.delete()
+        elif new_vtimeout > 0:
+            boto.log.info('new_vtimeout: %d' % new_vtimeout)
+            msg.change_visibility(new_vtimeout)
             
     def schedule(self, queue):
         msg = queue.new_message(self.id)
-        queue.write(msg)
+        msg = queue.write(msg)
+        self.message_id = msg.id
+        self.put()
         
     def run(self, msg, vtimeout=60):
         boto.log.info('Task[%s] - running:%s' % (self.name, self.command))
@@ -107,12 +108,13 @@ class Task(Model):
         process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         nsecs = 5
+        current_timeout = vtimeout
         while process.poll() == None:
-            boto.log.info('nsecs=%s, vtimeout=%s' % (nsecs, vtimeout))
-            if nsecs >= vtimeout:
-                boto.log.info('Task[%s] - extending timeout by %d seconds' % (self.name, vtimeout))
-                msg.change_visibility(vtimeout)
-                nsecs = 5
+            boto.log.info('nsecs=%s, timeout=%s' % (nsecs, current_timeout))
+            if nsecs >= current_timeout:
+                current_timeout += vtimeout
+                boto.log.info('Task[%s] - setting timeout to %d seconds' % (self.name, current_timeout))
+                msg.change_visibility(current_timeout)
             time.sleep(5)
             nsecs += 5
         t = process.communicate()
@@ -134,8 +136,12 @@ class TaskPoller:
             if m:
                 task = Task.get_by_id(m.get_body())
                 if task:
-                    boto.log.info('Task[%s] - calling check' % task.name)
-                    task.check(m, vtimeout)
+                    if not task.message_id or m.id == task.message_id:
+                        boto.log.info('Task[%s] - read message %s' % (task.name, m.id))
+                        task.check(m, vtimeout)
+                    else:
+                        boto.log.info('Task[%s] - found extraneous message, deleting' % task.name)
+                        m.delete()
             else:
                 time.sleep(wait)
 
