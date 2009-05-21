@@ -39,12 +39,13 @@ from boto.ec2.snapshot import Snapshot
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
 from boto.ec2.regioninfo import RegionInfo
+from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering, ReservedInstance
 from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-03-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-04-04')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'us-east-1.ec2.amazonaws.com')
@@ -874,4 +875,34 @@ class EC2Connection(AWSQueryConnection):
         params = {'ReservedInstancesOfferingId' : reserved_instances_offering_id,
                   'InstanceCount' : instance_count}
         return self.get_object('PurchaseReservedInstancesOffering', params, ReservedInstance)
+
+    #
+    # Monitoring
+    #
+
+    def monitor_instances(self, instance_id):
+        """
+        Enable CloudWatch monitoring for the supplied instance.
+        
+        @type instance_id: string
+        @param instance_id: The instance id
+        
+        @rtype: list
+        @return: A list of L{InstanceInfo<boto.ec2.instanceinfo.InstanceInfo>}
+        """
+        params = {'InstanceId' : instance_id}
+        return self.get_list('MonitorInstances', params, [('item', InstanceInfo)])
+
+    def unmonitor_instances(self, instance_id):
+        """
+        Disable CloudWatch monitoring for the supplied instance.
+        
+        @type instance_id: string
+        @param instance_id: The instance id
+        
+        @rtype: list
+        @return: A list of L{InstanceInfo<boto.ec2.instanceinfo.InstanceInfo>}
+        """
+        params = {'InstanceId' : instance_id}
+        return self.get_list('UnmonitorInstances', params, [('item', InstanceInfo)])
 
