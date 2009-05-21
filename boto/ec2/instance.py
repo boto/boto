@@ -82,10 +82,17 @@ class Instance(EC2Object):
         self.kernel = None
         self.ramdisk = None
         self.product_codes = []
+        self.monitored = False
+        self._in_monitoring_element = False
 
     def __repr__(self):
         return 'Instance:%s' % self.id
-    
+
+    def startElement(self, name, attrs, connection):
+        if name == 'monitoring':
+            self._in_monitoring_element = True
+        return None
+
     def endElement(self, name, value, connection):
         if name == 'instanceId':
             self.id = value
@@ -122,6 +129,11 @@ class Instance(EC2Object):
             self.ramdisk = value
         elif name == 'productCode':
             self.product_codes.append(value)
+        elif name == 'state':
+            if self._in_monitoring_element:
+                if value == 'enabled':
+                    self.monitored = True
+                self._in_monitoring_element = False
         else:
             setattr(self, name, value)
 
