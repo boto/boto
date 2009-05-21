@@ -19,46 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class Listener(object):
-    """
-    Represents an EC2 Load Balancer Listener tuple
-    """
-    
-    def __init__(self, load_balancer=None, load_balancer_port=0,
-                 instance_port=0, protocol=''):
-        self.load_balancer = load_balancer
-        self.load_balancer_port = load_balancer_port
-        self.instance_port = instance_port
-        self.protocol = protocol
-
-    def __repr__(self):
-        return "(%d, %d, '%s')" % (self.load_balancer_port, self.instance_port, self.protocol)
+class ListElement(list):
 
     def startElement(self, name, attrs, connection):
-        return None
+        pass
 
     def endElement(self, name, value, connection):
-        if name == 'LoadBalancerPort':
-            self.load_balancer_port = int(value)
-        elif name == 'InstancePort':
-            self.instance_port = int(value)
-        elif name == 'Protocol':
-            self.protocol = value
-        else:
-            setattr(self, name, value)
-
-    def get_tuple(self):
-        return self.load_balancer_port, self.instance_port, self.protocol
-
-    def __getitem__(self, key):
-        if key == 0:
-            return self.load_balancer_port
-        if key == 1:
-            return self.instance_port
-        if key == 2:
-            return self.protocol
-        raise KeyError
-        
-
-
-
+        if name == 'member':
+            self.append(value)
+    
+    

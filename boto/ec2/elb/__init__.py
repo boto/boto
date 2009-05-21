@@ -81,19 +81,21 @@ class ELBConnection(AWSQueryConnection):
         @type zones: List of strings
         @param zones: The names of the availability zone(s) to add.
 
-        @type listeners: L{Listener<boto.ec2.elb.listener.Listener>}
-        @param listeners: Used to specify the load balancer port, the instance port
-                          and the protocol used.
-
+        @type listeners: List of tuples
+        @param listeners: Each tuple contains three values.
+                          (LoadBalancerPortNumber, InstancePortNumber, Protocol)
+                          where LoadBalancerPortNumber and InstancePortNumber are
+                          integer values between 1 and 65535 and Protocol is a
+                          string containing either 'TCP' or 'HTTP'.
         
         @rtype: L{AccessPoint<boto.ec2.elb.loadbalancer.LoadBalancer}
         @return: The newly created L{LoadBalancer<boto.ec2.elb.loadbalancer.LoadBalancer}
         """
         params = {'LoadBalancerName' : name}
         for i in range(0, len(listeners)):
-            params['Listeners.member.%d.Protocol' % (i+1)] = listeners[i].protocol
-            params['Listeners.member.%d.LoadBalancerPort' % (i+1)] = listeners[i].load_balancer_port
-            params['Listeners.member.%d.InstancePort' % (i+1)] = listeners[i].instance_port
+            params['Listeners.member.%d.LoadBalancerPort' % (i+1)] = listeners[i][0]
+            params['Listeners.member.%d.InstancePort' % (i+1)] = listeners[i][1]
+            params['Listeners.member.%d.Protocol' % (i+1)] = listeners[i][2]
         self.build_list_params(params, zones, 'AvailabilityZones.member.%d')
         load_balancer = self.get_object('CreateLoadBalancer', params, LoadBalancer)
         load_balancer.name = name

@@ -22,6 +22,7 @@
 from boto.ec2.elb.healthcheck import HealthCheck
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.listener import Listener
+from boto.ec2.elb.listelement import ListElement
 from boto.ec2.zone import Zone
 from boto.resultset import ResultSet
 
@@ -37,8 +38,8 @@ class LoadBalancer(object):
         self.health_check = None
         self.dns_name = None
         self.created_time = None
-        self.instances = []
-        self.availability_zones = None
+        self.instances = ListElement()
+        self.availability_zones = ListElement()
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -51,8 +52,9 @@ class LoadBalancer(object):
             self.listeners = ResultSet([('member', Listener)])
             return self.listeners
         elif name == 'AvailabilityZones':
-            self.availability_zones = ResultSet([('member', Zone)])
             return self.availability_zones
+        elif name == 'Instances':
+            return self.instances
         else:
             return None
 
