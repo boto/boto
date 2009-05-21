@@ -94,6 +94,20 @@ def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.ec2.connection import EC2Connection
     return EC2Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def connect_elb(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    @type aws_access_key_id: string
+    @param aws_access_key_id: Your AWS Access Key ID
+    
+    @type aws_secret_access_key: string
+    @param aws_secret_access_key: Your AWS Secret Access Key
+    
+    @rtype: L{ELBConnection<boto.ec2.elb.ELBConnection>}
+    @return: A connection to Amazon's EC2
+    """
+    from boto.ec2.elb import ELBConnection
+    return ELBConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
 def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     @type aws_access_key_id: string
