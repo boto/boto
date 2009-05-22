@@ -129,7 +129,7 @@ class AutoScalingGroup(object):
 
     def update(self):
         """ Sync local changes with AutoScaling group. """
-        return self._update_group('UpdateAutoScalingGroup', self)
+        return self.connection._update_group('UpdateAutoScalingGroup', self)
 
     def get_all_triggers(self):
         """ Get all triggers for this auto scaling group. """

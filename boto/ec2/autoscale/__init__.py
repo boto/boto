@@ -178,7 +178,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if isinstance(autoscale_group, AutoScalingGroup):
             name = autoscale_group.name
         params = {'AutoScalingGroupName' : name}
-        if names:
+        if activity_ids:
             self.build_list_params(params, activity_ids, 'ActivityIds')
         return self.get_list('DescribeScalingActivities', params,
                              [('member', Activity)])
