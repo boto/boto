@@ -880,7 +880,7 @@ class EC2Connection(AWSQueryConnection):
     # Monitoring
     #
 
-    def monitor_instances(self, instance_id):
+    def monitor_instance(self, instance_id):
         """
         Enable CloudWatch monitoring for the supplied instance.
         
@@ -893,7 +893,7 @@ class EC2Connection(AWSQueryConnection):
         params = {'InstanceId' : instance_id}
         return self.get_list('MonitorInstances', params, [('item', InstanceInfo)])
 
-    def unmonitor_instances(self, instance_id):
+    def unmonitor_instance(self, instance_id):
         """
         Disable CloudWatch monitoring for the supplied instance.
         

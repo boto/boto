@@ -181,6 +181,12 @@ class Instance(EC2Object):
             ip_address = ip_address.public_ip
         return self.connection.associate_address(self.id, ip_address)
 
+    def monitor(self):
+        return self.connection.monitor_instance(self.id)
+
+    def unmonitor(self):
+        return self.connection.unmonitor_instance(self.id)
+
 class Group:
 
     def __init__(self, parent=None):
