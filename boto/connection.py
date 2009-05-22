@@ -505,7 +505,6 @@ class AWSQueryConnection(AWSAuthConnection):
         qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
-        print qs
         return self._mexe(verb, qs, None, headers)
 
     def build_list_params(self, params, items, label):
