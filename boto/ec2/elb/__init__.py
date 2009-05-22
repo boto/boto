@@ -171,7 +171,7 @@ class ELBConnection(AWSQueryConnection):
         
         """
         params = {'LoadBalancerName' : load_balancer_name}
-        self.build_list_params(params, instancesn, 'Instances.member.%d.instanceId')
+        self.build_list_params(params, instances, 'Instances.member.%d.instanceId')
         return self.get_list('RegisterInstancesWithLoadBalancer', params, None)
 
     def deregister_instances(self, load_balancer_name, instances):
