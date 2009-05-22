@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.resultset import ResultSet
+
 class Instance(object):
     def __init__(self, connection=None):
         self.connection = connection
