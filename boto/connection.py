@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -64,17 +64,17 @@ from boto import config, UserAgent, handler
 try:
     from hashlib import sha1 as sha
     from hashlib import sha256 as sha256
-    
+
     if sys.version[:3] == "2.4":
         # we are using an hmac that expects a .new() method.
         class Faker:
             def __init__(self, which):
                 self.which = which
                 self.digest_size = self.which().digest_size
-            
+
             def new(self, *args, **kwargs):
                 return self.which(*args, **kwargs)
-        
+
         sha = Faker(sha)
         sha256 = Faker(sha256)
 
@@ -92,38 +92,38 @@ class AWSAuthConnection:
         """
         @type server: string
         @param server: The server to make the connection to
-        
+
         @type aws_access_key_id: string
         @param aws_access_key_id: AWS Access Key ID (provided by Amazon)
-        
+
         @type aws_secret_access_key: string
         @param aws_secret_access_key: Secret Access Key (provided by Amazon)
-        
+
         @type is_secure: boolean
         @param is_secure: Whether the connection is over SSL
-        
+
         @type https_connection_factory: list or tuple
         @param https_connection_factory: A pair of an HTTP connection
                                          factory and the exceptions to catch.
                                          The factory should have a similar
                                          interface to L{httplib.HTTPSConnection}.
-        
+
         @type proxy:
         @param proxy:
-        
+
         @type proxy_port: int
         @param proxy_port: The port to use when connecting over a proxy
-        
+
         @type proxy_user: string
         @param proxy_user: The username to connect with on the proxy
-        
+
         @type proxy_pass: string
         @param proxy_pass: The password to use when connection over a proxy.
-        
+
         @type port: integer
         @param port: The port to use to connect
         """
-        
+
         self.num_retries = 5
         self.is_secure = is_secure
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
@@ -162,14 +162,14 @@ class AWSAuthConnection:
                 self.server_name = server
             else:
                 self.server_name = '%s:%d' % (server, self.port)
-        
+
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
         elif os.environ.has_key('AWS_ACCESS_KEY_ID'):
             self.aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
         elif config.has_option('Credentials', 'aws_access_key_id'):
             self.aws_access_key_id = config.get('Credentials', 'aws_access_key_id')
-        
+
         if aws_secret_access_key:
             self.aws_secret_access_key = aws_secret_access_key
         elif os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
@@ -505,6 +505,7 @@ class AWSQueryConnection(AWSAuthConnection):
         qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
+        print qs
         return self._mexe(verb, qs, None, headers)
 
     def build_list_params(self, params, items, label):
@@ -512,7 +513,7 @@ class AWSQueryConnection(AWSAuthConnection):
             items = [items]
         for i in range(1, len(items)+1):
             params['%s.%d' % (label, i)] = items[i-1]
-            
+
     # generics
 
     def get_list(self, action, params, markers, path='/', parent=None):
@@ -530,7 +531,7 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
-        
+
     def get_object(self, action, params, cls, path='/', parent=None):
         if not parent:
             parent = self
@@ -546,7 +547,7 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
-        
+
     def get_status(self, action, params, path='/', parent=None):
         if not parent:
             parent = self

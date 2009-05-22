@@ -78,11 +78,12 @@ class AutoScaleConnection(AWSQueryConnection):
                   'AutoScalingGroupName'    : as_group.name,
                   'Cooldown'                : as_group.cooldown,
                   'LaunchConfigurationName' : as_group.launch_config.name,
-                  'MinSize'                 : as_group.minsize,
-                  'MaxSize'                 : as_group.maxsize,
+                  'MinSize'                 : as_group.min_size,
+                  'MaxSize'                 : as_group.max_size,
                   }
-        self.build_list_params(params, load_balancers, 'LoadBalancerNames')
-        self.build_list_params(params, [availability_zone],
+        self.build_list_params(params, as_group.load_balancers,
+                               'LoadBalancerNames')
+        self.build_list_params(params, [as_group.availability_zone],
                                 'AvailabilityZones')
         return self.get_object(op, params, Request)
 
@@ -123,15 +124,15 @@ class AutoScaleConnection(AWSQueryConnection):
 
         """
         params = {'TriggerName'             : trigger.name,
-                  'AutoScalingGroupName'    : trigger.autoscale_group,
+                  'AutoScalingGroupName'    : trigger.autoscale_group.name,
                   'MeasureName'             : trigger.measure_name,
                   'Statistic'               : trigger.statistic,
                   'Period'                  : trigger.period,
                   'Unit'                    : trigger.unit,
                   'LowerThreshold'          : trigger.lower_threshold,
-                  'LowerBreachScaleIncrement' : trigger.lower_breach_scale_inc,
+                  'LowerBreachScaleIncrement' : trigger.lower_breach_scale_increment,
                   'UpperThreshold'            : trigger.upper_threshold,
-                  'UpperBreachScaleIncrement' : trigger.upper_breach_scale_inc,
+                  'UpperBreachScaleIncrement' : trigger.upper_breach_scale_increment,
                   'BreachDuration'            : trigger.breach_duration}
         # dimensions should be a list of tuples
         dimensions = []

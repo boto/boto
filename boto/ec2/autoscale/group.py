@@ -40,6 +40,7 @@ class Instance(object):
 class AutoScalingGroup(object):
     def __init__(self, connection=None, group_name=None,
                  availability_zone=None, launch_config=None,
+                 load_balancers=None, cooldown=0,
                  min_size=None, max_size=None):
         """
         Creates a new AutoScalingGroup with the specified name.
@@ -76,13 +77,14 @@ class AutoScalingGroup(object):
         """
         self.name = group_name
         self.connection = connection
-        self.min_size = None
-        self.max_size = None
+        self.min_size = min_size
+        self.max_size = max_size
         self.created_time = None
-        self.cooldown = None
-        self.launch_config = None
+        self.cooldown = cooldown
+        self.launch_config = launch_config
         self.desired_capacity = None
-        self.availability_zone = None
+        self.load_balancers = load_balancers
+        self.availability_zone = availability_zone
         self.instances = None
 
     def __repr__(self):

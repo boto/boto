@@ -68,13 +68,14 @@ class Trigger(object):
                  breach_duration=None):
         self.name = name
         self.connection = connection
+        self.dimensions = dimensions
         self.breach_duration = breach_duration
         self.upper_breach_scale_increment = upper_breach_scale_increment
         self.created_time = None
         self.upper_threshold = upper_threshold
         self.status = None
         self.lower_threshold = lower_threshold
-        self.period = None
+        self.period = period
         self.lower_breach_scale_increment = lower_breach_scale_increment
         self.statistic = statistic
         self.unit = unit
@@ -118,7 +119,7 @@ class Trigger(object):
         """ Delete this trigger. """
         params = {
                   'TriggerName'          : self.name,
-                  'AutoScalingGroupName' : self.autoscale_group,
+                  'AutoScalingGroupName' : self.autoscale_group.name,
                   }
         return self.connection.get_object('DeleteTrigger', params,
                                           Request)
