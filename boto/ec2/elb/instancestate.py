@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -23,7 +23,7 @@ class InstanceState(object):
     """
     Represents the state of an EC2 Load Balancer Instance
     """
-    
+
     def __init__(self, load_balancer=None, description=None,
                  state=None, instance_id=None, reason_code=None):
         self.load_balancer = load_balancer
@@ -33,16 +33,16 @@ class InstanceState(object):
         self.reason_code = reason_code
 
     def __repr__(self):
-        return 'InstanceState:%s' % self.instance_id
+        return 'InstanceState:(%s,%s)' % (self.instance_id, self.state)
 
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
         if name == 'Description':
-            self.Description = value
+            self.description = value
         elif name == 'State':
-            self.State = value
+            self.state = value
         elif name == 'InstanceId':
             self.instance_id = value
         elif name == 'ReasonCode':

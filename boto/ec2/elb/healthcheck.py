@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -23,9 +23,9 @@ class HealthCheck(object):
     """
     Represents an EC2 Access Point Health Check
     """
-    
-    def __init__(self, access_point=None, interval=None, target=None,
-                 healthy_threshold=None, timeout=None, unhealthy_threshold=None):
+
+    def __init__(self, access_point=None, interval=30, target=None,
+                 healthy_threshold=3, timeout=5, unhealthy_threshold=5):
         self.access_point = access_point
         self.interval = interval
         self.target = target
@@ -54,7 +54,11 @@ class HealthCheck(object):
             setattr(self, name, value)
 
     def update(self):
-        new_hc = self.connection.configure_health_check(self.name, self.health_check)
+        if not self.access_point:
+            return
+
+        new_hc = self.connection.configure_health_check(self.access_point,
+                                                        self)
         self.interval = new_hc.interval
         self.target = new_hc.target
         self.healthy_threshold = new_hc.healthy_threshold

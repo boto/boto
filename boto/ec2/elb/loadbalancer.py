@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -30,7 +30,7 @@ class LoadBalancer(object):
     """
     Represents an EC2 Load Balancer
     """
-    
+
     def __init__(self, connection=None, name=None, endpoints=None):
         self.connection = connection
         self.name = name
@@ -74,7 +74,7 @@ class LoadBalancer(object):
         """
         Enable availability zones to this Access Point.
         All zones must be in the same region as the Access Point.
-        
+
         @type zones: string or List of strings
         @param zones: The name of the zone(s) to add.
 
@@ -87,7 +87,7 @@ class LoadBalancer(object):
     def disable_zones(self, zones):
         """
         Disable availability zones from this Access Point.
-        
+
         @type zones: string or List of strings
         @param zones: The name of the zone(s) to add.
 
@@ -103,7 +103,7 @@ class LoadBalancer(object):
         All instances must be in the same region as the Load Balancer.
         Adding endpoints that are already registered with the Load Balancer
         has no effect.
-        
+
         @type zones: string or List of instance id's
         @param zones: The name of the endpoint(s) to add.
 
@@ -118,7 +118,7 @@ class LoadBalancer(object):
         Remove instances from this Load Balancer.
         Removing instances that are not registered with the Load Balancer
         has no effect.
-        
+
         @type zones: string or List of instance id's
         @param zones: The name of the endpoint(s) to add.
 
@@ -134,7 +134,7 @@ class LoadBalancer(object):
         """
         return self.connection.delete_load_balancer(self.name)
 
-    
 
-
+    def configure_health_check(self, health_check):
+        self.connection.configure_health_check(self.name, health_check)
 
