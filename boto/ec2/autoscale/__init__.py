@@ -153,7 +153,7 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_list('DescribeAutoScalingGroups', params,
                              [('member', AutoScalingGroup)])
 
-    def get_all_launch_configurations(self, name=None):
+    def get_all_launch_configurations(self, names=None):
         """
         """
         params = {}
