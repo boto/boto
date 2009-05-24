@@ -65,7 +65,7 @@ class LoadBalancer(object):
             self.dns_name = value
         elif name == 'CreatedTime':
             self.created_time = value
-        elif name == 'InstanceID':
+        elif name == 'InstanceId':
             self.instances.append(value)
         else:
             setattr(self, name, value)
