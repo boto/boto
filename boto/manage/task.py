@@ -124,7 +124,7 @@ class Task(Model):
         self.last_status = process.returncode
         self.last_output = log_fp.getvalue()[0:1023]
 
-class TaskPoller:
+class TaskPoller(object):
 
     def __init__(self, queue_name):
         self.sqs = boto.connect_sqs()
@@ -140,8 +140,7 @@ class TaskPoller:
                         boto.log.info('Task[%s] - read message %s' % (task.name, m.id))
                         task.check(m, vtimeout)
                     else:
-                        boto.log.info('Task[%s] - found extraneous message, deleting' % task.name)
-                        m.delete()
+                        boto.log.info('Task[%s] - found extraneous message, ignoring' % task.name)
             else:
                 time.sleep(wait)
 
