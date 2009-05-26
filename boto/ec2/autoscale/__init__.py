@@ -108,6 +108,8 @@ class AutoScaleConnection(AWSQueryConnection):
                   'LaunchConfigurationName' : launch_config.name,
                   'InstanceType'            : launch_config.instance_type,
                  }
+        if launch_config.user_data:
+            params['UserData'] = launch_config.user_data
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
