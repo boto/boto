@@ -19,7 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import weakref
+
 from boto.resultset import ResultSet
+from boto.ec2.autoscale.trigger import Trigger
+from boto.ec2.autoscale.request import Request
 
 class Instance(object):
     def __init__(self, connection=None):
@@ -84,6 +88,7 @@ class AutoScalingGroup(object):
         self.created_time = None
         self.cooldown = cooldown
         self.launch_config = launch_config
+        self.launch_config_name = launch_config.name if launch_config else None
         self.desired_capacity = None
         self.load_balancers = load_balancers
         self.availability_zone = availability_zone
@@ -125,18 +130,31 @@ class AutoScalingGroup(object):
                  }
         req = self.connection.get_object('SetDesiredCapacity', params,
                                             Request)
-        self.last_request = req
+        self.connection.last_request = req
+        return req
 
     def update(self):
         """ Sync local changes with AutoScaling group. """
         return self.connection._update_group('UpdateAutoScalingGroup', self)
 
+    def shutdown_instances(self):
+        """ Convenience method which shuts down all instances associated with
+        this group.
+        """
+        self.min_size = 0
+        self.max_size = 0
+        self.update()
+
     def get_all_triggers(self):
         """ Get all triggers for this auto scaling group. """
         params = {'AutoScalingGroupName' : self.name}
-        triggers = self.get_list('DescribeTriggers', params,
-                                 [('member', Trigger)])
-        self.triggers = triggers
+        triggers = self.connection.get_list('DescribeTriggers', params,
+                                            [('member', Trigger)])
+
+        # allow triggers to be able to access the autoscale group
+        for tr in triggers:
+            tr.autoscale_group = weakref.ref(self)
+
         return triggers
 
     def delete(self):
@@ -144,3 +162,4 @@ class AutoScalingGroup(object):
         params = {'AutoScalingGroupName' : self.name}
         return self.connection.get_object('DeleteAutoScalingGroup', params,
                                           Request)
+

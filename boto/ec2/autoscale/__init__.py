@@ -77,14 +77,15 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {
                   'AutoScalingGroupName'    : as_group.name,
                   'Cooldown'                : as_group.cooldown,
-                  'LaunchConfigurationName' : as_group.launch_config.name,
+                  'LaunchConfigurationName' : as_group.launch_config_name,
                   'MinSize'                 : as_group.min_size,
                   'MaxSize'                 : as_group.max_size,
                   }
-        self.build_list_params(params, as_group.load_balancers,
-                               'LoadBalancerNames')
-        self.build_list_params(params, [as_group.availability_zone],
-                                'AvailabilityZones')
+        if op.startswith('Create'):
+            self.build_list_params(params, as_group.load_balancers,
+                                   'LoadBalancerNames')
+            self.build_list_params(params, [as_group.availability_zone],
+                                    'AvailabilityZones')
         return self.get_object(op, params, Request)
 
     def create_auto_scaling_group(self, as_group):

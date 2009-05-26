@@ -19,6 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import weakref
+
+from boto.ec2.autoscale.request import Request
+
 
 class Trigger(object):
     """
@@ -80,7 +84,7 @@ class Trigger(object):
         self.statistic = statistic
         self.unit = unit
         self.namespace = None
-        self.autoscale_group = autoscale_group
+        self.autoscale_group = weakref.ref(autoscale_group) if autoscale_group else None
         self.measure_name = measure_name
 
     def __repr__(self):
@@ -105,7 +109,7 @@ class Trigger(object):
         elif name == 'Namespace':
             self.namespace = value
         elif name == 'AutoScalingGroupName':
-            self.group_name = value
+            self.autoscale_group_name = value
         elif name == 'MeasureName':
             self.measure_name = value
         else:
@@ -119,8 +123,10 @@ class Trigger(object):
         """ Delete this trigger. """
         params = {
                   'TriggerName'          : self.name,
-                  'AutoScalingGroupName' : self.autoscale_group.name,
+                  'AutoScalingGroupName' : self.autoscale_group_name,
                   }
-        return self.connection.get_object('DeleteTrigger', params,
-                                          Request)
+        req =self.connection.get_object('DeleteTrigger', params,
+                                        Request)
+        self.connection.last_request = req
+        return req
 

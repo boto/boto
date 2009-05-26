@@ -20,6 +20,10 @@
 # IN THE SOFTWARE.
 
 
+from boto.ec2.autoscale.request import Request
+from boto.ec2.elb.listelement import ListElement
+
+
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
                  key_name=None, security_groups=None, user_data=None,
@@ -48,7 +52,8 @@ class LaunchConfiguration(object):
         self.instance_type = instance_type
         self.block_device_mappings = block_device_mappings
         self.key_name = key_name
-        self.security_groups = security_groups
+        sec_groups = security_groups or []
+        self.security_groups = ListElement(sec_groups)
         self.image_id = image_id
         self.ramdisk_id = ramdisk_id
         self.created_time = None
@@ -60,13 +65,18 @@ class LaunchConfiguration(object):
         return 'LaunchConfiguration:%s' % self.name
 
     def startElement(self, name, attrs, connection):
-        return None
+        if name == 'SecurityGroups':
+            return self.security_groups
+        else:
+            return
 
     def endElement(self, name, value, connection):
         if name == 'InstanceType':
             self.instance_type = value
         elif name == 'LaunchConfigurationName':
             self.name = value
+        elif name == 'KeyName':
+            self.key_name = value
         elif name == 'ImageId':
             self.image_id = value
         elif name == 'CreatedTime':
@@ -75,6 +85,8 @@ class LaunchConfiguration(object):
             self.kernel_id = value
         elif name == 'RamdiskId':
             self.ramdisk_id = value
+        elif name == 'UserData':
+            self.user_data = value
         else:
             setattr(self, name, value)
 
