@@ -153,7 +153,7 @@ class AutoScalingGroup(object):
 
         # allow triggers to be able to access the autoscale group
         for tr in triggers:
-            tr.autoscale_group = weakref.ref(self)
+            tr.autoscale_group = weakref.proxy(self)
 
         return triggers
 
@@ -162,4 +162,10 @@ class AutoScalingGroup(object):
         params = {'AutoScalingGroupName' : self.name}
         return self.connection.get_object('DeleteAutoScalingGroup', params,
                                           Request)
+
+    def get_activities(self, activity_ids=None, max_records=100):
+        """
+        Get all activies for this group.
+        """
+        return self.connection.get_all_activities(self, activity_ids, max_records)
 
