@@ -53,6 +53,11 @@ class Task(Model):
     last_output = StringProperty()
     message_id = StringProperty()
 
+    @classmethod
+    def start_all(cls, queue_name):
+        for task in cls.all():
+            task.start(queue_name)
+            
     def __init__(self, id=None, **kw):
         Model.__init__(self, id, **kw)
         self.hourly = self.hour == '*'
@@ -130,12 +135,14 @@ class Task(Model):
             boto.log.info('new_vtimeout: %d' % delay)
             msg.change_visibility(delay)
 
-    def schedule(self, queue_name):
+    def start(self, queue_name):
+        boto.log.info('Task[%s] - starting' % queue_name)
         queue = boto.lookup('sqs', queue_name)
         msg = queue.new_message(self.id)
         msg = queue.write(msg)
         self.message_id = msg.id
         self.put()
+        boto.log.info('Task[%s] - start successful' % queue_name)
 
 class TaskPoller(object):
 
@@ -157,7 +164,7 @@ class TaskPoller(object):
             else:
                 time.sleep(wait)
 
-        
+
 
     
 
