@@ -36,10 +36,12 @@ class InstanceInfo(object):
         return None
 
     def endElement(self, name, value, connection):
-        if name == 'instanceId':
+        if name == 'instanceId' or name == 'InstanceId':
             self.id = value
         elif name == 'state':
             self.state = value
         else:
             setattr(self, name, value)
+
+            
 

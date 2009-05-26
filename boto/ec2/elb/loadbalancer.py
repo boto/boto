@@ -24,6 +24,7 @@ from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.listener import Listener
 from boto.ec2.elb.listelement import ListElement
 from boto.ec2.zone import Zone
+from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 
 class LoadBalancer(object):
@@ -38,7 +39,7 @@ class LoadBalancer(object):
         self.health_check = None
         self.dns_name = None
         self.created_time = None
-        self.instances = ListElement()
+        self.instances = None
         self.availability_zones = ListElement()
 
     def __repr__(self):
@@ -54,6 +55,7 @@ class LoadBalancer(object):
         elif name == 'AvailabilityZones':
             return self.availability_zones
         elif name == 'Instances':
+            self.instances = ResultSet([('member', InstanceInfo)])
             return self.instances
         else:
             return None
@@ -97,9 +99,9 @@ class LoadBalancer(object):
         new_zones = self.connection.disable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
 
-    def add_instances(self, instances):
+    def register_instances(self, instances):
         """
-        Add endpoints to this Load Balancer
+        Add instances to this Load Balancer
         All instances must be in the same region as the Load Balancer.
         Adding endpoints that are already registered with the Load Balancer
         has no effect.
@@ -113,7 +115,7 @@ class LoadBalancer(object):
         new_instances = self.connection.register_instances(self.name, instances)
         self.instances = new_instances
 
-    def remove_instances(self, instances):
+    def deregister_instances(self, instances):
         """
         Remove instances from this Load Balancer.
         Removing instances that are not registered with the Load Balancer

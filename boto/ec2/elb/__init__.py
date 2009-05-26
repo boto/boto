@@ -24,6 +24,7 @@ This module provides an interface to the Elastic Compute Cloud (EC2)
 load balancing service from AWS.
 """
 from boto.connection import AWSQueryConnection
+from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.elb.loadbalancer import LoadBalancer
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
@@ -172,7 +173,7 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {'LoadBalancerName' : load_balancer_name}
         self.build_list_params(params, instances, 'Instances.member.%d.InstanceId')
-        return self.get_list('RegisterInstancesWithLoadBalancer', params, None)
+        return self.get_list('RegisterInstancesWithLoadBalancer', params, [('member', InstanceInfo)])
 
     def deregister_instances(self, load_balancer_name, instances):
         """
@@ -190,7 +191,7 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {'LoadBalancerName' : load_balancer_name}
         self.build_list_params(params, instances, 'Instances.member.%d.InstanceId')
-        return self.get_list('DeregisterInstancesFromLoadBalancer', params, None)
+        return self.get_list('DeregisterInstancesWithLoadBalancer', params, [('member', InstanceInfo)])
 
     def describe_instance_health(self, load_balancer_name, instances=None):
         """
