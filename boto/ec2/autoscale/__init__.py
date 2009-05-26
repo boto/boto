@@ -70,7 +70,7 @@ class AutoScaleConnection(AWSQueryConnection):
             if isinstance(items[i-1], dict):
                 for k, v in items[i-1].iteritems():
                     params['%s.member.%d.%s' % (label, i, k)] = v
-            elif isinstance(items[i-1], str):
+            elif isinstance(items[i-1], basestring):
                 params['%s.member.%d' % (label, i)] = items[i-1]
 
     def _update_group(self, op, as_group):
@@ -124,17 +124,17 @@ class AutoScaleConnection(AWSQueryConnection):
         """
 
         """
-        params = {'TriggerName'             : trigger.name,
-                  'AutoScalingGroupName'    : trigger.autoscale_group.name,
-                  'MeasureName'             : trigger.measure_name,
-                  'Statistic'               : trigger.statistic,
-                  'Period'                  : trigger.period,
-                  'Unit'                    : trigger.unit,
-                  'LowerThreshold'          : trigger.lower_threshold,
-                  'LowerBreachScaleIncrement' : trigger.lower_breach_scale_increment,
-                  'UpperThreshold'            : trigger.upper_threshold,
-                  'UpperBreachScaleIncrement' : trigger.upper_breach_scale_increment,
-                  'BreachDuration'            : trigger.breach_duration}
+        params = {'TriggerName'                 : trigger.name,
+                  'AutoScalingGroupName'        : trigger.autoscale_group.name,
+                  'MeasureName'                 : trigger.measure_name,
+                  'Statistic'                   : trigger.statistic,
+                  'Period'                      : trigger.period,
+                  'Unit'                        : trigger.unit,
+                  'LowerThreshold'              : trigger.lower_threshold,
+                  'LowerBreachScaleIncrement'   : trigger.lower_breach_scale_increment,
+                  'UpperThreshold'              : trigger.upper_threshold,
+                  'UpperBreachScaleIncrement'   : trigger.upper_breach_scale_increment,
+                  'BreachDuration'              : trigger.breach_duration}
         # dimensions should be a list of tuples
         dimensions = []
         for dim in trigger.dimensions:

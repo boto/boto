@@ -21,6 +21,7 @@
 
 import weakref
 
+from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.request import Request
@@ -90,7 +91,8 @@ class AutoScalingGroup(object):
         self.launch_config = launch_config
         self.launch_config_name = launch_config.name if launch_config else None
         self.desired_capacity = None
-        self.load_balancers = load_balancers
+        lbs = load_balancers or []
+        self.load_balancers = ListElement(lbs)
         self.availability_zone = availability_zone
         self.instances = None
 
@@ -101,6 +103,8 @@ class AutoScalingGroup(object):
         if name == 'Instances':
             self.instances = ResultSet([('member', Instance)])
             return self.instances
+        elif name == 'LoadBalancerNames':
+            return self.load_balancers
         else:
             return
 
