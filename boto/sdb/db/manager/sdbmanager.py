@@ -67,17 +67,16 @@ class SDBConverter:
         return value
 
     def encode_prop(self, prop, value):
-        if isinstance(value, list):
-            if hasattr(prop, 'item_type'):
-                new_value = []
-                for v in value:
-                    item_type = getattr(prop, "item_type")
-                    if Model in item_type.mro():
-                        item_type = Model
-                    new_value.append(self.encode(item_type, v))
-                return new_value
-            else:
-                return value
+        if hasattr(prop, 'item_type'):
+            if not isinstance(value, list):
+                value = [value]
+            new_value = []
+            for v in value:
+                item_type = getattr(prop, "item_type")
+                if Model in item_type.mro():
+                    item_type = Model
+                new_value.append(self.encode(item_type, v))
+            return new_value
         else:
             return self.encode(prop.data_type, value)
 
@@ -322,20 +321,30 @@ class SDBManager(object):
             (name, op) = filter[0].strip().split(" ")
             value = filter[1]
             property = cls.find_property(name)
+            if not property:
+                raise AttributeError("Unknown Property: %s" % name)
             if name == order_by:
                 order_by_filtered = True
             if types.TypeType(value) == types.ListType:
                 filter_parts = []
                 for val in value:
                     val = self.encode_value(property, val)
-                    filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
+                    if isinstance(val, list):
+                        for v in val:
+                            filter_parts.append("`%s` %s '%s'" % (name, op, v.replace("'", "''")))
+                    else:
+                        filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
                 query_parts.append("(%s)" % (" or ".join(filter_parts)))
             else:
                 if op == 'is' and value == None:
                     query_parts.append("`%s` is null" % name)
                 else:
                     val = self.encode_value(property, value)
-                    query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
+                    if isinstance(val, list):
+                        for v in val:
+                            query_parts.append("`%s` %s '%s'" % (name, op, v.replace("'", "''")))
+                    else:
+                        query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
 
         type_query = "(`__type__` = '%s'" % cls.__name__
         for subclass in cls.__sub_classes__:
