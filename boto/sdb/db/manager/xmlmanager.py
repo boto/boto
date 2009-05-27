@@ -473,7 +473,7 @@ class XMLManager(object):
         else:
             doc = parse(fp)
         return self.get_object_from_doc(cls, id, doc)
-
+    
     def unmarshal_props(self, fp, cls=None, id=None):
         """
         Same as unmarshalling an object, except it returns
@@ -510,4 +510,10 @@ class XMLManager(object):
 
     def get_property(self, prop, obj, name):
         pass
+
+    def load_object(self, obj):
+        if not obj._loaded:
+            obj = obj.get_by_id(obj.id)
+            obj._loaded = True
+        return obj
 
