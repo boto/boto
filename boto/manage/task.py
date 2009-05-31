@@ -120,29 +120,29 @@ class Task(Model):
 
     def run(self, msg, vtimeout=60):
         delay = self.check()
-        boto.log.info('Task[%s] - delay=%s seconds' % delay)
+        boto.log.info('Task[%s] - delay=%s seconds' % (self.name, delay))
         if delay == 0:
             self._run(msg, vtimeout)
-            q = msg.queue
+            queue = msg.queue
             new_msg = queue.new_message(self.id)
             new_msg = queue.write(msg)
             self.message_id = new_msg.id
             self.put()
-            boto.log.info('Task[%s] - new message id=%s' % new_msg.id)
+            boto.log.info('Task[%s] - new message id=%s' % (self.name, new_msg.id))
             msg.delete()
-            boto.log.info('Task[%s] - deleted message %s' % msg.id)
+            boto.log.info('Task[%s] - deleted message %s' % (self.name, msg.id))
         else:
             boto.log.info('new_vtimeout: %d' % delay)
             msg.change_visibility(delay)
 
     def start(self, queue_name):
-        boto.log.info('Task[%s] - starting' % queue_name)
+        boto.log.info('Task[%s] - starting with queue: %s' % (self.name, queue_name))
         queue = boto.lookup('sqs', queue_name)
         msg = queue.new_message(self.id)
         msg = queue.write(msg)
         self.message_id = msg.id
         self.put()
-        boto.log.info('Task[%s] - start successful' % queue_name)
+        boto.log.info('Task[%s] - start successful' % self.name)
 
 class TaskPoller(object):
 
@@ -158,7 +158,7 @@ class TaskPoller(object):
                 if task:
                     if not task.message_id or m.id == task.message_id:
                         boto.log.info('Task[%s] - read message %s' % (task.name, m.id))
-                        task.check(m, vtimeout)
+                        task.run(m, vtimeout)
                     else:
                         boto.log.info('Task[%s] - found extraneous message, ignoring' % task.name)
             else:
