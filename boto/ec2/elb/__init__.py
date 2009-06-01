@@ -68,7 +68,7 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {}
         if load_balancer_names:
-            self.build_list_params(params, access_point_names, 'LoadBalancerName.%d')
+            self.build_list_params(params, load_balancer_names, 'LoadBalancerName.%d')
         return self.get_list('DescribeLoadBalancers', params, [('member', LoadBalancer)])
 
 
