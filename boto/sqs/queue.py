@@ -39,11 +39,19 @@ class Queue:
         self.visibility_timeout = None
 
     def _id(self):
-        return urlparse.urlparse(self.url)[2] if self.url else self.url
+        if self.url:
+            val = urlparse.urlparse(self.url)[2]
+        else:
+            val = self.url
+        return val
     id = property(_id)
 
     def _name(self):
-        return urlparse.urlparse(self.url)[2].split('/')[2] if self.url else self.url
+        if self.url:
+            val = urlparse.urlparse(self.url)[2].split('/')[2]
+        else:
+            val = self.url
+        return  val
     name = property(_name)
 
     def startElement(self, name, attrs, connection):
