@@ -168,7 +168,7 @@ class CloudWatchConnection(AWSQueryConnection):
             params[label % i] = items[i-1]
             
     def get_metric_statistics(self, period, start_time, end_time, measure_name,
-                              namespace, statistics=None, dimension=None, unit=None):
+                              namespace, statistics=None, dimensions=None, unit=None):
         """
         Get time-series data for one or more statistics of a given metric.
         
@@ -184,10 +184,12 @@ class CloudWatchConnection(AWSQueryConnection):
                   'Namespace' : namespace,
                   'StartTime' : start_time.isoformat(),
                   'EndTime' : end_time.isoformat()}
-        if dimension:
-            for name in dimension:
-                params['Dimension.Name'] = name
-                params['Dimension.Value'] = dimension[name]
+        if dimensions:
+            i = 1
+            for name in dimensions:
+                params['Dimensions.member.%d.Name' % i] = name
+                params['Dimensions.member.%d.Value' % i] = dimensions[name]
+                i += 1
         if statistics:
             self.build_list_params(params, statistics, 'Statistics.member.%d')
         return self.get_list('GetMetricStatistics', params, [('member', Datapoint)])
