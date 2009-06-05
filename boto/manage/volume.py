@@ -321,7 +321,11 @@ class Volume(Model):
                                      day=now.day, tzinfo=now.tzinfo)
         # Keep the first snapshot from each day of the previous week
         one_week = datetime.timedelta(days=7, seconds=60*60)
+        print midnight-one_week, midnight
         previous_week = self.get_snapshot_range(snaps, midnight-one_week, midnight)
+        print previous_week
+        if not previous_week:
+            return snaps
         current_day = None
         for snap in previous_week:
             if current_day and current_day == snap.date.day:
@@ -329,10 +333,11 @@ class Volume(Model):
             else:
                 current_day = snap.date.day
         # Get ourselves onto the next full week boundary
-        week_boundary = previous_week[0].date
-        if week_boundary.weekday() != 0:
-            delta = datetime.timedelta(days=week_boundary.weekday())
-            week_boundary = week_boundary - delta
+        if previous_week:
+            week_boundary = previous_week[0].date
+            if week_boundary.weekday() != 0:
+                delta = datetime.timedelta(days=week_boundary.weekday())
+                week_boundary = week_boundary - delta
         # Keep one within this partial week
         partial_week = self.get_snapshot_range(snaps, week_boundary, previous_week[0].date)
         if len(partial_week) > 1:
