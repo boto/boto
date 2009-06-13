@@ -153,7 +153,7 @@ class Domain:
         """
         return iter(QueryResultSet(self, query, max_items, attr_names))
     
-    def select(self, query='', next_token=None):
+    def select(self, query='', next_token=None, max_items=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -162,12 +162,15 @@ class Domain:
         @type query: string
         @param query: The SimpleDB query to be performed.
 
+        @type max_items: int
+        @param max_items: The maximum number of items to return.
+
         @rtype: iter
         @return: An iterator containing the results.  This is actually a generator
                  function that will iterate across all search results, not just the
                  first page.
         """
-        return iter(SelectResultSet(self, query))
+        return iter(SelectResultSet(self, query, max_items))
     
     def get_item(self, item_name):
         item = self.get_attributes(item_name)
