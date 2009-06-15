@@ -212,10 +212,11 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeImageAttribute', params, ImageAttribute)
         
     def modify_image_attribute(self, image_id, attribute='launchPermission',
-                               operation='add', user_ids=None, groups=None):
+                               operation='add', user_ids=None, groups=None,
+                               product_codes=None):
         """
         Changes an attribute of an image.
-        See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-ModifyImageAttribute.html
+        See http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyImageAttribute.html
         
         @type image_id: string
         @param image_id: The image id you wish to change
@@ -224,13 +225,18 @@ class EC2Connection(AWSQueryConnection):
         @param attribute: The attribute you wish to change
         
         @type operation: string
-        @param operation: Either add or remove (this is required for changing launchPermissions
+        @param operation: Either add or remove (this is required for changing launchPermissions)
         
         @type user_ids: list
         @param user_ids: The Amazon IDs of users to add/remove attributes
         
         @type groups: list
         @param groups: The groups to add/remove attributes
+
+        @type product_codes: list
+        @param product_codes: Amazon DevPay product code. Currently only one
+                              product code can be associated with an AMI. Once
+                              set, the product code cannot be changed or reset.
         """
         params = {'ImageId' : image_id,
                   'Attribute' : attribute,
@@ -239,6 +245,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, user_ids, 'UserId')
         if groups:
             self.build_list_params(params, groups, 'UserGroup')
+        if product_codes:
+            self.build_list_params(params, groups, 'ProductCode')
         return self.get_status('ModifyImageAttribute', params)
 
     def reset_image_attribute(self, image_id, attribute='launchPermission'):
