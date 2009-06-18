@@ -32,6 +32,10 @@ class Volume(EC2Object):
         self.create_time = None
         self.status = None
         self.size = None
+        self.instance_id = None
+        self.create_time = None
+        self.attach_time = None
+        self.device = None
         self.snapshot_id = None
         self.attach_data = None
 
@@ -50,12 +54,19 @@ class Volume(EC2Object):
             self.id = value
         elif name == 'createTime':
             self.create_time = value
+        elif name == 'attachTime':
+            self.attach_time = value
+        elif name == 'instanceId':
+            self.instance_id = value
         elif name == 'status':
-            self.status = value
+            if value != '':
+                self.status = value
         elif name == 'size':
             self.size = int(value)
         elif name == 'snapshotId':
             self.snapshot_id = value
+        elif name == 'device':
+            self.device = value
         else:
             setattr(self, name, value)
 

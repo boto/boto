@@ -85,10 +85,10 @@ except ImportError:
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 class AWSAuthConnection:
-    def __init__(self, server, aws_access_key_id=None,
-                 aws_secret_access_key=None, is_secure=True, port=None,
-                 proxy=None, proxy_port=None, proxy_user=None,
-                 proxy_pass=None, debug=0, https_connection_factory=None):
+    def __init__(self, server, aws_access_key_id=None, aws_secret_access_key=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, service=None):
         """
         @type server: string
         @param server: The server to make the connection to
@@ -149,6 +149,8 @@ class AWSAuthConnection:
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
+        if server:
+            self.server_name = server
         if self.port == 80:
             self.server_name = server
         else:
@@ -176,6 +178,8 @@ class AWSAuthConnection:
             self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
         elif config.has_option('Credentials', 'aws_secret_access_key'):
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
+
+        self.service = service
 
         # initialize an HMAC for signatures, make copies with each request
         self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
@@ -226,6 +230,8 @@ class AWSAuthConnection:
     def get_http_connection(self, host, is_secure):
         if host is None:
             host = self.server_name
+        if self.service:
+            host = '%s:%d' % (self.server_name, int(self.port))
         cached_name = is_secure and 'https://' or 'http://'
         cached_name += host
         if cached_name in self._cache:
@@ -376,6 +382,8 @@ class AWSAuthConnection:
 
     def make_request(self, method, path, headers=None, data='', host=None,
             auth_path=None, sender=None):
+        if self.service:
+            path = '/%s/%s' % (self.service, path)
         if headers == None:
             headers = {'User-Agent' : UserAgent}
         else:
@@ -388,7 +396,11 @@ class AWSAuthConnection:
                 # If is_secure, we don't have to set the proxy authentication
                 # header here, we did that in the CONNECT to the proxy.
                 headers.update(self.get_proxy_auth_header())
-        self.add_aws_auth_header(headers, method, auth_path or path)
+        if self.service:
+            request_string = path
+        else:
+            request_string = auth_path or path
+        self.add_aws_auth_header(headers, method, request_string)
         return self._mexe(method, path, data, headers, host, sender)
 
     def add_aws_auth_header(self, headers, method, path):
@@ -412,10 +424,10 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None):
+                 https_connection_factory=None, service=None):
         AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug,  https_connection_factory)
+                                   debug,  https_connection_factory, service)
 
     def get_utf8_value(self, value):
         if not isinstance(value, str) and not isinstance(value, unicode):
@@ -494,6 +506,8 @@ class AWSQueryConnection(AWSAuthConnection):
         headers = {'User-Agent' : UserAgent}
         if path == None:
             path = '/'
+        if self.service:
+            path = '/%s/%s' % (self.service, path)
         if params == None:
             params = {}
         params['Action'] = action

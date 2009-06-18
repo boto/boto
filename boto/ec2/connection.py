@@ -53,9 +53,9 @@ class EC2Connection(AWSQueryConnection):
     ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None):
+                 https_connection_factory=None, region=None, service=None):
         """
         Init method to create a new connection to EC2.
         
@@ -66,7 +66,7 @@ class EC2Connection(AWSQueryConnection):
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory)
+                                    self.region.endpoint, debug, https_connection_factory, service)
 
     def get_params(self):
         """
@@ -523,7 +523,9 @@ class EC2Connection(AWSQueryConnection):
         """
         if isinstance(zone, Zone):
             zone = zone.name
-        params = {'Size': size, 'AvailabilityZone' : zone}
+        params = {'AvailabilityZone' : zone}
+        if size:
+            params['Size'] = size
         if snapshot:
             if isinstance(snapshot, Snapshot):
                 snapshot = snapshot.id
@@ -540,10 +542,12 @@ class EC2Connection(AWSQueryConnection):
                   'Device' : device}
         return self.get_status('AttachVolume', params)
 
-    def detach_volume(self, volume_id, instance_id, device='', force=False):
-        params = {'InstanceId' : instance_id,
-                  'VolumeId' : volume_id,
-                  'Device' : device}
+    def detach_volume(self, volume_id, instance_id=None, device=None, force=False):
+        params = {'VolumeId' : volume_id}
+        if instance_id:
+            params['InstanceId'] = instance_id
+        if device:
+            params['Device'] = device
         if force:
             params['Force'] = 'true'
         return self.get_status('DetachVolume', params)

@@ -32,6 +32,7 @@ class Snapshot(EC2Object):
         self.progress = None
         self.start_time = None
         self.volume_id = None
+        self.status = None
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
@@ -43,6 +44,8 @@ class Snapshot(EC2Object):
             self.volume_id = value
         elif name == 'startTime':
             self.start_time = value
+        elif name == 'status':
+            self.status = value
         else:
             setattr(self, name, value)
 

@@ -82,6 +82,7 @@ class Instance(EC2Object):
         self.kernel = None
         self.ramdisk = None
         self.product_codes = []
+        self.ami_launch_index = None
         self.monitored = False
         self._in_monitoring_element = False
 
