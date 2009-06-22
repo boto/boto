@@ -54,10 +54,10 @@ class SDBConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='sdb.amazonaws.com', debug=0,
-                 https_connection_factory=None):
+                 https_connection_factory=None, path='/'):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory)
+                                    host, debug, https_connection_factory, path)
         self.box_usage = 0.0
 
     def build_name_value_list(self, params, attributes, replace=False):

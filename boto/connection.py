@@ -177,8 +177,16 @@ class AWSAuthConnection:
         self.refresh_http_connection(self.host, self.is_secure)
         self._last_rs = None
 
-    def get_http_host(self):
-        pass
+    def get_path(self, path='/'):
+        print 'self.path=%s, path=%s' % (self.path, path)
+        path_elements = self.path.split('/')
+        path_elements.extend(path.split('/'))
+        print 'path_elements: %s' % path_elements
+        path_elements = [p for p in path_elements if p]
+        path = '/' + '/'.join(path_elements)
+        if path[-1] != '/':
+            path = path + '/'
+        return path
 
     def server_name(self):
         if self.port == 80:
@@ -383,7 +391,7 @@ class AWSAuthConnection:
 
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None):
-        path = urlparse.urljoin(self.path, path)
+        path = self.get_path(path)
         if headers == None:
             headers = {'User-Agent' : UserAgent}
         else:
@@ -464,8 +472,8 @@ class AWSQueryConnection(AWSAuthConnection):
 
     def calc_signature_2(self, params, verb, path):
         boto.log.debug('using calc_signature_2')
-        string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name().lower(),
-                                           path or self.path)
+        path = self.get_path(path)
+        string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name().lower(), path)
         if self.hmac_256:
             hmac = self.hmac_256.copy()
             params['SignatureMethod'] = 'HmacSHA256'
@@ -500,6 +508,7 @@ class AWSQueryConnection(AWSAuthConnection):
         return t
 
     def make_request(self, action, params=None, path='/', verb='GET'):
+        path = self.get_path(path)
         headers = {'User-Agent' : UserAgent}
         if params == None:
             params = {}

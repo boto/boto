@@ -95,7 +95,7 @@ class S3Connection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path=None):
+                 calling_format=SubdomainCallingFormat(), path='/'):
         self.calling_format = calling_format
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
