@@ -78,7 +78,6 @@ class ResultSet(list):
         elif name == 'NextToken':
             self.next_token = value
         elif name == 'BoxUsage':
-            print 'BoxUsage: %s' % value
             try:
                 connection.box_usage += float(value)
             except:

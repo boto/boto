@@ -178,10 +178,8 @@ class AWSAuthConnection:
         self._last_rs = None
 
     def get_path(self, path='/'):
-        print 'self.path=%s, path=%s' % (self.path, path)
         path_elements = self.path.split('/')
         path_elements.extend(path.split('/'))
-        print 'path_elements: %s' % path_elements
         path_elements = [p for p in path_elements if p]
         return '/' + '/'.join(path_elements)
 
