@@ -40,7 +40,7 @@ class ELBConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=Endpoint, debug=0,
-                 https_connection_factory=None):
+                 https_connection_factory=None, path='/'):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
@@ -48,7 +48,7 @@ class ELBConnection(AWSQueryConnection):
         """
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory)
+                                    host, debug, https_connection_factory, path)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):

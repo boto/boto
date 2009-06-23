@@ -85,13 +85,13 @@ except ImportError:
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 class AWSAuthConnection:
-    def __init__(self, server, aws_access_key_id=None, aws_secret_access_key=None,
+    def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, service=None):
+                 https_connection_factory=None, path='/'):
         """
-        @type server: string
-        @param server: The server to make the connection to
+        @type host: string
+        @param host: The host to make the connection to
 
         @type aws_access_key_id: string
         @param aws_access_key_id: AWS Access Key ID (provided by Amazon)
@@ -140,7 +140,8 @@ class AWSAuthConnection:
             self.protocol = 'https'
         else:
             self.protocol = 'http'
-        self.server = server
+        self.host = host
+        self.path = path
         if debug:
             self.debug = debug
         else:
@@ -149,22 +150,7 @@ class AWSAuthConnection:
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
-        if server:
-            self.server_name = server
-        if self.port == 80:
-            self.server_name = server
-        else:
-            # This unfortunate little hack can be attributed to
-            # a difference in the 2.6 version of httplib.  In old
-            # versions, it would append ":443" to the hostname sent
-            # in the Host header and so we needed to make sure we
-            # did the same when calculating the signature.  In 2.6
-            # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] == "2.6" and self.port in [80, 443]:
-                self.server_name = server
-            else:
-                self.server_name = '%s:%d' % (server, self.port)
-
+            
         if aws_access_key_id:
             self.aws_access_key_id = aws_access_key_id
         elif os.environ.has_key('AWS_ACCESS_KEY_ID'):
@@ -179,8 +165,6 @@ class AWSAuthConnection:
         elif config.has_option('Credentials', 'aws_secret_access_key'):
             self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
 
-        self.service = service
-
         # initialize an HMAC for signatures, make copies with each request
         self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
         if sha256:
@@ -190,8 +174,32 @@ class AWSAuthConnection:
 
         # cache up to 20 connections
         self._cache = boto.utils.LRUCache(20)
-        self.refresh_http_connection(self.server, self.is_secure)
+        self.refresh_http_connection(self.host, self.is_secure)
         self._last_rs = None
+
+    def get_path(self, path='/'):
+        print 'self.path=%s, path=%s' % (self.path, path)
+        path_elements = self.path.split('/')
+        path_elements.extend(path.split('/'))
+        print 'path_elements: %s' % path_elements
+        path_elements = [p for p in path_elements if p]
+        return '/' + '/'.join(path_elements)
+
+    def server_name(self):
+        if self.port == 80:
+            signature_host = self.host
+        else:
+            # This unfortunate little hack can be attributed to
+            # a difference in the 2.6 version of httplib.  In old
+            # versions, it would append ":443" to the hostname sent
+            # in the Host header and so we needed to make sure we
+            # did the same when calculating the V2 signature.  In 2.6
+            # it no longer does that.  Hence, this kludge.
+            if sys.version[:3] == "2.6" and self.port == 443:
+                signature_host = self.host
+            else:
+                signature_host = '%s:%d' % (self.host, self.port)
+        return signature_host
 
     def handle_proxy(self, proxy, proxy_port, proxy_user, proxy_pass):
         self.proxy = proxy
@@ -229,9 +237,7 @@ class AWSAuthConnection:
 
     def get_http_connection(self, host, is_secure):
         if host is None:
-            host = self.server_name
-        if self.service:
-            host = '%s:%d' % (self.server_name, int(self.port))
+            host = self.server_name()
         cached_name = is_secure and 'https://' or 'http://'
         cached_name += host
         if cached_name in self._cache:
@@ -242,7 +248,7 @@ class AWSAuthConnection:
         if self.use_proxy:
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
-            host = self.server_name
+            host = self.server_name()
         boto.log.debug('establishing HTTP connection')
         if is_secure:
             if self.use_proxy:
@@ -262,12 +268,12 @@ class AWSAuthConnection:
             self._cache[cached_name].close()
         self._cache[cached_name] = connection
         # update self.connection for backwards-compatibility
-        if host.split(':')[0] == self.server and is_secure == self.is_secure:
+        if host.split(':')[0] == self.host and is_secure == self.is_secure:
             self.connection = connection
         return connection
 
     def proxy_ssl(self):
-        host = '%s:%d' % (self.server, self.port)
+        host = '%s:%d' % (self.host, self.port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.proxy, int(self.proxy_port)))
@@ -300,7 +306,7 @@ class AWSAuthConnection:
         return h
 
     def prefix_proxy_to_path(self, path, host=None):
-        path = self.protocol + '://' + (host or self.server) + path
+        path = self.protocol + '://' + (host or self.host) + path
         return path
 
     def get_proxy_auth_header(self):
@@ -381,9 +387,8 @@ class AWSAuthConnection:
             raise BotoClientError('Please report this exception as a Boto Issue!')
 
     def make_request(self, method, path, headers=None, data='', host=None,
-            auth_path=None, sender=None):
-        if self.service:
-            path = '/%s/%s' % (self.service, path)
+                     auth_path=None, sender=None):
+        path = self.get_path(path)
         if headers == None:
             headers = {'User-Agent' : UserAgent}
         else:
@@ -396,14 +401,12 @@ class AWSAuthConnection:
                 # If is_secure, we don't have to set the proxy authentication
                 # header here, we did that in the CONNECT to the proxy.
                 headers.update(self.get_proxy_auth_header())
-        if self.service:
-            request_string = path
-        else:
-            request_string = auth_path or path
+        request_string = auth_path or path
         self.add_aws_auth_header(headers, method, request_string)
         return self._mexe(method, path, data, headers, host, sender)
 
     def add_aws_auth_header(self, headers, method, path):
+        path = self.get_path(path)
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
@@ -424,10 +427,10 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, service=None):
+                 https_connection_factory=None, path='/'):
         AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug,  https_connection_factory, service)
+                                   debug,  https_connection_factory, path)
 
     def get_utf8_value(self, value):
         if not isinstance(value, str) and not isinstance(value, unicode):
@@ -467,8 +470,7 @@ class AWSQueryConnection(AWSAuthConnection):
 
     def calc_signature_2(self, params, verb, path):
         boto.log.debug('using calc_signature_2')
-        string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name.lower(),
-                                           path or '/')
+        string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name().lower(), path)
         if self.hmac_256:
             hmac = self.hmac_256.copy()
             params['SignatureMethod'] = 'HmacSHA256'
@@ -502,12 +504,9 @@ class AWSQueryConnection(AWSAuthConnection):
             raise BotoClientError('Unknown Signature Version: %s' % self.SignatureVersion)
         return t
 
-    def make_request(self, action, params=None, path=None, verb='GET'):
+    def make_request(self, action, params=None, path='/', verb='GET'):
+        path = self.get_path(path)
         headers = {'User-Agent' : UserAgent}
-        if path == None:
-            path = '/'
-        if self.service:
-            path = '/%s/%s' % (self.service, path)
         if params == None:
             params = {}
         params['Action'] = action
