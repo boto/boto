@@ -183,10 +183,7 @@ class AWSAuthConnection:
         path_elements.extend(path.split('/'))
         print 'path_elements: %s' % path_elements
         path_elements = [p for p in path_elements if p]
-        path = '/' + '/'.join(path_elements)
-        if path[-1] != '/':
-            path = path + '/'
-        return path
+        return '/' + '/'.join(path_elements)
 
     def server_name(self):
         if self.port == 80:
@@ -472,7 +469,6 @@ class AWSQueryConnection(AWSAuthConnection):
 
     def calc_signature_2(self, params, verb, path):
         boto.log.debug('using calc_signature_2')
-        path = self.get_path(path)
         string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name().lower(), path)
         if self.hmac_256:
             hmac = self.hmac_256.copy()
