@@ -444,3 +444,42 @@ class ListProperty(Property):
 
     def default_value(self):
         return list(super(ListProperty, self).default_value())
+
+class MapProperty(Property):
+    
+    data_type = dict
+    type_name = 'Map'
+
+    def __init__(self, item_type=str, verbose_name=None, name=None, default=None, **kwds):
+        if default is None:
+            default = {}
+        self.item_type = item_type
+        Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
+
+    def validate(self, value):
+        if value is not None:
+            if not isinstance(value, dict):
+                raise ValueError, 'Value must of type dict'
+
+        if self.item_type in (int, long):
+            item_type = (int, long)
+        elif self.item_type in (str, unicode):
+            item_type = (str, unicode)
+        else:
+            item_type = self.item_type
+
+        for key in value:
+            if not isinstance(value[key], item_type):
+                if item_type == (int, long):
+                    raise ValueError, 'Values in the %s Map must all be integers.' % self.name
+                else:
+                    raise ValueError('Values in the %s Map must all be %s instances' %
+                                     (self.name, self.item_type.__name__))
+        return value
+
+    def empty(self, value):
+        return value is None
+
+    def default_value(self):
+        return {}
+    

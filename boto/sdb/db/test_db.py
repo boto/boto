@@ -39,6 +39,11 @@ class TestList(Model):
     name = StringProperty()
     nums = ListProperty(int)
 
+class TestMap(Model):
+
+    name = StringProperty()
+    map = MapProperty()
+
 class TestListReference(Model):
 
     name = StringProperty()

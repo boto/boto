@@ -25,6 +25,7 @@ import uuid
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
+from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime
 from boto.exception import SDBPersistenceError
 from tempfile import TemporaryFile
@@ -66,38 +67,67 @@ class SDBConverter:
             return decode(value)
         return value
 
+    def encode_list(self, prop, value):
+        if not isinstance(value, list):
+            value = [value]
+        new_value = []
+        for v in value:
+            item_type = getattr(prop, "item_type")
+            if Model in item_type.mro():
+                item_type = Model
+            new_value.append(self.encode(item_type, v))
+        return new_value
+
+    def encode_map(self, prop, value):
+        if not isinstance(value, dict):
+            raise ValueError, 'Expected a dict value, got %s' % type(value)
+        new_value = []
+        for key in value:
+            item_type = getattr(prop, "item_type")
+            if Model in item_type.mro():
+                item_type = Model
+            encoded_value = self.encode(item_type, value[key])
+            new_value.append('%s:%s' % (key, encoded_value))
+        return new_value
+
     def encode_prop(self, prop, value):
-        if hasattr(prop, 'item_type'):
-            if not isinstance(value, list):
-                value = [value]
-            new_value = []
-            for v in value:
-                item_type = getattr(prop, "item_type")
-                if Model in item_type.mro():
-                    item_type = Model
-                new_value.append(self.encode(item_type, v))
-            return new_value
+        if isinstance(prop, ListProperty):
+            return self.encode_list(prop, value)
+        elif isinstance(prop, MapProperty):
+            return self.encode_map(prop, value)
         else:
             return self.encode(prop.data_type, value)
 
-    def decode_prop(self, prop, value):
-        if prop.data_type == list:
-            if not isinstance(value, list):
-                value = [value]
-            if hasattr(prop, 'item_type'):
-                item_type = getattr(prop, "item_type")
-                if Model in item_type.mro():
-                    return [item_type(id=v) for v in value]
-                return [self.decode(item_type, v) for v in value]
+    def decode_list(self, prop, value):
+        if not isinstance(value, list):
+            value = [value]
+        if hasattr(prop, 'item_type'):
+            item_type = getattr(prop, "item_type")
+            if Model in item_type.mro():
+                return [item_type(id=v) for v in value]
+            return [self.decode(item_type, v) for v in value]
+        else:
+            return value
+
+    def decode_map(self, prop, value):
+        if not isinstance(value, list):
+            value = [value]
+        ret_value = {}
+        item_type = getattr(prop, "item_type")
+        for keyval in value:
+            key, val = keyval.split(':', 1)
+            if Model in item_type.mro():
+                val = item_type(id=val)
             else:
-                return value
-        elif hasattr(prop, 'reference_class'):
-            # This may not look right but it is 8^)
-            # We don't want to create the object in a reference property
-            # until it is actually referenced.  This cuts down greatly
-            # on the calls to SimpleDB.  There is code in the ReferenceProperty
-            # to create the object upon first reference.
-            return prop.reference_class(id=value)
+                val = self.decode(item_type, val)
+            ret_value[key] = val
+        return ret_value
+        
+    def decode_prop(self, prop, value):
+        if isinstance(prop, ListProperty):
+            return self.decode_list(prop, value)
+        elif isinstance(prop, MapProperty):
+            return self.decode_map(prop, value)
         else:
             return self.decode(prop.data_type, value)
 
