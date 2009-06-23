@@ -406,6 +406,7 @@ class AWSAuthConnection:
         return self._mexe(method, path, data, headers, host, sender)
 
     def add_aws_auth_header(self, headers, method, path):
+        path = self.get_path(path)
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
