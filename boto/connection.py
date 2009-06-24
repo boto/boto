@@ -513,10 +513,16 @@ class AWSQueryConnection(AWSAuthConnection):
         params['SignatureVersion'] = self.SignatureVersion
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         qs, signature = self.get_signature(params, verb, path)
-        qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
+        if verb == 'POST':
+            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            request_body = qs + '&Signature=' + urllib.quote(signature)
+            qs = '/'
+        else:
+            request_body = None
+            qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
-        return self._mexe(verb, qs, None, headers)
+        return self._mexe(verb, qs, request_body, headers)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
@@ -526,10 +532,10 @@ class AWSQueryConnection(AWSAuthConnection):
 
     # generics
 
-    def get_list(self, action, params, markers, path='/', parent=None):
+    def get_list(self, action, params, markers, path='/', parent=None, verb='GET'):
         if not parent:
             parent = self
-        response = self.make_request(action, params, path)
+        response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -542,10 +548,10 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-    def get_object(self, action, params, cls, path='/', parent=None):
+    def get_object(self, action, params, cls, path='/', parent=None, verb='GET'):
         if not parent:
             parent = self
-        response = self.make_request(action, params, path)
+        response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -558,10 +564,10 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-    def get_status(self, action, params, path='/', parent=None):
+    def get_status(self, action, params, path='/', parent=None, verb='GET'):
         if not parent:
             parent = self
-        response = self.make_request(action, params, path)
+        response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:

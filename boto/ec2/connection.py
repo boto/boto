@@ -350,7 +350,7 @@ class EC2Connection(AWSQueryConnection):
             params['KernelId'] = kernel_id
         if ramdisk_id:
             params['RamdiskId'] = ramdisk_id
-        return self.get_object('RunInstances', params, Reservation)
+        return self.get_object('RunInstances', params, Reservation, verb='POST')
         
     def terminate_instances(self, instance_ids=None):
         """

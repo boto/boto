@@ -29,6 +29,7 @@ from boto.sdb.domain import Domain, DomainMetaData
 from boto.sdb.item import Item
 from boto.exception import SDBResponseError
 from boto.resultset import ResultSet
+import warnings
 
 class ItemThread(threading.Thread):
     
@@ -264,7 +265,7 @@ class SDBConnection(AWSQueryConnection):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name}
         self.build_batch_list(params, items, replace)
-        return self.get_status('BatchPutAttributes', params)
+        return self.get_status('BatchPutAttributes', params, verb='POST')
 
     def get_attributes(self, domain_or_name, item_name, attribute_names=None, item=None):
         """
@@ -350,6 +351,7 @@ class SDBConnection(AWSQueryConnection):
         @rtype: ResultSet
         @return: An iterator containing the results.
         """
+        warnings.warn('Query interface is deprecated', DeprecationWarning)
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
                   'QueryExpression' : query}
@@ -383,6 +385,7 @@ class SDBConnection(AWSQueryConnection):
         @rtype: ResultSet
         @return: An iterator containing the results.
         """
+        warnings.warn('Query interface is deprecated', DeprecationWarning)
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
                   'QueryExpression' : query}
