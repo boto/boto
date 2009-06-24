@@ -277,7 +277,7 @@ class EC2Connection(AWSQueryConnection):
         @param instance_ids: A list of strings of instance IDs
         
         @rtype: list
-        @return: A list of L{Instances<boto.ec2.instance.Instance>}
+        @return: A list of  L{Reservation<boto.ec2.instance.Reservation>}
         """
         params = {}
         if instance_ids:
