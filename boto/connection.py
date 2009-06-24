@@ -181,7 +181,10 @@ class AWSAuthConnection:
         path_elements = self.path.split('/')
         path_elements.extend(path.split('/'))
         path_elements = [p for p in path_elements if p]
-        return '/' + '/'.join(path_elements)
+        path = '/' + '/'.join(path_elements)
+        if path[-1] != '/' and path.find('?') < 0:
+            path += '/'
+        return path
 
     def server_name(self):
         if self.port == 80:
