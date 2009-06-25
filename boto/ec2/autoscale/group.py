@@ -89,7 +89,10 @@ class AutoScalingGroup(object):
         self.created_time = None
         self.cooldown = cooldown
         self.launch_config = launch_config
-        self.launch_config_name = launch_config.name if launch_config else None
+        if self.launch_config:
+            self.launch_config_name = self.launch_config.name
+        else:
+            self.launch_config_name = None
         self.desired_capacity = None
         lbs = load_balancers or []
         self.load_balancers = ListElement(lbs)

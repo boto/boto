@@ -84,7 +84,10 @@ class Trigger(object):
         self.statistic = statistic
         self.unit = unit
         self.namespace = None
-        self.autoscale_group = weakref.proxy(autoscale_group) if autoscale_group else None
+        if autoscale_group:
+            self.autoscale_group = weakref.proxy(autoscale_group)
+        else:
+            self.autoscale_group = None
         self.measure_name = measure_name
 
     def __repr__(self):
