@@ -205,7 +205,7 @@ class S3Connection(AWSAuthConnection):
             protocol = 'http'
         else:
             protocol = self.protocol
-        return self.calling_format.build_url_base(protocol, self.server,
+        return self.calling_format.build_url_base(protocol, self.server_name(),
                                                   bucket, key) + query_part
 
     def get_all_buckets(self):

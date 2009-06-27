@@ -33,7 +33,7 @@ try:
 except ImportError:
     from md5 import md5
 
-class Key:
+class Key(object):
 
     DefaultContentType = 'application/octet-stream'
 
