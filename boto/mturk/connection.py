@@ -391,6 +391,8 @@ class MTurkConnection(AWSQueryConnection):
             final_keywords = ', '.join(keywords)
         elif type(keywords) is str:
             final_keywords = keywords
+        elif type(keywords) is unicode:
+            final_keywords = keywords.encode('utf-8')
         elif keywords is None:
             final_keywords = ""
         else:
@@ -461,8 +463,7 @@ class Assignment(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer),])
             h = handler.XmlHandler(answer_rs, connection)
-            # need to convert from unicode to string for sax
-            value = str(value)
+            value = self.get_utf8_value(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:
