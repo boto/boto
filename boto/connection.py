@@ -178,11 +178,15 @@ class AWSAuthConnection:
         self._last_rs = None
 
     def get_path(self, path='/'):
+        if path[-1] == '/':
+            need_trailing = True
+        else:
+            need_trailing = False
         path_elements = self.path.split('/')
         path_elements.extend(path.split('/'))
         path_elements = [p for p in path_elements if p]
         path = '/' + '/'.join(path_elements)
-        if path[-1] != '/' and path.find('?') < 0:
+        if path[-1] != '/' and path.find('?') < 0 and need_trailing:
             path += '/'
         return path
 
