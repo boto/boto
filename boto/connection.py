@@ -178,6 +178,12 @@ class AWSAuthConnection:
         self._last_rs = None
 
     def get_path(self, path='/'):
+        pos = path.find('?')
+        if pos >= 0:
+            params = path[pos:]
+            path = path[:pos]
+        else:
+            params = None
         if path[-1] == '/':
             need_trailing = True
         else:
@@ -186,8 +192,10 @@ class AWSAuthConnection:
         path_elements.extend(path.split('/'))
         path_elements = [p for p in path_elements if p]
         path = '/' + '/'.join(path_elements)
-        if path[-1] != '/' and path.find('?') < 0 and need_trailing:
+        if path[-1] != '/' and need_trailing:
             path += '/'
+        if params:
+            path = path + params
         return path
 
     def server_name(self):
