@@ -39,8 +39,6 @@ class SQSConnection(AWSQueryConnection):
     SignatureVersion = '2'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
-    ValidActions = ['SQS:*', 'SQS:SendMessage', 'SQS:ReceiveMessage', 'SQS:DeleteMessage',
-                    'SQS:ChangeMessageVisibility', 'SQS:GetQueueAttributes']
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -215,7 +213,9 @@ class SQSConnection(AWSQueryConnection):
                              about locating the AWS account identification.
 
         @type action_name: str or unicode
-        @param action_name: The action.  See ValidActions attributes for details.
+        @param action_name: The action.  Valid choices are:
+                            *|SendMessage|ReceiveMessage|DeleteMessage|
+                            ChangeMessageVisibility|GetQueueAttributes
 
         @rtype: bool
         @return: True if successful, False otherwise.
@@ -228,7 +228,7 @@ class SQSConnection(AWSQueryConnection):
 
     def remove_permission(self, queue, label):
         """
-        Add a permission to a queue.
+        Remove a permission from a queue.
 
         @type queue: L{Queue<boto.sqs.queue.Queue>}
         @param queue: The queue object

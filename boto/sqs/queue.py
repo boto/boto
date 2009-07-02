@@ -82,9 +82,9 @@ class Queue:
         them in an Attribute instance (subclass of a Dictionary).
 
         @type attributes: string
-        @param attributes: String containing one of
-                           All|ApproximateNumberOfMessages|VisibilityTimeout
-                           Default value is "All"
+        @param attributes: String containing one of:
+                           ApproximateNumberOfMessages, VisibilityTimeout, CreatedTimestamp,
+                           LastModifiedTimestamp, Policy.
         @rtype: Attribute object
         @return: An Attribute object which is a mapping type holding the
                  requested name/value pairs
@@ -130,6 +130,44 @@ class Queue:
             self.visibility_timeout = visibility_timeout
         return retval
 
+    def add_permission(self, label, aws_account_id, action_name):
+        """
+        Add a permission to a queue.
+
+        @type label: str or unicode
+        @param label: A unique identification of the permission you are setting.
+                      Maximum of 80 characters [0-9a-zA-Z_-]
+                      Example, AliceSendMessage
+
+        @type aws_account_id: str or unicode
+        @param principal_id: The AWS account number of the principal who will be given
+                             permission.  The principal must have an AWS account, but
+                             does not need to be signed up for Amazon SQS. For information
+                             about locating the AWS account identification.
+
+        @type action_name: str or unicode
+        @param action_name: The action.  Valid choices are:
+                            *|SendMessage|ReceiveMessage|DeleteMessage|
+                            ChangeMessageVisibility|GetQueueAttributes
+
+        @rtype: bool
+        @return: True if successful, False otherwise.
+
+        """
+        return self.connection.add_permission(self, label, aws_account_id, action_name)
+
+    def remove_permission(self, label):
+        """
+        Remove a permission from a queue.
+
+        @type label: str or unicode
+        @param label: The unique label associated with the permission being removed.
+
+        @rtype: bool
+        @return: True if successful, False otherwise.
+        """
+        return self.connection.remove_permission(self, label)
+    
     def read(self, visibility_timeout=None):
         """
         Read a single message from the queue.
