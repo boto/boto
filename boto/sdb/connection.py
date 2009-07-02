@@ -133,7 +133,7 @@ class SDBConnection(AWSQueryConnection):
     def get_domain(self, domain_name, validate=True):
         domain = Domain(self, domain_name)
         if validate:
-            self.query(domain, '', max_items=1)
+            self.select(domain, """select * from `%s` limit 1""" % domain_name)
         return domain
 
     def lookup(self, domain_name, validate=True):
