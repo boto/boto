@@ -206,7 +206,11 @@ class S3KeyProperty(Property):
             if match:
                 s3 = obj._manager.get_s3_connection()
                 bucket = s3.get_bucket(match.group(1), validate=False)
-                return bucket.get_key(match.group(2))
+                k = bucket.get_key(match.group(2))
+                if not k:
+                    k = bucket.new_key(match.group(2))
+                    k.set_contents_from_string("")
+                return k
         else:
             return value
         
@@ -297,7 +301,7 @@ class DateTimeProperty(Property):
         return Property.get_value_for_datastore(self, model_instance)
 
     def now(self):
-        return datetime.datetime.now()
+        return datetime.datetime.utcnow()
 
 class ReferenceProperty(Property):
 
