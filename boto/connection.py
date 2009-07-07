@@ -531,7 +531,7 @@ class AWSQueryConnection(AWSAuthConnection):
         if verb == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
             request_body = qs + '&Signature=' + urllib.quote(signature)
-            qs = '/'
+            qs = path
         else:
             request_body = None
             qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
