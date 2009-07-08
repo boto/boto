@@ -183,10 +183,7 @@ class SDBConverter:
     def decode_reference(self, value):
         if not value:
             return None
-        try:
-            return self.manager.get_object_from_id(value)
-        except:
-            return None
+        return value
 
     def encode_blob(self, value):
         if not value:
