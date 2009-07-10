@@ -323,7 +323,14 @@ class ReferenceProperty(Property):
             # the object now that is the attribute has actually been accessed.  This lazy
             # instantiation saves unnecessary roundtrips to SimpleDB
             if isinstance(value, str) or isinstance(value, unicode):
-                value = self.reference_class._manager.get_object(self.reference_class, value)
+                # This is some minor handling to allow us to use the base "Model" class
+                # as our reference class. If we do so, we're going to assume we're using
+                # our own class's manager to fetch objects
+                if hasattr(self.reference_class, "_manager"):
+                    manager = self.reference_class._manager
+                else:
+                    manager = obj._manager
+                value = manager.get_object(self.reference_class, value)
                 setattr(obj, self.name, value)
             return value
     
