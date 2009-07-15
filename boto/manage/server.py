@@ -246,6 +246,7 @@ class Server(Model):
     hostname = CalculatedProperty(verbose_name="Public DNS Name", calculated_type=str, use_method=True)
     private_hostname = CalculatedProperty(verbose_name="Private DNS Name", calculated_type=str, use_method=True)
     groups = CalculatedProperty(verbose_name="Security Group Name", calculated_type=list, use_method=True)
+    security_group = CalculatedProperty(verbose_name="Security Group Name", calculated_type=list, use_method=True)
     key_name = CalculatedProperty(verbose_name="Key Name", calculated_type=str, use_method=True)
     instance_type = CalculatedProperty(verbose_name="Instance Type", calculated_type=str, use_method=True)
     status = CalculatedProperty(verbose_name="Current Status", calculated_type=str, use_method=True)
@@ -405,6 +406,12 @@ class Server(Model):
         if self._reservation:
             gn = self._reservation.groups
         return gn
+
+    def _security_group(self):
+        groups = self._groups()
+        if len(groups) >= 1:
+            return groups[0].id
+        return ""
 
     def _zone(self):
         zone = None
