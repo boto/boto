@@ -158,7 +158,6 @@ class Service(ScriptBase):
             except Exception, e:
                 boto.log.exception('Service Failed')
                 empty_reads += 1
-                self.create_connections()
         self.notify('Service: %s Shutting Down' % self.name)
         self.shutdown()
 
