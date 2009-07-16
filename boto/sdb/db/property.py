@@ -416,8 +416,11 @@ class CalculatedProperty(Property):
             setattr(obj, self.slot_name, value)
 
     def get_value_for_datastore(self, model_instance):
-        value = self.__get__(model_instance, model_instance.__class__)
-        return str(value)
+        if self.calculated_type in [str, int, bool]:
+            value = self.__get__(model_instance, model_instance.__class__)
+            return value
+        else:
+            return None
 
 class ListProperty(Property):
     

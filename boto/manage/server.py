@@ -244,13 +244,13 @@ class Server(Model):
     zone = CalculatedProperty(verbose_name="Availability Zone Name", calculated_type=str, use_method=True)
     hostname = CalculatedProperty(verbose_name="Public DNS Name", calculated_type=str, use_method=True)
     private_hostname = CalculatedProperty(verbose_name="Private DNS Name", calculated_type=str, use_method=True)
-    groups = CalculatedProperty(verbose_name="Security Group Name", calculated_type=list, use_method=True)
-    security_group = CalculatedProperty(verbose_name="Security Group Name", calculated_type=list, use_method=True)
+    groups = CalculatedProperty(verbose_name="Security Groups", calculated_type=list, use_method=True)
+    security_group = CalculatedProperty(verbose_name="Primary Security Group Name", calculated_type=str, use_method=True)
     key_name = CalculatedProperty(verbose_name="Key Name", calculated_type=str, use_method=True)
     instance_type = CalculatedProperty(verbose_name="Instance Type", calculated_type=str, use_method=True)
     status = CalculatedProperty(verbose_name="Current Status", calculated_type=str, use_method=True)
     launch_time = CalculatedProperty(verbose_name="Server Launch Time", calculated_type=str, use_method=True)
-    console_output = CalculatedProperty(verbose_name="Console Output", calculated_type=str, use_method=True)
+    console_output = CalculatedProperty(verbose_name="Console Output", calculated_type=file, use_method=True)
 
     packages = []
     plugins = []
