@@ -29,7 +29,6 @@ from boto.pyami.config import BotoConfigPath
 from boto.sdb.db.model import Model, ModelMeta
 from boto.sdb.db.property import *
 from boto.manage import propget
-import cmdshell
 import os, time
 import StringIO
 from contextlib import closing
@@ -463,6 +462,7 @@ class Server(Model):
 
     def get_cmdshell(self):
         if not self._cmdshell:
+            import cmdshell
             self.get_ssh_key_file()
             self._cmdshell = cmdshell.start(self)
         return self._cmdshell
