@@ -211,7 +211,7 @@ def fetch_file(uri, file=None, username=None, password=None):
     try:
         working_dir = boto.config.get("General", "working_dir")
         if uri.startswith('s3://'):
-            bucket_name, key_name = uri[len('s3://'):].split('/')
+            bucket_name, key_name = uri[len('s3://'):].split('/', 1)
             c = boto.connect_s3()
             bucket = c.get_bucket(bucket_name)
             key = bucket.get_key(key_name)
