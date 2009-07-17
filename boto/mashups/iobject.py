@@ -46,10 +46,16 @@ class IObject(object):
                     n += 1
                 else:
                     obj, id, desc = item
-                    if desc.find(search_str) >= 0:
-                        print '[%d] %s - %s' % (n, id, desc)
-                        choices.append(obj)
-                        n += 1
+                    if desc:
+                        if desc.find(search_str) >= 0:
+                            print '[%d] %s - %s' % (n, id, desc)
+                            choices.append(obj)
+                            n += 1
+                    else:
+                        if id.find(search_str) >= 0:
+                            print '[%d] %s' % (n, id)
+                            choices.append(obj)
+                            n += 1
             if choices:
                 val = raw_input('%s[1-%d]: ' % (prompt, len(choices)))
                 if val.startswith('/'):
