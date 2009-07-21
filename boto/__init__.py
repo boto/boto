@@ -35,7 +35,12 @@ def init_logging():
         except:
             pass
 
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 log = logging.getLogger('boto')
+log.addHandler(NullHandler())
 init_logging()
 
 # convenience function to set logging to a particular file
