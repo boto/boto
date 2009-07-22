@@ -103,6 +103,7 @@ class BS(object):
 
     def do_start(self):
         ami_id = self.sd.get('ami_id')
+        instance_type = self.sd.get('instance_type', 'm1.small')
         if not ami_id:
             self.parser.error('ami_id option is required when starting the service')
         ec2 = boto.connect_ec2()
@@ -115,7 +116,7 @@ class BS(object):
         rs = ec2.get_all_images([ami_id])
         img = rs[0]
         r = img.run(user_data=s.getvalue(), key_name=self.options.keypair,
-                    max_count=self.options.num_instances)
+                    max_count=self.options.num_instances, instance_type=instance_type)
         print 'Starting AMI: %s' % ami_id
         print 'Reservation %s contains the following instances:' % r.id
         for i in r.instances:
