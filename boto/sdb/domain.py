@@ -186,37 +186,38 @@ class Domain:
     def delete_item(self, item):
         self.delete_attributes(item.name)
 
-    def to_xml(self):
+    def to_xml(self, f=None):
+        """Get this domain as an XML DOM Document
+        @param f: Optional File to dump directly to
+        @type f: File or Stream
+
+        @return: File object where the XML has been dumped to
+        @rtype: file
         """
-        Get this domain as an XML DOM Document
-        """
-        from xml.dom.minidom import getDOMImplementation
-        impl = getDOMImplementation()
-        doc = impl.createDocument(None, 'Domain', None)
-        doc.documentElement.setAttribute("id", self.name)
+        if not f:
+            from tempfile import TemporaryFile
+            f = TemporaryFile()
+        print >>f,  '<?xml version="1.0" encoding="UTF-8"?>'
+        print >>f,  '<Domain id="%s">' % self.name
         for item in self:
-            obj_node = doc.createElement('Item')
-            obj_node.setAttribute("id", item.name)
+            print >>f, '\t<Item id="%s">' % item.name
             for k in item:
-                attr_node = doc.createElement("attribute")
-                attr_node.setAttribute("id", k)
+                print >>f, '\t\t<attribute id="%s">' % k
                 values = item[k]
                 if not isinstance(values, list):
-                    values = [item[k]]
-
+                    values = [values]
                 for value in values:
-                    value_node = doc.createElement("value")
-                    value_node.appendChild(doc.createTextNode(str(value.encode('utf-8'))))
-                    attr_node.appendChild(value_node)
+                    print >>f, '\t\t\t<value><![CDATA[ %s ]]></value>' % (str(value.encode('utf-8')))
+                print >>f, '\t\t</attribute>'
+            print >>f, '\t</Item>'
+        print >>f, '</Domain>'
+        f.flush()
+        f.seek(0)
+        return f
 
-                obj_node.appendChild(attr_node)
-            doc.documentElement.appendChild(obj_node)
-        return doc
 
     def from_xml(self, doc):
-        """
-        Load this domain based on an XML document
-        """
+        """Load this domain based on an XML document"""
         import xml.sax
         handler = DomainDumpParser(self)
         xml.sax.parse(doc, handler)

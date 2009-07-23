@@ -53,8 +53,7 @@ def dump_db(domain, file_name):
 	"""
 	Dump SDB domain to file
 	"""
-	doc = domain.to_xml()
-	doc.writexml(open(file_name, "w"))
+	doc = domain.to_xml(open(file_name, "w"))
 
 def empty_db(domain):
 	"""
@@ -144,7 +143,7 @@ if __name__ == "__main__":
 				file_name = options.file_name
 			else:
 				file_name = "%s.db" % domain.name
-			load_db(open(file_name, "rb"), domain)
+			load_db(domain, open(file_name, "rb"))
 
 
 	total_time = round(time.time() - stime, 2)
