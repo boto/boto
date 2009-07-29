@@ -311,11 +311,16 @@ class AWSAuthConnection:
         # We can safely close the response, it duped the original socket
         resp.close()
 
-        # Wrap the socket in an SSL socket
-        sslSock = socket.ssl(sock, None, None)
         h = httplib.HTTPConnection(host)
+        
+        # Wrap the socket in an SSL socket
+        if hasattr(httplib, 'ssl'):
+            sslSock = httplib.ssl.SSLSocket(sock)
+        else: # Old Python, no ssl module
+            sslSock = socket.ssl(sock, None, None)
+            sslSock = httplib.FakeSocket(sock, sslSock)
         # This is a bit unclean
-        h.sock = httplib.FakeSocket(sock, sslSock)
+        h.sock = sslSock
         return h
 
     def prefix_proxy_to_path(self, path, host=None):
