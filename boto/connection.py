@@ -408,9 +408,10 @@ class AWSAuthConnection:
                      auth_path=None, sender=None):
         path = self.get_path(path)
         if headers == None:
-            headers = {'User-Agent' : UserAgent}
+            headers = {}
         else:
             headers = headers.copy()
+        headers['User-Agent'] = UserAgent
         if not headers.has_key('Content-Length'):
             headers['Content-Length'] = str(len(data))
         if self.use_proxy:
@@ -523,8 +524,7 @@ class AWSQueryConnection(AWSAuthConnection):
         return t
 
     def make_request(self, action, params=None, path='/', verb='GET'):
-        path = self.get_path(path)
-        headers = {'User-Agent' : UserAgent}
+        headers = {}
         if params == None:
             params = {}
         params['Action'] = action
@@ -532,7 +532,7 @@ class AWSQueryConnection(AWSAuthConnection):
         params['AWSAccessKeyId'] = self.aws_access_key_id
         params['SignatureVersion'] = self.SignatureVersion
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        qs, signature = self.get_signature(params, verb, path)
+        qs, signature = self.get_signature(params, verb, self.get_path(path))
         if verb == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
             request_body = qs + '&Signature=' + urllib.quote(signature)
@@ -540,8 +540,6 @@ class AWSQueryConnection(AWSAuthConnection):
         else:
             request_body = ''
             qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
-        if self.use_proxy:
-            qs = self.prefix_proxy_to_path(qs)
         return AWSAuthConnection.make_request(self, verb, qs,
                                               data=request_body,
                                               headers=headers)
