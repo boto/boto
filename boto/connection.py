@@ -533,11 +533,13 @@ class AWSQueryConnection(AWSAuthConnection):
             request_body = qs + '&Signature=' + urllib.quote(signature)
             qs = path
         else:
-            request_body = None
+            request_body = ''
             qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
         if self.use_proxy:
             qs = self.prefix_proxy_to_path(qs)
-        return self._mexe(verb, qs, request_body, headers)
+        return AWSAuthConnection.make_request(self, verb, qs,
+                                              data=request_body,
+                                              headers=headers)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
