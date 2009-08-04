@@ -462,6 +462,8 @@ class Password(object):
         return str(self.str)
    
     def __eq__(self, other):
+        if other == None:
+            return False
         return str(_hashfn(other).hexdigest()) == str(self.str)
 
     def __len__(self):
