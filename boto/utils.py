@@ -47,6 +47,13 @@ import logging.handlers
 import boto
 import tempfile
 import smtplib
+import datetime
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email.Utils import formatdate
+from email import Encoders
+
 try:
     import hashlib
     _hashfn = hashlib.sha512
@@ -469,16 +476,27 @@ class Password(object):
     def __len__(self):
         return len(self.str)
 
-def notify(subject, body=''):
+def notify(subject, body=None, html_body=None):
     subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
     to_string = boto.config.get_value('Notification', 'smtp_to', None)
     if to_string:
         try:
             from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
-            msg = "From: %s\n" % from_string
-            msg += "To: %s\n" % to_string
-            msg += "Subject: %s\n\n" % subject
-            msg += body
+            msg = MIMEMultipart()
+            msg['From'] = from_string
+            msg['To'] = to_string
+            msg['Date'] = formatdate(localtime=True)
+            msg['Subject'] = subject
+        
+            if body:
+                msg.attach(MIMEText(body))
+
+            if html_body:
+                part = MIMEBase('text', 'html')
+                part.set_payload(html_body)
+                Encoders.encode_base64(part)
+                msg.attach(part)
+
             smtp_host = boto.config.get_value('Notification', 'smtp_host', 'localhost')
 
             # Alternate port support
@@ -496,7 +514,7 @@ def notify(subject, body=''):
             smtp_pass = boto.config.get_value('Notification', 'smtp_pass', '')
             if smtp_user:
                 server.login(smtp_user, smtp_pass)
-            server.sendmail(from_string, to_string, msg)
+            server.sendmail(from_string, to_string, msg.as_string())
             server.quit()
         except:
             boto.log.exception('notify failed')
