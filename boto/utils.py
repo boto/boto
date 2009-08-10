@@ -480,7 +480,18 @@ def notify(subject, body=''):
             msg += "Subject: %s\n\n" % subject
             msg += body
             smtp_host = boto.config.get_value('Notification', 'smtp_host', 'localhost')
-            server = smtplib.SMTP(smtp_host)
+
+            # Alternate port support
+            if boto.config.get_value("Notification", "smtp_port"):
+                server = smtplib.SMTP(smtp_host, int(boto.config.get_value("Notification", "smtp_port")))
+            else:
+                server = smtplib.SMTP(smtp_host)
+
+            # TLS support
+            if boto.config.get_value("Notification", "smtp_tls", None).lower() == "true":
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
             smtp_user = boto.config.get_value('Notification', 'smtp_user', '')
             smtp_pass = boto.config.get_value('Notification', 'smtp_pass', '')
             if smtp_user:
@@ -488,5 +499,5 @@ def notify(subject, body=''):
             server.sendmail(from_string, to_string, msg)
             server.quit()
         except:
-            boto.log.error('notify failed')
+            boto.log.exception('notify failed')
 
