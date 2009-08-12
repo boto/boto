@@ -476,9 +476,11 @@ class Password(object):
     def __len__(self):
         return len(self.str)
 
-def notify(subject, body=None, html_body=None):
-    subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
-    to_string = boto.config.get_value('Notification', 'smtp_to', None)
+def notify(subject, body=None, html_body=None, to_string=None, append_instance_id=True):
+    if append_instance_id:
+        subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
+    if not to_string:
+        to_string = boto.config.get_value('Notification', 'smtp_to', None)
     if to_string:
         try:
             from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
