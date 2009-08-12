@@ -476,7 +476,7 @@ class Password(object):
     def __len__(self):
         return len(self.str)
 
-def notify(subject, body=None, html_body=None, to_string=None, append_instance_id=True):
+def notify(subject, body=None, html_body=None, to_string=None, attachments=[], append_instance_id=True):
     if append_instance_id:
         subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
     if not to_string:
@@ -499,6 +499,9 @@ def notify(subject, body=None, html_body=None, to_string=None, append_instance_i
                 Encoders.encode_base64(part)
                 msg.attach(part)
 
+            for part in attachments:
+                msg.attach(part)
+
             smtp_host = boto.config.get_value('Notification', 'smtp_host', 'localhost')
 
             # Alternate port support
@@ -508,7 +511,7 @@ def notify(subject, body=None, html_body=None, to_string=None, append_instance_i
                 server = smtplib.SMTP(smtp_host)
 
             # TLS support
-            if boto.config.get_value("Notification", "smtp_tls", None).lower() == "true":
+            if boto.config.get_value("Notification", "smtp_tls", "").lower() == "true":
                 server.ehlo()
                 server.starttls()
                 server.ehlo()
