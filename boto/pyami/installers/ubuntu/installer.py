@@ -38,9 +38,9 @@ class Installer(boto.pyami.installers.Installer):
             name will be used as the name of the file
         """
         if minute == 'random':
-            minute = str(random.randomint(0, 59))
+            minute = str(random.randrange(60))
         if hour == 'random':
-            hour = str(random.randomint(0, 23))
+            hour = str(random.randrange(24))
         fp = open('/etc/cron.d/%s' % name, "w")
         if env:
             for key, value in env.items():
