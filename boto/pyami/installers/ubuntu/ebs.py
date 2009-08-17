@@ -64,6 +64,15 @@ if __name__ == "__main__":
     b = Backup()
     b.main()
 """
+
+BackupCleanupScript= """#!/usr/bin/env python
+# Cleans Backups of EBS volumes
+
+from boto.manage.volume import Volume
+
+for v in Volume.all():
+        v.trim_snapshot(True)
+"""
     
 class EBSInstaller(Installer):
     """
@@ -99,6 +108,12 @@ class EBSInstaller(Installer):
         fp.write(s)
         fp.close()
         self.run('chmod +x /usr/local/bin/ebs_backup')
+
+    def create_backup_cleanup_script(self):
+        fp = open('/usr/local/bin/ebs_backup_cleanup', 'w')
+        fp.write(BackupCleanupScript)
+        fp.close()
+        self.run('chmod +x /usr/local/bin/ebs_backup_cleanup')
 
     def handle_mount_point(self):
         boto.log.info('handle_mount_point')
@@ -146,7 +161,16 @@ class EBSInstaller(Installer):
         self.create_backup_script()
 
         # Set up the backup script
-        self.add_cron("ebs_backup", "/usr/local/bin/ebs_backup", minute="0", hour="4,16")
+        minute = boto.config.get('EBS', 'backup_cron_minute', '0')
+        hour = boto.config.get('EBS', 'backup_cron_hour', '4,16')
+        self.add_cron("ebs_backup", "/usr/local/bin/ebs_backup", minute=minute, hour=hour)
+
+        # Set up the backup cleanup script
+        minute = boto.config.get('EBS', 'backup_cleanup_cron_minute')
+        hour = boto.config.get('EBS', 'backup_cleanup_cron_hour')
+        if (minute != None) and (hour != None):
+            create_backup_cleanup_script();
+            self.add_cron("ebs_backup_cleanup", "/usr/local/bin/ebs_backup_cleanup", minute=minute, hour=hour)
 
         # Set up the fstab
         self.update_fstab()
