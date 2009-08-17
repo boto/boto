@@ -169,7 +169,7 @@ class EBSInstaller(Installer):
         minute = boto.config.get('EBS', 'backup_cleanup_cron_minute')
         hour = boto.config.get('EBS', 'backup_cleanup_cron_hour')
         if (minute != None) and (hour != None):
-            this.create_backup_cleanup_script();
+            self.create_backup_cleanup_script();
             self.add_cron("ebs_backup_cleanup", "/usr/local/bin/ebs_backup_cleanup", minute=minute, hour=hour)
 
         # Set up the fstab
