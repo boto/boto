@@ -56,19 +56,20 @@ class ELBConnection(AWSQueryConnection):
         for i in range(1, len(items)+1):
             params[label % i] = items[i-1]
 
-    def get_all_load_balancers(self, load_balancer_names=None):
+    def get_all_load_balancers(self, load_balancer_name=None):
         """
         Retrieve all load balancers associated with your account.
 
-        @type load_balancer_names: list
-        @param load_balancer_names: A list of strings of load balancer names
+        @type load_balancer_names: str
+        @param load_balancer_names: An optional filter string to get only one ELB
 
         @rtype: list
         @return: A list of L{LoadBalancer<boto.ec2.elb.loadbalancer.LoadBalancer>}
         """
         params = {}
-        if load_balancer_names:
-            self.build_list_params(params, load_balancer_names, 'LoadBalancerName.%d')
+        if load_balancer_name:
+            #self.build_list_params(params, load_balancer_names, 'LoadBalancerName.%d')
+            params['LoadBalancerName'] = load_balancer_name
         return self.get_list('DescribeLoadBalancers', params, [('member', LoadBalancer)])
 
 
