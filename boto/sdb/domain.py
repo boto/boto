@@ -256,6 +256,7 @@ class DomainMetaData:
         else:
             setattr(self, name, value)
 
+import sys
 from xml.sax.handler import ContentHandler
 class DomainDumpParser(ContentHandler):
     """
@@ -263,15 +264,17 @@ class DomainDumpParser(ContentHandler):
     """
     
     def __init__(self, domain):
-        self.items = []
-        self.item = None
+        self.uploader = UploaderThread(domain.name)
+        self.item_id = None
+        self.attrs = {}
         self.attribute = None
         self.value = ""
         self.domain = domain
 
     def startElement(self, name, attrs):
         if name == "Item":
-            self.item = self.domain.new_item(attrs['id'])
+            self.item_id = attrs['id']
+            self.attrs = {}
         elif name == "attribute":
             self.attribute = attrs['id']
         elif name == "value":
@@ -283,7 +286,39 @@ class DomainDumpParser(ContentHandler):
     def endElement(self, name):
         if name == "value":
             if self.value and self.attribute:
-                self.item.add_value(self.attribute, self.value.strip())
+                value = self.value.strip()
+                attr_name = self.attribute.strip()
+                if self.attrs.has_key(attr_name):
+                    self.attrs[attr_name].append(value)
+                else:
+                    self.attrs[attr_name] = [value]
         elif name == "Item":
-            self.item.save()
+            self.uploader.items[self.item_id] = self.attrs
+            # Every 40 items we spawn off the uploader
+            if len(self.uploader.items) >= 40:
+                self.uploader.start()
+                self.uploader = UploaderThread(self.domain.name)
+        elif name == "Domain":
+            # If we're done, spawn off our last Uploader Thread
+            self.uploader.start()
 
+from threading import Thread
+class UploaderThread(Thread):
+    """Uploader Thread"""
+    
+    def __init__(self, domain_name):
+        import boto
+        self.sdb = boto.connect_sdb()
+        self.db = self.sdb.get_domain(domain_name)
+        self.items = {}
+        Thread.__init__(self)
+
+    def run(self):
+        try:
+            self.db.batch_put_attributes(self.items)
+        except:
+            print "Exception using batch put, trying regular put instead"
+            for item_name in self.items:
+                self.db.put_attributes(item_name, self.items[item_name])
+        print ".",
+        sys.stdout.flush()
