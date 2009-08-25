@@ -154,7 +154,7 @@ class CommandLineGetter(object):
             params['zone'] = propget.get(prop)
             
     def get_ami_id(self, params):
-        ami = params['ami']
+        ami = params.get('ami', None)
         if isinstance(ami, str) or isinstance(ami, unicode):
             ami_list = self.get_ami_list()
             for l,a in ami_list:
@@ -167,7 +167,7 @@ class CommandLineGetter(object):
             params['ami'] = propget.get(prop)
 
     def get_group(self, params):
-        group = params['group']
+        group = params.get('group', None)
         if isinstance(group, str) or isinstance(group, unicode):
             group_list = self.ec2.get_all_security_groups()
             for g in group_list:
@@ -180,17 +180,17 @@ class CommandLineGetter(object):
             params['group'] = propget.get(prop)
 
     def get_key(self, params):
-        keypair = params['keypair']
+        keypair = params.get('keypair', None)
         if isinstance(keypair, str) or isinstance(keypair, unicode):
             key_list = self.ec2.get_all_key_pairs()
             for k in key_list:
                 if k.name == keypair:
-                    keypair = k
-                    params['keypair'] = k
+                    keypair = k.name
+                    params['keypair'] = k.name
         if not keypair:
             prop = StringProperty(name='keypair', verbose_name='EC2 KeyPair',
                                   choices=self.ec2.get_all_key_pairs)
-            params['keypair'] = propget.get(prop)
+            params['keypair'] = propget.get(prop).name
 
     def get(self, cls, params):
         self.cls = cls
@@ -251,7 +251,6 @@ class Server(Model):
         if cfg.has_section('EC2'):
             for option in cfg.options('EC2'):
                 params[option] = cfg.get('EC2', option)
-        print params
         getter = CommandLineGetter()
         getter.get(cls, params)
         region = params.get('region')
@@ -265,7 +264,7 @@ class Server(Model):
         cfg.write(cfg_fp)
         reservation = ami.run(min_count=1,
                               max_count=params.get('quantity', 1),
-                              key_name=kp.name,
+                              key_name=kp,
                               security_groups=[group],
                               instance_type=params.get('instance_type'),
                               placement = zone.name,
