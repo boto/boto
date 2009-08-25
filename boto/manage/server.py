@@ -25,56 +25,12 @@ High-level abstraction of an EC2 server
 from __future__ import with_statement
 import boto.ec2
 from boto.mashups.iobject import IObject
-from boto.pyami.config import BotoConfigPath
-from boto.sdb.db.model import Model, ModelMeta
+from boto.pyami.config import BotoConfigPath, Config
+from boto.sdb.db.model import Model
 from boto.sdb.db.property import *
 from boto.manage import propget
-import os, time
-import StringIO
+import os, time, StringIO
 from contextlib import closing
-
-class ServerMeta(ModelMeta):
-
-    def __init__(cls, name, bases, dict):
-        super(ServerMeta, cls).__init__(name, bases, dict)
-        installers = []
-        for base in bases:
-            l = []
-            for key in base.__dict__:
-                val = base.__dict__[key]
-                if isinstance(val, Installer):
-                    print 'Found %s_%s in %s' % (val.name, val.seq_no, base.__name__)
-                    l.append(val)
-            l.sort()
-            installers.extend(l)
-        for i in installers:
-            print i.name
-        
-class Installer(object):
-
-    def __init__ (self, seq_no, fn):
-        self.instance_id = boto.config.get('Instance', 'instance-id', None)
-        self.name = fn.__name__
-        self.seq_no = seq_no
-        self.fn = fn
-
-    def __call__ (self, *args, **kws):
-        if self.instance_id == self.obj.instance_id:
-            ret_val = self.fn(self.obj, *args, **kws)
-            return ret_val
-        else:
-            raise NotImplementedError, '%s is only available on the EC2 instance' % self.fn.__name__
-
-    def __cmp__(self, other):
-        return cmp(self.seq_no, other.seq_no)
-
-    def __get__(descr, inst, instCls=None):
-        descr.obj = inst
-        return descr
-
-def installer(seq_no):
-    ret_val = lambda func: Installer(seq_no, func)
-    return ret_val
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
 
@@ -162,7 +118,11 @@ class CommandLineGetter(object):
         return my_amis
     
     def get_region(self, params):
-        if not params.get('region', None):
+        region = params.get('region', None)
+        if isinstance(region, str) or isinstance(region, unicode):
+            region = boto.ec2.get_region(region)
+            params['region'] = region
+        if not region:
             prop = self.cls.find_property('region_name')
             params['region'] = propget.get(prop, choices=boto.ec2.regions)
 
@@ -194,19 +154,40 @@ class CommandLineGetter(object):
             params['zone'] = propget.get(prop)
             
     def get_ami_id(self, params):
+        ami = params['ami']
+        if isinstance(ami, str) or isinstance(ami, unicode):
+            ami_list = self.get_ami_list()
+            for l,a in ami_list:
+                if a.id == ami:
+                    ami = a
+                    params['ami'] = a
         if not params.get('ami', None):
             prop = StringProperty(name='ami', verbose_name='AMI',
                                   choices=self.get_ami_list)
             params['ami'] = propget.get(prop)
 
     def get_group(self, params):
-        if not params.get('groups', None):
-            prop = StringProperty(name='groups', verbose_name='EC2 Security Group',
+        group = params['group']
+        if isinstance(group, str) or isinstance(group, unicode):
+            group_list = self.ec2.get_all_security_groups()
+            for g in group_list:
+                if g.name == group:
+                    group = g
+                    params['group'] = g
+        if not group:
+            prop = StringProperty(name='group', verbose_name='EC2 Security Group',
                                   choices=self.ec2.get_all_security_groups)
-            params['groups'] = [propget.get(prop)]
+            params['group'] = propget.get(prop)
 
     def get_key(self, params):
-        if not params.get('keypair', None):
+        keypair = params['keypair']
+        if isinstance(keypair, str) or isinstance(keypair, unicode):
+            key_list = self.ec2.get_all_key_pairs()
+            for k in key_list:
+                if k.name == keypair:
+                    keypair = k
+                    params['keypair'] = k
+        if not keypair:
             prop = StringProperty(name='keypair', verbose_name='EC2 KeyPair',
                                   choices=self.ec2.get_all_key_pairs)
             params['keypair'] = propget.get(prop)
@@ -226,8 +207,6 @@ class CommandLineGetter(object):
 
 class Server(Model):
 
-    __metaclass__ = ServerMeta
-    
     #
     # The properties of this object consists of real properties for data that
     # is not already stored in EC2 somewhere (e.g. name, description) plus
@@ -256,34 +235,41 @@ class Server(Model):
     plugins = []
 
     @classmethod
-    def make_config(cls, aws_access_key_id, aws_secret_access_key):
-        cfg = StringIO.StringIO()
-        cfg.write('[Credentials]\n')
-        cfg.write('aws_access_key_id = %s\n' % aws_access_key_id)
-        cfg.write('aws_secret_access_key = %s\n\n' % aws_secret_access_key)
-        cfg.write('[DB_Server]\n')
-        cfg.write('db_type = SimpleDB\n')
-        cfg.write('db_name = %s\n' % cls._manager.domain.name)
-        return cfg.getvalue()
+    def add_credentials(cls, cfg, aws_access_key_id, aws_secret_access_key):
+        if not cfg.has_section('Credentials'):
+            cfg.add_section('Credentials')
+        cfg.set('Credentials', 'aws_access_key_id', aws_access_key_id)
+        cfg.set('Credentials', 'aws_secret_access_key', aws_secret_access_key)
+        if not cfg.has_section('DB_Server'):
+            cfg.add_section('DB_Server')
+        cfg.set('DB_Server', 'db_type', 'SimpleDB')
+        cfg.set('DB_Server', 'db_name', cls._manager.domain.name)
 
     @classmethod
-    def create(cls, **params):
+    def create(cls, config_file, **params):
+        cfg = Config(path=config_file)
+        if cfg.has_section('EC2'):
+            for option in cfg.options('EC2'):
+                params[option] = cfg.get('EC2', option)
+        print params
         getter = CommandLineGetter()
         getter.get(cls, params)
         region = params.get('region')
         ec2 = region.connect()
-        cfg = cls.make_config(ec2.aws_access_key_id, ec2.aws_secret_access_key)
+        cls.add_credentials(cfg, ec2.aws_access_key_id, ec2.aws_secret_access_key)
         ami = params.get('ami')
         kp = params.get('keypair')
-        groups = [g.name for g in params.get('groups')]
+        group = params.get('group')
         zone = params.get('zone')
+        cfg_fp = StringIO.StringIO()
+        cfg.write(cfg_fp)
         reservation = ami.run(min_count=1,
                               max_count=params.get('quantity', 1),
                               key_name=kp.name,
-                              security_groups=groups,
+                              security_groups=[group],
                               instance_type=params.get('instance_type'),
                               placement = zone.name,
-                              user_data = cfg)
+                              user_data = cfg_fp.getvalue())
         l = []
         i = 0
         for instance in reservation.instances:
@@ -322,6 +308,7 @@ class Server(Model):
                 return s
         return None
 
+    @classmethod
     def create_from_current_instances(cls):
         servers = []
         regions = boto.ec2.regions()
@@ -482,15 +469,5 @@ class Server(Model):
     def install(self, pkg):
         return self.run('apt-get -y install %s' % pkg)
 
-class MySQLServer(Server):
-
-    root_password = StringProperty(verbose_name="Root Password")
-
-    def test(self):
-        print 'MySQLServer.test'
-
-    @installer('001')
-    def test_mysql(self):
-        print 'MySQLServer.test_mysql'
 
     
