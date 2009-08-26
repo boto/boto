@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import StringIO, os
+import StringIO, os, re
 import ConfigParser
 import boto
 
@@ -38,11 +38,21 @@ class Config(ConfigParser.SafeConfigParser):
                                                       'debug' : '0'})
         if do_load:
             if path:
-                self.read(path)
+                self.load_from_path(path)
             elif fp:
                 self.readfp(fp)
             else:
                 self.read(BotoConfigLocations)
+
+    def load_from_path(self, path):
+        self.read(path)
+        file = open(path)
+        for line in file.readlines():
+            match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
+            if match:
+                extended_file = match.group(1)
+                (dir, file) = os.path.split(path)
+                self.load_from_path(os.path.join(dir, extended_file))
 
     def save_option(self, path, section, option, value):
         """
