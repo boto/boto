@@ -316,6 +316,9 @@ class ReferenceProperty(Property):
                  verbose_name=None, name=None, default=None, required=False, validator=None, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
         self.reference_class = reference_class
+        if self.reference_class is None:
+            from boto.sdb.db.model import Model
+            self.reference_class = Model
         self.collection_name = collection_name
         
     def __get__(self, obj, objtype):
@@ -445,11 +448,9 @@ class ListProperty(Property):
         self.item_type_prop = item_type()
 
     def validate(self, value):
-        print 'validate: value=', value
         if value is not None:
             if not isinstance(value, list):
                 value = [value]
-        print 'validate: value=', value
         for item in value:
             self.item_type_prop.validate(item)
         return value
@@ -464,6 +465,8 @@ class ListProperty(Property):
         return l
 
     def from_str(self, value):
+        if not isinstance(value, list):
+            value = [value]
         l = []
         for val in value:
             l.append(self.item_type_prop.from_str(val))
