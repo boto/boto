@@ -21,7 +21,6 @@
 
 from boto.sdb.db.manager import get_manager
 from boto.sdb.db.property import *
-from boto.sdb.db.key import Key
 from boto.sdb.db.query import Query
 import boto
 
@@ -36,7 +35,6 @@ class ModelMeta(type):
             if filter(lambda b: issubclass(b, Model), bases):
                 for base in bases:
                     base.__sub_classes__.append(cls)
-                cls._manager = get_manager(cls)
                 # look for all of the Properties and set their names
                 for key in dict.keys():
                     if isinstance(dict[key], Property):
@@ -63,48 +61,20 @@ class Model(object):
         return '.'.join(l)
 
     @classmethod
-    def kind(cls):
-        return cls.__name__
-    
-    @classmethod
-    def _get_by_id(cls, id, manager=None):
-        if not manager:
-            manager = cls._manager
-        return manager.get_object(cls, id)
-            
-    @classmethod
-    def get_by_id(cls, ids=None, parent=None):
-        if isinstance(ids, list):
-            objs = [cls._get_by_id(id) for id in ids]
-            return objs
-        else:
-            return cls._get_by_id(ids)
-
-    get_by_ids = get_by_id
+    def get_by_id(cls, manager, id):
+        return manager.load_object(id, cls)
 
     @classmethod
-    def get_by_key_name(cls, key_names, parent=None):
-        raise NotImplementedError, "Key Names are not currently supported"
-
-    @classmethod
-    def find(cls, **params):
-        q = Query(cls)
+    def find(cls, manager, **params):
+        q = Query(cls, manager)
         for key, value in params.items():
             q.filter('%s =' % key, value)
         return q
 
     @classmethod
-    def lookup(cls, name, value):
-        return cls._manager.lookup(cls, name, value)
+    def all(cls, manager, max_items=None):
+        return cls.find(manager, max_items=max_items)
 
-    @classmethod
-    def all(cls, max_items=None):
-        return cls.find()
-
-    @classmethod
-    def get_or_insert(key_name, **kw):
-        raise NotImplementedError, "get_or_insert not currently supported"
-            
     @classmethod
     def properties(cls, hidden=True):
         properties = []
@@ -135,30 +105,13 @@ class Model(object):
                 cls = None
         return property
 
-    @classmethod
-    def get_xmlmanager(cls):
-        if not hasattr(cls, '_xmlmanager'):
-            from boto.sdb.db.manager.xmlmanager import XMLManager
-            cls._xmlmanager = XMLManager(cls, None, None, None,
-                                         None, None, None, None, False)
-        return cls._xmlmanager
-
-    @classmethod
-    def from_xml(cls, fp):
-        xmlmanager = cls.get_xmlmanager()
-        return xmlmanager.unmarshal_object(fp)
-
-    def __init__(self, id=None, **kw):
-        self._loaded = False
-        # first initialize all properties to their default values
+    def __init__(self, id=None, **kwargs):
+        self.id = id
+        self.manager = None
         for prop in self.properties(hidden=False):
             setattr(self, prop.name, prop.default_value())
-        if kw.has_key('manager'):
-            self._manager = kw['manager']
-        self.id = id
-        for key in kw:
-            if key != 'manager':
-                setattr(self, key, kw[key])
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
@@ -169,26 +122,22 @@ class Model(object):
     def __eq__(self, other):
         return other and isinstance(other, Model) and self.id == other.id
 
-    def _get_raw_item(self):
-        return self._manager.get_raw_item(self)
+    def _get_raw_item(self, manager=None):
+        manager = manager or self.manager
+        if manager:
+            return manager.get_raw_item(self)
 
-    def load(self):
-        if self.id and not self._loaded:
-            self._manager.load_object(self)
-
-    def put(self):
-        self._manager.save_object(self)
+    def put(self, manager=None):
+        manager = manager or self.manager
+        if manager:
+            manager.save_object(self)
 
     save = put
         
-    def delete(self):
-        self._manager.delete_object(self)
-
-    def key(self):
-        return Key(obj=self)
-
-    def set_manager(self, manager):
-        self._manager = manager
+    def delete(self, manager=None):
+        manager = manager or self.manager
+        if manager:
+            manager.delete_object(self)
 
     def to_dict(self):
         props = {}
@@ -197,11 +146,6 @@ class Model(object):
         obj = {'properties' : props,
                'id' : self.id}
         return {self.__class__.__name__ : obj}
-
-    def to_xml(self, doc=None):
-        xmlmanager = self.get_xmlmanager()
-        doc = xmlmanager.marshal_object(self, doc)
-        return doc
 
 class Expando(Model):
 
@@ -213,12 +157,12 @@ class Expando(Model):
         elif name == 'id':
             object.__setattr__(self, name, value)
         else:
-            self._manager.set_key_value(self, name, value)
+            self.manager.set_key_value(self, name, value)
             object.__setattr__(self, name, value)
 
     def __getattr__(self, name):
         if not name.startswith('_'):
-            value = self._manager.get_key_value(self, name)
+            value = self.manager.get_key_value(self, name)
             if value:
                 object.__setattr__(self, name, value)
                 return value

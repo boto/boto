@@ -20,15 +20,13 @@
 # IN THE SOFTWARE.
 
 import datetime
-from key import Key
+import dateutil.parser
 from boto.utils import Password
 from boto.sdb.db.query import Query
-from tempfile import TemporaryFile
 
 import re
 import boto
 import boto.s3.key
-from boto.sdb.db.blob import Blob
 
 class Property(object):
 
@@ -49,7 +47,6 @@ class Property(object):
         
     def __get__(self, obj, objtype):
         if obj:
-            obj.load()
             return getattr(obj, self.slot_name)
         else:
             return None
@@ -83,13 +80,11 @@ class Property(object):
             self.default_validator(value)
         return value
 
-    def empty(self, value):
-        return not value
+    def to_str(self, value):
+        self.validate(value)
+        return value
 
-    def get_value_for_datastore(self, model_instance):
-        return getattr(model_instance, self.name)
-
-    def make_value_from_datastore(self, value):
+    def from_str(self, value):
         return value
 
     def get_choices(self):
@@ -136,16 +131,9 @@ class PasswordProperty(StringProperty):
                  validator=None, choices=None, unique=False):
         StringProperty.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
-    def make_value_from_datastore(self, value):
+    def from_str(self, value):
         p = Password(value)
         return p
-
-    def get_value_for_datastore(self, model_instance):
-        value = StringProperty.get_value_for_datastore(self, model_instance)
-        if value and len(value):
-            return str(value)
-        else:
-            return None
 
     def __set__(self, obj, value):
         if not isinstance(value, Password):
@@ -164,17 +152,6 @@ class PasswordProperty(StringProperty):
                 raise ValueError, 'Length of value greater than maxlength'
         else:
             raise TypeError, 'Expecting Password, got %s' % type(value)
-
-class BlobProperty(Property):
-    data_type = Blob
-    type_name = "blob"
-
-    def __set__(self, obj, value):
-        if value != self.default_value():
-            if not isinstance(value, Blob):
-                b = Blob(value=value)
-                value = b
-        Property.__set__(self, obj, value)
 
 class S3KeyProperty(Property):
     
@@ -204,7 +181,7 @@ class S3KeyProperty(Property):
                 return value
             match = re.match(self.validate_regex, value)
             if match:
-                s3 = obj._manager.get_s3_connection()
+                s3 = obj.manager.get_s3_connection()
                 bucket = s3.get_bucket(match.group(1), validate=False)
                 k = bucket.get_key(match.group(2))
                 if not k:
@@ -213,9 +190,9 @@ class S3KeyProperty(Property):
                 return k
         else:
             return value
-        
-    def get_value_for_datastore(self, model_instance):
-        value = Property.get_value_for_datastore(self, model_instance)
+
+    def to_str(self, value):
+        value = Property.to_str(self, value)
         if value:
             return "s3://%s/%s" % (value.bucket.name, value.name)
         else:
@@ -241,8 +218,15 @@ class IntegerProperty(Property):
             raise ValueError, 'Minimum value is %d' % min
         return value
     
-    def empty(self, value):
-        return value is None
+    def to_str(self, value):
+        value = self.validate(value)
+        value += 2147483648
+        return '%010d' % value
+
+    def from_str(self, value):
+        value = int(value)
+        value -= 2147483648
+        return int(value)
 
 class LongProperty(Property):
 
@@ -264,8 +248,15 @@ class LongProperty(Property):
             raise ValueError, 'Minimum value is %d' % min
         return value
         
-    def empty(self, value):
-        return value is None
+    def to_str(self, value):
+        value = self.validate(value)
+        value += 9223372036854775808
+        return '%020d' % value
+
+    def from_str(self, value):
+        value = long(value)
+        value -= 9223372036854775808
+        return value
 
 class BooleanProperty(Property):
 
@@ -276,9 +267,18 @@ class BooleanProperty(Property):
                  validator=None, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
-    def empty(self, value):
-        return value is None
-    
+    def to_str(self, value):
+        if value == True:
+            return 'true'
+        else:
+            return 'false'
+
+    def from_str(self, value):
+        if value and value.lower() == 'true':
+            return True
+        else:
+            return False
+
 class DateTimeProperty(Property):
 
     data_type = datetime.datetime
@@ -295,17 +295,21 @@ class DateTimeProperty(Property):
             return self.now()
         return Property.default_value(self)
 
-    def get_value_for_datastore(self, model_instance):
-        if self.auto_now:
-            setattr(model_instance, self.name, self.now())
-        return Property.get_value_for_datastore(self, model_instance)
+    def to_str(self, value):
+        value = self.validate(value)
+        if value:
+            return value.isoformat()
+        else:
+            return None
 
+    def from_str(self, value):
+        return dateutil.parser.parse(value)
+        
     def now(self):
         return datetime.datetime.utcnow()
 
 class ReferenceProperty(Property):
 
-    data_type = Key
     type_name = 'Reference'
 
     def __init__(self, reference_class=None, collection_name=None,
@@ -323,14 +327,7 @@ class ReferenceProperty(Property):
             # the object now that is the attribute has actually been accessed.  This lazy
             # instantiation saves unnecessary roundtrips to SimpleDB
             if isinstance(value, str) or isinstance(value, unicode):
-                # This is some minor handling to allow us to use the base "Model" class
-                # as our reference class. If we do so, we're going to assume we're using
-                # our own class's manager to fetch objects
-                if hasattr(self.reference_class, "_manager"):
-                    manager = self.reference_class._manager
-                else:
-                    manager = obj._manager
-                value = manager.get_object(self.reference_class, value)
+                value = obj.manager.load_object(value, self.reference_class)
                 setattr(obj, self.name, value)
             return value
     
@@ -367,6 +364,19 @@ class ReferenceProperty(Property):
         if not isinstance(value, str) and not isinstance(value, unicode):
             self.check_instance(value)
         
+    def to_str(self, value):
+        if isinstance(value, str) or isinstance(value, unicode):
+            return value
+        if value == None:
+            return ''
+        else:
+            return value.id
+
+    def value(self, value):
+        if not value:
+            return None
+        return value
+
 class _ReverseReferenceProperty(Property):
 
     def __init__(self, model, prop):
@@ -376,7 +386,7 @@ class _ReverseReferenceProperty(Property):
     def __get__(self, model_instance, model_class):
         """Fetches collection of model instances of this collection property."""
         if model_instance is not None:
-            query = Query(self.__model)
+            query = Query(self.__model, model_instance.manager)
             return query.filter(self.__property + ' =', model_instance)
         else:
             return self
@@ -432,33 +442,32 @@ class ListProperty(Property):
             default = []
         self.item_type = item_type
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
+        self.item_type_prop = item_type()
 
     def validate(self, value):
+        print 'validate: value=', value
         if value is not None:
             if not isinstance(value, list):
                 value = [value]
-
-        if self.item_type in (int, long):
-            item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
-        else:
-            item_type = self.item_type
-
+        print 'validate: value=', value
         for item in value:
-            if not isinstance(item, item_type):
-                if item_type == (int, long):
-                    raise ValueError, 'Items in the %s list must all be integers.' % self.name
-                else:
-                    raise ValueError('Items in the %s list must all be %s instances' %
-                                     (self.name, self.item_type.__name__))
+            self.item_type_prop.validate(item)
         return value
 
-    def empty(self, value):
-        return value is None
-
     def default_value(self):
-        return list(super(ListProperty, self).default_value())
+        return [self.item_type_prop.default_value()]
+
+    def to_str(self, value):
+        l = []
+        for val in value:
+            l.append(self.item_type_prop.to_str(val))
+        return l
+
+    def from_str(self, value):
+        l = []
+        for val in value:
+            l.append(self.item_type_prop.from_str(val))
+        return l
 
 class MapProperty(Property):
     
@@ -491,9 +500,6 @@ class MapProperty(Property):
                     raise ValueError('Values in the %s Map must all be %s instances' %
                                      (self.name, self.item_type.__name__))
         return value
-
-    def empty(self, value):
-        return value is None
 
     def default_value(self):
         return {}

@@ -37,7 +37,7 @@ class TestPassword(Model):
 class TestList(Model):
 
     name = StringProperty()
-    nums = ListProperty(int)
+    nums = ListProperty(IntegerProperty)
 
 class TestMap(Model):
 
@@ -47,7 +47,7 @@ class TestMap(Model):
 class TestListReference(Model):
 
     name = StringProperty()
-    basics = ListProperty(TestBasic)
+    basics = ListProperty(ReferenceProperty)
 
 class TestAutoNow(Model):
 
@@ -57,9 +57,9 @@ class TestAutoNow(Model):
 class TestUnique(Model):
     name = StringProperty(unique=True)
 
-def test_basic():
+def test_basic(mgr):
     global _objects
-    t = TestBasic()
+    t = TestBasic(manager=mgr)
     t.name = 'simple'
     t.size = -42
     t.foo = True
@@ -67,100 +67,93 @@ def test_basic():
     print 'saving object'
     t.put()
     _objects['test_basic_t'] = t
-    time.sleep(5)
+    time.sleep(10)
     print 'now try retrieving it'
-    tt = TestBasic.get_by_id(t.id)
+    tt = TestBasic.get_by_id(mgr, t.id)
     _objects['test_basic_tt'] = tt
     assert tt.id == t.id
-    l = TestBasic.get_by_id([t.id])
-    assert len(l) == 1
-    assert l[0].id == t.id
-    assert t.size == tt.size
-    assert t.foo == tt.foo
-    assert t.name == tt.name
-    #assert t.date == tt.date
     return t
     
-def test_required():
+def test_required(mgr):
     global _objects
-    t = TestRequired()
+    t = TestRequired(manager=mgr)
     _objects['test_required_t'] = t
     t.put()
     return t
 
-def test_reference(t=None):
+def test_reference(mgr, t=None):
     global _objects
     if not t:
-        t = test_basic()
-    tt = TestReference()
+        t = test_basic(mgr)
+    tt = TestReference(manager=mgr)
     tt.ref = t
     tt.put()
     time.sleep(10)
-    tt = TestReference.get_by_id(tt.id)
+    tt = TestReference.get_by_id(mgr, tt.id)
     _objects['test_reference_tt'] = tt
     assert tt.ref.id == t.id
     for o in t.refs:
         print o
 
-def test_subclass():
+def test_subclass(mgr):
     global _objects
-    t = TestSubClass()
+    t = TestSubClass(manager=mgr)
     _objects['test_subclass_t'] = t
     t.name = 'a subclass'
     t.size = -489
     t.save()
 
-def test_password():
+def test_password(mgr):
     global _objects
-    t = TestPassword()
+    t = TestPassword(manager=mgr)
     _objects['test_password_t'] = t
     t.password = "foo"
     t.save()
-    time.sleep(5)
+    time.sleep(10)
     # Make sure it stored ok
-    tt = TestPassword.get_by_id(t.id)
+    tt = TestPassword.get_by_id(mgr, t.id)
     _objects['test_password_tt'] = tt
     #Testing password equality
     assert tt.password == "foo"
     #Testing password not stored as string
     assert str(tt.password) != "foo"
 
-def test_list():
+def test_list(mgr):
     global _objects
-    t = TestList()
+    t = TestList(manager=mgr)
     _objects['test_list_t'] = t
     t.name = 'a list of ints'
     t.nums = [1,2,3,4,5]
     t.put()
-    tt = TestList.get_by_id(t.id)
+    tt = TestList.get_by_id(mgr, t.id)
     _objects['test_list_tt'] = tt
     assert tt.name == t.name
     for n in tt.nums:
         assert isinstance(n, int)
 
-def test_list_reference():
+def test_list_reference(mgr):
     global _objects
-    t = TestBasic()
+    t = TestBasic(manager=mgr)
     t.put()
     _objects['test_list_ref_t'] = t
-    tt = TestListReference()
+    tt = TestListReference(manager=mgr)
     tt.name = "foo"
     tt.basics = [t]
     tt.put()
-    time.sleep(5)
+    time.sleep(10)
     _objects['test_list_ref_tt'] = tt
-    ttt = TestListReference.get_by_id(tt.id)
+    ttt = TestListReference.get_by_id(mgr, tt.id)
     assert ttt.basics[0].id == t.id
 
-def test_unique():
+def test_unique(mgr):
     global _objects
-    t = TestUnique()
+    t = TestUnique(manager=mgr)
     name = 'foo' + str(int(time.time()))
     t.name = name
     t.put()
     _objects['test_unique_t'] = t
     time.sleep(10)
-    tt = TestUnique()
+    tt = TestUnique(manager=mgr)
     _objects['test_unique_tt'] = tt
     tt.name = name
     try:
@@ -169,34 +162,35 @@ def test_unique():
     except(SDBPersistenceError):
         pass
 
-def test_datetime():
+def test_datetime(mgr):
     global _objects
-    t = TestAutoNow()
+    t = TestAutoNow(manager=mgr)
     t.put()
     _objects['test_datetime_t'] = t
-    time.sleep(5)
-    tt = TestAutoNow.get_by_id(t.id)
+    time.sleep(10)
+    tt = TestAutoNow.get_by_id(mgr, t.id)
     assert tt.create_date.timetuple() == t.create_date.timetuple()
 
-def test():
+def test(domain_name):
+    mgr = get_manager(domain_name)
     print 'test_basic'
-    t1 = test_basic()
+    t1 = test_basic(mgr)
     print 'test_required'
-    test_required()
+    test_required(mgr)
     print 'test_reference'
-    test_reference(t1)
+    test_reference(mgr, t1)
     print 'test_subclass'
-    test_subclass()
+    test_subclass(mgr)
     print 'test_password'
-    test_password()
+    test_password(mgr)
     print 'test_list'
-    test_list()
+    test_list(mgr)
     print 'test_list_reference'
-    test_list_reference()
+    test_list_reference(mgr)
     print "test_datetime"
-    test_datetime()
+    test_datetime(mgr)
     print 'test_unique'
-    test_unique()
+    test_unique(mgr)
 
 if __name__ == "__main__":
     test()
