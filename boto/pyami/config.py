@@ -45,7 +45,6 @@ class Config(ConfigParser.SafeConfigParser):
                 self.read(BotoConfigLocations)
 
     def load_from_path(self, path):
-        self.read(path)
         file = open(path)
         for line in file.readlines():
             match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
@@ -53,6 +52,7 @@ class Config(ConfigParser.SafeConfigParser):
                 extended_file = match.group(1)
                 (dir, file) = os.path.split(path)
                 self.load_from_path(os.path.join(dir, extended_file))
+        self.read(path)
 
     def save_option(self, path, section, option, value):
         """
