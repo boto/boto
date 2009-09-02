@@ -245,12 +245,28 @@ class Server(Model):
         cfg.set('DB_Server', 'db_type', 'SimpleDB')
         cfg.set('DB_Server', 'db_name', cls._manager.domain.name)
 
+    '''
+    Create a new instance based on the specified configuration file and passed in parameters.
+    
+    The config file may include other config files with a #import reference. The included
+    config files must reside in the same directory as the specified file. 
+    
+    The logical_volume argument, if supplied, will be used to get the current physical 
+    volume ID and use that as an override of the value specified in the config file. This 
+    may be useful for debugging purposes when you want to debug with a production config 
+    file but a test Volume. 
+    
+    The dictionary argument may be used to override any EC2 configuration values in the 
+    config file. 
+    '''
     @classmethod
-    def create(cls, config_file, **params):
+    def create(cls, config_file, logical_volume = None, **params):
         cfg = Config(path=config_file)
         if cfg.has_section('EC2'):
+            # include any EC2 configuration values that aren't specified in params:
             for option in cfg.options('EC2'):
-                params[option] = cfg.get('EC2', option)
+                if params.keys().__contains__(option) == False:
+                    params[option] = cfg.get('EC2', option)
         getter = CommandLineGetter()
         getter.get(cls, params)
         region = params.get('region')
@@ -260,24 +276,39 @@ class Server(Model):
         kp = params.get('keypair')
         group = params.get('group')
         zone = params.get('zone')
+        # deal with possibly passed in logical volume:
+        if logical_volume != None:
+           cfg.set('EBS', 'volume_id', logical_volume._volume_id) 
         cfg_fp = StringIO.StringIO()
         cfg.write(cfg_fp)
+        # deal with the possibility that zone and/or keypair are strings read from the config file:
+        if isinstance(zone, str) == False and isinstance(kp, unicode) == False:
+            zone = zone.name
+        if isinstance(kp, str) == False and isinstance(kp, unicode) == False:
+            kp = kp.name
         reservation = ami.run(min_count=1,
                               max_count=params.get('quantity', 1),
                               key_name=kp,
                               security_groups=[group],
                               instance_type=params.get('instance_type'),
-                              placement = zone.name,
+                              placement = zone,
                               user_data = cfg_fp.getvalue())
         l = []
         i = 0
-        for instance in reservation.instances:
+        elastic_ip = params.get('elastic_ip')
+        instances = reservation.instances
+        if elastic_ip != None and instances.__len__() > 0:
+            instances[0].use_ip(elastic_ip)
+            print 'set the elastic IP of the first instance to %s' % elastic_ip
+        for instance in instances:
             s = cls()
             s.ec2 = ec2
             s.name = params.get('name') + '' if i==0 else str(i)
             s.description = params.get('description')
             s.region_name = region.name
             s.instance_id = instance.id
+            if i == 0:
+                s.elastic_ip = elastic_ip
             s.put()
             l.append(s)
             i += 1
