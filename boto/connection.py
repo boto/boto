@@ -352,7 +352,7 @@ class AWSAuthConnection:
         return h
 
     def prefix_proxy_to_path(self, path, host=None):
-        path = self.protocol + '://' + (host or self.host) + path
+        path = self.protocol + '://' + (host or self.server_name()) + path
         return path
 
     def get_proxy_auth_header(self):
