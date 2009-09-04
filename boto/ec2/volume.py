@@ -38,6 +38,7 @@ class Volume(EC2Object):
         self.device = None
         self.snapshot_id = None
         self.attach_data = None
+        self.zone = None
 
     def __repr__(self):
         return 'Volume:%s' % self.id
@@ -67,6 +68,8 @@ class Volume(EC2Object):
             self.snapshot_id = value
         elif name == 'device':
             self.device = value
+        elif name == 'availabilityZone':
+            self.zone = value
         else:
             setattr(self, name, value)
 

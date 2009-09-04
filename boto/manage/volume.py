@@ -76,6 +76,7 @@ class Volume(Model):
 
     name = StringProperty(required=True, unique=True, verbose_name='Name')
     region_name = StringProperty(required=True, verbose_name='EC2 Region')
+    zone_name = StringProperty(required=True, verbose_name='EC2 Zone')
     mount_point = StringProperty(verbose_name='Mount Point')
     device = StringProperty(verbose_name="Device Name", default='/dev/sdp')
     volume_id = StringProperty(required=True)
@@ -105,6 +106,7 @@ class Volume(Model):
         v.mount_point = params.get('mount_point')
         v.device = params.get('device')
         v.region_name = region.name
+        v.zone_name = zone.name
         v.put()
         return v
 
@@ -119,8 +121,26 @@ class Volume(Model):
             vol.volume_id = v.id
             vol.name = name
             vol.region_name = v.region.name
+            vol.zone_name = v.name
             vol.put()
         return vol
+
+    def create_from_latest_snapshot(self, name, size=None):
+        if size < self.size:
+            size = self.size
+        ec2 = self.get_ec2_connection()
+        snapshot = self.get_snapshots()[-1]
+        ebs_volume = ec2.create_volume(size, self.zone_name, snapshot)
+        v = Volume()
+        v.ec2 = self.ec2
+        v.volume_id = ebs_volume.id
+        v.name = name
+        v.mount_point = self.mount_point
+        v.device = self.device
+        v.region_name = self.region_name
+        v.zone_name = self.zone_name
+        v.put()
+        return v
     
     def get_ec2_connection(self):
         if self.server:
