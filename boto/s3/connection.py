@@ -124,7 +124,7 @@ class S3Connection(AWSAuthConnection):
 
     def build_post_form_args(self, bucket_name, key, expires_in = 6000,
                         acl = None, success_action_redirect = None, max_content_length = None,
-                        http_method = "http"):
+                        http_method = "http", fields=None, conditions=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
         This only returns the arguments required for the post form, not the actual form
@@ -141,8 +141,10 @@ class S3Connection(AWSAuthConnection):
         @return: {"action": action_url_to_post_to, "fields": [ {"name": field_name, "value":  field_value}, {"name": field_name2, "value": field_value2} ] }
         @rtype: dict
         """
-        fields = []
-        conditions = []
+        if fields == None:
+            fields = []
+        if conditions == None:
+            conditions = []
         expiration = time.gmtime(int(time.time() + expires_in))
 
         # Generate policy document
