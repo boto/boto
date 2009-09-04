@@ -1,0 +1,179 @@
+#!/usr/bin/env python
+# Copyright (c) 2009 Chris Moyer http://coredumped.org/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+
+#
+# Elastic Load Balancer Tool
+#
+VERSION="0.1"
+usage = """%prog [options] [command]
+Commands:
+    list|ls                           List all Elastic Load Balancers
+    delete    <name>                  Delete ELB <name>
+    get       <name>                  Get all instances associated with <name>
+    create    <name>                  Create an ELB
+    add       <name> <instance>       Add <instance> in ELB <name>
+    remove|rm <name> <instance>       Remove <instance> from ELB <name>
+    enable|en <name> <zone>           Enable Zone <zone> for ELB <name>
+    disable   <name> <zone>           Disable Zone <zone> for ELB <name>
+"""
+
+def list(elb):
+    """List all ELBs"""
+    print "%-20s %s" %  ("Name", "DNS Name")
+    print "-"*80
+    for b in elb.get_all_load_balancers():
+        print "%-20s %s" % (b.name, b.dns_name)
+
+def get(elb, name):
+    """Get details about ELB <name>"""
+    b = elb.get_all_load_balancers(name)
+    if len(b) < 1:
+        print "No load balancer by the name of %s found" % name
+        return
+    b = b[0]
+
+    print "Name: %s" % b.name
+    print "DNS Name: %s" % b.dns_name
+
+    print
+
+    print "Listeners"
+    print "---------"
+    print "%-8s %-8s %s" % ("IN", "OUT", "PROTO")
+    for l in b.listeners:
+        print "%-8s %-8s %s" % (l[0], l[1], l[2])
+
+    print
+
+    print "  Zones  "
+    print "---------"
+    for z in b.availability_zones:
+        print z
+
+    print
+
+    print "Instances"
+    print "---------"
+    for i in b.instances:
+        print i.id
+
+    print
+
+def create(elb, name, zones, listeners):
+    """Create an ELB named <name>"""
+    l_list = []
+    for l in listeners:
+        l = l.split(",")
+        l_list.append((int(l[0]), int(l[1]), l[2]))
+    
+    b = elb.create_load_balancer(name, zones, l_list)
+    return get(elb, name)
+
+def delete(elb, name):
+    """Delete this ELB"""
+    b = elb.get_all_load_balancers(name)
+    if len(b) < 1:
+        print "No load balancer by the name of %s found" % name
+        return
+    b = b[0]
+    b.delete()
+    print "Load Balancer %s deleted" % name
+
+def add_instance(elb, name, instance):
+    """Add <instance> to ELB <name>"""
+    b = elb.get_all_load_balancers(name)
+    if len(b) < 1:
+        print "No load balancer by the name of %s found" % name
+        return
+    b = b[0]
+    b.register_instances([instance])
+    return get(elb, name)
+
+
+def remove_instance(elb, name, instance):
+    """Remove instance from elb <name>"""
+    b = elb.get_all_load_balancers(name)
+    if len(b) < 1:
+        print "No load balancer by the name of %s found" % name
+        return
+    b = b[0]
+    b.deregister_instances([instance])
+    return get(elb, name)
+
+def enable_zone(elb, name, zone):
+    """Enable <zone> for elb"""
+    b = elb.get_all_load_balancers(name)
+    if len(b) < 1:
+        print "No load balancer by the name of %s found" % name
+        return
+    b = b[0]
+    b.enable_zones([zone])
+    return get(elb, name)
+
+def disable_zone(elb, name, zone):
+    """Disable <zone> for elb"""
+    b = elb.get_all_load_balancers(name)
+    if len(b) < 1:
+        print "No load balancer by the name of %s found" % name
+        return
+    b = b[0]
+    b.disable_zones([zone])
+    return get(elb, name)
+
+
+
+if __name__ == "__main__":
+    try:
+        import readline
+    except ImportError:
+        pass
+    import boto
+    import sys
+    from optparse import OptionParser
+    from boto.mashups.iobject import IObject
+    parser = OptionParser(version=VERSION, usage=usage)
+    parser.add_option("-z", "--zone", help="Operate on zone", action="append", default=[], dest="zones")
+    parser.add_option("-l", "--listener", help="Specify Listener in,out,proto", action="append", default=[], dest="listeners")
+
+    (options, args) = parser.parse_args()
+
+    if len(args) < 1:
+        parser.print_help()
+        sys.exit(1)
+
+    elb = boto.connect_elb()
+    command = args[0].lower()
+    if command in ("ls", "list"):
+        list(elb)
+    elif command == "get":
+        get(elb, args[1])
+    elif command == "create":
+        create(elb, args[1], options.zones, options.listeners)
+    elif command == "delete":
+        delete(elb, args[1])
+    elif command in ("add", "put"):
+        add_instance(elb, args[1], args[2])
+    elif command in ("rm", "remove"):
+        remove_instance(elb, args[1], args[2])
+    elif command in ("en", "enable"):
+        enable_zone(elb, args[1], args[2])
+    elif command == "disable":
+        disable_zone(elb, args[1], args[2])

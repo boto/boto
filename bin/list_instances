@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+import boto
+ec2 = boto.connect_ec2()
+
+print "%-20s %-30s %s" % ("ID", "Groups", "Hostname")
+for r in ec2.get_all_instances():
+    groups = [g.id for g in r.groups]
+    for i in r.instances:
+        print "%-20s %-30s %s" % (i.id, ','.join(groups), i.public_dns_name)

@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+# Copyright (c) 2009 Chris Moyer http://coredumped.org/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+
+#
+# Utility to launch an EC2 Instance
+#
+VERSION="0.1"
+
+import boto.pyami.config
+from boto.utils import fetch_file
+import re, os
+import ConfigParser
+
+class Config(boto.pyami.config.Config):
+    """A special config class that also adds import abilities
+    Directly in the config file. To have a config file import
+    another config file, simply use "#import <path>" where <path>
+    is either a relative path or a full URL to another config
+    """
+
+    def __init__(self):
+        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami', 'debug' : '0'})
+
+    def add_config(self, file_url):
+        """Add a config file to this configuration
+        @param file_url: URL for the file to add, or a local path
+        @type file_url: str
+        """
+        if not re.match("^([a-zA-Z0-9]*:\/\/)(.*)", file_url):
+            if not file_url.startswith("/"):
+                file_url = os.path.join(os.getcwd(), file_url)
+            file_url = "file://%s" % file_url
+        (base_url, file_name) = file_url.rsplit("/", 1)
+        base_config = fetch_file(file_url)
+        base_config.seek(0)
+        for line in base_config.readlines():
+            match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
+            if match:
+                self.add_config("%s/%s" % (base_url, match.group(1)))
+        base_config.seek(0)
+        self.readfp(base_config)
+
+    def add_creds(self, ec2):
+        """Add the credentials to this config if they don't already exist"""
+        if not self.has_section('Credentials'):
+            self.add_section('Credentials')
+            self.set('Credentials', 'aws_access_key_id', ec2.aws_access_key_id)
+            self.set('Credentials', 'aws_secret_access_key', ec2.aws_secret_access_key)
+
+    
+    def __str__(self):
+        """Get config as string"""
+        from StringIO import StringIO
+        s = StringIO()
+        self.write(s)
+        return s.getvalue()
+
+
+if __name__ == "__main__":
+    try:
+        import readline
+    except ImportError:
+        pass
+    import boto
+    from optparse import OptionParser
+    from boto.mashups.iobject import IObject
+    parser = OptionParser(version=VERSION, usage="%prog [options] config_url")
+    parser.add_option("-c", "--max-count", help="Maximum number of this type of instance to launch", dest="max_count", default="1")
+    parser.add_option("--min-count", help="Minimum number of this type of instance to launch", dest="min_count", default="1")
+    parser.add_option("-g", "--groups", help="Security Groups to add this instance to",  action="append", dest="groups")
+    parser.add_option("-a", "--ami", help="AMI to launch", dest="ami_id")
+    parser.add_option("-t", "--type", help="Type of Instance (default m1.small)", dest="type", default="m1.small")
+    parser.add_option("-k", "--key", help="Keypair", dest="key_name")
+    parser.add_option("-z", "--zone", help="Zone (default us-east-1a)", dest="zone", default="us-east-1a")
+    parser.add_option("-i", "--ip", help="Elastic IP", dest="elastic_ip")
+    parser.add_option("-n", "--no-add-cred", help="Don't add a credentials section", default=False, action="store_true", dest="nocred")
+
+    (options, args) = parser.parse_args()
+
+    if len(args) < 1:
+        import sys
+        parser.print_help()
+        sys.exit(1)
+    file_url = os.path.expanduser(args[0])
+    ec2 = boto.connect_ec2()
+
+    cfg = Config()
+    cfg.add_config(file_url)
+    if not options.nocred:
+        cfg.add_creds(ec2)
+
+    iobj = IObject()
+    if options.ami_id:
+        ami = ec2.get_image(options.ami_id)
+    else:
+        ami_id = options.ami_id
+        l = [(a, a.id, a.location) for a in ec2.get_all_images()]
+        ami = iobj.choose_from_list(l, prompt='Choose AMI')
+
+    if options.key_name:
+        key_name = options.key_name
+    else:
+        l = [(k, k.name, '') for k in ec2.get_all_key_pairs()]
+        key_name = iobj.choose_from_list(l, prompt='Choose Keypair').name
+
+    if options.groups:
+        groups = options.groups
+    else:
+        groups = []
+        l = [(g, g.name, g.description) for g in ec2.get_all_security_groups()]
+        g = iobj.choose_from_list(l, prompt='Choose Primary Security Group')
+        while g != None:
+            groups.append(g)
+            l.remove((g, g.name, g.description))
+            g = iobj.choose_from_list(l, prompt='Choose Additional Security Group (0 to quit)')
+
+    r = ami.run(min_count=int(options.min_count), max_count=int(options.max_count),
+            key_name=key_name, user_data=str(cfg),
+            security_groups=groups, instance_type=options.type,
+            placement=options.zone)
