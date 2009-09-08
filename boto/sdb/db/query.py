@@ -21,6 +21,8 @@
 
 class Query(object):
 
+    __local_iter__ = None
+
     def __init__(self, model_class, manager=None):
         self.model_class = model_class
         if manager:
@@ -35,7 +37,9 @@ class Query(object):
         return iter(self.manager.query(self.model_class, self.filters, self.limit, self.sort_by))
 
     def next(self):
-        return self.__iter__().next()
+        if self.__local_iter__ == None:
+            self.__local_iter__ = self.__iter__()
+        return self.__local_iter__.next()
 
     def filter(self, property_operator, value):
         self.filters.append((property_operator, value))
