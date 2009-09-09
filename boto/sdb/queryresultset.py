@@ -63,15 +63,26 @@ def select_lister(domain, query='', max_items=None):
         next_token = rs.next_token
         more_results = next_token != None
         
-class SelectResultSet:
+class SelectResultSet(object):
 
-    def __init__(self, domain=None, query='', max_items=None):
+    def __init__(self, domain=None, query='', max_items=None, next_token=None):
         self.domain = domain
         self.query = query
         self.max_items = max_items
+        self.next_token = next_token
 
     def __iter__(self):
-        return select_lister(self.domain, self.query, self.max_items)
+        more_results = True
+        num_results = 0
+        while more_results:
+            rs = self.domain.connection.select(self.domain, self.query, next_token=self.next_token)
+            for item in rs:
+                yield item
+                num_results += 1
+            self.next_token = rs.next_token
+            if self.max_items and num_results >= self.max_items:
+                raise StopIteration
+            more_results = self.next_token != None
 
-
-    
+    def next(self):
+        return self.__iter__().next()

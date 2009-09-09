@@ -170,7 +170,7 @@ class Domain:
                  function that will iterate across all search results, not just the
                  first page.
         """
-        return iter(SelectResultSet(self, query, max_items))
+        return SelectResultSet(self, query, max_items=max_items, next_token=next_token)
     
     def get_item(self, item_name):
         item = self.get_attributes(item_name)

@@ -20,21 +20,21 @@
 # IN THE SOFTWARE.
 
 class Query(object):
-
     __local_iter__ = None
-
-    def __init__(self, model_class, manager=None):
+    def __init__(self, model_class, limit=None, next_token=None, manager=None):
         self.model_class = model_class
+        self.limit = limit
         if manager:
             self.manager = manager
         else:
             self.manager = self.model_class._manager
         self.filters = []
-        self.limit = None
         self.sort_by = None
+        self.rs = None
+        self.next_token = next_token
 
     def __iter__(self):
-        return iter(self.manager.query(self.model_class, self.filters, self.limit, self.sort_by))
+        return iter(self.manager.query(self))
 
     def next(self):
         if self.__local_iter__ == None:
@@ -62,3 +62,15 @@ class Query(object):
         for obj in self:
             obj.to_xml(doc)
         return doc
+
+    def get_next_token(self):
+        if self.rs:
+            return self.rs.next_token
+        if self._next_token:
+            return self._next_token
+        return None
+
+    def set_next_token(self, token):
+        self._next_token = token
+
+    next_token = property(get_next_token, set_next_token)

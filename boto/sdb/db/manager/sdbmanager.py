@@ -316,10 +316,13 @@ class SDBManager(object):
     def get_object_from_id(self, id):
         return self.get_object(None, id)
 
-    def query(self, cls, filters, limit=None, order_by=None):
-        query = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters, order_by))
-        rs = self.domain.select(query)
-        return self._object_lister(cls, rs)
+    def query(self, query):
+        query_str = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(query.model_class, query.filters, query.sort_by))
+        if query.limit:
+            query_str += " limit %s" % query.limit
+        rs = self.domain.select(query_str, max_items=query.limit, next_token = query.next_token)
+        query.rs = rs
+        return self._object_lister(query.model_class, rs)
 
     def count(self, cls, filters):
         """

@@ -87,8 +87,8 @@ class Model(object):
         raise NotImplementedError, "Key Names are not currently supported"
 
     @classmethod
-    def find(cls, **params):
-        q = Query(cls)
+    def find(cls, limit=None, next_token=None, **params):
+        q = Query(cls, limit=limit, next_token=next_token)
         for key, value in params.items():
             q.filter('%s =' % key, value)
         return q
@@ -98,8 +98,8 @@ class Model(object):
         return cls._manager.lookup(cls, name, value)
 
     @classmethod
-    def all(cls, max_items=None):
-        return cls.find()
+    def all(cls, limit=None, next_token=None):
+        return cls.find(limit=limit, next_token=next_token)
 
     @classmethod
     def get_or_insert(key_name, **kw):
