@@ -132,15 +132,19 @@ def get_aws_metadata(headers):
             del headers[hkey]
     return metadata
 
-def retry_url(url):
+def retry_url(url, retry_on_404=True):
     for i in range(0, 10):
         try:
             req = urllib2.Request(url)
             resp = urllib2.urlopen(req)
             return resp.read()
+        except urllib2.HTTPError, e:
+            if e.getcode() == 404 and not retry_on_404:
+                return ''
         except:
-            boto.log.exception('Caught exception reading instance data')
-            time.sleep(2**i)
+            pass
+        boto.log.exception('Caught exception reading instance data')
+        time.sleep(2**i)
     boto.log.error('Unable to read instance data, giving up')
     return ''
     
@@ -159,7 +163,7 @@ def get_instance_metadata(version='latest'):
 
 def get_instance_userdata(version='latest', sep=None):
     url = 'http://169.254.169.254/%s/user-data/' % version
-    user_data = retry_url(url)
+    user_data = retry_url(url, retry_on_404=False)
     if user_data:
         if sep:
             l = user_data.split(sep)
