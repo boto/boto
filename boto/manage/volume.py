@@ -126,10 +126,13 @@ class Volume(Model):
         return vol
 
     def create_from_latest_snapshot(self, name, size=None):
+        snapshot = self.get_snapshots()[-1]
+        return self.create_from_snapshot(name, snapshot, size)
+
+    def create_from_snapshot(self, name, snapshot, size=None):
         if size < self.size:
             size = self.size
         ec2 = self.get_ec2_connection()
-        snapshot = self.get_snapshots()[-1]
         ebs_volume = ec2.create_volume(size, self.zone_name, snapshot)
         v = Volume()
         v.ec2 = self.ec2
@@ -291,9 +294,11 @@ class Volume(Model):
         # if this volume is attached to a server
         # we need to freeze the XFS file system
         try:
-            status = self.freeze(keep_alive=True)
-            print status[1]
-            snapshot = self.server.ec2.create_snapshot(self.volume_id)
+            self.freeze()
+            if self.server == None:
+                snapshot = self.get_ec2_connection().create_snapshot(self.volume_id)
+            else:
+                snapshot = self.server.ec2.create_snapshot(self.volume_id)
             boto.log.info('Snapshot of Volume %s created: %s' %  (self.name, snapshot))
         except Exception, e:
             boto.log.info('Snapshot error')
