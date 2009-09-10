@@ -89,11 +89,11 @@ class EBSInstaller(Installer):
 
     def attach(self):
         ec2 = boto.connect_ec2()
-         if self.logical_volume_name:
-              # if a logical volume was specified, override the specified volume_id
-              # (if there was one) with the current AWS volume for the logical volume:
-              logical_volume = Volume.find(name = self.logical_volume_name).next()
-              self.volume_id = logical_volume._volume_id
+        if self.logical_volume_name:
+            # if a logical volume was specified, override the specified volume_id
+            # (if there was one) with the current AWS volume for the logical volume:
+            logical_volume = Volume.find(name = self.logical_volume_name).next()
+            self.volume_id = logical_volume._volume_id
         ec2.attach_volume(self.volume_id, self.instance_id, self.device)
         # now wait for the volume device to appear
         while not os.path.exists(self.device):
