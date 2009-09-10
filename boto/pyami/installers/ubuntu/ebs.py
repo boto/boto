@@ -41,6 +41,7 @@ from string import Template
 BackupScriptTemplate = """#!/usr/bin/env python
 # Backup EBS volume
 import boto
+from boto.manage.volume import Volume
 from boto.pyami.scriptbase import ScriptBase
 import traceback
 
@@ -67,8 +68,6 @@ if __name__ == "__main__":
 
 BackupCleanupScript= """#!/usr/bin/env python
 # Cleans Backups of EBS volumes
-
-from boto.manage.volume import Volume
 
 for v in Volume.all():
         v.trim_snapshot(True)
