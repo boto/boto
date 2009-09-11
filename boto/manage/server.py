@@ -278,7 +278,7 @@ class Server(Model):
         zone = params.get('zone')
         # deal with possibly passed in logical volume:
         if logical_volume != None:
-           cfg.set('EBS', 'volume_id', logical_volume._volume_id) 
+           cfg.set('EBS', 'logical_volume_name', logical_volume.name) 
         cfg_fp = StringIO.StringIO()
         cfg.write(cfg_fp)
         # deal with the possibility that zone and/or keypair are strings read from the config file:
@@ -307,7 +307,7 @@ class Server(Model):
             s.description = params.get('description')
             s.region_name = region.name
             s.instance_id = instance.id
-            if i == 0:
+            if elastic_ip and i == 0:
                 s.elastic_ip = elastic_ip
             s.put()
             l.append(s)
