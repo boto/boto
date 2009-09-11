@@ -405,6 +405,12 @@ class Server(Model):
             hostname = self._instance.private_dns_name
         return hostname
 
+    def _instance_type(self):
+        it = ''
+        if self._instance:
+            it = self._instance.instance_type
+        return it
+
     def _launch_time(self):
         lt = ''
         if self._instance:
