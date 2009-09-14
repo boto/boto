@@ -83,8 +83,12 @@ class Queue:
 
         @type attributes: string
         @param attributes: String containing one of:
-                           ApproximateNumberOfMessages, VisibilityTimeout, CreatedTimestamp,
-                           LastModifiedTimestamp, Policy.
+                           ApproximateNumberOfMessages,
+                           ApproximateNumberOfMessagesNotVisible,
+                           VisibilityTimeout,
+                           CreatedTimestamp,
+                           LastModifiedTimestamp,
+                           Policy
         @rtype: Attribute object
         @return: An Attribute object which is a mapping type holding the
                  requested name/value pairs
@@ -214,20 +218,31 @@ class Queue:
         return m
 
     # get a variable number of messages, returns a list of messages
-    def get_messages(self, num_messages=1, visibility_timeout=None):
+    def get_messages(self, num_messages=1, visibility_timeout=None,
+                     attributes=None):
         """
         Get a variable number of messages.
 
         @type num_messages: int
         @param num_messages: The maximum number of messages to read from the queue.
+        
         @type visibility_timeout: int
         @param visibility_timeout: The VisibilityTimeout for the messages read.
 
+        @type attributes: list of strings
+        @param attributes: A list of additional attributes that will be returned
+                           with the response.  Valid values:
+                           All
+                           SenderId
+                           SentTimestamp
+                           ApproximateReceiveCount
+                           ApproximateFirstReceiveTimestamp
         @rtype: list
         @return: A list of messages.
         """
         return self.connection.receive_message(self, number_messages=num_messages,
-                                               visibility_timeout=visibility_timeout)
+                                               visibility_timeout=visibility_timeout,
+                                               attributes=attributes)
 
     def delete_message(self, message):
         """

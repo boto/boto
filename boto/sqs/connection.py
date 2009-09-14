@@ -106,8 +106,12 @@ class SQSConnection(AWSQueryConnection):
         @type attribute: str
         @type attribute: The specific attribute requested.  If not supplied, the default
                          is to return all attributes.  Valid attributes are:
-                         ApproximateNumberOfMessages, VisibilityTimeout, CreatedTimestamp,
-                         LastModifiedTimestamp, Policy.
+                         ApproximateNumberOfMessages,
+                         ApproximateNumberOfMessagesNotVisible,
+                         VisibilityTimeout,
+                         CreatedTimestamp,
+                         LastModifiedTimestamp,
+                         Policy
                          
         @rtype: L{Attributes<boto.sqs.attributes.Attributes>}
         @return: An Attributes object containing request value(s).
@@ -136,7 +140,12 @@ class SQSConnection(AWSQueryConnection):
 
         @type attributes: list of strings
         @param attributes: A list of additional attributes that will be returned
-                           with the response.  Valid values: SenderId | SentTimestamp.
+                           with the response.  Valid values:
+                           All
+                           SenderId
+                           SentTimestamp
+                           ApproximateReceiveCount
+                           ApproximateFirstReceiveTimestamp
         
         """
         params = {'MaxNumberOfMessages' : number_messages}
