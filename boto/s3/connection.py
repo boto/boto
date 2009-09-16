@@ -130,16 +130,32 @@ class S3Connection(AWSAuthConnection):
         This only returns the arguments required for the post form, not the actual form
         This does not return the file input field which also needs to be added
 
-        @param bucket_name: Bucket to submit to
-        @param key: Key name, optionally add ${filename} to the end to attach the submitted filename
-        @param expires_in: Time (in seconds) before this expires, defaults to 6000
-        @param acl: ACL rule to use, if any
-        @param success_action_redirect: URL to redirect to on success
-        @param max_content_length: Maximum size for this file
-        @param http_method: HTTP Method to use, "http" or "https"
+        **Parameters**
+        
+        bucket_name:
+            *string*, Bucket to submit to
+        
+        key: 
+            *string*, Key name, optionally add ${filename} to the end to attach the submitted filename
+        
+        expires_in: 
+            *int*, Time (in seconds) before this expires, defaults to 6000
+        
+        acl: 
+            *:acl:*, ACL rule to use, if any
+        
+        success_action_redirect: 
+            *string*, URL to redirect to on success
+        
+        max_content_length: 
+            *int*, Maximum size for this file
+        
+        http_method: 
+            *string*, HTTP Method to use, "http" or "https"
+        
+        **Returns**
 
-        @return: {"action": action_url_to_post_to, "fields": [ {"name": field_name, "value":  field_value}, {"name": field_name2, "value": field_value2} ] }
-        @rtype: dict
+        *dict*, {"action": action_url_to_post_to, "fields": [ {"name": field_name, "value":  field_value}, {"name": field_name2, "value": field_value2} ] }
         """
         if fields == None:
             fields = []

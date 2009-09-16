@@ -1,0 +1,8 @@
+.. ref-s3:
+
+============
+S3 Reference
+============
+
+.. autoclass:: boto.s3.connection.S3Connection
+   :members:
