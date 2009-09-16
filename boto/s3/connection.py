@@ -129,33 +129,48 @@ class S3Connection(AWSAuthConnection):
         Taken from the AWS book Python examples and modified for use with boto
         This only returns the arguments required for the post form, not the actual form
         This does not return the file input field which also needs to be added
-
-        **Parameters**
         
-        bucket_name:
-            *string*, Bucket to submit to
+        :param bucket_name: Bucket to submit to
+        :type bucket_name: string 
         
-        key: 
-            *string*, Key name, optionally add ${filename} to the end to attach the submitted filename
+        :param key:  Key name, optionally add ${filename} to the end to attach the submitted filename
+        :type key: string
         
-        expires_in: 
-            *int*, Time (in seconds) before this expires, defaults to 6000
+        :param expires_in: Time (in seconds) before this expires, defaults to 6000
+        :type expires_in: integer
         
-        acl: 
-            *:acl:*, ACL rule to use, if any
+        :param acl: ACL rule to use, if any
+        :type acl: :mod:boto.s3.acl.ACL 
         
-        success_action_redirect: 
-            *string*, URL to redirect to on success
+        :param success_action_redirect: URL to redirect to on success
+        :type success_action_redirect: string 
         
-        max_content_length: 
-            *int*, Maximum size for this file
+        :param max_content_length: Maximum size for this file
+        :type max_content_length: integer 
         
-        http_method: 
-            *string*, HTTP Method to use, "http" or "https"
+        :type http_method: string
+        :param http_method:  HTTP Method to use, "http" or "https"
         
-        **Returns**
-
-        *dict*, {"action": action_url_to_post_to, "fields": [ {"name": field_name, "value":  field_value}, {"name": field_name2, "value": field_value2} ] }
+        
+        :rtype: dict
+        :return: A dictionary containing field names/values as well as a url to POST to
+        
+            .. code-block:: python
+            
+                {
+                    "action": action_url_to_post_to, 
+                    "fields": [ 
+                        {
+                            "name": field_name, 
+                            "value":  field_value
+                        }, 
+                        {
+                            "name": field_name2, 
+                            "value": field_value2
+                        } 
+                    ] 
+                }
+            
         """
         if fields == None:
             fields = []
@@ -244,8 +259,8 @@ class S3Connection(AWSAuthConnection):
         of that response, the canonical userid is returned.  This method simply does all of
         that and then returns just the user id.
 
-        @rtype: string
-        @return: A string containing the canonical user id.
+        :rtype: string
+        :return: A string containing the canonical user id.
         """
         rs = self.get_all_buckets()
         return rs.ID
@@ -268,17 +283,17 @@ class S3Connection(AWSAuthConnection):
         Creates a new located bucket. By default it's in the USA. You can pass
         Location.EU to create an European bucket.
 
-        @type bucket_name: string
-        @param bucket_name: The name of the new bucket
+        :type bucket_name: string
+        :param bucket_name: The name of the new bucket
         
-        @type headers: dict
-        @param headers: Additional headers to pass along with the request to AWS.
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to AWS.
 
-        @type location: L{Location<boto.s3.connection.Location>}
-        @param location: The location of the new bucket
+        :type location: L{Location<boto.s3.connection.Location>}
+        :param location: The location of the new bucket
         
-        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
-        @param policy: A canned ACL policy that will be applied to the new key in S3.
+        :type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        :param policy: A canned ACL policy that will be applied to the new key in S3.
              
         """
         if policy:
