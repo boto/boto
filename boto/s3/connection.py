@@ -140,7 +140,7 @@ class S3Connection(AWSAuthConnection):
         :type expires_in: integer
         
         :param acl: ACL rule to use, if any
-        :type acl: :mod:boto.s3.acl.ACL 
+        :type acl: :class:`boto.s3.acl.ACL`
         
         :param success_action_redirect: URL to redirect to on success
         :type success_action_redirect: string 
