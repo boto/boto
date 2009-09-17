@@ -205,9 +205,11 @@ class S3Connection(AWSAuthConnection):
             query_part = ''
         if force_http:
             protocol = 'http'
+            port = 80
         else:
             protocol = self.protocol
-        return self.calling_format.build_url_base(protocol, self.server_name(),
+            port = self.port
+        return self.calling_format.build_url_base(protocol, self.server_name(port),
                                                   bucket, key) + query_part
 
     def get_all_buckets(self):

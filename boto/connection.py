@@ -225,8 +225,10 @@ class AWSAuthConnection:
             path = path + params
         return path
 
-    def server_name(self):
-        if self.port == 80:
+    def server_name(self, port=None):
+        if not port:
+            port = self.port
+        if port == 80:
             signature_host = self.host
         else:
             # This unfortunate little hack can be attributed to
@@ -235,10 +237,10 @@ class AWSAuthConnection:
             # in the Host header and so we needed to make sure we
             # did the same when calculating the V2 signature.  In 2.6
             # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] == "2.6" and self.port == 443:
+            if sys.version[:3] == "2.6" and port == 443:
                 signature_host = self.host
             else:
-                signature_host = '%s:%d' % (self.host, self.port)
+                signature_host = '%s:%d' % (self.host, port)
         return signature_host
 
     def handle_proxy(self, proxy, proxy_port, proxy_user, proxy_pass):
