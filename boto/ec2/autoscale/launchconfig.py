@@ -32,18 +32,18 @@ class LaunchConfiguration(object):
         """
         A launch configuration.
 
-        @type name: str
-        @param name: Name of the launch configuration to create.
+        :type name: str
+        :param name: Name of the launch configuration to create.
 
-        @type image_id: str
-        @param image_id: Unique ID of the Amazon Machine Image (AMI) which was
+        :type image_id: str
+        :param image_id: Unique ID of the Amazon Machine Image (AMI) which was
                          assigned during registration.
 
-        @type key_name: str
-        @param key_name: The name of the EC2 key pair.
+        :type key_name: str
+        :param key_name: The name of the EC2 key pair.
 
-        @type security_groups: list
-        @param security_groups: Names of the security groups with which to
+        :type security_groups: list
+        :param security_groups: Names of the security groups with which to
                                 associate the EC2 instances.
 
         """

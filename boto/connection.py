@@ -105,38 +105,38 @@ class AWSAuthConnection:
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, path='/'):
         """
-        @type host: string
-        @param host: The host to make the connection to
+        :type host: string
+        :param host: The host to make the connection to
 
-        @type aws_access_key_id: string
-        @param aws_access_key_id: AWS Access Key ID (provided by Amazon)
+        :type aws_access_key_id: string
+        :param aws_access_key_id: AWS Access Key ID (provided by Amazon)
 
-        @type aws_secret_access_key: string
-        @param aws_secret_access_key: Secret Access Key (provided by Amazon)
+        :type aws_secret_access_key: string
+        :param aws_secret_access_key: Secret Access Key (provided by Amazon)
 
-        @type is_secure: boolean
-        @param is_secure: Whether the connection is over SSL
+        :type is_secure: boolean
+        :param is_secure: Whether the connection is over SSL
 
-        @type https_connection_factory: list or tuple
-        @param https_connection_factory: A pair of an HTTP connection
+        :type https_connection_factory: list or tuple
+        :param https_connection_factory: A pair of an HTTP connection
                                          factory and the exceptions to catch.
                                          The factory should have a similar
                                          interface to L{httplib.HTTPSConnection}.
 
-        @type proxy:
-        @param proxy:
+        :type proxy:
+        :param proxy:
 
-        @type proxy_port: int
-        @param proxy_port: The port to use when connecting over a proxy
+        :type proxy_port: int
+        :param proxy_port: The port to use when connecting over a proxy
 
-        @type proxy_user: string
-        @param proxy_user: The username to connect with on the proxy
+        :type proxy_user: string
+        :param proxy_user: The username to connect with on the proxy
 
-        @type proxy_pass: string
-        @param proxy_pass: The password to use when connection over a proxy.
+        :type proxy_pass: string
+        :param proxy_pass: The password to use when connection over a proxy.
 
-        @type port: integer
-        @param port: The port to use to connect
+        :type port: integer
+        :param port: The port to use to connect
         """
 
         self.num_retries = 5

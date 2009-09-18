@@ -77,8 +77,8 @@ class LoadBalancer(object):
         Enable availability zones to this Access Point.
         All zones must be in the same region as the Access Point.
 
-        @type zones: string or List of strings
-        @param zones: The name of the zone(s) to add.
+        :type zones: string or List of strings
+        :param zones: The name of the zone(s) to add.
 
         """
         if isinstance(zones, str) or isinstance(zones, unicode):
@@ -90,8 +90,8 @@ class LoadBalancer(object):
         """
         Disable availability zones from this Access Point.
 
-        @type zones: string or List of strings
-        @param zones: The name of the zone(s) to add.
+        :type zones: string or List of strings
+        :param zones: The name of the zone(s) to add.
 
         """
         if isinstance(zones, str) or isinstance(zones, unicode):
@@ -106,8 +106,8 @@ class LoadBalancer(object):
         Adding endpoints that are already registered with the Load Balancer
         has no effect.
 
-        @type zones: string or List of instance id's
-        @param zones: The name of the endpoint(s) to add.
+        :type zones: string or List of instance id's
+        :param zones: The name of the endpoint(s) to add.
 
         """
         if isinstance(instances, str) or isinstance(instances, unicode):
@@ -121,8 +121,8 @@ class LoadBalancer(object):
         Removing instances that are not registered with the Load Balancer
         has no effect.
 
-        @type zones: string or List of instance id's
-        @param zones: The name of the endpoint(s) to add.
+        :type zones: string or List of instance id's
+        :param zones: The name of the endpoint(s) to add.
 
         """
         if isinstance(instances, str) or isinstance(instances, unicode):

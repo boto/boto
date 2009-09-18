@@ -8,3 +8,4 @@ API Reference
    :maxdepth: 1
 
    s3
+   ec2

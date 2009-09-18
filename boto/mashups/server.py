@@ -351,11 +351,11 @@ class Server(Model):
         """
         Attach an EBS volume to this server
 
-        @param volume: EBS Volume to attach
-        @type volume: boto.ec2.volume.Volume
+        :param volume: EBS Volume to attach
+        :type volume: boto.ec2.volume.Volume
 
-        @param device: Device to attach to (default to /dev/sdp)
-        @type device: string
+        :param device: Device to attach to (default to /dev/sdp)
+        :type device: string
         """
         if hasattr(volume, "id"):
             volume_id = volume.id
@@ -367,8 +367,8 @@ class Server(Model):
         """
         Detach an EBS volume from this server
 
-        @param volume: EBS Volume to detach
-        @type volume: boto.ec2.volume.Volume
+        :param volume: EBS Volume to detach
+        :type volume: boto.ec2.volume.Volume
         """
         if hasattr(volume, "id"):
             volume_id = volume.id
