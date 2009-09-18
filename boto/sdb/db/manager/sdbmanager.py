@@ -261,6 +261,8 @@ class SDBManager(object):
                 yield obj
             
     def encode_value(self, prop, value):
+        if value == None:
+            return None
         return self.converter.encode_prop(prop, value)
 
     def decode_value(self, prop, value):
@@ -348,7 +350,7 @@ class SDBManager(object):
                 order_by_method = "asc";
 
         for filter in filters:
-            (name, op) = filter[0].strip().split(" ")
+            (name, op) = filter[0].strip().split(" ", 1)
             value = filter[1]
             property = cls.find_property(name)
             if not property:
@@ -368,6 +370,8 @@ class SDBManager(object):
             else:
                 if op == 'is' and value == None:
                     query_parts.append("`%s` is null" % name)
+                if op == 'is not' and value == None:
+                    query_parts.append("`%s` is not null" % name)
                 else:
                     val = self.encode_value(property, value)
                     if isinstance(val, list):
