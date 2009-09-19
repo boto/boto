@@ -32,7 +32,7 @@ class SQSRegionInfo(RegionInfo):
         object's constructor as keyword arguments and they will be
         passed along to the SQSConnection object.
         
-        :rtype: L{SQSConnection<boto.sqs.connection.SQSConnection}
+        :rtype: :class:`boto.sqs.connection.SQSConnection`
         :return: The connection to this regions endpoint
         """
         from boto.sqs.connection import SQSConnection

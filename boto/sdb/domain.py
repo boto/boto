@@ -105,7 +105,7 @@ class Domain:
                                 parameter is optional.  If not supplied, all attributes
                                 will be retrieved for the item.
 
-        :rtype: L{Item<boto.sdb.item.Item>}
+        :rtype: :class:`boto.sdb.item.Item`
         :return: An Item mapping type containing the requested attribute name/values
         """
         return self.connection.get_attributes(self, item_name, attribute_name, item)
@@ -117,7 +117,7 @@ class Domain:
         :type item_name: string
         :param item_name: The name of the item whose attributes are being deleted.
 
-        :type attributes: dict, list or L{Item<boto.sdb.item.Item>}
+        :type attributes: dict, list or :class:`boto.sdb.item.Item`
         :param attributes: Either a list containing attribute names which will cause
                            all values associated with that attribute name to be deleted or
                            a dict or Item containing the attribute names and keys and list

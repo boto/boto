@@ -101,7 +101,7 @@ class Bucket:
         :type key_name: string
         :param key_name: The name of the key to retrieve
         
-        :rtype: L{Key<boto.s3.key.Key>}
+        :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
         return self.get_key(key_name)
@@ -115,7 +115,7 @@ class Bucket:
         :type key_name: string
         :param key_name: The name of the key to retrieve
         
-        :rtype: L{Key<boto.s3.key.Key>}
+        :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
         response = self.connection.make_request('HEAD', self.name, key_name)
@@ -161,7 +161,7 @@ class Bucket:
         :type marker: string
         :param marker: The "marker" of where you are in the result set
         
-        :rtype: L{BucketListResultSet<boto.s3.bucketlistresultset.BucketListResultSet>}
+        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return BucketListResultSet(self, prefix, delimiter, marker)
@@ -220,7 +220,7 @@ class Bucket:
         :type key_name: string
         :param key_name: The name of the key to create
         
-        :rtype: L{Key<boto.s3.key.Key>} or subclass
+        :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
         return self.key_class(self, key_name)
@@ -261,7 +261,7 @@ class Bucket:
                          If no metadata is supplied, the source key's
                          metadata will be copied to the new key.
 
-        :rtype: L{Key<boto.s3.key.Key>} or subclass
+        :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
         if metadata:

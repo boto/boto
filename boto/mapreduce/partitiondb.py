@@ -53,7 +53,7 @@ class Version(SDBObject):
         """
         Return an iterator containing all Partition objects related to this Version.
 
-        :rtype: iterator of L{Partitions<boto.mapreduce.partitiondb.Partition>}
+        :rtype: iterator of :class:`boto.mapreduce.partitiondb.Partition`
         :return: The Partitions in this Version
         """
         return self.get_related_objects('version', Partition)
@@ -65,7 +65,7 @@ class Version(SDBObject):
         :type name: string
         :param name: The name of the new Partition (optional)
 
-        :rtype: L{Partition<boto.mapreduce.partitiondb.Partition>}
+        :rtype: :class:`boto.mapreduce.partitiondb.Partition`
         :return: The new Partition object
         """
         p = Partition(manager=self.manager, name=name)
@@ -99,7 +99,7 @@ class PartitionDB(SDBObject):
         Add a new Version to this PartitionDB.  The newly added version becomes the
         current version.
 
-        :rtype: L{Version<boto.mapreduce.partitiondb.Version>}
+        :rtype: :class:`boto.mapreduce.partitiondb.Version`
         :return: The newly created Version object.
         """
         v = Version()
@@ -115,7 +115,7 @@ class PartitionDB(SDBObject):
         Note that this method does not delete the Version object or any Partitions related to the
         Version object.
 
-        :rtype: L{Version<boto.mapreduce.partitiondb.Version>}
+        :rtype: :class:`boto.mapreduce.partitiondb.Version`
         :return: The previous current Version object.
         """
         v = self.current_version()
@@ -127,7 +127,7 @@ class PartitionDB(SDBObject):
         """
         Get the currently active Version of this PartitionDB object.
 
-        :rtype: L{Version<boto.mapreduce.partitiondb.Version>}
+        :rtype: :class:`boto.mapreduce.partitiondb.Version`
         :return: The current Version object or None if there are no Versions associated
                  with this PartitionDB object.
         """

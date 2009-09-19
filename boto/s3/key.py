@@ -179,7 +179,7 @@ class Key(object):
                          If no metadata is supplied, the source key's
                          metadata will be copied to the new key.
 
-        :rtype: L{Key<boto.s3.key.Key>} or subclass
+        :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
         dst_bucket = self.bucket.connection.lookup(dst_bucket)
@@ -423,7 +423,7 @@ class Key(object):
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.
 
-        :type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the new key in S3.
              
         :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
@@ -483,7 +483,7 @@ class Key(object):
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        :type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the new key in S3.
              
         :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
@@ -524,7 +524,7 @@ class Key(object):
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        :type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the new key in S3.
              
         :type md5: A tuple containing the hexdigest version of the MD5 checksum of the

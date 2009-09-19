@@ -97,7 +97,7 @@ class EC2Connection(AWSQueryConnection):
         :param executable_by: 
         
         :rtype: list
-        :return: A list of L{Images<boto.ec2.image.Image>}
+        :return: A list of :class:`boto.ec2.image.Image`
         """
         params = {}
         if image_ids:
@@ -120,7 +120,7 @@ class EC2Connection(AWSQueryConnection):
         :param owners: A list of owner IDs
         
         :rtype: list
-        :return: A list of L{Images<boto.ec2.image.Image>}
+        :return: A list of :class:`boto.ec2.image.Image`
         """
         rs = self.get_all_images(kernel_ids, owners)
         kernels = []
@@ -141,7 +141,7 @@ class EC2Connection(AWSQueryConnection):
         :param owners: A list of owner IDs
         
         :rtype: list
-        :return: A list of L{Images<boto.ec2.image.Image>}
+        :return: A list of :class:`boto.ec2.image.Image`
         """
         rs = self.get_all_images(ramdisk_ids, owners)
         ramdisks = []
@@ -157,7 +157,7 @@ class EC2Connection(AWSQueryConnection):
         :type image_id: string
         :param image_id: the ID of the Image to retrieve
         
-        :rtype: L{Image<boto.ec2.image.Image>}
+        :rtype: :class:`boto.ec2.image.Image`
         :return: The EC2 Image specified or None if the image is not found
         """
         try:
@@ -204,7 +204,7 @@ class EC2Connection(AWSQueryConnection):
         :type attribute: string
         :param attribute: The attribute you need information about
         
-        :rtype: L{ImageAttribute<boto.ec2.image.ImageAttribute>}
+        :rtype: :class:`boto.ec2.image.ImageAttribute`
         :return: An ImageAttribute object representing the value of the attribute requested
         """
         params = {'ImageId' : image_id,
@@ -277,7 +277,7 @@ class EC2Connection(AWSQueryConnection):
         :param instance_ids: A list of strings of instance IDs
         
         :rtype: list
-        :return: A list of  L{Reservation<boto.ec2.instance.Reservation>}
+        :return: A list of  :class:`boto.ec2.instance.Reservation`
         """
         params = {}
         if instance_ids:
@@ -323,7 +323,7 @@ class EC2Connection(AWSQueryConnection):
         :param ramdisk_id: The ID of the RAM disk with which to launch the instances
         
         :rtype: Reservation
-        :return: The L{Reservation<boto.ec2.instance.Reservation>} associated with the request for machines
+        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
@@ -590,7 +590,7 @@ class EC2Connection(AWSQueryConnection):
                          If not provided, all key pairs will be returned.
         
         :rtype: list
-        :return: A list of L{KeyPairs<boto.ec2.keypair.KeyPair>}
+        :return: A list of :class:`boto.ec2.keypair.KeyPair`
         """
         params = {}
         if keynames:
@@ -604,7 +604,7 @@ class EC2Connection(AWSQueryConnection):
         :type image_id: string
         :param image_id: the ID of the Image to retrieve
         
-        :rtype: L{KeyPair<boto.ec2.keypair.KeyPair>}
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: The KeyPair specified or None if it is not found
         """
         try:
@@ -621,8 +621,8 @@ class EC2Connection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the new keypair
         
-        :rtype: L{KeyPair<boto.ec2.keypair.KeyPair>}
-        :return: The newly created L{KeyPair<boto.ec2.keypair.KeyPair>}.
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
                  The material attribute of the new KeyPair object
                  will contain the the unencrypted PEM encoded RSA private key.
         """
@@ -650,7 +650,7 @@ class EC2Connection(AWSQueryConnection):
                            If not provided, all security groups will be returned.
         
         :rtype: list
-        :return: A list of L{SecurityGroups<boto.ec2.securitygroup.SecurityGroup>}
+        :return: A list of :class:`boto.ec2.securitygroup.SecurityGroup`
         """
         params = {}
         if groupnames:
@@ -669,8 +669,8 @@ class EC2Connection(AWSQueryConnection):
         :type description: string
         :param description: The description of the new security group
         
-        :rtype: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>}
-        :return: The newly created L{KeyPair<boto.ec2.keypair.KeyPair>}.
+        :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
         """
         params = {'GroupName':name, 'GroupDescription':description}
         group = self.get_object('CreateSecurityGroup', params, SecurityGroup)
@@ -805,7 +805,7 @@ class EC2Connection(AWSQueryConnection):
         Get all available regions for the EC2 service.
         
         :rtype: list
-        :return: A list of L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+        :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
         """
         return self.get_list('DescribeRegions', None, [('item', RegionInfo)])
 
@@ -833,7 +833,7 @@ class EC2Connection(AWSQueryConnection):
         :param product_description: Displays Reserved Instances with the specified product description.
         
         :rtype: list
-        :return: A list of L{ReservedInstancesOffering<boto.ec2.reservedinstance.ReservedInstancesOffering>}
+        :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`
         """
         params = {}
         if reserved_instances_id:
@@ -857,7 +857,7 @@ class EC2Connection(AWSQueryConnection):
                                       If not provided, all reserved instances will be returned.
         
         :rtype: list
-        :return: A list of L{ReservedInstance<boto.ec2.reservedinstance.ReservedInstance>}
+        :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
         """
         params = {}
         if reserved_instances_id:
@@ -881,7 +881,7 @@ class EC2Connection(AWSQueryConnection):
         :param instance_count: The number of Reserved Instances to purchase.
                                Default value is 1.
         
-        :rtype: L{ReservedInstance<boto.ec2.reservedinstance.ReservedInstance>}
+        :rtype: :class:`boto.ec2.reservedinstance.ReservedInstance`
         :return: The newly created Reserved Instance
         """
         params = {'ReservedInstancesOfferingId' : reserved_instances_offering_id,
@@ -900,7 +900,7 @@ class EC2Connection(AWSQueryConnection):
         :param instance_id: The instance id
         
         :rtype: list
-        :return: A list of L{InstanceInfo<boto.ec2.instanceinfo.InstanceInfo>}
+        :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
         params = {'InstanceId' : instance_id}
         return self.get_list('MonitorInstances', params, [('item', InstanceInfo)])
@@ -913,7 +913,7 @@ class EC2Connection(AWSQueryConnection):
         :param instance_id: The instance id
         
         :rtype: list
-        :return: A list of L{InstanceInfo<boto.ec2.instanceinfo.InstanceInfo>}
+        :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
         params = {'InstanceId' : instance_id}
         return self.get_list('UnmonitorInstances', params, [('item', InstanceInfo)])

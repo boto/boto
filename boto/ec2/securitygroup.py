@@ -121,8 +121,8 @@ class SecurityGroup(EC2Object):
         :param to_port: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
-        :type src_group: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>} or
-                         L{GroupOrCIDR<boto.ec2.securitygroup.GroupOrCIDR}
+        :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
+                         :class:`boto.ec2.securitygroup.GroupOrCIDR`
                          
         :rtype: bool
         :return: True if successful.
@@ -180,14 +180,14 @@ class SecurityGroup(EC2Object):
         and will not stay in sync automatically after the copy
         operation.
 
-        :type region: L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+        :type region: :class:`boto.ec2.regioninfo.RegionInfo`
         :param region: The region to which this security group will be copied.
 
         :type name: string
         :param name: The name of the copy.  If not supplied, the copy
                      will have the same name as this security group.
         
-        :rtype: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>}
+        :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The new security group.
         """
         if region.name == self.region:

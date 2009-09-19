@@ -94,10 +94,10 @@ class KeyPair(EC2Object):
         you will need to save the material associated with the
         new key pair (use the save method) to a local file.
 
-        :type region: L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+        :type region: :class:`boto.ec2.regioninfo.RegionInfo`
         :param region: The region to which this security group will be copied.
 
-        :rtype: L{KeyPair<boto.ec2.keypair.KeyPair>}
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: The new key pair
         """
         if region.name == self.region:

@@ -33,7 +33,7 @@ def regions(**kw_params):
     passed along to the EC2Connection object.
         
     :rtype: list
-    :return: A list of L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+    :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
     c = EC2Connection(**kw_params)
     return c.get_all_regions()

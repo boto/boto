@@ -64,7 +64,7 @@ class ELBConnection(AWSQueryConnection):
         :param load_balancer_names: An optional filter string to get only one ELB
 
         :rtype: list
-        :return: A list of L{LoadBalancer<boto.ec2.elb.loadbalancer.LoadBalancer>}
+        :return: A list of :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {}
         if load_balancer_name:
@@ -90,8 +90,8 @@ class ELBConnection(AWSQueryConnection):
                           integer values between 1 and 65535 and Protocol is a
                           string containing either 'TCP' or 'HTTP'.
 
-        :rtype: L{AccessPoint<boto.ec2.elb.loadbalancer.LoadBalancer}
-        :return: The newly created L{LoadBalancer<boto.ec2.elb.loadbalancer.LoadBalancer}
+        :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
+        :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {'LoadBalancerName' : name}
         for i in range(0, len(listeners)):
@@ -206,7 +206,7 @@ class ELBConnection(AWSQueryConnection):
                           to return status for.  If not provided,
                           the state of all instances will be returned.
 
-        :rtype: List of L{InstanceState<boto.ec2.elb.instancestate.InstanceState>}
+        :rtype: List of :class:`boto.ec2.elb.instancestate.InstanceState`
         :return: list of state info for instances in this Load Balancer.
 
         """
@@ -222,12 +222,12 @@ class ELBConnection(AWSQueryConnection):
         :type name: string
         :param name: The mnemonic name associated with the new access point
 
-        :type health_check: L{HealthCheck<boto.ec2.elb.healthcheck.HealthCheck>}
+        :type health_check: :class:`boto.ec2.elb.healthcheck.HealthCheck`
         :param health_check: A HealthCheck object populated with the desired
                              values.
 
-        :rtype: L{HealthCheck<boto.ec2.elb.healthcheck.HealthCheck}
-        :return: The updated L{HealthCheck<boto.ec2.elb.healthcheck.HealthCheck}
+        :rtype: :class:`boto.ec2.elb.healthcheck.HealthCheck`
+        :return: The updated :class:`boto.ec2.elb.healthcheck.HealthCheck`
         """
         params = {'LoadBalancerName' : name,
                   'HealthCheck.Timeout' : health_check.timeout,

@@ -177,7 +177,7 @@ class CloudWatchConnection(AWSQueryConnection):
                              DiskIO-ALL-write|DiskIO-ALL-read-bytes|DiskIO-ALL-write-bytes
         
         :rtype: list
-        :return: A list of L{Images<boto.ec2.image.Image>}
+        :return: A list of :class:`boto.ec2.image.Image`
         """
         params = {'Period' : period,
                   'MeasureName' : measure_name,
