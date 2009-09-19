@@ -12,5 +12,9 @@ API Reference
    contrib
    ec2
    fps
+   manage
+   mapreduce
+   mashups
+   mturk
    s3
    sqs
