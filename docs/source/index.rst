@@ -10,6 +10,7 @@ Contents:
    :maxdepth: 2
    
    ref/index
+   documentation
 
 
 Indices and tables

@@ -5,10 +5,6 @@ def deploy(**kwargs):
     if kwargs.get('remote_path', None):
         remote_path = kwargs['remote_path']
     
-    # Clean
-    local("rm -rf %s" % tmp_folder_name)
-    local("rm -f %s" % archive_name)
-    
     # Update
     local("svn up ../")
     rev = local("svn info | grep Revision")
@@ -17,6 +13,10 @@ def deploy(**kwargs):
     open('source/conf.py', 'w+b').write(conf.replace('release = "HEAD"', 'release = "%s"' % rev))
     tmp_folder_name = 'boto-docs.r%s' % rev
     archive_name = '%s.tar.gz' % tmp_folder_name
+    
+    # Clean
+    local("rm -rf %s" % tmp_folder_name)
+    local("rm -f %s" % archive_name)
     
     # Build
     local("make html")

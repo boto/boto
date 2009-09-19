@@ -5,7 +5,7 @@ EC2 Reference
 =============
 
 boto.ec2
------------
+--------
 
 .. automodule:: boto.ec2
    :members:   
