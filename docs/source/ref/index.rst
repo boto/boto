@@ -8,6 +8,7 @@ API Reference
    :maxdepth: 3
 
    boto
+   cloudfront
    ec2
    s3
    sqs
