@@ -11,5 +11,6 @@ API Reference
    cloudfront
    contrib
    ec2
+   fps
    s3
    sqs
