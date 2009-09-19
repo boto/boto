@@ -45,7 +45,7 @@ to a webserver that you ssh access to.
 
 __ http://fabfile.org
 
-To build and deploy:
+To build and deploy::
 
     cd docs/
     fab deploy:remote_path='/var/www/folder/whatever' --hosts=user@host
