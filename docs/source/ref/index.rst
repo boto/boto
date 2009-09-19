@@ -5,7 +5,9 @@ API Reference
 =============
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
-   s3
+   boto
    ec2
+   s3
+   sqs

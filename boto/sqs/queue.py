@@ -31,7 +31,7 @@ from boto.sqs.message import Message
 from boto.resultset import ResultSet
 
 class Queue:
-    
+
     def __init__(self, connection=None, url=None, message_class=Message):
         self.connection = connection
         self.url = url
@@ -140,7 +140,7 @@ class Queue:
 
         :type label: str or unicode
         :param label: A unique identification of the permission you are setting.
-                      Maximum of 80 characters [0-9a-zA-Z_-]
+                      Maximum of 80 characters ``[0-9a-zA-Z_-]``
                       Example, AliceSendMessage
 
         :type aws_account_id: str or unicode
@@ -151,7 +151,7 @@ class Queue:
 
         :type action_name: str or unicode
         :param action_name: The action.  Valid choices are:
-                            *|SendMessage|ReceiveMessage|DeleteMessage|
+                            \*|SendMessage|ReceiveMessage|DeleteMessage|
                             ChangeMessageVisibility|GetQueueAttributes
 
         :rtype: bool
@@ -353,8 +353,10 @@ class Queue:
     def save_to_s3(self, bucket):
         """
         Read all messages from the queue and persist them to S3.
-        Messages are stored in the S3 bucket using a naming scheme of:
+        Messages are stored in the S3 bucket using a naming scheme of::
+        
             <queue_id>/<message_id>
+        
         Messages are deleted from the queue after being saved to S3.
         Returns the number of messages saved.
         """

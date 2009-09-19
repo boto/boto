@@ -62,13 +62,13 @@ class SQSConnection(AWSQueryConnection):
                            visibility_timeout is different than the value of the existing queue
                            of that name.  This is still an expensive operation, though, and not
                            the preferred way to check for the existence of a queue.  See the
-                           L{lookup<boto.sqs.connection.SQSConnection.lookup>} method.
+                           :func:`boto.sqs.connection.SQSConnection.lookup` method.
 
         :type visibility_timeout: int
         :param visibility_timeout: The default visibility timeout for all messages written in the
                                    queue.  This can be overridden on a per-message.
 
-        :rtype: L{Queue<boto.sqs.queue.Queue>}
+        :rtype: :class:`boto.sqs.queue.Queue`
         :return: The newly created queue.
 
         """
@@ -113,7 +113,7 @@ class SQSConnection(AWSQueryConnection):
                          LastModifiedTimestamp,
                          Policy
                          
-        :rtype: L{Attributes<boto.sqs.attributes.Attributes>}
+        :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
         """
         params = {'AttributeName' : attribute}
@@ -169,7 +169,7 @@ class SQSConnection(AWSQueryConnection):
         Extends the read lock timeout for the specified message from the specified queue
         to the specified value.
 
-        :type queue: A L{Queue<boto.sqs.queue.Queue>} object
+        :type queue: A :class:`boto.sqs.queue.Queue` object
         :param queue: The Queue from which messages are read.
         
         :type receipt_handle: str
@@ -207,12 +207,12 @@ class SQSConnection(AWSQueryConnection):
         """
         Add a permission to a queue.
 
-        :type queue: L{Queue<boto.sqs.queue.Queue>}
+        :type queue: :class:`boto.sqs.queue.Queue`
         :param queue: The queue object
 
         :type label: str or unicode
         :param label: A unique identification of the permission you are setting.
-                      Maximum of 80 characters [0-9a-zA-Z_-]
+                      Maximum of 80 characters ``[0-9a-zA-Z_-]``
                       Example, AliceSendMessage
 
         :type aws_account_id: str or unicode
@@ -223,7 +223,7 @@ class SQSConnection(AWSQueryConnection):
 
         :type action_name: str or unicode
         :param action_name: The action.  Valid choices are:
-                            *|SendMessage|ReceiveMessage|DeleteMessage|
+                            \*|SendMessage|ReceiveMessage|DeleteMessage|
                             ChangeMessageVisibility|GetQueueAttributes
 
         :rtype: bool
@@ -239,7 +239,7 @@ class SQSConnection(AWSQueryConnection):
         """
         Remove a permission from a queue.
 
-        :type queue: L{Queue<boto.sqs.queue.Queue>}
+        :type queue: :class:`boto.sqs.queue.Queue`
         :param queue: The queue object
 
         :type label: str or unicode
