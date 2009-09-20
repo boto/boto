@@ -16,5 +16,6 @@ API Reference
    mapreduce
    mashups
    mturk
+   pyami
    s3
    sqs
