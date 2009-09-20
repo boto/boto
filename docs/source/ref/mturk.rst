@@ -18,10 +18,10 @@ boto.mturk.connection
    :members:   
    :undoc-members:
 
-boto.mturk.notifications
-------------------------
+boto.mturk.notification
+-----------------------
 
-.. automodule:: boto.mturk.notifications
+.. automodule:: boto.mturk.notification
    :members:   
    :undoc-members:
 
