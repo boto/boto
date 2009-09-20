@@ -18,4 +18,6 @@ API Reference
    mturk
    pyami
    s3
+   sdb
+   services
    sqs
