@@ -36,7 +36,7 @@ class Domain:
         return 'Domain:%s' % self.name
 
     def __iter__(self):
-        return self.select("SELECT * FROM `%s`" % self.name)
+        return iter(self.select("SELECT * FROM `%s`" % self.name))
 
     def startElement(self, name, attrs, connection):
         return None
