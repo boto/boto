@@ -1,5 +1,8 @@
+.. _ec2_tut:
+
+=======================================
 An Introduction to boto's EC2 interface
----------------------------------------
+=======================================
 
 This tutorial focuses on the boto interface to the Elastic Compute Cloud
 from Amazon Web Services.  This tutorial assumes that you have already
@@ -232,14 +235,9 @@ to the run method are:
 
 min_count - The minimum number of instances to launch.
 max_count - The maximum number of instances to launch.
-keypair - Keypair to launch instances with (either a KeyPair object or
-          a string with the name of the desired keypair.
-security_groups - A list of security groups to associate with the
-                  instance.  This can either be a list of SecurityGroup
-                  objects or a list of strings with the names of the
-                  desired security groups.
-user_data - Data to be made available to the launched instances.  This
-            should be base64 encoded according to the EC2 documentation.
+keypair - Keypair to launch instances with (either a KeyPair object or a string with the name of the desired keypair.
+security_groups - A list of security groups to associate with the instance.  This can either be a list of SecurityGroup objects or a list of strings with the names of the desired security groups.
+user_data - Data to be made available to the launched instances.  This should be base64 encoded according to the EC2 documentation.
 
 So, if I wanted to create two instances of the base image and launch them
 with my keypair, called gsg-keypair, I would to this:

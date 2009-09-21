@@ -41,8 +41,8 @@ class Config(boto.pyami.config.Config):
 
     def add_config(self, file_url):
         """Add a config file to this configuration
-        @param file_url: URL for the file to add, or a local path
-        @type file_url: str
+        :param file_url: URL for the file to add, or a local path
+        :type file_url: str
         """
         if not re.match("^([a-zA-Z0-9]*:\/\/)(.*)", file_url):
             if not file_url.startswith("/"):

@@ -1,5 +1,11 @@
+.. ref-cloudfront
+
+==========
+cloudfront
+==========
+
 A Crash Course in CloudFront in Boto
---------------------------------
+------------------------------------
 
 This new boto module provides an interface to Amazon's new Content Service, CloudFront.
 
@@ -16,7 +22,7 @@ Create an cloudfront connection:
 >>> from boto.cloudfront import CloudFrontConnection
 >>> c = CloudFrontConnection()
 
-Create a new Distribution:
+Create a new :class:`boto.cloudfront.distribution.Distribution`:
 
 >>> distro = c.create_distribution(origin='mybucket.s3.amazonaws.com', enabled=False, comment='My new Distribution')
 >>> d.domain_name
@@ -35,8 +41,8 @@ u'31b8d9cf-a623-4a28-b062-a91856fac6d0'
 False
 
 Note that a new caller reference is created automatically, using
-uuid.uuid4().  The Distribution, DistributionConfig and
-DistributionSummary objects are defined in the aws100.distribution
+uuid.uuid4().  The :class:`boto.cloudfront.distribution.Distribution`, :class:`boto.cloudfront.distribution.DistributionConfig` and
+:class:`boto.cloudfront.distribution.DistributionSummary` objects are defined in the :mod:`boto.cloudfront.distribution`
 module.
 
 To get a listing of all current distributions:
@@ -46,9 +52,9 @@ To get a listing of all current distributions:
 [<boto.cloudfront.distribution.DistributionSummary instance at 0xe8d4e0>,
  <boto.cloudfront.distribution.DistributionSummary instance at 0xe8d788>]
 
-This returns a list of DistributionSummary objects.  Note that paging
-is not yet supported!  To get a DistributionObject from a
-DistributionSummary object:
+This returns a list of :class:`boto.cloudfront.distribution.DistributionSummary` objects.  Note that paging
+is not yet supported!  To get a :class:`boto.cloudfront.distribution.DistributionObject` from a
+:class:`boto.cloudfront.distribution.DistributionSummary` object:
 
 >>> ds = rs[1]
 >>> distro = ds.get_distribution()
@@ -75,7 +81,28 @@ or
 The only attributes that can be updated for a Distribution are
 comment, enabled and cnames.
 
-To delete a Distribution:
+To delete a :class:`boto.cloudfront.distribution.Distribution`:
 
 >>> distro.delete()
 
+
+boto.cloudfront
+---------------
+
+.. automodule:: boto.cloudfront
+   :members:   
+   :undoc-members:
+
+boto.cloudfront.distribution
+----------------------------
+
+.. automodule:: boto.cloudfront.distribution
+   :members:   
+   :undoc-members:
+
+boto.cloudfront.exception
+-------------------------
+
+.. automodule:: boto.cloudfront.exception
+   :members:   
+   :undoc-members:

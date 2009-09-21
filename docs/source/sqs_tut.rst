@@ -1,5 +1,8 @@
+.. _sqs_tut:
+
+=======================================
 An Introduction to boto's SQS interface
----------------------------------------
+=======================================
 
 This tutorial focuses on the boto interface to the Simple Queue Service
 from Amazon Web Services.  This tutorial assumes that you have already

@@ -68,16 +68,16 @@ def load_db(domain, file):
     data in the file so if you want to do a full recovery and restore
     you need to call empty_db before calling this
 
-    @param domain: The SDB Domain object to load to
-    @param file: The File to load the DB from
+    :param domain: The SDB Domain object to load to
+    :param file: The File to load the DB from
     """
     domain.from_xml(file)
 
 def create_db(domain_name):
     """Create a new DB
 
-    @param domain: Name of the domain to create
-    @type domain: str
+    :param domain: Name of the domain to create
+    :type domain: str
     """
     sdb = boto.connect_sdb()
     return sdb.create_domain(domain_name)

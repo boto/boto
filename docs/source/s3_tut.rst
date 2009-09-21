@@ -1,5 +1,8 @@
+.. _s3_tut:
+
+======================================
 An Introduction to boto's S3 interface
----------------------------------------
+======================================
 
 This tutorial focuses on the boto interface to the Simple Storage Service
 from Amazon Web Services.  This tutorial assumes that you have already
@@ -34,7 +37,7 @@ In either case, conn will point to an S3Connection object which we will
 use throughout the remainder of this tutorial.
 
 Creating a Bucket
-----------------
+-----------------
 
 Once you have a connection established with S3, you will probably want to
 create a bucket.  A bucket is a container used to store key/value pairs
@@ -110,7 +113,7 @@ to and from S3 so you should be able to send and receive large files without
 any problem.
 
 Listing All Available Buckets
-----------------------------
+-----------------------------
 In addition to accessing specific buckets via the create_bucket method
 you can also get a list of all available buckets that you have created.
 
@@ -141,13 +144,10 @@ S3.  There are two ways to set the ACL for an object:
 
 2. Use a "canned" access control policy.  There are four canned policies
    defined:
-     a. private: Owner gets FULL_CONTROL.  No one else has any access rights.
-     b. public-read: Owners gets FULL_CONTROL and the anonymous principal
-        is granted READ access.
-     c. public-read-write: Owner gets FULL_CONTROL and the anonymous
-        principal is granted READ and WRITE access.
-     d. authenticated-read: Owner gets FULL_CONTROL and any principal
-        authenticated as a registered Amazon S3 user is granted READ access.
+   a. private: Owner gets FULL_CONTROL.  No one else has any access rights.
+   b. public-read: Owners gets FULL_CONTROL and the anonymous principal is granted READ access.
+   c. public-read-write: Owner gets FULL_CONTROL and the anonymous principal is granted READ and WRITE access.
+   d. authenticated-read: Owner gets FULL_CONTROL and any principal authenticated as a registered Amazon S3 user is granted READ access.
 
 Currently, boto only supports the second method using canned access control
 policies.  A future version may allow setting of arbitrary ACL's if there

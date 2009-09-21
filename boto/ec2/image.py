@@ -80,29 +80,29 @@ class Image(EC2Object):
         """
         Runs this instance.
         
-        @type min_count: int
-        @param min_count: The minimum number of instances to start
+        :type min_count: int
+        :param min_count: The minimum number of instances to start
         
-        @type max_count: int
-        @param max_count: The maximum number of instances to start
+        :type max_count: int
+        :param max_count: The maximum number of instances to start
         
-        @type key_name: string
-        @param key_name: The keypair to run this instance with.
+        :type key_name: string
+        :param key_name: The keypair to run this instance with.
         
-        @type security_groups: 
-        @param security_groups:
+        :type security_groups: 
+        :param security_groups:
         
-        @type user_data: 
-        @param user_data:
+        :type user_data: 
+        :param user_data:
         
-        @type addressing_type: 
-        @param daddressing_type:
+        :type addressing_type: 
+        :param daddressing_type:
         
-        @type instance_type: string
-        @param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+        :type instance_type: string
+        :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
         
-        @type placement: 
-        @param placement: 
+        :type placement: 
+        :param placement: 
         """
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,

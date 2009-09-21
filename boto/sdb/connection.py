@@ -117,8 +117,8 @@ class SDBConnection(AWSQueryConnection):
         """
         Returns the BoxUsage accumulated on this SDBConnection object.
 
-        @rtype: float
-        @return: The accumulated BoxUsage of all requests made on the connection.
+        :rtype: float
+        :return: The accumulated BoxUsage of all requests made on the connection.
         """
         return self.box_usage
 
@@ -140,11 +140,11 @@ class SDBConnection(AWSQueryConnection):
         """
         Lookup an existing SimpleDB domain
 
-        @type domain_name: string
-        @param domain_name: The name of the new domain
+        :type domain_name: string
+        :param domain_name: The name of the new domain
 
-        @rtype: L{Domain<boto.sdb.domain.Domain>} object or None
-        @return: The Domain object or None if the domain does not exist.
+        :rtype: :class:`boto.sdb.domain.Domain` object or None
+        :return: The Domain object or None if the domain does not exist.
         """
         try:
             domain = self.get_domain(domain_name, validate)
@@ -164,11 +164,11 @@ class SDBConnection(AWSQueryConnection):
         """
         Create a SimpleDB domain.
 
-        @type domain_name: string
-        @param domain_name: The name of the new domain
+        :type domain_name: string
+        :param domain_name: The name of the new domain
 
-        @rtype: L{Domain<boto.sdb.domain.Domain>} object
-        @return: The newly created domain
+        :rtype: :class:`boto.sdb.domain.Domain` object
+        :return: The newly created domain
         """
         params = {'DomainName':domain_name}
         d = self.get_object('CreateDomain', params, Domain)
@@ -185,11 +185,11 @@ class SDBConnection(AWSQueryConnection):
         """
         Delete a SimpleDB domain.
 
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         
         B{Note:} This will delete the domain and all items within the domain.
         """
@@ -201,11 +201,11 @@ class SDBConnection(AWSQueryConnection):
         """
         Get the Metadata for a SimpleDB domain.
 
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @rtype: L{DomainMetaData<boto.sdb.domain.DomainMetaData>} object
-        @return: The newly created domain metadata object
+        :rtype: :class:`boto.sdb.domain.DomainMetaData` object
+        :return: The newly created domain metadata object
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
@@ -217,22 +217,22 @@ class SDBConnection(AWSQueryConnection):
         """
         Store attributes for a given item in a domain.
 
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type item_name: string
-        @param item_name: The name of the item whose attributes are being stored.
+        :type item_name: string
+        :param item_name: The name of the item whose attributes are being stored.
 
-        @type attribute_names: dict or dict-like object
-        @param attribute_names: The name/value pairs to store as attributes
+        :type attribute_names: dict or dict-like object
+        :param attribute_names: The name/value pairs to store as attributes
 
-        @type replace: bool
-        @param replace: Whether the attribute values passed in will replace
+        :type replace: bool
+        :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
                         Defaults to True.
 
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
@@ -244,23 +244,23 @@ class SDBConnection(AWSQueryConnection):
         """
         Store attributes for multiple items in a domain.
 
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type items: dict or dict-like object
-        @param items: A dictionary-like object.  The keys of the dictionary are
+        :type items: dict or dict-like object
+        :param items: A dictionary-like object.  The keys of the dictionary are
                       the item names and the values are themselves dictionaries
                       of attribute names/values, exactly the same as the
                       attribute_names parameter of the scalar put_attributes
                       call.
 
-        @type replace: bool
-        @param replace: Whether the attribute values passed in will replace
+        :type replace: bool
+        :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
                         Defaults to True.
 
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name}
@@ -271,19 +271,19 @@ class SDBConnection(AWSQueryConnection):
         """
         Retrieve attributes for a given item in a domain.
 
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type item_name: string
-        @param item_name: The name of the item whose attributes are being retrieved.
+        :type item_name: string
+        :param item_name: The name of the item whose attributes are being retrieved.
 
-        @type attribute_names: string or list of strings
-        @param attribute_names: An attribute name or list of attribute names.  This
+        :type attribute_names: string or list of strings
+        :param attribute_names: An attribute name or list of attribute names.  This
                                 parameter is optional.  If not supplied, all attributes
                                 will be retrieved for the item.
 
-        @rtype: L{Item<boto.sdb.item.Item>}
-        @return: An Item mapping type containing the requested attribute name/values
+        :rtype: :class:`boto.sdb.item.Item`
+        :return: An Item mapping type containing the requested attribute name/values
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
@@ -307,21 +307,21 @@ class SDBConnection(AWSQueryConnection):
         """
         Delete attributes from a given item in a domain.
 
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type item_name: string
-        @param item_name: The name of the item whose attributes are being deleted.
+        :type item_name: string
+        :param item_name: The name of the item whose attributes are being deleted.
 
-        @type attributes: dict, list or L{Item<boto.sdb.item.Item>}
-        @param attributes: Either a list containing attribute names which will cause
+        :type attributes: dict, list or :class:`boto.sdb.item.Item`
+        :param attributes: Either a list containing attribute names which will cause
                            all values associated with that attribute name to be deleted or
                            a dict or Item containing the attribute names and keys and list
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
                            
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name,
@@ -337,19 +337,19 @@ class SDBConnection(AWSQueryConnection):
         """
         Returns a list of item names within domain_name that match the query.
         
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type query: string
-        @param query: The SimpleDB query to be performed.
+        :type query: string
+        :param query: The SimpleDB query to be performed.
 
-        @type max_items: int
-        @param max_items: The maximum number of items to return.  If not
+        :type max_items: int
+        :param max_items: The maximum number of items to return.  If not
                           supplied, the default is None which returns all
                           items matching the query.
 
-        @rtype: ResultSet
-        @return: An iterator containing the results.
+        :rtype: ResultSet
+        :return: An iterator containing the results.
         """
         warnings.warn('Query interface is deprecated', DeprecationWarning)
         domain, domain_name = self.get_domain_and_name(domain_or_name)
@@ -366,24 +366,24 @@ class SDBConnection(AWSQueryConnection):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type query: string
-        @param query: The SimpleDB query to be performed.
+        :type query: string
+        :param query: The SimpleDB query to be performed.
 
-        @type attr_names: list
-        @param attr_names: The name of the attributes to be returned.
+        :type attr_names: list
+        :param attr_names: The name of the attributes to be returned.
                            If no attributes are specified, all attributes
                            will be returned.
 
-        @type max_items: int
-        @param max_items: The maximum number of items to return.  If not
+        :type max_items: int
+        :param max_items: The maximum number of items to return.  If not
                           supplied, the default is None which returns all
                           items matching the query.
 
-        @rtype: ResultSet
-        @return: An iterator containing the results.
+        :rtype: ResultSet
+        :return: An iterator containing the results.
         """
         warnings.warn('Query interface is deprecated', DeprecationWarning)
         domain, domain_name = self.get_domain_and_name(domain_or_name)
@@ -406,14 +406,14 @@ class SDBConnection(AWSQueryConnection):
         object must be passed into this method so the Item objects returned can
         point to the appropriate domain.
         
-        @type domain_or_name: string or L{Domain<boto.sdb.domain.Domain>} object.
-        @param domain_or_name: Either the name of a domain or a Domain object
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
 
-        @type query: string
-        @param query: The SimpleDB query to be performed.
+        :type query: string
+        :param query: The SimpleDB query to be performed.
 
-        @rtype: ResultSet
-        @return: An iterator containing the results.
+        :rtype: ResultSet
+        :return: An iterator containing the results.
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'SelectExpression' : query}

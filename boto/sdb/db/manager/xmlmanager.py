@@ -309,7 +309,7 @@ class XMLManager(object):
         """
         Pull out the properties from this document
         Returns the class, the properties in a hash, and the id if provided as a tuple
-        @return: (cls, props, id)
+        :return: (cls, props, id)
         """
         obj_node = doc.getElementsByTagName('object')[0]
         if not cls:

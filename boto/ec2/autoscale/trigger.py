@@ -27,41 +27,8 @@ from boto.ec2.autoscale.request import Request
 class Trigger(object):
     """
     An auto scaling trigger.
-
-    @type name: str
-    @param name: The name for this trigger
-
-    @type autoscale_group: str
-    @param autoscale_group: The name of the AutoScalingGroup that will be
-                            associated with the trigger. The AutoScalingGroup
-                            that will be affected by the trigger when it is
-                            activated.
-
-    @type dimensions: list
-    @param dimensions: List of tuples, i.e.
-                        ('ImageId', 'i-13lasde') etc.
-
-    @type measure_name: str
-    @param measure_name: The measure name associated with the metric used by
-                         the trigger to determine when to activate, for
-                         example, CPU, network I/O, or disk I/O.
-
-    @type statistic: str
-    @param statistic: The particular statistic used by the trigger when
-                      fetching metric statistics to examine.
-
-    @type period: int
-    @param period: The period associated with the metric statistics in
-                   seconds. Valid Values: 60 or a multiple of 60.
-
-    @type unit:
-    @param unit
-
-    @type lower_threshold:
-    @param lower_threshold
-
-
     """
+
     def __init__(self, connection=None, name=None, autoscale_group=None,
                  dimensions=None, measure_name=None,
                  statistic=None, unit=None, period=60,
@@ -70,6 +37,41 @@ class Trigger(object):
                  upper_threshold=None,
                  upper_breach_scale_increment=None,
                  breach_duration=None):
+        """
+        Initialize an auto-scaling trigger object.
+        
+        :type name: str
+        :param name: The name for this trigger
+        
+        :type autoscale_group: str
+        :param autoscale_group: The name of the AutoScalingGroup that will be
+                                associated with the trigger. The AutoScalingGroup
+                                that will be affected by the trigger when it is
+                                activated.
+        
+        :type dimensions: list
+        :param dimensions: List of tuples, i.e.
+                            ('ImageId', 'i-13lasde') etc.
+        
+        :type measure_name: str
+        :param measure_name: The measure name associated with the metric used by
+                             the trigger to determine when to activate, for
+                             example, CPU, network I/O, or disk I/O.
+        
+        :type statistic: str
+        :param statistic: The particular statistic used by the trigger when
+                          fetching metric statistics to examine.
+        
+        :type period: int
+        :param period: The period associated with the metric statistics in
+                       seconds. Valid Values: 60 or a multiple of 60.
+        
+        :type unit:
+        :param unit
+        
+        :type lower_threshold:
+        :param lower_threshold
+        """
         self.name = name
         self.connection = connection
         self.dimensions = dimensions

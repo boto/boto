@@ -31,7 +31,7 @@ from boto.sqs.message import Message
 from boto.resultset import ResultSet
 
 class Queue:
-    
+
     def __init__(self, connection=None, url=None, message_class=Message):
         self.connection = connection
         self.url = url
@@ -71,8 +71,8 @@ class Queue:
         from the queue.  By default, the class boto.sqs.message.Message is used but
         this can be overriden with any class that behaves like a message.
 
-        @type message_class: Message-like class
-        @param message_class:  The new Message class
+        :type message_class: Message-like class
+        :param message_class:  The new Message class
         """
         self.message_class = message_class
 
@@ -81,16 +81,16 @@ class Queue:
         Retrieves attributes about this queue object and returns
         them in an Attribute instance (subclass of a Dictionary).
 
-        @type attributes: string
-        @param attributes: String containing one of:
+        :type attributes: string
+        :param attributes: String containing one of:
                            ApproximateNumberOfMessages,
                            ApproximateNumberOfMessagesNotVisible,
                            VisibilityTimeout,
                            CreatedTimestamp,
                            LastModifiedTimestamp,
                            Policy
-        @rtype: Attribute object
-        @return: An Attribute object which is a mapping type holding the
+        :rtype: Attribute object
+        :return: An Attribute object which is a mapping type holding the
                  requested name/value pairs
         """
         return self.connection.get_queue_attributes(self, attributes)
@@ -99,16 +99,16 @@ class Queue:
         """
         Set a new value for an attribute of the Queue.
         
-        @type attribute: String
-        @param attribute: The name of the attribute you want to set.  The
+        :type attribute: String
+        :param attribute: The name of the attribute you want to set.  The
                            only valid value at this time is: VisibilityTimeout
-        @type value: int
-        @param value: The new value for the attribute.
+        :type value: int
+        :param value: The new value for the attribute.
                       For VisibilityTimeout the value must be an
                       integer number of seconds from 0 to 86400.
 
-        @rtype: bool
-        @return: True if successful, otherwise False.
+        :rtype: bool
+        :return: True if successful, otherwise False.
         """
         return self.connection.set_queue_attribute(self, attribute, value)
 
@@ -116,8 +116,8 @@ class Queue:
         """
         Get the visibility timeout for the queue.
         
-        @rtype: int
-        @return: The number of seconds as an integer.
+        :rtype: int
+        :return: The number of seconds as an integer.
         """
         a = self.get_attributes('VisibilityTimeout')
         return int(a['VisibilityTimeout'])
@@ -126,8 +126,8 @@ class Queue:
         """
         Set the visibility timeout for the queue.
 
-        @type visibility_timeout: int
-        @param visibility_timeout: The desired timeout in seconds
+        :type visibility_timeout: int
+        :param visibility_timeout: The desired timeout in seconds
         """
         retval = self.set_attribute('VisibilityTimeout', visibility_timeout)
         if retval:
@@ -138,24 +138,24 @@ class Queue:
         """
         Add a permission to a queue.
 
-        @type label: str or unicode
-        @param label: A unique identification of the permission you are setting.
-                      Maximum of 80 characters [0-9a-zA-Z_-]
+        :type label: str or unicode
+        :param label: A unique identification of the permission you are setting.
+                      Maximum of 80 characters ``[0-9a-zA-Z_-]``
                       Example, AliceSendMessage
 
-        @type aws_account_id: str or unicode
-        @param principal_id: The AWS account number of the principal who will be given
+        :type aws_account_id: str or unicode
+        :param principal_id: The AWS account number of the principal who will be given
                              permission.  The principal must have an AWS account, but
                              does not need to be signed up for Amazon SQS. For information
                              about locating the AWS account identification.
 
-        @type action_name: str or unicode
-        @param action_name: The action.  Valid choices are:
-                            *|SendMessage|ReceiveMessage|DeleteMessage|
+        :type action_name: str or unicode
+        :param action_name: The action.  Valid choices are:
+                            \*|SendMessage|ReceiveMessage|DeleteMessage|
                             ChangeMessageVisibility|GetQueueAttributes
 
-        @rtype: bool
-        @return: True if successful, False otherwise.
+        :rtype: bool
+        :return: True if successful, False otherwise.
 
         """
         return self.connection.add_permission(self, label, aws_account_id, action_name)
@@ -164,11 +164,11 @@ class Queue:
         """
         Remove a permission from a queue.
 
-        @type label: str or unicode
-        @param label: The unique label associated with the permission being removed.
+        :type label: str or unicode
+        :param label: The unique label associated with the permission being removed.
 
-        @rtype: bool
-        @return: True if successful, False otherwise.
+        :rtype: bool
+        :return: True if successful, False otherwise.
         """
         return self.connection.remove_permission(self, label)
     
@@ -176,11 +176,11 @@ class Queue:
         """
         Read a single message from the queue.
         
-        @type visibility_timeout: int
-        @param visibility_timeout: The timeout for this message in seconds
+        :type visibility_timeout: int
+        :param visibility_timeout: The timeout for this message in seconds
 
-        @rtype: Message
-        @return: A single message or None if queue is empty
+        :rtype: Message
+        :return: A single message or None if queue is empty
         """
         rs = self.get_messages(1, visibility_timeout)
         if len(rs) == 1:
@@ -192,11 +192,11 @@ class Queue:
         """
         Add a single message to the queue.
 
-        @type message: Message
-        @param message: The message to be written to the queue
+        :type message: Message
+        :param message: The message to be written to the queue
 
-        @rtype: bool
-        @return: True if successful, False if not
+        :rtype: bool
+        :return: True if successful, False if not
         """
         new_msg = self.connection.send_message(self, message.get_body_encoded())
         message.id = new_msg.id
@@ -207,11 +207,11 @@ class Queue:
         """
         Create new message of appropriate class.
 
-        @type body: message body
-        @param body: The body of the newly created message (optional).
+        :type body: message body
+        :param body: The body of the newly created message (optional).
 
-        @rtype: Message
-        @return: A new Message object
+        :rtype: Message
+        :return: A new Message object
         """
         m = self.message_class(self, body)
         m.queue = self
@@ -223,22 +223,22 @@ class Queue:
         """
         Get a variable number of messages.
 
-        @type num_messages: int
-        @param num_messages: The maximum number of messages to read from the queue.
+        :type num_messages: int
+        :param num_messages: The maximum number of messages to read from the queue.
         
-        @type visibility_timeout: int
-        @param visibility_timeout: The VisibilityTimeout for the messages read.
+        :type visibility_timeout: int
+        :param visibility_timeout: The VisibilityTimeout for the messages read.
 
-        @type attributes: list of strings
-        @param attributes: A list of additional attributes that will be returned
+        :type attributes: list of strings
+        :param attributes: A list of additional attributes that will be returned
                            with the response.  Valid values:
                            All
                            SenderId
                            SentTimestamp
                            ApproximateReceiveCount
                            ApproximateFirstReceiveTimestamp
-        @rtype: list
-        @return: A list of messages.
+        :rtype: list
+        :return: A list of messages.
         """
         return self.connection.receive_message(self, number_messages=num_messages,
                                                visibility_timeout=visibility_timeout,
@@ -248,11 +248,11 @@ class Queue:
         """
         Delete a message from the queue.
 
-        @type message: Message
-        @param message: The message object to delete.
+        :type message: Message
+        :param message: The message object to delete.
 
-        @rtype: bool
-        @return: True if successful, False otherwise
+        :rtype: bool
+        :return: True if successful, False otherwise
         """
         return self.connection.delete_message(self, message)
 
@@ -353,8 +353,10 @@ class Queue:
     def save_to_s3(self, bucket):
         """
         Read all messages from the queue and persist them to S3.
-        Messages are stored in the S3 bucket using a naming scheme of:
+        Messages are stored in the S3 bucket using a naming scheme of::
+        
             <queue_id>/<message_id>
+        
         Messages are deleted from the queue after being saved to S3.
         Returns the number of messages saved.
         """

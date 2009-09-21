@@ -57,30 +57,30 @@ class AutoScalingGroup(object):
         creation request is completed, the AutoScalingGroup is ready to be
         used in other calls.
 
-        @type name: str
-        @param name: Name of autoscaling group.
+        :type name: str
+        :param name: Name of autoscaling group.
 
-        @type availability_zone: str
-        @param availability_zone: An availability zone.
+        :type availability_zone: str
+        :param availability_zone: An availability zone.
 
-        @type launch_config: str
-        @param launch_config: Name of launch configuration name.
+        :type launch_config: str
+        :param launch_config: Name of launch configuration name.
 
-        @type load_balancers: list
-        @param load_balancers: List of load balancers.
+        :type load_balancers: list
+        :param load_balancers: List of load balancers.
 
-        @type minsize: int
-        @param minsize: Minimum size of group
+        :type minsize: int
+        :param minsize: Minimum size of group
 
-        @type maxsize: int
-        @param maxsize: Maximum size of group
+        :type maxsize: int
+        :param maxsize: Maximum size of group
 
-        @type cooldown: int
-        @param cooldown: Amount of time after a Scaling Activity completes
+        :type cooldown: int
+        :param cooldown: Amount of time after a Scaling Activity completes
                          before any further scaling activities can start.
 
-        @rtype: tuple
-        @return: Updated healthcheck for the instances.
+        :rtype: tuple
+        :return: Updated healthcheck for the instances.
         """
         self.name = group_name
         self.connection = connection

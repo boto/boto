@@ -23,7 +23,8 @@ import boto
 def get_manager(cls):
     """
     Returns the appropriate Manager class for a given Model class.  It does this by
-    looking in the boto config for a section like this:
+    looking in the boto config for a section like this::
+    
         [DB]
         db_type = SimpleDB
         db_user = <aws access key id>
@@ -35,6 +36,7 @@ def get_manager(cls):
         db_passwd = <another aws secret access key>
         db_name = basic_domain
         db_port = 1111
+    
     The values in the DB section are "generic values" that will be used if nothing more
     specific is found.  You can also create a section for a specific Model class that
     gives the db info for that class.  In the example above, TestBasic is a Model subclass.

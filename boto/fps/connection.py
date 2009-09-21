@@ -48,7 +48,9 @@ class FPSConnection(AWSQueryConnection):
 		"""
 		InstallPaymentInstruction
 		instruction: The PaymentInstruction to send, for example: 
+		
 			MyRole=='Caller' orSay 'Roles do not match';
+		
 		token_type: Defaults to "Unrestricted"
 		transaction_id: Defaults to a new ID
 		"""

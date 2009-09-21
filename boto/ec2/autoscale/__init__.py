@@ -98,8 +98,8 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Creates a new Launch Configuration.
 
-        @type launch_config: boto.ec2.autoscale.launchconfig.LaunchConfiguration
-        @param launch_config: LaunchConfiguraiton object.
+        :type launch_config: boto.ec2.autoscale.launchconfig.LaunchConfiguration
+        :param launch_config: LaunchConfiguraiton object.
 
         """
         params = {
@@ -171,11 +171,11 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Get all activities for the given autoscaling group.
 
-        @type autoscale_group: str or AutoScalingGroup object
-        @param autoscale_group: The auto scaling group to get activities on.
+        :type autoscale_group: str or AutoScalingGroup object
+        :param autoscale_group: The auto scaling group to get activities on.
 
         @max_records: int
-        @param max_records: Maximum amount of activities to return.
+        :param max_records: Maximum amount of activities to return.
         """
         name = autoscale_group
         if isinstance(autoscale_group, AutoScalingGroup):

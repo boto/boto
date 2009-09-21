@@ -1,0 +1,54 @@
+.. ref-s3:
+
+===
+S3
+===
+
+boto.s3.acl
+-----------
+
+.. automodule:: boto.s3.acl
+   :members:   
+   :undoc-members:
+
+boto.s3.bucket
+--------------
+
+.. automodule:: boto.s3.bucket
+   :members:   
+   :undoc-members:
+
+boto.s3.bucketlistresultset
+---------------------------
+
+.. automodule:: boto.s3.bucketlistresultset
+   :members:   
+   :undoc-members:
+
+boto.s3.connection
+------------------
+
+.. automodule:: boto.s3.connection
+   :members:
+   :undoc-members:
+
+boto.s3.key
+-----------
+
+.. automodule:: boto.s3.key
+   :members:   
+   :undoc-members:
+
+boto.s3.prefix
+--------------
+
+.. automodule:: boto.s3.prefix
+   :members:   
+   :undoc-members:
+
+boto.s3.user
+------------
+
+.. automodule:: boto.s3.user
+   :members:   
+   :undoc-members:

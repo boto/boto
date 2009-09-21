@@ -60,11 +60,11 @@ class ELBConnection(AWSQueryConnection):
         """
         Retrieve all load balancers associated with your account.
 
-        @type load_balancer_names: str
-        @param load_balancer_names: An optional filter string to get only one ELB
+        :type load_balancer_names: str
+        :param load_balancer_names: An optional filter string to get only one ELB
 
-        @rtype: list
-        @return: A list of L{LoadBalancer<boto.ec2.elb.loadbalancer.LoadBalancer>}
+        :rtype: list
+        :return: A list of :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {}
         if load_balancer_name:
@@ -77,21 +77,21 @@ class ELBConnection(AWSQueryConnection):
         """
         Create a new load balancer for your account.
 
-        @type name: string
-        @param name: The mnemonic name associated with the new load balancer
+        :type name: string
+        :param name: The mnemonic name associated with the new load balancer
 
-        @type zones: List of strings
-        @param zones: The names of the availability zone(s) to add.
+        :type zones: List of strings
+        :param zones: The names of the availability zone(s) to add.
 
-        @type listeners: List of tuples
-        @param listeners: Each tuple contains three values.
+        :type listeners: List of tuples
+        :param listeners: Each tuple contains three values.
                           (LoadBalancerPortNumber, InstancePortNumber, Protocol)
                           where LoadBalancerPortNumber and InstancePortNumber are
                           integer values between 1 and 65535 and Protocol is a
                           string containing either 'TCP' or 'HTTP'.
 
-        @rtype: L{AccessPoint<boto.ec2.elb.loadbalancer.LoadBalancer}
-        @return: The newly created L{LoadBalancer<boto.ec2.elb.loadbalancer.LoadBalancer}
+        :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
+        :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {'LoadBalancerName' : name}
         for i in range(0, len(listeners)):
@@ -109,8 +109,8 @@ class ELBConnection(AWSQueryConnection):
         """
         Delete a Load Balancer from your account.
 
-        @type name: string
-        @param name: The name of the Load Balancer to delete
+        :type name: string
+        :param name: The name of the Load Balancer to delete
         """
         params = {'LoadBalancerName': name}
         return self.get_status('DeleteLoadBalancer', params)
@@ -122,14 +122,14 @@ class ELBConnection(AWSQueryConnection):
         Adding zones that are already registered with the Load Balancer
         has no effect.
 
-        @type load_balancer_name: string
-        @param load_balancer_name: The name of the Load Balancer
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
 
-        @type zones: List of strings
-        @param zones: The name of the zone(s) to add.
+        :type zones: List of strings
+        :param zones: The name of the zone(s) to add.
 
-        @rtype: List of strings
-        @return: An updated list of zones for this Load Balancer.
+        :rtype: List of strings
+        :return: An updated list of zones for this Load Balancer.
 
         """
         params = {'LoadBalancerName' : load_balancer_name}
@@ -144,14 +144,14 @@ class ELBConnection(AWSQueryConnection):
         has no effect.
         You cannot remove all zones from an Load Balancer.
 
-        @type load_balancer_name: string
-        @param load_balancer_name: The name of the Load Balancer
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
 
-        @type zones: List of strings
-        @param zones: The name of the zone(s) to remove.
+        :type zones: List of strings
+        :param zones: The name of the zone(s) to remove.
 
-        @rtype: List of strings
-        @return: An updated list of zones for this Load Balancer.
+        :rtype: List of strings
+        :return: An updated list of zones for this Load Balancer.
 
         """
         params = {'LoadBalancerName' : load_balancer_name}
@@ -162,14 +162,14 @@ class ELBConnection(AWSQueryConnection):
         """
         Add new Instances to an existing Load Balancer.
 
-        @type load_balancer_name: string
-        @param load_balancer_name: The name of the Load Balancer
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
 
-        @type instances: List of strings
-        @param instances: The instance ID's of the EC2 instances to add.
+        :type instances: List of strings
+        :param instances: The instance ID's of the EC2 instances to add.
 
-        @rtype: List of strings
-        @return: An updated list of instances for this Load Balancer.
+        :rtype: List of strings
+        :return: An updated list of instances for this Load Balancer.
 
         """
         params = {'LoadBalancerName' : load_balancer_name}
@@ -180,14 +180,14 @@ class ELBConnection(AWSQueryConnection):
         """
         Remove Instances from an existing Load Balancer.
 
-        @type load_balancer_name: string
-        @param load_balancer_name: The name of the Load Balancer
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
 
-        @type instances: List of strings
-        @param instances: The instance ID's of the EC2 instances to remove.
+        :type instances: List of strings
+        :param instances: The instance ID's of the EC2 instances to remove.
 
-        @rtype: List of strings
-        @return: An updated list of instances for this Load Balancer.
+        :rtype: List of strings
+        :return: An updated list of instances for this Load Balancer.
 
         """
         params = {'LoadBalancerName' : load_balancer_name}
@@ -198,16 +198,16 @@ class ELBConnection(AWSQueryConnection):
         """
         Get current state of all Instances registered to an Load Balancer.
 
-        @type load_balancer_name: string
-        @param load_balancer_name: The name of the Load Balancer
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
 
-        @type instances: List of strings
-        @param instances: The instance ID's of the EC2 instances
+        :type instances: List of strings
+        :param instances: The instance ID's of the EC2 instances
                           to return status for.  If not provided,
                           the state of all instances will be returned.
 
-        @rtype: List of L{InstanceState<boto.ec2.elb.instancestate.InstanceState>}
-        @return: list of state info for instances in this Load Balancer.
+        :rtype: List of :class:`boto.ec2.elb.instancestate.InstanceState`
+        :return: list of state info for instances in this Load Balancer.
 
         """
         params = {'LoadBalancerName' : load_balancer_name}
@@ -219,15 +219,15 @@ class ELBConnection(AWSQueryConnection):
         """
         Define a health check for the EndPoints.
 
-        @type name: string
-        @param name: The mnemonic name associated with the new access point
+        :type name: string
+        :param name: The mnemonic name associated with the new access point
 
-        @type health_check: L{HealthCheck<boto.ec2.elb.healthcheck.HealthCheck>}
-        @param health_check: A HealthCheck object populated with the desired
+        :type health_check: :class:`boto.ec2.elb.healthcheck.HealthCheck`
+        :param health_check: A HealthCheck object populated with the desired
                              values.
 
-        @rtype: L{HealthCheck<boto.ec2.elb.healthcheck.HealthCheck}
-        @return: The updated L{HealthCheck<boto.ec2.elb.healthcheck.HealthCheck}
+        :rtype: :class:`boto.ec2.elb.healthcheck.HealthCheck`
+        :return: The updated :class:`boto.ec2.elb.healthcheck.HealthCheck`
         """
         params = {'LoadBalancerName' : name,
                   'HealthCheck.Timeout' : health_check.timeout,

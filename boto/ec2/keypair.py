@@ -52,8 +52,8 @@ class KeyPair(EC2Object):
         """
         Delete the KeyPair.
         
-        @rtype: bool
-        @return: True if successful, otherwise False.
+        :rtype: bool
+        :return: True if successful, otherwise False.
         """
         return self.connection.delete_key_pair(self.name)
 
@@ -62,8 +62,8 @@ class KeyPair(EC2Object):
         Save the material (the unencrypted PEM encoded RSA private key)
         of a newly created KeyPair to a local file.
         
-        @type directory_path: string
-        @param directory_path: The fully qualified path to the directory
+        :type directory_path: string
+        :param directory_path: The fully qualified path to the directory
                                in which the keypair will be saved.  The
                                keypair file will be named using the name
                                of the keypair as the base name and .pem
@@ -72,8 +72,8 @@ class KeyPair(EC2Object):
                                exception will be raised and the old file
                                will not be overwritten.
         
-        @rtype: bool
-        @return: True if successful.
+        :rtype: bool
+        :return: True if successful.
         """
         if self.material:
             file_path = os.path.join(directory_path, '%s.pem' % self.name)
@@ -94,11 +94,11 @@ class KeyPair(EC2Object):
         you will need to save the material associated with the
         new key pair (use the save method) to a local file.
 
-        @type region: L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
-        @param region: The region to which this security group will be copied.
+        :type region: :class:`boto.ec2.regioninfo.RegionInfo`
+        :param region: The region to which this security group will be copied.
 
-        @rtype: L{KeyPair<boto.ec2.keypair.KeyPair>}
-        @return: The new key pair
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
+        :return: The new key pair
         """
         if region.name == self.region:
             raise BotoClientError('Unable to copy to the same Region')

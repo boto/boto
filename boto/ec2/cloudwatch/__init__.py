@@ -172,12 +172,12 @@ class CloudWatchConnection(AWSQueryConnection):
         """
         Get time-series data for one or more statistics of a given metric.
         
-        @type measure_name: string
-        @param measure_name: CPUUtilization|NetworkIO-in|NetworkIO-out|DiskIO-ALL-read|
+        :type measure_name: string
+        :param measure_name: CPUUtilization|NetworkIO-in|NetworkIO-out|DiskIO-ALL-read|
                              DiskIO-ALL-write|DiskIO-ALL-read-bytes|DiskIO-ALL-write-bytes
         
-        @rtype: list
-        @return: A list of L{Images<boto.ec2.image.Image>}
+        :rtype: list
+        :return: A list of :class:`boto.ec2.image.Image`
         """
         params = {'Period' : period,
                   'MeasureName' : measure_name,

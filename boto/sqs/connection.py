@@ -55,21 +55,21 @@ class SQSConnection(AWSQueryConnection):
         """
         Create an SQS Queue.
 
-        @type queue_name: str or unicode
-        @param queue_name: The name of the new queue.  Names are scoped to an account and need to
+        :type queue_name: str or unicode
+        :param queue_name: The name of the new queue.  Names are scoped to an account and need to
                            be unique within that account.  Calling this method on an existing
                            queue name will not return an error from SQS unless the value for
                            visibility_timeout is different than the value of the existing queue
                            of that name.  This is still an expensive operation, though, and not
                            the preferred way to check for the existence of a queue.  See the
-                           L{lookup<boto.sqs.connection.SQSConnection.lookup>} method.
+                           :func:`boto.sqs.connection.SQSConnection.lookup` method.
 
-        @type visibility_timeout: int
-        @param visibility_timeout: The default visibility timeout for all messages written in the
+        :type visibility_timeout: int
+        :param visibility_timeout: The default visibility timeout for all messages written in the
                                    queue.  This can be overridden on a per-message.
 
-        @rtype: L{Queue<boto.sqs.queue.Queue>}
-        @return: The newly created queue.
+        :rtype: :class:`boto.sqs.queue.Queue`
+        :return: The newly created queue.
 
         """
         params = {'QueueName': queue_name}
@@ -81,18 +81,18 @@ class SQSConnection(AWSQueryConnection):
         """
         Delete an SQS Queue.
 
-        @type queue: A Queue object
-        @param queue: The SQS queue to be deleted
+        :type queue: A Queue object
+        :param queue: The SQS queue to be deleted
         
-        @type force_deletion: Boolean
-        @param force_deletion: Normally, SQS will not delete a queue that contains messages.
+        :type force_deletion: Boolean
+        :param force_deletion: Normally, SQS will not delete a queue that contains messages.
                                However, if the force_deletion argument is True, the
                                queue will be deleted regardless of whether there are messages in
                                the queue or not.  USE WITH CAUTION.  This will delete all
                                messages in the queue as well.
                                
-        @rtype: bool
-        @return: True if the command succeeded, False otherwise
+        :rtype: bool
+        :return: True if the command succeeded, False otherwise
         """
         return self.get_status('DeleteQueue', None, queue.id)
 
@@ -100,11 +100,11 @@ class SQSConnection(AWSQueryConnection):
         """
         Gets one or all attributes of a Queue
         
-        @type queue: A Queue object
-        @param queue: The SQS queue to be deleted
+        :type queue: A Queue object
+        :param queue: The SQS queue to be deleted
 
-        @type attribute: str
-        @type attribute: The specific attribute requested.  If not supplied, the default
+        :type attribute: str
+        :type attribute: The specific attribute requested.  If not supplied, the default
                          is to return all attributes.  Valid attributes are:
                          ApproximateNumberOfMessages,
                          ApproximateNumberOfMessagesNotVisible,
@@ -113,8 +113,8 @@ class SQSConnection(AWSQueryConnection):
                          LastModifiedTimestamp,
                          Policy
                          
-        @rtype: L{Attributes<boto.sqs.attributes.Attributes>}
-        @return: An Attributes object containing request value(s).
+        :rtype: :class:`boto.sqs.attributes.Attributes`
+        :return: An Attributes object containing request value(s).
         """
         params = {'AttributeName' : attribute}
         return self.get_object('GetQueueAttributes', params, Attributes, queue.id)
@@ -128,18 +128,18 @@ class SQSConnection(AWSQueryConnection):
         """
         Read messages from an SQS Queue.
 
-        @type queue: A Queue object
-        @param queue: The Queue from which messages are read.
+        :type queue: A Queue object
+        :param queue: The Queue from which messages are read.
         
-        @type number_messages: int
-        @param number_messages: The maximum number of messages to read (default=1)
+        :type number_messages: int
+        :param number_messages: The maximum number of messages to read (default=1)
         
-        @type visibility_timeout: int
-        @param visibility_timeout: The number of seconds the message should remain invisible
+        :type visibility_timeout: int
+        :param visibility_timeout: The number of seconds the message should remain invisible
                                    to other queue readers (default=None which uses the Queues default)
 
-        @type attributes: list of strings
-        @param attributes: A list of additional attributes that will be returned
+        :type attributes: list of strings
+        :param attributes: A list of additional attributes that will be returned
                            with the response.  Valid values:
                            All
                            SenderId
@@ -169,15 +169,15 @@ class SQSConnection(AWSQueryConnection):
         Extends the read lock timeout for the specified message from the specified queue
         to the specified value.
 
-        @type queue: A L{Queue<boto.sqs.queue.Queue>} object
-        @param queue: The Queue from which messages are read.
+        :type queue: A :class:`boto.sqs.queue.Queue` object
+        :param queue: The Queue from which messages are read.
         
-        @type receipt_handle: str
-        @param queue: The receipt handle associated with the message whose
+        :type receipt_handle: str
+        :param queue: The receipt handle associated with the message whose
                       visibility timeout will be changed.
         
-        @type visibility_timeout: int
-        @param visibility_timeout: The new value of the message's visibility timeout
+        :type visibility_timeout: int
+        :param visibility_timeout: The new value of the message's visibility timeout
                                    in seconds.
         """
         params = {'ReceiptHandle' : receipt_handle,
@@ -207,27 +207,27 @@ class SQSConnection(AWSQueryConnection):
         """
         Add a permission to a queue.
 
-        @type queue: L{Queue<boto.sqs.queue.Queue>}
-        @param queue: The queue object
+        :type queue: :class:`boto.sqs.queue.Queue`
+        :param queue: The queue object
 
-        @type label: str or unicode
-        @param label: A unique identification of the permission you are setting.
-                      Maximum of 80 characters [0-9a-zA-Z_-]
+        :type label: str or unicode
+        :param label: A unique identification of the permission you are setting.
+                      Maximum of 80 characters ``[0-9a-zA-Z_-]``
                       Example, AliceSendMessage
 
-        @type aws_account_id: str or unicode
-        @param principal_id: The AWS account number of the principal who will be given
+        :type aws_account_id: str or unicode
+        :param principal_id: The AWS account number of the principal who will be given
                              permission.  The principal must have an AWS account, but
                              does not need to be signed up for Amazon SQS. For information
                              about locating the AWS account identification.
 
-        @type action_name: str or unicode
-        @param action_name: The action.  Valid choices are:
-                            *|SendMessage|ReceiveMessage|DeleteMessage|
+        :type action_name: str or unicode
+        :param action_name: The action.  Valid choices are:
+                            \*|SendMessage|ReceiveMessage|DeleteMessage|
                             ChangeMessageVisibility|GetQueueAttributes
 
-        @rtype: bool
-        @return: True if successful, False otherwise.
+        :rtype: bool
+        :return: True if successful, False otherwise.
 
         """
         params = {'Label': label,
@@ -239,14 +239,14 @@ class SQSConnection(AWSQueryConnection):
         """
         Remove a permission from a queue.
 
-        @type queue: L{Queue<boto.sqs.queue.Queue>}
-        @param queue: The queue object
+        :type queue: :class:`boto.sqs.queue.Queue`
+        :param queue: The queue object
 
-        @type label: str or unicode
-        @param label: The unique label associated with the permission being removed.
+        :type label: str or unicode
+        :param label: The unique label associated with the permission being removed.
 
-        @rtype: bool
-        @return: True if successful, False otherwise.
+        :rtype: bool
+        :return: True if successful, False otherwise.
         """
         params = {'Label': label}
         return self.get_status('RemovePermission', params, queue.id)

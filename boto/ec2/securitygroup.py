@@ -108,24 +108,24 @@ class SecurityGroup(EC2Object):
         and cidr_ip.  In other words, either you are authorizing another
         group or you are authorizing some ip-based rule.
         
-        @type ip_protocol: string
-        @param ip_protocol: Either tcp | udp | icmp
+        :type ip_protocol: string
+        :param ip_protocol: Either tcp | udp | icmp
 
-        @type from_port: int
-        @param from_port: The beginning port number you are enabling
+        :type from_port: int
+        :param from_port: The beginning port number you are enabling
 
-        @type to_port: int
-        @param to_port: The ending port number you are enabling
+        :type to_port: int
+        :param to_port: The ending port number you are enabling
 
-        @type to_port: string
-        @param to_port: The CIDR block you are providing access to.
+        :type to_port: string
+        :param to_port: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
-        @type src_group: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>} or
-                         L{GroupOrCIDR<boto.ec2.securitygroup.GroupOrCIDR}
+        :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
+                         :class:`boto.ec2.securitygroup.GroupOrCIDR`
                          
-        @rtype: bool
-        @return: True if successful.
+        :rtype: bool
+        :return: True if successful.
         """
         if src_group:
             from_port = None
@@ -180,15 +180,15 @@ class SecurityGroup(EC2Object):
         and will not stay in sync automatically after the copy
         operation.
 
-        @type region: L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
-        @param region: The region to which this security group will be copied.
+        :type region: :class:`boto.ec2.regioninfo.RegionInfo`
+        :param region: The region to which this security group will be copied.
 
-        @type name: string
-        @param name: The name of the copy.  If not supplied, the copy
+        :type name: string
+        :param name: The name of the copy.  If not supplied, the copy
                      will have the same name as this security group.
         
-        @rtype: L{SecurityGroup<boto.ec2.securitygroup.SecurityGroup>}
-        @return: The new security group.
+        :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
+        :return: The new security group.
         """
         if region.name == self.region:
             raise BotoClientError('Unable to copy to the same Region')

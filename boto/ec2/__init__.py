@@ -32,8 +32,8 @@ def regions(**kw_params):
     object's constructor as keyword arguments and they will be
     passed along to the EC2Connection object.
         
-    @rtype: list
-    @return: A list of L{RegionInfo<boto.ec2.regioninfo.RegionInfo>}
+    :rtype: list
+    :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
     c = EC2Connection(**kw_params)
     return c.get_all_regions()

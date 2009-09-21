@@ -82,11 +82,11 @@ class Key(object):
         """
         Open this key for reading
         
-        @type headers: dict
-        @param headers: Headers to pass in the web request
+        :type headers: dict
+        :param headers: Headers to pass in the web request
         
-        @type query_args: string
-        @param query_args: Arguments to pass in the query string (ie, 'torrent')
+        :type query_args: string
+        :param query_args: Arguments to pass in the query string (ie, 'torrent')
         """
         if self.resp == None:
             self.mode = 'r'
@@ -113,8 +113,8 @@ class Key(object):
         Open this key for writing. 
         Not yet implemented
         
-        @type headers: dict
-        @param headers: Headers to pass in the write request
+        :type headers: dict
+        :param headers: Headers to pass in the write request
         """
         raise BotoClientError('Not Implemented')
 
@@ -166,21 +166,21 @@ class Key(object):
         """
         Copy this Key to another bucket.
 
-        @type dst_bucket: string
-        @param dst_bucket: The name of the destination bucket
+        :type dst_bucket: string
+        :param dst_bucket: The name of the destination bucket
 
-        @type dst_key: string
-        @param dst_key: The name of the destinatino key
+        :type dst_key: string
+        :param dst_key: The name of the destinatino key
         
-        @type metadata: dict
-        @param metadata: Metadata to be associated with new key.
+        :type metadata: dict
+        :param metadata: Metadata to be associated with new key.
                          If metadata is supplied, it will replace the
                          metadata of the source key being copied.
                          If no metadata is supplied, the source key's
                          metadata will be copied to the new key.
 
-        @rtype: L{Key<boto.s3.key.Key>} or subclass
-        @returns: An instance of the newly created key object
+        :rtype: :class:`boto.s3.key.Key` or subclass
+        :returns: An instance of the newly created key object
         """
         dst_bucket = self.bucket.connection.lookup(dst_bucket)
         return dst_bucket.copy_key(dst_key, self.bucket.name, self.name, metadata)
@@ -212,8 +212,8 @@ class Key(object):
         """
         Returns True if the key exists
         
-        @rtype: bool
-        @return: Whether the key exists on S3
+        :rtype: bool
+        :return: Whether the key exists on S3
         """
         return bool(self.bucket.lookup(self.name))
 
@@ -260,20 +260,20 @@ class Key(object):
         """
         Generate a URL to access this key.
         
-        @type expires_in: int
-        @param expires_in: How long the url is valid for, in seconds
+        :type expires_in: int
+        :param expires_in: How long the url is valid for, in seconds
         
-        @type method: string
-        @param method: The method to use for retrieving the file (default is GET)
+        :type method: string
+        :param method: The method to use for retrieving the file (default is GET)
         
-        @type headers: dict
-        @param headers: Any headers to pass along in the request
+        :type headers: dict
+        :param headers: Any headers to pass along in the request
         
-        @type query_auth: bool
-        @param query_auth: 
+        :type query_auth: bool
+        :param query_auth: 
         
-        @rtype: string
-        @return: The URL to access the key
+        :rtype: string
+        :return: The URL to access the key
         """
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
@@ -283,21 +283,21 @@ class Key(object):
         """
         Upload a file to a key into a bucket on S3.
         
-        @type fp: file
-        @param fp: The file pointer to upload
+        :type fp: file
+        :param fp: The file pointer to upload
         
-        @type headers: dict
-        @param headers: The headers to pass along with the PUT request
+        :type headers: dict
+        :param headers: The headers to pass along with the PUT request
         
-        @type cb: function
-        @param cb: a callback function that will be called to report
+        :type cb: function
+        :param cb: a callback function that will be called to report
                     progress on the upload.  The callback should accept two integer
                     parameters, the first representing the number of bytes that have
                     been successfully transmitted to S3 and the second representing
                     the total number of bytes that need to be transmitted.
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
@@ -368,12 +368,12 @@ class Key(object):
 
     def compute_md5(self, fp):
         """
-        @type fp: file
-        @param fp: File pointer to the file to MD5 hash.  The file pointer will be
+        :type fp: file
+        :param fp: File pointer to the file to MD5 hash.  The file pointer will be
                    reset to the beginning of the file before the method returns.
         
-        @rtype: tuple
-        @return: A tuple containing the hex digest version of the MD5 hash
+        :rtype: tuple
+        :return: A tuple containing the hex digest version of the MD5 hash
                  as the first element and the base64 encoded version of the
                  plain digest as the second element.
         """
@@ -398,39 +398,39 @@ class Key(object):
         key in S3 and the contents of the file pointed to by 'fp' as the
         contents.
         
-        @type fp: file
-        @param fp: the file whose contents to upload
+        :type fp: file
+        :param fp: the file whose contents to upload
         
-        @type headers: dict
-        @param headers: additional HTTP headers that will be sent with the PUT request.
+        :type headers: dict
+        :param headers: additional HTTP headers that will be sent with the PUT request.
 
-        @type replace: bool
-        @param replace: If this parameter is False, the method
+        :type replace: bool
+        :param replace: If this parameter is False, the method
                         will first check to see if an object exists in the
                         bucket with the same key.  If it does, it won't
                         overwrite it.  The default value is True which will
                         overwrite the object.
                     
-        @type cb: function
-        @param cb: a callback function that will be called to report
+        :type cb: function
+        :param cb: a callback function that will be called to report
                     progress on the upload.  The callback should accept two integer
                     parameters, the first representing the number of bytes that have
                     been successfully transmitted to S3 and the second representing
                     the total number of bytes that need to be transmitted.
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.
 
-        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
-        @param policy: A canned ACL policy that will be applied to the new key in S3.
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key in S3.
              
-        @type md5: A tuple containing the hexdigest version of the MD5 checksum of the
+        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
                    file as the first element and the Base64-encoded version of the plain
                    checksum as the second element.  This is the same format returned by
                    the compute_md5 method.
-        @param md5: If you need to compute the MD5 for any reason prior to upload,
+        :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
@@ -462,35 +462,35 @@ class Key(object):
         See set_contents_from_file method for details about the
         parameters.
         
-        @type filename: string
-        @param filename: The name of the file that you want to put onto S3
+        :type filename: string
+        :param filename: The name of the file that you want to put onto S3
         
-        @type headers: dict
-        @param headers: Additional headers to pass along with the request to AWS.
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to AWS.
         
-        @type replace: bool
-        @param replace: If True, replaces the contents of the file if it already exists.
+        :type replace: bool
+        :param replace: If True, replaces the contents of the file if it already exists.
         
-        @type cb: function
-        @param cb: (optional) a callback function that will be called to report
+        :type cb: function
+        :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.        
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
-        @param policy: A canned ACL policy that will be applied to the new key in S3.
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key in S3.
              
-        @type md5: A tuple containing the hexdigest version of the MD5 checksum of the
+        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
                    file as the first element and the Base64-encoded version of the plain
                    checksum as the second element.  This is the same format returned by
                    the compute_md5 method.
-        @param md5: If you need to compute the MD5 for any reason prior to upload,
+        :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
@@ -506,32 +506,32 @@ class Key(object):
         See set_contents_from_file method for details about the
         parameters.
         
-        @type headers: dict
-        @param headers: Additional headers to pass along with the request to AWS.
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to AWS.
         
-        @type replace: bool
-        @param replace: If True, replaces the contents of the file if it already exists.
+        :type replace: bool
+        :param replace: If True, replaces the contents of the file if it already exists.
         
-        @type cb: function
-        @param cb: (optional) a callback function that will be called to report
+        :type cb: function
+        :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.        
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        @type policy: L{CannedACLString<boto.s3.acl.CannedACLStrings>}
-        @param policy: A canned ACL policy that will be applied to the new key in S3.
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key in S3.
              
-        @type md5: A tuple containing the hexdigest version of the MD5 checksum of the
+        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
                    file as the first element and the Base64-encoded version of the plain
                    checksum as the second element.  This is the same format returned by
                    the compute_md5 method.
-        @param md5: If you need to compute the MD5 for any reason prior to upload,
+        :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
@@ -543,27 +543,27 @@ class Key(object):
         """
         Retrieves a file from an S3 Key
         
-        @type fp: file
-        @param fp: File pointer to put the data into
+        :type fp: file
+        :param fp: File pointer to put the data into
         
-        @type headers: string
-        @param: headers to send when retrieving the files
+        :type headers: string
+        :param: headers to send when retrieving the files
         
-        @type cb: function
-        @param cb: (optional) a callback function that will be called to report
+        :type cb: function
+        :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
         
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        @type torrent: bool
-        @param torrent: Flag for whether to get a torrent for the file
+        :type torrent: bool
+        :param torrent: Flag for whether to get a torrent for the file
         """
         if cb:
             if num_cb > 2:
@@ -595,17 +595,17 @@ class Key(object):
         """
         Get a torrent file (see to get_file)
         
-        @type fp: file
-        @param fp: The file pointer of where to put the torrent
+        :type fp: file
+        :param fp: The file pointer of where to put the torrent
         
-        @type headers: dict
-        @param headers: Headers to be passed
+        :type headers: dict
+        :param headers: Headers to be passed
         
-        @type cb: function
-        @param cb: Callback function to call on retrieved data
+        :type cb: function
+        :param cb: Callback function to call on retrieved data
         
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
@@ -618,27 +618,27 @@ class Key(object):
         key in S3.  Write the contents of the object to the file pointed
         to by 'fp'.
         
-        @type fp: File -like object
-        @param fp:
+        :type fp: File -like object
+        :param fp:
         
-        @type headers: dict
-        @param headers: additional HTTP headers that will be sent with the GET request.
+        :type headers: dict
+        :param headers: additional HTTP headers that will be sent with the GET request.
         
-        @type cb: function
-        @param cb: (optional) a callback function that will be called to report
+        :type cb: function
+        :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
              
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        @type torrent: bool
-        @param torrent: If True, returns the contents of a torrent file as a string.
+        :type torrent: bool
+        :param torrent: If True, returns the contents of a torrent file as a string.
 
         """
         if self.bucket != None:
@@ -651,27 +651,27 @@ class Key(object):
         See get_contents_to_file method for details about the
         parameters.
         
-        @type filename: string
-        @param filename: The filename of where to put the file contents
+        :type filename: string
+        :param filename: The filename of where to put the file contents
         
-        @type headers: dict
-        @param headers: Any additional headers to send in the request
+        :type headers: dict
+        :param headers: Any additional headers to send in the request
         
-        @type cb: function
-        @param cb: (optional) a callback function that will be called to report
+        :type cb: function
+        :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
              
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        @type torrent: bool
-        @param torrent: If True, returns the contents of a torrent file as a string.
+        :type torrent: bool
+        :param torrent: If True, returns the contents of a torrent file as a string.
         
         """
         fp = open(filename, 'wb')
@@ -692,32 +692,32 @@ class Key(object):
         See get_contents_to_file method for details about the
         parameters.
         
-        @type headers: dict
-        @param headers: Any additional headers to send in the request
+        :type headers: dict
+        :param headers: Any additional headers to send in the request
         
-        @type cb: function
-        @param cb: (optional) a callback function that will be called to report
+        :type cb: function
+        :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
              parameters, the first representing the number of bytes that have
              been successfully transmitted from S3 and the second representing
              the total number of bytes that need to be transmitted.
 
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
                     
-        @type cb: int
-        @param num_cb: (optional) If a callback is specified with the cb parameter
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the cb parameter
              this parameter determines the granularity of the callback by defining
              the maximum number of times the callback will be called during the file transfer.  
              
-        @type torrent: bool
-        @param torrent: If True, returns the contents of a torrent file as a string.
+        :type torrent: bool
+        :param torrent: If True, returns the contents of a torrent file as a string.
         
-        @rtype: string
-        @returns: The contents of the file as a string
+        :rtype: string
+        :returns: The contents of the file as a string
         """
         fp = StringIO.StringIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
@@ -729,14 +729,14 @@ class Key(object):
         This method retrieves the current ACL, creates a new grant based on the parameters
         passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
         
-        @type permission: string
-        @param permission: The permission being granted.  Should be one of:
+        :type permission: string
+        :param permission: The permission being granted.  Should be one of:
                             READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
                             See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
                             for more details on permissions.
         
-        @type email_address: string
-        @param email_address: The email address associated with the AWS account your are granting
+        :type email_address: string
+        :param email_address: The email address associated with the AWS account your are granting
                                 the permission to.
         """
         policy = self.get_acl()
@@ -749,14 +749,14 @@ class Key(object):
         This method retrieves the current ACL, creates a new grant based on the parameters
         passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
         
-        @type permission: string
-        @param permission: The permission being granted.  Should be one of:
+        :type permission: string
+        :param permission: The permission being granted.  Should be one of:
                             READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
                             See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
                             for more details on permissions.
         
-        @type user_id: string
-        @param user_id: The canonical user id associated with the AWS account your are granting
+        :type user_id: string
+        :param user_id: The canonical user id associated with the AWS account your are granting
                         the permission to.
         """
         policy = self.get_acl()

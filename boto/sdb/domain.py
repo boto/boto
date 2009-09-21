@@ -56,19 +56,19 @@ class Domain:
         """
         Store attributes for a given item.
 
-        @type item_name: string
-        @param item_name: The name of the item whose attributes are being stored.
+        :type item_name: string
+        :param item_name: The name of the item whose attributes are being stored.
 
-        @type attribute_names: dict or dict-like object
-        @param attribute_names: The name/value pairs to store as attributes
+        :type attribute_names: dict or dict-like object
+        :param attribute_names: The name/value pairs to store as attributes
 
-        @type replace: bool
-        @param replace: Whether the attribute values passed in will replace
+        :type replace: bool
+        :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
                         Defaults to True.
 
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         """
         return self.connection.put_attributes(self, item_name, attributes, replace)
 
@@ -76,20 +76,20 @@ class Domain:
         """
         Store attributes for multiple items.
 
-        @type items: dict or dict-like object
-        @param items: A dictionary-like object.  The keys of the dictionary are
+        :type items: dict or dict-like object
+        :param items: A dictionary-like object.  The keys of the dictionary are
                       the item names and the values are themselves dictionaries
                       of attribute names/values, exactly the same as the
                       attribute_names parameter of the scalar put_attributes
                       call.
 
-        @type replace: bool
-        @param replace: Whether the attribute values passed in will replace
+        :type replace: bool
+        :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
                         Defaults to True.
 
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         """
         return self.connection.batch_put_attributes(self, items, replace)
 
@@ -97,16 +97,16 @@ class Domain:
         """
         Retrieve attributes for a given item.
 
-        @type item_name: string
-        @param item_name: The name of the item whose attributes are being retrieved.
+        :type item_name: string
+        :param item_name: The name of the item whose attributes are being retrieved.
 
-        @type attribute_names: string or list of strings
-        @param attribute_names: An attribute name or list of attribute names.  This
+        :type attribute_names: string or list of strings
+        :param attribute_names: An attribute name or list of attribute names.  This
                                 parameter is optional.  If not supplied, all attributes
                                 will be retrieved for the item.
 
-        @rtype: L{Item<boto.sdb.item.Item>}
-        @return: An Item mapping type containing the requested attribute name/values
+        :rtype: :class:`boto.sdb.item.Item`
+        :return: An Item mapping type containing the requested attribute name/values
         """
         return self.connection.get_attributes(self, item_name, attribute_name, item)
 
@@ -114,18 +114,18 @@ class Domain:
         """
         Delete attributes from a given item.
 
-        @type item_name: string
-        @param item_name: The name of the item whose attributes are being deleted.
+        :type item_name: string
+        :param item_name: The name of the item whose attributes are being deleted.
 
-        @type attributes: dict, list or L{Item<boto.sdb.item.Item>}
-        @param attributes: Either a list containing attribute names which will cause
+        :type attributes: dict, list or :class:`boto.sdb.item.Item`
+        :param attributes: Either a list containing attribute names which will cause
                            all values associated with that attribute name to be deleted or
                            a dict or Item containing the attribute names and keys and list
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
                            
-        @rtype: bool
-        @return: True if successful
+        :rtype: bool
+        :return: True if successful
         """
         return self.connection.delete_attributes(self, item_name, attributes)
 
@@ -133,21 +133,21 @@ class Domain:
         """
         Returns a list of items within domain that match the query.
         
-        @type query: string
-        @param query: The SimpleDB query to be performed.
+        :type query: string
+        :param query: The SimpleDB query to be performed.
 
-        @type max_items: int
-        @param max_items: The maximum number of items to return.  If not
+        :type max_items: int
+        :param max_items: The maximum number of items to return.  If not
                           supplied, the default is None which returns all
                           items matching the query.
 
-        @type attr_names: list
-        @param attr_names: Either None, meaning return all attributes
+        :type attr_names: list
+        :param attr_names: Either None, meaning return all attributes
                            or a list of attribute names which means to return
                            only those attributes.
 
-        @rtype: iter
-        @return: An iterator containing the results.  This is actually a generator
+        :rtype: iter
+        :return: An iterator containing the results.  This is actually a generator
                  function that will iterate across all search results, not just the
                  first page.
         """
@@ -159,14 +159,14 @@ class Domain:
         The query must be expressed in using the SELECT style syntax rather than the
         original SimpleDB query language.
 
-        @type query: string
-        @param query: The SimpleDB query to be performed.
+        :type query: string
+        :param query: The SimpleDB query to be performed.
 
-        @type max_items: int
-        @param max_items: The maximum number of items to return.
+        :type max_items: int
+        :param max_items: The maximum number of items to return.
 
-        @rtype: iter
-        @return: An iterator containing the results.  This is actually a generator
+        :rtype: iter
+        :return: An iterator containing the results.  This is actually a generator
                  function that will iterate across all search results, not just the
                  first page.
         """
@@ -188,11 +188,11 @@ class Domain:
 
     def to_xml(self, f=None):
         """Get this domain as an XML DOM Document
-        @param f: Optional File to dump directly to
-        @type f: File or Stream
+        :param f: Optional File to dump directly to
+        :type f: File or Stream
 
-        @return: File object where the XML has been dumped to
-        @rtype: file
+        :return: File object where the XML has been dumped to
+        :rtype: file
         """
         if not f:
             from tempfile import TemporaryFile

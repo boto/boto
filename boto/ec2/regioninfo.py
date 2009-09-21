@@ -51,8 +51,8 @@ class RegionInfo(object):
         object's constructor as keyword arguments and they will be
         passed along to the EC2Connection object.
         
-        @rtype: L{EC2Connection<boto.ec2.connection.EC2Connection}
-        @return: The connection to this regions endpoint
+        :rtype: :class:`boto.ec2.connection.EC2Connection`
+        :return: The connection to this regions endpoint
         """
         from boto.ec2.connection import EC2Connection
         return EC2Connection(region=self, **kw_params)

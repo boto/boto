@@ -27,17 +27,21 @@ following section in the boto config passed to the new instance.
 You also need to install dateutil by listing python-dateutil
 in the list of packages to be installed in the Pyami seciont
 of your boto config file.
+
 If there is already a device mounted at the specified mount point,
 the installer assumes that it is the ephemeral drive and unmounts
 it, remounts it as /tmp and chmods it to 777.
 
-[EBS]
-volume_id = <the id of the EBS volume, should look like vol-xxxxxxxx>
-logical_volume_name = <the name of the logical volume that contaings 
-    a reference to the physical volume to be mounted. If this parameter
-    is supplied, it overrides the volume_id setting.>
-device = <the linux device the EBS volume should be mounted on>
-mount_point = <directory to mount device, defaults to /ebs>
+Config file section::
+
+    [EBS]
+    volume_id = <the id of the EBS volume, should look like vol-xxxxxxxx>
+    logical_volume_name = <the name of the logical volume that contaings 
+        a reference to the physical volume to be mounted. If this parameter
+        is supplied, it overrides the volume_id setting.>
+    device = <the linux device the EBS volume should be mounted on>
+    mount_point = <directory to mount device, defaults to /ebs>
+
 """
 import boto
 from boto.manage.volume import Volume

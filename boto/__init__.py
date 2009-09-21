@@ -59,126 +59,126 @@ def set_file_logger(name, filepath, level=logging.INFO, format_string=None):
 
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{SQSConnection<boto.sqs.connection.SQSConnection>}
-    @return: A connection to Amazon's SQS
+    :rtype: :class:`boto.sqs.connection.SQSConnection`
+    :return: A connection to Amazon's SQS
     """
     from boto.sqs.connection import SQSConnection
     return SQSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_s3(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{S3Connection<boto.s3.connection.S3Connection>}
-    @return: A connection to Amazon's S3
+    :rtype: :class:`boto.s3.connection.S3Connection`
+    :return: A connection to Amazon's S3
     """
     from boto.s3.connection import S3Connection
     return S3Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{EC2Connection<boto.ec2.connection.EC2Connection>}
-    @return: A connection to Amazon's EC2
+    :rtype: :class:`boto.ec2.connection.EC2Connection`
+    :return: A connection to Amazon's EC2
     """
     from boto.ec2.connection import EC2Connection
     return EC2Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_elb(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{ELBConnection<boto.ec2.elb.ELBConnection>}
-    @return: A connection to Amazon's Load Balancing Service
+    :rtype: :class:`boto.ec2.elb.ELBConnection`
+    :return: A connection to Amazon's Load Balancing Service
     """
     from boto.ec2.elb import ELBConnection
     return ELBConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_autoscale(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{AutoScaleConnnection<boto.ec2.autoscale.AutoScaleConnection>}
-    @return: A connection to Amazon's Auto Scaling Service
+    :rtype: :class:`boto.ec2.autoscale.AutoScaleConnection`
+    :return: A connection to Amazon's Auto Scaling Service
     """
     from boto.ec2.autoscale import AutoScaleConnection
     return AutoScaleConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_cloudwatch(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{CloudWatchConnection<boto.ec2.cloudwatch.CloudWatchConnection>}
-    @return: A connection to Amazon's EC2 Monitoring service
+    :rtype: :class:`boto.ec2.cloudwatch.CloudWatchConnection`
+    :return: A connection to Amazon's EC2 Monitoring service
     """
     from boto.ec2.cloudwatch import CloudWatchConnection
     return CloudWatchConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_sdb(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{SDBConnection<boto.sdb.connection.SDBConnection>}
-    @return: A connection to Amazon's SDB
+    :rtype: :class:`boto.sdb.connection.SDBConnection`
+    :return: A connection to Amazon's SDB
     """
     from boto.sdb.connection import SDBConnection
     return SDBConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_fps(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{FPSConnection<boto.fps.connection.FPSConnection>}
-    @return: A connection to FPS
+    :rtype: :class:`boto.fps.connection.FPSConnection`
+    :return: A connection to FPS
     """
     from boto.fps.connection import FPSConnection
     return FPSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_cloudfront(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
-    @type aws_access_key_id: string
-    @param aws_access_key_id: Your AWS Access Key ID
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
 
-    @type aws_secret_access_key: string
-    @param aws_secret_access_key: Your AWS Secret Access Key
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
 
-    @rtype: L{FPSConnection<boto.fps.connection.FPSConnection>}
-    @return: A connection to FPS
+    :rtype: :class:`boto.fps.connection.FPSConnection`
+    :return: A connection to FPS
     """
     from boto.cloudfront import CloudFrontConnection
     return CloudFrontConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
