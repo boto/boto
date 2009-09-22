@@ -397,7 +397,7 @@ class SDBConnection(AWSQueryConnection):
             self.build_list_params(params, attr_names, 'AttributeName')
         return self.get_list('QueryWithAttributes', params, [('Item', Item)], parent=domain)
 
-    def select(self, domain_or_name, query='', next_token=None):
+    def select(self, domain_or_name, query='', next_token=None, item_cls=Item):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -419,7 +419,7 @@ class SDBConnection(AWSQueryConnection):
         params = {'SelectExpression' : query}
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('Select', params, [('Item', Item)], parent=domain)
+        return self.get_list('Select', params, [('Item', item_cls)], parent=domain)
 
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """

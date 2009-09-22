@@ -65,17 +65,21 @@ def select_lister(domain, query='', max_items=None):
         
 class SelectResultSet(object):
 
-    def __init__(self, domain=None, query='', max_items=None, next_token=None):
+    def __init__(self, domain=None, query='', max_items=None,
+                 next_token=None, item_cls=None):
         self.domain = domain
         self.query = query
         self.max_items = max_items
         self.next_token = next_token
+        self.item_cls = item_cls
 
     def __iter__(self):
         more_results = True
         num_results = 0
         while more_results:
-            rs = self.domain.connection.select(self.domain, self.query, next_token=self.next_token)
+            rs = self.domain.connection.select(self.domain, self.query,
+                                               next_token=self.next_token,
+                                               item_cls=self.item_cls)
             for item in rs:
                 yield item
                 num_results += 1

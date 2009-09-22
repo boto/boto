@@ -153,7 +153,7 @@ class Domain:
         """
         return iter(QueryResultSet(self, query, max_items, attr_names))
     
-    def select(self, query='', next_token=None, max_items=None):
+    def select(self, query='', next_token=None, max_items=None, item_cls=Item):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -170,7 +170,8 @@ class Domain:
                  function that will iterate across all search results, not just the
                  first page.
         """
-        return SelectResultSet(self, query, max_items=max_items, next_token=next_token)
+        return SelectResultSet(self, query, max_items=max_items,
+                               next_token=next_token, item_cls=item_cls)
     
     def get_item(self, item_name):
         item = self.get_attributes(item_name)
