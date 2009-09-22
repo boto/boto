@@ -370,7 +370,7 @@ class SDBManager(object):
             else:
                 if op == 'is' and value == None:
                     query_parts.append("`%s` is null" % name)
-                if op == 'is not' and value == None:
+                elif op == 'is not' and value == None:
                     query_parts.append("`%s` is not null" % name)
                 else:
                     val = self.encode_value(property, value)
