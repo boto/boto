@@ -35,6 +35,7 @@ class Item(dict):
         self.request_id = None
         self.encoding = None
         self.in_attribute = False
+        self.converter = self.domain.connection.converter
 
     def startElement(self, name, attrs, connection):
         if name == 'Attribute':
@@ -61,9 +62,15 @@ class Item(dict):
             if self.has_key(self.last_key):
                 if not isinstance(self[self.last_key], list):
                     self[self.last_key] = [self[self.last_key]]
-                self[self.last_key].append(self.decode_value(value))
+                value = self.decode_value(value)
+                if self.converter:
+                    value = self.converter.decode(value)
+                self[self.last_key].append(value)
             else:
-                self[self.last_key] = self.decode_value(value)
+                value = self.decode_value(value)
+                if self.converter:
+                    value = self.converter.decode(value)
+                self[self.last_key] = value
         elif name == 'BoxUsage':
             try:
                 connection.box_usage += float(value)

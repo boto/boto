@@ -55,11 +55,12 @@ class SDBConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='sdb.amazonaws.com', debug=0,
-                 https_connection_factory=None, path='/'):
+                 https_connection_factory=None, path='/', converter=None):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory, path)
         self.box_usage = 0.0
+        self.converter = converter
 
     def build_name_value_list(self, params, attributes, replace=False):
         keys = attributes.keys()
@@ -70,12 +71,16 @@ class SDBConnection(AWSQueryConnection):
             if isinstance(value, list):
                 for v in value:
                     params['Attribute.%d.Name'%i] = key
+                    if self.converter:
+                        v = self.converter.encode(v)
                     params['Attribute.%d.Value'%i] = v
                     if replace:
                         params['Attribute.%d.Replace'%i] = 'true'
                     i += 1
             else:
                 params['Attribute.%d.Name'%i] = key
+                if self.converter:
+                    value = self.converter.encode(value)
                 params['Attribute.%d.Value'%i] = value
                 if replace:
                     params['Attribute.%d.Replace'%i] = 'true'
@@ -93,6 +98,8 @@ class SDBConnection(AWSQueryConnection):
                 value = item[attr_name]
                 if isinstance(value, list):
                     for v in value:
+                        if self.converter:
+                            v = self.converter.encode(v)
                         params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
                         params['Item.%d.Attribute.%d.Value' % (i,j)] = v
                         if replace:
@@ -100,6 +107,8 @@ class SDBConnection(AWSQueryConnection):
                         j += 1
                 else:
                     params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
+                    if self.converter:
+                        value = self.converter.encode(value)
                     params['Item.%d.Attribute.%d.Value' % (i,j)] = value
                     if replace:
                         params['Item.%d.Attribute.%d.Replace' % (i,j)] = 'true'
