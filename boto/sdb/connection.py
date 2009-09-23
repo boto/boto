@@ -61,6 +61,10 @@ class SDBConnection(AWSQueryConnection):
                                     host, debug, https_connection_factory, path)
         self.box_usage = 0.0
         self.converter = converter
+        self.item_cls = Item
+
+    def set_item_cls(self, cls):
+        self.item_cls = cls
 
     def build_name_value_list(self, params, attributes, replace=False):
         keys = attributes.keys()
@@ -305,7 +309,7 @@ class SDBConnection(AWSQueryConnection):
         body = response.read()
         if response.status == 200:
             if item == None:
-                item = Item(domain, item_name)
+                item = self.item_cls(domain, item_name)
             h = handler.XmlHandler(item, self)
             xml.sax.parseString(body, h)
             return item
@@ -338,7 +342,7 @@ class SDBConnection(AWSQueryConnection):
         if attr_names:
             if isinstance(attr_names, list):
                 self.build_name_list(params, attr_names)
-            elif isinstance(attr_names, dict) or isinstance(attr_names, Item):
+            elif isinstance(attr_names, dict) or isinstance(attr_names, self.item_cls):
                 self.build_name_value_list(params, attr_names)
         return self.get_status('DeleteAttributes', params)
         
@@ -404,9 +408,9 @@ class SDBConnection(AWSQueryConnection):
             params['NextToken'] = next_token
         if attr_names:
             self.build_list_params(params, attr_names, 'AttributeName')
-        return self.get_list('QueryWithAttributes', params, [('Item', Item)], parent=domain)
+        return self.get_list('QueryWithAttributes', params, [('Item', self.item_cls)], parent=domain)
 
-    def select(self, domain_or_name, query='', next_token=None, item_cls=Item):
+    def select(self, domain_or_name, query='', next_token=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -428,7 +432,7 @@ class SDBConnection(AWSQueryConnection):
         params = {'SelectExpression' : query}
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('Select', params, [('Item', item_cls)], parent=domain)
+        return self.get_list('Select', params, [('Item', self.item_cls)], parent=domain)
 
     def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
         """

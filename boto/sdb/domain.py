@@ -23,7 +23,6 @@
 Represents an SDB Domain
 """
 from boto.sdb.queryresultset import QueryResultSet, SelectResultSet
-from boto.sdb.item import Item
 
 class Domain:
     
@@ -153,7 +152,7 @@ class Domain:
         """
         return iter(QueryResultSet(self, query, max_items, attr_names))
     
-    def select(self, query='', next_token=None, max_items=None, item_cls=Item):
+    def select(self, query='', next_token=None, max_items=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -171,7 +170,7 @@ class Domain:
                  first page.
         """
         return SelectResultSet(self, query, max_items=max_items,
-                               next_token=next_token, item_cls=item_cls)
+                               next_token=next_token)
     
     def get_item(self, item_name):
         item = self.get_attributes(item_name)
@@ -182,7 +181,7 @@ class Domain:
             return None
 
     def new_item(self, item_name):
-        return Item(self, item_name)
+        return self.connection.item_cls(self, item_name)
 
     def delete_item(self, item):
         self.delete_attributes(item.name)
