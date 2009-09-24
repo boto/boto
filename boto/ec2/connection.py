@@ -36,6 +36,7 @@ from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
 from boto.ec2.volume import Volume
 from boto.ec2.snapshot import Snapshot
+from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
 from boto.ec2.regioninfo import RegionInfo
@@ -45,7 +46,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-04-04')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-08-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'us-east-1.ec2.amazonaws.com')
@@ -554,7 +555,7 @@ class EC2Connection(AWSQueryConnection):
 
     # Snapshot methods
 
-    def get_all_snapshots(self, snapshot_ids=None):
+    def get_all_snapshots(self, snapshot_ids=None, owner=None, restorable_by=None):
         """
         Get all EBS Snapshots associated with the current credentials.
 
@@ -563,22 +564,116 @@ class EC2Connection(AWSQueryConnection):
                            only the Snapshots associated with these snapshot ids
                            will be returned.
 
+        :type owner: str
+        :param owner: If present, only the snapshots owned by the specified user
+                      will be returned.  Valid values are:
+                      self | amazon | AWS Account ID
+
+        :type restorable_by: str
+        :param restorable_by: If present, only the snapshots that are restorable
+                              by the specified account id will be returned.
+
         :rtype: list of L{boto.ec2.snapshot.Snapshot}
         :return: The requested Snapshot objects
         """
         params = {}
         if snapshot_ids:
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
+        if owner:
+            params['Owner'] = owner
+        if restorable_by:
+            params['RestorableBy'] = restorable_by
         return self.get_list('DescribeSnapshots', params, [('item', Snapshot)])
         
-    def create_snapshot(self, volume_id):
+    def create_snapshot(self, volume_id, description=None):
+        """
+        Create a snapshot of an existing EBS Volume.
+
+        :type volume_id: str
+        :param volume_id: The ID of the volume to be snapshot'ed
+
+        :type description: str
+        :param description: A description of the snapshot.  Limited to 256 characters.
+        """
         params = {'VolumeId' : volume_id}
+        if description:
+            params['Description'] = description[0:255]
         return self.get_object('CreateSnapshot', params, Snapshot)
         
     def delete_snapshot(self, snapshot_id):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params)
 
+    def get_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission'):
+        """
+        Get information about an attribute of a snapshot.  Only one attribute can be
+        specified per call.
+
+        :type snapshot_id: str
+        :param snapshot_id: The ID of the snapshot.
+
+        :type attribute: str
+        :param attribute: The requested attribute.  Valid values are:
+                          createVolumePermission
+
+        :rtype: list of L{boto.ec2.snapshotattribute.SnapshotAttribute}
+        :return: The requested Snapshot attribute
+        """
+        params = {'Attribute' : attribute}
+        if snapshot_id:
+            params['SnapshotId'] = snapshot_id
+        return self.get_object('DescribeSnapshotAttribute', params, SnapshotAttribute)
+        
+    def modify_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission',
+                                  operation='add', user_ids=None, groups=None):
+        """
+        Changes an attribute of an image.
+        
+        :type snapshot_id: string
+        :param snapshot_id: The snapshot id you wish to change
+        
+        :type attribute: string
+        :param attribute: The attribute you wish to change.  Valid values are:
+                          createVolumePermission
+        
+        :type operation: string
+        :param operation: Either add or remove (this is required for changing
+                          snapshot ermissions)
+        
+        :type user_ids: list
+        :param user_ids: The Amazon IDs of users to add/remove attributes
+        
+        :type groups: list
+        :param groups: The groups to add/remove attributes.  The only valid
+                       value at this time is 'all'.
+
+        """
+        params = {'SnapshotId' : snapshot_id,
+                  'Attribute' : attribute,
+                  'OperationType' : operation}
+        if user_ids:
+            self.build_list_params(params, user_ids, 'UserId')
+        if groups:
+            self.build_list_params(params, groups, 'UserGroup')
+        return self.get_status('ModifySnapshotAttribute', params)
+
+    def reset_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission'):
+        """
+        Resets an attribute of a snapshot to its default value.
+        
+        :type snapshot_id: string
+        :param snapshot_id: ID of the snapshot
+        
+        :type attribute: string
+        :param attribute: The attribute to reset
+        
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+        params = {'SnapshotId' : snapshot_id,
+                  'Attribute' : attribute}
+        return self.get_status('ResetSnapshotAttribute', params)
+        
     # Keypair methods
         
     def get_all_key_pairs(self, keynames=None):

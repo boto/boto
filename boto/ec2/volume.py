@@ -82,8 +82,8 @@ class Volume(EC2Object):
     def detach(self):
         return self.connection.detach_volume(self.id, self.instance_id)
 
-    def create_snapshot(self):
-        return self.connection.create_snapshot(self.id)
+    def create_snapshot(self, description=None):
+        return self.connection.create_snapshot(self.id, description)
 
     def volume_state(self):
         return self.status
