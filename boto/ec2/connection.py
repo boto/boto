@@ -534,16 +534,68 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('CreateVolume', params, Volume)
         
     def delete_volume(self, volume_id):
+        """
+        Delete an EBS volume.
+
+        :type volume_id: str
+        :param volume_id: The ID of the volume to be delete.
+
+        :rtype: bool
+        :return: True if successful
+        """
         params = {'VolumeId': volume_id}
         return self.get_status('DeleteVolume', params)
 
     def attach_volume(self, volume_id, instance_id, device):
+        """
+        Attach an EBS volume to an EC2 instance.
+
+        :type volume_id: str
+        :param volume_id: The ID of the EBS volume to be attached.
+
+        :type instance_id: str
+        :param instance_id: The ID of the EC2 instance to which it will
+                            be attached.
+
+        :type device: str
+        :param device: The device on the instance through which the
+                       volume will be exposted (e.g. /dev/sdh)
+
+        :rtype: bool
+        :return: True if successful
+        """
         params = {'InstanceId' : instance_id,
                   'VolumeId' : volume_id,
                   'Device' : device}
         return self.get_status('AttachVolume', params)
 
     def detach_volume(self, volume_id, instance_id=None, device=None, force=False):
+        """
+        Detach an EBS volume from an EC2 instance.
+
+        :type volume_id: str
+        :param volume_id: The ID of the EBS volume to be attached.
+
+        :type instance_id: str
+        :param instance_id: The ID of the EC2 instance from which it will
+                            be detached.
+
+        :type device: str
+        :param device: The device on the instance through which the
+                       volume is exposted (e.g. /dev/sdh)
+
+        :type force: bool
+        :param force: Forces detachment if the previous detachment attempt did
+                      not occur cleanly.  This option can lead to data loss or
+                      a corrupted file system. Use this option only as a last
+                      resort to detach a volume from a failed instance. The
+                      instance will not have an opportunity to flush file system
+                      caches nor file system meta data. If you use this option,
+                      you must perform file system check and repair procedures.
+
+        :rtype: bool
+        :return: True if successful
+        """
         params = {'VolumeId' : volume_id}
         if instance_id:
             params['InstanceId'] = instance_id
@@ -594,6 +646,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type description: str
         :param description: A description of the snapshot.  Limited to 256 characters.
+
+        :rtype: bool
+        :return: True if successful
         """
         params = {'VolumeId' : volume_id}
         if description:

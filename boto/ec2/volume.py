@@ -74,15 +74,67 @@ class Volume(EC2Object):
             setattr(self, name, value)
 
     def delete(self):
+        """
+        Delete this EBS volume.
+
+        :rtype: bool
+        :return: True if successful
+        """
         return self.connection.delete_volume(self.id)
 
     def attach(self, instance_id, device):
+        """
+        Attach this EBS volume to an EC2 instance.
+
+        :type instance_id: str
+        :param instance_id: The ID of the EC2 instance to which it will
+                            be attached.
+
+        :type device: str
+        :param device: The device on the instance through which the
+                       volume will be exposted (e.g. /dev/sdh)
+
+        :rtype: bool
+        :return: True if successful
+        """
         return self.connection.attach_volume(self.id, instance_id, device)
 
     def detach(self):
+        """
+        Detach this EBS volume from an EC2 instance.
+
+        :type instance_id: str
+        :param instance_id: The ID of the EC2 instance from which it will
+                            be detached.
+
+        :type device: str
+        :param device: The device on the instance through which the
+                       volume is exposted (e.g. /dev/sdh)
+
+        :type force: bool
+        :param force: Forces detachment if the previous detachment attempt did
+                      not occur cleanly.  This option can lead to data loss or
+                      a corrupted file system. Use this option only as a last
+                      resort to detach a volume from a failed instance. The
+                      instance will not have an opportunity to flush file system
+                      caches nor file system meta data. If you use this option,
+                      you must perform file system check and repair procedures.
+
+        :rtype: bool
+        :return: True if successful
+        """
         return self.connection.detach_volume(self.id, self.instance_id)
 
     def create_snapshot(self, description=None):
+        """
+        Create a snapshot of this EBS Volume.
+
+        :type description: str
+        :param description: A description of the snapshot.  Limited to 256 characters.
+        
+        :rtype: bool
+        :return: True if successful
+        """
         return self.connection.create_snapshot(self.id, description)
 
     def volume_state(self):
@@ -93,6 +145,34 @@ class Volume(EC2Object):
         if self.attach_data:
             state = self.attach_data.status
         return state
+
+    def snapshots(self, owner=None, restorable_by=None):
+        """
+        Get all snapshots related to this volume.  Note that this requires
+        that all available snapshots for the account be retrieved from EC2
+        first and then the list is filtered client-side to contain only
+        those for this volume.
+
+        :type owner: str
+        :param owner: If present, only the snapshots owned by the specified user
+                      will be returned.  Valid values are:
+                      self | amazon | AWS Account ID
+
+        :type restorable_by: str
+        :param restorable_by: If present, only the snapshots that are restorable
+                              by the specified account id will be returned.
+
+        :rtype: list of L{boto.ec2.snapshot.Snapshot}
+        :return: The requested Snapshot objects
+        
+        """
+        rs = self.connection.get_all_snapshots(owner=owner,
+                                               restorable_by=restorable_by)
+        mine = []
+        for snap in rs:
+            if snap.volume_id = self.id:
+                mine.append(snap)
+        return mine
 
 class AttachmentSet(object):
     
