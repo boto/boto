@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyrigh (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -170,7 +170,7 @@ class Volume(EC2Object):
                                                restorable_by=restorable_by)
         mine = []
         for snap in rs:
-            if snap.volume_id = self.id:
+            if snap.volume_id == self.id:
                 mine.append(snap)
         return mine
 
