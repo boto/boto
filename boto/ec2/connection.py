@@ -289,7 +289,8 @@ class EC2Connection(AWSQueryConnection):
                       key_name=None, security_groups=None,
                       user_data=None, addressing_type=None,
                       instance_type='m1.small', placement=None,
-                      kernel_id=None, ramdisk_id=None):
+                      kernel_id=None, ramdisk_id=None,
+                      monitoring_enabled=False, subnet_id=None):
         """
         Runs an image on EC2.
         
@@ -323,6 +324,12 @@ class EC2Connection(AWSQueryConnection):
         :type ramdisk_id: string
         :param ramdisk_id: The ID of the RAM disk with which to launch the instances
         
+        :type monitoring_enabled: bool
+        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
+        
+        :type subnet_id: string
+        :param subnet_id: The subnet ID within which to launch the instances for VPC.
+        
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
@@ -351,6 +358,10 @@ class EC2Connection(AWSQueryConnection):
             params['KernelId'] = kernel_id
         if ramdisk_id:
             params['RamdiskId'] = ramdisk_id
+        if monitoring_enabled:
+            params['Monitoring.Enabled'] = 'true'
+        if subnet_id:
+            params['subnetId'] = subnet_id
         return self.get_object('RunInstances', params, Reservation, verb='POST')
         
     def terminate_instances(self, instance_ids=None):

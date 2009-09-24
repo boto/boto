@@ -84,6 +84,11 @@ class Instance(EC2Object):
         self.product_codes = []
         self.ami_launch_index = None
         self.monitored = False
+        self.subnet_id = None
+        self.vpc_id = None
+        self.private_ip_address = None
+        self.ip_address = None
+        self.requester_id = None
         self._in_monitoring_element = False
 
     def __repr__(self):
@@ -135,6 +140,16 @@ class Instance(EC2Object):
                 if value == 'enabled':
                     self.monitored = True
                 self._in_monitoring_element = False
+        elif name == 'subnetId':
+            self.subnet_id = value
+        elif name == 'vpcId':
+            self.vpc_id = value
+        elif name == 'privateIpAddress':
+            self.private_ip_address = value
+        elif name == 'ipAddress':
+            self.ip_address = value
+        elif name == 'requesterId':
+            self.requester_id = value
         else:
             setattr(self, name, value)
 
