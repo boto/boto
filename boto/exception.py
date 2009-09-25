@@ -175,6 +175,20 @@ class SQSError(BotoServerError):
         for p in ('detail', 'type'):
             setattr(self, p, None)
 
+class SQSDecodeError(BotoClientError):
+    """
+    Error when decoding an SQS message.
+    """
+    def __init__(self, reason, message):
+        self.reason = reason
+        self.message = message
+
+    def __repr__(self):
+        return 'SQSDecodeError: %s' % self.reason
+
+    def __str__(self):
+        return 'SQSDecodeError: %s' % self.reason
+    
 class S3ResponseError(BotoServerError):
     """
     Error in response from S3.

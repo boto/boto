@@ -152,7 +152,11 @@ class Message(RawMessage):
         return base64.b64encode(value)
 
     def decode(self, value):
-        return base64.b64decode(value)
+        try:
+            value = base64.b64decode(value)
+        except:
+            raise SQSDecodeError('Unable to decode message', self)
+        return value
 
 class MHMessage(Message):
     """
@@ -172,15 +176,18 @@ class MHMessage(Message):
         Message.__init__(self, queue, body)
 
     def decode(self, value):
-        msg = {}
-        fp = StringIO.StringIO(value)
-        line = fp.readline()
-        while line:
-            delim = line.find(':')
-            key = line[0:delim]
-            value = line[delim+1:].strip()
-            msg[key.strip()] = value.strip()
+        try:
+            msg = {}
+            fp = StringIO.StringIO(value)
             line = fp.readline()
+            while line:
+                delim = line.find(':')
+                key = line[0:delim]
+                value = line[delim+1:].strip()
+                msg[key.strip()] = value.strip()
+                line = fp.readline()
+        except:
+            raise SQSDecodeError('Unable to decode message', self)
         return msg
 
     def encode(self, value):
@@ -231,7 +238,10 @@ class EncodedMHMessage(MHMessage):
     """
 
     def decode(self, value):
-        value = base64.b64decode(value)
+        try:
+            value = base64.b64decode(value)
+        except:
+            raise SQSDecodeError('Unable to decode message', self)
         return MHMessage.decode(self, value)
 
     def encode(self, value):

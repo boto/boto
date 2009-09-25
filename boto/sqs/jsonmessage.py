@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.sqs.message import MHMessage
+from boto.exception import SQSDecodeError
 import base64
 import simplejson
 
@@ -29,8 +30,12 @@ class JSONMessage(MHMessage):
     """
 
     def decode(self, value):
-        value = base64.b64decode(value)
-        return simplejson.loads(value)
+        try:
+            value = base64.b64decode(value)
+            value = simplejson.loads(value)
+        except:
+            raise SQSDecodeError('Unable to decode message', self)
+        return value
 
     def encode(self, value):
         value = simplejson.dumps(value)
