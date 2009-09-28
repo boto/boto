@@ -121,7 +121,7 @@ class Volume(Model):
             vol.volume_id = v.id
             vol.name = name
             vol.region_name = v.region.name
-            vol.zone_name = v.name
+            vol.zone_name = v.zone
             vol.put()
         return vol
 
