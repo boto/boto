@@ -178,7 +178,10 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'ImageLocation':image_location}
         rs = self.get_object('RegisterImage', params, ResultSet)
-        return rs.imageId
+        image_id = None
+        if rs:
+            image_id = rs.imageId
+        return image_id
         
     def deregister_image(self, image_id):
         """
