@@ -73,9 +73,8 @@ class Bundler(object):
             command += '-r x86_64'
         print '\t%s' % command
         t = self.ssh_client.run(command)
-        response = t[1].read()
-        print '\t%s' % response
-        print '\t%s' % t[2].read()
+        print '\t%s' % t[0]
+        print '\t%s' % t[1]
         print '...complete!'
 
     def upload_bundle(self, bucket, prefix, ssh_key):
@@ -90,9 +89,8 @@ class Bundler(object):
         command += '-s %s ' % self.server.ec2.aws_secret_access_key
         print '\t%s' % command
         t = self.ssh_client.run(command)
-        response = t[1].read()
-        print '\t%s' % response
-        print '\t%s' % t[2].read()
+        print '\t%s' % t[0]
+        print '\t%s' % t[1]
         print '...complete!'
 
     def bundle(self, bucket=None, prefix=None, key_file=None, cert_file=None, size=None, ssh_key=None):
