@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,4 +20,21 @@
 # IN THE SOFTWARE.
 #
 
+import boto
+from regioninfo import SDBRegionInfo
 
+def regions():
+    """
+    Get all available regions for the SDB service.
+        
+    :rtype: list
+    :return: A list of :class:`boto.sdb.regioninfo.RegionInfo`
+    """
+    return [SDBRegionInfo(name='us-east-1', endpoint='sdb.amazonaws.com'),
+            SDBRegionInfo(name='eu-west-1', endpoint='sdb.eu-west-1.amazonaws.com')]
+
+def connect_to_region(region_name):
+    for region in regions():
+        if region.name == region_name:
+            return region.connect()
+    return None

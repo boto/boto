@@ -192,6 +192,9 @@ class AWSAuthConnection:
         self._connection = (self.server_name(), self.is_secure)
         self._last_rs = None
 
+    def __repr__(self):
+        return '%s:%s' % (self.__class__.__name__, self.host)
+
     def _cached_name(self, host, is_secure):
         if host is None:
             host = self.server_name()
