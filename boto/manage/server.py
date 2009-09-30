@@ -29,6 +29,7 @@ from boto.pyami.config import BotoConfigPath, Config
 from boto.sdb.db.model import Model
 from boto.sdb.db.property import *
 from boto.manage import propget
+from boto.manage.cmdshell import SSHClient
 import os, time, StringIO
 from contextlib import closing
 
@@ -36,9 +37,10 @@ InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
 
 class Bundler(object):
 
-    def __init__(self, server):
+    def __init__(self, server, uname='root'):
         self.server = server
-        self.ssh_client = SSHClient(server)
+        self.uname = uname
+        self.ssh_client = SSHClient(server, uname=uname)
 
     def bundle_image(self, prefix, key_file, cert_file, size, ssh_key):
         print 'bundling image...'
@@ -46,28 +48,31 @@ class Bundler(object):
         sftp_client = self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
         remote_key_file = '/mnt/%s' % name
-        self.put_file(key_file, remote_key_file)
+        self.ssh_client.put_file(key_file, remote_key_file)
         path, name = os.path.split(cert_file)
         remote_cert_file = '/mnt/%s' % name
-        self.put_file(cert_file, remote_cert_file)
+        self.ssh_client.put_file(cert_file, remote_cert_file)
         print '\tdeleting %s' % BotoConfigPath
         # delete the metadata.ini file if it exists
         try:
             sftp_client.remove(BotoConfigPath)
         except:
             pass
-        command = 'ec2-bundle-vol '
+        command = ""
+        if self.uname != 'root':
+            command = "sudo "
+        command += 'ec2-bundle-vol '
         command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
-        command += '-u %s ' % self._reservation.owner_id
+        command += '-u %s ' % self.server._reservation.owner_id
         command += '-p %s ' % prefix
         command += '-s %d ' % size
         command += '-d /mnt '
-        if self.instance.instance_type == 'm1.small' or self.instance_type == 'c1.medium':
+        if self.server.instance_type == 'm1.small' or self.server.instance_type == 'c1.medium':
             command += '-r i386'
         else:
             command += '-r x86_64'
         print '\t%s' % command
-        t = ssh_client.exec_command(command)
+        t = self.ssh_client.run(command)
         response = t[1].read()
         print '\t%s' % response
         print '\t%s' % t[2].read()
@@ -75,13 +80,16 @@ class Bundler(object):
 
     def upload_bundle(self, bucket, prefix, ssh_key):
         print 'uploading bundle...'
-        command = 'ec2-upload-bundle '
+        command = ""
+        if self.uname != 'root':
+            command = "sudo "
+        command += 'ec2-upload-bundle '
         command += '-m /mnt/%s.manifest.xml ' % prefix
         command += '-b %s ' % bucket
         command += '-a %s ' % self.server.ec2.aws_access_key_id
         command += '-s %s ' % self.server.ec2.aws_secret_access_key
         print '\t%s' % command
-        t = self.ssh_client.exec_command(command)
+        t = self.ssh_client.run(command)
         response = t[1].read()
         print '\t%s' % response
         print '\t%s' % t[2].read()
@@ -100,7 +108,7 @@ class Bundler(object):
         if not size:
             size = iobject.get_int('Size (in MB) of bundled image')
         if not ssh_key:
-            ssh_key = iobject.get_filename('Path to SSH Private Key')
+            ssh_key = self.server.get_ssh_key_file()
         self.bundle_image(prefix, key_file, cert_file, size, ssh_key)
         self.upload_bundle(bucket, prefix, ssh_key)
         print 'registering image...'
@@ -498,9 +506,13 @@ class Server(Model):
             status = cmd.run(command)
         return status
 
-    def get_bundler(self, key_file=None):
-        self.get_ssh_key_file()
-        return SSHClient(self)
+    def get_bundler(self, uname='root'):
+        ssh_key_file = self.get_ssh_key_file()
+        return Bundler(self, uname)
+
+    def get_ssh_client(self, uname='root'):
+        ssh_key_file = self.get_ssh_key_file()
+        return SSHClient(self, uname=uname)
 
     def install(self, pkg):
         return self.run('apt-get -y install %s' % pkg)

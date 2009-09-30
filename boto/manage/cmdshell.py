@@ -75,6 +75,9 @@ class SSHClient(object):
         sftp_client = self._ssh_client.open_sftp()
         return sftp_client.listdir(path)
 
+    def open_sftp(self):
+        return self._ssh_client.open_sftp()
+
     def isdir(self, path):
         status = self.run('[ -d %s ] || echo "FALSE"' % path)
         if status[1].startswith('FALSE'):
