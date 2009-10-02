@@ -29,15 +29,16 @@ from boto.pyami.config import BotoConfigPath, Config
 from boto.sdb.db.model import Model
 from boto.sdb.db.property import *
 from boto.manage import propget
-from boto.manage.cmdshell import SSHClient
 import os, time, StringIO
 from contextlib import closing
+from boto.exception import EC2ResponseError
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
 
 class Bundler(object):
 
     def __init__(self, server, uname='root'):
+        from boto.manage.cmdshell import SSHClient
         self.server = server
         self.uname = uname
         self.ssh_client = SSHClient(server, uname=uname)
@@ -385,12 +386,15 @@ class Server(Model):
                     if region.name == self.region_name:
                         self.ec2 = region.connect()
                         if self.instance_id and not self._instance:
-                            rs = self.ec2.get_all_instances([self.instance_id])
-                            if len(rs) >= 1:
-                                for instance in rs[0].instances:
-                                    if instance.id == self.instance_id:
-                                        self._reservation = rs[0]
-                                        self._instance = instance
+                            try:
+                                rs = self.ec2.get_all_instances([self.instance_id])
+                                if len(rs) >= 1:
+                                    for instance in rs[0].instances:
+                                        if instance.id == self.instance_id:
+                                            self._reservation = rs[0]
+                                            self._instance = instance
+                            except EC2ResponseError:
+                                pass
                             
     def _status(self):
         status = ''
@@ -509,6 +513,7 @@ class Server(Model):
         return Bundler(self, uname)
 
     def get_ssh_client(self, uname='root'):
+        from boto.manage.cmdshell import SSHClient
         ssh_key_file = self.get_ssh_key_file()
         return SSHClient(self, uname=uname)
 
