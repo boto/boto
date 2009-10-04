@@ -478,7 +478,10 @@ class Password(object):
         return str(_hashfn(other).hexdigest()) == str(self.str)
 
     def __len__(self):
-        return len(self.str)
+        if self.str:
+            return len(self.str)
+        else:
+            return 0
 
 def notify(subject, body=None, html_body=None, to_string=None, attachments=[], append_instance_id=True):
     if append_instance_id:
