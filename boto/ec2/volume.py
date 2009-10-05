@@ -73,6 +73,35 @@ class Volume(EC2Object):
         else:
             setattr(self, name, value)
 
+    def _update(self, updated):
+        self.updated = updated
+        if hasattr(updated, 'create_time'):
+            self.create_time = updated.create_time
+        if hasattr(updated, 'attach_time'):
+            self.attach_time = updated.attach_time
+        if hasattr(updated, 'instance_id'):
+            self.instance_id = updated.instance_id
+        if hasattr(updated, 'status'):
+            self.status = updated.status
+        else:
+            self.status = None
+        if hasattr(updated, 'size'):
+            self.size = updated.size
+        if hasattr(updated, 'snapshot_id'):
+            self.snapshot_id = updated.snapshot_id
+        if hasattr(updated, 'device'):
+            self.device = updated.device
+        if hasattr(updated, 'attach_data'):
+            self.attach_data = updated.attach_data
+        if hasattr(updated, 'zone'):
+            self.zone = updated.zone
+
+    def update(self):
+        rs = self.connection.get_all_volumes([self.id])
+        if len(rs) > 0:
+            self._update(rs[0])
+        return self.status
+
     def delete(self):
         """
         Delete this EBS volume.
