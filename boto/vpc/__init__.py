@@ -54,12 +54,13 @@ class VPCConnection(EC2Connection):
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                            state - state of the VPC (pending or available)
-                            cidrBlock - CIDR block of the VPC
-                            dhcpOptionsId - ID of a set of DHCP options
+                        
+                        - *state*, the state of the VPC (pending or available)
+                        - *cidrBlock*, CIDR block of the VPC
+                        - *dhcpOptionsId*, the ID of a set of DHCP options
 
         :rtype: list
-        :return: A list of :class:`boto.vpc.vpc.VPC
+        :return: A list of :class:`boto.vpc.vpc.VPC`
         """
         params = {}
         if vpc_ids:
@@ -79,8 +80,8 @@ class VPCConnection(EC2Connection):
         :type cidr_block: str
         :param cidr_block: A valid CIDR block
 
-        :rtype : The newly created VPC
-        :return : A :class:`boto.vpc.vpc.VPC objectn
+        :rtype: The newly created VPC
+        :return: A :class:`boto.vpc.vpc.VPC` object
         """
         params = {'CidrBlock' : cidr_block}
         return self.get_object('CreateVpc', params, VPC)
@@ -114,14 +115,15 @@ class VPCConnection(EC2Connection):
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                            state - state of the CustomerGateway
-                                    (pending,available,deleting,deleted)
-                            type - Type of customer gateway (ipsec.1)
-                            ipAddress - IP address of customer gateway's
-                                        internet-routable external inteface
+                        
+                         - *state*, the state of the CustomerGateway
+                           (pending,available,deleting,deleted)
+                         - *type*, the type of customer gateway (ipsec.1)
+                         - *ipAddress* the IP address of customer gateway's
+                           internet-routable external inteface
 
         :rtype: list
-        :return: A list of :class:`boto.vpc.customergateway.CustomerGateway
+        :return: A list of :class:`boto.vpc.customergateway.CustomerGateway`
         """
         params = {}
         if customer_gateway_ids:
@@ -149,8 +151,8 @@ class VPCConnection(EC2Connection):
         :param bgp_asn: Customer gateway's Border Gateway Protocol (BGP)
                         Autonomous System Number (ASN)
 
-        :rtype : The newly created CustomerGateway
-        :return : A :class:`boto.vpc.customergateway.CustomerGateway object
+        :rtype: The newly created CustomerGateway
+        :return: A :class:`boto.vpc.customergateway.CustomerGateway` object
         """
         params = {'Type' : type,
                   'IpAddress' : ip_address,
@@ -186,14 +188,15 @@ class VPCConnection(EC2Connection):
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                            state - state of the VpnGateway
-                                    (pending,available,deleting,deleted)
-                            type - Type of customer gateway (ipsec.1)
-                            availabilityZone - Availability zone the
-                                               VPN gateway is in.
+                        
+                        - *state*, the state of the VpnGateway
+                          (pending,available,deleting,deleted)
+                        - *type*, the type of customer gateway (ipsec.1)
+                        - *availabilityZone*, the Availability zone the
+                          VPN gateway is in.
 
         :rtype: list
-        :return: A list of :class:`boto.vpc.customergateway.VpnGateway
+        :return: A list of :class:`boto.vpc.customergateway.VpnGateway`
         """
         params = {}
         if vpn_gateway_ids:
@@ -216,8 +219,8 @@ class VPCConnection(EC2Connection):
         :type availability_zone: str
         :param availability_zone: The Availability Zone where you want the VPN gateway.
 
-        :rtype : The newly created VpnGateway
-        :return : A :class:`boto.vpc.vpngateway.VpnGateway object
+        :rtype: The newly created VpnGateway
+        :return: A :class:`boto.vpc.vpngateway.VpnGateway` object
         """
         params = {'Type' : type}
         if availability_zone:
@@ -248,7 +251,7 @@ class VPCConnection(EC2Connection):
         :param vpc_id: The ID of the VPC you want to attach the gateway to.
 
         :rtype: An attachment
-        :return: a :class:`boto.vcp.vpngateway.Attachment
+        :return: a :class:`boto.vpc.vpngateway.Attachment`
         """
         params = {'VpnGatewayId': vpn_gateway_id,
                   'VpcId' : vpc_id}
@@ -270,16 +273,17 @@ class VPCConnection(EC2Connection):
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                            state - state of the Subnet
-                                    (pending,available)
-                            vpdId - ID of teh VPC the subnet is in.
-                            cidrBlock - CIDR block of the subnet
-                            availabilityZone - The Availability Zone
-                                               the subnet is in.
+                        
+                        - *state*, the state of the Subnet
+                          (pending,available)
+                        - *vpdId*, the ID of teh VPC the subnet is in.
+                        - *cidrBlock*, CIDR block of the subnet
+                        - *availabilityZone*, the Availability Zone
+                          the subnet is in.
 
 
         :rtype: list
-        :return: A list of :class:`boto.vpc.subnet.Subnet
+        :return: A list of :class:`boto.vpc.subnet.Subnet`
         """
         params = {}
         if subnet_ids:
@@ -305,8 +309,8 @@ class VPCConnection(EC2Connection):
         :type availability_zone: str
         :param availability_zone: The AZ you want the subnet in
 
-        :rtype : The newly created Subnet
-        :return : A :class:`boto.vpc.customergateway.Subnet object
+        :rtype: The newly created Subnet
+        :return: A :class:`boto.vpc.customergateway.Subnet` object
         """
         params = {'VpcId' : vpc_id,
                   'CidrBlock' : cidr_block}
@@ -338,7 +342,7 @@ class VPCConnection(EC2Connection):
         :param dhcp_options_ids: A list of strings with the desired DhcpOption ID's
         
         :rtype: list
-        :return: A list of :class:`boto.vpc.dhcpoptions.DhcpOptions
+        :return: A list of :class:`boto.vpc.dhcpoptions.DhcpOptions`
         """
         params = {}
         if dhcp_options_ids:
@@ -358,8 +362,8 @@ class VPCConnection(EC2Connection):
         :type availability_zone: str
         :param availability_zone: The AZ you want the subnet in
 
-        :rtype : The newly created DhcpOption
-        :return : A :class:`boto.vpc.customergateway.DhcpOption object
+        :rtype: The newly created DhcpOption
+        :return: A :class:`boto.vpc.customergateway.DhcpOption` object
         """
         params = {'VpcId' : vpc_id,
                   'CidrBlock' : cidr_block}
@@ -383,13 +387,13 @@ class VPCConnection(EC2Connection):
     def associate_dhcp_options(self, dhcp_options_id, vpc_id):
         """
         Associate a set of Dhcp Options with a VPC.
-
+        
         :type dhcp_options_id: str
-        :param dhcp_options_id: The ID of the Dhcp Optionsn
-
+        :param dhcp_options_id: The ID of the Dhcp Options
+        
         :type vpc_id: str
         :param vpc_id: The ID of the VPC.
-
+        
         :rtype: bool
         :return: True if successful
         """
@@ -413,16 +417,17 @@ class VPCConnection(EC2Connection):
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                            state - state of the VPN_CONNECTION
-                                    pending,available,deleting,deleted
-                            type - type of connection, currently 'ipsec.1'
-                            customerGatewayId - The ID of the customer gateway
-                                                associated with the VPN
-                            vpnGatewayId - ID of the VPN gateway associated
-                                           with the VPN connection
+                        
+                        - *state*, the state of the VPN_CONNECTION
+                          pending,available,deleting,deleted
+                        - *type*, the type of connection, currently 'ipsec.1'
+                        - *customerGatewayId*, the ID of the customer gateway
+                          associated with the VPN
+                        - *vpnGatewayId*, the ID of the VPN gateway associated
+                          with the VPN connection
 
         :rtype: list
-        :return: A list of :class:`boto.vpn_connection.vpn_connection.VPN_CONNECTION
+        :return: A list of :class:`boto.vpn_connection.vpnconnection.VpnConnection`
         """
         params = {}
         if vpn_connection_ids:
@@ -449,8 +454,8 @@ class VPCConnection(EC2Connection):
         :type vpn_gateway_id: str
         :param vpn_gateway_id: The ID of the VPN gateway.
 
-        :rtype : The newly created VpnConnection
-        :return : A :class:`boto.vpc.vpnconnection.VpnConnection object
+        :rtype: The newly created VpnConnection
+        :return: A :class:`boto.vpc.vpnconnection.VpnConnection` object
         """
         params = {'Type' : type,
                   'CustomerGatewayId' : customer_gateway_id,
