@@ -12,6 +12,7 @@ Contents:
    sqs_tut
    s3_tut
    ec2_tut
+   vpc_tut
    ref/index
    documentation
 

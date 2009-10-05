@@ -86,4 +86,3 @@ Attaching a VPN Gateway to a VPC
 
 >>> vg.attach(vpc.id)
 >>>
-

@@ -21,3 +21,4 @@ API Reference
    sdb
    services
    sqs
+   vpc
