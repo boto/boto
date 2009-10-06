@@ -397,12 +397,24 @@ class Bucket:
         policy = self.get_acl()
         return policy.acl.grants
 
-#    def get_location(self):
-#        location = _XmlInterpreter(
-#                string_attrs={'LocationConstraint': 'location'})
-#        body = self.connection.checked_request(location, self,
-#                'GET', self.name, query_args='location').location
-#        return parse_xml_string(body, location, self)
+    def get_location(self):
+        """
+        Returns the LocationConstraint for the bucket.
+
+        :rtype: str
+        :return: The LocationConstraint for the bucket or the empty string if
+                 no constraint was specified when bucket was created.
+        """
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='location')
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet(self)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.LocationConstraint
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
 
     def enable_logging(self, target_bucket, target_prefix=''):
         if isinstance(target_bucket, Bucket):
