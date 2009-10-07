@@ -79,6 +79,8 @@ class SelectResultSet(object):
             rs = self.domain.connection.select(self.domain, self.query,
                                                next_token=self.next_token)
             for item in rs:
+                if self.max_items and num_results >= self.max_items:
+                    raise StopIteration
                 yield item
                 num_results += 1
             self.next_token = rs.next_token
