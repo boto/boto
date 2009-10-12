@@ -295,6 +295,12 @@ class DateTimeProperty(Property):
             return self.now()
         return Property.default_value(self)
 
+    def validate(self, value):
+        if value == None:
+            return
+        if not isinstance(value, self.data_type):
+            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
             setattr(model_instance, self.name, self.now())
