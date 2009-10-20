@@ -364,7 +364,7 @@ class EC2Connection(AWSQueryConnection):
         if monitoring_enabled:
             params['Monitoring.Enabled'] = 'true'
         if subnet_id:
-            params['subnetId'] = subnet_id
+            params['SubnetId'] = subnet_id
         return self.get_object('RunInstances', params, Reservation, verb='POST')
         
     def terminate_instances(self, instance_ids=None):
