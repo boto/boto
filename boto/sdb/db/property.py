@@ -279,6 +279,23 @@ class BooleanProperty(Property):
     def empty(self, value):
         return value is None
     
+class FloatProperty(Property):
+
+    data_type = float
+    type_name = 'Float'
+
+    def __init__(self, verbose_name=None, name=None, default=0.0, required=False,
+                 validator=None, choices=None, unique=False):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+
+    def validate(self, value):
+        value = float(value)
+        value = Property.validate(self, value)
+        return value
+    
+    def empty(self, value):
+        return value is None
+
 class DateTimeProperty(Property):
 
     data_type = datetime.datetime

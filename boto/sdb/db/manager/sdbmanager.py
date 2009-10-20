@@ -49,6 +49,7 @@ class SDBConverter:
         self.type_map = { bool : (self.encode_bool, self.decode_bool),
                           int : (self.encode_int, self.decode_int),
                           long : (self.encode_long, self.decode_long),
+                          float : (self.encode_float, self.decode_float),
                           Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime),
@@ -162,6 +163,55 @@ class SDBConverter:
             return True
         else:
             return False
+
+    def encode_float(self, value):
+        """
+        See http://tools.ietf.org/html/draft-wood-ldapext-float-00.
+        """
+        s = '%e' % value
+        l = s.split('e')
+        mantissa = l[0].ljust(18, '0')
+        exponent = l[1]
+        if value == 0.0:
+            case = '3'
+            exponent = '000'
+        elif mantissa[0] != '-' and exponent[0] == '+':
+            case = '5'
+            exponent = exponent[1:].rjust(3, '0')
+        elif mantissa[0] != '-' and exponent[0] == '-':
+            case = '4'
+            exponent = 999 + int(exponent)
+            exponent = '%03d' % exponent
+        elif mantissa[0] == '-' and exponent[0] == '-':
+            case = '2'
+            mantissa = '%f' % (10 + float(mantissa))
+            mantissa = mantissa.ljust(18, '0')
+            exponent = exponent[1:].rjust(3, '0')
+        else:
+            case = '1'
+            mantissa = '%f' % (10 + float(mantissa))
+            mantissa = mantissa.ljust(18, '0')
+            exponent = 999 - int(exponent)
+            exponent = '%03d' % exponent
+        return '%s %s %s' % (case, exponent, mantissa)
+
+    def decode_float(self, value):
+        case = value[0]
+        exponent = value[2:5]
+        mantissa = value[6:]
+        if case == '3':
+            return 0.0
+        elif case == '5':
+            pass
+        elif case == '4':
+            exponent = '%03d' % (int(exponent) - 999)
+        elif case == '2':
+            mantissa = '%f' % (float(mantissa) - 10)
+            exponent = '-' + exponent
+        else:
+            mantissa = '%f' % (float(mantissa) - 10)
+            exponent = '%03d' % abs((int(exponent) - 999))
+        return float(mantissa + 'e' + exponent)
 
     def encode_datetime(self, value):
         return value.strftime(ISO8601)

@@ -19,6 +19,11 @@ class TestBasic(Model):
     foo = BooleanProperty()
     date = DateTimeProperty()
 
+class TestFloat(Model):
+
+    name = StringProperty()
+    value = FloatProperty()
+
 class TestRequired(Model):
 
     req = StringProperty(required=True, default='foo')
@@ -79,6 +84,23 @@ def test_basic():
     assert t.foo == tt.foo
     assert t.name == tt.name
     #assert t.date == tt.date
+    return t
+
+def test_float():
+    global _objects
+    t = TestFloat()
+    t.name = 'float object'
+    t.value = 98.6
+    print 'saving object'
+    t.save()
+    _objects['test_float_t'] = t
+    time.sleep(5)
+    print 'now try retrieving it'
+    tt = TestFloat.get_by_id(t.id)
+    _objects['test_float_tt'] = tt
+    assert tt.id == t.id
+    assert tt.name == t.name
+    assert tt.value == t.value
     return t
     
 def test_required():
