@@ -76,7 +76,9 @@ class Image(EC2Object):
 
     def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None,
-            addressing_type=None, instance_type='m1.small', placement=None):
+            addressing_type=None, instance_type='m1.small', placement=None,
+            kernel_id=None, ramdisk_id=None,
+            monitoring_enabled=False, subnet_id=None):
         """
         Runs this instance.
         
@@ -102,12 +104,29 @@ class Image(EC2Object):
         :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
         
         :type placement: 
-        :param placement: 
+        :param placement:
+
+        :type kernel_id: string
+        :param kernel_id: The ID of the kernel with which to launch the instances
+        
+        :type ramdisk_id: string
+        :param ramdisk_id: The ID of the RAM disk with which to launch the instances
+        
+        :type monitoring_enabled: bool
+        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
+        
+        :type subnet_id: string
+        :param subnet_id: The subnet ID within which to launch the instances for VPC.
+        
+        :rtype: Reservation
+        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,
                                              user_data, addressing_type,
-                                             instance_type, placement)
+                                             instance_type, placement,
+                                             kernel_id, ramdisk_id,
+                                             monitoring_enabled, subnet_id)
 
     def deregister(self):
         return self.connection.deregister_image(self.id)
