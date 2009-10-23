@@ -30,6 +30,8 @@ if 'HOME' in os.environ:
     BotoConfigLocations.append(UserConfigPath)
 else:
     UserConfigPath = None
+if 'BOTO_CONFIG' in os.environ:
+    BotoConfigLocations.append(os.path.expanduser(os.environ['BOTO_CONFIG']))
 
 class Config(ConfigParser.SafeConfigParser):
 
