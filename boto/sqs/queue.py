@@ -195,8 +195,8 @@ class Queue:
         :type message: Message
         :param message: The message to be written to the queue
 
-        :rtype: bool
-        :return: True if successful, False if not
+        :rtype: :class:`boto.sqs.message.Message`
+        :return: The :class:`boto.sqs.message.Message` object that was written.
         """
         new_msg = self.connection.send_message(self, message.get_body_encoded())
         message.id = new_msg.id
