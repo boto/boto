@@ -179,7 +179,7 @@ class Queue:
         :type visibility_timeout: int
         :param visibility_timeout: The timeout for this message in seconds
 
-        :rtype: Message
+        :rtype: :class:`boto.sqs.message.Message`
         :return: A single message or None if queue is empty
         """
         rs = self.get_messages(1, visibility_timeout)
@@ -210,7 +210,7 @@ class Queue:
         :type body: message body
         :param body: The body of the newly created message (optional).
 
-        :rtype: Message
+        :rtype: :class:`boto.sqs.message.Message`
         :return: A new Message object
         """
         m = self.message_class(self, body)
@@ -238,7 +238,7 @@ class Queue:
                            ApproximateReceiveCount
                            ApproximateFirstReceiveTimestamp
         :rtype: list
-        :return: A list of messages.
+        :return: A list of :class:`boto.sqs.message.Message` objects.
         """
         return self.connection.receive_message(self, number_messages=num_messages,
                                                visibility_timeout=visibility_timeout,
@@ -248,8 +248,8 @@ class Queue:
         """
         Delete a message from the queue.
 
-        :type message: Message
-        :param message: The message object to delete.
+        :type message: :class:`boto.sqs.message.Message`
+        :param message: The :class:`boto.sqs.message.Message` object to delete.
 
         :rtype: bool
         :return: True if successful, False otherwise
