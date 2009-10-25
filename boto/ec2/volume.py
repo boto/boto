@@ -32,10 +32,6 @@ class Volume(EC2Object):
         self.create_time = None
         self.status = None
         self.size = None
-        self.instance_id = None
-        self.create_time = None
-        self.attach_time = None
-        self.device = None
         self.snapshot_id = None
         self.attach_data = None
         self.zone = None
@@ -55,10 +51,6 @@ class Volume(EC2Object):
             self.id = value
         elif name == 'createTime':
             self.create_time = value
-        elif name == 'attachTime':
-            self.attach_time = value
-        elif name == 'instanceId':
-            self.instance_id = value
         elif name == 'status':
             if value != '':
                 self.status = value
@@ -66,8 +58,6 @@ class Volume(EC2Object):
             self.size = int(value)
         elif name == 'snapshotId':
             self.snapshot_id = value
-        elif name == 'device':
-            self.device = value
         elif name == 'availabilityZone':
             self.zone = value
         else:
@@ -77,10 +67,6 @@ class Volume(EC2Object):
         self.updated = updated
         if hasattr(updated, 'create_time'):
             self.create_time = updated.create_time
-        if hasattr(updated, 'attach_time'):
-            self.attach_time = updated.attach_time
-        if hasattr(updated, 'instance_id'):
-            self.instance_id = updated.instance_id
         if hasattr(updated, 'status'):
             self.status = updated.status
         else:
@@ -89,8 +75,6 @@ class Volume(EC2Object):
             self.size = updated.size
         if hasattr(updated, 'snapshot_id'):
             self.snapshot_id = updated.snapshot_id
-        if hasattr(updated, 'device'):
-            self.device = updated.device
         if hasattr(updated, 'attach_data'):
             self.attach_data = updated.attach_data
         if hasattr(updated, 'zone'):
@@ -167,9 +151,22 @@ class Volume(EC2Object):
         return self.connection.create_snapshot(self.id, description)
 
     def volume_state(self):
+        """
+        Returns the state of the volume.  Same value as the status attribute.
+        """
         return self.status
 
     def attachment_state(self):
+        """
+        Get the attachmentSet information for the volume.  This info is stored
+        in a dictionary object and contains at least the following info:
+
+        - volumeId
+        - instanceId
+        - device
+        - status
+        - attachTime
+        """
         state = None
         if self.attach_data:
             state = self.attach_data.status
