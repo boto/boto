@@ -232,6 +232,8 @@ class S3Connection(AWSAuthConnection):
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                              self.aws_access_key_id)
+            if 'x-amz-security-token' in headers:
+                query_part += '&x-amz-security-token=%s' % urllib.quote(headers['x-amz-security-token']);
         else:
             query_part = ''
         if force_http:
@@ -243,17 +245,17 @@ class S3Connection(AWSAuthConnection):
         return self.calling_format.build_url_base(protocol, self.server_name(port),
                                                   bucket, key) + query_part
 
-    def get_all_buckets(self):
+    def get_all_buckets(self, headers=None):
         response = self.make_request('GET')
         body = response.read()
         if response.status > 300:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise S3ResponseError(response.status, response.reason, body, headers=headers)
         rs = ResultSet([('Bucket', Bucket)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
 
-    def get_canonical_user_id(self):
+    def get_canonical_user_id(self, headers=None):
         """
         Convenience method that returns the "CanonicalUserID" of the user who's credentials
         are associated with the connection.  The only way to get this value is to do a GET
@@ -264,18 +266,18 @@ class S3Connection(AWSAuthConnection):
         :rtype: string
         :return: A string containing the canonical user id.
         """
-        rs = self.get_all_buckets()
+        rs = self.get_all_buckets(headers=headers)
         return rs.ID
 
-    def get_bucket(self, bucket_name, validate=True):
+    def get_bucket(self, bucket_name, validate=True, headers=None):
         bucket = Bucket(self, bucket_name)
         if validate:
-            rs = bucket.get_all_keys(None, maxkeys=0)
+            rs = bucket.get_all_keys(headers, maxkeys=0)
         return bucket
 
-    def lookup(self, bucket_name, validate=True):
+    def lookup(self, bucket_name, validate=True, headers=None):
         try:
-            bucket = self.get_bucket(bucket_name, validate)
+            bucket = self.get_bucket(bucket_name, validate, headers=headers)
         except:
             bucket = None
         return bucket
@@ -318,8 +320,8 @@ class S3Connection(AWSAuthConnection):
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def delete_bucket(self, bucket):
-        response = self.make_request('DELETE', bucket)
+    def delete_bucket(self, bucket, headers=None):
+        response = self.make_request('DELETE', bucket, headers=headers)
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason, body)

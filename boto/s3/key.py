@@ -233,25 +233,30 @@ class Key(object):
         self.metadata.update(d)
     
     # convenience methods for setting/getting ACL
-    def set_acl(self, acl_str):
+    def set_acl(self, acl_str, headers=None):
         if self.bucket != None:
-            self.bucket.set_acl(acl_str, self.name)
+            self.bucket.set_acl(acl_str, self.name, headers=headers)
 
-    def get_acl(self):
+    def get_acl(self, headers=None):
         if self.bucket != None:
-            return self.bucket.get_acl(self.name)
+            return self.bucket.get_acl(self.name, headers=headers)
 
-    def get_xml_acl(self):
+    def get_xml_acl(self, headers=None):
         if self.bucket != None:
-            return self.bucket.get_xml_acl(self.name)
+            return self.bucket.get_xml_acl(self.name, headers=headers)
 
-    def set_xml_acl(self, acl_str):
+    def set_xml_acl(self, acl_str, headers=None):
         if self.bucket != None:
-            return self.bucket.set_xml_acl(acl_str, self.name)
+            return self.bucket.set_xml_acl(acl_str, self.name, headers=headers)
         
-    def make_public(self):
+    def make_public(self, headers=None):
+        if headers:
+            headers['x-amz-acl'] = 'public-read'
+        else:
+            headers={'x-amz-acl': 'public-read'}
+
         response = self.bucket.connection.make_request('PUT', self.bucket.name, self.name,
-                headers={'x-amz-acl': 'public-read'}, query_args='acl')
+                headers=headers, query_args='acl')
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)

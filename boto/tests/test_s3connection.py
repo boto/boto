@@ -28,6 +28,7 @@ Some unit tests for the S3Connection
 import unittest
 import time
 import os
+import urllib
 from boto.s3.connection import S3Connection
 from boto.exception import S3PermissionsError
 
@@ -41,7 +42,12 @@ class S3ConnectionTest (unittest.TestCase):
         bucket = c.create_bucket(bucket_name)
         # now try a get_bucket call and see if it's really there
         bucket = c.get_bucket(bucket_name)
-        # create a new key and store it's content from a string
+        # test logging
+        logging_bucket = c.create_bucket(bucket_name + '-log')
+        logging_bucket.set_as_logging_target()
+        bucket.enable_logging(target_bucket=logging_bucket, target_prefix=bucket.name)
+        bucket.disable_logging()
+        c.delete_bucket(logging_bucket)
         k = bucket.new_key()
         k.name = 'foobar'
         s1 = 'This is a test of file upload and download'
@@ -55,6 +61,13 @@ class S3ConnectionTest (unittest.TestCase):
         # check to make sure content read from s3 is identical to original
         assert s1 == fp.read(), 'corrupted file'
         fp.close()
+        # test generated URLs
+        url = k.generate_url(3600)
+        file = urllib.urlopen(url)
+        assert s1 == file.read(), 'invalid URL %s' % url
+        url = k.generate_url(3600, force_http=True)
+        file = urllib.urlopen(url)
+        assert s1 == file.read(), 'invalid URL %s' % url
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type
@@ -110,9 +123,15 @@ class S3ConnectionTest (unittest.TestCase):
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
         bucket.delete_key(k)
-        # try a key with a funny character
+        # test list and iterator
+        rs1 = bucket.list()
+        num_iter = 0
+        for r in rs1:
+            num_iter = num_iter + 1
         rs = bucket.get_all_keys()
         num_keys = len(rs)
+        assert num_iter == num_keys
+        # try a key with a funny character
         k = bucket.new_key()
         k.name = 'testnewline\n'
         k.set_contents_from_string('This is a test')

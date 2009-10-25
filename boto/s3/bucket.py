@@ -94,7 +94,7 @@ class Bucket:
         """
         self.key_class = key_class
 
-    def lookup(self, key_name):
+    def lookup(self, key_name, headers=None):
         """
         Deprecated: Please use get_key method.
         
@@ -104,9 +104,9 @@ class Bucket:
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
-        return self.get_key(key_name)
+        return self.get_key(key_name, headers=headers)
         
-    def get_key(self, key_name):
+    def get_key(self, key_name, headers=None):
         """
         Check to see if a particular key exists within the bucket.  This
         method uses a HEAD request to check for the existance of the key.
@@ -118,7 +118,7 @@ class Bucket:
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
-        response = self.connection.make_request('HEAD', self.name, key_name)
+        response = self.connection.make_request('HEAD', self.name, key_name, headers=headers)
         if response.status == 200:
             body = response.read()
             k = self.key_class(self)
@@ -137,7 +137,7 @@ class Bucket:
             else:
                 raise S3ResponseError(response.status, response.reason, '')
 
-    def list(self, prefix='', delimiter='', marker=''):
+    def list(self, prefix='', delimiter='', marker='', headers=None):
         """
         List key objects within a bucket.  This returns an instance of an
         BucketListResultSet that automatically handles all of the result
@@ -164,7 +164,7 @@ class Bucket:
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
-        return BucketListResultSet(self, prefix, delimiter, marker)
+        return BucketListResultSet(self, prefix, delimiter, marker, headers)
 
     def get_all_keys(self, headers=None, **params):
         """
@@ -229,14 +229,14 @@ class Bucket:
         return self.connection.generate_url(expires_in, method, self.name, headers=headers,
                                             force_http=force_http)
 
-    def delete_key(self, key_name):
+    def delete_key(self, key_name, headers=None):
         """
         Deletes a key from the bucket.
         
         :type key_name: string
         :param key_name: The key name to delete
         """
-        response = self.connection.make_request('DELETE', self.name, key_name)
+        response = self.connection.make_request('DELETE', self.name, key_name, headers=headers)
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason, body)
@@ -284,38 +284,44 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name=''):
+    def set_canned_acl(self, acl_str, key_name='', headers=None):
         assert acl_str in CannedACLStrings
+
+        if headers:
+            headers['x-amz-acl'] = acl_str
+        else:
+            headers={'x-amz-acl': acl_str}
+
         response = self.connection.make_request('PUT', self.name, key_name,
-                headers={'x-amz-acl': acl_str}, query_args='acl')
+                headers=headers, query_args='acl')
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def get_xml_acl(self, key_name=''):
+    def get_xml_acl(self, key_name='', headers=None):
         response = self.connection.make_request('GET', self.name, key_name,
-                                                query_args='acl')
+                                                query_args='acl', headers=headers)
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
         return body
 
-    def set_xml_acl(self, acl_str, key_name=''):
+    def set_xml_acl(self, acl_str, key_name='', headers=None):
         response = self.connection.make_request('PUT', self.name, key_name,
-                data=acl_str, query_args='acl')
+                data=acl_str, query_args='acl', headers=headers)
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def set_acl(self, acl_or_str, key_name=''):
+    def set_acl(self, acl_or_str, key_name='', headers=None):
         if isinstance(acl_or_str, Policy):
-            self.set_xml_acl(acl_or_str.to_xml(), key_name)
+            self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers)
         else:
-            self.set_canned_acl(acl_or_str, key_name)
+            self.set_canned_acl(acl_or_str, key_name, headers=headers)
 
-    def get_acl(self, key_name=''):
+    def get_acl(self, key_name='', headers=None):
         response = self.connection.make_request('GET', self.name, key_name,
-                query_args='acl')
+                query_args='acl', headers=headers)
         body = response.read()
         if response.status == 200:
             policy = Policy(self)
@@ -325,13 +331,13 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def make_public(self, recursive=False):
-        self.set_canned_acl('public-read')
+    def make_public(self, recursive=False, headers=None):
+        self.set_canned_acl('public-read', headers=headers)
         if recursive:
             for key in self:
-                self.set_canned_acl('public-read', key.name)
+                self.set_canned_acl('public-read', key.name, headers=headers)
 
-    def add_email_grant(self, permission, email_address, recursive=False):
+    def add_email_grant(self, permission, email_address, recursive=False, headers=None):
         """
         Convenience method that provides a quick way to add an email grant to a bucket.
         This method retrieves the current ACL, creates a new grant based on the parameters
@@ -354,14 +360,14 @@ class Bucket:
         """
         if permission not in S3Permissions:
             raise S3PermissionsError('Unknown Permission: %s' % permission)
-        policy = self.get_acl()
-        policy.acl.add_email_grant(permission, email_address)
-        self.set_acl(policy)
+        policy = self.get_acl(headers=headers)
+        policy.acl.add_email_grant(permission, email_address, headers=headers)
+        self.set_acl(policy, headers=headers)
         if recursive:
             for key in self:
-                key.add_email_grant(permission, email_address)
+                key.add_email_grant(permission, email_address, headers=headers)
 
-    def add_user_grant(self, permission, user_id, recursive=False):
+    def add_user_grant(self, permission, user_id, recursive=False, headers=None):
         """
         Convenience method that provides a quick way to add a canonical user grant to a bucket.
         This method retrieves the current ACL, creates a new grant based on the parameters
@@ -386,15 +392,15 @@ class Bucket:
         """
         if permission not in S3Permissions:
             raise S3PermissionsError('Unknown Permission: %s' % permission)
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id)
-        self.set_acl(policy)
+        self.set_acl(policy, headers=headers)
         if recursive:
             for key in self:
-                key.add_user_grant(permission, user_id)
+                key.add_user_grant(permission, user_id, headers=headers)
 
-    def list_grants(self):
-        policy = self.get_acl()
+    def list_grants(self, headers=None):
+        policy = self.get_acl(headers=headers)
         return policy.acl.grants
 
     def get_location(self):
@@ -416,73 +422,73 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def enable_logging(self, target_bucket, target_prefix=''):
+    def enable_logging(self, target_bucket, target_prefix='', headers=None):
         if isinstance(target_bucket, Bucket):
             target_bucket = target_bucket.name
         body = self.BucketLoggingBody % (target_bucket, target_prefix)
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='logging')
+                query_args='logging', headers=headers)
         body = response.read()
         if response.status == 200:
             return True
         else:
             raise S3ResponseError(response.status, response.reason, body)
         
-    def disable_logging(self):
+    def disable_logging(self, headers=None):
         body = self.EmptyBucketLoggingBody
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='logging')
+                query_args='logging', headers=headers)
         body = response.read()
         if response.status == 200:
             return True
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def get_logging_status(self):
+    def get_logging_status(self, headers=None):
         response = self.connection.make_request('GET', self.name,
-                query_args='logging')
+                query_args='logging', headers=headers)
         body = response.read()
         if response.status == 200:
             return body
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def set_as_logging_target(self):
-        policy = self.get_acl()
+    def set_as_logging_target(self, headers=None):
+        policy = self.get_acl(headers=headers)
         g1 = Grant(permission='WRITE', type='Group', uri=self.LoggingGroup)
         g2 = Grant(permission='READ_ACP', type='Group', uri=self.LoggingGroup)
         policy.acl.add_grant(g1)
         policy.acl.add_grant(g2)
-        self.set_acl(policy)
+        self.set_acl(policy, headers=headers)
 
-    def disable_logging(self):
+    def disable_logging(self, headers=None):
         body = self.EmptyBucketLoggingBody
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='logging')
+                query_args='logging', headers=headers)
         body = response.read()
         if response.status == 200:
             return True
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def get_request_payment(self):
+    def get_request_payment(self, headers=None):
         response = self.connection.make_request('GET', self.name,
-                query_args='requestPayment')
+                query_args='requestPayment', headers=headers)
         body = response.read()
         if response.status == 200:
             return body
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def set_request_payment(self, payer='BucketOwner'):
+    def set_request_payment(self, payer='BucketOwner', headers=None):
         body = self.BucketPaymentBody % payer
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='requestPayment')
+                query_args='requestPayment', headers=headers)
         body = response.read()
         if response.status == 200:
             return True
         else:
             raise S3ResponseError(response.status, response.reason, body)
         
-    def delete(self):
-        return self.connection.delete_bucket(self.name)
+    def delete(self, headers=None):
+        return self.connection.delete_bucket(self.name, headers=headers)
