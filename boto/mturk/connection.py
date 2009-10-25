@@ -463,7 +463,7 @@ class Assignment(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer),])
             h = handler.XmlHandler(answer_rs, connection)
-            value = self.get_utf8_value(value)
+            value = self.connection.get_utf8_value(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:
