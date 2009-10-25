@@ -47,6 +47,7 @@ class Instance(object):
 class AutoScalingGroup(object):
     def __init__(self, connection=None, group_name=None,
                  availability_zone=None, launch_config=None,
+                 availability_zones=None,
                  load_balancers=None, cooldown=0,
                  min_size=None, max_size=None):
         """
@@ -61,7 +62,13 @@ class AutoScalingGroup(object):
         :param name: Name of autoscaling group.
 
         :type availability_zone: str
-        :param availability_zone: An availability zone.
+        :param availability_zone: An availability zone. DEPRECATED - use the
+                                  availability_zones parameter, which expects
+                                  a list of availability zone
+                                  strings
+
+        :type availability_zone: list
+        :param availability_zone: List of availability zones.
 
         :type launch_config: str
         :param launch_config: Name of launch configuration name.
@@ -97,6 +104,7 @@ class AutoScalingGroup(object):
         lbs = load_balancers or []
         self.load_balancers = ListElement(lbs)
         self.availability_zone = availability_zone
+        self.availability_zones = availability_zones
         self.instances = None
 
     def __repr__(self):

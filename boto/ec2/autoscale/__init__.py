@@ -82,9 +82,13 @@ class AutoScaleConnection(AWSQueryConnection):
                   'MaxSize'                 : as_group.max_size,
                   }
         if op.startswith('Create'):
+            if as_group.availability_zones:
+                zones = self.availability_zones
+            else:
+                zones = [as_group.availability_zone]
             self.build_list_params(params, as_group.load_balancers,
                                    'LoadBalancerNames')
-            self.build_list_params(params, [as_group.availability_zone],
+            self.build_list_params(params, zones,
                                     'AvailabilityZones')
         return self.get_object(op, params, Request)
 
@@ -146,6 +150,7 @@ class AutoScaleConnection(AWSQueryConnection):
 
         req = self.get_object('CreateOrUpdateScalingTrigger', params,
                                Request)
+        return req
 
     def get_all_groups(self, names=None):
         """
