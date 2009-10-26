@@ -26,9 +26,11 @@ from boto.exception import S3ResponseError
 
 usage_string = """
 SYNOPSIS
-    s3put [-a access_key] [-s secret_key] -b bucket_name [-c num_cb]
-          [-d debug_level] [-i ignore_dirs] [-n] [-p prefix] [-q]
-          [-g grant] path
+    s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
+          -b/--bucket <bucket_name> [-c/--callback <num_cb>]
+          [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
+          [-n/--no_op] [-p/--prefix <prefix>] [-q/--quiet]
+          [-g/--grant grant] [-w/--no_overwrite] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -66,6 +68,12 @@ SYNOPSIS
                 transferred to S3.  The value of provided must be one
                 of the "canned" ACL policies supported by S3:
                 private|public-read|public-read-write|authenticated-read
+        no_overwrite - No files will be overwritten on S3, if the file/key 
+                       exists on s3 it will be kept. This is useful for 
+                       resuming interrupted transfers. Note this is not a 
+                       sync, even if the file has been updated locally if 
+                       the key exists on s3 the file on s3 will not be 
+                       updated.
 
      If the -n option is provided, no files will be transferred to S3 but
      informational messages will be printed about what would happen.
@@ -84,9 +92,9 @@ def get_key_name(fullpath, prefix):
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:np:qs:v',
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:np:qs:vw',
                                    ['access_key', 'bucket', 'callback', 'debug', 'help', 'grant',
-                                    'ignore', 'no_op', 'prefix', 'quiet', 'secret_key'])
+                                    'ignore', 'no_op', 'prefix', 'quiet', 'secret_key', 'no_overwrite'])
     except:
         usage()
     ignore_dirs = []
@@ -101,6 +109,7 @@ def main():
     no_op = False
     prefix = '/'
     grant = None
+    no_overwrite = False
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
@@ -120,6 +129,8 @@ def main():
             ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
             no_op = True
+        if o == ('w', '--no_overwrite'):
+            no_overwrite = True
         if o in ('-p', '--prefix'):
             prefix = a
             if prefix[-1] != os.sep:
@@ -139,6 +150,12 @@ def main():
         c.debug = debug
         b = c.get_bucket(bucket_name)
         if os.path.isdir(path):
+            if no_overwrite:
+                if not quiet:
+                    print 'Getting list of existing keys to check against'
+                keys = []
+                for key in b.list():
+                    keys.append(key.name)
             for root, dirs, files in os.walk(path):
                 for ignore in ignore_dirs:
                     if ignore in dirs:
@@ -146,16 +163,31 @@ def main():
                 for file in files:
                     fullpath = os.path.join(root, file)
                     key_name = get_key_name(fullpath, prefix)
-                    if not quiet:
-                        print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
-                    if not no_op:
-                        k = b.new_key(key_name)
-                        k.set_contents_from_filename(fullpath, cb=cb,
-                                                     num_cb=num_cb, policy=grant)
+                    copy_file = True
+                    if no_overwrite:
+                        if key_name in keys:
+                            copy_file = False
+                            if not quiet:
+                                print 'Skipping %s as it exists in s3' % file
+                    if copy_file:
+                        if not quiet:
+                            print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
+                        if not no_op:
+                            k = b.new_key(key_name)
+                            k.set_contents_from_filename(fullpath, cb=cb,
+                                                            num_cb=num_cb, policy=grant)
                     total += 1
         elif os.path.isfile(path):
-            k = b.new_key(os.path.split(path)[1])
-            k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant)
+            key_name = os.path.split(path)[1]
+            copy_file = True
+            if no_overwrite:
+                if b.get_key(key_name):
+                    copy_file = False
+                    if not quiet:
+                        print 'Skipping %s as it exists in s3' % path
+            if copy_file:
+                k = b.new_key(key_name)
+                k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant)
     else:
         print usage()
 
