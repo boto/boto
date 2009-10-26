@@ -364,7 +364,7 @@ class ReferenceProperty(Property):
         if hasattr(self.reference_class, self.collection_name):
             raise ValueError, 'duplicate property: %s' % self.collection_name
         setattr(self.reference_class, self.collection_name,
-                _ReverseReferenceProperty(model_class, property_name, self.collection_name, self.reference_class))
+                _ReverseReferenceProperty(model_class, property_name, self.collection_name))
 
     def check_uuid(self, value):
         # This does a bit of hand waving to "type check" the string
@@ -394,11 +394,11 @@ class _ReverseReferenceProperty(Property):
     data_type = Query
     type_name = 'query'
 
-    def __init__(self, model, prop, name, reference_class):
+    def __init__(self, model, prop, name):
         self.__model = model
         self.__property = prop
         self.name = name
-        self.item_type = reference_class
+        self.item_type = model
 
     def __get__(self, model_instance, model_class):
         """Fetches collection of model instances of this collection property."""
