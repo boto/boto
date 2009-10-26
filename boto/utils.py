@@ -117,7 +117,9 @@ def canonical_string(method, path, headers, expires=None):
 def merge_meta(headers, metadata):
     final_headers = headers.copy()
     for k in metadata.keys():
-        if k.lower() in ['content-md5', 'content-type', 'date']:
+        if k.lower() in ['cache-control', 'content-md5', 'content-type',
+                         'content-encoding', 'content-disposition',
+                         'date', 'expires']:
             final_headers[k] = metadata[k]
         else:
             final_headers[METADATA_PREFIX + k] = metadata[k]
