@@ -178,6 +178,13 @@ def _get_instance_metadata(url):
     return d
 
 def get_instance_metadata(version='latest'):
+    """
+    Returns the instance metadata as a nested Python dictionary.
+    Simple values (e.g. local_hostname, hostname, etc.) will be
+    stored as string values.  Values such as ancestor-ami-ids will
+    be stored in the dict as a list of string values.  More complex
+    fields such as public-keys and will be stored as nested dicts.
+    """
     url = 'http://169.254.169.254/%s/meta-data/' % version
     return _get_instance_metadata(url)
 
