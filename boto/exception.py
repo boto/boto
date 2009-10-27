@@ -28,7 +28,7 @@ from boto.resultset import ResultSet
 
 import xml.sax
 
-class BotoClientError(Exception):
+class BotoClientError(StandardError):
     """
     General Boto Client error (error accessing AWS)
     """
@@ -42,7 +42,7 @@ class BotoClientError(Exception):
     def __str__(self):
         return 'S3Error: %s' % self.reason
 
-class SDBPersistenceError(Exception):
+class SDBPersistenceError(StandardError):
 
     pass
 
@@ -52,7 +52,7 @@ class S3PermissionsError(BotoClientError):
     """
     pass
     
-class BotoServerError(Exception):
+class BotoServerError(StandardError):
     
     def __init__(self, status, reason, body=None):
         self.status = status
