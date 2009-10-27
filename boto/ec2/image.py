@@ -21,6 +21,15 @@
 
 from boto.ec2.ec2object import EC2Object
 
+class ProductCodes(list):
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'productCode':
+            self.append(value)
+    
 class Image(EC2Object):
     """
     Represents an EC2 Image
@@ -37,11 +46,17 @@ class Image(EC2Object):
         self.type = None
         self.kernel_id = None
         self.ramdisk_id = None
-        self.product_codes = []
+        self.product_codes = ProductCodes()
 
     def __repr__(self):
         return 'Image:%s' % self.id
 
+    def startElement(self, name, attrs, connection):
+        if name == 'productCodes':
+            return self.product_codes
+        else:
+            return None
+        
     def endElement(self, name, value, connection):
         if name == 'imageId':
             self.id = value
@@ -69,8 +84,6 @@ class Image(EC2Object):
                         self.id
                     )
                 )
-        elif name == 'productCode':
-            self.product_codes.append(value)
         else:
             setattr(self, name, value)
 
