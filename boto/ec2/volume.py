@@ -136,7 +136,10 @@ class Volume(EC2Object):
         :rtype: bool
         :return: True if successful
         """
-        return self.connection.detach_volume(self.id, self.instance_id)
+        instance_id = None
+        if self.attach_data:
+            instance_id = self.attach_data.get('instance_id', None)
+        return self.connection.detach_volume(self.id, instance_id)
 
     def create_snapshot(self, description=None):
         """
