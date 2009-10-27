@@ -60,6 +60,7 @@ class Snapshot(EC2Object):
 
     def _update(self, updated):
         self.progress = updated.progress
+        self.status = updated.status
 
     def update(self):
         rs = self.connection.get_all_snapshots([self.id])
