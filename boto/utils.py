@@ -141,7 +141,12 @@ def retry_url(url, retry_on_404=True):
             resp = urllib2.urlopen(req)
             return resp.read()
         except urllib2.HTTPError, e:
-            if e.getcode() == 404 and not retry_on_404:
+            # in 2.6 you use getcode(), in 2.5 and earlier you use code
+            if hasattr(e, 'getcode'):
+                code = e.getcode()
+            else:
+                code = e.code
+            if code == 404 and not retry_on_404:
                 return ''
         except:
             pass
@@ -149,22 +154,32 @@ def retry_url(url, retry_on_404=True):
         time.sleep(2**i)
     boto.log.error('Unable to read instance data, giving up')
     return ''
-    
-def get_instance_metadata(version='latest'):
-    metadata = {}
-    url = 'http://169.254.169.254/%s/meta-data/' % version
+
+def _get_instance_metadata(url):
+    d = {}
     data = retry_url(url)
     if data:
-        md_fields = data.split('\n')
-        for md in md_fields:
-            val = retry_url(url + md)
-            if val.find('\n') > 0:
-                val = val.split('\n')
-            metadata[md] = val
-    return metadata
+        fields = data.split('\n')
+        for field in fields:
+            if field.endswith('/'):
+                d[field[0:-1]] = _get_instance_metadata(url + field)
+            else:
+                p = field.find('=')
+                if p > 0:
+                    field = field[0:p]
+                val = retry_url(url + field)
+                p = val.find('\n')
+                if p > 0:
+                    val = val.split('\n')
+                d[field] = val
+    return d
+
+def get_instance_metadata(version='latest'):
+    url = 'http://169.254.169.254/%s/meta-data/' % version
+    return _get_instance_metadata(url)
 
 def get_instance_userdata(version='latest', sep=None):
-    url = 'http://169.254.169.254/%s/user-data/' % version
+    url = 'http://169.254.169.254/%s/user-data' % version
     user_data = retry_url(url, retry_on_404=False)
     if user_data:
         if sep:
