@@ -166,12 +166,15 @@ def _get_instance_metadata(url):
             else:
                 p = field.find('=')
                 if p > 0:
-                    field = field[0:p]
-                val = retry_url(url + field)
+                    key = field[p+1:]
+                    resource = field[0:p] + '/openssh-key'
+                else:
+                    key = resource = field
+                val = retry_url(url + resource)
                 p = val.find('\n')
                 if p > 0:
                     val = val.split('\n')
-                d[field] = val
+                d[key] = val
     return d
 
 def get_instance_metadata(version='latest'):
