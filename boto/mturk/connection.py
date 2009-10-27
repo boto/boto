@@ -176,7 +176,7 @@ class MTurkConnection(AWSQueryConnection):
             self.build_list_params(params, response_groups, 'ResponseGroup')
                 
         # Submit
-        return self._process_request('CreateHIT', params, [('Reward', Price),])
+        return self._process_request('CreateHIT', params, [('HIT', HIT),])
 
     def get_reviewable_hits(self, hit_type=None, status='Reviewable',
                             sort_by='Expiration', sort_direction='Ascending', 
@@ -374,7 +374,7 @@ class MTurkConnection(AWSQueryConnection):
         """
         body = response.read()
         #print body
-        if response.status == 200:
+        if '<Errors>' not in body:
             rs = ResultSet(marker_elems)
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
