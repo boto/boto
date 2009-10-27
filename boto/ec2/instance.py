@@ -26,6 +26,7 @@ Represents an EC2 Instance
 from boto.ec2.ec2object import EC2Object
 from boto.resultset import ResultSet
 from boto.ec2.address import Address
+from boto.ec2.image import ProductCodes
 import base64
 
 class Reservation(EC2Object):
@@ -81,7 +82,7 @@ class Instance(EC2Object):
         self.placement = None
         self.kernel = None
         self.ramdisk = None
-        self.product_codes = []
+        self.product_codes = ProductCodes()
         self.ami_launch_index = None
         self.monitored = False
         self.subnet_id = None
@@ -97,6 +98,8 @@ class Instance(EC2Object):
     def startElement(self, name, attrs, connection):
         if name == 'monitoring':
             self._in_monitoring_element = True
+        elif name == 'productCodes':
+            return self.product_codes
         return None
 
     def endElement(self, name, value, connection):
@@ -133,8 +136,6 @@ class Instance(EC2Object):
             self.kernel = value
         elif name == 'ramdiskId':
             self.ramdisk = value
-        elif name == 'productCode':
-            self.product_codes.append(value)
         elif name == 'state':
             if self._in_monitoring_element:
                 if value == 'enabled':
