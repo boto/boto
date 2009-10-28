@@ -57,6 +57,19 @@ def set_file_logger(name, filepath, level=logging.INFO, format_string=None):
     logger.addHandler(fh)
     log = logger
 
+def set_stream_logger(name, level=logging.DEBUG, format_string=None):
+    global log
+    if not format_string:
+        format_string = "%(asctime)s %(name)s [%(levelname)s]:%(message)s"
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    fh = logging.StreamHandler()
+    fh.setLevel(level)
+    formatter = logging.Formatter(format_string)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    log = logger
+
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     :type aws_access_key_id: string
