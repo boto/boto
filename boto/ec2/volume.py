@@ -1,4 +1,4 @@
-# Copyrigh (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -112,17 +112,9 @@ class Volume(EC2Object):
         """
         return self.connection.attach_volume(self.id, instance_id, device)
 
-    def detach(self):
+    def detach(self, force=False):
         """
         Detach this EBS volume from an EC2 instance.
-
-        :type instance_id: str
-        :param instance_id: The ID of the EC2 instance from which it will
-                            be detached.
-
-        :type device: str
-        :param device: The device on the instance through which the
-                       volume is exposted (e.g. /dev/sdh)
 
         :type force: bool
         :param force: Forces detachment if the previous detachment attempt did
@@ -138,8 +130,11 @@ class Volume(EC2Object):
         """
         instance_id = None
         if self.attach_data:
-            instance_id = self.attach_data.get('instance_id', None)
-        return self.connection.detach_volume(self.id, instance_id)
+            instance_id = self.attach_data.instance_id
+        device = None
+        if self.attach_data:
+            device = self.attach_data.device
+        return self.connection.detach_volume(self.id, instance_id, device, force)
 
     def create_snapshot(self, description=None):
         """
