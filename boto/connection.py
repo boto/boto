@@ -471,6 +471,18 @@ class AWSAuthConnection:
         b64_hmac = base64.encodestring(hmac.digest()).strip()
         headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
 
+    def close(self):
+        """(Optional) Close any open HTTP connections.  This is non-destructive,
+        and making a new request will open a connection again."""
+
+        boto.log.debug('closing all HTTP connections')
+        self.connection = None  # compat field
+        hosts = list(self._cache.keys())
+        for host in hosts:
+            conn = self._cache[host]
+            conn.close()
+            del self._cache[host]
+
 class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''

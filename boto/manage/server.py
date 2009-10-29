@@ -29,11 +29,15 @@ from boto.pyami.config import BotoConfigPath, Config
 from boto.sdb.db.model import Model
 from boto.sdb.db.property import *
 from boto.manage import propget
+from boto.ec2.zone import Zone
+from boto.ec2.keypair import KeyPair
 import os, time, StringIO
 from contextlib import closing
 from boto.exception import EC2ResponseError
 
-InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
+InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
+                 'c1.medium', 'c1.xlarge',
+                 'm2.2xlarge', 'm2.4xlarge']
 
 class Bundler(object):
 
@@ -267,7 +271,7 @@ class Server(Model):
     config file. 
     '''
     @classmethod
-    def create(cls, config_file, logical_volume = None, **params):
+    def create(cls, config_file=None, logical_volume = None, **params):
         cfg = Config(path=config_file)
         if cfg.has_section('EC2'):
             # include any EC2 configuration values that aren't specified in params:
@@ -283,15 +287,17 @@ class Server(Model):
         kp = params.get('keypair')
         group = params.get('group')
         zone = params.get('zone')
+        print zone
         # deal with possibly passed in logical volume:
         if logical_volume != None:
            cfg.set('EBS', 'logical_volume_name', logical_volume.name) 
         cfg_fp = StringIO.StringIO()
         cfg.write(cfg_fp)
         # deal with the possibility that zone and/or keypair are strings read from the config file:
-        if isinstance(zone, str) == False and isinstance(kp, unicode) == False:
+        if isinstance(zone, Zone):
             zone = zone.name
-        if isinstance(kp, str) == False and isinstance(kp, unicode) == False:
+        print zone
+        if isinstance(kp, KeyPair):
             kp = kp.name
         reservation = ami.run(min_count=1,
                               max_count=params.get('quantity', 1),
