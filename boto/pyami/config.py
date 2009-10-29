@@ -45,6 +45,18 @@ class Config(ConfigParser.SafeConfigParser):
                 self.readfp(fp)
             else:
                 self.read(BotoConfigLocations)
+            if "AWS_CREDENTIAL_FILE" in os.environ:
+                self.load_credential_file(os.path.expanduser(os.environ['AWS_CREDENTIAL_FILE']))
+
+    def load_credential_file(self, path):
+        """Load a credential file as is setup like the Java utilities"""
+        config = ConfigParser.ConfigParser()
+        c_data = StringIO.StringIO()
+        c_data.write("[Credentials]\n")
+        for line in open(path, "r").readlines():
+            c_data.write(line.replace("AWSAccessKeyId", "aws_access_key_id").replace("AWSSecretKey", "aws_secret_access_key"))
+        c_data.seek(0)
+        self.readfp(c_data)
 
     def load_from_path(self, path):
         file = open(path)
