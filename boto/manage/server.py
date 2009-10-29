@@ -276,7 +276,7 @@ class Server(Model):
         if cfg.has_section('EC2'):
             # include any EC2 configuration values that aren't specified in params:
             for option in cfg.options('EC2'):
-                if params.keys().__contains__(option) == False:
+                if option not in params:
                     params[option] = cfg.get('EC2', option)
         getter = CommandLineGetter()
         getter.get(cls, params)
@@ -287,7 +287,6 @@ class Server(Model):
         kp = params.get('keypair')
         group = params.get('group')
         zone = params.get('zone')
-        print zone
         # deal with possibly passed in logical volume:
         if logical_volume != None:
            cfg.set('EBS', 'logical_volume_name', logical_volume.name) 
@@ -296,7 +295,6 @@ class Server(Model):
         # deal with the possibility that zone and/or keypair are strings read from the config file:
         if isinstance(zone, Zone):
             zone = zone.name
-        print zone
         if isinstance(kp, KeyPair):
             kp = kp.name
         reservation = ami.run(min_count=1,
