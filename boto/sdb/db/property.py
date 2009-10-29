@@ -75,7 +75,7 @@ class Property(object):
     def validate(self, value):
         if self.required and value==None:
             raise ValueError, '%s is a required property' % self.name
-        if self.choices and not value in self.choices:
+        if self.choices and value and not value in self.choices:
             raise ValueError, '%s not a valid choice for %s' % (value, self.name)
         if self.validator:
             self.validator(value)
