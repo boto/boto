@@ -361,7 +361,7 @@ class Bucket:
         if permission not in S3Permissions:
             raise S3PermissionsError('Unknown Permission: %s' % permission)
         policy = self.get_acl(headers=headers)
-        policy.acl.add_email_grant(permission, email_address, headers=headers)
+        policy.acl.add_email_grant(permission, email_address)
         self.set_acl(policy, headers=headers)
         if recursive:
             for key in self:
