@@ -56,6 +56,10 @@ class ParameterGroup(dict):
             if p.is_modifiable:
                 mod.append(p)
         return mod
+
+    def get_params(self):
+        pg = self.connection.get_all_dbparameters(self.name)
+        self.update(pg)
     
     def add_param(self, name, value, apply_method):
         param = Parameter()

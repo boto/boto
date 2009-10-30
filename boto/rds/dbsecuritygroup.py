@@ -28,6 +28,7 @@ class DBSecurityGroup(object):
     
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None):
+        self.connection = connection
         self.owner_id = owner_id
         self.name = name
         self.description = description

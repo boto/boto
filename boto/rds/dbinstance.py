@@ -19,6 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.rds.dbsecuritygroup import DBSecurityGroup
+from boto.rds.parametergroup import ParameterGroup
+
 class DBInstance(object):
     """
     Represents a RDS  DBInstance
@@ -34,6 +37,8 @@ class DBInstance(object):
         self.endpoint = None
         self.instance_class = None
         self.master_username = None
+        self.parameter_group = None
+        self.security_group = None
         self.availability_zone = None
         self._in_endpoint = False
         self._port = None
@@ -45,11 +50,19 @@ class DBInstance(object):
     def startElement(self, name, attrs, connection):
         if name == 'Endpoint':
             self._in_endpoint = True
+        elif name == 'DBParameterGroup':
+            self.parameter_group = ParameterGroup(self.connection)
+            return self.parameter_group
+        elif name == 'DBSecurityGroup':
+            self.security_group = DBSecurityGroup(self.connection)
+            return self.security_group
         return None
 
     def endElement(self, name, value, connection):
         if name == 'DBInstanceIdentifier':
             self.id = value
+        elif name == 'DBInstanceStatus':
+            self.status = value
         elif name == 'CreationDate':
             self.creation_date = value
         elif name == 'Engine':

@@ -33,6 +33,8 @@ from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
 from boto.rds.event import Event
 
+#boto.set_stream_logger('rds')
+
 class RDSConnection(AWSQueryConnection):
 
     DefaultHost = 'rds.amazonaws.com'
@@ -41,7 +43,7 @@ class RDSConnection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, host=DefaultHost, debug=0,
+                 proxy_user=None, proxy_pass=None, host=DefaultHost, debug,
                  https_connection_factory=None, path='/'):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user,
@@ -84,8 +86,10 @@ class RDSConnection(AWSQueryConnection):
     def create_dbinstance(self, id, allocated_storage, instance_class,
                           master_username, master_password, port=3306,
                           engine='MySQL5.1', db_name=None, param_group=None,
-                          security_groups=None, availability_zone=None,
-                          preferred_maintenance_window=None):
+                          security_group=None, availability_zone=None,
+                          preferred_maintenance_window=None,
+                          backup_retention_period=None,
+                          preferred_backup_window=None):
         """
         Create a new DBInstance.
 
@@ -130,9 +134,9 @@ class RDSConnection(AWSQueryConnection):
                             this DBInstance.  If no groups are specified
                             no parameter groups will be used.
                         
-        :type security_groups: list of str
-        :param security_groups: List of DBSecurityGroups to authorize on
-                                this DBInstance.
+        :type security_group: str
+        :param security_group: Name of DBSecurityGroup to authorize on
+                               this DBInstance.
                         
         :type availability_zone: str
         :param availability_zone: Name of the availability zone to place
@@ -167,11 +171,10 @@ class RDSConnection(AWSQueryConnection):
             params['Port'] = port
         if db_name:
             params['DBName'] = db_name
-        if param_groups:
+        if param_group:
             params['DBParameterGroup'] = param_group
-        if security_groups:
-            self.build_list_params(params, security_groups,
-                                   'DBSecurityGroups')
+        if security_group:
+            params['DBSecurityGroup'] = security_group
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         if preferred_maintenance_window:
@@ -183,7 +186,7 @@ class RDSConnection(AWSQueryConnection):
             
         return self.get_object('CreateDBInstance', params, DBInstance)
         
-    def modify_dbinstance(self, id, param_group=None, security_groups=None,
+    def modify_dbinstance(self, id, param_group=None, security_group=None,
                           preferred_maintenance_window=None,
                           master_password=None, allocated_storage=None):
         """
@@ -192,9 +195,9 @@ class RDSConnection(AWSQueryConnection):
         :type id: str
         :param id: Unique identifier for the new instance.
 
-        :type security_groups: list of str
-        :param security_groups: List of DBSecurityGroups to authorize on
-                                this DBInstance.
+        :type security_group: str
+        :param security_group: Name of DBSecurityGroup to authorize on
+                               this DBInstance.
 
         :type preferred_maintenance_window: str
         :param preferred_maintenance_window: The weekly time range (in UTC) during
@@ -239,9 +242,8 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBInstanceIdentifier' : id}
         if param_group:
             params['DBParameterGroupName'] = param_group
-        if security_groups:
-            self.build_list_params(params, security_groups,
-                                   'DBSecurityGroups')
+        if security_group:
+            params['DBSecurityGroups'] = security_group
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
         if master_password:
@@ -279,9 +281,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBInstanceIdentifier' : id}
         if skip_final_snapshot:
-            params['SkipFinalSnapshot'] = 'true'
+            params['SkipFinalSnapshot'] = 'True'
         else:
-            params['SkipFinalSnapshot'] = 'false'
+            params['SkipFinalSnapshot'] = 'False'
             params['FinalDBSnapshotIdentifier'] = final_snapshot_id
         return self.get_object('DeleteDBInstance', params, DBInstance)
         
@@ -316,7 +318,7 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeDBParameterGroups', params,
-                             [('item', ParameterGroup)])
+                             [('DBParameterGroup', ParameterGroup)])
 
     def get_all_dbparameters(self, groupname, source=None,
                              max_records=None, marker=None):
@@ -408,9 +410,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBParameterGroupName':name}
         if reset_all_params:
-            params['ResetAllParameters'] = 'true'
+            params['ResetAllParameters'] = 'True'
         else:
-            params['ResetAllParameters'] = 'false'
+            params['ResetAllParameters'] = 'False'
             for i in range(0, len(parameters)):
                 parameter = parameters[i]
                 parameter.merge(params, i+1)
@@ -448,7 +450,7 @@ class RDSConnection(AWSQueryConnection):
         
         :rtype: list
         :return: A list of :class:`boto.rds.dbsecuritygroup.DBSecurityGroup`
-        """p
+        """
         params = {}
         if groupname:
             params['DBSecurityGroupName'] = groupname
@@ -456,9 +458,10 @@ class RDSConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if marker:
             params['Marker'] = marker
-        return self.get_list('DescribeDBSecurityGroups', params, [('item', DBSecurityGroup)])
+        return self.get_list('DescribeDBSecurityGroups', params,
+                             [('DBSecurityGroup', DBSecurityGroup)])
 
-    def create_security_group(self, name, description=None):
+    def create_dbsecurity_group(self, name, description=None):
         """
         Create a new security group for your account.
         This will create the security group within the region you
@@ -518,7 +521,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'GroupName':group_name}
+        params = {'DBSecurityGroupName':group_name}
         if ec2_security_group_name:
             params['EC2SecurityGroupName'] = ec2_security_group_name
         if ec2_security_group_owner_id:
@@ -600,7 +603,7 @@ class RDSConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if marker:
             params['Marker'] = marker
-        return self.get_list('DescribeDBSnapshots', params, [('item', DBSnapshot)])
+        return self.get_list('DescribeDBSnapshots', params, [('DBSnapshots', DBSnapshot)])
 
     def create_dbsnapshot(self, identifier, dbinstance_id):
         """
@@ -675,7 +678,7 @@ class RDSConnection(AWSQueryConnection):
                                               target_instance_id,
                                               use_latest=False,
                                               restore_time=None,
-                                              dbinstance_class,
+                                              dbinstance_class=None,
                                               port=None,
                                               availability_zone=None):
         
