@@ -282,9 +282,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBInstanceIdentifier' : id}
         if skip_final_snapshot:
-            params['SkipFinalSnapshot'] = 'True'
+            params['SkipFinalSnapshot'] = 'true'
         else:
-            params['SkipFinalSnapshot'] = 'False'
+            params['SkipFinalSnapshot'] = 'false'
             params['FinalDBSnapshotIdentifier'] = final_snapshot_id
         return self.get_object('DeleteDBInstance', params, DBInstance)
         
@@ -411,9 +411,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBParameterGroupName':name}
         if reset_all_params:
-            params['ResetAllParameters'] = 'True'
+            params['ResetAllParameters'] = 'true'
         else:
-            params['ResetAllParameters'] = 'False'
+            params['ResetAllParameters'] = 'false'
             for i in range(0, len(parameters)):
                 parameter = parameters[i]
                 parameter.merge(params, i+1)
@@ -721,7 +721,7 @@ class RDSConnection(AWSQueryConnection):
         params = {'SourceDBInstanceIdentifier' : source_instance_id,
                   'TargetDBInstanceIdentifier' : target_instance_id}
         if use_latest:
-            params['UseLatestRestorableTime'] = 'True'
+            params['UseLatestRestorableTime'] = 'true'
         elif restore_time:
             params['RestoreTime'] = restore_time.isoformat()
         if instance_class:
