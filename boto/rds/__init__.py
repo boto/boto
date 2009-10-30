@@ -630,6 +630,104 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBSnapshotIdentifier' : identifier}
         return self.get_object('DeleteDBSnapshot', params, DBSnapshot)
 
+    def restore_dbinstance_from_dbsnapshot(self, identifier, dbinstance_id,
+                                           dbinstance_class, port=None,
+                                           availability_zone=None):
+        
+        """
+        Create a new DBInstance from a DB snapshot.
+        
+        :type identifier: string
+        :param identifier: The identifier for the DBSnapshot
+        
+        :type dbinstance_id: string
+        :param dbinstance_id: The source identifier for the RDS instance from
+                              which the snapshot is created.
+        
+        :type instance_class: str
+        :param instance_class: The compute and memory capacity of the DBInstance.
+                               Valid values are:
+                               db.m1.small | db.m1.large | db.m1.xlarge |
+                               db.m2.2xlarge | db.m2.4xlarge
+
+        :type port: int
+        :param port: Port number on which database accepts connections.
+                     Valid values [1115-65535].  Defaults to 3306.
+
+        :type availability_zone: str
+        :param availability_zone: Name of the availability zone to place
+                                  DBInstance into.
+
+        :rtype: :class:`boto.rds.dbinstance.DBInstance`
+        :return: The newly created DBInstance
+        """
+        params = {'DBSnapshotIdentifier' : identifier,
+                  'DBInstanceIdentifier' : dbinstance_id,
+                  'DBInstanceClass' : instance_class}
+        if port:
+            params['Port'] = port
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
+        return self.get_object('CreateDBInstanceFromDBSnapshot',
+                               params, DBInstance)
+
+    def restore_dbinstance_from_point_in_time(self, source_instance_id,
+                                              target_instance_id,
+                                              use_latest=False,
+                                              restore_time=None,
+                                              dbinstance_class,
+                                              port=None,
+                                              availability_zone=None):
+        
+        """
+        Create a new DBInstance from a point in time.
+        
+        :type source_instance_id: string
+        :param source_instance_id: The identifier for the source DBInstance.
+        
+        :type target_instance_id: string
+        :param target_instance_id: The identifier of the new DBInstance.
+
+        :type use_latest: bool
+        :param use_latest: If True, the latest snapshot availabile will
+                           be used.
+
+        :type restore_time: datetime
+        :param restore_time: The date and time to restore from.  Only
+                             used if use_latest is False.
+        
+        :type instance_class: str
+        :param instance_class: The compute and memory capacity of the DBInstance.
+                               Valid values are:
+                               db.m1.small | db.m1.large | db.m1.xlarge |
+                               db.m2.2xlarge | db.m2.4xlarge
+
+        :type port: int
+        :param port: Port number on which database accepts connections.
+                     Valid values [1115-65535].  Defaults to 3306.
+
+        :type availability_zone: str
+        :param availability_zone: Name of the availability zone to place
+                                  DBInstance into.
+
+        :rtype: :class:`boto.rds.dbinstance.DBInstance`
+        :return: The newly created DBInstance
+        """
+        params = {'SourceDBInstanceIdentifier' : source_instance_id,
+                  'TargetDBInstanceIdentifier' : target_instance_id}
+        if use_latest:
+            params['UseLatestRestorableTime'] = 'True'
+        elif restore_time:
+            params['RestoreTime'] = restore_time.isoformat()
+        if instance_class:
+            params['DBInstanceClass'] = instance_class
+        if port:
+            params['Port'] = port
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
+        return self.get_object('RestoreDBInstanceToPointInTime',
+                               params, DBInstance)
+
     # Events
 
     def get_all_events(self, source_identifier=None, source_type=None,
