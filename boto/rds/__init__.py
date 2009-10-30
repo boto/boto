@@ -31,6 +31,7 @@ from boto.resultset import ResultSet
 from boto.rds.dbinstance import DBInstance
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
+from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 
 #boto.set_stream_logger('rds')
@@ -603,23 +604,24 @@ class RDSConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if marker:
             params['Marker'] = marker
-        return self.get_list('DescribeDBSnapshots', params, [('DBSnapshots', DBSnapshot)])
+        return self.get_list('DescribeDBSnapshots', params,
+                             [('DBSnapshots', DBSnapshot)])
 
-    def create_dbsnapshot(self, identifier, dbinstance_id):
+    def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
         Create a new DB snapshot.
         
-        :type identifier: string
-        :param identifier: The identifier for the DBSnapshot
+        :type snapshot_id: string
+        :param snapshot_id: The identifier for the DBSnapshot
         
         :type dbinstance_id: string
         :param dbinstance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
         
-        :rtype: L{DBSnapshot<boto.rds.dbsnapshot.DBSnapshot>}
+        :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
         :return: The newly created DBSnapshot
         """
-        params = {'DBSnapshotIdentifier' : identifier,
+        params = {'DBSnapshotIdentifier' : snapshot_id,
                   'DBInstanceIdentifier' : dbinstance_id}
         return self.get_object('CreateDBSnapshot', params, DBSnapshot)
 

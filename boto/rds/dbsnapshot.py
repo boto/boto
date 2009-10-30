@@ -28,14 +28,15 @@ class DBSnapshot(object):
         self.connection = connection
         self.id = id
         self.engine = None
-        self.instance_creation_date = None
-        self.endpoint_port = None
+        self.snapshot_create_time = None
+        self.instance_create_time = None
+        self.port = None
         self.status = None
         self.availability_zone = None
         self.master_username = None
         self.allocated_storage = None
-        self.time = None
         self.instance_id = None
+        self.availability_zone = None
 
     def __repr__(self):
         return 'DBSnapshot:%s' % self.id
@@ -44,21 +45,23 @@ class DBSnapshot(object):
         pass
 
     def endElement(self, name, value, connection):
-        if name == 'DBEngineName':
+        if name == 'Engine':
             self.engine = value
-        elif name == 'InstanceCreationDate':
-            self.instance_creation_date = value
+        elif name == 'InstanceCreateTime':
+            self.instance_create_time = value
+        elif name == 'SnapshotCreateTime':
+            self.snapshot_create_time = value
         elif name == 'DBInstanceIdentifier':
             self.instance_id = value
         elif name == 'DBSnapshotIdentifier':
             self.id = value
-        elif name == 'EndpointPort':
-            self.endpoint_port = int(value)
+        elif name == 'Port':
+            self.port = int(value)
         elif name == 'Status':
             self.status = value
         elif name == 'AvailabilityZone':
             self.availability_zone = value
-        elif name == 'DBMasterUsername':
+        elif name == 'MasterUsername':
             self.master_username = value
         elif name == 'AllocatedStorage':
             self.allocated_storage = int(value)
