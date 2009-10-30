@@ -55,15 +55,21 @@ class MySQL(Installer):
     def change_data_dir(self, password=None):
         data_dir = boto.config.get('MySQL', 'data_dir', '/mnt')
         fresh_install = False;
-        time.sleep(10) #trying to stop mysql immediately after installing it fails
-        # We need to wait until mysql creates the root account before we kill it
-        # or bad things will happen
-        i = 0
-        while self.run("echo 'quit' | mysql -u root") != 0 and i<5:
-            time.sleep(5)
-            i = i + 1
-        self.run('/etc/init.d/mysql stop')
-        self.run("pkill -9 mysql")
+        is_mysql_running_command = ShellCommand('mysqladmin ping') # exit status 0 if mysql is running
+        is_mysql_running_command.run()
+        if is_mysql_running_command.getStatus() == 0:
+            # mysql is running. This is the state apt-get will leave it in. If it isn't running, 
+            # that means mysql was already installed on the AMI and there's no need to stop it,
+            # saving 40 seconds on instance startup.
+            time.sleep(10) #trying to stop mysql immediately after installing it fails
+            # We need to wait until mysql creates the root account before we kill it
+            # or bad things will happen
+            i = 0
+            while self.run("echo 'quit' | mysql -u root") != 0 and i<5:
+                time.sleep(5)
+                i = i + 1
+            self.run('/etc/init.d/mysql stop')
+            self.run("pkill -9 mysql")
 
         mysql_path = os.path.join(data_dir, 'mysql')
         if not os.path.exists(mysql_path):
