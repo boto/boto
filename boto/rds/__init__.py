@@ -25,6 +25,7 @@ import base64
 import time
 import boto
 import boto.utils
+import urllib
 from boto.connection import AWSQueryConnection
 from boto import handler
 from boto.resultset import ResultSet
@@ -635,8 +636,8 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBSnapshotIdentifier' : identifier}
         return self.get_object('DeleteDBSnapshot', params, DBSnapshot)
 
-    def restore_dbinstance_from_dbsnapshot(self, identifier, dbinstance_id,
-                                           dbinstance_class, port=None,
+    def restore_dbinstance_from_dbsnapshot(self, identifier, instance_id,
+                                           instance_class, port=None,
                                            availability_zone=None):
         
         """
@@ -645,8 +646,8 @@ class RDSConnection(AWSQueryConnection):
         :type identifier: string
         :param identifier: The identifier for the DBSnapshot
         
-        :type dbinstance_id: string
-        :param dbinstance_id: The source identifier for the RDS instance from
+        :type instance_id: string
+        :param instance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
         
         :type instance_class: str
@@ -667,13 +668,13 @@ class RDSConnection(AWSQueryConnection):
         :return: The newly created DBInstance
         """
         params = {'DBSnapshotIdentifier' : identifier,
-                  'DBInstanceIdentifier' : dbinstance_id,
+                  'DBInstanceIdentifier' : instance_id,
                   'DBInstanceClass' : instance_class}
         if port:
             params['Port'] = port
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDBInstanceFromDBSnapshot',
+        return self.get_object('RestoreDBInstanceFromDBSnapshot',
                                params, DBInstance)
 
     def restore_dbinstance_from_point_in_time(self, source_instance_id,

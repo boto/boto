@@ -39,9 +39,14 @@ class DBSecurityGroup(object):
         return 'DBSecurityGroup:%s' % self.name
 
     def startElement(self, name, attrs, connection):
-        if name == 'item':
-            self.rules.append(IPPermissions(self))
-            return self.rules[-1]
+        if name == 'IPRange':
+            cidr = IPRange(self)
+            self.ip_ranges.append(cidr)
+            return cidr
+        elif name == 'EC2SecurityGroup':
+            ec2_grp = EC2SecurityGroup(self)
+            self.ec2_groups.append(ec2_grp)
+            return ec2_grp
         else:
             return None
 
@@ -54,14 +59,6 @@ class DBSecurityGroup(object):
             self.description = value
         elif name == 'IPRanges':
             pass
-        elif name == 'IPRange':
-            cidr = IPRange(self)
-            self.ip_ranges.append(cidr)
-            return cidr
-        elif name == 'EC2SecurityGroup':
-            ec2_grp = EC2SecurityGroup(self)
-            self.ec2_groups.append(ec2_grp)
-            return ec2_grp
         else:
             setattr(self, name, value)
 
