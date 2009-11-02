@@ -30,6 +30,7 @@ to the instance.
 from boto.pyami.installers.ubuntu.installer import Installer
 import os
 import boto
+from boto.utils import ShellCommand
 from ConfigParser import SafeConfigParser
 import time
 
