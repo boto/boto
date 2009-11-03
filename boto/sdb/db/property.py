@@ -172,7 +172,11 @@ class BlobProperty(Property):
     def __set__(self, obj, value):
         if value != self.default_value():
             if not isinstance(value, Blob):
-                b = Blob(value=value)
+                oldb = self.__get__(obj, type(obj))
+                id = None
+                if oldb:
+                    id = oldb.id
+                b = Blob(value=value, id=id)
                 value = b
         Property.__set__(self, obj, value)
 

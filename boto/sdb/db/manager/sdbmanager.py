@@ -252,7 +252,8 @@ class SDBConverter:
             else:
                 raise SDBPersistenceError("Invalid Blob ID: %s" % value.id)
 
-        key.set_contents_from_string(value.value)
+        if value.value != None:
+            key.set_contents_from_string(value.value)
         return value.id
 
 
