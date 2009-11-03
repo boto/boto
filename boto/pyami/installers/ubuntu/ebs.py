@@ -103,6 +103,12 @@ class EBSInstaller(Installer):
             # (if there was one) with the current AWS volume for the logical volume:
             logical_volume = Volume.find(name = self.logical_volume_name).next()
             self.volume_id = logical_volume._volume_id
+        volume = ec2.get_all_volumes([self.volume_id])[0]
+        # wait for the volume to be available. The volume may still be being created
+        # from a snapshot.
+        while volume.update() != 'available':
+            boto.log.info('Volume %s not yet available. Current status = %s.' % (volume.id, volume.status))
+            time.sleep(5)
         ec2.attach_volume(self.volume_id, self.instance_id, self.device)
         # now wait for the volume device to appear
         while not os.path.exists(self.device):
