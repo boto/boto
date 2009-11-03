@@ -310,6 +310,8 @@ class SDBManager(object):
     def encode_value(self, prop, value):
         if value == None:
             return None
+        if not prop:
+            return str(value)
         return self.converter.encode_prop(prop, value)
 
     def decode_value(self, prop, value):
@@ -400,8 +402,6 @@ class SDBManager(object):
             (name, op) = filter[0].strip().split(" ", 1)
             value = filter[1]
             property = cls.find_property(name)
-            if not property:
-                raise AttributeError("Unknown Property: %s" % name)
             if name == order_by:
                 order_by_filtered = True
             if types.TypeType(value) == types.ListType:
