@@ -19,19 +19,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class Blob(object):
-    """
-    Blob object
-    """
+    """Blob object"""
     def __init__(self, value=None, file=None, id=None):
-        self.file = file
+        self._file = file
         self.id = id
         self.value = value
+
+    @property
+    def file(self):
+        from StringIO import StringIO
+        if self._file:
+            f = self._file
+        else:
+            f = StringIO(self.value)
+        return f
 
     def __str__(self):
         return str(self.read())
 
     def read(self):
-        if not self.value:
-            self.value = self.file.read()
-        return self.value
+        return self.file.read()
+
+    def readline(self):
+        return self.file.readline()
+
+    def next(self):
+        return sefl.file.next()
+
+    def __iter__(self):
+        return iter(self.file)
