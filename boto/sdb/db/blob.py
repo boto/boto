@@ -37,7 +37,10 @@ class Blob(object):
         return f
 
     def __str__(self):
-        return str(self.read())
+        if hasattr(self.file, "get_contents_as_string"):
+            return str(self.file.get_contents_as_string())
+        else:
+            return str(self.file.getvalue())
 
     def read(self):
         return self.file.read()
