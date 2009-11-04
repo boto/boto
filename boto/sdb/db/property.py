@@ -364,7 +364,7 @@ class ReferenceProperty(Property):
     def __property_config__(self, model_class, property_name):
         Property.__property_config__(self, model_class, property_name)
         if self.collection_name is None:
-            self.collection_name = '%s_set' % (model_class.__name__.lower())
+            self.collection_name = '%s_%s_set' % (model_class.__name__.lower(), self.name)
         if hasattr(self.reference_class, self.collection_name):
             raise ValueError, 'duplicate property: %s' % self.collection_name
         setattr(self.reference_class, self.collection_name,
