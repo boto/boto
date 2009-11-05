@@ -231,18 +231,18 @@ class IntegerProperty(Property):
     type_name = 'Integer'
 
     def __init__(self, verbose_name=None, name=None, default=0, required=False,
-                 validator=None, choices=None, unique=False):
+                 validator=None, choices=None, unique=False, max=2147483647, min=-2147483648):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+        self.max = max
+        self.min = min
 
     def validate(self, value):
         value = int(value)
         value = Property.validate(self, value)
-        min = -2147483648
-        max = 2147483647
-        if value > max:
-            raise ValueError, 'Maximum value is %d' % max
-        if value < min:
-            raise ValueError, 'Minimum value is %d' % min
+        if value > self.max:
+            raise ValueError, 'Maximum value is %d' % self.max
+        if value < self.min:
+            raise ValueError, 'Minimum value is %d' % self.min
         return value
     
     def empty(self, value):
