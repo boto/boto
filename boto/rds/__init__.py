@@ -88,7 +88,7 @@ class RDSConnection(AWSQueryConnection):
     def create_dbinstance(self, id, allocated_storage, instance_class,
                           master_username, master_password, port=3306,
                           engine='MySQL5.1', db_name=None, param_group=None,
-                          security_group=None, availability_zone=None,
+                          security_groups=None, availability_zone=None,
                           preferred_maintenance_window=None,
                           backup_retention_period=None,
                           preferred_backup_window=None):
@@ -136,9 +136,9 @@ class RDSConnection(AWSQueryConnection):
                             this DBInstance.  If no groups are specified
                             no parameter groups will be used.
                         
-        :type security_group: str
-        :param security_group: Name of DBSecurityGroup to authorize on
-                               this DBInstance.
+        :type security_groups: list of str or list of DBSecurityGroup objects
+        :param security_groups: List of names of DBSecurityGroup to authorize on
+                                this DBInstance.
                         
         :type availability_zone: str
         :param availability_zone: Name of the availability zone to place
@@ -175,8 +175,14 @@ class RDSConnection(AWSQueryConnection):
             params['DBName'] = db_name
         if param_group:
             params['DBParameterGroup'] = param_group
-        if security_group:
-            params['DBSecurityGroup'] = security_group
+        if security_groups:
+            l = []
+            for group in security_groups:
+                if isinstance(group, DBSecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l, 'DBSecurityGroups.member')
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         if preferred_maintenance_window:
@@ -188,19 +194,21 @@ class RDSConnection(AWSQueryConnection):
             
         return self.get_object('CreateDBInstance', params, DBInstance)
         
-    def modify_dbinstance(self, id, param_group=None, security_group=None,
+    def modify_dbinstance(self, id, param_group=None, security_groups=None,
                           preferred_maintenance_window=None,
-                          master_password=None, allocated_storage=None):
+                          master_password=None, allocated_storage=None,
+                          backup_retention_period=None,
+                          preferred_backup_window=None):
         """
         Modify an existing DBInstance.
 
         :type id: str
         :param id: Unique identifier for the new instance.
 
-        :type security_group: str
-        :param security_group: Name of DBSecurityGroup to authorize on
-                               this DBInstance.
-
+        :type security_groups: list of str or list of DBSecurityGroup objects
+        :param security_groups: List of names of DBSecurityGroup to authorize on
+                                this DBInstance.
+                        
         :type preferred_maintenance_window: str
         :param preferred_maintenance_window: The weekly time range (in UTC) during
                                              which maintenance can occur.
@@ -244,8 +252,14 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBInstanceIdentifier' : id}
         if param_group:
             params['DBParameterGroupName'] = param_group
-        if security_group:
-            params['DBSecurityGroups'] = security_group
+        if security_groups:
+            l = []
+            for group in security_groups:
+                if isinstance(group, DBSecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l, 'DBSecurityGroups.member')
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
         if master_password:
