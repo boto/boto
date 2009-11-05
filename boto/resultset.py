@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -48,7 +48,7 @@ class ResultSet(list):
         self.next_token = None
         self.status = True
 
-    def startElement(self, name, attrs, connection):	
+    def startElement(self, name, attrs, connection):
         for t in self.markers:
             if name == t[0]:
                 obj = t[1](connection)
@@ -86,7 +86,7 @@ class ResultSet(list):
             self.status = self.to_boolean(value, 'True')
         else:
             setattr(self, name, value)
-        
+
 class BooleanResult(object):
 
     def __init__(self, marker_elem=None):
@@ -105,7 +105,7 @@ class BooleanResult(object):
 
     def startElement(self, name, attrs, connection):
         return None
-    
+
     def to_boolean(self, value, true_value='true'):
         if value == true_value:
             return True
@@ -121,8 +121,10 @@ class BooleanResult(object):
             self.status = self.to_boolean(value, 'True')
         elif name == 'RequestId':
             self.request_id = value
+        elif name == 'requestId':
+            self.request_id = value
         elif name == 'BoxUsage':
             self.request_id = value
         else:
             setattr(self, name, value)
-            
+

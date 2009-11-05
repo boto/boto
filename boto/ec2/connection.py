@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -59,8 +59,8 @@ class EC2Connection(AWSQueryConnection):
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2.
-        
-        B{Note:} The host argument is overridden by the host specified in the boto configuration file.        
+
+        B{Note:} The host argument is overridden by the host specified in the boto configuration file.
         """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
@@ -83,20 +83,20 @@ class EC2Connection(AWSQueryConnection):
         return params
 
     # Image methods
-        
+
     def get_all_images(self, image_ids=None, owners=None, executable_by=None):
         """
         Retrieve all the EC2 images available on your account.
-        
+
         :type image_ids: list
         :param image_ids: A list of strings with the image IDs wanted
-        
+
         :type owners: list
         :param owners: A list of owner IDs
-        
-        :type executable_by: 
-        :param executable_by: 
-        
+
+        :type executable_by:
+        :param executable_by:
+
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
         """
@@ -113,13 +113,13 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieve all the EC2 kernels available on your account.  Simply filters the list returned
         by get_all_images because EC2 does not provide a way to filter server-side.
-        
+
         :type kernel_ids: list
         :param kernel_ids: A list of strings with the image IDs wanted
-        
+
         :type owners: list
         :param owners: A list of owner IDs
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
         """
@@ -134,13 +134,13 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieve all the EC2 ramdisks available on your account.  Simply filters the list returned
         by get_all_images because EC2 does not provide a way to filter server-side.
-        
+
         :type ramdisk_ids: list
         :param ramdisk_ids: A list of strings with the image IDs wanted
-        
+
         :type owners: list
         :param owners: A list of owner IDs
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
         """
@@ -154,10 +154,10 @@ class EC2Connection(AWSQueryConnection):
     def get_image(self, image_id):
         """
         Shortcut method to retrieve a specific image (AMI).
-        
+
         :type image_id: string
         :param image_id: the ID of the Image to retrieve
-        
+
         :rtype: :class:`boto.ec2.image.Image`
         :return: The EC2 Image specified or None if the image is not found
         """
@@ -178,62 +178,60 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'ImageLocation':image_location}
         rs = self.get_object('RegisterImage', params, ResultSet)
-        image_id = None
-        if rs:
-            image_id = rs.imageId
+        image_id = getattr(rs, 'imageId', None)
         return image_id
-        
+
     def deregister_image(self, image_id):
         """
         Unregister an AMI.
-        
+
         :type image_id: string
         :param image_id: the ID of the Image to unregister
-        
+
         :rtype: bool
         :return: True if successful
         """
         return self.get_status('DeregisterImage', {'ImageId':image_id})
-        
+
     # ImageAttribute methods
-        
+
     def get_image_attribute(self, image_id, attribute='launchPermission'):
         """
         Gets an attribute from an image.
         See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-DescribeImageAttribute.html
-        
+
         :type image_id: string
         :param image_id: The Amazon image id for which you want info about
-        
+
         :type attribute: string
         :param attribute: The attribute you need information about
-        
+
         :rtype: :class:`boto.ec2.image.ImageAttribute`
         :return: An ImageAttribute object representing the value of the attribute requested
         """
         params = {'ImageId' : image_id,
                   'Attribute' : attribute}
         return self.get_object('DescribeImageAttribute', params, ImageAttribute)
-        
+
     def modify_image_attribute(self, image_id, attribute='launchPermission',
                                operation='add', user_ids=None, groups=None,
                                product_codes=None):
         """
         Changes an attribute of an image.
         See http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyImageAttribute.html
-        
+
         :type image_id: string
         :param image_id: The image id you wish to change
-        
+
         :type attribute: string
         :param attribute: The attribute you wish to change
-        
+
         :type operation: string
         :param operation: Either add or remove (this is required for changing launchPermissions)
-        
+
         :type user_ids: list
         :param user_ids: The Amazon IDs of users to add/remove attributes
-        
+
         :type groups: list
         :param groups: The groups to add/remove attributes
 
@@ -257,29 +255,29 @@ class EC2Connection(AWSQueryConnection):
         """
         Resets an attribute of an AMI to its default value.
         See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-ResetImageAttribute.html
-        
+
         :type image_id: string
         :param image_id: ID of the AMI for which an attribute will be described
-        
+
         :type attribute: string
         :param attribute: The attribute to reset
-        
+
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
         params = {'ImageId' : image_id,
                   'Attribute' : attribute}
         return self.get_status('ResetImageAttribute', params)
-        
+
     # Instance methods
-        
+
     def get_all_instances(self, instance_ids=None):
         """
         Retrieve all the instances associated with your account.
-        
+
         :type instance_ids: list
         :param instance_ids: A list of strings of instance IDs
-        
+
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
         """
@@ -296,43 +294,43 @@ class EC2Connection(AWSQueryConnection):
                       monitoring_enabled=False, subnet_id=None):
         """
         Runs an image on EC2.
-        
+
         :type image_id: string
         :param image_id: The ID of the image to run
-        
+
         :type min_count: int
         :param min_count: The minimum number of instances to launch
-        
+
         :type max_count: int
         :param max_count: The maximum number of instances to launch
-        
+
         :type key_name: string
         :param key_name: The name of the key pair with which to launch instances
-        
+
         :type security_groups: list of strings
         :param security_groups: The names of the security groups with which to associate instances
-        
+
         :type user_data: string
         :param user_data: The user data passed to the launched instances
-        
+
         :type instance_type: string
         :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
-        
+
         :type placement: string
         :param placement: The availability zone in which to launch the instances
-        
+
         :type kernel_id: string
         :param kernel_id: The ID of the kernel with which to launch the instances
-        
+
         :type ramdisk_id: string
         :param ramdisk_id: The ID of the RAM disk with which to launch the instances
-        
+
         :type monitoring_enabled: bool
         :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
-        
+
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances for VPC.
-        
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
@@ -366,14 +364,14 @@ class EC2Connection(AWSQueryConnection):
         if subnet_id:
             params['SubnetId'] = subnet_id
         return self.get_object('RunInstances', params, Reservation, verb='POST')
-        
+
     def terminate_instances(self, instance_ids=None):
         """
         Terminate the instances specified
-        
+
         :type instance_ids: list
         :param instance_ids: A list of strings of the Instance IDs to terminate
-        
+
         :rtype: list
         :return: A list of the instances terminated
         """
@@ -386,10 +384,10 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieves the console output for the specified instance.
         See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-GetConsoleOutput.html
-        
+
         :type instance_id: string
         :param instance_id: The instance ID of a running instance on the cloud.
-        
+
         :rtype: L{boto.ec2.instance.ConsoleOutput}
         :return: The console output as a ConsoleOutput object
         """
@@ -400,7 +398,7 @@ class EC2Connection(AWSQueryConnection):
     def reboot_instances(self, instance_ids=None):
         """
         Reboot the specified instances.
-        
+
         :type instance_ids: list
         :param instance_ids: The instances to terminate and reboot
         """
@@ -522,7 +520,7 @@ class EC2Connection(AWSQueryConnection):
         if volume_ids:
             self.build_list_params(params, volume_ids, 'VolumeId')
         return self.get_list('DescribeVolumes', params, [('item', Volume)])
-        
+
     def create_volume(self, size, zone, snapshot=None):
         """
         Create a new EBS Volume.
@@ -546,7 +544,7 @@ class EC2Connection(AWSQueryConnection):
                 snapshot = snapshot.id
             params['SnapshotId'] = snapshot
         return self.get_object('CreateVolume', params, Volume)
-        
+
     def delete_volume(self, volume_id):
         """
         Delete an EBS volume.
@@ -650,7 +648,7 @@ class EC2Connection(AWSQueryConnection):
         if restorable_by:
             params['RestorableBy'] = restorable_by
         return self.get_list('DescribeSnapshots', params, [('item', Snapshot)])
-        
+
     def create_snapshot(self, volume_id, description=None):
         """
         Create a snapshot of an existing EBS Volume.
@@ -668,7 +666,7 @@ class EC2Connection(AWSQueryConnection):
         if description:
             params['Description'] = description[0:255]
         return self.get_object('CreateSnapshot', params, Snapshot)
-        
+
     def delete_snapshot(self, snapshot_id):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params)
@@ -692,26 +690,26 @@ class EC2Connection(AWSQueryConnection):
         if snapshot_id:
             params['SnapshotId'] = snapshot_id
         return self.get_object('DescribeSnapshotAttribute', params, SnapshotAttribute)
-        
+
     def modify_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission',
                                   operation='add', user_ids=None, groups=None):
         """
         Changes an attribute of an image.
-        
+
         :type snapshot_id: string
         :param snapshot_id: The snapshot id you wish to change
-        
+
         :type attribute: string
         :param attribute: The attribute you wish to change.  Valid values are:
                           createVolumePermission
-        
+
         :type operation: string
         :param operation: Either add or remove (this is required for changing
                           snapshot ermissions)
-        
+
         :type user_ids: list
         :param user_ids: The Amazon IDs of users to add/remove attributes
-        
+
         :type groups: list
         :param groups: The groups to add/remove attributes.  The only valid
                        value at this time is 'all'.
@@ -729,30 +727,30 @@ class EC2Connection(AWSQueryConnection):
     def reset_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission'):
         """
         Resets an attribute of a snapshot to its default value.
-        
+
         :type snapshot_id: string
         :param snapshot_id: ID of the snapshot
-        
+
         :type attribute: string
         :param attribute: The attribute to reset
-        
+
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
         params = {'SnapshotId' : snapshot_id,
                   'Attribute' : attribute}
         return self.get_status('ResetSnapshotAttribute', params)
-        
+
     # Keypair methods
-        
+
     def get_all_key_pairs(self, keynames=None):
         """
         Get all key pairs associated with your account.
-        
+
         :type keynames: list
         :param keynames: A list of the names of keypairs to retrieve.
                          If not provided, all key pairs will be returned.
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.keypair.KeyPair`
         """
@@ -760,14 +758,14 @@ class EC2Connection(AWSQueryConnection):
         if keynames:
             self.build_list_params(params, keynames, 'KeyName')
         return self.get_list('DescribeKeyPairs', params, [('item', KeyPair)])
-    
+
     def get_key_pair(self, keyname):
         """
         Convenience method to retrieve a specific keypair (KeyPair).
-        
+
         :type image_id: string
         :param image_id: the ID of the Image to retrieve
-        
+
         :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: The KeyPair specified or None if it is not found
         """
@@ -775,16 +773,16 @@ class EC2Connection(AWSQueryConnection):
             return self.get_all_key_pairs(keynames=[keyname])[0]
         except IndexError: # None of those key pairs available
             return None
-        
+
     def create_key_pair(self, key_name):
         """
         Create a new key pair for your account.
         This will create the key pair within the region you
         are currently connected to.
-        
+
         :type key_name: string
         :param key_name: The name of the new keypair
-        
+
         :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
                  The material attribute of the new KeyPair object
@@ -792,11 +790,11 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'KeyName':key_name}
         return self.get_object('CreateKeyPair', params, KeyPair)
-        
+
     def delete_key_pair(self, key_name):
         """
         Delete a key pair from your account.
-        
+
         :type key_name: string
         :param key_name: The name of the keypair to delete
         """
@@ -804,15 +802,15 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('DeleteKeyPair', params)
 
     # SecurityGroup methods
-        
+
     def get_all_security_groups(self, groupnames=None):
         """
         Get all security groups associated with your account in a region.
-        
+
         :type groupnames: list
         :param groupnames: A list of the names of security groups to retrieve.
                            If not provided, all security groups will be returned.
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.securitygroup.SecurityGroup`
         """
@@ -826,13 +824,13 @@ class EC2Connection(AWSQueryConnection):
         Create a new security group for your account.
         This will create the security group within the region you
         are currently connected to.
-        
+
         :type name: string
         :param name: The name of the new security group
-        
+
         :type description: string
         :param description: The description of the new security group
-        
+
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
         """
@@ -845,7 +843,7 @@ class EC2Connection(AWSQueryConnection):
     def delete_security_group(self, name):
         """
         Delete a security group from your account.
-        
+
         :type key_name: string
         :param key_name: The name of the keypair to delete
         """
@@ -862,19 +860,19 @@ class EC2Connection(AWSQueryConnection):
         src_security_group_owner_id OR ip_protocol, from_port, to_port,
         and cidr_ip.  In other words, either you are authorizing another
         group or you are authorizing some ip-based rule.
-        
+
         :type group_name: string
         :param group_name: The name of the security group you are adding
                            the rule to.
-                           
+
         :type src_security_group_name: string
-        :param src_security_group_name: The name of the security group you are 
+        :param src_security_group_name: The name of the security group you are
                                         granting access to.
-                                        
+
         :type src_security_group_owner_id: string
-        :param src_security_group_owner_id: The ID of the owner of the security group you are 
+        :param src_security_group_owner_id: The ID of the owner of the security group you are
                                             granting access to.
-                                            
+
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
 
@@ -916,19 +914,19 @@ class EC2Connection(AWSQueryConnection):
         src_security_group_owner_id OR ip_protocol, from_port, to_port,
         and cidr_ip.  In other words, either you are revoking another
         group or you are revoking some ip-based rule.
-        
+
         :type group_name: string
         :param group_name: The name of the security group you are removing
                            the rule from.
-                           
+
         :type src_security_group_name: string
-        :param src_security_group_name: The name of the security group you are 
+        :param src_security_group_name: The name of the security group you are
                                         revoking access to.
-                                        
+
         :type src_security_group_owner_id: string
-        :param src_security_group_owner_id: The ID of the owner of the security group you are 
+        :param src_security_group_owner_id: The ID of the owner of the security group you are
                                             revoking access to.
-                                            
+
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
 
@@ -941,7 +939,7 @@ class EC2Connection(AWSQueryConnection):
         :type to_port: string
         :param to_port: The CIDR block you are revoking access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
-                        
+
         :rtype: bool
         :return: True if successful.
         """
@@ -967,7 +965,7 @@ class EC2Connection(AWSQueryConnection):
     def get_all_regions(self):
         """
         Get all available regions for the EC2 service.
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
         """
@@ -983,19 +981,19 @@ class EC2Connection(AWSQueryConnection):
                                              product_description=None):
         """
         Describes Reserved Instance offerings that are available for purchase.
-        
+
         :type reserved_instances_id: str
         :param reserved_instances_id: Displays Reserved Instances with the specified offering IDs.
-        
+
         :type instance_type: str
         :param instance_type: Displays Reserved Instances of the specified instance type.
-        
+
         :type availability_zone: str
         :param availability_zone: Displays Reserved Instances within the specified Availability Zone.
-        
+
         :type product_description: str
         :param product_description: Displays Reserved Instances with the specified product description.
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`
         """
@@ -1015,11 +1013,11 @@ class EC2Connection(AWSQueryConnection):
     def get_all_reserved_instances(self, reserved_instances_id=None):
         """
         Describes Reserved Instance offerings that are available for purchase.
-        
+
         :type reserved_instance_ids: list
         :param reserved_instance_ids: A list of the reserved instance ids that will be returned.
                                       If not provided, all reserved instances will be returned.
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
         """
@@ -1036,15 +1034,15 @@ class EC2Connection(AWSQueryConnection):
         ** CAUTION **
         This request can result in large amounts of money being charged to your
         AWS account.  Use with caution!
-        
+
         :type reserved_instances_offering_id: string
         :param reserved_instances_offering_id: The offering ID of the Reserved
                                                Instance to purchase
-        
+
         :type instance_count: int
         :param instance_count: The number of Reserved Instances to purchase.
                                Default value is 1.
-        
+
         :rtype: :class:`boto.ec2.reservedinstance.ReservedInstance`
         :return: The newly created Reserved Instance
         """
@@ -1059,10 +1057,10 @@ class EC2Connection(AWSQueryConnection):
     def monitor_instance(self, instance_id):
         """
         Enable CloudWatch monitoring for the supplied instance.
-        
+
         :type instance_id: string
         :param instance_id: The instance id
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
@@ -1072,10 +1070,10 @@ class EC2Connection(AWSQueryConnection):
     def unmonitor_instance(self, instance_id):
         """
         Disable CloudWatch monitoring for the supplied instance.
-        
+
         :type instance_id: string
         :param instance_id: The instance id
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
