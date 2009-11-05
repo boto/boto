@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,21 +25,24 @@ implementations of the Mechanical Turk Notification API.
 """
 
 import hmac
-import sha
+try:
+    from hashlib import sha1 as sha
+except ImportError:
+    import sha
 import base64
 import re
 
 class NotificationMessage:
-    
+
     NOTIFICATION_WSDL = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurk/2006-05-05/AWSMechanicalTurkRequesterNotification.wsdl"
     NOTIFICATION_VERSION = '2006-05-05'
-    
+
     SERVICE_NAME = "AWSMechanicalTurkRequesterNotification"
     OPERATION_NAME = "Notify"
-    
+
     EVENT_PATTERN = r"Event\.(?P<n>\d+)\.(?P<param>\w+)"
     EVENT_RE = re.compile(EVENT_PATTERN)
-    
+
     def __init__(self, d):
         """
         Constructor; expects parameter d to be a dict of string parameters from a REST transport notification message
@@ -48,7 +51,7 @@ class NotificationMessage:
         self.timestamp = d['Timestamp'] # 2006-05-23T23:22:30Z
         self.version = d['Version'] # 2006-05-05
         assert d['method'] == NotificationMessage.OPERATION_NAME, "Method should be '%s'" % NotificationMessage.OPERATION_NAME
-        
+
         # Build Events
         self.events = []
         events_dict = {}
@@ -67,7 +70,7 @@ class NotificationMessage:
                     events_dict[n][param] = v
         for n in events_dict:
             self.events.append(Event(events_dict[n]))
-    
+
     def verify(self, secret_key):
         """
         Verifies the authenticity of a notification message.
@@ -85,8 +88,8 @@ class Event:
         self.hit_type = d['HITTypeId']
         self.hit_id = d['HITId']
         self.assignment_id = d['AssignmentId']
-        
+
         #TODO: build self.event_time datetime from string self.event_time_str
-        
+
     def __repr__(self):
         return "<boto.mturk.notification.Event: %s for HIT # %s>" % (self.event_type, self.hit_id)
