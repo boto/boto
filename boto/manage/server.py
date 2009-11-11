@@ -51,19 +51,19 @@ class Bundler(object):
         print '\tcopying cert and pk over to /mnt directory on server'
         sftp_client = self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
-        remote_key_file = '/mnt/%s' % name
-        self.ssh_client.put_file(key_file, remote_key_file)
+        self.remote_key_file = '/mnt/%s' % name
+        self.ssh_client.put_file(key_file, self.remote_key_file)
         path, name = os.path.split(cert_file)
-        remote_cert_file = '/mnt/%s' % name
-        self.ssh_client.put_file(cert_file, remote_cert_file)
+        self.remote_cert_file = '/mnt/%s' % name
+        self.ssh_client.put_file(cert_file, self.remote_cert_file)
         print '...complete!'
 
-    def bundle_image(self, prefix, key_file, cert_file, size, ssh_key):
+    def bundle_image(self, prefix, size, ssh_key):
         command = ""
         if self.uname != 'root':
             command = "sudo "
         command += 'ec2-bundle-vol '
-        command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
+        command += '-c %s -k %s ' % (self.remote_cert_file, self.remote_key_file)
         command += '-u %s ' % self.server._reservation.owner_id
         command += '-p %s ' % prefix
         command += '-s %d ' % size
