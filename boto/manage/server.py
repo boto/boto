@@ -47,8 +47,7 @@ class Bundler(object):
         self.uname = uname
         self.ssh_client = SSHClient(server, uname=uname)
 
-    def bundle_image(self, prefix, key_file, cert_file, size, ssh_key):
-        print 'bundling image...'
+    def copy_x509(self, key_file, cert_file):
         print '\tcopying cert and pk over to /mnt directory on server'
         sftp_client = self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
@@ -57,12 +56,9 @@ class Bundler(object):
         path, name = os.path.split(cert_file)
         remote_cert_file = '/mnt/%s' % name
         self.ssh_client.put_file(cert_file, remote_cert_file)
-        print '\tdeleting %s' % BotoConfigPath
-        # delete the metadata.ini file if it exists
-        try:
-            sftp_client.remove(BotoConfigPath)
-        except:
-            pass
+        print '...complete!'
+
+    def bundle_image(self, prefix, key_file, cert_file, size, ssh_key):
         command = ""
         if self.uname != 'root':
             command = "sudo "
@@ -76,14 +72,9 @@ class Bundler(object):
             command += '-r i386'
         else:
             command += '-r x86_64'
-        print '\t%s' % command
-        t = self.ssh_client.run(command)
-        print '\t%s' % t[0]
-        print '\t%s' % t[1]
-        print '...complete!'
+        return command
 
     def upload_bundle(self, bucket, prefix, ssh_key):
-        print 'uploading bundle...'
         command = ""
         if self.uname != 'root':
             command = "sudo "
@@ -92,13 +83,10 @@ class Bundler(object):
         command += '-b %s ' % bucket
         command += '-a %s ' % self.server.ec2.aws_access_key_id
         command += '-s %s ' % self.server.ec2.aws_secret_access_key
-        print '\t%s' % command
-        t = self.ssh_client.run(command)
-        print '\t%s' % t[0]
-        print '\t%s' % t[1]
-        print '...complete!'
+        return command
 
-    def bundle(self, bucket=None, prefix=None, key_file=None, cert_file=None, size=None, ssh_key=None):
+    def bundle(self, bucket=None, prefix=None, key_file=None, cert_file=None,
+               size=None, ssh_key=None, fp=None):
         iobject = IObject()
         if not bucket:
             bucket = iobject.get_string('Name of S3 bucket')
@@ -112,8 +100,24 @@ class Bundler(object):
             size = iobject.get_int('Size (in MB) of bundled image')
         if not ssh_key:
             ssh_key = self.server.get_ssh_key_file()
-        self.bundle_image(prefix, key_file, cert_file, size, ssh_key)
-        self.upload_bundle(bucket, prefix, ssh_key)
+        self.copy_x509(key_file, cert_file)
+        if not fp:
+            fp = StringIO.StringIO()
+        fp.write('mv %s /mnt/boto.cfg; ' % BotoConfigPath)
+        fp.write('mv /root/.ssh/authorized_keys /mnt/authorized_keys; ')
+        fp.write(self.bundle_image(prefix, size, ssh_key))
+        fp.write('; ')
+        fp.write(self.upload_bundle(bucket, prefix, ssh_key))
+        fp.write('; ')
+        fp.write('mv /mnt/boto.cfg %s; ' % BotoConfigPath)
+        fp.write('mv /mnt/authorized_keys /root/.ssh/authorized_keys\n')
+        command = fp.getvalue()
+        print 'running the following command on the remote server:'
+        print command
+        t = self.ssh_client.run(command)
+        print '\t%s' % t[0]
+        print '\t%s' % t[1]
+        print '...complete!'
         print 'registering image...'
         self.image_id = self.server.ec2.register_image('%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
