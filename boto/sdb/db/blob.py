@@ -53,3 +53,12 @@ class Blob(object):
 
     def __iter__(self):
         return iter(self.file)
+
+    @property
+    def size(self):
+        if self._file:
+            return self._file.size
+        elif self.value:
+            return len(self.value)
+        else:
+            return 0
