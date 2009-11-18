@@ -261,8 +261,12 @@ class Server(Model):
         cfg.set('DB_Server', 'db_name', cls._manager.domain.name)
 
     '''
-    Create a new instance based on the specified configuration file and passed in parameters.
+    Create a new instance based on the specified configuration file or the specified
+    configuration and the passed in parameters.
     
+    If the config_file argument is not None, the configuration is read from there. 
+    Otherwise, the cfg argument is used.
+
     The config file may include other config files with a #import reference. The included
     config files must reside in the same directory as the specified file. 
     
@@ -275,8 +279,9 @@ class Server(Model):
     config file. 
     '''
     @classmethod
-    def create(cls, config_file=None, logical_volume = None, **params):
-        cfg = Config(path=config_file)
+    def create(cls, config_file=None, logical_volume = None, cfg = None, **params):
+        if config_file:
+            cfg = Config(path=config_file)
         if cfg.has_section('EC2'):
             # include any EC2 configuration values that aren't specified in params:
             for option in cfg.options('EC2'):
