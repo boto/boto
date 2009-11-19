@@ -56,6 +56,15 @@ class Property(object):
 
     def __set__(self, obj, value):
         self.validate(value)
+
+        # Fire off any on_set functions
+        try:
+            if obj._loaded and hasattr(obj, "on_set_%s" % self.name):
+                fnc = getattr(obj, "on_set_%s" % self.name)
+                value = fnc(value)
+        except Exception, e:
+            boto.log.exception("Exception running on_set_%s" % self.name)
+
         setattr(obj, self.slot_name, value)
 
     def __property_config__(self, model_class, property_name):
@@ -528,4 +537,3 @@ class MapProperty(Property):
 
     def default_value(self):
         return {}
-    
