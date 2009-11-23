@@ -133,6 +133,10 @@ class Volume(Model):
         if size < self.size:
             size = self.size
         ec2 = self.get_ec2_connection()
+        if self.zone_name == None or self.zone_name == '':
+            # deal with the migration case where the zone is not set in the logical volume:
+            current_volume = ec2.get_all_volumes([self.volume_id])[0]
+            self.zone_name = current_volume.zone
         ebs_volume = ec2.create_volume(size, self.zone_name, snapshot)
         v = Volume()
         v.ec2 = self.ec2
