@@ -82,7 +82,7 @@ class Task(Model):
             if int(self.hour) == self.now.hour:
                 return 0
             else:
-                return max((self.hour - self.now.hour),0)*60*60
+                return max((int(self.hour) - self.now.hour),0)*60*60
 
         delta = self.now - self.last_executed
         if self.hourly:
