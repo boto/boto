@@ -158,7 +158,12 @@ class Model(object):
         self.id = id
         for key in kw:
             if key != 'manager':
-                setattr(self, key, kw[key])
+                # We don't want any errors populating up when loading an object,
+                # so if it fails we just revert to it's default value
+                try:
+                    setattr(self, key, kw[key])
+                except Exception, e:
+                    boto.log.exception(e)
 
     def __repr__(self):
         return '%s<%s>' % (self.__class__.__name__, self.id)
