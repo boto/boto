@@ -545,7 +545,7 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=[], a
                 server = smtplib.SMTP(smtp_host)
 
             # TLS support
-            if boto.config.get_value("Notification", "smtp_tls", "").lower() == "true":
+            if boto.config.getbool("Notification", "smtp_tls"):
                 server.ehlo()
                 server.starttls()
                 server.ehlo()
