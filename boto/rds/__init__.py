@@ -198,7 +198,8 @@ class RDSConnection(AWSQueryConnection):
                           preferred_maintenance_window=None,
                           master_password=None, allocated_storage=None,
                           backup_retention_period=None,
-                          preferred_backup_window=None):
+                          preferred_backup_window=None,
+                          apply_immediately=False):
         """
         Modify an existing DBInstance.
 
@@ -270,6 +271,8 @@ class RDSConnection(AWSQueryConnection):
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
+        if apply_immediately:
+            params['ApplyImmediately'] = 'true'
             
         return self.get_object('ModifyDBInstance', params, DBInstance)
         
