@@ -121,17 +121,20 @@ class StringProperty(Property):
                  validator=validate_string, choices=None, unique=False):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
-def validate_text(value):
-    if not isinstance(value, str) and not isinstance(value, unicode):
-        raise TypeError, 'Expecting Text, got %s' % type(value)
-
 class TextProperty(Property):
     
     type_name = 'Text'
     
     def __init__(self, verbose_name=None, name=None, default='', required=False,
-                 validator=validate_text, choices=None, unique=False):
+                 validator=None, choices=None, unique=False, max_length=None):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+        self.max_length = max_length
+
+    def validate(self, value):
+        if not isinstance(value, str) and not isinstance(value, unicode):
+            raise TypeError, 'Expecting Text, got %s' % type(value)
+        if self.max_length and len(value) > self.max_length:
+            raise ValueError, 'Length of value greater than maxlength %s' % self.max_length
 
 class PasswordProperty(StringProperty):
     """
