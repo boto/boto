@@ -207,7 +207,13 @@ class Domain:
                 if not isinstance(values, list):
                     values = [values]
                 for value in values:
-                    print >>f, '\t\t\t<value><![CDATA[ %s ]]></value>' % (str(value.encode('utf-8')))
+                    print >>f, '\t\t\t<value><![CDATA[',
+                    if isinstance(value, unicode):
+                        value = value.encode('utf-8', 'replace')
+                    else:
+                        value = unicode(value, errors='replace').encode('utf-8', 'replace')
+                    f.write(value)
+                    print >>f, ']]></value>'
                 print >>f, '\t\t</attribute>'
             print >>f, '\t</Item>'
         print >>f, '</Domain>'
