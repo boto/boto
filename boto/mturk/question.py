@@ -170,78 +170,18 @@ class QuestionForm(object):
     #    pass # What's this method for?  I don't get it.
 
 class QuestionContent(object):
+    QUESTIONCONTENT_XML_TEMPLATE = """<QuestionContent>%s</QuestionContent>"""
     
-    def __init__(self, title=None, text=None, bulleted_list=None, 
-                 binary=None, binary_type=None, binary_subtype=None, binary_alttext=None,
-                 application=None, formatted_content=None):
-        if binary:
-            # TODO: attempt to auto-detect mimetype from binary url
-            assert (binary_type and binary_subtype and binary_alttext), "Type, subtype and alttext are required for binary alements"
-        self.title = title
-        self.text = text
-        self.bulleted_list = bulleted_list
-        self.binary = binary
-        self.binary_type = binary_type
-        self.binary_subtype = binary_subtype
-        self.binary_alttext = binary_alttext
-        self.application = application
-        self.formatted_content = formatted_content
-        
-    def get_title_xml(self):
-        if self.title is None:
-            return '' # empty
-        else:
-            return "<Title>%s</Title>" % self.title
-    
-    def get_text_xml(self):
-        if self.text is None:
-            return ''
-        else:
-            return "<Text>%s</Text>" % self.text
-    
-    def get_bulleted_list_xml(self):
-        if self.bulleted_list is None:
-            return ''
-        elif type(self.bulleted_list) is list:
-            return "<List>%s</List>" % self.get_bulleted_list_items_xml()
-        else:
-            raise ValueError("QuestionContent bulleted_list argument should be a list.")
-    
-    def get_bulleted_list_items_xml(self):
-        ret = ""
-        for item in self.bulleted_list:
-            ret = ret + "<ListItem>%s</ListItem>" % item
-        return ret
-    
-    def get_binary_xml(self):
-        if self.binary is None:
-            return ''
-        else:
-            return """
-<Binary>
-  <MimeType>
-    <Type>%s</Type>
-    <SubType>%s</SubType>
-  </MimeType>
-  <DataURL>%s</DataURL>
-  <AltText>%s</AltText>
-</Binary>""" %(self.binary_type, self.binary_subtype, self.binary, self.binary_alttext )
-    
-    def get_application_xml(self):
-        if self.application is None:
-            return ''
-        else:
-            raise NotImplementedError("Application question content is not yet supported.")
-    
-    def get_formatted_content_xml(self):
-        if self.formatted_content is None:
-            return ''
-        else:
-            return "<FormattedContent><![CDATA[%s]]></FormattedContent>" % self.formatted_content
+    def __init__(self):
+        self.ordered_content = OrderedContent()
+
+    def append(self, field, value):
+        self.ordered_content.append(field,value)
     
     def get_as_xml(self):
-        children = self.get_title_xml() + self.get_text_xml() + self.get_bulleted_list_xml() + self.get_binary_xml() + self.get_application_xml() + self.get_formatted_content_xml()
-        return "<QuestionContent>%s</QuestionContent>" % children
+        ret = QuestionContent.QUESTIONCONTENT_XML_TEMPLATE % (self.ordered_content.get_as_xml())
+
+        return ret
 
 
 class AnswerSpecification(object):
