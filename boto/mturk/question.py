@@ -70,22 +70,90 @@ class ExternalQuestion(object):
                                                 self.frame_height)
         return ret
 
+class OrderedContent(object):
+    def __init__(self):
+        self.items = []
 
+    def append(self, field, value):
+        "Expects field type and value"
+        self.items.append((field, value))
+
+    def get_binary_xml(self, field, value):
+        return """
+<Binary>
+  <MimeType>
+    <Type>%s</Type>
+    <SubType>%s</SubType>
+  </MimeType>
+  <DataURL>%s</DataURL>
+  <AltText>%s</AltText>
+</Binary>""" % (value['binary_type'],
+                value['binary_subtype'],
+                value['binary'],
+                value['binary_alttext'])
+    
+    def get_application_xml(self, field, value):
+        raise NotImplementedError("Application question content is not yet supported.")
+
+    def get_as_xml(self):
+        default_handler = lambda f,v: '<%s>%s</%s>' % (f,v,f)
+        bulleted_list_handler = lambda _,list: '<List>%s</List>' % ''.join([('<ListItem>%s</ListItem>' % item) for item in list])
+        formatted_content_handler = lambda _,content: "<FormattedContent><![CDATA[%s]]></FormattedContent>" % content
+        application_handler = self.get_application_xml
+        binary_handler = self.get_binary_xml
+        
+        children = ''
+        for (field,value) in self.items:
+            handler = default_handler
+            if field == 'List':
+                handler = bulleted_list_handler
+            elif field == 'Application':
+                handler = application_handler
+            elif field == 'Binary':
+                handler = binary_handler
+            elif field == 'FormattedContent':
+                handler = formatted_content_handler
+            children = children + handler(field, value)
+
+        return children    
+
+class Overview(object):
+    OVERVIEW_XML_TEMPLATE = """<Overview>%s</Overview>"""
+    
+    def __init__(self):
+        self.ordered_content = OrderedContent()
+
+    def append(self, field, value):
+        self.ordered_content.append(field,value)
+    
+    def get_as_params(self, label='Overview'):
+        return { label : self.get_as_xml() }
+    
+    def get_as_xml(self):
+        ret = Overview.OVERVIEW_XML_TEMPLATE % (self.ordered_content.get_as_xml())
+
+        return ret
+    
 
 class QuestionForm(object):
     
     QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
     QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s">%s</QuestionForm>""" # % (ns, questions_xml)
     
-    def __init__(self, questions=None):
+    def __init__(self, questions=None, overview=None):
         if questions is None or type(questions) is not list:
             raise ValueError("Must pass a list of Question instances to QuestionForm constructor")
         else:
             self.questions = questions
+        self.overview = overview
+
     
     def get_as_xml(self):
+        if self.overview:
+            overview_xml = self.overview.get_as_xml()
         questions_xml = "".join([q.get_as_xml() for q in self.questions])
-        return QuestionForm.QUESTIONFORM_XML_TEMPLATE % (QuestionForm.QUESTIONFORM_SCHEMA_LOCATION, questions_xml)
+        qf_xml = overview_xml + questions_xml
+        return QuestionForm.QUESTIONFORM_XML_TEMPLATE % (QuestionForm.QUESTIONFORM_SCHEMA_LOCATION, qf_xml)
     
     #def startElement(self, name, attrs, connection):
     #    return None
@@ -174,6 +242,7 @@ class QuestionContent(object):
     def get_as_xml(self):
         children = self.get_title_xml() + self.get_text_xml() + self.get_bulleted_list_xml() + self.get_binary_xml() + self.get_application_xml() + self.get_formatted_content_xml()
         return "<QuestionContent>%s</QuestionContent>" % children
+
 
 class AnswerSpecification(object):
     
