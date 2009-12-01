@@ -50,8 +50,9 @@ version = '1.8'
 release = "HEAD" #'1.8d'
 try:
     import subprocess
-    p = subprocess.Popen(["svn info ../boto | grep Revision | awk '{print $2}'"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    p = subprocess.Popen(["svn info ../../boto | grep Revision | awk '{print $2}'"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     release = 'r%s' % p.stdout.read().strip()
+    print p.stderr.read()
 except:
     pass
 
@@ -110,7 +111,7 @@ html_theme = 'sphinxdoc'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+html_title = "boto v%s (r%s)" % (version, release)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
