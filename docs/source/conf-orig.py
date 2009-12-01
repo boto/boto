@@ -51,7 +51,7 @@ release = "HEAD" #'1.8d'
 try:
     import subprocess
     p = subprocess.Popen(["svn info ../../boto | grep Revision | awk '{print $2}'"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    release = 'r%s' % p.stdout.read().strip()
+    release = p.stdout.read().strip()
     print p.stderr.read()
 except:
     pass
