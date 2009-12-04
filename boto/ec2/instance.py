@@ -22,10 +22,11 @@
 """
 Represents an EC2 Instance
 """
-
+import boto
 from boto.ec2.ec2object import EC2Object
 from boto.resultset import ResultSet
 from boto.ec2.address import Address
+from boto.ec2.blockdevicemapping import BlockDeviceMapping
 from boto.ec2.image import ProductCodes
 import base64
 
@@ -77,6 +78,7 @@ class Instance(EC2Object):
         self.shutdown_state = None
         self.previous_state = None
         self.instance_type = None
+        self.instance_class = None
         self.launch_time = None
         self.image_id = None
         self.placement = None
@@ -91,6 +93,9 @@ class Instance(EC2Object):
         self.ip_address = None
         self.requester_id = None
         self._in_monitoring_element = False
+        self.persistent = False
+        self.root_device_name = None
+        self.block_device_mapping = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -98,6 +103,9 @@ class Instance(EC2Object):
     def startElement(self, name, attrs, connection):
         if name == 'monitoring':
             self._in_monitoring_element = True
+        elif name == 'blockDeviceMapping':
+            self.block_device_mapping = BlockDeviceMapping()
+            return self.block_device_mapping
         elif name == 'productCodes':
             return self.product_codes
         return None
@@ -123,9 +131,17 @@ class Instance(EC2Object):
         elif name == 'name':
             self.state = value
         elif name == 'code':
-            self.state_code = int(value)
+            try:
+                self.state_code = int(value)
+            except ValueError:
+                boto.log.warning('Error converting code (%s) to int' % value)
+                self.state_code = value
         elif name == 'instanceType':
             self.instance_type = value
+        elif name == 'instanceClass':
+            self.instance_class = value
+        elif name == 'rootDeviceName':
+            self.root_device_name = value
         elif name == 'launchTime':
             self.launch_time = value
         elif name == 'availabilityZone':
@@ -151,6 +167,11 @@ class Instance(EC2Object):
             self.ip_address = value
         elif name == 'requesterId':
             self.requester_id = value
+        elif name == 'persistent':
+            if value == 'true':
+                self.persistent = True
+            else:
+                self.persistent = False
         else:
             setattr(self, name, value)
 
@@ -236,3 +257,18 @@ class ConsoleOutput:
             self.output = base64.b64decode(value)
         else:
             setattr(self, name, value)
+
+class InstanceAttribute(dict):
+
+    def __init__(self, parent=None):
+        dict.__init__(self)
+        self._current_value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'value':
+            self._current_value = value
+        else:
+            self[name] = self._current_value

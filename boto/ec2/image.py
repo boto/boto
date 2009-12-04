@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.ec2.ec2object import EC2Object
+from boto.ec2.blockdevicemapping import BlockDeviceMapping
 
 class ProductCodes(list):
 
@@ -41,22 +42,32 @@ class Image(EC2Object):
         self.location = None
         self.state = None
         self.ownerId = None
+        self.owner_alias = None
         self.is_public = False
         self.architecture = None
+        self.platform = None
         self.type = None
         self.kernel_id = None
         self.ramdisk_id = None
+        self.name = None
+        self.description = None
         self.product_codes = ProductCodes()
+        self.block_device_mapping = None
+        self.root_device_type = None
+        self.root_device_name = None
 
     def __repr__(self):
         return 'Image:%s' % self.id
 
     def startElement(self, name, attrs, connection):
-        if name == 'productCodes':
+        if name == 'blockDeviceMapping':
+            self.block_device_mapping = BlockDeviceMapping()
+            return self.block_device_mapping
+        elif name == 'productCodes':
             return self.product_codes
         else:
             return None
-        
+
     def endElement(self, name, value, connection):
         if name == 'imageId':
             self.id = value
@@ -66,12 +77,6 @@ class Image(EC2Object):
             self.state = value
         elif name == 'imageOwnerId':
             self.ownerId = value
-        elif name == 'imageType':
-            self.type = value
-        elif name == 'kernelId':
-            self.kernel_id = value
-        elif name == 'ramdiskId':
-            self.ramdisk_id = value
         elif name == 'isPublic':
             if value == 'false':
                 self.is_public = False
@@ -84,6 +89,26 @@ class Image(EC2Object):
                         self.id
                     )
                 )
+        elif name == 'architecture':
+            self.architecture = value
+        elif name == 'imageType':
+            self.type = value
+        elif name == 'kernelId':
+            self.kernel_id = value
+        elif name == 'ramdiskId':
+            self.ramdisk_id = value
+        elif name == 'imageOwnerAlias':
+            self.owner_alias = value
+        elif name == 'platform':
+            self.platform = value
+        elif name == 'name':
+            self.name = value
+        elif name == 'description':
+            self.description = value
+        elif name == 'rootDeviceType':
+            self.root_device_type = value
+        elif name == 'rootDeviceName':
+            self.root_device_name = value
         else:
             setattr(self, name, value)
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -31,7 +31,7 @@ from boto import config
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
-from boto.ec2.instance import Reservation, Instance, ConsoleOutput
+from boto.ec2.instance import Reservation, Instance, ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
 from boto.ec2.volume import Volume
@@ -46,10 +46,10 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-08-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-10-31')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
-                                            'us-east-1.ec2.amazonaws.com')
+                                            'ec2-pinotage.amazonaws.com')
     SignatureVersion = '2'
     ResponseError = EC2ResponseError
 
@@ -166,17 +166,55 @@ class EC2Connection(AWSQueryConnection):
         except IndexError: # None of those images available
             return None
 
-    def register_image(self, image_location):
+    def register_image(self, name, description=None, image_location=None,
+                       architecture=None, kernel_id=None, ramdisk_id=None,
+                       root_device_name=None, block_device_map=None):
         """
         Register an image.
 
+        :type name: string
+        :param name: The name of the AMI.
+
+        :type description: string
+        :param description: The description of the AMI.
+
         :type image_location: string
         :param image_location: Full path to your AMI manifest in Amazon S3 storage.
+                               Only used for S3-based AMI's.
+
+        :type architecture: string
+        :param architecture: The architecture of the AMI.  Valid choices are:
+                             i386 | x86_64
+
+        :type kernel_id: string
+        :param kernel_id: The ID of the kernel with which to launch the instances
+
+        :type root_device_name: string
+        :param root_device_name: The root device name (e.g. /dev/sdh)
+
+        :type block_device_mapping: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_mapping: A BlockDeviceMapping data structure
+                                     describing the EBS volumes associated
+                                     with the Image.
 
         :rtype: string
         :return: The new image id
         """
-        params = {'ImageLocation':image_location}
+        params = {'Name': name}
+        if description:
+            params['Description'] = description
+        if architecture:
+            params['Architecture'] = architecture
+        if kernel_id:
+            params['KernelId'] = kernel_id
+        if ramdisk_id:
+            params['RamdiskId'] = ramdisk_id
+        if image_location:
+            params['Location'] = image_location
+        if root_device_name:
+            params['RootDeviceName'] = root_device_name
+        if block_device_map:
+            block_device_map.build_list_params(params)
         rs = self.get_object('RegisterImage', params, ResultSet)
         image_id = getattr(rs, 'imageId', None)
         return image_id
@@ -193,6 +231,43 @@ class EC2Connection(AWSQueryConnection):
         """
         return self.get_status('DeregisterImage', {'ImageId':image_id})
 
+    def create_image(self, instance_id, name, description=None, no_reboot=False):
+        """
+        Will create an AMI from the instance in the running or stopped
+        state.
+        
+        :type instance_id: string
+        :param instance_id: the ID of the instance to image.
+
+        :type name: string
+        :param name: The name of the new image
+
+        :type description: string
+        :param description: An optional human-readable string describing
+                            the contents and purpose of the AMI.
+
+        :type no_reboot: bool
+        :param no_reboot: An optional flag indicating that the bundling process
+                          should not attempt to shutdown the instance before
+                          bundling.  If this flag is True, the responsibility
+                          of maintaining file system integrity is left to the
+                          owner of the instance.
+        
+        :rtype: string
+        :return: The new image id
+        """
+        params = {'InstanceId' : instance_id,
+                  'Name' : name}
+        if description:
+            params['Description'] = description
+        if no_reboot:
+            params['NoReboot'] = 'true'
+        rs = self.get_object('CreateImage', params, Image)
+        image_id = getattr(rs, 'imageId', None)
+        if not image_id:
+            image_id = getattr(rs, 'ImageId', None)
+        return image_id
+        
     # ImageAttribute methods
 
     def get_image_attribute(self, image_id, attribute='launchPermission'):
@@ -380,6 +455,36 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('TerminateInstances', params, [('item', Instance)])
 
+    def stop_instances(self, instance_ids=None):
+        """
+        Stop the instances specified
+        
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to stop
+        
+        :rtype: list
+        :return: A list of the instances stopped
+        """
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('StopInstances', params, [('item', Instance)])
+
+    def start_instances(self, instance_ids=None):
+        """
+        Start the instances specified
+        
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to start
+        
+        :rtype: list
+        :return: A list of the instances started
+        """
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('StartInstances', params, [('item', Instance)])
+
     def get_console_output(self, instance_id):
         """
         Retrieves the console output for the specified instance.
@@ -412,6 +517,87 @@ class EC2Connection(AWSQueryConnection):
                   'InstanceId' : instance_id}
         rs = self.get_object('ConfirmProductInstance', params, ResultSet)
         return (rs.status, rs.ownerId)
+
+    # InstanceAttribute methods
+
+    def get_instance_attribute(self, instance_id, attribute):
+        """
+        Gets an attribute from an instance.
+
+        :type instance_id: string
+        :param instance_id: The Amazon id of the instance
+
+        :type attribute: string
+        :param attribute: The attribute you need information about
+                          Valid choices are:
+                          instanceType|kernel|ramdisk|userData|
+                          disableApiTermination|
+                          instanceInitiatedShutdownBehavior|
+                          rootDeviceName|blockDeviceMapping
+
+        :rtype: :class:`boto.ec2.image.ImageAttribute`
+        :return: An ImageAttribute object representing the value of the attribute requested
+        """
+        params = {'InstanceId' : instance_id}
+        if attribute:
+            params['Attribute'] = attribute
+        return self.get_object('DescribeInstanceAttribute', params, InstanceAttribute)
+
+    def modify_image_attribute(self, image_id, attribute='launchPermission',
+                               operation='add', user_ids=None, groups=None,
+                               product_codes=None):
+        """
+        Changes an attribute of an image.
+        See http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyImageAttribute.html
+
+        :type image_id: string
+        :param image_id: The image id you wish to change
+
+        :type attribute: string
+        :param attribute: The attribute you wish to change
+
+        :type operation: string
+        :param operation: Either add or remove (this is required for changing launchPermissions)
+
+        :type user_ids: list
+        :param user_ids: The Amazon IDs of users to add/remove attributes
+
+        :type groups: list
+        :param groups: The groups to add/remove attributes
+
+        :type product_codes: list
+        :param product_codes: Amazon DevPay product code. Currently only one
+                              product code can be associated with an AMI. Once
+                              set, the product code cannot be changed or reset.
+        """
+        params = {'ImageId' : image_id,
+                  'Attribute' : attribute,
+                  'OperationType' : operation}
+        if user_ids:
+            self.build_list_params(params, user_ids, 'UserId')
+        if groups:
+            self.build_list_params(params, groups, 'UserGroup')
+        if product_codes:
+            self.build_list_params(params, product_codes, 'ProductCode')
+        return self.get_status('ModifyImageAttribute', params)
+
+    def reset_image_attribute(self, image_id, attribute='launchPermission'):
+        """
+        Resets an attribute of an AMI to its default value.
+        See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-ResetImageAttribute.html
+
+        :type image_id: string
+        :param image_id: ID of the AMI for which an attribute will be described
+
+        :type attribute: string
+        :param attribute: The attribute to reset
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+        params = {'ImageId' : image_id,
+                  'Attribute' : attribute}
+        return self.get_status('ResetImageAttribute', params)
 
     # Zone methods
 
@@ -657,7 +843,7 @@ class EC2Connection(AWSQueryConnection):
         :param volume_id: The ID of the volume to be snapshot'ed
 
         :type description: str
-        :param description: A description of the snapshot.  Limited to 256 characters.
+        :param description: A description of the snapshot.  Limited to 255 characters.
 
         :rtype: bool
         :return: True if successful
