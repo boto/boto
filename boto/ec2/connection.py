@@ -44,8 +44,6 @@ from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering, ReservedInstance
 from boto.exception import EC2ResponseError
 
-boto.set_stream_logger('ec2')
-
 class EC2Connection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'ec2_version', '2009-10-31')
@@ -57,7 +55,7 @@ class EC2Connection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=2,
+                 proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2.
