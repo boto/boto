@@ -31,7 +31,8 @@ def regions():
     :return: A list of :class:`boto.sdb.regioninfo.RegionInfo`
     """
     return [SDBRegionInfo(name='us-east-1', endpoint='sdb.amazonaws.com'),
-            SDBRegionInfo(name='eu-west-1', endpoint='sdb.eu-west-1.amazonaws.com')]
+            SDBRegionInfo(name='eu-west-1', endpoint='sdb.eu-west-1.amazonaws.com'),
+            SDBRegionInfo(name='us-west-1', endpoint='sdb.us-west-1.amazonaws.com')]
 
 def connect_to_region(region_name):
     for region in regions():
