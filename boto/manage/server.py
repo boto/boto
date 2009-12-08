@@ -318,7 +318,10 @@ class Server(Model):
         elastic_ip = params.get('elastic_ip')
         instances = reservation.instances
         if elastic_ip != None and instances.__len__() > 0:
-            instances[0].use_ip(elastic_ip)
+            instance = instances[0]
+            while instance.update() != 'running':
+                time.sleep(1)
+            instance.use_ip(elastic_ip)
             print 'set the elastic IP of the first instance to %s' % elastic_ip
         for instance in instances:
             s = cls()
