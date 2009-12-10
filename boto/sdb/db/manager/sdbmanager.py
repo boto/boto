@@ -214,6 +214,8 @@ class SDBConverter:
         return float(mantissa + 'e' + exponent)
 
     def encode_datetime(self, value):
+        if isinstance(value, str) or isinstance(value, unicode):
+            return value
         return value.strftime(ISO8601)
 
     def decode_datetime(self, value):
