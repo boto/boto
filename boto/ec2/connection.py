@@ -42,11 +42,15 @@ from boto.ec2.securitygroup import SecurityGroup
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering, ReservedInstance
+from boto.ec2.spotinstancerequest import SpotInstanceRequest
+from boto.ec2.spotpricehistory import SpotPriceHistory
+from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
+from boto.ec2.launchspecification import LaunchSpecification
 from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-10-31')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-11-30')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
@@ -65,9 +69,12 @@ class EC2Connection(AWSQueryConnection):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
 
     def get_params(self):
         """
@@ -132,8 +139,9 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_ramdisks(self, ramdisk_ids=None, owners=None):
         """
-        Retrieve all the EC2 ramdisks available on your account.  Simply filters the list returned
-        by get_all_images because EC2 does not provide a way to filter server-side.
+        Retrieve all the EC2 ramdisks available on your account.
+        Simply filters the list returned by get_all_images because
+        EC2 does not provide a way to filter server-side.
 
         :type ramdisk_ids: list
         :param ramdisk_ids: A list of strings with the image IDs wanted
@@ -192,10 +200,10 @@ class EC2Connection(AWSQueryConnection):
         :type root_device_name: string
         :param root_device_name: The root device name (e.g. /dev/sdh)
 
-        :type block_device_mapping: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
-        :param block_device_mapping: A BlockDeviceMapping data structure
-                                     describing the EBS volumes associated
-                                     with the Image.
+        :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_map: A BlockDeviceMapping data structure
+                                 describing the EBS volumes associated
+                                 with the Image.
 
         :rtype: string
         :return: The new image id
@@ -366,7 +374,8 @@ class EC2Connection(AWSQueryConnection):
                       user_data=None, addressing_type=None,
                       instance_type='m1.small', placement=None,
                       kernel_id=None, ramdisk_id=None,
-                      monitoring_enabled=False, subnet_id=None):
+                      monitoring_enabled=False, subnet_id=None,
+                      block_device_mapping=None):
         """
         Runs an image on EC2.
 
@@ -406,6 +415,11 @@ class EC2Connection(AWSQueryConnection):
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances for VPC.
 
+        :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_map: A BlockDeviceMapping data structure
+                                 describing the EBS volumes associated
+                                 with the Image.
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
@@ -438,6 +452,8 @@ class EC2Connection(AWSQueryConnection):
             params['Monitoring.Enabled'] = 'true'
         if subnet_id:
             params['SubnetId'] = subnet_id
+        if block_device_map:
+            block_device_map.build_list_params(params)
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
@@ -493,7 +509,7 @@ class EC2Connection(AWSQueryConnection):
         :type instance_id: string
         :param instance_id: The instance ID of a running instance on the cloud.
 
-        :rtype: L{boto.ec2.instance.ConsoleOutput}
+        :rtype: :class:`boto.ec2.instance.ConsoleOutput`
         :return: The console output as a ConsoleOutput object
         """
         params = {}
@@ -598,6 +614,236 @@ class EC2Connection(AWSQueryConnection):
         params = {'ImageId' : image_id,
                   'Attribute' : attribute}
         return self.get_status('ResetImageAttribute', params)
+
+    # Spot Instances
+
+    def get_all_spot_instance_requests(self, request_ids=None):
+        """
+        Retrieve all the spot instances requests associated with your account.
+        
+        @type request_ids: list
+        @param request_ids: A list of strings of spot instance request IDs
+        
+        @rtype: list
+        @return: A list of
+                 :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
+        """
+        params = {}
+        if request_ids:
+            self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
+        return self.get_list('DescribeSpotInstanceRequests', params,
+                             [('item', SpotInstanceRequest)])
+
+    def get_spot_price_history(self, start_time=None, end_time=None,
+                               instance_type=None, product_description=None):
+        """
+        Retrieve the recent history of spot instances pricing.
+        
+        @type start_time: str
+        @param start_time: An indication of how far back to provide price
+                           changes for. An ISO8601 DateTime string.
+        
+        @type end_time: str
+        @param end_time: An indication of how far forward to provide price
+                         changes for.  An ISO8601 DateTime string.
+        
+        @type instance_type: str
+        @param instance_type: Filter responses to a particular instance type.
+        
+        @type product_description: str
+        @param product_descripton: Filter responses to a particular platform.
+                                   Valid values are currently: Linux
+        
+        @rtype: list
+        @return: A list tuples containing price and timestamp.
+        """
+        params = {}
+        if start_time:
+            params['StartTime'] = start_time
+        if end_time:
+            params['EndTime'] = end_time
+        if instance_type:
+            params['InstanceType'] = instance_type
+        if product_description:
+            params['ProductDescription'] = product_description
+        return self.get_list('DescribeSpotPriceHistory', params, [('item', SpotPriceHistory)])
+
+    def request_spot_instances(self, price, image_id, count=1, type=None,
+                               valid_from=None, valid_until=None,
+                               launch_group=None, availability_zone_group=None,
+                               key_name=None, security_groups=None,
+                               user_data=None, addressing_type=None,
+                               instance_type='m1.small', placement=None,
+                               kernel_id=None, ramdisk_id=None,
+                               monitoring_enabled=False, subnet_id=None,
+                               block_device_map=None):
+        """
+        Request instances on the spot market at a particular price.
+
+        :type price: str
+        :param price: The maximum price of your bid
+        
+        :type image_id: string
+        :param image_id: The ID of the image to run
+
+        :type count: int
+        :param count: The of instances to requested
+        
+        :type type: str
+        :param type: Type of request. Can be 'one-time' or 'persistent'.
+                     Default is one-time.
+
+        :type valid_from: str
+        :param valid_from: Start date of the request. An ISO8601 time string.
+
+        :type valid_until: str
+        :param valid_until: End date of the request.  An ISO8601 time string.
+
+        :type launch_group: str
+        :param launch_group: If supplied, all requests will be fulfilled
+                             as a group.
+                             
+        :type availability_zone_group: str
+        :param availability_zone_group: If supplied, all requests will be fulfilled
+                                        within a single availability zone.
+                             
+        :type key_name: string
+        :param key_name: The name of the key pair with which to launch instances
+
+        :type security_groups: list of strings
+        :param security_groups: The names of the security groups with which to associate instances
+
+        :type user_data: string
+        :param user_data: The user data passed to the launched instances
+
+        :type instance_type: string
+        :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+
+        :type placement: string
+        :param placement: The availability zone in which to launch the instances
+
+        :type kernel_id: string
+        :param kernel_id: The ID of the kernel with which to launch the instances
+
+        :type ramdisk_id: string
+        :param ramdisk_id: The ID of the RAM disk with which to launch the instances
+
+        :type monitoring_enabled: bool
+        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
+
+        :type subnet_id: string
+        :param subnet_id: The subnet ID within which to launch the instances for VPC.
+
+        :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_map: A BlockDeviceMapping data structure
+                                 describing the EBS volumes associated
+                                 with the Image.
+
+        :rtype: Reservation
+        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        """
+        params = {'LaunchSpecification.ImageId':image_id,
+                  'SpotPrice' : price}
+        if count:
+            params['InstanceCount'] = count
+        if valid_from:
+            params['ValidFrom'] = valid_from
+        if valid_until:
+            params['ValidUntil'] = valid_until
+        if launch_group:
+            params['LaunchGroup'] = launch_group
+        if availability_zone_group:
+            params['AvailabilityZoneGroup'] = availability_zone_group
+        if key_name:
+            params['LaunchSpecification.KeyName'] = key_name
+        if security_groups:
+            l = []
+            for group in security_groups:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l,
+                                   'LaunchSpecification.SecurityGroup')
+        if user_data:
+            params['LaunchSpecification.UserData'] = base64.b64encode(user_data)
+        if addressing_type:
+            params['LaunchSpecification.AddressingType'] = addressing_type
+        if instance_type:
+            params['LaunchSpecification.InstanceType'] = instance_type
+        if placement:
+            params['LaunchSpecification.Placement.AvailabilityZone'] = placement
+        if kernel_id:
+            params['LaunchSpecification.KernelId'] = kernel_id
+        if ramdisk_id:
+            params['LaunchSpecification.RamdiskId'] = ramdisk_id
+        if monitoring_enabled:
+            params['LaunchSpecification.Monitoring.Enabled'] = 'true'
+        if subnet_id:
+            params['LaunchSpecification.SubnetId'] = subnet_id
+        if block_device_map:
+            block_device_map.build_list_params(params, 'LaunchSpecification.')
+        return self.get_list('RequestSpotInstances', params,
+                             [('item', SpotInstanceRequest)],
+                             verb='POST')
+
+        
+    def cancel_spot_instance_requests(self, request_ids):
+        """
+        Cancel the specified Spot Instance Requests.
+        
+        :type request_ids: list
+        :param request_ids: A list of strings of the Request IDs to terminate
+        
+        :rtype: list
+        :return: A list of the instances terminated
+        """
+        params = {}
+        if request_ids:
+            self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
+        return self.get_list('CancelSpotInstanceRequests', params, [('item', Instance)])
+
+    def get_spot_datafeed_subscription(self):
+        """
+        Return the current spot instance data feed subscription
+        associated with this account, if any.
+        
+        :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription
+        :return: The datafeed subscription object or None
+        """
+        return self.get_object('DescribeSpotDatafeedSubscription',
+                               None, SpotDatafeedSubscription)
+
+    def create_spot_datafeed_subscription(self, bucket, prefix=None):
+        """
+        Create a spot instance datafeed subscription for this account.
+
+        :type bucket: str or unicode
+        :param bucket: The name of the bucket where spot instance data
+                       will be written.
+
+        :type prefix: str or unicode
+        :param prefix: An optional prefix that will be pre-pended to all
+                       data files written to the bucket.
+                       
+        :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription
+        :return: The datafeed subscription object or None
+        """
+        params = {'Bucket' : bucket}
+        if prefix:
+            params['Prefix'] = prefix
+        return self.get_object('CreateSpotDatafeedSubscription',
+                               None, SpotDatafeedSubscription)
+
+    def delete_spot_datafeed_subscription(self):
+        """
+        Delete the current spot instance data feed subscription
+        associated with this account
+        
+        :rtype: bool
+        :return: True if successful
+        """
+        return self.get_status('DeleteSpotDatafeedSubscription', None)
 
     # Zone methods
 

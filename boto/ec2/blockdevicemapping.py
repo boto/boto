@@ -72,10 +72,10 @@ class BlockDeviceMapping(dict):
         elif name == 'item':
             self[self.current_name] = self.current_value
 
-    def build_list_params(self, params):
+    def build_list_params(self, params, prefix=''):
         i = 1
         for dev_name in self:
-            pre = 'BlockDeviceMapping.%d' % i
+            pre = '%sBlockDeviceMapping.%d' % (pre, i)
             params['%s.DeviceName' % pre] = dev_name
             ebs = self[dev_name]
             if ebs.snapshot_id:

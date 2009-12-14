@@ -87,6 +87,8 @@ class Instance(EC2Object):
         self.product_codes = ProductCodes()
         self.ami_launch_index = None
         self.monitored = False
+        self.instance_class = None
+        self.spot_instance_request_id = None
         self.subnet_id = None
         self.vpc_id = None
         self.private_ip_address = None
@@ -157,6 +159,10 @@ class Instance(EC2Object):
                 if value == 'enabled':
                     self.monitored = True
                 self._in_monitoring_element = False
+        elif name == 'instanceClass':
+            self.instance_class = value
+        elif name == 'spotInstanceRequestId':
+            self.spot_instance_request_id = value
         elif name == 'subnetId':
             self.subnet_id = value
         elif name == 'vpcId':
