@@ -129,7 +129,7 @@ def main():
             ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
             no_op = True
-        if o == ('w', '--no_overwrite'):
+        if o in ('w', '--no_overwrite'):
             no_overwrite = True
         if o in ('-p', '--prefix'):
             prefix = a
