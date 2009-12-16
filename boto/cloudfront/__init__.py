@@ -68,7 +68,6 @@ class CloudFrontConnection(AWSAuthConnection):
             tags=[('DistributionSummary', DistributionSummary)]
         response = self.make_request('GET', '/%s/%s' % (self.Version, resource))
         body = response.read()
-        print body
         if response.status >= 300:
             raise CloudFrontServerError(response.status, response.reason, body)
         rs = ResultSet(tags)
@@ -80,7 +79,6 @@ class CloudFrontConnection(AWSAuthConnection):
         uri = '/%s/%s/%s' % (self.Version, resource, id)
         response = self.make_request('GET', uri)
         body = response.read()
-        print body
         if response.status >= 300:
             raise CloudFrontServerError(response.status, response.reason, body)
         d = dist_class(connection=self)
@@ -96,7 +94,6 @@ class CloudFrontConnection(AWSAuthConnection):
         uri = '/%s/%s/%s/config' % (self.Version, resource, id)
         response = self.make_request('GET', uri)
         body = response.read()
-        print body
         if response.status >= 300:
             raise CloudFrontServerError(response.status, response.reason, body)
         d = config_class(connection=self)
@@ -114,7 +111,6 @@ class CloudFrontConnection(AWSAuthConnection):
         headers = {'If-Match' : etag, 'Content-Type' : 'text/xml'}
         response = self.make_request('PUT', uri, headers, config.to_xml())
         body = response.read()
-        print body
         return self.get_etag(response)
         if response.status != 200:
             raise CloudFrontServerError(response.status, response.reason, body)
@@ -123,7 +119,6 @@ class CloudFrontConnection(AWSAuthConnection):
         response = self.make_request('POST', '/%s/%s' % (self.Version, resource),
                                      {'Content-Type' : 'text/xml'}, data=config.to_xml())
         body = response.read()
-        print body
         if response.status == 201:
             d = dist_class(connection=self)
             h = handler.XmlHandler(d, self)
@@ -136,7 +131,6 @@ class CloudFrontConnection(AWSAuthConnection):
         uri = '/%s/%s/%s' % (self.Version, resource, id)
         response = self.make_request('DELETE', uri, {'If-Match' : etag})
         body = response.read()
-        print body
         if response.status != 204:
             raise CloudFrontServerError(response.status, response.reason, body)
 
