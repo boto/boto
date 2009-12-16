@@ -580,7 +580,7 @@ class AWSQueryConnection(AWSAuthConnection):
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         qs, signature = self.get_signature(params, verb, self.get_path(path))
         if verb == 'POST':
-            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
             request_body = qs + '&Signature=' + urllib.quote(signature)
             qs = path
         else:
