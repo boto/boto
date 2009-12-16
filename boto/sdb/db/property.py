@@ -35,6 +35,7 @@ class Property(object):
     data_type = str
     type_name = ''
     name = ''
+    verbose_name = ''
 
     def __init__(self, verbose_name=None, name=None, default=None, required=False,
                  validator=None, choices=None, unique=False):
@@ -502,6 +503,19 @@ class ListProperty(Property):
 
     def default_value(self):
         return list(super(ListProperty, self).default_value())
+
+    def __set__(self, obj, value):
+        """Override the set method to allow them to set the property to an instance of the item_type instead of requiring a list to be passed in"""
+        if self.item_type in (int, long):
+            item_type = (int, long)
+        elif self.item_type in (str, unicode):
+            item_type = (str, unicode)
+        else:
+            item_type = self.item_type
+        if isinstance(value, item_type):
+            value = [value]
+        return super(ListProperty, self).__set__(obj,value)
+
 
 class MapProperty(Property):
     
