@@ -248,20 +248,15 @@ class Key(object):
     def set_xml_acl(self, acl_str, headers=None):
         if self.bucket != None:
             return self.bucket.set_xml_acl(acl_str, self.name, headers=headers)
+
+    def set_canned_acl(self, acl_str, headers=None):
+        return self.bucket.set_canned_acl(acl_str, self.name, headers)
         
     def make_public(self, headers=None):
-        if headers:
-            headers['x-amz-acl'] = 'public-read'
-        else:
-            headers={'x-amz-acl': 'public-read'}
+        return self.bucket.set_canned_acl('public-read', self.name, headers)
 
-        response = self.bucket.connection.make_request('PUT', self.bucket.name, self.name,
-                headers=headers, query_args='acl')
-        body = response.read()
-        if response.status != 200:
-            raise S3ResponseError(response.status, response.reason, body)
-
-    def generate_url(self, expires_in, method='GET', headers=None, query_auth=True, force_http=False):
+    def generate_url(self, expires_in, method='GET', headers=None,
+                     query_auth=True, force_http=False):
         """
         Generate a URL to access this key.
         
