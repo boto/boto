@@ -21,7 +21,7 @@
 
 import uuid
 from boto.cloudfront.identity import OriginAccessIdentity
-from boto.cloudfront.object import Object
+from boto.cloudfront.object import Object, StreamingObject
 from boto.cloudfront.signers import Signer, ActiveTrustedSigners, TrustedSigners
 from boto.cloudfront.logging import LoggingInfo
 from boto.s3.acl import ACL
@@ -240,7 +240,8 @@ class Distribution:
             setattr(self, name, value)
 
     def update(self, enabled=None, cnames=None, comment=None,
-               origin_access_identity=None):
+               origin_access_identity=None,
+               trusted_signers=None):
         """
         Update the configuration of the Distribution.
 
@@ -260,11 +261,16 @@ class Distribution:
                                        must be provided if you want the
                                        distribution to serve private content.
 
+        :type trusted_signers: :class:`boto.cloudfront.signers.TrustedSigner`
+        :param trusted_signers: The AWS users who are authorized to sign
+                                URL's for private content in this Distribution.
+
         """
         new_config = DistributionConfig(self.connection, self.config.origin,
                                         self.config.enabled, self.config.caller_reference,
                                         self.config.cnames, self.config.comment,
-                                        self.config.origin_access_identity)
+                                        self.config.origin_access_identity,
+                                        self.config.trusted_signers)
         if enabled != None:
             new_config.enabled = enabled
         if cnames != None:
@@ -273,8 +279,11 @@ class Distribution:
             new_config.comment = comment
         if origin_access_identity != None:
             new_config.origin_access_identity = origin_access_identity
+        if trusted_signers:
+            new_config.trusted_signers = trusted_signers
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
+        self._object_class = Object
 
     def enable(self):
         """
@@ -310,7 +319,7 @@ class Distribution:
                               proxy_pass=self.connection.proxy_pass)
             self._bucket = s3.get_bucket(bucket_name)
             self._bucket.distribution = self
-            self._bucket.set_key_class(Object)
+            self._bucket.set_key_class(self._object_class)
         return self._bucket
     
     def get_objects(self):
@@ -374,7 +383,7 @@ class Distribution:
         for key in bucket:
             self.set_permissions(key)
 
-    def add_object(self, name, content, headers=None):
+    def add_object(self, name, content, headers=None, replace=True):
         """
         Adds a new content object to the Distribution.  The content
         for the object will be copied to a new Key in the S3 Bucket
@@ -404,10 +413,16 @@ class Distribution:
         object = bucket.new_key(name)
         object.set_contents_from_file(content, headers=headers, policy=policy)
         if self.config.origin_access_identity:
-            self.set_permissions(object, True)
+            self.set_permissions(object, replace)
         return object
             
 class StreamingDistribution(Distribution):
+
+    def __init__(self, connection=None, config=None, domain_name='',
+                 id='', last_modified_time=None, status=''):
+        Distribution.__init__(self, connection, config, domain_name,
+                              id, last_modified_time, status)
+        self._object_class = StreamingObject
 
     def startElement(self, name, attrs, connection):
         if name == 'StreamingDistributionConfig':

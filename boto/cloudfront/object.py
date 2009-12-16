@@ -39,4 +39,10 @@ class Object(Key):
             url += '/'
         url += self.name
         return url
+
+class StreamingObject(Object):
+
+    def url(self, scheme='rtmp'):
+        return Object.url(self, scheme)
+
         
