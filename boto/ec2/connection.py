@@ -375,7 +375,7 @@ class EC2Connection(AWSQueryConnection):
                       instance_type='m1.small', placement=None,
                       kernel_id=None, ramdisk_id=None,
                       monitoring_enabled=False, subnet_id=None,
-                      block_device_mapping=None):
+                      block_device_map=None):
         """
         Runs an image on EC2.
 
