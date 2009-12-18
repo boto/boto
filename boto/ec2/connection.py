@@ -48,6 +48,8 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.launchspecification import LaunchSpecification
 from boto.exception import EC2ResponseError
 
+#boto.set_stream_logger('ec2')
+
 class EC2Connection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'ec2_version', '2009-11-30')
@@ -814,7 +816,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeSpotDatafeedSubscription',
                                None, SpotDatafeedSubscription)
 
-    def create_spot_datafeed_subscription(self, bucket, prefix=None):
+    def create_spot_datafeed_subscription(self, bucket, prefix):
         """
         Create a spot instance datafeed subscription for this account.
 
@@ -833,7 +835,7 @@ class EC2Connection(AWSQueryConnection):
         if prefix:
             params['Prefix'] = prefix
         return self.get_object('CreateSpotDatafeedSubscription',
-                               None, SpotDatafeedSubscription)
+                               params, SpotDatafeedSubscription)
 
     def delete_spot_datafeed_subscription(self):
         """

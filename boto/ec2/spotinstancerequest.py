@@ -26,6 +26,25 @@ Represents an EC2 Spot Instance Request
 from boto.ec2.ec2object import EC2Object
 from boto.ec2.launchspecification import LaunchSpecification
 
+class SpotInstanceStateFault(object):
+
+    def __init__(self, code=None, message=None):
+        self.code = code
+        self.message = message
+
+    def __repr__(self):
+        return '(%s, %s)' % (self.code, self.message)
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'code':
+            self.code = code
+        elif name == 'message':
+            self.message = message
+        setattr(self, name, value)
+
 class SpotInstanceRequest(EC2Object):
     
     def __init__(self, connection=None):
@@ -50,6 +69,9 @@ class SpotInstanceRequest(EC2Object):
         if name == 'launchSpecification':
             self.launch_specification = LaunchSpecification(connection)
             return self.launch_specification
+        elif name == 'fault':
+            self.fault = SpotInstanceStateFault()
+            return self.fault
         else:
             return None
 
