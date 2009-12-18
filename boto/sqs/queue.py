@@ -378,7 +378,7 @@ class Queue:
         if prefix:
             prefix = '%s/' % prefix
         else:
-            prefix = '%s/' % self.id
+            prefix = '%s/' % self.id[1:]
         rs = bucket.list(prefix=prefix)
         for key in rs:
             n += 1
