@@ -264,12 +264,13 @@ class Bucket:
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
+        src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if metadata:
-            headers = {'x-amz-copy-source' : '%s/%s' % (src_bucket_name, src_key_name),
+            headers = {'x-amz-copy-source' : src,
                        'x-amz-metadata-directive' : 'REPLACE'}
             headers = boto.utils.merge_meta(headers, metadata)
         else:
-            headers = {'x-amz-copy-source' : '%s/%s' % (src_bucket_name, src_key_name),
+            headers = {'x-amz-copy-source' : src,
                        'x-amz-metadata-directive' : 'COPY'}
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers)
