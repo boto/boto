@@ -86,7 +86,7 @@ class Bundler(object):
         return command
 
     def bundle(self, bucket=None, prefix=None, key_file=None, cert_file=None,
-               size=None, ssh_key=None, fp=None):
+               size=None, ssh_key=None, fp=None, clear_history=True):
         iobject = IObject()
         if not bucket:
             bucket = iobject.get_string('Name of S3 bucket')
@@ -105,6 +105,8 @@ class Bundler(object):
             fp = StringIO.StringIO()
         fp.write('mv %s /mnt/boto.cfg; ' % BotoConfigPath)
         fp.write('mv /root/.ssh/authorized_keys /mnt/authorized_keys; ')
+        if clear_history:
+            fp.write('history -c; ')
         fp.write(self.bundle_image(prefix, size, ssh_key))
         fp.write('; ')
         fp.write(self.upload_bundle(bucket, prefix, ssh_key))
