@@ -24,7 +24,7 @@ import os, sys
 import logging
 import logging.config
 
-Version = '1.9a'
+Version = '1.9b'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
 
