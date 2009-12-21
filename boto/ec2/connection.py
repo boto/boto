@@ -289,7 +289,11 @@ class EC2Connection(AWSQueryConnection):
         :param image_id: The Amazon image id for which you want info about
 
         :type attribute: string
-        :param attribute: The attribute you need information about
+        :param attribute: The attribute you need information about.
+                          Valid choices are:
+                          * launchPermission
+                          * productCodes
+                          * blockDeviceMapping
 
         :rtype: :class:`boto.ec2.image.ImageAttribute`
         :return: An ImageAttribute object representing the value of the attribute requested

@@ -209,7 +209,11 @@ class ImageAttribute:
         self.attrs = {}
 
     def startElement(self, name, attrs, connection):
-        return None
+        if name == 'blockDeviceMapping':
+            self.attrs['block_device_mapping'] = BlockDeviceMapping()
+            return self.attrs['block_device_mapping']
+        else:
+            return None
 
     def endElement(self, name, value, connection):
         if name == 'launchPermission':
