@@ -17,6 +17,7 @@ API Reference
    mashups
    mturk
    pyami
+   rds
    s3
    sdb
    services
