@@ -205,7 +205,7 @@ with an S3 object.  For example:
 This code associates two metadata key/value pairs with the Key k.  To retrieve
 those values later:
 
->>> k = b.lookup('has_metadata)
+>>> k = b.get_key('has_metadata)
 >>> k.get_metadata('meta1')
 'This is the first metadata value'
 >>> k.get_metadata('meta2')
