@@ -77,10 +77,13 @@ if __name__ == "__main__":
 """
 
 BackupCleanupScript= """#!/usr/bin/env python
+import boto
+from boto.manage.volume import Volume
+
 # Cleans Backups of EBS volumes
 
 for v in Volume.all():
-        v.trim_snapshot(True)
+    v.trim_snapshots(True)
 """
     
 class EBSInstaller(Installer):
