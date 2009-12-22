@@ -61,6 +61,7 @@ class SpotInstanceRequest(EC2Object):
         self.availability_zone_group = None
         self.create_time = None
         self.launch_specification = None
+        self.instance_id = None
 
     def __repr__(self):
         return 'SpotInstanceRequest:%s' % self.id
@@ -96,6 +97,8 @@ class SpotInstanceRequest(EC2Object):
             self.availability_zone_group = value
         elif name == 'createTime':
             self.create_time = value
+        elif name == 'instanceId':
+            self.instance_id = value
         else:
             setattr(self, name, value)
 

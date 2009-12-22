@@ -48,7 +48,7 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.launchspecification import LaunchSpecification
 from boto.exception import EC2ResponseError
 
-#boto.set_stream_logger('ec2')
+boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
@@ -61,7 +61,7 @@ class EC2Connection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=0,
+                 proxy_user=None, proxy_pass=None, debug=2,
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2.
@@ -826,7 +826,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type bucket: str or unicode
         :param bucket: The name of the bucket where spot instance data
-                       will be written.
+                       will be written.  The account issuing this request
+                       must have FULL_CONTROL access to the bucket
+                       specified in the request.
 
         :type prefix: str or unicode
         :param prefix: An optional prefix that will be pre-pended to all
