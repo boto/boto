@@ -72,7 +72,7 @@ class BlockDeviceMapping(dict):
         elif name == 'item':
             self[self.current_name] = self.current_value
 
-    def build_list_params(self, params, prefix=''):
+    def build_list_params(self, params, pre=''):
         i = 1
         for dev_name in self:
             pre = '%sBlockDeviceMapping.%d' % (pre, i)
