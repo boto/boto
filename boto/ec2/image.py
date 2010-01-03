@@ -116,7 +116,8 @@ class Image(EC2Object):
             security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
             kernel_id=None, ramdisk_id=None,
-            monitoring_enabled=False, subnet_id=None):
+            monitoring_enabled=False, subnet_id=None,
+            block_device_map=None):
         """
         Runs this instance.
         
@@ -156,6 +157,11 @@ class Image(EC2Object):
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances for VPC.
         
+        :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_map: A BlockDeviceMapping data structure
+                                 describing the EBS volumes associated
+                                 with the Image.
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
@@ -164,7 +170,8 @@ class Image(EC2Object):
                                              user_data, addressing_type,
                                              instance_type, placement,
                                              kernel_id, ramdisk_id,
-                                             monitoring_enabled, subnet_id)
+                                             monitoring_enabled, subnet_id,
+                                             block_device_map)
 
     def deregister(self):
         return self.connection.deregister_image(self.id)
