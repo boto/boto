@@ -24,10 +24,8 @@ Represents a connection to the EC2 service.
 """
 
 import urllib
-import xml.sax
 import base64
 import boto
-from boto import config
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
@@ -45,7 +43,6 @@ from boto.ec2.reservedinstance import ReservedInstancesOffering, ReservedInstanc
 from boto.ec2.spotinstancerequest import SpotInstanceRequest
 from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
-from boto.ec2.launchspecification import LaunchSpecification
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -565,61 +562,52 @@ class EC2Connection(AWSQueryConnection):
             params['Attribute'] = attribute
         return self.get_object('DescribeInstanceAttribute', params, InstanceAttribute)
 
-    def modify_image_attribute(self, image_id, attribute='launchPermission',
-                               operation='add', user_ids=None, groups=None,
-                               product_codes=None):
+    def modify_instance_attribute(self, instance_id, attribute, value):
         """
-        Changes an attribute of an image.
-        See http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyImageAttribute.html
+        Changes an attribute of an instance
 
-        :type image_id: string
-        :param image_id: The image id you wish to change
+        :type instance_id: string
+        :param instance_id: The instance id you wish to change
 
         :type attribute: string
-        :param attribute: The attribute you wish to change
+        :param attribute: The attribute you wish to change.
+                          AttributeName - Expected value (default)
+                          instanceType - A valid instance type (m1.small)
+                          kernel - Kernel ID (None)
+                          ramdisk - Ramdisk ID (None)
+                          userData - Base64 encoded String (None)
+                          disableApiTermination - Boolean (true)
+                          instanceInitiatedShutdownBehavior - stop|terminate
+                          rootDeviceName - device name (None)
 
-        :type operation: string
-        :param operation: Either add or remove (this is required for changing launchPermissions)
-
-        :type user_ids: list
-        :param user_ids: The Amazon IDs of users to add/remove attributes
-
-        :type groups: list
-        :param groups: The groups to add/remove attributes
-
-        :type product_codes: list
-        :param product_codes: Amazon DevPay product code. Currently only one
-                              product code can be associated with an AMI. Once
-                              set, the product code cannot be changed or reset.
-        """
-        params = {'ImageId' : image_id,
-                  'Attribute' : attribute,
-                  'OperationType' : operation}
-        if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
-        if groups:
-            self.build_list_params(params, groups, 'UserGroup')
-        if product_codes:
-            self.build_list_params(params, product_codes, 'ProductCode')
-        return self.get_status('ModifyImageAttribute', params)
-
-    def reset_image_attribute(self, image_id, attribute='launchPermission'):
-        """
-        Resets an attribute of an AMI to its default value.
-        See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-ResetImageAttribute.html
-
-        :type image_id: string
-        :param image_id: ID of the AMI for which an attribute will be described
-
-        :type attribute: string
-        :param attribute: The attribute to reset
+        :type value: string
+        :param value: The new value for the attribute
 
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
-        params = {'ImageId' : image_id,
+        params = {'InstanceId' : instance_id,
+                  'Attribute' : attribute,
+                  'Value' : value}
+        return self.get_status('ModifyInstanceAttribute', params)
+
+    def reset_instance_attribute(self, instance_id, attribute):
+        """
+        Resets an attribute of an instance to its default value.
+
+        :type instance_id: string
+        :param instance_id: ID of the instance
+
+        :type attribute: string
+        :param attribute: The attribute to reset. Valid values are:
+                          kernel|ramdisk
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+        params = {'InstanceId' : instance_id,
                   'Attribute' : attribute}
-        return self.get_status('ResetImageAttribute', params)
+        return self.get_status('ResetInstanceAttribute', params)
 
     # Spot Instances
 

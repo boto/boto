@@ -40,9 +40,9 @@ class SpotInstanceStateFault(object):
 
     def endElement(self, name, value, connection):
         if name == 'code':
-            self.code = code
+            self.code = value
         elif name == 'message':
-            self.message = message
+            self.message = value
         setattr(self, name, value)
 
 class SpotInstanceRequest(EC2Object):

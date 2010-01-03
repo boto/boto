@@ -140,7 +140,6 @@ from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
 from boto.ec2.cloudwatch.datapoint import Datapoint
 import boto
-import datetime
 
 class CloudWatchConnection(AWSQueryConnection):
 
@@ -198,8 +197,6 @@ class CloudWatchConnection(AWSQueryConnection):
         """
         Returns a list of the valid metrics for which there is recorded data available.
         """
-        response = self.make_request('ListMetrics')
-        body = response.read()
         return self.get_list('ListMetrics', None, [('member', Metric)])
         
 
