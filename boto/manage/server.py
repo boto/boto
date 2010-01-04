@@ -173,10 +173,8 @@ class CommandLineGetter(object):
     def get_ami_id(self, params):
         ami = params.get('ami', None)
         if isinstance(ami, str) or isinstance(ami, unicode):
-            ami_list = self.get_ami_list()
-            for l,a in ami_list:
+            for a in self.ec2.get_all_images():
                 if a.id == ami:
-                    ami = a
                     params['ami'] = a
         if not params.get('ami', None):
             prop = StringProperty(name='ami', verbose_name='AMI',
