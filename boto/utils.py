@@ -111,6 +111,12 @@ def canonical_string(method, path, headers, expires=None):
         buf += "?location"
     elif re.search("[&?]requestPayment($|=|&)", path):
         buf += "?requestPayment"
+    elif re.search("[&?]versioning($|=|&)", path):
+        buf += "?versioning"
+    else:
+        m = re.search("[&?]versionId=([^&]+)($|=|&)", path)
+        if m:
+            buf += '?versionId=' + m.group(1)
 
     return buf
 

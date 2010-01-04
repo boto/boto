@@ -55,6 +55,11 @@ class Bucket:
          <Payer>%s</Payer>
        </RequestPaymentConfiguration>"""
 
+    VersioningBody = """<?xml version="1.0" encoding="UTF-8"?>
+       <VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+         <Status>%s</Status>
+       </VersioningConfiguration>"""
+
     def __init__(self, connection=None, name=None, key_class=Key):
         self.name = name
         self.connection = connection
@@ -106,7 +111,7 @@ class Bucket:
         """
         return self.get_key(key_name, headers=headers)
         
-    def get_key(self, key_name, headers=None):
+    def get_key(self, key_name, headers=None, version_id=None):
         """
         Check to see if a particular key exists within the bucket.  This
         method uses a HEAD request to check for the existance of the key.
@@ -118,7 +123,13 @@ class Bucket:
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
-        response = self.connection.make_request('HEAD', self.name, key_name, headers=headers)
+        if version_id:
+            query_args = 'versionId=%s' % version_id
+        else:
+            query_args = None
+        response = self.connection.make_request('HEAD', self.name, key_name,
+                                                headers=headers,
+                                                query_args=query_args)
         if response.status == 200:
             body = response.read()
             k = self.key_class(self)
@@ -129,6 +140,7 @@ class Bucket:
             k.last_modified = response.getheader('last-modified')
             k.size = int(response.getheader('content-length'))
             k.name = key_name
+            k.handle_version_headers(response)
             return k
         else:
             if response.status == 404:
@@ -168,8 +180,9 @@ class Bucket:
 
     def get_all_keys(self, headers=None, **params):
         """
-        A lower-level method for listing contents of a bucket.  This closely models the actual S3
-        API and requires you to manually handle the paging of results.  For a higher-level method
+        A lower-level method for listing contents of a bucket.
+        This closely models the actual S3 API and requires you to manually
+        handle the paging of results.  For a higher-level method
         that handles the details of paging for you, you can use the list method.
         
         :type maxkeys: int
@@ -182,7 +195,13 @@ class Bucket:
         :param marker: The "marker" of where you are in the result set
         
         :type delimiter: string 
-        :param delimiter: "If this optional, Unicode string parameter is included with your request, then keys that contain the same string between the prefix and the first occurrence of the delimiter will be rolled up into a single result element in the CommonPrefixes collection. These rolled-up keys are not returned elsewhere in the response."
+        :param delimiter: If this optional, Unicode string parameter
+                          is included with your request, then keys that
+                          contain the same string between the prefix and
+                          the first occurrence of the delimiter will be
+                          rolled up into a single result element in the
+                          CommonPrefixes collection. These rolled-up keys
+                          are not returned elsewhere in the response.
 
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
@@ -229,19 +248,30 @@ class Bucket:
         return self.connection.generate_url(expires_in, method, self.name, headers=headers,
                                             force_http=force_http)
 
-    def delete_key(self, key_name, headers=None):
+    def delete_key(self, key_name, headers=None, version_id=None):
         """
-        Deletes a key from the bucket.
+        Deletes a key from the bucket.  If a version_id is provided,
+        only that version of the key will be deleted.
         
         :type key_name: string
         :param key_name: The key name to delete
+
+        :type version_id: string
+        :param version_id: The version ID (optional)
         """
-        response = self.connection.make_request('DELETE', self.name, key_name, headers=headers)
+        if version_id:
+            query_args = 'versionId=%s' % version_id
+        else:
+            query_args = None
+        response = self.connection.make_request('DELETE', self.name, key_name,
+                                                headers=headers,
+                                                query_args=query_args)
         body = response.read()
         if response.status != 204:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def copy_key(self, new_key_name, src_bucket_name, src_key_name, metadata=None):
+    def copy_key(self, new_key_name, src_bucket_name,
+                 src_key_name, metadata=None):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -281,11 +311,13 @@ class Bucket:
             xml.sax.parseString(body, h)
             if hasattr(key, 'Error'):
                 raise S3CopyError(key.Code, key.Message, body)
+            key.handle_version_headers(response)
             return key
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name='', headers=None):
+    def set_canned_acl(self, acl_str, key_name='', headers=None,
+                       version_id=None):
         assert acl_str in CannedACLStrings
 
         if headers:
@@ -293,36 +325,54 @@ class Bucket:
         else:
             headers={'x-amz-acl': acl_str}
 
+        query_args='acl'
+        if version_id:
+            query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
-                headers=headers, query_args='acl')
+                headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def get_xml_acl(self, key_name='', headers=None):
+    def get_xml_acl(self, key_name='', headers=None, version_id=None):
+        query_args = 'acl'
+        if version_id:
+            query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('GET', self.name, key_name,
-                                                query_args='acl', headers=headers)
+                                                query_args=query_args,
+                                                headers=headers)
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
         return body
 
-    def set_xml_acl(self, acl_str, key_name='', headers=None):
+    def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None):
+        query_args = 'acl'
+        if version_id:
+            query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
-                data=acl_str, query_args='acl', headers=headers)
+                                                data=acl_str,
+                                                query_args=query_args,
+                                                headers=headers)
         body = response.read()
         if response.status != 200:
             raise S3ResponseError(response.status, response.reason, body)
 
-    def set_acl(self, acl_or_str, key_name='', headers=None):
+    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
         if isinstance(acl_or_str, Policy):
-            self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers)
+            self.set_xml_acl(acl_or_str.to_xml(), key_name,
+                             headers, version_id)
         else:
-            self.set_canned_acl(acl_or_str, key_name, headers=headers)
+            self.set_canned_acl(acl_or_str, key_name,
+                                headers, version_id)
 
-    def get_acl(self, key_name='', headers=None):
+    def get_acl(self, key_name='', headers=None, version_id=None):
+        query_args = 'acl'
+        if version_id:
+            query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('GET', self.name, key_name,
-                query_args='acl', headers=headers)
+                                                query_args=query_args,
+                                                headers=headers)
         body = response.read()
         if response.status == 200:
             policy = Policy(self)
@@ -491,5 +541,40 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason, body)
         
+    def enable_versioning(self, headers=None):
+        """
+        Enable versioning for this bucket.
+        Note: This feature is currently in beta release and is available
+              only in the Northern California region.
+        
+        """
+        body = self.VersioningBody % 'Enabled'
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='versioning', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+        
+    def disable_versioning(self, headers=None):
+        body = self.VersioningBody % 'Suspended'
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='versioning', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+        
+    def get_versioning_status(self, headers=None):
+        response = self.connection.make_request('GET', self.name,
+                query_args='versioning', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)

@@ -56,6 +56,9 @@ class Key(object):
         self.resp = None
         self.mode = None
         self.size = None
+        self.version_id = None
+        self.source_version_id = None
+        self.delete_marker = False
 
     def __repr__(self):
         if self.bucket:
@@ -78,6 +81,14 @@ class Key(object):
     def __iter__(self):
         return self
 
+    def handle_version_headers(self, resp):
+        self.version_id = resp.getheader('x-amz-version-id', None)
+        self.source_version_id = resp.getheader('x-amz-copy-source-version-id', None)
+        if resp.getheader('x-amz-delete-marker', 'false') == 'true':
+            self.delete_marker = True
+        else:
+            self.delete_marker = False
+
     def open_read(self, headers=None, query_args=None):
         """
         Open this key for reading
@@ -91,7 +102,10 @@ class Key(object):
         if self.resp == None:
             self.mode = 'r'
             
-            self.resp = self.bucket.connection.make_request('GET', self.bucket.name, self.name, headers, query_args=query_args)
+            self.resp = self.bucket.connection.make_request('GET',
+                                                            self.bucket.name,
+                                                            self.name, headers,
+                                                            query_args=query_args)
             if self.resp.status < 199 or self.resp.status > 299:
                 raise S3ResponseError(self.resp.status, self.resp.reason)
             response_headers = self.resp.msg
@@ -107,6 +121,7 @@ class Key(object):
                     self.content_encoding = value
                 elif name.lower() == 'last-modified':
                     self.last_modified = value
+            self.handle_version_headers(self.resp)
 
     def open_write(self, headers=None):
         """
@@ -205,6 +220,8 @@ class Key(object):
             self.storage_class = value
         elif name == 'Owner':
             pass
+        elif name == 'VersionId':
+            self.version_id = value
         else:
             setattr(self, name, value)
 
@@ -363,8 +380,10 @@ class Key(object):
         headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata)
-        return self.bucket.connection.make_request('PUT', self.bucket.name,
-                self.name, headers, sender=sender)
+        resp = self.bucket.connection.make_request('PUT', self.bucket.name,
+                                                   self.name, headers,
+                                                   sender=sender)
+        self.handle_version_headers(resp)
 
     def compute_md5(self, fp):
         """
@@ -536,10 +555,12 @@ class Key(object):
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
         """
         fp = StringIO.StringIO(s)
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
+        r = self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
         fp.close()
+        return r
 
-    def get_file(self, fp, headers=None, cb=None, num_cb=10, torrent=False):
+    def get_file(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None):
         """
         Retrieves a file from an S3 Key
         
@@ -575,9 +596,13 @@ class Key(object):
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
-        
-        if torrent: torrent = "torrent"
-        self.open('r', headers, query_args=torrent)
+
+        query_args = ''
+        if torrent:
+            query_args = 'torrent'
+        elif version_id:
+            query_args = 'versionId=%s' % version_id
+        self.open('r', headers, query_args=query_args)
         for bytes in self:
             fp.write(bytes)
             if cb:
@@ -612,7 +637,10 @@ class Key(object):
         """
         return self.get_file(fp, headers, cb, num_cb, torrent=True)
     
-    def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10, torrent=False):
+    def get_contents_to_file(self, fp, headers=None,
+                             cb=None, num_cb=10,
+                             torrent=False,
+                             version_id=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Write the contents of the object to the file pointed
@@ -642,9 +670,13 @@ class Key(object):
 
         """
         if self.bucket != None:
-            self.get_file(fp, headers, cb, num_cb, torrent=torrent)
+            self.get_file(fp, headers, cb, num_cb, torrent=torrent,
+                          version_id=version_id)
 
-    def get_contents_to_filename(self, filename, headers=None, cb=None, num_cb=10, torrent=False):
+    def get_contents_to_filename(self, filename, headers=None,
+                                 cb=None, num_cb=10,
+                                 torrent=False,
+                                 version_id=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Store contents of the object to a file named by 'filename'.
@@ -675,7 +707,8 @@ class Key(object):
         
         """
         fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
+        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                  version_id=version_id)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
@@ -685,7 +718,10 @@ class Key(object):
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception: pass
 
-    def get_contents_as_string(self, headers=None, cb=None, num_cb=10, torrent=False):
+    def get_contents_as_string(self, headers=None,
+                               cb=None, num_cb=10,
+                               torrent=False,
+                               version_id=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -720,7 +756,8 @@ class Key(object):
         :returns: The contents of the file as a string
         """
         fp = StringIO.StringIO()
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent)
+        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                  version_id=version_id)
         return fp.getvalue()
 
     def add_email_grant(self, permission, email_address):

@@ -85,7 +85,10 @@ class OrdinaryCallingFormat(_CallingFormat):
 class Location:
     DEFAULT = ''
     EU = 'EU'
+    USWest = 'us-west-1'
 
+#boto.set_stream_logger('s3')
+    
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = 's3.amazonaws.com'
@@ -282,7 +285,8 @@ class S3Connection(AWSAuthConnection):
             bucket = None
         return bucket
 
-    def create_bucket(self, bucket_name, headers=None, location=Location.DEFAULT, policy=None):
+    def create_bucket(self, bucket_name, headers=None,
+                      location=Location.DEFAULT, policy=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
         Location.EU to create an European bucket.
