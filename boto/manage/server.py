@@ -319,6 +319,7 @@ class Server(Model):
         instances = reservation.instances
         if elastic_ip != None and instances.__len__() > 0:
             instance = instances[0]
+            print 'Waiting for instance to start so we can set its elastic IP address...'
             while instance.update() != 'running':
                 time.sleep(1)
             instance.use_ip(elastic_ip)
