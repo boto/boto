@@ -56,8 +56,7 @@ class Trac(Installer):
 	def setup_vhost(self):
 		domain = boto.config.get("Trac", "hostname").strip()
 		if domain:
-                        domain_info = domain.split('.')
-                        boto.log.info("base domain info is %s" % domain_info[0]
+			domain_info = domain.split('.')
 			cnf = open("/etc/apache2/sites-available/%s" % domain_info[0], "w")
 			cnf.write("NameVirtualHost *:80\n")
 			if boto.config.get("Trac", "SSLCertificateFile"):
@@ -88,7 +87,7 @@ class Trac(Installer):
 			cnf.write("\t\tAuthType Basic\n")
 			cnf.write("\t\tAuthName \"%s\"\n" % boto.config.get("Trac", "name"))
 			cnf.write("\t\tRequire valid-user\n")
-			cnf.write("\t\tAuthUserFile /etc/apache2/passwd/passwds\n")
+			cnf.write("\t\tAuthUserFile /mnt/apache/passwd/passwords\n")
 			cnf.write("\t</Location>\n")
 
 			data_dir = boto.config.get("Trac", "data_dir")
@@ -128,7 +127,7 @@ class Trac(Installer):
 				cnf.write("\tSSLCertificateChainFile %s\n" % SSLCertificateChainFile)
 			cnf.write("</VirtualHost>\n")
 			cnf.close()
-			self.run("a2ensite %s" % domain)
+			self.run("a2ensite %s" % domain_info[0])
 			self.run("/etc/init.d/apache2 force-reload")
 
 	def main(self):
