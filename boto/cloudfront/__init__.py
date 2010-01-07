@@ -23,7 +23,6 @@
 import xml.sax
 import base64
 import time
-import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.cloudfront.distribution import *

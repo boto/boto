@@ -69,7 +69,7 @@ class DistributionConfig:
         s += '</Enabled>\n'
         if self.origin_access_identity:
             val = self.get_oai_value()
-            s += '<OriginAccessIdentifier>%s</OriginAccessIdentifier>\n' % val
+            s += '<OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
         if self.trusted_signers:
             s += '<TrustedSigners>\n'
             for signer in self.trusted_signers:
