@@ -87,10 +87,10 @@ class OrderedContent(object):
   </MimeType>
   <DataURL>%s</DataURL>
   <AltText>%s</AltText>
-</Binary>""" % (value['binary_type'],
-                value['binary_subtype'],
-                value['binary'],
-                value['binary_alttext'])
+</Binary>""" % (value['type'],
+                value['subtype'],
+                value['dataurl'],
+                value['alttext'])
     
     def get_application_xml(self, field, value):
         raise NotImplementedError("Application question content is not yet supported.")
@@ -138,37 +138,21 @@ class Overview(object):
 class QuestionForm(object):
     
     QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
-    QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s">%s</QuestionForm>""" # % (ns, questions_xml)
-    
-    def __init__(self, questions=None, overview=None):
-        if questions is None or type(questions) is not list:
-            raise ValueError("Must pass a list of Question instances to QuestionForm constructor")
-        else:
-            self.questions = questions
-        self.overview = overview
+    QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s">%s</QuestionForm>"""
 
-    
+    def __init__(self):
+        self.items = []
+
+    def append(self, item):
+        "Expects field type and value"
+        self.items.append(item)
+        
     def get_as_xml(self):
-        if self.overview:
-            overview_xml = self.overview.get_as_xml()
-        questions_xml = "".join([q.get_as_xml() for q in self.questions])
-        qf_xml = overview_xml + questions_xml
-        return QuestionForm.QUESTIONFORM_XML_TEMPLATE % (QuestionForm.QUESTIONFORM_SCHEMA_LOCATION, qf_xml)
-    
-    #def startElement(self, name, attrs, connection):
-    #    return None
-    #
-    #def endElement(self, name, value, connection):
-    #    
-    #    #if name == 'Amount':
-    #    #    self.amount = float(value)
-    #    #elif name == 'CurrencyCode':
-    #    #    self.currency_code = value
-    #    #elif name == 'FormattedPrice':
-    #    #    self.formatted_price = value
-    #    
-    #    pass # What's this method for?  I don't get it.
-
+        xml = ''
+        for item in self.items:
+            xml = xml + item.get_as_xml()
+        return QuestionForm.QUESTIONFORM_XML_TEMPLATE % (QuestionForm.QUESTIONFORM_SCHEMA_LOCATION, xml)
+        
 class QuestionContent(object):
     QUESTIONCONTENT_XML_TEMPLATE = """<QuestionContent>%s</QuestionContent>"""
     
