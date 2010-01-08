@@ -31,7 +31,7 @@ from boto.resultset import ResultSet
 
 class MTurkConnection(AWSQueryConnection):
     
-    APIVersion = '2006-10-31'
+    APIVersion = '2008-08-02'
     SignatureVersion = '1'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
