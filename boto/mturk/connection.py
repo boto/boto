@@ -507,9 +507,9 @@ class QuestionFormAnswer(BaseAutoResultElement):
         self.qid = None
 
     def endElement(self, name, value, connection):
-      if name == 'QuestionIdentifier':
-        self.qid = value
-      elif name == 'FreeText' and self.qid:
-        self.fields.append((self.qid,value))
-      elif name == 'Answer':
-        self.qid = None
+        if name == 'QuestionIdentifier':
+            self.qid = value
+        elif name == 'FreeText' and self.qid:
+            self.fields.append((self.qid,value))
+        elif name == 'Answer':
+            self.qid = None
