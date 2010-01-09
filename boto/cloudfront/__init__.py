@@ -27,6 +27,7 @@ from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.cloudfront.distribution import *
 from boto.cloudfront.identity import OriginAccessIdentity
+from boto.cloudfront.identity import OriginAccessIdentitySummary
 from boto.cloudfront.identity import OriginAccessIdentityConfig
 from boto.resultset import ResultSet
 from boto.cloudfront.exception import CloudFrontServerError
