@@ -501,4 +501,15 @@ class QuestionFormAnswer(BaseAutoResultElement):
     *NOTE* - currently really only supports free-text answers
     """
 
-    pass
+    def __init__(self, connection):
+        BaseAutoResultElement.__init__(self, connection)
+        self.fields = []
+        self.qid = None
+
+    def endElement(self, name, value, connection):
+      if name == 'QuestionIdentifier':
+        self.qid = value
+      elif name == 'FreeText' and self.qid:
+        self.fields.append((self.qid,value))
+      elif name == 'Answer':
+        self.qid = None
