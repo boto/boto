@@ -173,14 +173,14 @@ class EC2Connection(AWSQueryConnection):
         except IndexError: # None of those images available
             return None
 
-    def register_image(self, name, description=None, image_location=None,
+    def register_image(self, name=None, description=None, image_location=None,
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None):
         """
         Register an image.
 
         :type name: string
-        :param name: The name of the AMI.
+        :param name: The name of the AMI.  Valid only for EBS-based images.
 
         :type description: string
         :param description: The description of the AMI.
@@ -207,7 +207,9 @@ class EC2Connection(AWSQueryConnection):
         :rtype: string
         :return: The new image id
         """
-        params = {'Name': name}
+        params = {}
+        if name:
+            params['Name'] = name
         if description:
             params['Description'] = description
         if architecture:
@@ -217,7 +219,7 @@ class EC2Connection(AWSQueryConnection):
         if ramdisk_id:
             params['RamdiskId'] = ramdisk_id
         if image_location:
-            params['Location'] = image_location
+            params['ImageLocation'] = image_location
         if root_device_name:
             params['RootDeviceName'] = root_device_name
         if block_device_map:
