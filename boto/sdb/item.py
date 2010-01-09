@@ -89,6 +89,14 @@ class Item(dict):
     def save(self, replace=True):
         self.domain.put_attributes(self.name, self, replace)
 
+    def add_value(self, key, value):
+        if key in self:
+            if not isinstance(self[key], list):
+                self[key] = [self[key]]
+            self[key].append(value)
+        else:
+            self[key] = value
+
     def delete(self):
         self.domain.delete_item(self)
 
