@@ -2,8 +2,9 @@
 import boto
 ec2 = boto.connect_ec2()
 
-print "%-20s %-30s %s" % ("ID", "Groups", "Hostname")
+print "%-15s %-15s %-30s %s" % ("ID", 'Zone', "Groups", "Hostname")
+print "-"*105
 for r in ec2.get_all_instances():
     groups = [g.id for g in r.groups]
     for i in r.instances:
-        print "%-20s %-30s %s" % (i.id, ','.join(groups), i.public_dns_name)
+        print "%-15s %-15s %-30s %s" % (i.id, i.placement, ','.join(groups), i.public_dns_name)

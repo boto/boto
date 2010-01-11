@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+def kill_instance(instance_id):
+    """Kill an instance given it's instance ID"""
+    import boto
+    ec2 = boto.connect_ec2()
+    print "Stopping instance: %s" % instance_id
+    ec2.terminate_instances([instance_id])
+
+
+if __name__ == "__main__":
+    import sys
+    kill_instance(sys.argv[1])
