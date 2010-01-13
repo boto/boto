@@ -53,7 +53,7 @@ class Trac(Installer):
 		self.run("a2enmod dav_svn")
 		self.run("a2enmod rewrite")
 		# Make sure that boto.log is writable by everyone so that subversion post-commit hooks can 
-        # write to it.
+		# write to it.
 		self.run("touch /var/log/boto.log")
 		self.run("chmod a+w /var/log/boto.log")
 
