@@ -317,12 +317,12 @@ class MTurkConnection(AWSQueryConnection):
         """
         Expire a HIT that is no longer needed.
 
-	The effect is identical to the HIT expiring on its own. The HIT no longer appears on the 
-	Mechanical Turk web site, and no new Workers are allowed to accept the HIT. Workers who 
-	have accepted the HIT prior to expiration are allowed to complete it or return it, or 
-	allow the assignment duration to elapse (abandon the HIT). Once all remaining assignments 
-	have been submitted, the expired HIT becomes "reviewable", and will be returned by a call 
-	to GetReviewableHITs.
+    The effect is identical to the HIT expiring on its own. The HIT no longer appears on the 
+    Mechanical Turk web site, and no new Workers are allowed to accept the HIT. Workers who 
+    have accepted the HIT prior to expiration are allowed to complete it or return it, or 
+    allow the assignment duration to elapse (abandon the HIT). Once all remaining assignments 
+    have been submitted, the expired HIT becomes "reviewable", and will be returned by a call 
+    to GetReviewableHITs.
         """
         params = {'HITId' : hit_id,}
         return self._process_request('ForceExpireHIT', params)
