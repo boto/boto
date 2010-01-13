@@ -49,9 +49,13 @@ class Trac(Installer):
 		self.run('apt-get -y install trac', notify=True, exit_on_error=True)
 		self.run('apt-get -y install libapache2-svn', notify=True, exit_on_error=True)
 		self.run("a2enmod ssl")
-		self.run("a2enmod python")
+		self.run("a2enmod mod_python")
 		self.run("a2enmod dav_svn")
 		self.run("a2enmod rewrite")
+		# Make sure that boto.log is writable by everyone so that subversion post-commit hooks can 
+        # write to it.
+		self.run("touch /var/log/boto.log")
+		self.run("chmod a+w /var/log/boto.log")
 
 	def setup_vhost(self):
 		domain = boto.config.get("Trac", "hostname").strip()
