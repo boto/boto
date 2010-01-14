@@ -25,6 +25,7 @@
 VERSION = "%prog version 1.0"
 import boto
 import time
+from boto import sdb
 
 def choice_input(options, default=None, title=None):
     """
@@ -73,13 +74,13 @@ def load_db(domain, file):
     """
     domain.from_xml(file)
 
-def create_db(domain_name):
+def create_db(domain_name, region_name):
     """Create a new DB
 
     :param domain: Name of the domain to create
     :type domain: str
     """
-    sdb = boto.connect_sdb()
+    sdb = boto.sdb.connect_to_region(region_name)
     return sdb.create_domain(domain_name)
 
 if __name__ == "__main__":
@@ -96,14 +97,15 @@ if __name__ == "__main__":
     parser.add_option("-a", "--all-domains", help="Operate on all domains", action="store_true", default=False, dest="all_domains")
     parser.add_option("-d", "--domain", help="Do functions on domain (may be more then one)", action="append", dest="domains")
     parser.add_option("-f", "--file", help="Input/Output file we're operating on", dest="file_name")
-
+    parser.add_option("-r", "--region", help="Region (e.g. us-east-1[default] or eu-west-1)", default="us-east-1", dest="region_name")
     (options, args) = parser.parse_args()
 
     if options.create:
-        create_db(*args)
+        for domain_name in options.domains:
+            create_db(domain_name, options.region_name)
         exit()
 
-    sdb = boto.connect_sdb()
+    sdb = boto.sdb.connect_to_region(options.region_name)
     if options.list:
         for db in sdb.get_all_domains():
             print db

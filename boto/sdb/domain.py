@@ -270,7 +270,7 @@ class DomainDumpParser(ContentHandler):
     """
     
     def __init__(self, domain):
-        self.uploader = UploaderThread(domain.name)
+        self.uploader = UploaderThread(domain)
         self.item_id = None
         self.attrs = {}
         self.attribute = None
@@ -300,10 +300,10 @@ class DomainDumpParser(ContentHandler):
                     self.attrs[attr_name] = [value]
         elif name == "Item":
             self.uploader.items[self.item_id] = self.attrs
-            # Every 40 items we spawn off the uploader
-            if len(self.uploader.items) >= 40:
+            # Every 20 items we spawn off the uploader
+            if len(self.uploader.items) >= 20:
                 self.uploader.start()
-                self.uploader = UploaderThread(self.domain.name)
+                self.uploader = UploaderThread(self.domain)
         elif name == "Domain":
             # If we're done, spawn off our last Uploader Thread
             self.uploader.start()
@@ -312,10 +312,8 @@ from threading import Thread
 class UploaderThread(Thread):
     """Uploader Thread"""
     
-    def __init__(self, domain_name):
-        import boto
-        self.sdb = boto.connect_sdb()
-        self.db = self.sdb.get_domain(domain_name)
+    def __init__(self, domain):
+        self.db = domain
         self.items = {}
         Thread.__init__(self)
 
