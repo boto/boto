@@ -50,7 +50,7 @@ class OriginAccessIdentity:
             setattr(self, name, value)
 
     def update(self, comment=None):
-        new_config = OriginAccessIdentifyConfig(self.connection,
+        new_config = OriginAccessIdentityConfig(self.connection,
                                                 self.config.caller_reference,
                                                 self.config.comment)
         if comment != None:

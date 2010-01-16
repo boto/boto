@@ -61,9 +61,9 @@ class SecurityGroup(EC2Object):
                 self.status = True
             else:
                 raise Exception(
-                    'Unexpected value of status %s for image %s'%(
+                    'Unexpected value of status %s for group %s'%(
                         value, 
-                        self.id
+                        self.name
                     )
                 )
         else:
