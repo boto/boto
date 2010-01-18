@@ -127,7 +127,7 @@ class Task(Model):
             self._run(msg, vtimeout)
             queue = msg.queue
             new_msg = queue.new_message(self.id)
-            new_msg = queue.write(msg)
+            new_msg = queue.write(new_msg)
             self.message_id = new_msg.id
             self.put()
             boto.log.info('Task[%s] - new message id=%s' % (self.name, new_msg.id))
