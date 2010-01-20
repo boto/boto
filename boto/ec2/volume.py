@@ -156,14 +156,7 @@ class Volume(EC2Object):
 
     def attachment_state(self):
         """
-        Get the attachmentSet information for the volume.  This info is stored
-        in a dictionary object and contains at least the following info:
-
-        - volumeId
-        - instanceId
-        - device
-        - status
-        - attachTime
+        Get the attachment state.
         """
         state = None
         if self.attach_data:
