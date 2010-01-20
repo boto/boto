@@ -107,7 +107,8 @@ class Key(object):
                                                             self.name, headers,
                                                             query_args=query_args)
             if self.resp.status < 199 or self.resp.status > 299:
-                raise S3ResponseError(self.resp.status, self.resp.reason)
+                body = self.resp.read()
+                raise S3ResponseError(self.resp.status, self.resp.reason, body)
             response_headers = self.resp.msg
             self.metadata = boto.utils.get_aws_metadata(response_headers)
             for name,value in response_headers.items():
