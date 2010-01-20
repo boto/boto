@@ -304,6 +304,10 @@ class S3Connection(AWSAuthConnection):
         :param policy: A canned ACL policy that will be applied to the new key in S3.
              
         """
+        # TODO: Not sure what Exception Type from boto.exception to use.
+        if not bucket_name.islower():
+            raise Exception("Bucket names must be lower case.")
+
         if policy:
             if headers:
                 headers['x-amz-acl'] = policy
