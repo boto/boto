@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 import boto.ec2
-from boto.sdb.db.property import *
+from boto.sdb.db.property import StringProperty, IntegerProperty
 from boto.manage import propget
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
