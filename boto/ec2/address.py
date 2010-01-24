@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -44,8 +44,15 @@ class Address(EC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
-        return self.connection.delete_address(self.public_ip)
+    def release(self):
+        return self.connection.release_address(self.public_ip)
 
+    delete = release
 
+    def associate(self, instance_id):
+        return self.connection.associate_address(instance_id, self.public_ip)
 
+    def disassociate(self):
+        return self.connection.disassociate_address(self.public_ip)
+
+    
