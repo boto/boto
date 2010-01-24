@@ -26,8 +26,10 @@ from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
 from boto.s3.user import User
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
+from boto.s3.deletemarker import DeleteMarker
 from boto.exception import S3ResponseError, S3PermissionsError, S3CopyError
 from boto.s3.bucketlistresultset import BucketListResultSet
+from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 import boto.utils
 import xml.sax
 import urllib
@@ -178,6 +180,64 @@ class Bucket:
         """
         return BucketListResultSet(self, prefix, delimiter, marker, headers)
 
+    def list_versions(self, prefix='', delimiter='', key_marker='',
+                      version_id_marker='', headers=None):
+        """
+        List key objects within a bucket.  This returns an instance of an
+        BucketListResultSet that automatically handles all of the result
+        paging, etc. from S3.  You just need to keep iterating until
+        there are no more results.
+        Called with no arguments, this will return an iterator object across
+        all keys within the bucket.
+        
+        :type prefix: string
+        :param prefix: allows you to limit the listing to a particular
+                        prefix.  For example, if you call the method with prefix='/foo/'
+                        then the iterator will only cycle through the keys that begin with
+                        the string '/foo/'.
+                        
+        :type delimiter: string
+        :param delimiter: can be used in conjunction with the prefix
+                        to allow you to organize and browse your keys hierarchically. See:
+                        http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
+                        for more details.
+                        
+        :type marker: string
+        :param marker: The "marker" of where you are in the result set
+        
+        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
+        :return: an instance of a BucketListResultSet that handles paging, etc
+        """
+        return VersionedBucketListResultSet(self, prefix, delimiter, key_marker,
+                                            version_id_marker, headers)
+
+    def _get_all(self, element_map, initial_query_string='',
+                 headers=None, **params):
+        l = []
+        for k,v in params.items():
+            k = k.replace('_', '-')
+            if  k == 'maxkeys':
+                k = 'max-keys'
+            if isinstance(v, unicode):
+                v = v.encode('utf-8')
+            if v is not None and v != '':
+                l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
+        if len(l):
+            s = initial_query_string + '&' + '&'.join(l)
+        else:
+            s = initial_query_string
+        response = self.connection.make_request('GET', self.name,
+                headers=headers, query_args=s)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            rs = ResultSet(element_map)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs
+        else:
+            raise S3ResponseError(response.status, response.reason, body)
+
     def get_all_keys(self, headers=None, **params):
         """
         A lower-level method for listing contents of a bucket.
@@ -185,8 +245,8 @@ class Bucket:
         handle the paging of results.  For a higher-level method
         that handles the details of paging for you, you can use the list method.
         
-        :type maxkeys: int
-        :param maxkeys: The maximum number of keys to retrieve
+        :type max_keys: int
+        :param max_keys: The maximum number of keys to retrieve
         
         :type prefix: string
         :param prefix: The prefix of the keys you want to retrieve
@@ -207,30 +267,48 @@ class Bucket:
         :return: The result from S3 listing the keys requested
         
         """
-        l = []
-        for k,v in params.items():
-            if  k == 'maxkeys':
-                k = 'max-keys'
-            if isinstance(v, unicode):
-                v = v.encode('utf-8')
-            if v is not None:
-                l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
-        if len(l):
-            s = '&'.join(l)
-        else:
-            s = None
-        response = self.connection.make_request('GET', self.name,
-                headers=headers, query_args=s)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            rs = ResultSet([('Contents', self.key_class),
-                            ('CommonPrefixes', Prefix)])
-            h = handler.XmlHandler(rs, self)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            raise S3ResponseError(response.status, response.reason, body)
+        return self._get_all([('Contents', self.key_class),
+                              ('CommonPrefixes', Prefix)],
+                             '', headers, **params)
+
+    def get_all_versions(self, headers=None, **params):
+        """
+        A lower-level, version-aware method for listing contents of a bucket.
+        This closely models the actual S3 API and requires you to manually
+        handle the paging of results.  For a higher-level method
+        that handles the details of paging for you, you can use the list method.
+        
+        :type max_keys: int
+        :param max_keys: The maximum number of keys to retrieve
+        
+        :type prefix: string
+        :param prefix: The prefix of the keys you want to retrieve
+        
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+                           with respect to keys.
+        
+        :type version_id_marker: string
+        :param version_id_marker: The "marker" of where you are in the result set
+                                  with respect to version-id's.
+        
+        :type delimiter: string 
+        :param delimiter: If this optional, Unicode string parameter
+                          is included with your request, then keys that
+                          contain the same string between the prefix and
+                          the first occurrence of the delimiter will be
+                          rolled up into a single result element in the
+                          CommonPrefixes collection. These rolled-up keys
+                          are not returned elsewhere in the response.
+
+        :rtype: ResultSet
+        :return: The result from S3 listing the keys requested
+        
+        """
+        return self._get_all([('Version', self.key_class),
+                              ('CommonPrefixes', Prefix),
+                              ('DeleteMarker', DeleteMarker)],
+                             'versions', headers, **params)
 
     def new_key(self, key_name=None):
         """

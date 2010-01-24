@@ -92,10 +92,11 @@ def canonical_string(method, path, headers, expires=None):
 
     buf = "%s\n" % method
     for key in sorted_header_keys:
+        val = interesting_headers[key]
         if key.startswith(AMAZON_HEADER_PREFIX):
-            buf += "%s:%s\n" % (key, interesting_headers[key])
+            buf += "%s:%s\n" % (key, val)
         else:
-            buf += "%s\n" % interesting_headers[key]
+            buf += "%s\n" % val
 
     # don't include anything after the first ? in the resource...
     buf += "%s" % path.split('?')[0]
@@ -111,6 +112,8 @@ def canonical_string(method, path, headers, expires=None):
         buf += "?location"
     elif re.search("[&?]requestPayment($|=|&)", path):
         buf += "?requestPayment"
+    elif re.search("[&?]versions($|=|&)", path):
+        buf += "?versions"
     elif re.search("[&?]versioning($|=|&)", path):
         buf += "?versioning"
     else:
@@ -136,7 +139,8 @@ def get_aws_metadata(headers):
     metadata = {}
     for hkey in headers.keys():
         if hkey.lower().startswith(METADATA_PREFIX):
-            metadata[hkey[len(METADATA_PREFIX):]] = headers[hkey]
+            val = urllib.unquote_plus(headers[hkey])
+            metadata[hkey[len(METADATA_PREFIX):]] = unicode(val, 'utf-8')
             del headers[hkey]
     return metadata
 
