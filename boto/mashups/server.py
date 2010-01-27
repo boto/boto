@@ -297,7 +297,7 @@ class Server(Model):
             sftp_client.remove(BotoConfigPath)
         except:
             pass
-        command = 'ec2-bundle-vol '
+        command = 'sudo ec2-bundle-vol '
         command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
         command += '-u %s ' % self._reservation.owner_id
         command += '-p %s ' % prefix
