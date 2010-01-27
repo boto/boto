@@ -431,8 +431,8 @@ class SDBManager(object):
                         query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
 
         type_query = "(`__type__` = '%s'" % cls.__name__
-        for subclass in cls.__sub_classes__:
-            type_query += " or `__type__` = '%s'" % subclass.__name__
+        for subclass in self._get_all_decendents(cls).keys():
+            type_query += " or `__type__` = '%s'" % subclass
         type_query +=")"
         query_parts.append(type_query)
 
@@ -447,6 +447,14 @@ class SDBManager(object):
         else:
             return ""
 
+
+    def _get_all_decendents(self, cls):
+        """Get all decendents for a given class"""
+        decendents = {}
+        for sc in cls.__sub_classes__:
+            decendents[sc.__name__] = sc
+            decendents.update(self._get_all_decendents(sc))
+        return decendents
 
     def query_gql(self, query_string, *args, **kwds):
         raise NotImplementedError, "GQL queries not supported in SimpleDB"
