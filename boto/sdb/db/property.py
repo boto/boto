@@ -56,7 +56,6 @@ class Property(object):
             return None
 
     def __set__(self, obj, value):
-        obj._loaded = True # Once we start setting properties, we don't want to re-load them
         self.validate(value)
 
         # Fire off any on_set functions
