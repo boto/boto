@@ -55,6 +55,7 @@ class ModelMeta(type):
         
 class Model(object):
     __metaclass__ = ModelMeta
+    id = None
 
     @classmethod
     def get_lineage(cls):
