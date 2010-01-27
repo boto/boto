@@ -1,4 +1,5 @@
 # Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010 Chris Moyer http://coredumped.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -103,16 +104,16 @@ class Bundler(object):
         self.copy_x509(key_file, cert_file)
         if not fp:
             fp = StringIO.StringIO()
-        fp.write('mv %s /mnt/boto.cfg; ' % BotoConfigPath)
-        fp.write('mv /root/.ssh/authorized_keys /mnt/authorized_keys; ')
+        fp.write('sudo mv %s /mnt/boto.cfg; ' % BotoConfigPath)
+        fp.write('mv ~/.ssh/authorized_keys /mnt/authorized_keys; ')
         if clear_history:
             fp.write('history -c; ')
         fp.write(self.bundle_image(prefix, size, ssh_key))
         fp.write('; ')
         fp.write(self.upload_bundle(bucket, prefix, ssh_key))
         fp.write('; ')
-        fp.write('mv /mnt/boto.cfg %s; ' % BotoConfigPath)
-        fp.write('mv /mnt/authorized_keys /root/.ssh/authorized_keys\n')
+        fp.write('sudo mv /mnt/boto.cfg %s; ' % BotoConfigPath)
+        fp.write('mv /mnt/authorized_keys ~/.ssh/authorized_keys')
         command = fp.getvalue()
         print 'running the following command on the remote server:'
         print command
@@ -121,7 +122,7 @@ class Bundler(object):
         print '\t%s' % t[1]
         print '...complete!'
         print 'registering image...'
-        self.image_id = self.server.ec2.register_image('%s/%s.manifest.xml' % (bucket, prefix))
+        self.image_id = self.server.ec2.register_image(name=prefix, image_location='%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
 class CommandLineGetter(object):
