@@ -145,16 +145,16 @@ div.body h4,
 div.body h5,
 div.body h6 {
     font-family: 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, Arial, sans-serif;
-    font-weight: normal;
-    color: #212224;
+    font-weight: bold;
+    color: #069;
     margin: 30px 0px 10px 0px;
     padding: 5px 0 5px 0px;
     text-shadow: 0px 1px 0 white;
     border-bottom: 1px solid #C8D5E3;
 }
  
-div.body h1 { margin-top: 0; font-size: 200%; }
-div.body h2 { font-size: 150%; }
+div.body h1 { margin-top: 0; font-size: 165%; }
+div.body h2 { font-size: 135%; }
 div.body h3 { font-size: 120%; }
 div.body h4 { font-size: 110%; }
 div.body h5 { font-size: 100%; }
