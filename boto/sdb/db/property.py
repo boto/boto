@@ -507,6 +507,8 @@ class ListProperty(Property):
             item_type = self.item_type
         if isinstance(value, item_type):
             value = [value]
+        elif value == None: # Override to allow them to set this to "None" to remove everything
+            value = []
         return super(ListProperty, self).__set__(obj,value)
 
 
