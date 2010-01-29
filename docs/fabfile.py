@@ -9,8 +9,6 @@ def deploy(**kwargs):
     local("svn up ../")
     rev = local("svn info | grep Revision")
     rev = rev.replace("Revision: ", "").strip()
-    conf = open('source/conf-orig.py', 'r+b').read() 
-    open('source/conf.py', 'w+b').write(conf.replace('release = "HEAD"', 'release = "%s"' % rev))
     tmp_folder_name = 'boto-docs.r%s' % rev
     archive_name = '%s.tar.gz' % tmp_folder_name
     
