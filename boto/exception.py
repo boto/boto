@@ -244,6 +244,11 @@ class EC2ResponseError(BotoServerError):
         for p in ('errors'):
             setattr(self, p, None)
 
+class EmrResponseError(BotoServerError):
+     """
+     Error in response from EMR
+     """
+
 class _EC2Error:
 
     def __init__(self, connection=None):
