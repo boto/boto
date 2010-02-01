@@ -246,7 +246,7 @@ class IPPermissions:
         else:
             setattr(self, name, value)
 
-    def add_grant(self, owner_id=None, name=None, cidr_ip=None):
+    def add_grant(self, name=None, owner_id=None, cidr_ip=None):
         grant = GroupOrCIDR(self)
         grant.owner_id = owner_id
         grant.name = name
