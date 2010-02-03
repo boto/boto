@@ -407,6 +407,7 @@ class _ReverseReferenceProperty(Property):
     def __init__(self, model, prop, name):
         self.__model = model
         self.__property = prop
+        self.collection_name = prop
         self.name = name
         self.item_type = model
 
