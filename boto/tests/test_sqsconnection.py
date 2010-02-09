@@ -98,8 +98,8 @@ class SQSConnectionTest (unittest.TestCase):
         message = queue.read()
         assert message == None
 
-        # now wait 10 seconds and try again
-        time.sleep(10)
+        # now wait 30 seconds and try again
+        time.sleep(30)
         message = queue.read()
         assert message
 

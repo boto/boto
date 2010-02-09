@@ -33,6 +33,7 @@ from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 import boto.utils
 import xml.sax
 import urllib
+import re
 
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
@@ -60,7 +61,11 @@ class Bucket:
     VersioningBody = """<?xml version="1.0" encoding="UTF-8"?>
        <VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
          <Status>%s</Status>
+         <MfaDelete>%s</MfaDelete>
        </VersioningConfiguration>"""
+
+    VersionRE = '<Status>([A-Za-z]+)</Status>'
+    MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
 
     def __init__(self, connection=None, name=None, key_class=Key):
         self.name = name
@@ -162,13 +167,14 @@ class Bucket:
         
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
-                        prefix.  For example, if you call the method with prefix='/foo/'
-                        then the iterator will only cycle through the keys that begin with
-                        the string '/foo/'.
+                        prefix.  For example, if you call the method with
+                        prefix='/foo/' then the iterator will only cycle
+                        through the keys that begin with the string '/foo/'.
                         
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
-                        to allow you to organize and browse your keys hierarchically. See:
+                        to allow you to organize and browse your keys
+                        hierarchically. See:
                         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
                         for more details.
                         
@@ -192,13 +198,14 @@ class Bucket:
         
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
-                        prefix.  For example, if you call the method with prefix='/foo/'
-                        then the iterator will only cycle through the keys that begin with
-                        the string '/foo/'.
+                        prefix.  For example, if you call the method with
+                        prefix='/foo/' then the iterator will only cycle
+                        through the keys that begin with the string '/foo/'.
                         
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
-                        to allow you to organize and browse your keys hierarchically. See:
+                        to allow you to organize and browse your keys
+                        hierarchically. See:
                         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
                         for more details.
                         
@@ -289,8 +296,8 @@ class Bucket:
                            with respect to keys.
         
         :type version_id_marker: string
-        :param version_id_marker: The "marker" of where you are in the result set
-                                  with respect to version-id's.
+        :param version_id_marker: The "marker" of where you are in the result
+                                  set with respect to version-id's.
         
         :type delimiter: string 
         :param delimiter: If this optional, Unicode string parameter
@@ -322,11 +329,14 @@ class Bucket:
         """
         return self.key_class(self, key_name)
 
-    def generate_url(self, expires_in, method='GET', headers=None, force_http=False):
-        return self.connection.generate_url(expires_in, method, self.name, headers=headers,
+    def generate_url(self, expires_in, method='GET',
+                     headers=None, force_http=False):
+        return self.connection.generate_url(expires_in, method, self.name,
+                                            headers=headers,
                                             force_http=force_http)
 
-    def delete_key(self, key_name, headers=None, version_id=None):
+    def delete_key(self, key_name, headers=None,
+                   version_id=None, mfa_token=None):
         """
         Deletes a key from the bucket.  If a version_id is provided,
         only that version of the key will be deleted.
@@ -336,11 +346,23 @@ class Bucket:
 
         :type version_id: string
         :param version_id: The version ID (optional)
+        
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: A tuple or list consisting of the serial number
+                          from the MFA device and the current value of
+                          the six-digit token associated with the device.
+                          This value is required anytime you are
+                          deleting versioned objects from a bucket
+                          that has the MFADelete option on the bucket.
         """
         if version_id:
             query_args = 'versionId=%s' % version_id
         else:
             query_args = None
+        if mfa_token:
+            if not headers:
+                headers = {}
+            headers['x-amz-mfa'] = ' '.join(mfa_token)
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
@@ -349,7 +371,7 @@ class Bucket:
             raise S3ResponseError(response.status, response.reason, body)
 
     def copy_key(self, new_key_name, src_bucket_name,
-                 src_key_name, metadata=None):
+                 src_key_name, metadata=None, src_version_id=None):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -362,6 +384,11 @@ class Bucket:
         :type src_key_name: string
         :param src_key_name: The name of the source key
 
+        :type src_version_id: string
+        :param src_version_id: The version id for the key.  This param
+                               is optional.  If not specified, the newest
+                               version of the key will be copied.
+
         :type metadata: dict
         :param metadata: Metadata to be associated with new key.
                          If metadata is supplied, it will replace the
@@ -373,6 +400,8 @@ class Bucket:
         :returns: An instance of the newly created key object
         """
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
+        if src_version_id:
+            src += '?version_id=%s' % src_version_id
         if metadata:
             headers = {'x-amz-copy-source' : src,
                        'x-amz-metadata-directive' : 'REPLACE'}
@@ -466,26 +495,30 @@ class Bucket:
             for key in self:
                 self.set_canned_acl('public-read', key.name, headers=headers)
 
-    def add_email_grant(self, permission, email_address, recursive=False, headers=None):
+    def add_email_grant(self, permission, email_address,
+                        recursive=False, headers=None):
         """
-        Convenience method that provides a quick way to add an email grant to a bucket.
-        This method retrieves the current ACL, creates a new grant based on the parameters
-        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
+        Convenience method that provides a quick way to add an email grant
+        to a bucket. This method retrieves the current ACL, creates a new
+        grant based on the parameters passed in, adds that grant to the ACL
+        and then PUT's the new ACL back to S3.
         
-        :param permission: The permission being granted. Should be one of: (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
-             See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html for more details on permissions.
         :type permission: string
+        :param permission: The permission being granted. Should be one of:
+                           (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
         
-        :param email_address: The email address associated with the AWS account your are granting
-            the permission to.
         :type email_address: string
+        :param email_address: The email address associated with the AWS
+                              account your are granting the permission to.
         
-        :param recursive: A boolean value to controls whether the command will apply the
-            grant to all keys within the bucket or not.  The default value is False.
-            By passing a True value, the call will iterate through all keys in the
-            bucket and apply the same grant to each key.
-            CAUTION: If you have a lot of keys, this could take a long time!
         :type recursive: boolean
+        :param recursive: A boolean value to controls whether the command
+                          will apply the grant to all keys within the bucket
+                          or not.  The default value is False.  By passing a
+                          True value, the call will iterate through all keys
+                          in the bucket and apply the same grant to each key.
+                          CAUTION: If you have a lot of keys, this could take
+                          a long time!
         """
         if permission not in S3Permissions:
             raise S3PermissionsError('Unknown Permission: %s' % permission)
@@ -503,21 +536,21 @@ class Bucket:
         passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
         
         :type permission: string
-        :param permission:  The permission being granted.  Should be one of:
-                            READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
-                            See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
-                            for more details on permissions.
-                            
+        :param permission: The permission being granted. Should be one of:
+                           (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
+        
         :type user_id: string
         :param user_id:     The canonical user id associated with the AWS account your are granting
                             the permission to.
                             
-        :type recursive: bool
-        :param recursive:   A boolean value that controls whether the command will apply the
-                            grant to all keys within the bucket or not.  The default value is False.
-                            By passing a True value, the call will iterate through all keys in the
-                            bucket and apply the same grant to each key.
-                            CAUTION: If you have a lot of keys, this could take a long time!
+        :type recursive: boolean
+        :param recursive: A boolean value to controls whether the command
+                          will apply the grant to all keys within the bucket
+                          or not.  The default value is False.  By passing a
+                          True value, the call will iterate through all keys
+                          in the bucket and apply the same grant to each key.
+                          CAUTION: If you have a lot of keys, this could take
+                          a long time!
         """
         if permission not in S3Permissions:
             raise S3PermissionsError('Unknown Permission: %s' % permission)
@@ -619,24 +652,46 @@ class Bucket:
         else:
             raise S3ResponseError(response.status, response.reason, body)
         
-    def enable_versioning(self, headers=None):
+    def configure_versioning(self, versioning, mfa_delete=False,
+                             mfa_token=None, headers=None):
         """
-        Enable versioning for this bucket.
+        Configure versioning for this bucket.
         Note: This feature is currently in beta release and is available
               only in the Northern California region.
-        
+
+        :type versioning: bool
+        :param versioning: A boolean indicating whether version is
+                           enabled (True) or disabled (False).
+
+        :type mfa_delete: bool
+        :param mfa_delete: A boolean indicating whether the Multi-Factor
+                           Authentication Delete feature is enabled (True)
+                           or disabled (False).  If mfa_delete is enabled
+                           then all Delete operations will require the
+                           token from your MFA device to be passed in
+                           the request.
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: A tuple or list consisting of the serial number
+                          from the MFA device and the current value of
+                          the six-digit token associated with the device.
+                          This value is required when you are changing
+                          the status of the MfaDelete property of
+                          the bucket.
         """
-        body = self.VersioningBody % 'Enabled'
-        response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='versioning', headers=headers)
-        body = response.read()
-        if response.status == 200:
-            return True
+        if versioning:
+            ver = 'Enabled'
         else:
-            raise S3ResponseError(response.status, response.reason, body)
-        
-    def disable_versioning(self, headers=None):
-        body = self.VersioningBody % 'Suspended'
+            ver = 'Disabled'
+        if mfa_delete:
+            mfa = 'Enabled'
+        else:
+            mfa = 'Disabled'
+        body = self.VersioningBody % (ver, mfa)
+        if mfa_token:
+            if not headers:
+                headers = {}
+            headers['x-amz-mfa'] = ' '.join(mfa_token)
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='versioning', headers=headers)
         body = response.read()
@@ -646,11 +701,30 @@ class Bucket:
             raise S3ResponseError(response.status, response.reason, body)
         
     def get_versioning_status(self, headers=None):
+        """
+        Returns the current status of versioning on the bucket.
+
+        :rtype: dict
+        :returns: A dictionary containing a key named 'Versioning'
+                  that can have a value of either Enabled, Disabled,
+                  or Suspended. Also, if MFADelete has ever been enabled
+                  on the bucket, the dictionary will contain a key
+                  named 'MFADelete' which will have a value of either
+                  Enabled or Suspended.
+        """
         response = self.connection.make_request('GET', self.name,
                 query_args='versioning', headers=headers)
         body = response.read()
+        boto.log.debug(body)
         if response.status == 200:
-            return body
+            d = {}
+            ver = re.search(self.VersionRE, body)
+            if ver:
+                d['Versioning'] = ver.group(1)
+            mfa = re.search(self.MFADeleteRE, body)
+            if mfa:
+                d['MfaDelete'] = mfa.group(1)
+            return d
         else:
             raise S3ResponseError(response.status, response.reason, body)
 

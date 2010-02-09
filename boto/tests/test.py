@@ -30,6 +30,7 @@ import boto
 
 from boto.tests.test_sqsconnection import SQSConnectionTest
 from boto.tests.test_s3connection import S3ConnectionTest
+from boto.tests.test_s3versioning import S3VersionTest
 from boto.tests.test_ec2connection import EC2ConnectionTest
 from boto.tests.test_sdbconnection import SDBConnectionTest
 
@@ -66,6 +67,9 @@ def main():
         suite.addTest(unittest.makeSuite(SDBConnectionTest))
     elif testsuite == 's3':
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
+        suite.addTest(unittest.makeSuite(S3VersionTest))
+    elif testsuite == 's3ver':
+        suite.addTest(unittest.makeSuite(S3VersionTest))
     elif testsuite == 'sqs':
         suite.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == 'ec2':
