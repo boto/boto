@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 """
-Represents an EC2 Elastic IP Volume
+Represents an EC2 Elastic Block Storage Volume
 """
 from boto.ec2.ec2object import EC2Object
 
