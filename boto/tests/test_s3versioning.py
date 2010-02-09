@@ -118,7 +118,6 @@ class S3VersionTest (unittest.TestCase):
         assert d['MfaDelete'] == 'Enabled'
         
         # Now try to delete v2 without the MFA token
-        mfa_code = raw_input('MFA Code: ')
         try:
             bucket.delete_key('foobar', version_id=v2)
         except S3ResponseError:
