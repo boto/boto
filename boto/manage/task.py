@@ -82,7 +82,7 @@ class Task(Model):
             if int(self.hour) == self.now.hour:
                 return 0
             else:
-                return max((int(self.hour) - self.now.hour),0)*60*60
+                return max( (int(self.hour)-self.now.hour), (self.now.hour-int(self.hour)) )*60*60
 
         delta = self.now - self.last_executed
         if self.hourly:
@@ -91,10 +91,13 @@ class Task(Model):
             else:
                 return 60*60 - delta.seconds
         else:
-            if delta.days >= 1:
-                return 0
+            if int(self.hour) == self.now.hour:
+                if delta.days >= 1:
+                    return 0
+                else:
+                    return 82800 # 23 hours, just to be safe
             else:
-                return min(60*60*24-delta.seconds, 43200)
+                return max( (int(self.hour)-self.now.hour), (self.now.hour-int(self.hour)) )*60*60
     
     def _run(self, msg, vtimeout):
         boto.log.info('Task[%s] - running:%s' % (self.name, self.command))
