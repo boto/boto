@@ -24,6 +24,7 @@ class EBSBlockDeviceType(object):
 
     def __init__(self, connection=None):
         self.connection = connection
+        self.virtual_name = None
         self.volume_id = None
         self.snapshot_id = None
         self.status = None
@@ -37,6 +38,8 @@ class EBSBlockDeviceType(object):
     def endElement(self, name, value, connection):
         if name =='volumeId':
             self.volume_id = value
+        elif name == 'virtualName':
+            self.virtual_name = value
         elif name =='snapshotId':
             self.snapshot_id = value
         elif name == 'volumeSize':
@@ -80,10 +83,12 @@ class BlockDeviceMapping(dict):
             ebs = self[dev_name]
             if ebs.snapshot_id:
                 params['%s.Ebs.SnapshotId' % pre] = ebs.snapshot_id
-            if ebs.size:
-                params['%s.Ebs.VolumeSize' % pre] = ebs.size
-            if ebs.delete_on_termination:
-                params['%s.Ebs.DeleteOnTermination' % pre] = 'true'
-            else:
-                params['%s.Ebs.DeleteOnTermination' % pre] = 'false'
+                if ebs.size:
+                    params['%s.Ebs.VolumeSize' % pre] = ebs.size
+                if ebs.delete_on_termination:
+                    params['%s.Ebs.DeleteOnTermination' % pre] = 'true'
+                else:
+                    params['%s.Ebs.DeleteOnTermination' % pre] = 'false'
+            elif ebs.virtual_name:
+                params['%s.VirtualName' % pre] = ebs.virtual_name
             i += 1
