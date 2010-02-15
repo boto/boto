@@ -66,6 +66,8 @@ def get_manager(cls):
         db_port = boto.config.getint(db_section, 'db_port', db_port)
         enable_ssl = boto.config.getint(db_section, 'enable_ssl', enable_ssl)
         debug = boto.config.getint(db_section, 'debug', debug)
+    elif hasattr(cls.__bases__[0], "_manager"):
+        return cls.__bases__[0]._manager
     if db_type == 'SimpleDB':
         from sdbmanager import SDBManager
         return SDBManager(cls, db_name, db_user, db_passwd,
