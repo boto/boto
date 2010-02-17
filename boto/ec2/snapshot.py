@@ -52,7 +52,10 @@ class Snapshot(EC2Object):
         elif name == 'ownerId':
             self.owner_id = value
         elif name == 'volumeSize':
-            self.volume_size = int(value)
+            try:
+                self.volume_size = int(value)
+            except:
+                self.volume_size = value
         elif name == 'description':
             self.description = value
         else:
