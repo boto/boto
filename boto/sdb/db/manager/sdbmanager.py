@@ -290,19 +290,32 @@ class SDBManager(object):
         self.s3 = None
         self.bucket = None
         self.converter = SDBConverter(self)
-        self._connect()
+        self._sdb = None
+        self._domain = None
+
+    @property
+    def sdb(self):
+        if self._sdb is None:
+            self._connect()
+        return self._sdb
+
+    @property
+    def domain(self):
+        if self._domain is None:
+            self._connect()
+        return self._domain
 
     def _connect(self):
-        self.sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
+        self._sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
                                     aws_secret_access_key=self.db_passwd,
                                     is_secure=self.enable_ssl)
         # This assumes that the domain has already been created
         # It's much more efficient to do it this way rather than
         # having this make a roundtrip each time to validate.
         # The downside is that if the domain doesn't exist, it breaks
-        self.domain = self.sdb.lookup(self.db_name, validate=False)
-        if not self.domain:
-            self.domain = self.sdb.create_domain(self.db_name)
+        self._domain = self._sdb.lookup(self.db_name, validate=False)
+        if not self._domain:
+            self._domain = self._sdb.create_domain(self.db_name)
 
     def _object_lister(self, cls, query_lister):
         for item in query_lister:
