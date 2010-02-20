@@ -74,7 +74,7 @@ class DBSecurityGroup(object):
         @type cidr_ip: string
         @param cidr_ip: A valid CIDR IP range to authorize
 
-        @type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup>`b
+        @type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup>`
                          
         @rtype: bool
         @return: True if successful.
@@ -99,7 +99,7 @@ class DBSecurityGroup(object):
         @type cidr_ip: string
         @param cidr_ip: A valid CIDR IP range to authorize
 
-        @type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup>`b
+        @type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup>`
                          
         @rtype: bool
         @return: True if successful.

@@ -804,7 +804,7 @@ class EC2Connection(AWSQueryConnection):
         Return the current spot instance data feed subscription
         associated with this account, if any.
         
-        :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription
+        :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
         return self.get_object('DescribeSpotDatafeedSubscription',
@@ -824,7 +824,7 @@ class EC2Connection(AWSQueryConnection):
         :param prefix: An optional prefix that will be pre-pended to all
                        data files written to the bucket.
                        
-        :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription
+        :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
         params = {'Bucket' : bucket}
