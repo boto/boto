@@ -57,7 +57,11 @@ class ServerSet(list):
 
 class Server(Model):
 
-    ec2 = boto.connect_ec2()
+    @property
+    def ec2(self):
+        if self._ec2 is None:
+            self._ec2 = boto.connect_ec2()
+        return self._ec2
 
     @classmethod
     def Inventory(cls):
@@ -87,6 +91,7 @@ class Server(Model):
         self._ssh_client = None
         self._pkey = None
         self._config = None
+        self._ec2 = None
 
     name = StringProperty(unique=True, verbose_name="Name")
     instance_id = StringProperty(verbose_name="Instance ID")
