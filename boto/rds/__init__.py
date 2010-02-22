@@ -112,7 +112,7 @@ class RDSConnection(AWSQueryConnection):
                                db.m2.2xlarge | db.m2.4xlarge
 
         :type engine: str
-.       :param engine: Name of database engine.  Must be MySQL5.1 for now.
+        :param engine: Name of database engine. Must be MySQL5.1 for now.
 
         :type master_username: str
         :param master_username: Name of master user for the DBInstance.
