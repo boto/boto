@@ -20,14 +20,12 @@
 # IN THE SOFTWARE.
 
 from boto.connection import AWSQueryConnection
-import xml.sax
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
-from boto import handler
-from boto.resultset import ResultSet
 from boto.exception import SQSError
+
 
 class SQSConnection(AWSQueryConnection):
     """
