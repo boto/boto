@@ -20,15 +20,9 @@
 # IN THE SOFTWARE.
 #
 
-import xml.sax
-import base64
-import time
-import boto
 import boto.utils
 import urllib
 from boto.connection import AWSQueryConnection
-from boto import handler
-from boto.resultset import ResultSet
 from boto.rds.dbinstance import DBInstance
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
@@ -742,8 +736,8 @@ class RDSConnection(AWSQueryConnection):
             params['UseLatestRestorableTime'] = 'true'
         elif restore_time:
             params['RestoreTime'] = restore_time.isoformat()
-        if instance_class:
-            params['DBInstanceClass'] = instance_class
+        if dbinstance_class:
+            params['DBInstanceClass'] = dbinstance_class
         if port:
             params['Port'] = port
         if availability_zone:
