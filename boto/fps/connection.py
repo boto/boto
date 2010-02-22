@@ -24,7 +24,6 @@ import xml.sax
 import uuid
 import boto
 import boto.utils
-import urllib
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
@@ -83,7 +82,7 @@ class FPSConnection(AWSQueryConnection):
                 boto.config.save_user_option("FPS", "caller_token", caller_token)
             return caller_token
         else:
-            raise FPSResponseError(response.status, respons.reason, body)
+            raise FPSResponseError(response.status, response.reason, body)
 
     def install_recipient_instruction(self, token_type="Unrestricted", transaction_id=None):
         """
@@ -105,7 +104,7 @@ class FPSConnection(AWSQueryConnection):
 
             return recipient_token
         else:
-            raise FPSResponseError(response.status, respons.reason, body)
+            raise FPSResponseError(response.status, response.reason, body)
 
     def make_url(self, returnURL, paymentReason, pipelineName, **params):
         """
