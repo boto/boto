@@ -27,11 +27,13 @@ import base64
 import boto.utils
 from boto.exception import S3ResponseError, S3DataError, BotoClientError
 from boto.s3.user import User
-from boto import UserAgent, config
+from boto import UserAgent
+
 try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
+
 
 class Key(object):
 

@@ -23,7 +23,6 @@ import xml.sax
 import urllib, base64
 import time
 import boto.utils
-import types
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
@@ -231,7 +230,7 @@ class S3Connection(AWSAuthConnection):
         hmac_copy.update(canonical_str)
         b64_hmac = base64.encodestring(hmac_copy.digest()).strip()
         encoded_canonical = urllib.quote_plus(b64_hmac)
-        path = self.calling_format.build_path_base(bucket, key)
+        self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                              self.aws_access_key_id)
@@ -275,7 +274,7 @@ class S3Connection(AWSAuthConnection):
     def get_bucket(self, bucket_name, validate=True, headers=None):
         bucket = Bucket(self, bucket_name)
         if validate:
-            rs = bucket.get_all_keys(headers, maxkeys=0)
+            bucket.get_all_keys(headers, maxkeys=0)
         return bucket
 
     def lookup(self, bucket_name, validate=True, headers=None):

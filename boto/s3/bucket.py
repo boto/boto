@@ -22,8 +22,7 @@
 import boto
 from boto import handler
 from boto.resultset import ResultSet
-from boto.s3.acl import Policy, CannedACLStrings, ACL, Grant
-from boto.s3.user import User
+from boto.s3.acl import Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
@@ -138,7 +137,7 @@ class Bucket:
                                                 headers=headers,
                                                 query_args=query_args)
         if response.status == 200:
-            body = response.read()
+            response.read()
             k = self.key_class(self)
             k.metadata = boto.utils.get_aws_metadata(response.msg)
             k.etag = response.getheader('etag')
@@ -151,7 +150,7 @@ class Bucket:
             return k
         else:
             if response.status == 404:
-                body = response.read()
+                response.read()
                 return None
             else:
                 raise S3ResponseError(response.status, response.reason, '')
@@ -622,16 +621,6 @@ class Bucket:
         policy.acl.add_grant(g1)
         policy.acl.add_grant(g2)
         self.set_acl(policy, headers=headers)
-
-    def disable_logging(self, headers=None):
-        body = self.EmptyBucketLoggingBody
-        response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='logging', headers=headers)
-        body = response.read()
-        if response.status == 200:
-            return True
-        else:
-            raise S3ResponseError(response.status, response.reason, body)
 
     def get_request_payment(self, headers=None):
         response = self.connection.make_request('GET', self.name,
