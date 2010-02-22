@@ -20,22 +20,25 @@
 # IN THE SOFTWARE.
 #
 
-import random, time, os, datetime
-import boto
+import random
+import os
+import datetime
 from boto.sdb.persist.object import SDBObject
-from boto.sdb.persist.property import *
+from boto.sdb.persist.property import StringProperty, ObjectProperty, DateTimeProperty, ObjectListProperty, S3KeyProperty
+
+
+HEX_DIGITS = '0123456789abcdef'
 
 class Identifier(object):
 
-    _hex_digits = '0123456789abcdef'
-
-    @classmethod
-    def gen(cls, prefix):
+    @staticmethod
+    def gen(prefix):
         suffix = ''
         for i in range(0,8):
-            suffix += random.choice(cls._hex_digits)
-        return ts + '-' + suffix
-    
+            suffix += random.choice(HEX_DIGITS)
+        return prefix + '-' + suffix
+
+
 class Version(SDBObject):
 
     name = StringProperty()

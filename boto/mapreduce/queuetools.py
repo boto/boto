@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import socket, sys
+import socket
 from lqs import LQSServer, LQSMessage
 import boto
 from boto.sqs.jsonmessage import JSONMessage
