@@ -43,9 +43,11 @@ class Instance(object):
         else:
             setattr(self, name, value)
 
-    def terminate(self):
-        """ Terminate this instance. """
-        params = {'LaunchConfigurationName' : self.instance_id}
-        return self.get_object('DeleteLaunchConfiguration', params,
-                               Request)
+    # BUG: self.get_object is not defined
+    # BUG: Request is not defined
+    # def terminate(self):
+    #     """ Terminate this instance. """
+    #     params = {'LaunchConfigurationName' : self.instance_id}
+    #     return self.get_object('DeleteLaunchConfiguration', params,
+    #                            Request)
 

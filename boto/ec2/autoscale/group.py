@@ -21,7 +21,6 @@
 
 import weakref
 
-from boto.ec2.zone import Zone
 from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.trigger import Trigger
