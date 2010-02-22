@@ -20,8 +20,8 @@
 # IN THE SOFTWARE.
 #
 
-import boto
 from regioninfo import SDBRegionInfo
+
 
 def regions():
     """

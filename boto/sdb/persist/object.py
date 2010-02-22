@@ -21,7 +21,7 @@
 
 from boto.exception import SDBPersistenceError
 from boto.sdb.persist import get_manager, object_lister
-from boto.sdb.persist.property import *
+from boto.sdb.persist.property import Property, ScalarProperty
 import uuid
 
 class SDBBase(type):

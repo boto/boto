@@ -23,8 +23,6 @@ import datetime
 from key import Key
 from boto.utils import Password
 from boto.sdb.db.query import Query
-from tempfile import TemporaryFile
-
 import re
 import boto
 import boto.s3.key
@@ -63,7 +61,7 @@ class Property(object):
             if obj._loaded and hasattr(obj, "on_set_%s" % self.name):
                 fnc = getattr(obj, "on_set_%s" % self.name)
                 value = fnc(value)
-        except Exception, e:
+        except Exception:
             boto.log.exception("Exception running on_set_%s" % self.name)
 
         setattr(obj, self.slot_name, value)

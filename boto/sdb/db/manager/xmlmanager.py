@@ -20,11 +20,9 @@
 # IN THE SOFTWARE.
 import boto
 from boto.utils import find_class, Password
-import uuid
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from datetime import datetime
-from boto.exception import SDBPersistenceError
 from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'

@@ -19,10 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import urllib
 import xml.sax
 import threading
-import boto
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain, DomainMetaData
@@ -31,6 +29,7 @@ from boto.sdb.regioninfo import SDBRegionInfo
 from boto.exception import SDBResponseError
 from boto.resultset import ResultSet
 import warnings
+
 
 class ItemThread(threading.Thread):
     

@@ -28,9 +28,9 @@ from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime
 from boto.exception import SDBPersistenceError
-from tempfile import TemporaryFile
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
+
 
 class SDBConverter:
     """

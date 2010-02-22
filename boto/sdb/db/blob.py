@@ -49,7 +49,7 @@ class Blob(object):
         return self.file.readline()
 
     def next(self):
-        return sefl.file.next()
+        return self.file.next()
 
     def __iter__(self):
         return iter(self.file)

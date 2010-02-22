@@ -1,5 +1,8 @@
 from boto.sdb.persist.object import SDBObject
-from boto.sdb.persist.property import *
+from boto.sdb.persist.property import StringProperty, PositiveIntegerProperty, IntegerProperty
+from boto.sdb.persist.property import BooleanProperty, DateTimeProperty, S3KeyProperty
+from boto.sdb.persist.property import ObjectProperty, StringListProperty
+from boto.sdb.persist.property import PositiveIntegerListProperty, BooleanListProperty, ObjectListProperty
 from boto.sdb.persist import Manager
 from datetime import datetime
 import time

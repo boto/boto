@@ -20,7 +20,8 @@
 # IN THE SOFTWARE.
 
 from boto.exception import SDBPersistenceError
-from boto.sdb.persist.checker import *
+from boto.sdb.persist.checker import StringChecker, PasswordChecker, IntegerChecker, BooleanChecker
+from boto.sdb.persist.checker import DateTimeChecker, ObjectChecker, S3KeyChecker, S3BucketChecker
 from boto.utils import Password
 
 class Property(object):
