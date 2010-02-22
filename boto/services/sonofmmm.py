@@ -22,7 +22,8 @@
 import boto
 from boto.services.service import Service
 from boto.services.message import ServiceMessage
-import os, time, mimetypes
+import os
+import mimetypes
 
 class SonOfMMM(Service):
 

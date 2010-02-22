@@ -20,9 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import getopt, sys, os, time, mimetypes
+import os
 from datetime import datetime, timedelta
-from boto.services.servicedef import ServiceDef
 from boto.utils import parse_ts
 import boto
 
@@ -83,9 +82,7 @@ class ResultProcessor:
             bucket = boto.lookup('s3', record['Bucket'])
         for output in outputs:
             if get_file:
-                key_name, type = output.split(';')
-                if type:
-                    mimetype = type.split('=')[1]
+                key_name = output.split(';')[0]
                 key = bucket.lookup(key_name)
                 file_name = os.path.join(path, key_name)
                 print 'retrieving file: %s to %s' % (key_name, file_name)
@@ -111,8 +108,8 @@ class ResultProcessor:
         if bucket:
             print 'No output queue or domain, just retrieving files from output_bucket'
             for key in bucket:
-                file_name = os.path.join(path, key_name)
-                print 'retrieving file: %s to %s' % (key_name, file_name)
+                file_name = os.path.join(path, key)
+                print 'retrieving file: %s to %s' % (key, file_name)
                 key.get_contents_to_filename(file_name)
                 self.num_files + 1
 

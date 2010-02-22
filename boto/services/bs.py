@@ -21,7 +21,6 @@
 # IN THE SOFTWARE.
 from optparse import OptionParser
 from boto.services.servicedef import ServiceDef
-from boto.services.message import ServiceMessage
 from boto.services.submit import Submitter
 from boto.services.result import ResultProcessor
 import boto
