@@ -22,11 +22,11 @@
 """
 Exception classes - Subclassing allows you to check for specific errors
 """
-
+import base64
+import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
 
-import xml.sax
 
 class BotoClientError(StandardError):
     """
