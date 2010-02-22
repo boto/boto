@@ -50,7 +50,7 @@ import os
 import xml.sax
 import Queue
 import boto
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.exception import BotoClientError, BotoServerError
 from boto.resultset import ResultSet
 import boto.utils
 from boto import config, UserAgent, handler
