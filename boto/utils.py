@@ -36,13 +36,12 @@
 Some handy utility functions used by several classes.
 """
 
-import base64
-import hmac
 import re
-import urllib, urllib2
-import imp
-import subprocess, os, StringIO
-import time, datetime
+import urllib
+import urllib2
+import subprocess
+import StringIO
+import time
 import logging.handlers
 import boto
 import tempfile
@@ -224,7 +223,6 @@ def find_class(module_name, class_name=None):
     if class_name:
         module_name = "%s.%s" % (module_name, class_name)
     modules = module_name.split('.')
-    path = None
     c = None
 
     try:
@@ -257,7 +255,6 @@ def fetch_file(uri, file=None, username=None, password=None):
     if file == None:
         file = tempfile.NamedTemporaryFile()
     try:
-        working_dir = boto.config.get("General", "working_dir")
         if uri.startswith('s3://'):
             bucket_name, key_name = uri[len('s3://'):].split('/', 1)
             c = boto.connect_s3()
@@ -350,11 +347,6 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
         without having to resort to cut and paste inheritance but, no.
         """
         try:
-            import smtplib
-            try:
-                from email.Utils import formatdate
-            except:
-                formatdate = self.date_time
             port = self.mailport
             if not port:
                 port = smtplib.SMTP_PORT
@@ -470,7 +462,6 @@ class LRUCache(dict):
 
     def _manage_size(self):
         while len(self._dict) > self.capacity:
-            olditem = self._dict[self.tail.key]
             del self._dict[self.tail.key]
             if self.tail != self.head:
                 self.tail = self.tail.previous
