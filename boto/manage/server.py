@@ -28,7 +28,7 @@ import boto.ec2
 from boto.mashups.iobject import IObject
 from boto.pyami.config import BotoConfigPath, Config
 from boto.sdb.db.model import Model
-from boto.sdb.db.property import *
+from boto.sdb.db.property import StringProperty, IntegerProperty, BooleanProperty, CalculatedProperty
 from boto.manage import propget
 from boto.ec2.zone import Zone
 from boto.ec2.keypair import KeyPair
@@ -50,7 +50,7 @@ class Bundler(object):
 
     def copy_x509(self, key_file, cert_file):
         print '\tcopying cert and pk over to /mnt directory on server'
-        sftp_client = self.ssh_client.open_sftp()
+        self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
         self.remote_key_file = '/mnt/%s' % name
         self.ssh_client.put_file(key_file, self.remote_key_file)
@@ -527,12 +527,12 @@ class Server(Model):
         return status
 
     def get_bundler(self, uname='root'):
-        ssh_key_file = self.get_ssh_key_file()
+        self.get_ssh_key_file()
         return Bundler(self, uname)
 
     def get_ssh_client(self, uname='root'):
         from boto.manage.cmdshell import SSHClient
-        ssh_key_file = self.get_ssh_key_file()
+        self.get_ssh_key_file()
         return SSHClient(self, uname=uname)
 
     def install(self, pkg):

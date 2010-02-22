@@ -21,13 +21,16 @@
 
 from __future__ import with_statement
 from boto.sdb.db.model import Model
-from boto.sdb.db.property import *
+from boto.sdb.db.property import StringProperty, IntegerProperty, ListProperty, ReferenceProperty, CalculatedProperty
 from boto.manage.server import Server
 from boto.manage import propget
 import boto.ec2
-import time, traceback
+import time
+import traceback
 from contextlib import closing
 import dateutil.parser
+import datetime
+
 
 class CommandLineGetter(object):
     
@@ -304,7 +307,7 @@ class Volume(Model):
             else:
                 snapshot = self.server.ec2.create_snapshot(self.volume_id)
             boto.log.info('Snapshot of Volume %s created: %s' %  (self.name, snapshot))
-        except Exception, e:
+        except Exception:
             boto.log.info('Snapshot error')
             boto.log.info(traceback.format_exc())
         finally:
