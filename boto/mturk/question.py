@@ -296,7 +296,6 @@ class SelectionAnswer(object):
         self.other = other
     
     def get_as_xml(self):
-        xml = ""
         if self.type == 'text':
             TYPE_TAG = "Text"
         elif self.type == 'binary':
