@@ -34,7 +34,7 @@ class VpnConnection(EC2Object):
         self.customer_gateway_configuration = None
         self.type = None
         self.customer_gateway_id = None
-        self.vpn_gateway_id = Nonen
+        self.vpn_gateway_id = None
 
     def __repr__(self):
         return 'VpnConnection:%s' % self.id
