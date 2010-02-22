@@ -22,7 +22,7 @@
 import uuid
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
-from boto.cloudfront.signers import Signer, ActiveTrustedSigners, TrustedSigners
+from boto.cloudfront.signers import ActiveTrustedSigners, TrustedSigners
 from boto.cloudfront.logging import LoggingInfo
 from boto.s3.acl import ACL
 
