@@ -20,9 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import getopt, sys, imp, time
+import getopt
+import sys
+import imp
+import time
 import boto
-from boto.utils import get_instance_userdata
 
 usage_string = """
 SYNOPSIS

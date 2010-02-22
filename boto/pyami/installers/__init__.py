@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 #
 from boto.pyami.scriptbase import ScriptBase
-import os
+
 
 class Installer(ScriptBase):
     """
@@ -31,7 +31,7 @@ class Installer(ScriptBase):
         """
         Add an entry to the system crontab.
         """
-        raise NotImplimented()
+        raise NotImplementedError
 
     def add_init_script(self, file):
         """
@@ -42,23 +42,23 @@ class Installer(ScriptBase):
         """
         Add an environemnt variable
         """
-        raise NotImplimented()
+        raise NotImplementedError
 
     def stop(self, service_name):
         """
         Stop a service.
         """
-        raise NotImplimented()
+        raise NotImplementedError
 
     def start(self, service_name):
         """
         Start a service.
         """
-        raise NotImplimented()
+        raise NotImplementedError
 
     def install(self):
         """
         Do whatever is necessary to "install" the package.
         """
-        raise NotImplimented()
+        raise NotImplementedError
 

@@ -92,5 +92,5 @@ class Installer(boto.pyami.installers.Installer):
         """
         This is the only method you need to override
         """
-        raise NotImplimented()
+        raise NotImplementedError
 

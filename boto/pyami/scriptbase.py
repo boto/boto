@@ -1,5 +1,5 @@
-import os, sys, time, traceback
-import smtplib
+import os
+import sys
 from boto.utils import ShellCommand, get_ts
 import boto
 import boto.utils

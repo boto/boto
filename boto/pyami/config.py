@@ -50,7 +50,6 @@ class Config(ConfigParser.SafeConfigParser):
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
-        config = ConfigParser.ConfigParser()
         c_data = StringIO.StringIO()
         c_data.write("[Credentials]\n")
         for line in open(path, "r").readlines():
