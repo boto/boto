@@ -22,14 +22,16 @@
 """
 High-level abstraction of an EC2 server
 """
-import boto, boto.utils
+import boto
+import boto.utils
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config, BotoConfigPath
 from boto.mashups.interactive import interactive_shell
 from boto.sdb.db.model import Model
-from boto.sdb.db.property import *
+from boto.sdb.db.property import StringProperty
 import os
 import StringIO
+
 
 class ServerSet(list):
 
