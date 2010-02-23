@@ -226,14 +226,16 @@ class Queue:
         :type visibility_timeout: int
         :param visibility_timeout: The VisibilityTimeout for the messages read.
 
-        :type attributes: list of strings
-        :param attributes: A list of additional attributes that will be returned
-                           with the response.  Valid values:
+        :type attributes: str
+        :param attributes: The name of additional attribute to return with response
+                           or All if you want all attributes.  The default is to
+                           return no additional attributes.  Valid values:
                            All
                            SenderId
                            SentTimestamp
                            ApproximateReceiveCount
                            ApproximateFirstReceiveTimestamp
+                           
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
         """

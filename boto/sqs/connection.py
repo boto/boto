@@ -136,21 +136,24 @@ class SQSConnection(AWSQueryConnection):
         :param visibility_timeout: The number of seconds the message should remain invisible
                                    to other queue readers (default=None which uses the Queues default)
 
-        :type attributes: list of strings
-        :param attributes: A list of additional attributes that will be returned
-                           with the response.  Valid values:
+        :type attributes: str
+        :param attributes: The name of additional attribute to return with response
+                           or All if you want all attributes.  The default is to
+                           return no additional attributes.  Valid values:
                            All
                            SenderId
                            SentTimestamp
                            ApproximateReceiveCount
                            ApproximateFirstReceiveTimestamp
         
+        :rtype: list
+        :return: A list of :class:`boto.sqs.message.Message` objects.
         """
         params = {'MaxNumberOfMessages' : number_messages}
         if visibility_timeout:
             params['VisibilityTimeout'] = visibility_timeout
         if attributes:
-            self.build_list_params(self, params, attributes, 'AttributeName')
+            self.build_list_params(params, attributes, 'AttributeName')
         return self.get_list('ReceiveMessage', params, [('Message', queue.message_class)],
                              queue.id, queue)
 
