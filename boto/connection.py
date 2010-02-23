@@ -477,12 +477,7 @@ class AWSAuthConnection:
 
         boto.log.debug('closing all HTTP connections')
         self.connection = None  # compat field
-        if hasattr(self, '_cache') and isinstance(self._cache, dict):
-            hosts = list(self._cache.keys())
-            for host in hosts:
-                conn = self._cache[host]
-                conn.close()
-                del self._cache[host]
+
 
 class AWSQueryConnection(AWSAuthConnection):
 
