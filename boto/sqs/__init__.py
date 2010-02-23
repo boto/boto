@@ -22,10 +22,7 @@
 
 import boto
 
-boto.check_extensions(__name__, __path__)
-
 from regioninfo import SQSRegionInfo
-
 
 def regions():
     """
