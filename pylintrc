@@ -302,4 +302,4 @@ indent-string='    '
 
 
 [MESSAGES CONTROL]
-disable-msg=C0301,C0111,C0103,R0201,W0702
+disable-msg=C0301,C0111,C0103,R0201,W0702,C0324
