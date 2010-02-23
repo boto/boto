@@ -24,9 +24,10 @@ latex_documents = [
 intersphinx_mapping = {'http://docs.python.org/': None}
 
 try:
-    import subprocess
-    p = subprocess.Popen(["svn info ../boto | grep Revision | awk '{print $2}'"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    release = p.stdout.read().strip()
-    print p.stderr.read()
+    import subprocess, os
+    release = os.environ['SVN_REVISION']
+    # p = subprocess.Popen(["svn info ../boto | grep Revision | awk '{print $2}'"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    # release = p.stdout.read().strip()
+    # print p.stderr.read()
 except:
     pass
