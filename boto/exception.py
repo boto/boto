@@ -35,6 +35,7 @@ class BotoClientError(StandardError):
     
     def __init__(self, reason):
         self.reason = reason
+        super(BotoClientError, self).__init__()
 
     def __repr__(self):
         return 'S3Error: %s' % self.reason
@@ -75,6 +76,7 @@ class BotoServerError(StandardError):
                 # don't get partial garbage.
                 print "Warning: failed to parse error message from AWS: %s" % pe
                 self._cleanupParsedProperties()
+        super(BotoServerError, self).__init__()
 
     def __getattr__(self, name):
         if name == 'message':
@@ -118,6 +120,7 @@ class ConsoleOutput:
         self.instance_id = None
         self.timestamp = None
         self.comment = None
+        self.output = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -180,8 +183,8 @@ class SQSDecodeError(BotoClientError):
     Error when decoding an SQS message.
     """
     def __init__(self, reason, message):
-        self.reason = reason
         self.message = message
+        super(SQSDecodeError, self).__init__(reason)
 
     def __repr__(self):
         return 'SQSDecodeError: %s' % self.reason
@@ -245,9 +248,10 @@ class EC2ResponseError(BotoServerError):
             setattr(self, p, None)
 
 class EmrResponseError(BotoServerError):
-     """
-     Error in response from EMR
-     """
+    """
+    Error in response from EMR
+    """
+    pass
 
 class _EC2Error:
 
