@@ -7,7 +7,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 project = u'boto'
-copyright = u'2009, Mitch Garnaat'
+copyright = u'2009,2010, Mitch Garnaat'
 version = '1.9'
 release = "HEAD" #'1.8d'
 exclude_trees = []
@@ -25,6 +25,7 @@ intersphinx_mapping = {'http://docs.python.org/': None}
 
 try:
     import subprocess, os
+    print os.environ
     release = os.environ['SVN_REVISION']
     # p = subprocess.Popen(["svn info ../boto | grep Revision | awk '{print $2}'"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     # release = p.stdout.read().strip()
