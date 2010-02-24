@@ -476,17 +476,22 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('TerminateInstances', params, [('item', Instance)])
 
-    def stop_instances(self, instance_ids=None):
+    def stop_instances(self, instance_ids=None, force=False):
         """
         Stop the instances specified
         
         :type instance_ids: list
         :param instance_ids: A list of strings of the Instance IDs to stop
+
+        :type force: bool
+        :param force: Forces the instance to stop
         
         :rtype: list
         :return: A list of the instances stopped
         """
         params = {}
+        if force:
+            params['Force'] = 'true'
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('StopInstances', params, [('item', Instance)])
