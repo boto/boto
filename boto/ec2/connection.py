@@ -380,7 +380,8 @@ class EC2Connection(AWSQueryConnection):
                       instance_type='m1.small', placement=None,
                       kernel_id=None, ramdisk_id=None,
                       monitoring_enabled=False, subnet_id=None,
-                      block_device_map=None):
+                      block_device_map=None,
+                      instance_initiated_shutdown_behavior=None):
         """
         Runs an image on EC2.
 
@@ -425,6 +426,14 @@ class EC2Connection(AWSQueryConnection):
                                  describing the EBS volumes associated
                                  with the Image.
 
+        :type instance_initiated_shutdown_behavior: string
+        :param instance_initiated_shutdown_behavior: Specifies whether the instance's
+                                                     EBS volues are stopped (i.e. detached)
+                                                     or terminated (i.e. deleted) when
+                                                     the instance is shutdown by the
+                                                     owner.  Valid values are:
+                                                     stop | terminate
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
@@ -459,6 +468,9 @@ class EC2Connection(AWSQueryConnection):
             params['SubnetId'] = subnet_id
         if block_device_map:
             block_device_map.build_list_params(params)
+        if instance_initiated_shutdown_behavior:
+            val = instance_initiated_shutdown_behavior
+            params['InstanceInitiatedShutdownBehavior'] = val
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
