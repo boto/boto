@@ -51,7 +51,8 @@ class Domain:
             self._metadata = self.connection.domain_metadata(self)
         return self._metadata
     
-    def put_attributes(self, item_name, attributes, replace=True):
+    def put_attributes(self, item_name, attributes,
+                       replace=True, expected_values=None):
         """
         Store attributes for a given item.
 
@@ -61,6 +62,17 @@ class Domain:
         :type attribute_names: dict or dict-like object
         :param attribute_names: The name/value pairs to store as attributes
 
+        :type expected_values: dict or dict-like object
+        :param attribute_names: If supplied, this is a dictionary of
+                                attribute names and expected values for
+                                each of the attributes supplied in the
+                                attribute_names dictionary.  Supplying
+                                this additional information will  make the
+                                request a conditional put which will only
+                                succeed if the supplied expected values
+                                match the current state of the values
+                                in SimpleDB.
+
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
@@ -69,7 +81,8 @@ class Domain:
         :rtype: bool
         :return: True if successful
         """
-        return self.connection.put_attributes(self, item_name, attributes, replace)
+        return self.connection.put_attributes(self, item_name, attributes,
+                                              replace, expected_values)
 
     def batch_put_attributes(self, items, replace=True):
         """
@@ -92,7 +105,8 @@ class Domain:
         """
         return self.connection.batch_put_attributes(self, items, replace)
 
-    def get_attributes(self, item_name, attribute_name=None, item=None):
+    def get_attributes(self, item_name, attribute_name=None,
+                       consistent_read=False, item=None):
         """
         Retrieve attributes for a given item.
 
@@ -107,9 +121,11 @@ class Domain:
         :rtype: :class:`boto.sdb.item.Item`
         :return: An Item mapping type containing the requested attribute name/values
         """
-        return self.connection.get_attributes(self, item_name, attribute_name, item)
+        return self.connection.get_attributes(self, item_name, attribute_name,
+                                              consistent_read, item)
 
-    def delete_attributes(self, item_name, attributes=None):
+    def delete_attributes(self, item_name, attributes=None,
+                          expected_values=None):
         """
         Delete attributes from a given item.
 
@@ -123,36 +139,24 @@ class Domain:
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
                            
+        :type expected_values: dict or dict-like object
+        :param attribute_names: If supplied, this is a dictionary of
+                                attribute names and expected values for
+                                each of the attributes supplied in the
+                                attribute_names dictionary.  Supplying
+                                this additional information will  make the
+                                request a conditional put which will only
+                                succeed if the supplied expected values
+                                match the current state of the values
+                                in SimpleDB.
+
         :rtype: bool
         :return: True if successful
         """
-        return self.connection.delete_attributes(self, item_name, attributes)
+        return self.connection.delete_attributes(self, item_name, attributes,
+                                                 expected_values)
 
-    def query(self, query='', max_items=None, attr_names=None):
-        """
-        Returns a list of items within domain that match the query.
-        
-        :type query: string
-        :param query: The SimpleDB query to be performed.
-
-        :type max_items: int
-        :param max_items: The maximum number of items to return.  If not
-                          supplied, the default is None which returns all
-                          items matching the query.
-
-        :type attr_names: list
-        :param attr_names: Either None, meaning return all attributes
-                           or a list of attribute names which means to return
-                           only those attributes.
-
-        :rtype: iter
-        :return: An iterator containing the results.  This is actually a generator
-                 function that will iterate across all search results, not just the
-                 first page.
-        """
-        return iter(QueryResultSet(self, query, max_items, attr_names))
-    
-    def select(self, query='', next_token=None, max_items=None):
+    def select(self, query='', next_token=None, consistent_read=False):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -161,16 +165,13 @@ class Domain:
         :type query: string
         :param query: The SimpleDB query to be performed.
 
-        :type max_items: int
-        :param max_items: The maximum number of items to return.
-
         :rtype: iter
         :return: An iterator containing the results.  This is actually a generator
                  function that will iterate across all search results, not just the
                  first page.
         """
-        return SelectResultSet(self, query, max_items=max_items,
-                               next_token=next_token)
+        return SelectResultSet(self, query, next_token=next_token,
+                               consistent_read=consistent_read)
     
     def get_item(self, item_name):
         item = self.get_attributes(item_name)

@@ -46,11 +46,13 @@ class ItemThread(threading.Thread):
             item = self.conn.get_attributes(self.domain_name, item_name)
             self.items.append(item)
 
+#boto.set_stream_logger('sdb')
+
 class SDBConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'sdb.amazonaws.com'
-    APIVersion = '2007-11-07'
+    APIVersion = '2009-04-15'
     SignatureVersion = '2'
     ResponseError = SDBResponseError
 
@@ -71,7 +73,8 @@ class SDBConnection(AWSQueryConnection):
     def set_item_cls(self, cls):
         self.item_cls = cls
 
-    def build_name_value_list(self, params, attributes, replace=False):
+    def build_name_value_list(self, params, attributes, replace=False,
+                              label='Attribute'):
         keys = attributes.keys()
         keys.sort()
         i = 1
@@ -79,21 +82,31 @@ class SDBConnection(AWSQueryConnection):
             value = attributes[key]
             if isinstance(value, list):
                 for v in value:
-                    params['Attribute.%d.Name'%i] = key
+                    params['%s.%d.Name'%(label,i)] = key
                     if self.converter:
                         v = self.converter.encode(v)
-                    params['Attribute.%d.Value'%i] = v
+                    params['%s.%d.Value'%(label,i)] = v
                     if replace:
-                        params['Attribute.%d.Replace'%i] = 'true'
+                        params['%s.%d.Replace'%(label,i)] = 'true'
                     i += 1
             else:
-                params['Attribute.%d.Name'%i] = key
+                params['%s.%d.Name'%(label,i)] = key
                 if self.converter:
                     value = self.converter.encode(value)
-                params['Attribute.%d.Value'%i] = value
+                params['%s.%d.Value'%(label,i)] = value
                 if replace:
-                    params['Attribute.%d.Replace'%i] = 'true'
+                    params['%s.%d.Replace'%(label,i)] = 'true'
             i += 1
+
+    def build_expected_value(self, params, expected_value):
+        params['Expected.1.Name'] = expected_value[0]
+        if expected_value[1] == True:
+            params['Expected.1.Exists'] = 'true'
+        elif expected_value[1] == False:
+            params['Expected.1.Exists'] = 'false'
+        else:
+            params['Expected.1.Value'] = expected_value[1]
+            
 
     def build_batch_list(self, params, items, replace=False):
         item_names = items.keys()
@@ -231,7 +244,8 @@ class SDBConnection(AWSQueryConnection):
         d.domain = domain
         return d
         
-    def put_attributes(self, domain_or_name, item_name, attributes, replace=True):
+    def put_attributes(self, domain_or_name, item_name, attributes,
+                       replace=True, expected_value=None):
         """
         Store attributes for a given item in a domain.
 
@@ -243,6 +257,21 @@ class SDBConnection(AWSQueryConnection):
 
         :type attribute_names: dict or dict-like object
         :param attribute_names: The name/value pairs to store as attributes
+
+        :type expected_value: dict or dict-like object
+        :param expected_value: If supplied, this is a list or tuple consisting
+                               of a single attribute name and expected value.
+                               The list can be of the form:
+                                * ['name', 'value']
+                               In which case the call will first verify
+                               that the attribute "name" of this item has
+                               a value of "value".  If it does, the delete
+                               will proceed, otherwise a ConditionalCheckFailed
+                               error will be returned.
+                               The list can also be of the form:
+                                * ['name', True|False]
+                               which will simply check for the existence (True)
+                               or non-existencve (False) of the attribute.
 
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
@@ -256,6 +285,8 @@ class SDBConnection(AWSQueryConnection):
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
         self.build_name_value_list(params, attributes, replace)
+        if expected_value:
+            self.build_expected_value(params, expected_value)
         return self.get_status('PutAttributes', params)
 
     def batch_put_attributes(self, domain_or_name, items, replace=True):
@@ -285,7 +316,8 @@ class SDBConnection(AWSQueryConnection):
         self.build_batch_list(params, items, replace)
         return self.get_status('BatchPutAttributes', params, verb='POST')
 
-    def get_attributes(self, domain_or_name, item_name, attribute_names=None, item=None):
+    def get_attributes(self, domain_or_name, item_name, attribute_names=None,
+                       consistent_read=False, item=None):
         """
         Retrieve attributes for a given item in a domain.
 
@@ -300,12 +332,18 @@ class SDBConnection(AWSQueryConnection):
                                 parameter is optional.  If not supplied, all attributes
                                 will be retrieved for the item.
 
+        :type consistent_read: bool
+        :param consistent_read: When set to true, ensures that the most recent
+                                data is returned.
+
         :rtype: :class:`boto.sdb.item.Item`
         :return: An Item mapping type containing the requested attribute name/values
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
+        if consistent_read:
+            params['ConsistentRead'] = 'true'
         if attribute_names:
             if not isinstance(attribute_names, list):
                 attribute_names = [attribute_names]
@@ -321,7 +359,8 @@ class SDBConnection(AWSQueryConnection):
         else:
             raise SDBResponseError(response.status, response.reason, body)
         
-    def delete_attributes(self, domain_or_name, item_name, attr_names=None):
+    def delete_attributes(self, domain_or_name, item_name, attr_names=None,
+                          expected_value=None):
         """
         Delete attributes from a given item in a domain.
 
@@ -338,6 +377,21 @@ class SDBConnection(AWSQueryConnection):
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
                            
+        :type expected_value: dict or dict-like object
+        :param expected_value: If supplied, this is a list or tuple consisting
+                               of a single attribute name and expected value.
+                               The list can be of the form:
+                                * ['name', 'value']
+                               In which case the call will first verify
+                               that the attribute "name" of this item has
+                               a value of "value".  If it does, the delete
+                               will proceed, otherwise a ConditionalCheckFailed
+                               error will be returned.
+                               The list can also be of the form:
+                                * ['name', True|False]
+                               which will simply check for the existence (True)
+                               or non-existencve (False) of the attribute.
+
         :rtype: bool
         :return: True if successful
         """
@@ -349,73 +403,12 @@ class SDBConnection(AWSQueryConnection):
                 self.build_name_list(params, attr_names)
             elif isinstance(attr_names, dict) or isinstance(attr_names, self.item_cls):
                 self.build_name_value_list(params, attr_names)
+        if expected_value:
+            self.build_expected_value(params, expected_value)
         return self.get_status('DeleteAttributes', params)
         
-    def query(self, domain_or_name, query='', max_items=None, next_token=None):
-        """
-        Returns a list of item names within domain_name that match the query.
-        
-        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
-        :param domain_or_name: Either the name of a domain or a Domain object
-
-        :type query: string
-        :param query: The SimpleDB query to be performed.
-
-        :type max_items: int
-        :param max_items: The maximum number of items to return.  If not
-                          supplied, the default is None which returns all
-                          items matching the query.
-
-        :rtype: ResultSet
-        :return: An iterator containing the results.
-        """
-        warnings.warn('Query interface is deprecated', DeprecationWarning)
-        domain, domain_name = self.get_domain_and_name(domain_or_name)
-        params = {'DomainName':domain_name,
-                  'QueryExpression' : query}
-        if max_items:
-            params['MaxNumberOfItems'] = max_items
-        if next_token:
-            params['NextToken'] = next_token
-        return self.get_object('Query', params, ResultSet)
-
-    def query_with_attributes(self, domain_or_name, query='', attr_names=None,
-                              max_items=None, next_token=None):
-        """
-        Returns a set of Attributes for item names within domain_name that match the query.
-        
-        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
-        :param domain_or_name: Either the name of a domain or a Domain object
-
-        :type query: string
-        :param query: The SimpleDB query to be performed.
-
-        :type attr_names: list
-        :param attr_names: The name of the attributes to be returned.
-                           If no attributes are specified, all attributes
-                           will be returned.
-
-        :type max_items: int
-        :param max_items: The maximum number of items to return.  If not
-                          supplied, the default is None which returns all
-                          items matching the query.
-
-        :rtype: ResultSet
-        :return: An iterator containing the results.
-        """
-        warnings.warn('Query interface is deprecated', DeprecationWarning)
-        domain, domain_name = self.get_domain_and_name(domain_or_name)
-        params = {'DomainName':domain_name,
-                  'QueryExpression' : query}
-        if max_items:
-            params['MaxNumberOfItems'] = max_items
-        if next_token:
-            params['NextToken'] = next_token
-        if attr_names:
-            self.build_list_params(params, attr_names, 'AttributeName')
-        return self.get_list('QueryWithAttributes', params, [('Item', self.item_cls)], parent=domain)
-
-    def select(self, domain_or_name, query='', next_token=None):
+    def select(self, domain_or_name, query='', next_token=None,
+               consistent_read=False):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -430,41 +423,19 @@ class SDBConnection(AWSQueryConnection):
         :type query: string
         :param query: The SimpleDB query to be performed.
 
+        :type consistent_read: bool
+        :param consistent_read: When set to true, ensures that the most recent
+                                data is returned.
+
         :rtype: ResultSet
         :return: An iterator containing the results.
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'SelectExpression' : query}
+        if consistent_read:
+            params['ConsistentRead'] = 'true'
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('Select', params, [('Item', self.item_cls)], parent=domain)
-
-    def threaded_query(self, domain_or_name, query='', max_items=None, next_token=None, num_threads=6):
-        """
-        Returns a list of fully populated items that match the query provided.
-
-        The name/value pairs for all of the matching item names are retrieved in a number of separate
-        threads (specified by num_threads) to achieve maximum throughput.
-        The ResultSet that is returned has an attribute called next_token that can be used
-        to retrieve additional results for the same query.
-        """
-        domain, domain_name = self.get_domain_and_name(domain_or_name)
-        if max_items and num_threads > max_items:
-            num_threads = max_items
-        rs = self.query(domain_or_name, query, max_items, next_token)
-        threads = []
-        n = len(rs) / num_threads
-        for i in range(0, num_threads):
-            if i+1 == num_threads:
-                thread = ItemThread('Thread-%d' % i, domain_name, rs[n*i:])
-            else:
-                thread = ItemThread('Thread-%d' % i, domain_name, rs[n*i:n*(i+1)])
-            threads.append(thread)
-            thread.start()
-        del rs[0:]
-        for thread in threads:
-            thread.join()
-            for item in thread.items:
-                rs.append(item)
-        return rs
+        return self.get_list('Select', params, [('Item', self.item_cls)],
+                             parent=domain)
 
