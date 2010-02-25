@@ -164,7 +164,7 @@ class Domain:
         return self.connection.delete_attributes(self, item_name, attributes,
                                                  expected_values)
 
-    def select(self, query='', next_token=None, consistent_read=False):
+    def select(self, query='', next_token=None, consistent_read=False, max_items=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
         The query must be expressed in using the SELECT style syntax rather than the
@@ -178,7 +178,7 @@ class Domain:
                  function that will iterate across all search results, not just the
                  first page.
         """
-        return SelectResultSet(self, query, next_token=next_token,
+        return SelectResultSet(self, query, max_items = max_items, next_token=next_token,
                                consistent_read=consistent_read)
     
     def get_item(self, item_name):
