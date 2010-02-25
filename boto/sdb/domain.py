@@ -62,16 +62,20 @@ class Domain:
         :type attribute_names: dict or dict-like object
         :param attribute_names: The name/value pairs to store as attributes
 
-        :type expected_values: dict or dict-like object
-        :param attribute_names: If supplied, this is a dictionary of
-                                attribute names and expected values for
-                                each of the attributes supplied in the
-                                attribute_names dictionary.  Supplying
-                                this additional information will  make the
-                                request a conditional put which will only
-                                succeed if the supplied expected values
-                                match the current state of the values
-                                in SimpleDB.
+        :type expected_value: list
+        :param expected_value: If supplied, this is a list or tuple consisting
+                               of a single attribute name and expected value.
+                               The list can be of the form:
+                                * ['name', 'value']
+                               In which case the call will first verify
+                               that the attribute "name" of this item has
+                               a value of "value".  If it does, the delete
+                               will proceed, otherwise a ConditionalCheckFailed
+                               error will be returned.
+                               The list can also be of the form:
+                                * ['name', True|False]
+                               which will simply check for the existence (True)
+                               or non-existencve (False) of the attribute.
 
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
@@ -139,16 +143,20 @@ class Domain:
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
                            
-        :type expected_values: dict or dict-like object
-        :param attribute_names: If supplied, this is a dictionary of
-                                attribute names and expected values for
-                                each of the attributes supplied in the
-                                attribute_names dictionary.  Supplying
-                                this additional information will  make the
-                                request a conditional put which will only
-                                succeed if the supplied expected values
-                                match the current state of the values
-                                in SimpleDB.
+        :type expected_value: list
+        :param expected_value: If supplied, this is a list or tuple consisting
+                               of a single attribute name and expected value.
+                               The list can be of the form:
+                                * ['name', 'value']
+                               In which case the call will first verify
+                               that the attribute "name" of this item has
+                               a value of "value".  If it does, the delete
+                               will proceed, otherwise a ConditionalCheckFailed
+                               error will be returned.
+                               The list can also be of the form:
+                                * ['name', True|False]
+                               which will simply check for the existence (True)
+                               or non-existencve (False) of the attribute.
 
         :rtype: bool
         :return: True if successful

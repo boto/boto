@@ -258,7 +258,7 @@ class SDBConnection(AWSQueryConnection):
         :type attribute_names: dict or dict-like object
         :param attribute_names: The name/value pairs to store as attributes
 
-        :type expected_value: dict or dict-like object
+        :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
                                of a single attribute name and expected value.
                                The list can be of the form:
@@ -377,7 +377,7 @@ class SDBConnection(AWSQueryConnection):
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
                            
-        :type expected_value: dict or dict-like object
+        :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
                                of a single attribute name and expected value.
                                The list can be of the form:
