@@ -491,6 +491,12 @@ class Server(Model):
         if self._instance:
             self._instance.stop()
 
+    def terminate(self):
+        if self.production:
+            raise ValueError, "Can't delete a production server"
+        if self._instance:
+            self._instance.terminate()
+
     def reboot(self):
         if self._instance:
             self._instance.reboot()
