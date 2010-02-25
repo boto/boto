@@ -107,7 +107,7 @@ class Sequence(object):
     http://bitbucket.org/mitch/stupidbototricks/src/tip/counter.py"""
 
 
-    def __init__(self, id=None, domain_name=None, fnc=increment_by_one, init_val=None, env=None):
+    def __init__(self, id=None, domain_name=None, fnc=increment_by_one, init_val=None):
         """Create a new Sequence, using an optional function to 
         increment to the next number, by default we just increment by one.
         Every parameter here is optional, if you don't specify any options
@@ -130,18 +130,10 @@ class Sequence(object):
         :param init_val: Initial value, by default this is the first element in your sequence, 
             but you can pass in any value, even a string if you pass in a function that uses
             strings instead of ints to increment
-
-        :param env: Optional environment to use for connecting to boto and for 
-            by default we just use the global environment
-        :type env: botoweb.environment.Environment
         """
         self._db = None
         self._value = None
         self.last_value = None
-        if not env:
-            import botoweb
-            env = botoweb.env
-        self.env = env
         self.domain_name = domain_name
         self.id = id
         if self.id == None:
@@ -161,8 +153,6 @@ class Sequence(object):
 
     def set(self, val):
         """Set the value"""
-        print "set: %s" % val 
-        print "current value: %s" % self._value
         import time
         now = time.time()
         expected_values = []
@@ -171,7 +161,6 @@ class Sequence(object):
         if self._value != None:
             new_val['last_value'] = self._value
             expected_values = ['current_value', str(self._value)]
-            print expected_values
         new_val['current_value'] = val
         try:
             self.db.put_attributes(self.id, new_val, expected_values=expected_values)
@@ -186,8 +175,10 @@ class Sequence(object):
     def get(self):
         """Get the value"""
         val = self.db.get_attributes(self.id, consistent_read=True)
-        self.timestamp = val['timestamp']
-        self._value = self.item_type(val['current_value'])
+        if val and val.has_key('timestamp'):
+            self.timestamp = val['timestamp']
+        if val and val.has_key('current_value'):
+            self._value = self.item_type(val['current_value'])
         if val.has_key("last_value") and val['last_value'] != None:
             self.last_value = self.item_type(val['last_value'])
         return self._value
@@ -207,13 +198,9 @@ class Sequence(object):
         """Connect to our domain"""
         if not self._db:
             if not self.domain_name:
-                if self.env:
-                    sdb = self.env.connect_sdb()
-                    self.domain_name = self.env.config.get("DB", "sequence_db", self.env.config.get("DB", "db_name", "default"))
-                else:
-                    import boto
-                    sdb = boto.connect_sdb()
-                    self.domain_name = boto.config.get("DB", "sequence_db", boto.config.get("DB", "db_name", "default"))
+                import boto
+                sdb = boto.connect_sdb()
+                self.domain_name = boto.config.get("DB", "sequence_db", boto.config.get("DB", "db_name", "default"))
             try:
                 self._db = sdb.get_domain(self.domain_name)
             except SDBResponseError, e:
