@@ -428,12 +428,18 @@ class SDBManager(object):
                         for v in val:
                             filter_parts.append("`%s` %s '%s'" % (name, op, v.replace("'", "''")))
                     else:
-                        filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
+                        if val == None:
+                            if op in ('is','='):
+                                filter_parts.append("`%s` is null" % name)
+                            elif op in ('is not', '!='):
+                                filter_parts.append("`%s` is not null" % name)
+                        else:
+                            filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
                 query_parts.append("(%s)" % (" or ".join(filter_parts)))
             else:
-                if op == 'is' and value == None:
+                if op in ('is','=') and value == None:
                     query_parts.append("`%s` is null" % name)
-                elif op == 'is not' and value == None:
+                elif op in ('is not', '!=') and value == None:
                     query_parts.append("`%s` is not null" % name)
                 else:
                     val = self.encode_value(property, value)
