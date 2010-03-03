@@ -489,7 +489,7 @@ class SDBManager(object):
             value = property.get_value_for_datastore(obj)
             if value is not None:
                 value = self.encode_value(property, value)
-                attrs[property.name] = value
+            attrs[property.name] = value
             if property.unique:
                 try:
                     args = {property.name: value}
