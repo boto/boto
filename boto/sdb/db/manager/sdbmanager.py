@@ -1,4 +1,5 @@
 # Copyright (c) 2006,2007,2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010 Chris Moyer http://coredumped.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -71,13 +72,8 @@ class SDBConverter:
     def encode_list(self, prop, value):
         if not isinstance(value, list):
             value = [value]
-        new_value = []
-        for v in value:
-            item_type = getattr(prop, "item_type")
-            if Model in item_type.mro():
-                item_type = Model
-            new_value.append(self.encode(item_type, v))
-        return new_value
+        value = dict(enumerate(value))
+        return self.encode_map(prop, value)
 
     def encode_map(self, prop, value):
         if not isinstance(value, dict):
@@ -105,8 +101,8 @@ class SDBConverter:
         if hasattr(prop, 'item_type'):
             item_type = getattr(prop, "item_type")
             if Model in item_type.mro():
-                return [item_type(id=v) for v in value]
-            return [self.decode(item_type, v) for v in value]
+                item_type = Model
+            return [self.decode_map_element(item_type, v) for v in value]
         else:
             return value
 
@@ -115,15 +111,20 @@ class SDBConverter:
             value = [value]
         ret_value = {}
         item_type = getattr(prop, "item_type")
-        for keyval in value:
-            key, val = keyval.split(':', 1)
-            if Model in item_type.mro():
-                val = item_type(id=val)
+        if Model in item_type.mro():
+            item_type = Model
+        return [self.decode_map_element(item_type, v) for v in value]
+
+    def decode_map_element(self, item_type, value):
+        """Decode a single element for a map"""
+        if ":" in value:
+            key, val = value.split(':',1)
+            if item_type == Model:
+                value = item_type(id=val)
             else:
-                val = self.decode(item_type, val)
-            ret_value[key] = val
-        return ret_value
-        
+                value = self.decode(item_type, val)
+        return value
+
     def decode_prop(self, prop, value):
         if isinstance(prop, ListProperty):
             return self.decode_list(prop, value)
