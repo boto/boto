@@ -43,7 +43,7 @@ class TestQuerying(object):
 
         o = SimpleModel()
         o.name = "Simple Object"
-        o.strs = ["B", "A", "C"]
+        o.strs = ["B", "A", "C", "Foo"]
         o.num = 1
         o.put()
         cls.objs.append(o)
@@ -143,3 +143,10 @@ class TestQuerying(object):
         assert(SimpleModel.find(strs="A").next().id == self.objs[0].id)
         assert(SimpleModel.find(strs="B").next().id == self.objs[0].id)
         assert(SimpleModel.find(strs="C").next().id == self.objs[0].id)
+
+    def test_like(self):
+        """Test with a "like" expression"""
+        query = SimpleModel.all()
+        query.filter("strs like", "%oo%")
+        print query.get_query()
+        assert(query.count() == 1)

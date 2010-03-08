@@ -418,7 +418,8 @@ class SDBManager(object):
                 op = "like"
             elif op in ("!=", "not"):
                 op = "not like"
-            val = "%%:%s" % val
+            if not(op == "like" and val.startswith("%")):
+                val = "%%:%s" % val
         return "`%s` %s '%s'" % (name, op, val.replace("'", "''"))
 
     def _build_filter_part(self, cls, filters, order_by=None):
