@@ -67,3 +67,27 @@ class TestLists(object):
         time.sleep(3)
         t = SimpleListModel.get_by_id(t.id)
         assert(t.strs == item['strs'])
+
+    def test_query_equals(self):
+        """We noticed a slight problem with querying, since the query uses the same encoder,
+        it was asserting that the value was at the same position in the list, not just "in" the list"""
+        t = SimpleListModel()
+        t.strs = ["Bizzle", "Bar"]
+        t.put()
+        self.objs.append(t)
+        time.sleep(3)
+        assert(SimpleListModel.find(strs="Bizzle").count() == 1)
+        assert(SimpleListModel.find(strs="Bar").count() == 1)
+        assert(SimpleListModel.find(strs=["Bar","Bizzle"]).count() == 1)
+
+    def test_query_not_equals(self):
+        """Test a not equal filter"""
+        t = SimpleListModel()
+        t.strs = ["Fizzle"]
+        t.put()
+        self.objs.append(t)
+        time.sleep(3)
+        print SimpleListModel.all().filter("strs !=", "Fizzle").get_query()
+        for tt in SimpleListModel.all().filter("strs !=", "Fizzle"):
+            print tt.strs
+            assert("Fizzle" not in tt.strs)

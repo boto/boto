@@ -1,4 +1,5 @@
 # Copyright (c) 2006,2007,2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010 Chris Moyer http://coredumped.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -70,14 +71,12 @@ class SDBConverter:
 
     def encode_list(self, prop, value):
         if not isinstance(value, list):
-            value = [value]
-        new_value = []
-        for v in value:
+            # This is a little trick to avoid encoding when it's just a single value,
+            # since that most likely means it's from a query
             item_type = getattr(prop, "item_type")
-            if Model in item_type.mro():
-                item_type = Model
-            new_value.append(self.encode(item_type, v))
-        return new_value
+            return self.encode(item_type, value)
+        value = dict(enumerate(value))
+        return self.encode_map(prop, value)
 
     def encode_map(self, prop, value):
         if not isinstance(value, dict):
@@ -105,8 +104,8 @@ class SDBConverter:
         if hasattr(prop, 'item_type'):
             item_type = getattr(prop, "item_type")
             if Model in item_type.mro():
-                return [item_type(id=v) for v in value]
-            return [self.decode(item_type, v) for v in value]
+                item_type = Model
+            return [self.decode_map_element(item_type, v) for v in value]
         else:
             return value
 
@@ -115,15 +114,20 @@ class SDBConverter:
             value = [value]
         ret_value = {}
         item_type = getattr(prop, "item_type")
-        for keyval in value:
-            key, val = keyval.split(':', 1)
-            if Model in item_type.mro():
-                val = item_type(id=val)
+        if Model in item_type.mro():
+            item_type = Model
+        return [self.decode_map_element(item_type, v) for v in value]
+
+    def decode_map_element(self, item_type, value):
+        """Decode a single element for a map"""
+        if ":" in value:
+            key, val = value.split(':',1)
+            if item_type == Model:
+                value = item_type(id=val)
             else:
-                val = self.decode(item_type, val)
-            ret_value[key] = val
-        return ret_value
-        
+                value = self.decode(item_type, val)
+        return value
+
     def decode_prop(self, prop, value):
         if isinstance(prop, ListProperty):
             return self.decode_list(prop, value)
@@ -400,6 +404,23 @@ class SDBManager(object):
         count =  int(self.domain.select(query).next()["Count"])
         return count
 
+
+    def _build_filter(self, property, name, op, val):
+        if val == None:
+            if op in ('is','='):
+                return "`%s` is null" % name
+            elif op in ('is not', '!='):
+                return "`%s` is not null" % name
+            else:
+                val = ""
+        if property.__class__ == ListProperty:
+            if op in ("is", "="):
+                op = "like"
+            elif op in ("!=", "not"):
+                op = "not like"
+            val = "%%:%s" % val
+        return "`%s` %s '%s'" % (name, op, val.replace("'", "''"))
+
     def _build_filter_part(self, cls, filters, order_by=None):
         """
         Build the filter part
@@ -426,28 +447,17 @@ class SDBManager(object):
                     val = self.encode_value(property, val)
                     if isinstance(val, list):
                         for v in val:
-                            filter_parts.append("`%s` %s '%s'" % (name, op, v.replace("'", "''")))
+                            filter_parts.append(self._build_filter(property, name, op, v))
                     else:
-                        if val == None:
-                            if op in ('is','='):
-                                filter_parts.append("`%s` is null" % name)
-                            elif op in ('is not', '!='):
-                                filter_parts.append("`%s` is not null" % name)
-                        else:
-                            filter_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
+                        filter_parts.append(self._build_filter(property, name, op, val))
                 query_parts.append("(%s)" % (" or ".join(filter_parts)))
             else:
-                if op in ('is','=') and value == None:
-                    query_parts.append("`%s` is null" % name)
-                elif op in ('is not', '!=') and value == None:
-                    query_parts.append("`%s` is not null" % name)
+                val = self.encode_value(property, value)
+                if isinstance(val, list):
+                    for v in val:
+                        query_parts.append(self._build_filter(property, name, op, v))
                 else:
-                    val = self.encode_value(property, value)
-                    if isinstance(val, list):
-                        for v in val:
-                            query_parts.append("`%s` %s '%s'" % (name, op, v.replace("'", "''")))
-                    else:
-                        query_parts.append("`%s` %s '%s'" % (name, op, val.replace("'", "''")))
+                    query_parts.append(self._build_filter(property, name, op, val))
 
         type_query = "(`__type__` = '%s'" % cls.__name__
         for subclass in self._get_all_decendents(cls).keys():
