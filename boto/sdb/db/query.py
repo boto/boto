@@ -51,6 +51,9 @@ class Query(object):
     def count(self):
         return self.manager.count(self.model_class, self.filters)
 
+    def get_query(self):
+        return self.manager._build_filter_part(self.model_class, self.filters, self.sort_by)
+
     def order(self, key):
         self.sort_by = key
         return self
