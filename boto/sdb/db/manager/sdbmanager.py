@@ -58,6 +58,11 @@ class SDBConverter:
                       }
 
     def encode(self, item_type, value):
+        try:
+            if Model in item_type.mro():
+                item_type = Model
+        except:
+            pass
         if item_type in self.type_map:
             encode = self.type_map[item_type][0]
             return encode(value)
