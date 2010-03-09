@@ -108,8 +108,6 @@ class SDBConverter:
             value = [value]
         if hasattr(prop, 'item_type'):
             item_type = getattr(prop, "item_type")
-            if Model in item_type.mro():
-                item_type = Model
             return [self.decode_map_element(item_type, v) for v in value]
         else:
             return value
@@ -119,15 +117,13 @@ class SDBConverter:
             value = [value]
         ret_value = {}
         item_type = getattr(prop, "item_type")
-        if Model in item_type.mro():
-            item_type = Model
         return [self.decode_map_element(item_type, v) for v in value]
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
         if ":" in value:
             key, val = value.split(':',1)
-            if item_type == Model:
+            if Model in item_type.mro():
                 value = item_type(id=val)
             else:
                 value = self.decode(item_type, val)
