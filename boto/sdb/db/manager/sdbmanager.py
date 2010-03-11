@@ -108,26 +108,34 @@ class SDBConverter:
             value = [value]
         if hasattr(prop, 'item_type'):
             item_type = getattr(prop, "item_type")
-            return [self.decode_map_element(item_type, v) for v in value]
-        else:
-            return value
+            dec_val = {}
+            for val in value:
+                k,v = self.decode_map_element(item_type, val)
+                dec_val[k] = v
+            value = dec_val.values()
+        return value
 
     def decode_map(self, prop, value):
         if not isinstance(value, list):
             value = [value]
         ret_value = {}
         item_type = getattr(prop, "item_type")
-        return [self.decode_map_element(item_type, v) for v in value]
+        value = {}
+        for val in value:
+            k,v = self.decode_map_element(item_type, val)
+            value[k] = v
+        return value
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
+        key = value
         if ":" in value:
-            key, val = value.split(':',1)
-            if Model in item_type.mro():
-                value = item_type(id=val)
-            else:
-                value = self.decode(item_type, val)
-        return value
+            key, value = value.split(':',1)
+        if Model in item_type.mro():
+            value = item_type(id=value)
+        else:
+            value = self.decode(item_type, value)
+        return (key, value)
 
     def decode_prop(self, prop, value):
         if isinstance(prop, ListProperty):
