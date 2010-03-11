@@ -151,6 +151,11 @@ class SDBConverter:
         return '%010d' % value
 
     def decode_int(self, value):
+        try:
+            value = int(value)
+        except:
+            boto.log.error("Error, %s is not an integer" % value)
+            value = 0
         value = int(value)
         value -= 2147483648
         return int(value)
