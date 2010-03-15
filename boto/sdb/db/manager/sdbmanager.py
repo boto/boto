@@ -251,7 +251,7 @@ class SDBConverter:
             return value.id
 
     def decode_reference(self, value):
-        if not value:
+        if not value or value == "None":
             return None
         return value
 
