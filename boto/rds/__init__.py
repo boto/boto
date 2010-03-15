@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -47,26 +47,26 @@ class RDSConnection(AWSQueryConnection):
                                     https_connection_factory, path)
 
     # DB Instance methods
-        
+
     def get_all_dbinstances(self, instance_id=None, max_records=None,
                             marker=None):
         """
         Retrieve all the DBInstances in your account.
-        
+
         :type instance_id: str
         :param instance_id: DB Instance identifier.  If supplied, only information
                             this instance will be returned.  Otherwise, info
                             about all DB Instances will be returned.
-        
+
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
                             If more results are available, a MoreToken will
                             be returned in the response that can be used to
                             retrieve additional records.  Default is 100.
-        
+
         :type marker: str
-        :param marker: The marker provided by a previous request. 
-        
+        :param marker: The marker provided by a previous request.
+
         :rtype: list
         :return: A list of :class:`boto.rds.dbinstance.DBInstance`
         """
@@ -129,11 +129,11 @@ class RDSConnection(AWSQueryConnection):
         :param param_group: Name of DBParameterGroup to associate with
                             this DBInstance.  If no groups are specified
                             no parameter groups will be used.
-                        
+
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to authorize on
                                 this DBInstance.
-                        
+
         :type availability_zone: str
         :param availability_zone: Name of the availability zone to place
                                   DBInstance into.
@@ -153,7 +153,7 @@ class RDSConnection(AWSQueryConnection):
                                         automated backups are created (if
                                         enabled).  Must be in h24:mi-hh24:mi
                                         format (UTC).
-                                        
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -185,12 +185,13 @@ class RDSConnection(AWSQueryConnection):
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
-            
+
         return self.get_object('CreateDBInstance', params, DBInstance)
-        
+
     def modify_dbinstance(self, id, param_group=None, security_groups=None,
                           preferred_maintenance_window=None,
                           master_password=None, allocated_storage=None,
+                          instance_class=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
                           apply_immediately=False):
@@ -203,12 +204,12 @@ class RDSConnection(AWSQueryConnection):
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to authorize on
                                 this DBInstance.
-                        
+
         :type preferred_maintenance_window: str
         :param preferred_maintenance_window: The weekly time range (in UTC) during
                                              which maintenance can occur.
                                              Default is Sun:05:00-Sun:09:00
-                                             
+
         :type master_password: str
         :param master_password: Password of master user for the DBInstance.
                                 Must be 4-15 alphanumeric characters.
@@ -216,7 +217,7 @@ class RDSConnection(AWSQueryConnection):
         :type allocated_storage: int
         :param allocated_storage: The new allocated storage size, in GBs.
                                   Valid values are [5-1024]
-                                  
+
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the DBInstance.
                                Changes will be applied at next maintenance
@@ -240,7 +241,7 @@ class RDSConnection(AWSQueryConnection):
                                         automated backups are created (if
                                         enabled).  Must be in h24:mi-hh24:mi
                                         format (UTC).
-                                        
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -261,15 +262,17 @@ class RDSConnection(AWSQueryConnection):
             params['MasterUserPassword'] = master_password
         if allocated_storage:
             params['AllocatedStorage'] = allocated_storage
+        if instance_class:
+            params['DBInstanceClass'] = instance_class
         if backup_retention_period:
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
         if apply_immediately:
             params['ApplyImmediately'] = 'true'
-            
+
         return self.get_object('ModifyDBInstance', params, DBInstance)
-        
+
     def delete_dbinstance(self, id, skip_final_snapshot=False,
                           final_snapshot_id=''):
         """
@@ -299,27 +302,27 @@ class RDSConnection(AWSQueryConnection):
             params['SkipFinalSnapshot'] = 'false'
             params['FinalDBSnapshotIdentifier'] = final_snapshot_id
         return self.get_object('DeleteDBInstance', params, DBInstance)
-        
+
     # DBParameterGroup methods
-        
+
     def get_all_dbparameter_groups(self, groupname=None, max_records=None,
                                   marker=None):
         """
         Get all parameter groups associated with your account in a region.
-        
+
         :type groupname: str
         :param groupname: The name of the DBParameter group to retrieve.
                           If not provided, all DBParameter groups will be returned.
-        
+
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
                             If more results are available, a MoreToken will
                             be returned in the response that can be used to
                             retrieve additional records.  Default is 100.
-        
+
         :type marker: str
-        :param marker: The marker provided by a previous request. 
-        
+        :param marker: The marker provided by a previous request.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.parametergroup.ParameterGroup`
         """
@@ -337,7 +340,7 @@ class RDSConnection(AWSQueryConnection):
                              max_records=None, marker=None):
         """
         Get all parameters associated with a ParameterGroup
-        
+
         :type groupname: str
         :param groupname: The name of the DBParameter group to retrieve.
 
@@ -345,16 +348,16 @@ class RDSConnection(AWSQueryConnection):
         :param source: Specifies which parameters to return.
                        If not specified, all parameters will be returned.
                        Valid values are: user|system|engine-default
-        
+
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
                             If more results are available, a MoreToken will
                             be returned in the response that can be used to
                             retrieve additional records.  Default is 100.
-        
+
         :type marker: str
-        :param marker: The marker provided by a previous request. 
-        
+        :param marker: The marker provided by a previous request.
+
         :rtype: :class:`boto.ec2.parametergroup.ParameterGroup`
         :return: The ParameterGroup
         """
@@ -372,16 +375,16 @@ class RDSConnection(AWSQueryConnection):
     def create_parameter_group(self, name, engine='MySQL5.1', description=''):
         """
         Create a new dbparameter group for your account.
-        
+
         :type name: string
         :param name: The name of the new dbparameter group
-        
+
         :type engine: str
         :param engine: Name of database engine.  Must be MySQL5.1 for now.
 
         :type description: string
         :param description: The description of the new security group
-        
+
         :rtype: :class:`boto.rds.dbsecuritygroup.DBSecurityGroup`
         :return: The newly created DBSecurityGroup
         """
@@ -393,10 +396,10 @@ class RDSConnection(AWSQueryConnection):
     def modify_parameter_group(self, name, parameters=None):
         """
         Modify a parameter group for your account.
-        
+
         :type name: string
         :param name: The name of the new parameter group
-        
+
         :type parameters: list of :class:`boto.rds.parametergroup.Parameter`
         :param parameters: The new parameters
 
@@ -413,7 +416,7 @@ class RDSConnection(AWSQueryConnection):
         """
         Resets some or all of the parameters of a ParameterGroup to the
         default value
-        
+
         :type key_name: string
         :param key_name: The name of the ParameterGroup to reset
 
@@ -434,7 +437,7 @@ class RDSConnection(AWSQueryConnection):
     def delete_parameter_group(self, name):
         """
         Delete a DBSecurityGroup from your account.
-        
+
         :type key_name: string
         :param key_name: The name of the DBSecurityGroup to delete
         """
@@ -442,25 +445,25 @@ class RDSConnection(AWSQueryConnection):
         return self.get_status('DeleteDBParameterGroup', params)
 
     # DBSecurityGroup methods
-        
+
     def get_all_dbsecurity_groups(self, groupname=None, max_records=None,
                                   marker=None):
         """
         Get all security groups associated with your account in a region.
-        
+
         :type groupnames: list
         :param groupnames: A list of the names of security groups to retrieve.
                            If not provided, all security groups will be returned.
-        
+
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
                             If more results are available, a MoreToken will
                             be returned in the response that can be used to
                             retrieve additional records.  Default is 100.
-        
+
         :type marker: str
-        :param marker: The marker provided by a previous request. 
-        
+        :param marker: The marker provided by a previous request.
+
         :rtype: list
         :return: A list of :class:`boto.rds.dbsecuritygroup.DBSecurityGroup`
         """
@@ -479,13 +482,13 @@ class RDSConnection(AWSQueryConnection):
         Create a new security group for your account.
         This will create the security group within the region you
         are currently connected to.
-        
+
         :type name: string
         :param name: The name of the new security group
-        
+
         :type description: string
         :param description: The description of the new security group
-        
+
         :rtype: :class:`boto.rds.dbsecuritygroup.DBSecurityGroup`
         :return: The newly created DBSecurityGroup
         """
@@ -500,7 +503,7 @@ class RDSConnection(AWSQueryConnection):
     def delete_dbsecurity_group(self, name):
         """
         Delete a DBSecurityGroup from your account.
-        
+
         :type key_name: string
         :param key_name: The name of the DBSecurityGroup to delete
         """
@@ -514,19 +517,19 @@ class RDSConnection(AWSQueryConnection):
         Add a new rule to an existing security group.
         You need to pass in either src_security_group_name and
         src_security_group_owner_id OR a CIDR block but not both.
-        
+
         :type group_name: string
         :param group_name: The name of the security group you are adding
                            the rule to.
-                           
+
         :type ec2_security_group_name: string
-        :param ec2_security_group_name: The name of the EC2 security group you are 
+        :param ec2_security_group_name: The name of the EC2 security group you are
                                         granting access to.
-                                        
+
         :type ec2_security_group_owner_id: string
         :param ec2_security_group_owner_id: The ID of the owner of the EC2 security
                                             group you are granting access to.
-                                            
+
         :type cidr_ip: string
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
@@ -549,19 +552,19 @@ class RDSConnection(AWSQueryConnection):
         Remove an existing rule from an existing security group.
         You need to pass in either ec2_security_group_name and
         ec2_security_group_owner_id OR a CIDR block.
-        
+
         :type group_name: string
         :param group_name: The name of the security group you are removing
                            the rule from.
-                           
+
         :type ec2_security_group_name: string
-        :param ec2_security_group_name: The name of the EC2 security group you are 
+        :param ec2_security_group_name: The name of the EC2 security group you are
                                         granting access to.
-                                        
+
         :type ec2_security_group_owner_id: string
         :param ec2_security_group_owner_id: The ID of the owner of the EC2 security
                                             group you are granting access to.
-                                            
+
         :type cidr_ip: string
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
@@ -579,31 +582,31 @@ class RDSConnection(AWSQueryConnection):
         return self.get_object('RevokeDBSecurityGroupIngress', params, DBSecurityGroup)
 
     # DBSnapshot methods
-        
+
     def get_all_dbsnapshots(self, snapshot_id=None, instance_id=None,
                             max_records=None, marker=None):
         """
-        Get information about DB Snapshots.  
-        
+        Get information about DB Snapshots.
+
         :type snapshot_id: str
         :param snapshot_id: The unique identifier of an RDS snapshot.
                             If not provided, all RDS snapshots will be returned.
-        
+
         :type instance_id: str
         :param instance_id: The identifier of a DBInstance.  If provided,
                             only the DBSnapshots related to that instance will
                             be returned.
                             If not provided, all RDS snapshots will be returned.
-        
+
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
                             If more results are available, a MoreToken will
                             be returned in the response that can be used to
                             retrieve additional records.  Default is 100.
-        
+
         :type marker: str
-        :param marker: The marker provided by a previous request. 
-        
+        :param marker: The marker provided by a previous request.
+
         :rtype: list
         :return: A list of :class:`boto.rds.dbsnapshot.DBSnapshot`
         """
@@ -622,14 +625,14 @@ class RDSConnection(AWSQueryConnection):
     def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
         Create a new DB snapshot.
-        
+
         :type snapshot_id: string
         :param snapshot_id: The identifier for the DBSnapshot
-        
+
         :type dbinstance_id: string
         :param dbinstance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
-        
+
         :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
         :return: The newly created DBSnapshot
         """
@@ -640,7 +643,7 @@ class RDSConnection(AWSQueryConnection):
     def delete_dbsnapshot(self, identifier):
         """
         Delete a DBSnapshot
-        
+
         :type identifier: string
         :param identifier: The identifier of the DBSnapshot to delete
         """
@@ -650,17 +653,17 @@ class RDSConnection(AWSQueryConnection):
     def restore_dbinstance_from_dbsnapshot(self, identifier, instance_id,
                                            instance_class, port=None,
                                            availability_zone=None):
-        
+
         """
         Create a new DBInstance from a DB snapshot.
-        
+
         :type identifier: string
         :param identifier: The identifier for the DBSnapshot
-        
+
         :type instance_id: string
         :param instance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
-        
+
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the DBInstance.
                                Valid values are:
@@ -695,13 +698,13 @@ class RDSConnection(AWSQueryConnection):
                                               dbinstance_class=None,
                                               port=None,
                                               availability_zone=None):
-        
+
         """
         Create a new DBInstance from a point in time.
-        
+
         :type source_instance_id: string
         :param source_instance_id: The identifier for the source DBInstance.
-        
+
         :type target_instance_id: string
         :param target_instance_id: The identifier of the new DBInstance.
 
@@ -712,7 +715,7 @@ class RDSConnection(AWSQueryConnection):
         :type restore_time: datetime
         :param restore_time: The date and time to restore from.  Only
                              used if use_latest is False.
-        
+
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the DBInstance.
                                Valid values are:
@@ -753,7 +756,7 @@ class RDSConnection(AWSQueryConnection):
         """
         Get information about events related to your DBInstances,
         DBSecurityGroups and DBParameterGroups.
-        
+
         :type source_identifier: str
         :param source_identifier: If supplied, the events returned will be
                                   limited to those that apply to the identified
@@ -772,21 +775,21 @@ class RDSConnection(AWSQueryConnection):
         :param start_time: The beginning of the time interval for events.
                            If not supplied, all available events will
                            be returned.
-        
+
         :type end_time: datetime
         :param end_time: The ending of the time interval for events.
                          If not supplied, all available events will
                          be returned.
-        
+
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
                             If more results are available, a MoreToken will
                             be returned in the response that can be used to
                             retrieve additional records.  Default is 100.
-        
+
         :type marker: str
-        :param marker: The marker provided by a previous request. 
-        
+        :param marker: The marker provided by a previous request.
+
         :rtype: list
         :return: A list of class:`boto.rds.event.Event`
         """
@@ -804,4 +807,4 @@ class RDSConnection(AWSQueryConnection):
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
 
-    
+
