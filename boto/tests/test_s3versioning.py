@@ -130,6 +130,9 @@ class S3VersionTest (unittest.TestCase):
         # Now disable MfaDelete on the bucket
         mfa_code = raw_input('MFA Code: ')
         bucket.configure_versioning(True, mfa_delete=False, mfa_token=(mfa_sn, mfa_code))
+
+        # Now suspend Versioning on the bucket
+        bucket.configure_versioning(False)
         
         # now delete all keys and deletemarkers in bucket
         for k in bucket.list_versions():

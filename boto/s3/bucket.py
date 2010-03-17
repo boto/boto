@@ -671,7 +671,7 @@ class Bucket:
         if versioning:
             ver = 'Enabled'
         else:
-            ver = 'Disabled'
+            ver = 'Suspended'
         if mfa_delete:
             mfa = 'Enabled'
         else:
