@@ -80,8 +80,14 @@ class SDBConverter:
             # since that most likely means it's from a query
             item_type = getattr(prop, "item_type")
             return self.encode(item_type, value)
-        value = dict(enumerate(value))
-        return self.encode_map(prop, value)
+        # Just enumerate(value) won't work here because
+        # we need to add in some zero padding
+        # We support lists up to 1,000 attributes, since
+        # SDB technically only supports 1024 attributes anyway
+        values = {}
+        for k,v in enumerate(value):
+            values["%03d" % k] = v
+        return self.encode_map(prop, values)
 
     def encode_map(self, prop, value):
         if not isinstance(value, dict):
@@ -111,7 +117,12 @@ class SDBConverter:
             dec_val = {}
             for val in value:
                 k,v = self.decode_map_element(item_type, val)
+                try:
+                    k = int(k)
+                except:
+                    k = v
                 dec_val[k] = v
+                print "Decoded: %s = %s" % (k, v)
             value = dec_val.values()
         return value
 

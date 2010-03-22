@@ -66,7 +66,11 @@ class TestLists(object):
         item.save()
         time.sleep(3)
         t = SimpleListModel.get_by_id(t.id)
-        assert(t.strs == item['strs'])
+        i1 = item['strs']
+        i1.sort()
+        i2 = t.strs
+        i2.sort()
+        assert(i1 == i2)
 
     def test_query_equals(self):
         """We noticed a slight problem with querying, since the query uses the same encoder,
