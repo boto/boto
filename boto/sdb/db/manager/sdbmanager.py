@@ -122,7 +122,6 @@ class SDBConverter:
                 except:
                     k = v
                 dec_val[k] = v
-                print "Decoded: %s = %s" % (k, v)
             value = dec_val.values()
         return value
 
