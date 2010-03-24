@@ -461,28 +461,35 @@ class SDBManager(object):
                 order_by_method = "asc";
 
         for filter in filters:
-            (name, op) = filter[0].strip().split(" ", 1)
-            value = filter[1]
-            property = cls.find_property(name)
-            if name == order_by:
-                order_by_filtered = True
-            if types.TypeType(value) == types.ListType:
-                filter_parts = []
-                for val in value:
-                    val = self.encode_value(property, val)
+            filter_parts = []
+            filter_props = filter[0]
+            if type(filter_props) != list:
+                filter_props = [filter_props]
+            for filter_prop in filter_props:
+                (name, op) = filter_prop.strip().split(" ", 1)
+                value = filter[1]
+                property = cls.find_property(name)
+                if name == order_by:
+                    order_by_filtered = True
+                if types.TypeType(value) == types.ListType:
+                    filter_parts_sub = []
+                    for val in value:
+                        val = self.encode_value(property, val)
+                        if isinstance(val, list):
+                            for v in val:
+                                filter_parts_sub.append(self._build_filter(property, name, op, v))
+                        else:
+                            filter_parts_sub.append(self._build_filter(property, name, op, val))
+                    filter_parts.append("(%s)" % (" or ".join(filter_parts_sub)))
+                else:
+                    val = self.encode_value(property, value)
                     if isinstance(val, list):
                         for v in val:
                             filter_parts.append(self._build_filter(property, name, op, v))
                     else:
                         filter_parts.append(self._build_filter(property, name, op, val))
-                query_parts.append("(%s)" % (" or ".join(filter_parts)))
-            else:
-                val = self.encode_value(property, value)
-                if isinstance(val, list):
-                    for v in val:
-                        query_parts.append(self._build_filter(property, name, op, v))
-                else:
-                    query_parts.append(self._build_filter(property, name, op, val))
+            query_parts.append("(%s)" % (" or ".join(filter_parts)))
+
 
         type_query = "(`__type__` = '%s'" % cls.__name__
         for subclass in self._get_all_decendents(cls).keys():

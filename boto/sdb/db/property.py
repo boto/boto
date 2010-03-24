@@ -413,7 +413,13 @@ class _ReverseReferenceProperty(Property):
         """Fetches collection of model instances of this collection property."""
         if model_instance is not None:
             query = Query(self.__model)
-            return query.filter(self.__property + ' =', model_instance)
+            if type(self.__property) == list:
+                props = []
+                for prop in self.__property:
+                    props.append("%s =" % prop)
+                return query.filter(props, model_instance)
+            else:
+                return query.filter(self.__property + ' =', model_instance)
         else:
             return self
 
