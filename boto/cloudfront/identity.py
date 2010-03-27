@@ -59,7 +59,7 @@ class OriginAccessIdentity:
         self.config = new_config
 
     def delete(self):
-        return self.connection.delete_distribution(self.id, self.etag)
+        return self.connection.delete_origin_access_identity(self.id, self.etag)
 
     def uri(self):
         return 'origin-access-identity/cloudfront/%s' % self.id
