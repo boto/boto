@@ -97,7 +97,9 @@ class Instance(EC2Object):
         self._in_monitoring_element = False
         self.persistent = False
         self.root_device_name = None
+        self.root_device_type = None
         self.block_device_mapping = None
+        self.state_reason = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -110,6 +112,9 @@ class Instance(EC2Object):
             return self.block_device_mapping
         elif name == 'productCodes':
             return self.product_codes
+        elif name == 'stateReason':
+            self.state_reason = StateReason()
+            return self.state_reason
         return None
 
     def endElement(self, name, value, connection):
@@ -144,6 +149,8 @@ class Instance(EC2Object):
             self.instance_class = value
         elif name == 'rootDeviceName':
             self.root_device_name = value
+        elif name == 'rootDeviceType':
+            self.root_device_type = value
         elif name == 'launchTime':
             self.launch_time = value
         elif name == 'availabilityZone':
@@ -182,29 +189,15 @@ class Instance(EC2Object):
             setattr(self, name, value)
 
     def _update(self, updated):
-        self.updated = updated
-        if hasattr(updated, 'dns_name'):
-            self.dns_name = updated.dns_name
-            self.public_dns_name = updated.dns_name
-        if hasattr(updated, 'private_dns_name'):
-            self.private_dns_name = updated.private_dns_name
-        if hasattr(updated, 'ami_launch_index'):
-            self.ami_launch_index = updated.ami_launch_index
-        self.shutdown_state = updated.shutdown_state
-        self.previous_state = updated.previous_state
-        if hasattr(updated, 'state'):
-            self.state = updated.state
-        else:
-            self.state = None
-        if hasattr(updated, 'state_code'):
-            self.state_code = updated.state_code
-        else:
-            self.state_code = None
+        self.__dict__.update(updated.__dict__)
 
     def update(self):
         rs = self.connection.get_all_instances([self.id])
         if len(rs) > 0:
-            self._update(rs[0].instances[0])
+            r = rs[0]
+            for i in r.instances:
+                if i.id == self.id:
+                    self._update(i)
         return self.state
 
     def terminate(self):
@@ -286,3 +279,16 @@ class InstanceAttribute(dict):
             self._current_value = value
         else:
             self[name] = self._current_value
+
+class StateReason(dict):
+
+    def __init__(self, parent=None):
+        dict.__init__(self)
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name != 'stateReason':
+            self[name] = value
+            

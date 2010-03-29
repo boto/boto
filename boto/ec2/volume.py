@@ -64,21 +64,7 @@ class Volume(EC2Object):
             setattr(self, name, value)
 
     def _update(self, updated):
-        self.updated = updated
-        if hasattr(updated, 'create_time'):
-            self.create_time = updated.create_time
-        if hasattr(updated, 'status'):
-            self.status = updated.status
-        else:
-            self.status = None
-        if hasattr(updated, 'size'):
-            self.size = updated.size
-        if hasattr(updated, 'snapshot_id'):
-            self.snapshot_id = updated.snapshot_id
-        if hasattr(updated, 'attach_data'):
-            self.attach_data = updated.attach_data
-        if hasattr(updated, 'zone'):
-            self.zone = updated.zone
+        self.__dict__.update(updated.__dict__)
 
     def update(self):
         rs = self.connection.get_all_volumes([self.id])
