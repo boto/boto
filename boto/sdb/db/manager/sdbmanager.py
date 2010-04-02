@@ -98,7 +98,8 @@ class SDBConverter:
             if Model in item_type.mro():
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
-            new_value.append('%s:%s' % (key, encoded_value))
+            if encoded_value != None and encoded_value != "None":
+                new_value.append('%s:%s' % (key, encoded_value))
         return new_value
 
     def encode_prop(self, prop, value):
@@ -378,19 +379,22 @@ class SDBManager(object):
             
     def load_object(self, obj):
         if not obj._loaded:
-            a = self.domain.get_attributes(obj.id)
+            a = self.domain.get_attributes(obj.id,consistent_read=obj.__consistent__)
             if a.has_key('__type__'):
                 for prop in obj.properties(hidden=False):
                     if a.has_key(prop.name):
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
-                        setattr(obj, prop.name, value)
+                        try:
+                            setattr(obj, prop.name, value)
+                        except Exception, e:
+                            boto.log.exception(e)
             obj._loaded = True
         
     def get_object(self, cls, id, a=None):
         obj = None
         if not a:
-            a = self.domain.get_attributes(id)
+            a = self.domain.get_attributes(id,consistent_read=cls.__consistent__)
         if a.has_key('__type__'):
             if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
@@ -561,7 +565,7 @@ class SDBManager(object):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
     def get_property(self, prop, obj, name):
-        a = self.domain.get_attributes(obj.id)
+        a = self.domain.get_attributes(obj.id,consistent_read=obj.__consistent__)
 
         # try to get the attribute value from SDB
         if name in a:
@@ -578,7 +582,7 @@ class SDBManager(object):
         self.domain.delete_attributes(obj.id, name)
 
     def get_key_value(self, obj, name):
-        a = self.domain.get_attributes(obj.id, name)
+        a = self.domain.get_attributes(obj.id, name,consistent_read=obj.__consistent__)
         if a.has_key(name):
             return a[name]
         else:
