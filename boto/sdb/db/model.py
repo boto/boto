@@ -55,6 +55,7 @@ class ModelMeta(type):
         
 class Model(object):
     __metaclass__ = ModelMeta
+    __consistent__ = False # Consistent is set off by default
     id = None
 
     @classmethod

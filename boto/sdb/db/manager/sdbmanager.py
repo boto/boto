@@ -306,7 +306,7 @@ class SDBConverter:
 class SDBManager(object):
     
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table, ddl_dir, enable_ssl):
+                 db_host, db_port, db_table, ddl_dir, enable_ssl, consistent=None):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user
@@ -321,6 +321,9 @@ class SDBManager(object):
         self.converter = SDBConverter(self)
         self._sdb = None
         self._domain = None
+        if consistent == None and hasattr(cls, "__consistent"):
+            consistent = cls.__consistent__
+        self.consistent = consistent
 
     @property
     def sdb(self):
@@ -379,7 +382,7 @@ class SDBManager(object):
             
     def load_object(self, obj):
         if not obj._loaded:
-            a = self.domain.get_attributes(obj.id,consistent_read=obj.__consistent__)
+            a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
             if a.has_key('__type__'):
                 for prop in obj.properties(hidden=False):
                     if a.has_key(prop.name):
@@ -394,7 +397,7 @@ class SDBManager(object):
     def get_object(self, cls, id, a=None):
         obj = None
         if not a:
-            a = self.domain.get_attributes(id,consistent_read=cls.__consistent__)
+            a = self.domain.get_attributes(id,consistent_read=self.consistent)
         if a.has_key('__type__'):
             if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
@@ -565,7 +568,7 @@ class SDBManager(object):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
     def get_property(self, prop, obj, name):
-        a = self.domain.get_attributes(obj.id,consistent_read=obj.__consistent__)
+        a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
 
         # try to get the attribute value from SDB
         if name in a:
@@ -582,7 +585,7 @@ class SDBManager(object):
         self.domain.delete_attributes(obj.id, name)
 
     def get_key_value(self, obj, name):
-        a = self.domain.get_attributes(obj.id, name,consistent_read=obj.__consistent__)
+        a = self.domain.get_attributes(obj.id, name,consistent_read=self.consistent)
         if a.has_key(name):
             return a[name]
         else:
