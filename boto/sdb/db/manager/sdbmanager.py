@@ -131,11 +131,10 @@ class SDBConverter:
             value = [value]
         ret_value = {}
         item_type = getattr(prop, "item_type")
-        value = {}
         for val in value:
             k,v = self.decode_map_element(item_type, val)
-            value[k] = v
-        return value
+            ret_value[k] = v
+        return ret_value
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
