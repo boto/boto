@@ -238,6 +238,21 @@ def connect_emr(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.emr import EmrConnection
     return EmrConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def connect_sns(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.sns.SNSConnection`
+    :return: A connection to Amazon's SNS
+    """
+    from boto.sns import SNSConnection
+    return SNSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+
 def check_extensions(module_name, module_path):
     """
     This function checks for extensions to boto modules.  It should be called in the
