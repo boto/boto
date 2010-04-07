@@ -162,6 +162,27 @@ class SNSConnection(AWSQueryConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
+    def delete_topic(self, topic):
+        """
+        Delete an existing topic
+
+        :type topic: string
+        :param topic: The ARN of the topic
+
+        """
+        params = {'ContentType' : 'JSON',
+                  'TopicArn' : topic}
+        response = self.make_request('DeleteTopic', params, '/', 'GET')
+        body = response.read()
+        if response.status == 200:
+            return json.loads(body)
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+
+
+
     def publish(self, topic, message, subject=None):
         """
         Get properties of a Topic
