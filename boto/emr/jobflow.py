@@ -37,6 +37,9 @@ class Step(EmrObject):
     Fields = set(['Name',
                   'ActionOnFailure',
                   'CreationDateTime',
+                  'StartDateTime',
+                  'EndDateTime',
+                  'LastStateChangeReason',
                   'State'])
     
     def __init__(self, connection=None):
