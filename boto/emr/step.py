@@ -123,7 +123,11 @@ class StreamingStep(Step):
                 '-reducer', self.reducer]
 
         if self.input:
-            args.extend(('-input', self.input))
+            if isinstance(self.input, list):
+                for input in self.input:
+                    args.extend(('-input', input))
+            else:
+                args.extend(('-input', self.input))
         if self.output:
             args.extend(('-output', self.output))
 
