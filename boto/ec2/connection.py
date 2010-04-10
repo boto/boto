@@ -25,7 +25,9 @@ Represents a connection to the EC2 service.
 
 import urllib
 import base64
+import hmac
 import boto
+from hashlib import sha1 as sha
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
@@ -43,6 +45,7 @@ from boto.ec2.reservedinstance import ReservedInstancesOffering, ReservedInstanc
 from boto.ec2.spotinstancerequest import SpotInstanceRequest
 from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
+from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -1526,4 +1529,77 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'InstanceId' : instance_id}
         return self.get_list('UnmonitorInstances', params, [('item', InstanceInfo)])
+
+    # 
+    # Bundle Windows Instances
+    #
+
+    def bundle_instance(self, instance_id,
+                        s3_bucket, 
+                        s3_prefix,
+                        s3_upload_policy):
+        """
+        Bundle Windows instance.
+
+        :type instance_id: string
+        :param instance_id: The instance id
+
+        :type s3_bucket: string
+        :param s3_bucket: The bucket in which the AMI should be stored.
+
+        :type s3_prefix: string
+        :param s3_prefix: The beginning of the file name for the AMI.
+
+        :type s3_upload_policy: string
+        :param s3_upload_policy: Base64 encoded policy that specifies condition and permissions
+                                 for Amazon EC2 to upload the user's image into Amazon S3.
+        """
+
+        params = {'InstanceId' : instance_id,
+                  'Storage.S3.Bucket' : s3_bucket,
+                  'Storage.S3.Prefix' : s3_prefix,
+                  'Storage.S3.UploadPolicy' : s3_upload_policy}
+        params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
+        local_hmac = self.hmac.copy()
+        local_hmac.update(s3_upload_policy)
+        s3_upload_policy_signature = base64.b64encode(local_hmac.digest())
+        params['Storage.S3.UploadPolicySignature'] = s3_upload_policy_signature
+        return self.get_object('BundleInstance', params, BundleInstanceTask) 
+
+    def get_all_bundle_tasks(self, bundle_ids=None):
+        """
+        Retrieve current bundling tasks. If no bundle id is specified, all tasks are retrieved.
+
+        :type bundle_ids: list
+        :param bundle_ids: A list of strings containing identifiers for 
+                           previously created bundling tasks. 
+        """
+ 
+        params = {}
+        if bundle_ids:
+            self.build_list_params(params, bundle_ids, 'BundleId')
+        return self.get_list('DescribeBundleTasks', params, [('item', BundleInstanceTask)])
+
+    def cancel_bundle_task(self, bundle_id):
+        """
+        Cancel a previously submitted bundle task
+ 
+        :type bundle_id: string
+        :param bundle_id: The identifier of the bundle task to cancel.
+        """                        
+
+        params = {'BundleId' : bundle_id}
+        return self.get_object('CancelBundleTask', params, BundleInstanceTask)
+
+    def get_password_data(self, instance_id):
+        """
+        Get encrypted administrator password for a Windows instance.
+
+        :type instance_id: string
+        :param instance_id: The identifier of the instance to retrieve the password for.
+        """
+
+        params = {'InstanceId' : instance_id}
+        rs = self.get_object('GetPasswordData', params, ResultSet)
+        return rs.passwordData
 
