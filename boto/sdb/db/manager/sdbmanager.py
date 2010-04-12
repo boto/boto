@@ -75,6 +75,8 @@ class SDBConverter:
         return value
 
     def encode_list(self, prop, value):
+        if value == None:
+            return None
         if not isinstance(value, list):
             # This is a little trick to avoid encoding when it's just a single value,
             # since that most likely means it's from a query
@@ -90,6 +92,8 @@ class SDBConverter:
         return self.encode_map(prop, values)
 
     def encode_map(self, prop, value):
+        if value == None:
+            return None
         if not isinstance(value, dict):
             raise ValueError, 'Expected a dict value, got %s' % type(value)
         new_value = []
