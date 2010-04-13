@@ -620,7 +620,7 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeDBSnapshots', params,
-                             [('DBSnapshots', DBSnapshot)])
+                             [('DBSnapshot', DBSnapshot)])
 
     def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
