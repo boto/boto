@@ -69,6 +69,10 @@ class JarStep(Step):
         self._jar = jar
         self._main_class = main_class
         self.action_on_failure = action_on_failure
+
+        if isinstance(step_args, basestring):
+            step_args = [step_args]
+
         self.step_args = step_args
 
     def jar(self):
@@ -122,9 +126,13 @@ class StreamingStep(Step):
         self.action_on_failure = action_on_failure
         self.cache_files = cache_files
         self.cache_archives = cache_archives
-        self.step_args = step_args
         self.input = input
         self.output = output
+
+        if isinstance(step_args, basestring):
+            step_args = [step_args]
+
+        self.step_args = step_args
 
     def jar(self):
         return '/home/hadoop/contrib/streaming/hadoop-0.18-streaming.jar'

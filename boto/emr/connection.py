@@ -27,6 +27,7 @@ import types
 import boto
 from boto.ec2.regioninfo import RegionInfo
 from boto.emr.jobflow import JobFlow, RunJobFlowResponse
+from boto.emr.step import JarStep
 from boto.connection import AWSQueryConnection
 from boto.exception import EmrResponseError
 
@@ -37,6 +38,10 @@ class EmrConnection(AWSQueryConnection):
     DefaultRegionEndpoint = boto.config.get('Boto', 'emr_region_endpoint',
                                             'elasticmapreduce.amazonaws.com')
     ResponseError = EmrResponseError
+
+    # Constants for AWS Console debugging
+    DebuggingJar = 's3n://us-east-1.elasticmapreduce/libs/script-runner/script-runner.jar'
+    DebuggingArgs = 's3n://us-east-1.elasticmapreduce/libs/state-pusher/0.1/fetch'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
@@ -127,7 +132,8 @@ class EmrConnection(AWSQueryConnection):
                     master_instance_type='m1.small',
                     slave_instance_type='m1.small', num_instances=1,
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
-                    steps=None):
+                    enable_debugging=False,
+                    steps=[]):
         """
         Runs a job flow
 
@@ -149,6 +155,8 @@ class EmrConnection(AWSQueryConnection):
         :param action_on_failure: Action to take if a step terminates
         :type keep_alive: bool
         :param keep_alive: Denotes whether the cluster should stay alive upon completion
+        :type enable_debugging: bool
+        :param enable_debugging: Denotes whether AWS console debugging should be enabled.
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
 
@@ -166,6 +174,15 @@ class EmrConnection(AWSQueryConnection):
                                                     master_instance_type, slave_instance_type,
                                                     num_instances, keep_alive)
         params.update(instance_params)
+
+        # Debugging step from EMR API docs
+        if enable_debugging:
+            debugging_step = JarStep(name='Setup Hadoop Debugging',
+                                     action_on_failure='TERMINATE_JOB_FLOW',
+                                     main_class=None,
+                                     jar=self.DebuggingJar,
+                                     step_args=self.DebuggingArgs)
+            steps.insert(0, debugging_step)
 
         # Step args
         if steps:
