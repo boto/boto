@@ -50,19 +50,26 @@ class JarStep(Step):
     Custom jar step
     """
     def __init__(self, name, jar, main_class,
-                 action_on_failure='TERMINATE_JOB_FLOW',
-                 cache_files=None, cache_archives=None,
-                 step_args=None, input=None, output=None):
+                 action_on_failure='TERMINATE_JOB_FLOW', step_args=None):
+        """
+        A elastic mapreduce step that executes a jar
 
+        :type name: str
+        :param name: The name of the step
+        :type jar: str
+        :param jar: S3 URI to the Jar file
+        :type main_class: str
+        :param main_class: The class to execute in the jar
+        :type action_on_failure: str
+        :param action_on_failure: An action, defined in the EMR docs to take on failure.
+        :type step_args: list(str)
+        :param step_args: A list of arguments to pass to the step
+        """
         self.name = name
         self._jar = jar
         self._main_class = main_class
         self.action_on_failure = action_on_failure
-        self.cache_files = cache_files
-        self.cache_archives = cache_archives
         self.step_args = step_args
-        self.input = input
-        self.output = output
 
     def jar(self):
         return self._jar
@@ -70,22 +77,8 @@ class JarStep(Step):
     def args(self):
         args = []
 
-        if self.input:
-            args.append(self.input)
-        if self.output:
-            args.append(self.output)
-
-        if self.cache_files:
-            for cache_file in self.cache_files:
-                args.extend(('-cacheFile', cache_file))
-
-        if self.cache_archives:
-            for cache_archive in self.cache_archives:
-                args.extend(('-cacheArchive', cache_archive))
-
         if self.step_args:
-            for step_arg in self.step_args:
-                args.extend(step_arg)
+            args.extend(self.step_args)
 
         return args
 
@@ -101,7 +94,28 @@ class StreamingStep(Step):
                  action_on_failure='TERMINATE_JOB_FLOW',
                  cache_files=None, cache_archives=None,
                  step_args=None, input=None, output=None):
+        """
+        A hadoop streaming elastic mapreduce step
 
+        :type name: str
+        :param name: The name of the step
+        :type mapper: str
+        :param mapper: The mapper URI
+        :type reducer: str
+        :param reducer: The reducer URI
+        :type action_on_failure: str
+        :param action_on_failure: An action, defined in the EMR docs to take on failure.
+        :type cache_files: list(str)
+        :param cache_files: A list of cache files to be bundled with the job
+        :type cache_archives: list(str)
+        :param cache_archives: A list of jar archives to be bundled with the job
+        :type step_args: list(str)
+        :param step_args: A list of arguments to pass to the step
+        :type input: str
+        :param input: The input uri
+        :type output: str
+        :param output: The output uri
+        """
         self.name = name
         self.mapper = mapper
         self.reducer = reducer
@@ -140,8 +154,7 @@ class StreamingStep(Step):
                 args.extend(('-cacheArchive', cache_archive))
 
         if self.step_args:
-            for step_arg in self.step_args:
-                args.extend(step_arg)
+            args.extend(self.step_args)
 
         return args
 
