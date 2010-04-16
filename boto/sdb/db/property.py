@@ -259,6 +259,13 @@ class IntegerProperty(Property):
     def empty(self, value):
         return value is None
 
+    def __set__(self, obj, value):
+        if value == "" or value == None:
+            value = 0
+        return Property.__set__(self, obj, value)
+
+
+
 class LongProperty(Property):
 
     data_type = long
