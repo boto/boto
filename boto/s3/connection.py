@@ -251,7 +251,7 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('GET')
         body = response.read()
         if response.status > 300:
-            raise S3ResponseError(response.status, response.reason, body, headers=headers)
+            raise S3ResponseError(response.status, response.reason, body)
         rs = ResultSet([('Bucket', Bucket)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
