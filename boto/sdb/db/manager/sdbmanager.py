@@ -75,8 +75,8 @@ class SDBConverter:
         return value
 
     def encode_list(self, prop, value):
-        if value == None:
-            return None
+        if value in (None, []):
+            return []
         if not isinstance(value, list):
             # This is a little trick to avoid encoding when it's just a single value,
             # since that most likely means it's from a query
@@ -121,12 +121,13 @@ class SDBConverter:
             item_type = getattr(prop, "item_type")
             dec_val = {}
             for val in value:
-                k,v = self.decode_map_element(item_type, val)
-                try:
-                    k = int(k)
-                except:
-                    k = v
-                dec_val[k] = v
+                if val != "None" and val != None:
+                    k,v = self.decode_map_element(item_type, val)
+                    try:
+                        k = int(k)
+                    except:
+                        k = v
+                    dec_val[k] = v
             value = dec_val.values()
         return value
 
