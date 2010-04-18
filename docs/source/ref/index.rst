@@ -23,3 +23,4 @@ API Reference
    services
    sqs
    vpc
+   emr

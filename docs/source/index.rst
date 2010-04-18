@@ -39,6 +39,7 @@ Documentation Contents
    elb_tut
    autoscale_tut
    vpc_tut
+   emr_tut
    ref/index
    documentation
 
