@@ -19,6 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+"""
+This module contains EMR response objects
+"""
+
+from boto.resultset import ResultSet
 
 class EmrObject(object):
     Fields = set()
@@ -32,3 +37,68 @@ class EmrObject(object):
     def endElement(self, name, value, connection):
         if name in self.Fields:
             setattr(self, name.lower(), value)
+
+class RunJobFlowResponse(EmrObject):
+    Fields = set(['JobFlowId'])
+
+class Arg(EmrObject):
+    def __init__(self, connection=None):
+        self.value = None
+
+    def endElement(self, name, value, connection):
+        self.value = value
+
+
+class Step(EmrObject):
+    Fields = set(['Name',
+                  'ActionOnFailure',
+                  'CreationDateTime',
+                  'StartDateTime',
+                  'EndDateTime',
+                  'LastStateChangeReason',
+                  'State'])
+    
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.args = None 
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Args':
+            self.args = ResultSet([('member', Arg)])
+            return self.args
+ 
+class JobFlow(EmrObject):
+    Fields = set(['CreationDateTime',
+                  'StartDateTime',
+                  'State',
+                  'EndDateTime',
+                  'Id',
+                  'InstanceCount',
+                  'JobFlowId',
+                  'KeepJobAliveWhenNoSteps',
+                  'LogURI',
+                  'MasterPublicDnsName', 
+                  'MasterInstanceId',
+                  'Name',
+                  'Placement',
+                  'RequestId',
+                  'Type',
+                  'Value',
+                  'AvailabilityZone',
+                  'SlaveInstanceType',
+                  'MasterInstanceType',
+                  'Ec2KeyName',
+                  'InstanceCount',
+                  'KeepJobFlowAliveWhenNoSteps'])
+
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.steps = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Steps':
+            self.steps = ResultSet([('member', Step)])
+            return self.steps
+        else:
+            return None
+

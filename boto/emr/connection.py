@@ -26,7 +26,7 @@ import types
 
 import boto
 from boto.ec2.regioninfo import RegionInfo
-from boto.emr.jobflow import JobFlow, RunJobFlowResponse
+from boto.emr.emrobject import JobFlow, RunJobFlowResponse
 from boto.emr.step import JarStep
 from boto.connection import AWSQueryConnection
 from boto.exception import EmrResponseError
