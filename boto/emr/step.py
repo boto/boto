@@ -49,7 +49,7 @@ class JarStep(Step):
     """
     Custom jar step
     """
-    def __init__(self, name, jar, main_class,
+    def __init__(self, name, jar, main_class=None,
                  action_on_failure='TERMINATE_JOB_FLOW', step_args=None):
         """
         A elastic mapreduce step that executes a jar
