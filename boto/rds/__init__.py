@@ -303,6 +303,20 @@ class RDSConnection(AWSQueryConnection):
             params['FinalDBSnapshotIdentifier'] = final_snapshot_id
         return self.get_object('DeleteDBInstance', params, DBInstance)
 
+
+    def reboot_dbinstance(self, id):
+        """
+        Reboot DBInstance.
+
+        :type id: str
+        :param id: Unique identifier of the instance.
+
+        :rtype: :class:`boto.rds.dbinstance.DBInstance`
+        :return: The rebooting db instance.
+        """
+        params = {'DBInstanceIdentifier' : id}
+        return self.get_object('RebootDBInstance', params, DBInstance)
+    
     # DBParameterGroup methods
 
     def get_all_dbparameter_groups(self, groupname=None, max_records=None,

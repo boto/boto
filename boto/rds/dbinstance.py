@@ -113,6 +113,15 @@ class DBInstance(object):
         """
         return self.connection.create_dbsnapshot(snapshot_id, self.id)
 
+    def reboot(self):
+        """
+        Reboot this DBInstance
+        
+        :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
+        :return: The newly created DBSnapshot
+        """
+        return self.connection.reboot_dbinstance(self.id)
+
     def stop(self, skip_final_snapshot, final_snapshot_id):
         """
         Delete this DBInstance.
