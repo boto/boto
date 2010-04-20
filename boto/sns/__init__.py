@@ -22,6 +22,7 @@
 from boto.connection import AWSQueryConnection
 from boto.sdb.regioninfo import SDBRegionInfo
 import boto
+import uuid
 try:
     import json
 except ImportError:
@@ -250,6 +251,47 @@ class SNSConnection(AWSQueryConnection):
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
+
+    def subscribe_sqs_queue(self, topic, queue):
+        """
+        Subscribe an SQS queue to a topic.
+
+        This is convenience method that handles most of the complexity involved
+        in using ans SQS queue as an endpoint for an SNS topic.  To achieve this
+        the following operations are performed:
+        * The correct ARN is constructed for the SQS queue and that ARN is
+          then subscribed to the topic.
+        * A JSON policy document is contructed that grants permission to
+          the SNS topic to send messages to the SQS queue.
+        * This JSON policy is then associated with the SQS queue using
+          the queue's set_attribute method.  If the queue already has
+          a policy associated with it, this process will add a Statement to
+          that policy.  If no policy exists, a new policy will be created.
+          
+        :type topic: string
+        :param topic: The name of the new topic.
+
+        :type queue: A boto Queue object
+        :param queue: The queue you wish to subscribe to the SNS Topic.
+        """
+        t = queue.id.split('/')
+        q_arn = 'arn:aws:sqs:%s:%s:%s' % (queue.connection.region.name,
+                                          t[1], t[2])
+        resp = self.subscribe(topic, 'sqs', q_arn)
+        policy = queue.get_attributes('Policy')
+        if 'Version' not in policy:
+            policy['Version'] = '2008-10-17'
+        if 'Statement' not in policy:
+            policy['Statement'] = []
+        statement = {'Action' : 'SQS:SendMessage',
+                     'Effect' : 'Allow',
+                     'Principal' : {'AWS' : '*'},
+                     'Resource' : q_arn,
+                     'Sid' : str(uuid.uuid4()),
+                     'Condition' : {'StringLike' : {'aws:SourceArn' : topic}}}
+        policy['Statement'].append(statement)
+        queue.set_attribute('Policy', json.dumps(policy))
+        return resp
 
     def confirm_subscription(self, topic, token,
                              authenticate_on_unsubscribe=False):
