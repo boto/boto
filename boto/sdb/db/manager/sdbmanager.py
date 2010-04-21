@@ -186,7 +186,7 @@ class SDBConverter:
         return value
 
     def encode_bool(self, value):
-        if value == True:
+        if value == True or str(value).lower() in ("true", "yes"):
             return 'true'
         else:
             return 'false'
