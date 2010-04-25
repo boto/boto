@@ -21,7 +21,9 @@
 
 class Qualifications:
 
-    def __init__(self, requirements = []):
+    def __init__(self, requirements=None):
+        if requirements == None:
+            requirements = []
         self.requirements = requirements
 
     def add(self, req):
