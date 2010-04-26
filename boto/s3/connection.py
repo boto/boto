@@ -40,10 +40,11 @@ def assert_case_insensitive(f):
     return wrapper
 
 class _CallingFormat:
-    def build_url_base(self, protocol, server, bucket, key=''):
+
+    def build_url_base(self, connection, protocol, server, bucket, key=''):
         url_base = '%s://' % protocol
         url_base += self.build_host(server, bucket)
-        url_base += self.build_path_base(bucket, key)
+        url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
 
     def build_host(self, server, bucket):
@@ -52,26 +53,30 @@ class _CallingFormat:
         else:
             return self.get_bucket_server(server, bucket)
 
-    def build_auth_path(self, bucket, key=''):
+    def build_auth_path(self, connection, bucket, key=''):
         path = ''
         if bucket != '':
             path = '/' + bucket
+        path = connection.get_path(path)
         return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
         return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
+    
     @assert_case_insensitive
     def get_bucket_server(self, server, bucket):
         return '%s.%s' % (bucket, server)
 
 class VHostCallingFormat(_CallingFormat):
+    
     @assert_case_insensitive
     def get_bucket_server(self, server, bucket):
         return bucket
 
 class OrdinaryCallingFormat(_CallingFormat):
+    
     def get_bucket_server(self, server, bucket):
         return server
 
@@ -223,7 +228,7 @@ class S3Connection(AWSAuthConnection):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
-        auth_path = self.calling_format.build_auth_path(bucket, key)
+        auth_path = self.calling_format.build_auth_path(self, bucket, key)
         canonical_str = boto.utils.canonical_string(method, auth_path,
                                                     headers, expires)
         hmac_copy = self.hmac.copy()
@@ -244,7 +249,7 @@ class S3Connection(AWSAuthConnection):
         else:
             protocol = self.protocol
             port = self.port
-        return self.calling_format.build_url_base(protocol, self.server_name(port),
+        return self.calling_format.build_url_base(self, protocol, self.server_name(port),
                                                   bucket, key) + query_part
 
     def get_all_buckets(self, headers=None):
@@ -340,7 +345,7 @@ class S3Connection(AWSAuthConnection):
         if isinstance(key, Key):
             key = key.name
         path = self.calling_format.build_path_base(bucket, key)
-        auth_path = self.calling_format.build_auth_path(bucket, key)
+        auth_path = self.calling_format.build_auth_path(self, bucket, key)
         host = self.calling_format.build_host(self.server_name(), bucket)
         if query_args:
             path += '?' + query_args

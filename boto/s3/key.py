@@ -763,7 +763,7 @@ class Key(object):
                                   version_id=version_id)
         return fp.getvalue()
 
-    def add_email_grant(self, permission, email_address):
+    def add_email_grant(self, permission, email_address, headers=None):
         """
         Convenience method that provides a quick way to add an email grant to a key.
         This method retrieves the current ACL, creates a new grant based on the parameters
@@ -779,9 +779,9 @@ class Key(object):
         :param email_address: The email address associated with the AWS account your are granting
                                 the permission to.
         """
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_email_grant(permission, email_address)
-        self.set_acl(policy)
+        self.set_acl(policy, headers=headers)
 
     def add_user_grant(self, permission, user_id):
         """

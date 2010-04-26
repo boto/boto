@@ -22,10 +22,8 @@
 
 import boto
 
-boto.check_extensions(__name__, __path__)
-
 from connection import S3Connection as Connection
 from key import Key
 from bucket import Bucket
 
-__all__ = ['Connection', 'Key', 'Bucket']
+__all__ = [Connection, Key, Bucket]
