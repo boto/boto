@@ -53,11 +53,10 @@ class _CallingFormat:
         else:
             return self.get_bucket_server(server, bucket)
 
-    def build_auth_path(self, connection, bucket, key=''):
+    def build_auth_path(self, bucket, key=''):
         path = ''
         if bucket != '':
             path = '/' + bucket
-        path = connection.get_path(path)
         return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
@@ -228,7 +227,8 @@ class S3Connection(AWSAuthConnection):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
-        auth_path = self.calling_format.build_auth_path(self, bucket, key)
+        auth_path = self.calling_format.build_auth_path(bucket, key)
+        auth_path = self.get_path(auth_path)
         canonical_str = boto.utils.canonical_string(method, auth_path,
                                                     headers, expires)
         hmac_copy = self.hmac.copy()
@@ -345,7 +345,7 @@ class S3Connection(AWSAuthConnection):
         if isinstance(key, Key):
             key = key.name
         path = self.calling_format.build_path_base(bucket, key)
-        auth_path = self.calling_format.build_auth_path(self, bucket, key)
+        auth_path = self.calling_format.build_auth_path(bucket, key)
         host = self.calling_format.build_host(self.server_name(), bucket)
         if query_args:
             path += '?' + query_args
