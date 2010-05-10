@@ -258,10 +258,10 @@ class SDBConverter:
             return None
 
     def encode_reference(self, value):
+        if value in (None, 'None', '', ' '):
+            return 'None'
         if isinstance(value, str) or isinstance(value, unicode):
             return value
-        if value == None:
-            return ''
         else:
             return value.id
 
