@@ -44,6 +44,7 @@ class DBInstance(object):
         self.preferred_backup_window = None
         self.preferred_maintenance_window = None
         self.latest_restorable_time = None
+        self.multi_az = False
         self._in_endpoint = False
         self._port = None
         self._address = None
@@ -98,6 +99,9 @@ class DBInstance(object):
             self.preferred_maintenance_window = value
         elif name == 'PreferredBackupWindow':
             self.preferred_backup_window = value
+        elif name == 'MultiAZ':
+            if value.lower() == 'true':
+                self.multi_az = True
         else:
             setattr(self, name, value)
 

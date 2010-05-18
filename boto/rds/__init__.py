@@ -43,7 +43,7 @@ class RDSConnection(AWSQueryConnection):
                  https_connection_factory=None, path='/'):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user,
-                                    proxy_pass, self.DefaultHost, debug,
+                                    proxy_pass, host, debug,
                                     https_connection_factory, path)
 
     # DB Instance methods
@@ -85,7 +85,8 @@ class RDSConnection(AWSQueryConnection):
                           security_groups=None, availability_zone=None,
                           preferred_maintenance_window=None,
                           backup_retention_period=None,
-                          preferred_backup_window=None):
+                          preferred_backup_window=None,
+                          multi_az=False):
         """
         Create a new DBInstance.
 
@@ -154,6 +155,10 @@ class RDSConnection(AWSQueryConnection):
                                         enabled).  Must be in h24:mi-hh24:mi
                                         format (UTC).
 
+        :type multi_az: bool
+        :param multi_az: If True, specifies the DB Instance will be
+                         deployed in multiple availability zones.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -185,6 +190,8 @@ class RDSConnection(AWSQueryConnection):
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
+        if multi_az:
+            param['MultiAZ'] = 'true'
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 
@@ -194,6 +201,7 @@ class RDSConnection(AWSQueryConnection):
                           instance_class=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
+                          multi_az=False
                           apply_immediately=False):
         """
         Modify an existing DBInstance.
@@ -242,6 +250,10 @@ class RDSConnection(AWSQueryConnection):
                                         enabled).  Must be in h24:mi-hh24:mi
                                         format (UTC).
 
+        :type multi_az: bool
+        :param multi_az: If True, specifies the DB Instance will be
+                         deployed in multiple availability zones.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -268,6 +280,8 @@ class RDSConnection(AWSQueryConnection):
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
+        if multi_az:
+            params['MultiAZ'] = 'true'
         if apply_immediately:
             params['ApplyImmediately'] = 'true'
 
