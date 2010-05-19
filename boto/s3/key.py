@@ -51,7 +51,7 @@ class Key(object):
         self.etag = None
         self.last_modified = None
         self.owner = None
-        self.storage_class = None
+        self.storage_class = 'STANDARD'
         self.md5 = None
         self.base64md5 = None
         self.path = None
@@ -180,7 +180,10 @@ class Key(object):
             self.close()
         return data
 
-    def copy(self, dst_bucket, dst_key, metadata=None):
+    def set_reduced_redundancy(self):
+        self.storage_class = 'REDUCED_REDUNDANCY'
+
+    def copy(self, dst_bucket, dst_key, metadata=None, reduced_redundancy=False):
         """
         Copy this Key to another bucket.
 
@@ -197,11 +200,20 @@ class Key(object):
                          If no metadata is supplied, the source key's
                          metadata will be copied to the new key.
 
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage class
+                                   of the new Key such that it will use the
+                                   Reduced Redundancy Storage (RRS) feature
+                                   of S3, providing lower redundancy at lower
+                                   storage cost.
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
         dst_bucket = self.bucket.connection.lookup(dst_bucket)
-        return dst_bucket.copy_key(dst_key, self.bucket.name, self.name, metadata)
+        return dst_bucket.copy_key(dst_key, self.bucket.name,
+                                   self.name, metadata,
+                                   reduced_redundancy=reduced_redundancy)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -371,6 +383,7 @@ class Key(object):
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
+        headers['x-amz-storage-class'] = self.storage_class
         if headers.has_key('Content-Type'):
             self.content_type = headers['Content-Type']
         elif self.path:

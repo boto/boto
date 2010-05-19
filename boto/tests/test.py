@@ -24,9 +24,9 @@
 do the unit tests!
 """
 
-import sys, os, unittest
-import getopt, sys
-import boto
+import sys
+import unittest
+import getopt
 
 from boto.tests.test_sqsconnection import SQSConnectionTest
 from boto.tests.test_s3connection import S3ConnectionTest
@@ -36,7 +36,7 @@ from boto.tests.test_sdbconnection import SDBConnectionTest
 
 def usage():
     print 'test.py  [-t testsuite] [-v verbosity]'
-    print '    -t   run specific testsuite (s3|sqs|ec2|sdb|all)'
+    print '    -t   run specific testsuite (s3|s3ver|s3nover|sqs|ec2|sdb|all)'
     print '    -v   verbosity (0|1|2)'
   
 def main():
@@ -70,6 +70,8 @@ def main():
         suite.addTest(unittest.makeSuite(S3VersionTest))
     elif testsuite == 's3ver':
         suite.addTest(unittest.makeSuite(S3VersionTest))
+    elif testsuite == 's3nover':
+        suite.addTest(unittest.makeSuite(S3ConnectionTest))
     elif testsuite == 'sqs':
         suite.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == 'ec2':

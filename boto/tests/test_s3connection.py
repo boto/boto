@@ -167,9 +167,16 @@ class S3ConnectionTest (unittest.TestCase):
             bucket.add_email_grant('foobar', 'foo@bar.com')
         except S3PermissionsError:
             pass
+        # now try to create an RRS key
+        k = bucket.new_key('reduced_redundancy')
+        k.set_reduced_redundancy()
+        assert k.storage_class == 'REDUCED_REDUNDANCY'
+        k.set_contents_from_string('This key has reduced redundancy')
         # now delete all keys in bucket
         for k in all:
             bucket.delete_key(k)
+            if k.name == 'reduced_redundancy':
+                assert k.storage_class == 'REDUCED_REDUNDANCY'
         # now delete bucket
         c.delete_bucket(bucket)
         print '--- tests completed ---'

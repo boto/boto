@@ -370,7 +370,8 @@ class Bucket:
             raise S3ResponseError(response.status, response.reason, body)
 
     def copy_key(self, new_key_name, src_bucket_name,
-                 src_key_name, metadata=None, src_version_id=None):
+                 src_key_name, metadata=None, src_version_id=None,
+                 reduced_redundancy=False):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -395,19 +396,25 @@ class Bucket:
                          If no metadata is supplied, the source key's
                          metadata will be copied to the new key.
 
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage class
+                                   of the new Key such that it will use the
+                                   Reduced Redundancy Storage (RRS) feature
+                                   of S3, providing lower redundancy at lower
+                                   storage cost.
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
+        headers = {'x-amz-copy-source' : src,
+                   'x-amz-metadata-directive' : 'REPLACE'}
+        if reduced_redundancy:
+            headers['x-amz-storage-class'] = 'REDUCED_REDUNDANCY'
         if metadata:
-            headers = {'x-amz-copy-source' : src,
-                       'x-amz-metadata-directive' : 'REPLACE'}
             headers = boto.utils.merge_meta(headers, metadata)
-        else:
-            headers = {'x-amz-copy-source' : src,
-                       'x-amz-metadata-directive' : 'COPY'}
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers)
         body = response.read()
