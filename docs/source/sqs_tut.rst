@@ -148,7 +148,8 @@ number of messages that will be returned by the method.  To show this
 feature off, first let's load up a few more messages.
 
 >>> for i in range(1, 11):
-...   m = Message('This is message %d' % i)
+...   m = Message()
+...   m.set_body('This is message %d' % i)
 ...   q.write(m)
 ...
 >>> rs = q.get_messages(10)
