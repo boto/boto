@@ -182,7 +182,7 @@ by S3 and creates a set of Python objects that represent the ACL.
 >>> acp.acl.grants
 [<boto.acl.Grant instance at 0x2e6a08>]
 >>> for grant in acp.acl.grants:
-...   print grant.permission, grant.grantee
+...   print grant.permission, grant.display_name, grant.email_address, grant.id
 ... 
 FULL_CONTROL <boto.user.User instance at 0x2e6a30>
 
