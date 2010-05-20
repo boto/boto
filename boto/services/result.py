@@ -60,7 +60,7 @@ class ResultProcessor:
         keys = msg.keys()
         keys.sort()
         if not self.log_fp:
-            self.log_fp = open(os.path.join(path, self.LogFileName), 'w')
+            self.log_fp = open(os.path.join(path, self.LogFileName), 'a')
             line = ','.join(keys)
             self.log_fp.write(line+'\n')
         values = []
