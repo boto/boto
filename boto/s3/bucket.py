@@ -371,7 +371,7 @@ class Bucket:
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
-                 reduced_redundancy=False):
+                 storage_class='STANDARD', preserve_acl=False):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -396,25 +396,41 @@ class Bucket:
                          If no metadata is supplied, the source key's
                          metadata will be copied to the new key.
 
-        :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will set the storage class
-                                   of the new Key such that it will use the
-                                   Reduced Redundancy Storage (RRS) feature
-                                   of S3, providing lower redundancy at lower
-                                   storage cost.
+        :type storage_class: string
+        :param storage_class: The storage class of the new key.
+                              By default, the new key will use the
+                              standard storage class.  Possible values are:
+                              STANDARD | REDUCED_REDUNDANCY
+
+        :type preserve_acl: bool
+        :param preserve_acl: If True, the ACL from the source key
+                             will be copied to the destination
+                             key.  If False, the destination key
+                             will have the default ACL.
+                             Note that preserving the ACL in the
+                             new key object will require two
+                             additional API calls to S3, one to
+                             retrieve the current ACL and one to
+                             set that ACL on the new object.  If
+                             you don't care about the ACL, a value
+                             of False will be significantly more
+                             efficient.
 
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
+        if preserve_acl:
+            acl = self.get_xml_acl(src_key_name)
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
         headers = {'x-amz-copy-source' : src,
-                   'x-amz-metadata-directive' : 'REPLACE'}
-        if reduced_redundancy:
-            headers['x-amz-storage-class'] = 'REDUCED_REDUNDANCY'
+                   'x-amz-storage-class' : storage_class}
         if metadata:
+            headers['x-amz-metadata-directive'] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata)
+        else:
+            headers['x-amz-metadata-directive'] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers)
         body = response.read()
@@ -425,6 +441,8 @@ class Bucket:
             if hasattr(key, 'Error'):
                 raise S3CopyError(key.Code, key.Message, body)
             key.handle_version_headers(response)
+            if preserve_acl:
+                self.set_xml_acl(acl, new_key_name)
             return key
         else:
             raise S3ResponseError(response.status, response.reason, body)

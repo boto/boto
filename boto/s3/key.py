@@ -180,10 +180,33 @@ class Key(object):
             self.close()
         return data
 
-    def set_reduced_redundancy(self):
-        self.storage_class = 'REDUCED_REDUNDANCY'
+    def change_storage_class(self, new_storage_class, dst_bucket=None):
+        """
+        Change the storage class of an existing key.
+        Depending on whether a different destination bucket is supplied
+        or not, this will either move the item within the bucket, preserving
+        all metadata and ACL info bucket changing the storage class or it
+        will copy the item to the provided destination bucket, also
+        preserving metadata and ACL info.
 
-    def copy(self, dst_bucket, dst_key, metadata=None, reduced_redundancy=False):
+        :type new_storage_class: string
+        :param new_storage_class: The new storage class for the Key.
+                                  Possible values are:
+                                  * STANDARD
+                                  * REDUCED_REDUNDANCY
+
+        :type dst_bucket: string
+        :param dst_bucket: The name of a destination bucket.  If not
+                           provided the current bucket of the key
+                           will be used.
+                                  
+        """
+        self.storage_class = new_storage_class
+        return self.copy(self.bucket.name, self.name,
+                         reduced_redundancy=True, preserve_acl=True)
+
+    def copy(self, dst_bucket, dst_key, metadata=None,
+             reduced_redundancy=False, preserve_acl=False):
         """
         Copy this Key to another bucket.
 
@@ -191,7 +214,7 @@ class Key(object):
         :param dst_bucket: The name of the destination bucket
 
         :type dst_key: string
-        :param dst_key: The name of the destinatino key
+        :param dst_key: The name of the destination key
         
         :type metadata: dict
         :param metadata: Metadata to be associated with new key.
@@ -201,19 +224,40 @@ class Key(object):
                          metadata will be copied to the new key.
 
         :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will set the storage class
-                                   of the new Key such that it will use the
-                                   Reduced Redundancy Storage (RRS) feature
-                                   of S3, providing lower redundancy at lower
-                                   storage cost.
+        :param reduced_redundancy: If True, this will force the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY regardless of the
+                                   storage class of the key being copied.
+                                   The Reduced Redundancy Storage (RRS)
+                                   feature of S3, provides lower
+                                   redundancy at lower storage cost.
+
+        :type preserve_acl: bool
+        :param preserve_acl: If True, the ACL from the source key
+                             will be copied to the destination
+                             key.  If False, the destination key
+                             will have the default ACL.
+                             Note that preserving the ACL in the
+                             new key object will require two
+                             additional API calls to S3, one to
+                             retrieve the current ACL and one to
+                             set that ACL on the new object.  If
+                             you don't care about the ACL, a value
+                             of False will be significantly more
+                             efficient.
 
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
         dst_bucket = self.bucket.connection.lookup(dst_bucket)
+        if reduced_redundancy:
+            storage_class = 'REDUCED_REDUNDANCY'
+        else:
+            storage_class = self.storage_class
         return dst_bucket.copy_key(dst_key, self.bucket.name,
                                    self.name, metadata,
-                                   reduced_redundancy=reduced_redundancy)
+                                   storage_class=storage_class,
+                                   preserve_acl=preserve_acl)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -426,8 +470,9 @@ class Key(object):
         fp.seek(0)
         return (hex_md5, base64md5)
 
-    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None, num_cb=10,
-                               policy=None, md5=None):
+    def set_contents_from_file(self, fp, headers=None, replace=True,
+                               cb=None, num_cb=10, policy=None, md5=None,
+                               reduced_redundancy=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -468,12 +513,24 @@ class Key(object):
         :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+                    
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will force the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY regardless of the
+                                   storage class of the key being copied.
+                                   The Reduced Redundancy Storage (RRS)
+                                   feature of S3, provides lower
+                                   redundancy at lower storage cost.
+
         """
+        if headers is None:
+            headers = {}
         if policy:
-            if headers:
-                headers['x-amz-acl'] = policy
-            else:
-                headers = {'x-amz-acl' : policy}
+            headers['x-amz-acl'] = policy
+        if reduced_redundancy:
+            self.storage_class = 'REDUCED_REDUNDANCY'
+            headers['x-amz-storage-class'] = self.storage_class
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
@@ -489,8 +546,9 @@ class Key(object):
                     return
             self.send_file(fp, headers, cb, num_cb)
 
-    def set_contents_from_filename(self, filename, headers=None, replace=True, cb=None, num_cb=10,
-                                   policy=None, md5=None):
+    def set_contents_from_filename(self, filename, headers=None, replace=True,
+                                   cb=None, num_cb=10, policy=None, md5=None,
+                                   reduced_redundancy=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -528,13 +586,25 @@ class Key(object):
         :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+                    
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will force the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY regardless of the
+                                   storage class of the key being copied.
+                                   The Reduced Redundancy Storage (RRS)
+                                   feature of S3, provides lower
+                                   redundancy at lower storage cost.
+
         """
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                    policy, md5, reduced_redundancy)
         fp.close()
 
-    def set_contents_from_string(self, s, headers=None, replace=True, cb=None, num_cb=10,
-                                 policy=None, md5=None):
+    def set_contents_from_string(self, s, headers=None, replace=True,
+                                 cb=None, num_cb=10, policy=None, md5=None,
+                                 reduced_redundancy=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -569,9 +639,20 @@ class Key(object):
         :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+                    
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will force the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY regardless of the
+                                   storage class of the key being copied.
+                                   The Reduced Redundancy Storage (RRS)
+                                   feature of S3, provides lower
+                                   redundancy at lower storage cost.
+
         """
         fp = StringIO.StringIO(s)
-        r = self.set_contents_from_file(fp, headers, replace, cb, num_cb, policy)
+        r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5, reduced_redundancy)
         fp.close()
         return r
 
