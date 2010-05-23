@@ -169,14 +169,14 @@ class S3ConnectionTest (unittest.TestCase):
             pass
         # now try to create an RRS key
         k = bucket.new_key('reduced_redundancy')
-        k.set_reduced_redundancy()
-        assert k.storage_class == 'REDUCED_REDUNDANCY'
-        k.set_contents_from_string('This key has reduced redundancy')
+        k.set_contents_from_string('This key has reduced redundancy',
+                                   reduced_redundancy=True)
         # now delete all keys in bucket
-        for k in all:
-            bucket.delete_key(k)
+        for k in bucket:
             if k.name == 'reduced_redundancy':
                 assert k.storage_class == 'REDUCED_REDUNDANCY'
+            bucket.delete_key(k)
         # now delete bucket
+        time.sleep(5)
         c.delete_bucket(bucket)
         print '--- tests completed ---'
