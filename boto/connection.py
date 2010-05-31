@@ -455,6 +455,10 @@ class AWSAuthConnection:
                 # header here, we did that in the CONNECT to the proxy.
                 headers.update(self.get_proxy_auth_header())
         request_string = auth_path or path
+        for key in headers:
+            val = headers[key]
+            if isinstance(val, unicode):
+                headers[key] = urllib.quote_plus(val.encode('utf-8'))
         self.add_aws_auth_header(headers, method, request_string)
         return self._mexe(method, path, data, headers, host, sender)
 
