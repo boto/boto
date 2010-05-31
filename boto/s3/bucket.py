@@ -424,8 +424,9 @@ class Bucket:
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
-        headers = {'x-amz-copy-source' : src,
-                   'x-amz-storage-class' : storage_class}
+        headers = {'x-amz-copy-source' : src}
+        if storage_class != 'STANDARD':
+            headers['x-amz-storage-class'] = storage_class
         if metadata:
             headers['x-amz-metadata-directive'] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata)

@@ -26,6 +26,7 @@ import base64
 import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
+import base64
 
 
 class BotoClientError(StandardError):
@@ -291,3 +292,11 @@ class S3DataError(BotoClientError):
 
 class FPSResponseError(BotoServerError):
     pass
+
+
+class InvalidUriError(Exception):
+  """Exception raised when URI is invalid."""
+
+  def __init__(self, message):
+    Exception.__init__(self)
+    self.message = message

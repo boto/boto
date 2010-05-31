@@ -20,9 +20,11 @@
 # IN THE SOFTWARE.
 #
 from boto.pyami.config import Config, BotoConfigLocations
-import os, sys
+from boto.storage_uri import BucketStorageUri, FileStorageUri
+import os, re, sys
 import logging
 import logging.config
+from boto.exception import InvalidUriError
 
 Version = '1.9b'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
@@ -97,6 +99,20 @@ def connect_s3(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     from boto.s3.connection import S3Connection
     return S3Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+def connect_gs(gs_access_key_id=None, gs_secret_access_key=None, **kwargs):
+    """
+    @type gs_access_key_id: string
+    @param gs_access_key_id: Your Google Storage Access Key ID
+
+    @type gs_secret_access_key: string
+    @param gs_secret_access_key: Your Google Storage Secret Access Key
+
+    @rtype: L{GSConnection<boto.gs.connection.GSConnection>}
+    @return: A connection to Google's Storage service
+    """
+    from boto.gs.connection import GSConnection
+    return GSConnection(gs_access_key_id, gs_secret_access_key, **kwargs)
 
 def connect_ec2(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
@@ -290,3 +306,54 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
+def storage_uri(uri_str, default_provider='file', debug=False):
+    """Instantiate a StorageUri from a URI string.
+
+    :type uri_str: string
+    :param uri_str: URI naming bucket + optional object.
+    :type default_provider: string
+    :param default_provider: default provider for provider-less URIs.
+
+    :rtype: :class:`boto.StorageUri` subclass
+    :return: StorageUri subclass for given URI.
+
+    uri_str must be one of the following formats:
+        gs://bucket/name
+        s3://bucket/name
+        gs://bucket
+        s3://bucket
+        filename
+    The last example uses the default provider ('file', unless overridden)
+    """
+
+    # Manually parse URI components instead of using urlparse.urlparse because
+    # what we're calling URIs don't really fit the standard syntax for URIs
+    # (the latter includes an optional host/net location part).
+    end_provider_idx = uri_str.find('://')
+    if end_provider_idx == -1:
+      provider = default_provider.lower()
+      path = uri_str
+    else:
+      provider = uri_str[0:end_provider_idx].lower()
+      path = uri_str[end_provider_idx + 3:]
+
+    if provider not in ['file', 's3', 'gs']:
+        raise InvalidUriError('Unrecognized provider "%s"' % provider)
+    if provider == 'file':
+        # For file URIs we have no bucket name, and use the complete path
+        # (minus 'file://') as the object name.
+        return FileStorageUri(path, debug)
+    else:
+        path_parts = path.split('/', 1)
+        bucket_name = path_parts[0]
+        # Ensure the bucket name is valid, to avoid possibly confusing other
+        # parts of the code. (For example if we didn't catch bucket names
+        # containing ':', when a user tried to connect to the server with that
+        # name they might get a confusing error about non-integer port numbers.)
+        if (bucket_name and
+            not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)):
+          raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+        object_name = ''
+        if len(path_parts) > 1:
+            object_name = path_parts[1]
+        return BucketStorageUri(provider, bucket_name, object_name, debug)

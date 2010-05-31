@@ -427,7 +427,8 @@ class Key(object):
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
-        headers['x-amz-storage-class'] = self.storage_class
+        if self.storage_class != 'STANDARD':
+            headers['x-amz-storage-class'] = self.storage_class
         if headers.has_key('Content-Type'):
             self.content_type = headers['Content-Type']
         elif self.path:

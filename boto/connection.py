@@ -99,11 +99,39 @@ class ConnectionPool:
     def __repr__(self):
         return 'ConnectionPool:%s' % ','.join(self._hosts._dict.keys())
 
-class AWSAuthConnection:
+class ProviderCredentials(object):
+
+    ProviderCredentialMap = {
+        'aws' : ('aws_access_key_id', 'aws_secret_access_key'),
+        'google' : ('gs_access_key_id', 'gs_secret_access_key'),
+    }
+
+    def __init__(self, provider, access_key=None, secret_key=None):
+        self.provider = provider
+        self.access_key = None
+        self.secret_key = None
+        provider_map = self.ProviderCredentialMap[self.provider]
+        access_key_name, secret_key_name = self.ProviderCredentialMap[provider]
+        if access_key:
+            self.access_key = access_key
+        elif os.environ.has_key(access_key_name.upper()):
+            self.access_key = os.environ[access_key_name.upper()]
+        elif config.has_option('Credentials', access_key_name):
+            self.access_key = config.get('Credentials', access_key_name)
+
+        if secret_key:
+            self.secret_key = secret_key
+        elif os.environ.has_key(secret_key_name.upper()):
+            self.secret_key = os.environ[secret_key_name.upper()]
+        elif config.has_option('Credentials', secret_key_name):
+            self.secret_key = config.get('Credentials', secret_key_name)
+
+class AWSAuthConnection(object):
+
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, path='/'):
+                 https_connection_factory=None, path='/', provider='aws'):
         """
         :type host: string
         :param host: The host to make the connection to
@@ -165,21 +193,11 @@ class AWSAuthConnection:
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
-            
-        if aws_access_key_id:
-            self.aws_access_key_id = aws_access_key_id
-        elif os.environ.has_key('AWS_ACCESS_KEY_ID'):
-            self.aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-        elif config.has_option('Credentials', 'aws_access_key_id'):
-            self.aws_access_key_id = config.get('Credentials', 'aws_access_key_id')
 
-        if aws_secret_access_key:
-            self.aws_secret_access_key = aws_secret_access_key
-        elif os.environ.has_key('AWS_SECRET_ACCESS_KEY'):
-            self.aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
-        elif config.has_option('Credentials', 'aws_secret_access_key'):
-            self.aws_secret_access_key = config.get('Credentials', 'aws_secret_access_key')
-
+        self.provider_credentials = ProviderCredentials(provider,
+                                                        aws_access_key_id,
+                                                        aws_secret_access_key)
+        
         # initialize an HMAC for signatures, make copies with each request
         self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
         if sha256:
@@ -204,8 +222,19 @@ class AWSAuthConnection:
 
     def connection(self):
         return self.get_http_connection(*self._connection)
-
     connection = property(connection)
+
+    def aws_access_key_id(self):
+        return self.provider_credentials.access_key
+    aws_access_key_id = property(aws_access_key_id)
+    gs_access_key_id = aws_access_key_id
+    access_key = aws_access_key_id
+
+    def aws_secret_access_key(self):
+        return self.provider_credentials.secret_key
+    aws_secret_access_key = property(aws_secret_access_key)
+    gs_secret_access_key = aws_secret_access_key
+    secret_key = aws_secret_access_key
 
     def get_path(self, path='/'):
         pos = path.find('?')
