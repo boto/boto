@@ -142,6 +142,7 @@ class EmrConnection(AWSQueryConnection):
                     slave_instance_type='m1.small', num_instances=1,
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
+                    hadoop_version='0.18',
                     steps=[]):
         """
         Runs a job flow
@@ -181,7 +182,7 @@ class EmrConnection(AWSQueryConnection):
         # Instance args
         instance_params = self._build_instance_args(ec2_keyname, availability_zone,
                                                     master_instance_type, slave_instance_type,
-                                                    num_instances, keep_alive)
+                                                    num_instances, keep_alive, hadoop_version)
         params.update(instance_params)
 
         # Debugging step from EMR API docs
@@ -228,12 +229,13 @@ class EmrConnection(AWSQueryConnection):
         return params
 
     def _build_instance_args(self, ec2_keyname, availability_zone, master_instance_type,
-                             slave_instance_type, num_instances, keep_alive):
+                             slave_instance_type, num_instances, keep_alive, hadoop_version):
         params = {
             'Instances.MasterInstanceType' : master_instance_type,
             'Instances.SlaveInstanceType' : slave_instance_type,
             'Instances.InstanceCount' : num_instances,
-            'Instances.KeepJobFlowAliveWhenNoSteps' : str(keep_alive).lower()
+            'Instances.KeepJobFlowAliveWhenNoSteps' : str(keep_alive).lower(),
+            'Instances.HadoopVersion' : hadoop_version
         }
 
         if ec2_keyname:
