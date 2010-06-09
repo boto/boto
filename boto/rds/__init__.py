@@ -201,7 +201,7 @@ class RDSConnection(AWSQueryConnection):
                           instance_class=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
-                          multi_az=False
+                          multi_az=False,
                           apply_immediately=False):
         """
         Modify an existing DBInstance.
