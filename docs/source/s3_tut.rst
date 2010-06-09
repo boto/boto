@@ -149,11 +149,7 @@ S3.  There are two ways to set the ACL for an object:
    c. public-read-write: Owner gets FULL_CONTROL and the anonymous principal is granted READ and WRITE access.
    d. authenticated-read: Owner gets FULL_CONTROL and any principal authenticated as a registered Amazon S3 user is granted READ access.
 
-Currently, boto only supports the second method using canned access control
-policies.  A future version may allow setting of arbitrary ACL's if there
-is sufficient demand.
-
-To set the ACL for a bucket, use the set_acl method of the Bucket object.
+To set a canned ACL for a bucket, use the set_acl method of the Bucket object.
 The argument passed to this method must be one of the four permissable
 canned policies named in the list CannedACLStrings contained in acl.py.
 For example, to make a bucket readable by anyone:
@@ -188,6 +184,18 @@ FULL_CONTROL <boto.user.User instance at 0x2e6a30>
 
 The Python objects representing the ACL can be found in the acl.py module
 of boto.
+
+Both the Bucket object and the Key object also provide shortcut
+methods to simplify the process of granting individuals specific
+access.  For example, if you want to grant an individual user READ
+access to a particular object in S3 you could do the following:
+
+>>> key = b.lookup('mykeytoshare')
+>>> key.add_email_grant('READ', 'foo@bar.com')
+
+The email address provided should be the one associated with the users
+AWS account.  There is a similar method called add_user_grant that accepts the
+canonical id of the user rather than the email address.
 
 Setting/Getting Metadata Values on Key Objects
 ----------------------------------------------
