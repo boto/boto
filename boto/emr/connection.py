@@ -143,7 +143,8 @@ class EmrConnection(AWSQueryConnection):
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
                     hadoop_version='0.18',
-                    steps=[]):
+                    steps=[],
+                    bootstrap_actions=[]):
         """
         Runs a job flow
 
@@ -199,8 +200,27 @@ class EmrConnection(AWSQueryConnection):
             step_args = [self._build_step_args(step) for step in steps]
             params.update(self._build_step_list(step_args))
 
+        if bootstrap_actions:
+            bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
+            params.update(self._build_bootstrap_action_list(bootstrap_action_args))
+
         response = self.get_object('RunJobFlow', params, RunJobFlowResponse)
         return response.jobflowid
+
+    def _build_bootstrap_action_args(self, bootstrap_action):
+        bootstrap_action_params = {}
+        bootstrap_action_params['ScriptBootstrapAction.Path'] = bootstrap_action.path
+
+        try:
+            bootstrap_action_params['Name'] = bootstrap_action.name
+        except AttributeError:
+            pass
+
+        args = bootstrap_action.args()
+        if args:
+            self.build_list_params(bootstrap_action_params, args, 'ScriptBootstrapAction.Args.member')
+
+        return bootstrap_action_params
 
     def _build_step_args(self, step):
         step_params = {}
@@ -217,6 +237,16 @@ class EmrConnection(AWSQueryConnection):
 
         step_params['Name'] = step.name
         return step_params
+
+    def _build_bootstrap_action_list(self, bootstrap_actions):
+        if type(bootstrap_actions) != types.ListType:
+            bootstrap_actions = [bootstrap_actions]
+
+        params = {}
+        for i, bootstrap_action in enumerate(bootstrap_actions):
+            for key, value in bootstrap_action.iteritems():
+                params['BootstrapActions.memeber.%s.%s' % (i + 1, key)] = value
+        return params
 
     def _build_step_list(self, steps):
         if type(steps) != types.ListType:

@@ -19,12 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-This module provies an interface to the Elastic MapReduce (EMR)
-service from AWS.
-"""
-from connection import EmrConnection
-from step import Step, StreamingStep, JarStep
-from bootstrap_action import BootstrapAction
+class BootstrapAction(object):
+    def __init__(self, name, path, bootstrap_action_args):
+        self.name = name
+        self.path = path
 
+        if isinstance(bootstrap_action_args, basestring):
+            bootstrap_action_args = [bootstrap_action_args]
 
+        self.bootstrap_action_args = bootstrap_action_args
+
+    def args(self):
+        args = []
+
+        if self.bootstrap_action_args:
+            args.extend(self.bootstrap_action_args)
+
+        return args
