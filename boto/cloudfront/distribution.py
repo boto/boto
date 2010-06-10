@@ -216,6 +216,7 @@ class Distribution:
         self.active_signers = None
         self.etag = None
         self._bucket = None
+        self._object_class = Object
 
     def startElement(self, name, attrs, connection):
         if name == 'DistributionConfig':
