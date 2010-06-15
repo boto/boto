@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import base64
 import urllib
 import xml.sax
 import uuid
@@ -39,9 +40,10 @@ class FPSConnection(AWSQueryConnection):
                         host='fps.sandbox.amazonaws.com', debug=0,
                         https_connection_factory=None):
         AWSQueryConnection.__init__(self, aws_access_key_id,
-                                                aws_secret_access_key,
-                                                is_secure, port, proxy, proxy_port,
-                                                host, debug, https_connection_factory)
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    host, debug=debug,
+                                    https_connection_factory=https_connection_factory)
     
     def install_payment_instruction(self, instruction, token_type="Unrestricted", transaction_id=None):
         """
@@ -118,14 +120,22 @@ class FPSConnection(AWSQueryConnection):
         if(not params.has_key('callerReference')):
             params['callerReference'] = str(uuid.uuid4())
 
-        url = ""
-        keys = params.keys()
-        keys.sort()
+        deco = [(key.lower(),i,key) for i,key in enumerate(params.keys())]
+        deco.sort()
+        keys = [key for _,_,key in deco]
+
+        url = ''
+        canonical = ''
         for k in keys:
             url += "&%s=%s" % (k, urllib.quote_plus(str(params[k])))
+            canonical += "%s%s" % (k, str(params[k]))
 
         url = "/cobranded-ui/actions/start?%s" % ( url[1:])
         signature= boto.utils.encode(self.aws_secret_access_key, url, True)
+        hmac = self.hmac.copy()
+        hmac.updaet(canonical)
+        signature = urllib.quote_plus(base64.encodestring(hmac.digest()).strip())
+        
         return "https://authorize.payments-sandbox.amazon.com%s&awsSignature=%s" % (url, signature)
 
     def make_payment(self, amount, sender_token, charge_fee_to="Recipient", reference=None, senderReference=None, recipientReference=None, senderDescription=None, recipientDescription=None, callerDescription=None, metadata=None, transactionDate=None):
