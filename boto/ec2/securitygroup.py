@@ -74,6 +74,11 @@ class SecurityGroup(EC2Object):
 
     def add_rule(self, ip_protocol, from_port, to_port,
                  src_group_name, src_group_owner_id, cidr_ip):
+        """
+        Add a rule to the SecurityGroup object.  Note that this method
+        only changes the local version of the object.  No information
+        is sent to EC2.
+        """
         rule = IPPermissions(self)
         rule.ip_protocol = ip_protocol
         rule.from_port = from_port
@@ -83,6 +88,11 @@ class SecurityGroup(EC2Object):
 
     def remove_rule(self, ip_protocol, from_port, to_port,
                     src_group_name, src_group_owner_id, cidr_ip):
+        """
+        Remove a rule to the SecurityGroup object.  Note that this method
+        only changes the local version of the object.  No information
+        is sent to EC2.
+        """
         target_rule = None
         for rule in self.rules:
             if rule.ip_protocol == ip_protocol:
