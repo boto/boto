@@ -372,10 +372,13 @@ class Key(object):
                     been successfully transmitted to S3 and the second representing
                     the total number of bytes that need to be transmitted.
                     
-        :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the cb
+                       parameter this parameter determines the granularity
+                       of the callback by defining the maximum number of
+                       times the callback will be called during the file
+                       transfer. Providing a negative integer will cause
+                       your callback to be called with each buffer read.
              
         """
         def sender(http_conn, method, path, data, headers):
@@ -389,6 +392,8 @@ class Key(object):
             if cb:
                 if num_cb > 2:
                     cb_count = self.size / self.BufferSize / (num_cb-2)
+                elif num_cb < 0:
+                    cb_count = -1
                 else:
                     cb_count = 0
                 i = total_bytes = 0
@@ -399,7 +404,7 @@ class Key(object):
                 if cb:
                     total_bytes += len(l)
                     i += 1
-                    if i == cb_count:
+                    if i == cb_count or cb_count == -1:
                         cb(total_bytes, self.size)
                         i = 0
                 l = fp.read(self.BufferSize)
