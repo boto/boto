@@ -80,7 +80,7 @@ class AutoScaleConnection(AWSQueryConnection):
                   }
         if op.startswith('Create'):
             if as_group.availability_zones:
-                zones = self.availability_zones
+                zones = as_group.availability_zones
             else:
                 zones = [as_group.availability_zone]
             self.build_list_params(params, as_group.load_balancers,
