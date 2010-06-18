@@ -61,6 +61,7 @@ class MTurkConnection(AWSQueryConnection):
                   'Description' : description,
                   'AssignmentDurationInSeconds' : duration}
         params.update(MTurkConnection.get_price_as_price(reward).get_as_params('Reward'))
+        params.update(qual_req.get_as_params())
 
         if keywords:
             params['Keywords'] = keywords
@@ -118,7 +119,7 @@ class MTurkConnection(AWSQueryConnection):
     
     def create_hit(self, hit_type=None, question=None, lifetime=60*60*24*7, max_assignments=1, 
                    title=None, description=None, keywords=None, reward=None,
-                   duration=60*60*24*7, approval_delay=None, annotation=None, qual_req=None, 
+                   duration=60*60*24*7, approval_delay=None, annotation=None,
                    questions=None, qualifications=None, response_groups=None):
         """
         Creates a new HIT.
