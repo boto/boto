@@ -67,8 +67,8 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
                                      delimiter=delimiter, headers=headers)
         for k in rs:
             yield k
-        key_marker = rs.key_marker
-        version_id_marker = rs.version_id_marker
+        key_marker = rs.next_key_marker
+        version_id_marker = rs.next_version_id_marker
         more_results= rs.is_truncated
         
 class VersionedBucketListResultSet:
