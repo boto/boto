@@ -26,6 +26,7 @@ Auto Scaling service.
 
 import boto
 from boto.connection import AWSQueryConnection
+from boto.region import RegionInfo
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
@@ -37,11 +38,13 @@ class AutoScaleConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'autoscale_version', '2009-05-15')
     Endpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                'autoscaling.amazonaws.com')
+    DefaultRegionName = 'us-east-1'
+    DefaultRegionEndpoint = 'autoscaling.amazonaws.com'
     SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, host=Endpoint, debug=1,
+                 proxy_user=None, proxy_pass=None, debug=1,
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to the AutoScaling service.
@@ -49,10 +52,16 @@ class AutoScaleConnection(AWSQueryConnection):
         B{Note:} The host argument is overridden by the host specified in the
                  boto configuration file.
         """
+        if not region:
+            region = EC2RegionInfo(self, self.DefaultRegionName,
+                                   self.DefaultRegionEndpoint)
+        self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
-                aws_secret_access_key, is_secure, port, proxy, proxy_port,
-                proxy_user, proxy_pass, host, debug,
-                https_connection_factory, path=path)
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path=path)
 
     def build_list_params(self, params, items, label):
         """ items is a list of dictionaries or strings:
