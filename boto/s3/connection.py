@@ -110,7 +110,8 @@ class S3Connection(AWSAuthConnection):
                 path=path, provider=provider)
 
     def __iter__(self):
-        return self.get_all_buckets()
+        for bucket in self.get_all_buckets():
+            yield bucket
 
     def __contains__(self, bucket_name):
        return not (self.lookup(bucket_name) is None)
