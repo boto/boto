@@ -26,14 +26,13 @@ import base64
 import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
-import base64
 
 
 class BotoClientError(StandardError):
     """
     General Boto Client error (error accessing AWS)
     """
-    
+
     def __init__(self, reason):
         StandardError.__init__(self)
         self.reason = reason
@@ -53,9 +52,9 @@ class S3PermissionsError(BotoClientError):
     Permissions error when accessing a bucket or key on S3.
     """
     pass
-    
+
 class BotoServerError(StandardError):
-    
+
     def __init__(self, status, reason, body=None):
         StandardError.__init__(self)
         self.status = status
@@ -293,9 +292,15 @@ class S3DataError(BotoClientError):
 class FPSResponseError(BotoServerError):
     pass
 
-
 class InvalidUriError(Exception):
   """Exception raised when URI is invalid."""
+
+  def __init__(self, message):
+    Exception.__init__(self)
+    self.message = message
+
+class InvalidAclError(Exception):
+  """Exception raised when ACL XML is invalid."""
 
   def __init__(self, message):
     Exception.__init__(self)

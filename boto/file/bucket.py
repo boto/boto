@@ -40,12 +40,19 @@ class Bucket(object):
     def __str__(self):
         return 'anonymous bucket for file://' + self.contained_key
 
-    def delete_key(self, key_name, headers=None):
+    def delete_key(self, key_name, headers=None,
+                   version_id=None, mfa_token=None):
         """
         Deletes a key from the bucket.
 
         :type key_name: string
         :param key_name: The key name to delete
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+        
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: Unused in this subclass.
         """
         try:
           os.remove(key_name)
@@ -64,13 +71,16 @@ class Bucket(object):
         key = Key(self.name, self.contained_key)
         return SimpleResultSet([key])
 
-    def get_key(self, key_name, headers=None):
+    def get_key(self, key_name, headers=None, version_id=None):
         """
         Check to see if a particular key exists within the bucket.
         Returns: An instance of a Key object or None
 
         :type key_name: string
         :param key_name: The name of the key to retrieve
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
 
         :rtype: :class:`boto.file.key.Key`
         :returns: A Key object from this bucket.

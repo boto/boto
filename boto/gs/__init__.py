@@ -22,10 +22,6 @@
 
 import boto
 
-boto.check_extensions(__name__, __path__)
+from bucket import Bucket
 
-from connection import GSConnection as Connection
-from boto.s3.key import Key
-from boto.s3.bucket import Bucket
-
-__all__ = ['Connection']
+__all__ = ['Bucket']
