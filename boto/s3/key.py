@@ -521,12 +521,10 @@ class Key(object):
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
                     
         :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will force the storage
+        :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
-                                   REDUCED_REDUNDANCY regardless of the
-                                   storage class of the key being copied.
-                                   The Reduced Redundancy Storage (RRS)
-                                   feature of S3, provides lower
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
 
         """
@@ -594,12 +592,10 @@ class Key(object):
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
                     
         :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will force the storage
+        :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
-                                   REDUCED_REDUNDANCY regardless of the
-                                   storage class of the key being copied.
-                                   The Reduced Redundancy Storage (RRS)
-                                   feature of S3, provides lower
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
 
         """
@@ -647,12 +643,10 @@ class Key(object):
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
                     
         :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will force the storage
+        :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
-                                   REDUCED_REDUNDANCY regardless of the
-                                   storage class of the key being copied.
-                                   The Reduced Redundancy Storage (RRS)
-                                   feature of S3, provides lower
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
 
         """
