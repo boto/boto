@@ -131,9 +131,8 @@ class FPSConnection(AWSQueryConnection):
             canonical += "%s%s" % (k, str(params[k]))
 
         url = "/cobranded-ui/actions/start?%s" % ( url[1:])
-        signature= boto.utils.encode(self.aws_secret_access_key, url, True)
         hmac = self.hmac.copy()
-        hmac.updaet(canonical)
+        hmac.update(canonical)
         signature = urllib.quote_plus(base64.encodestring(hmac.digest()).strip())
         
         return "https://authorize.payments-sandbox.amazon.com%s&awsSignature=%s" % (url, signature)
