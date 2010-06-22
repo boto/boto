@@ -19,8 +19,9 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
-# This class encapsulates the provider_specific header differences.
+"""
+This class encapsulates the provider-specific header differences.
+"""
 
 import os
 import boto
@@ -51,7 +52,6 @@ class Provider(object):
     CredentialMap = {
         'aws' : ('aws_access_key_id', 'aws_secret_access_key'),
         'google' : ('gs_access_key_id', 'gs_secret_access_key'),
-        'euca' : ('euca_access_key_id', 'euca_secret_access_key'),
     }
 
     AclClassMap = {

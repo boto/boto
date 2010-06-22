@@ -140,9 +140,8 @@ class Bucket(object):
         if response.status == 200:
             response.read()
             k = self.key_class(self)
-            provider_headers = self.connection.provider_headers
-            k.metadata = boto.utils.get_aws_metadata(response.msg,
-                                                     provider_headers)
+            provider = self.connection.provider
+            k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
@@ -364,8 +363,8 @@ class Bucket(object):
         if mfa_token:
             if not headers:
                 headers = {}
-            provider_headers = self.connection.provider_headers
-            headers[provider_headers.mfa_header] = ' '.join(mfa_token)
+            provider = self.connection.provider
+            headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
@@ -428,15 +427,15 @@ class Bucket(object):
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
-        provider_headers = self.connection.provider_headers
-        headers = {provider_headers.copy_source_header : src}
+        provider = self.connection.provider
+        headers = {provider.copy_source_header : src}
         if storage_class != 'STANDARD':
-            headers[provider_headers.storage_class] = storage_class
+            headers[provider.storage_class] = storage_class
         if metadata:
-            headers[provider_headers.metadata_directive_header] = 'REPLACE'
+            headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata)
         else:
-            headers[provider_headers.metadata_directive_header] = 'COPY'
+            headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers)
         body = response.read()
@@ -458,9 +457,9 @@ class Bucket(object):
         assert acl_str in CannedACLStrings
 
         if headers:
-            headers[self.connection.provider_headers.acl_header] = acl_str
+            headers[self.connection.provider.acl_header] = acl_str
         else:
-            headers={self.connection.provider_headers.acl_header: acl_str}
+            headers={self.connection.provider.acl_header: acl_str}
 
         query_args='acl'
         if version_id:
@@ -711,8 +710,8 @@ class Bucket(object):
         if mfa_token:
             if not headers:
                 headers = {}
-            provider_headers = self.connection.provider_headers
-            headers[provider_headers.mfa_header] = ' '.join(mfa_token)
+            provider = self.connection.provider
+            headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='versioning', headers=headers)
         body = response.read()
