@@ -384,6 +384,7 @@ class EC2Connection(AWSQueryConnection):
                       kernel_id=None, ramdisk_id=None,
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
+                      disable_api_termination=False,
                       instance_initiated_shutdown_behavior=None):
         """
         Runs an image on EC2.
@@ -429,6 +430,10 @@ class EC2Connection(AWSQueryConnection):
                                  describing the EBS volumes associated
                                  with the Image.
 
+        :type disable_api_termination: bool
+        :param disable_api_termination: If True, the instances will be locked and will
+                                        not be able to be terminated via the API.
+
         :type instance_initiated_shutdown_behavior: string
         :param instance_initiated_shutdown_behavior: Specifies whether the instance's
                                                      EBS volues are stopped (i.e. detached)
@@ -471,6 +476,8 @@ class EC2Connection(AWSQueryConnection):
             params['SubnetId'] = subnet_id
         if block_device_map:
             block_device_map.build_list_params(params)
+        if disable_api_termination:
+            params['DisableApiTermination'] = 'true'
         if instance_initiated_shutdown_behavior:
             val = instance_initiated_shutdown_behavior
             params['InstanceInitiatedShutdownBehavior'] = val
@@ -608,6 +615,13 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
+        # Allow a bool to be passed in for value of disableApiTermination
+        if attribute == 'disableApiTermination':
+            if isinstance(value, bool):
+                if value:
+                    value = 'true'
+                else:
+                    value = 'false'
         params = {'InstanceId' : instance_id,
                   'Attribute' : attribute,
                   'Value' : value}
