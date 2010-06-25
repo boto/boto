@@ -274,11 +274,8 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if no_reboot:
             params['NoReboot'] = 'true'
-        rs = self.get_object('CreateImage', params, Image)
-        image_id = getattr(rs, 'imageId', None)
-        if not image_id:
-            image_id = getattr(rs, 'ImageId', None)
-        return image_id
+        img = self.get_object('CreateImage', params, Image)
+        return img.id
         
     # ImageAttribute methods
 
