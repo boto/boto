@@ -27,7 +27,7 @@ from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
-from datetime import datetime
+from datetime import datetime, date
 from boto.exception import SDBPersistenceError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
@@ -54,6 +54,7 @@ class SDBConverter:
                           Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime),
+                          date : (self.encode_date, self.decode_date),
                           Blob: (self.encode_blob, self.decode_blob),
                       }
 
@@ -257,6 +258,18 @@ class SDBConverter:
         except:
             return None
 
+    def encode_date(self, value):
+        if isinstance(value, str) or isinstance(value, unicode):
+            return value
+        return value.isoformat()
+
+    def decode_date(self, value):
+        try:
+            value = value.split("-")
+            return date(int(value[0]), int(value[1]), int(value[2]))
+        except:
+            return None
+
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
             return 'None'
@@ -273,6 +286,8 @@ class SDBConverter:
     def encode_blob(self, value):
         if not value:
             return None
+        if isinstance(value, str):
+            return value
 
         if not value.id:
             bucket = self.manager.get_blob_bucket()

@@ -348,6 +348,36 @@ class DateTimeProperty(Property):
     def now(self):
         return datetime.datetime.utcnow()
 
+class DateProperty(Property):
+
+    data_type = datetime.date
+    type_name = 'Date'
+
+    def __init__(self, verbose_name=None, auto_now=False, auto_now_add=False, name=None,
+                 default=None, required=False, validator=None, choices=None, unique=False):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+        self.auto_now = auto_now
+        self.auto_now_add = auto_now_add
+
+    def default_value(self):
+        if self.auto_now or self.auto_now_add:
+            return self.now()
+        return Property.default_value(self)
+
+    def validate(self, value):
+        if value == None:
+            return
+        if not isinstance(value, self.data_type):
+            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+
+    def get_value_for_datastore(self, model_instance):
+        if self.auto_now:
+            setattr(model_instance, self.name, self.now())
+        return Property.get_value_for_datastore(self, model_instance)
+
+    def now(self):
+        return datetime.date.today()
+
 class ReferenceProperty(Property):
 
     data_type = Key
