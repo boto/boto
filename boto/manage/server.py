@@ -321,6 +321,9 @@ class Server(Model):
         if elastic_ip != None and instances.__len__() > 0:
             instance = instances[0]
             print 'Waiting for instance to start so we can set its elastic IP address...'
+            # Sometimes we get a message from ec2 that says that the instance does not exist.
+            # Hopefully the following delay will giv eec2 enough time to get to a stable state:
+            time.sleep(5) 
             while instance.update() != 'running':
                 time.sleep(1)
             instance.use_ip(elastic_ip)
