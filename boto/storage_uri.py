@@ -124,14 +124,14 @@ class StorageUri(object):
             raise InvalidUriError('acl_class on bucket-less URI (%s)' %
                                   self.uri)
         conn = self.connect()
-        return conn.acl_class
+        return conn.provider.acl_class
 
     def canned_acls(self):
         if self.bucket_name is None:
             raise InvalidUriError('canned_acls on bucket-less URI (%s)' %
                                   self.uri)
         conn = self.connect()
-        return conn.canned_acls
+        return conn.provider.canned_acls
 
 
 class BucketStorageUri(StorageUri):
@@ -254,9 +254,9 @@ class BucketStorageUri(StorageUri):
         conn = self.connect()
         return conn.get_all_buckets(headers)
 
-    def get_provider_headers(self):
+    def get_provider(self):
         conn = self.connect()
-        return conn.provider_headers
+        return conn.provider
 
     def set_acl(self, acl_or_str, key_name='', validate=True, headers=None,
                 version_id=None):
