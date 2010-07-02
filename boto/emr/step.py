@@ -115,7 +115,7 @@ class StreamingStep(Step):
         :param cache_archives: A list of jar archives to be bundled with the job
         :type step_args: list(str)
         :param step_args: A list of arguments to pass to the step
-        :type input: str
+        :type input: str or a list of str
         :param input: The input uri
         :type output: str
         :param output: The output uri
