@@ -76,7 +76,7 @@ class JobFlow(EmrObject):
                   'InstanceCount',
                   'JobFlowId',
                   'KeepJobAliveWhenNoSteps',
-                  'LogURI',
+                  'LogUri',
                   'MasterPublicDnsName', 
                   'MasterInstanceId',
                   'Name',
