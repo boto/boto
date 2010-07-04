@@ -120,8 +120,8 @@ class S3Connection(AWSAuthConnection):
         """
         Taken from the AWS book Python examples and modified for use with boto
         """
-        if type(expiration_time) != time.struct_time:
-            raise 'Policy document must include a valid expiration Time object'
+        assert type(expiration_time) == time.struct_time, \
+            'Policy document must include a valid expiration Time object'
 
         # Convert conditions object mappings to condition statements
 
