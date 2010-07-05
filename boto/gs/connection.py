@@ -19,8 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
+from boto.gs.bucket import Bucket            
 
 class GSConnection(S3Connection):
 
@@ -35,4 +37,4 @@ class GSConnection(S3Connection):
         S3Connection.__init__(self, gs_access_key_id, gs_secret_access_key,
                  is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                  host, debug, https_connection_factory, calling_format, path,
-                 "google")
+                 "google", boto.gs.bucket.Bucket)

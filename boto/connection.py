@@ -1,6 +1,9 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010 Google
 # Copyright (c) 2008 rPath, Inc.
 # Copyright (c) 2009 The Echo Nest Corporation
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -50,8 +53,9 @@ import os
 import xml.sax
 import Queue
 import boto
-from boto.exception import BotoClientError, BotoServerError
+from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 from boto.resultset import ResultSet
+from boto.provider import Provider
 import boto.utils
 from boto import config, UserAgent, handler
 
@@ -99,35 +103,7 @@ class ConnectionPool:
     def __repr__(self):
         return 'ConnectionPool:%s' % ','.join(self._hosts._dict.keys())
 
-class ProviderCredentials(object):
-
-    ProviderCredentialMap = {
-        'aws' : ('aws_access_key_id', 'aws_secret_access_key'),
-        'google' : ('gs_access_key_id', 'gs_secret_access_key'),
-    }
-
-    def __init__(self, provider, access_key=None, secret_key=None):
-        self.provider = provider
-        self.access_key = None
-        self.secret_key = None
-        provider_map = self.ProviderCredentialMap[self.provider]
-        access_key_name, secret_key_name = self.ProviderCredentialMap[provider]
-        if access_key:
-            self.access_key = access_key
-        elif os.environ.has_key(access_key_name.upper()):
-            self.access_key = os.environ[access_key_name.upper()]
-        elif config.has_option('Credentials', access_key_name):
-            self.access_key = config.get('Credentials', access_key_name)
-
-        if secret_key:
-            self.secret_key = secret_key
-        elif os.environ.has_key(secret_key_name.upper()):
-            self.secret_key = os.environ[secret_key_name.upper()]
-        elif config.has_option('Credentials', secret_key_name):
-            self.secret_key = config.get('Credentials', secret_key_name)
-
 class AWSAuthConnection(object):
-
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
@@ -168,10 +144,14 @@ class AWSAuthConnection(object):
         """
 
         self.num_retries = 5
+        # Override passed-in is_secure setting if value was defined in config.
+        if config.has_option('Boto', 'is_secure'):
+          is_secure = config.getboolean('Boto', 'is_secure')
         self.is_secure = is_secure
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
-        self.http_exceptions = (httplib.HTTPException, socket.error, socket.gaierror)
+        self.http_exceptions = (httplib.HTTPException, socket.error,
+                                socket.gaierror)
         # define values in socket exceptions we don't want to catch
         self.socket_exception_values = (errno.EINTR,)
         if https_connection_factory is not None:
@@ -194,10 +174,14 @@ class AWSAuthConnection(object):
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
 
-        self.provider_credentials = ProviderCredentials(provider,
-                                                        aws_access_key_id,
-                                                        aws_secret_access_key)
+        self.provider = Provider(provider,
+                                 aws_access_key_id,
+                                 aws_secret_access_key)
         
+        # allow config file to override default host
+        if self.provider.host:
+            self.host = self.provider.host
+
         # initialize an HMAC for signatures, make copies with each request
         self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
         if sha256:
@@ -225,13 +209,13 @@ class AWSAuthConnection(object):
     connection = property(connection)
 
     def aws_access_key_id(self):
-        return self.provider_credentials.access_key
+        return self.provider.access_key
     aws_access_key_id = property(aws_access_key_id)
     gs_access_key_id = aws_access_key_id
     access_key = aws_access_key_id
 
     def aws_secret_access_key(self):
-        return self.provider_credentials.secret_key
+        return self.provider.secret_key
     aws_secret_access_key = property(aws_secret_access_key)
     gs_secret_access_key = aws_secret_access_key
     secret_key = aws_secret_access_key
@@ -497,12 +481,16 @@ class AWSAuthConnection(object):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
-        c_string = boto.utils.canonical_string(method, path, headers)
+        c_string = boto.utils.canonical_string(method, path, headers,
+                                               None, self.provider)
         boto.log.debug('Canonical: %s' % c_string)
         hmac = self.hmac.copy()
         hmac.update(c_string)
         b64_hmac = base64.encodestring(hmac.digest()).strip()
-        headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
+        auth_hdr = self.provider.auth_header
+        headers['Authorization'] = ("%s %s:%s" %
+                                    (auth_hdr,
+                                     self.aws_access_key_id, b64_hmac))
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,
@@ -510,7 +498,6 @@ class AWSAuthConnection(object):
 
         boto.log.debug('closing all HTTP connections')
         self.connection = None  # compat field
-
 
 class AWSQueryConnection(AWSAuthConnection):
 
@@ -674,4 +661,3 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
-

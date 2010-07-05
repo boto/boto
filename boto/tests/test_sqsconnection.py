@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -85,9 +87,9 @@ class SQSConnectionTest (unittest.TestCase):
         message_body = 'This is a test\n'
         message = queue.new_message(message_body)
         queue.write(message)
-        time.sleep(30)
+        time.sleep(60)
         assert queue.count_slow() == 1
-        time.sleep(30)
+        time.sleep(90)
 
         # now read the message from the queue with a 10 second timeout
         message = queue.read(visibility_timeout=10)
@@ -102,13 +104,6 @@ class SQSConnectionTest (unittest.TestCase):
         time.sleep(30)
         message = queue.read()
         assert message
-
-        if c.APIVersion == '2007-05-01':
-            # now terminate the visibility timeout for this message
-            message.change_visibility(0)
-            # now see if we can read it in the queue
-            message = queue.read()
-            assert message
 
         # now delete the message
         queue.delete_message(message)

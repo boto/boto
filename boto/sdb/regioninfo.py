@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,21 +22,11 @@
 # IN THE SOFTWARE.
 #
 
-from boto.ec2.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo
 
 class SDBRegionInfo(RegionInfo):
 
-    def connect(self, **kw_params):
-        """
-        Connect to this Region's endpoint. Returns an SDBConnection
-        object pointing to the endpoint associated with this region.
-        You may pass any of the arguments accepted by the SDBConnection
-        object's constructor as keyword arguments and they will be
-        passed along to the SDBConnection object.
-        
-        :rtype: :class:`boto.sdb.connection.SDBConnection`
-        :return: The connection to this regions endpoint
-        """
+    def __init__(self, connection=None, name=None, endpoint=None):
         from boto.sdb.connection import SDBConnection
-        return SDBConnection(region=self, **kw_params)
-
+        RegionInfo.__init__(self, connection, name, endpoint,
+                            SDBConnection)

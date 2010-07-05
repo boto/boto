@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -112,8 +114,12 @@ class S3VersionTest (unittest.TestCase):
         mfa_sn = raw_input('MFA S/N: ')
         mfa_code = raw_input('MFA Code: ')
         bucket.configure_versioning(True, mfa_delete=True, mfa_token=(mfa_sn, mfa_code))
-        time.sleep(5)
-        d = bucket.get_versioning_status()
+        i = 0
+        for i in range(1,8):
+            time.sleep(2**i)
+            d = bucket.get_versioning_status()
+            if d['Versioning'] == 'Enabled' and d['MfaDelete'] == 'Enabled':
+                break
         assert d['Versioning'] == 'Enabled'
         assert d['MfaDelete'] == 'Enabled'
         

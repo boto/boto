@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -26,8 +28,11 @@ import logging
 import logging.config
 from boto.exception import InvalidUriError
 
-Version = '1.9b'
-UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
+__verion__ = '2.0a1'
+Version = __version__ # for backware compatibility
+__svn_version__ = '$Rev$'
+
+UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
 config = Config()
 
 def init_logging():
@@ -306,13 +311,13 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_provider='file', debug=False):
+def storage_uri(uri_str, default_scheme='file', debug=False):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
-    :type default_provider: string
-    :param default_provider: default provider for provider-less URIs.
+    :type default_scheme: string
+    :param default_scheme: default scheme for scheme-less URIs.
 
     :rtype: :class:`boto.StorageUri` subclass
     :return: StorageUri subclass for given URI.
@@ -323,23 +328,23 @@ def storage_uri(uri_str, default_provider='file', debug=False):
         gs://bucket
         s3://bucket
         filename
-    The last example uses the default provider ('file', unless overridden)
+    The last example uses the default scheme ('file', unless overridden)
     """
 
     # Manually parse URI components instead of using urlparse.urlparse because
     # what we're calling URIs don't really fit the standard syntax for URIs
     # (the latter includes an optional host/net location part).
-    end_provider_idx = uri_str.find('://')
-    if end_provider_idx == -1:
-      provider = default_provider.lower()
+    end_scheme_idx = uri_str.find('://')
+    if end_scheme_idx == -1:
+      scheme = default_scheme.lower()
       path = uri_str
     else:
-      provider = uri_str[0:end_provider_idx].lower()
-      path = uri_str[end_provider_idx + 3:]
+      scheme = uri_str[0:end_scheme_idx].lower()
+      path = uri_str[end_scheme_idx + 3:]
 
-    if provider not in ['file', 's3', 'gs']:
-        raise InvalidUriError('Unrecognized provider "%s"' % provider)
-    if provider == 'file':
+    if scheme not in ['file', 's3', 'gs']:
+        raise InvalidUriError('Unrecognized scheme "%s"' % scheme)
+    if scheme == 'file':
         # For file URIs we have no bucket name, and use the complete path
         # (minus 'file://') as the object name.
         return FileStorageUri(path, debug)
@@ -356,4 +361,4 @@ def storage_uri(uri_str, default_provider='file', debug=False):
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]
-        return BucketStorageUri(provider, bucket_name, object_name, debug)
+        return BucketStorageUri(scheme, bucket_name, object_name, debug)

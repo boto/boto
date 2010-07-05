@@ -53,8 +53,9 @@ class AutoScaleConnection(AWSQueryConnection):
                  boto configuration file.
         """
         if not region:
-            region = EC2RegionInfo(self, self.DefaultRegionName,
-                                   self.DefaultRegionEndpoint)
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint,
+                                AutoScaleConnection)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,

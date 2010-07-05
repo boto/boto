@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -113,7 +115,7 @@ class EC2ConnectionTest (unittest.TestCase):
         except socket.error:
             pass
         # now kill the instance and delete the security group
-        instance.stop()
+        instance.terminate()
         # unfortunately, I can't delete the sg within this script
         #sg.delete()
         

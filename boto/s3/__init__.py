@@ -1,4 +1,6 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,10 +22,3 @@
 # IN THE SOFTWARE.
 #
 
-import boto
-
-from connection import S3Connection as Connection
-from key import Key
-from bucket import Bucket
-
-__all__ = [Connection, Key, Bucket]

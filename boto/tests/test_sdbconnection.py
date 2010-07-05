@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -67,12 +69,14 @@ class SDBConnectionTest (unittest.TestCase):
         assert item['name2'] == attrs_1['name2']
 
         # try a search or two
-        rs = domain.query("['name1'='%s']" % same_value)
+        query = 'select * from %s where name1="%s"' % (domain_name, same_value)
+        rs = domain.select(query)
         n = 0
         for item in rs:
             n += 1
         assert n == 2
-        rs = domain.query("['name2'='diff_value_2']")
+        query = 'select * from %s where name2="diff_value_2"' % domain_name
+        rs = domain.select(query)
         n = 0
         for item in rs:
             n += 1

@@ -1,6 +1,4 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2010, Eucalyptus Systems, Inc.
-# All rights reserved.
+# Copyright 2010 Google Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -16,19 +14,41 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.regioninfo import RegionInfo
 
-class EC2RegionInfo(RegionInfo):
-    """
-    Represents an EC2 Region
-    """
-    
-    def __init__(self, connection=None, name=None, endpoint=None):
-        from boto.ec2.connection import EC2Connection
-        RegionInfo.__init__(self, connection, name, endpoint,
-                            EC2Connection)
+class User:
+    def __init__(self, parent=None, id='', name=''):
+        if parent:
+            parent.owner = self
+        self.type = None
+        self.id = id
+        self.name = name
+
+    def __repr__(self):
+        return self.id
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Name':
+            self.name = value
+        elif name == 'ID':
+            self.id = value
+        else:
+            setattr(self, name, value)
+
+    def to_xml(self, element_name='Owner'):
+        if self.type:
+            s = '<%s type="%s">' % (element_name, self.type)
+        else:
+            s = '<%s>' % element_name
+        s += '<ID>%s</ID>' % self.id
+        if self.name:
+            s += '<Name>%s</Name>' % self.name
+        s += '</%s>' % element_name
+        return s

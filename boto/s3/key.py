@@ -28,7 +28,6 @@ import boto.utils
 from boto.exception import S3ResponseError, S3DataError, BotoClientError
 from boto.s3.user import User
 from boto import UserAgent
-
 try:
     from hashlib import md5
 except ImportError:
@@ -45,6 +44,7 @@ class Key(object):
         self.bucket = bucket
         self.name = name
         self.metadata = {}
+        self.cache_control = None
         self.content_type = self.DefaultContentType
         self.content_encoding = None
         self.filename = None
@@ -84,9 +84,10 @@ class Key(object):
         return self
 
     def handle_version_headers(self, resp):
-        self.version_id = resp.getheader('x-amz-version-id', None)
-        self.source_version_id = resp.getheader('x-amz-copy-source-version-id', None)
-        if resp.getheader('x-amz-delete-marker', 'false') == 'true':
+        provider = self.bucket.connection.provider
+        self.version_id = resp.getheader(provider.version_id, None)
+        self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
+        if resp.getheader(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
         else:
             self.delete_marker = False
@@ -112,7 +113,9 @@ class Key(object):
                 body = self.resp.read()
                 raise S3ResponseError(self.resp.status, self.resp.reason, body)
             response_headers = self.resp.msg
-            self.metadata = boto.utils.get_aws_metadata(response_headers)
+            provider = self.bucket.connection.provider
+            self.metadata = boto.utils.get_aws_metadata(response_headers,
+                                                        provider)
             for name,value in response_headers.items():
                 if name.lower() == 'content-length':
                     self.size = int(value)
@@ -124,6 +127,8 @@ class Key(object):
                     self.content_encoding = value
                 elif name.lower() == 'last-modified':
                     self.last_modified = value
+                elif name.lower() == 'cache-control':
+                    self.cache_control = value
             self.handle_version_headers(self.resp)
 
     def open_write(self, headers=None):
@@ -433,9 +438,12 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
-            headers['x-amz-storage-class'] = self.storage_class
+            provider = self.bucket.connection.provider
+            headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Type'):
             self.content_type = headers['Content-Type']
+        if headers.has_key('Content-Encoding'):
+            self.content_encoding = headers['Content-Encoding']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
@@ -445,7 +453,8 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
-        headers = boto.utils.merge_meta(headers, self.metadata)
+        headers = boto.utils.merge_meta(headers, self.metadata,
+                                        self.bucket.connection.provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
                                                    sender=sender)
@@ -519,7 +528,6 @@ class Key(object):
         :param md5: If you need to compute the MD5 for any reason prior to upload,
                     it's silly to have to do it twice so this param, if present, will be
                     used as the MD5 values of the file.  Otherwise, the checksum will be computed.
-                    
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
@@ -528,13 +536,17 @@ class Key(object):
                                    redundancy at lower storage cost.
 
         """
+        provider = self.bucket.connection.provider
         if headers is None:
             headers = {}
         if policy:
-            headers['x-amz-acl'] = policy
+            headers[provider.acl_header] = policy
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
-            headers['x-amz-storage-class'] = self.storage_class
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
+                # TODO - What if the provider doesn't support reduced reduncancy?
+                # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
@@ -597,7 +609,6 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
-
         """
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
@@ -648,7 +659,6 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
-
         """
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
@@ -693,7 +703,7 @@ class Key(object):
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
-
+        
         query_args = ''
         if torrent:
             query_args = 'torrent'

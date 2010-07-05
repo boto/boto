@@ -41,7 +41,7 @@ class StorageUri(object):
         raise BotoClientError('Attempt to instantiate abstract StorageUri '
                               'class')
 
-    def __str__(self):
+    def __repr__(self):
         """Returns string representation of URI."""
         return self.uri
 
@@ -52,7 +52,7 @@ class StorageUri(object):
     def connect(self, access_key_id=None, secret_access_key=None, **kwargs):
         """
         Opens a connection to appropriate provider, depending on provider
-        portion of URI. Requires Credentials defined in boto config file (see 
+        portion of URI. Requires Credentials defined in boto config file (see
         boto/pyami/config.py).
         @type storage_uri: StorageUri
         @param storage_uri: StorageUri specifying a bucket or a bucket+object
@@ -61,32 +61,34 @@ class StorageUri(object):
         """
 
         if not self.connection:
-            if self.provider == 's3':
+            if self.scheme == 's3':
                 from boto.s3.connection import S3Connection
                 self.connection = S3Connection(access_key_id,
                                                secret_access_key, **kwargs)
-            elif self.provider == 'gs':
+            elif self.scheme == 'gs':
                 from boto.gs.connection import GSConnection
                 self.connection = GSConnection(access_key_id,
                                                secret_access_key, **kwargs)
-            elif self.provider == 'file':
+            elif self.scheme == 'file':
                 from boto.file.connection import FileConnection
                 self.connection = FileConnection(self)
             else:
-                raise InvalidUriError('Unrecognized provider "%s"' %
-                                      self.provider)
+                raise InvalidUriError('Unrecognized scheme "%s"' %
+                                      self.scheme)
         self.connection.debug = self.debug
         return self.connection
 
-    def delete_key(self, headers=None):
+    def delete_key(self, validate=True, headers=None, version_id=None,
+                   mfa_token=None):
         if not self.object_name:
             raise InvalidUriError('delete_key on object-less URI (%s)' %
                                   self.uri)
-        bucket = self.get_bucket()
-        return bucket.delete_key(self.object_name, headers)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.delete_key(self.object_name, headers, version_id,
+                                 mfa_token)
 
     def get_all_keys(self, headers=None, **params):
-        bucket = self.get_bucket(headers)
+        bucket = self.get_bucket(validate, headers)
         return bucket.get_all_keys(headers, params)
 
     def get_bucket(self, validate=True, headers=None):
@@ -96,25 +98,40 @@ class StorageUri(object):
         conn = self.connect()
         return conn.get_bucket(self.bucket_name, validate, headers)
 
-    def get_key(self):
+    def get_key(self, validate=True, headers=None, version_id=None):
         if not self.object_name:
             raise InvalidUriError('get_key on object-less URI (%s)' % self.uri)
-        bucket = self.get_bucket()
-        return bucket.get_key(self.object_name)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_key(self.object_name, headers, version_id)
 
-    def new_key(self):
+    def new_key(self, validate=True, headers=None):
         if not self.object_name:
             raise InvalidUriError('new_key on object-less URI (%s)' % self.uri)
-        bucket = self.get_bucket()
+        bucket = self.get_bucket(validate, headers)
         return bucket.new_key(self.object_name)
 
-    def get_contents_as_string(self, headers=None, cb=None, num_cb=10,
-                               torrent=False):
+    def get_contents_as_string(self, validate=True, headers=None, cb=None,
+                               num_cb=10, torrent=False, version_id=None):
         if not self.object_name:
             raise InvalidUriError('get_contents_as_string on object-less URI '
                                   '(%s)' % self.uri)
-        return self.get_key().get_contents_as_string(headers, cb, num_cb,
-                                                     torrent)
+        key = self.get_key(validate, headers)
+        return key.get_contents_as_string(headers, cb, num_cb, torrent,
+                                          version_id)
+
+    def acl_class(self):
+        if self.bucket_name is None:
+            raise InvalidUriError('acl_class on bucket-less URI (%s)' %
+                                  self.uri)
+        conn = self.connect()
+        return conn.provider.acl_class
+
+    def canned_acls(self):
+        if self.bucket_name is None:
+            raise InvalidUriError('canned_acls on bucket-less URI (%s)' %
+                                  self.uri)
+        conn = self.connect()
+        return conn.provider.canned_acls
 
 
 class BucketStorageUri(StorageUri):
@@ -123,12 +140,12 @@ class BucketStorageUri(StorageUri):
     Callers should instantiate this class by calling boto.storage_uri().
     """
 
-    def __init__(self, provider, bucket_name=None, object_name=None,
+    def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=False):
-        """Instantiate a BucketStorageUri from provider,bucket,object tuple.
+        """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
-        @type provider: string
-        @param provider: provider name (gs, s3, etc.)
+        @type scheme: string
+        @param scheme: URI scheme naming the storage provider (gs, s3, etc.)
         @type bucket_name: string
         @param bucket_name: bucket name
         @type object_name: string
@@ -137,19 +154,19 @@ class BucketStorageUri(StorageUri):
         @param debug: whether to turn on debugging on calls to this class
 
         After instantiation the components are available in the following
-        fields: uri, provider, bucket_name, object_name.
+        fields: uri, scheme, bucket_name, object_name.
         """
 
-        self.provider = provider
+        self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
         if self.bucket_name and self.object_name:
-            self.uri = ('%s://%s/%s' % (self.provider, self.bucket_name,
-                        self.object_name))
+            self.uri = ('%s://%s/%s' % (self.scheme, self.bucket_name,
+                                        self.object_name))
         elif self.bucket_name:
-            self.uri = ('%s://%s' % (self.provider, self.bucket_name))
+            self.uri = ('%s://%s/' % (self.scheme, self.bucket_name))
         else:
-            self.uri = ('%s://' % self.provider)
+            self.uri = ('%s://' % self.scheme)
         self.debug = debug
 
     def clone_replace_name(self, new_name):
@@ -162,16 +179,46 @@ class BucketStorageUri(StorageUri):
         if not self.bucket_name:
             raise InvalidUriError('clone_replace_name() on bucket-less URI %s' %
                                   self.uri)
-        return BucketStorageUri(self.provider, self.bucket_name, new_name,
+        return BucketStorageUri(self.scheme, self.bucket_name, new_name,
                                 self.debug)
 
-    def get_acl(self, headers=None):
+    def get_acl(self, validate=True, headers=None, version_id=None):
         if not self.bucket_name:
             raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
-        bucket = self.get_bucket()
-        # This works for both bucket- and object- level ACL (former passes
+        bucket = self.get_bucket(validate, headers)
+        # This works for both bucket- and object- level ACLs (former passes
         # key_name=None):
-        return bucket.get_acl(self.object_name, headers)
+        return bucket.get_acl(self.object_name, headers, version_id)
+
+    def add_email_grant(self, permission, email_address, recursive=False,
+                        validate=True, headers=None):
+        if not self.bucket_name:
+            raise InvalidUriError('add_email_grant on bucket-less URI (%s)' %
+                                  self.uri)
+        if not self.object_name:
+            bucket = self.get_bucket(validate, headers)
+            bucket.add_email_grant(permission, email_address, recursive,
+                                   headers)
+        else:
+            key = self.get_key(validate, headers)
+            key.add_email_grant(permission, email_address)
+
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       validate=True, headers=None):
+        if not self.bucket_name:
+            raise InvalidUriError('add_user_grant on bucket-less URI (%s)' % self.uri)
+        if not self.object_name:
+            bucket = self.get_bucket(validate, headers)
+            bucket.add_user_grant(permission, user_id, recursive, headers)
+        else:
+            key = self.get_key(validate, headers)
+            key.add_user_grant(permission, user_id)
+
+    def list_grants(self, headers=None):
+        if not self.bucket_name:
+            raise InvalidUriError('list_grants on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(headers)
+        return bucket.list_grants(headers)
 
     def names_container(self):
         """Returns True if this URI names a bucket (vs. an object).
@@ -181,7 +228,7 @@ class BucketStorageUri(StorageUri):
     def names_singleton(self):
         """Returns True if this URI names an object (vs. a bucket).
         """
-        return self.object_name is not None and  self.object_name != ''
+        return self.object_name is not None and self.object_name != ''
 
     def is_file_uri(self):
         return False
@@ -207,18 +254,25 @@ class BucketStorageUri(StorageUri):
         conn = self.connect()
         return conn.get_all_buckets(headers)
 
-    def set_acl(self, acl_or_str, key_name='', headers=None):
+    def get_provider(self):
+        conn = self.connect()
+        return conn.provider
+
+    def set_acl(self, acl_or_str, key_name='', validate=True, headers=None,
+                version_id=None):
         if not self.bucket_name:
             raise InvalidUriError('set_acl on bucket-less URI (%s)' %
                                   self.uri)
-        self.get_bucket().set_acl(acl_or_str, key_name, headers)
+        self.get_bucket(validate, headers).set_acl(acl_or_str, key_name, headers,
+                        version_id)
 
-    def set_canned_acl(self, acl_str, headers=None):
+    def set_canned_acl(self, acl_str, validate=True, headers=None,
+                       version_id=None):
         if not self.object_name:
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
                                   self.uri)
-        key = self.get_key()
-        key.set_canned_acl(acl_str, headers)
+        key = self.get_key(validate, headers)
+        key.set_canned_acl(acl_str, headers, version_id)
 
 
 class FileStorageUri(StorageUri):
@@ -234,13 +288,15 @@ class FileStorageUri(StorageUri):
 
         @type object_name: string
         @param object_name: object name
+        @type debug: boolean
+        @param debug: whether to enable debugging on this StorageUri
 
         After instantiation the components are available in the following
-        fields: uri, provider, bucket_name (always blank for this "anonymous"
+        fields: uri, scheme, bucket_name (always blank for this "anonymous"
         bucket), object_name.
         """
 
-        self.provider = 'file'
+        self.scheme = 'file'
         self.bucket_name = ''
         self.object_name = object_name
         self.uri = 'file://' + object_name

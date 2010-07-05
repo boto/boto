@@ -1,4 +1,6 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,10 +24,11 @@
 import boto
 from boto import handler
 from boto.resultset import ResultSet
-from boto.s3.acl import Policy, CannedACLStrings, Grant
+from boto.s3.acl import ACL, Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
+from boto.s3.user import User
 from boto.exception import S3ResponseError, S3PermissionsError, S3CopyError
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
@@ -36,7 +39,7 @@ import re
 
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
-class Bucket:
+class Bucket(object):
 
     BucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
        <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -139,7 +142,8 @@ class Bucket:
         if response.status == 200:
             response.read()
             k = self.key_class(self)
-            k.metadata = boto.utils.get_aws_metadata(response.msg)
+            provider = self.connection.provider
+            k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
@@ -361,7 +365,8 @@ class Bucket:
         if mfa_token:
             if not headers:
                 headers = {}
-            headers['x-amz-mfa'] = ' '.join(mfa_token)
+            provider = self.connection.provider
+            headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
@@ -424,14 +429,15 @@ class Bucket:
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
-        headers = {'x-amz-copy-source' : src}
+        provider = self.connection.provider
+        headers = {provider.copy_source_header : src}
         if storage_class != 'STANDARD':
-            headers['x-amz-storage-class'] = storage_class
+            headers[provider.storage_class] = storage_class
         if metadata:
-            headers['x-amz-metadata-directive'] = 'REPLACE'
+            headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata)
         else:
-            headers['x-amz-metadata-directive'] = 'COPY'
+            headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers)
         body = response.read()
@@ -453,9 +459,9 @@ class Bucket:
         assert acl_str in CannedACLStrings
 
         if headers:
-            headers['x-amz-acl'] = acl_str
+            headers[self.connection.provider.acl_header] = acl_str
         else:
-            headers={'x-amz-acl': acl_str}
+            headers={self.connection.provider.acl_header: acl_str}
 
         query_args='acl'
         if version_id:
@@ -706,7 +712,8 @@ class Bucket:
         if mfa_token:
             if not headers:
                 headers = {}
-            headers['x-amz-mfa'] = ' '.join(mfa_token)
+            provider = self.connection.provider
+            headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='versioning', headers=headers)
         body = response.read()

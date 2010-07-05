@@ -1,4 +1,6 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -36,9 +38,12 @@
 Some handy utility functions used by several classes.
 """
 
+import base64
+import hmac
 import re
 import urllib
 import urllib2
+import imp
 import subprocess
 import StringIO
 import time
@@ -60,15 +65,16 @@ except ImportError:
     import md5
     _hashfn = md5.md5
 
-METADATA_PREFIX = 'x-amz-meta-'
-AMAZON_HEADER_PREFIX = 'x-amz-'
-
 # generates the aws canonical string for the given parameters
-def canonical_string(method, path, headers, expires=None):
+def canonical_string(method, path, headers, expires=None,
+                     provider=None):
+    if not provider:
+        provider = boto.provider.get_default()
     interesting_headers = {}
     for key in headers:
         lk = key.lower()
-        if headers[key] != None and (lk in ['content-md5', 'content-type', 'date'] or lk.startswith(AMAZON_HEADER_PREFIX)):
+        if headers[key] != None and (lk in ['content-md5', 'content-type', 'date'] or
+                                     lk.startswith(provider.header_prefix)):
             interesting_headers[lk] = headers[key].strip()
 
     # these keys get empty strings if they don't exist
@@ -78,11 +84,11 @@ def canonical_string(method, path, headers, expires=None):
         interesting_headers['content-md5'] = ''
 
     # just in case someone used this.  it's not necessary in this lib.
-    if interesting_headers.has_key('x-amz-date'):
+    if interesting_headers.has_key(provider.date_header):
         interesting_headers['date'] = ''
 
     # if you're using expires for query string auth, then it trumps date
-    # (and x-amz-date)
+    # (and provider.date_header)
     if expires:
         interesting_headers['date'] = str(expires)
 
@@ -92,7 +98,7 @@ def canonical_string(method, path, headers, expires=None):
     buf = "%s\n" % method
     for key in sorted_header_keys:
         val = interesting_headers[key]
-        if key.startswith(AMAZON_HEADER_PREFIX):
+        if key.startswith(provider.header_prefix):
             buf += "%s:%s\n" % (key, val)
         else:
             buf += "%s\n" % val
@@ -122,7 +128,10 @@ def canonical_string(method, path, headers, expires=None):
 
     return buf
 
-def merge_meta(headers, metadata):
+def merge_meta(headers, metadata, provider=None):
+    if not provider:
+        provider = boto.provider.get_default()
+    metadata_prefix = provider.metadata_prefix
     final_headers = headers.copy()
     for k in metadata.keys():
         if k.lower() in ['cache-control', 'content-md5', 'content-type',
@@ -130,16 +139,19 @@ def merge_meta(headers, metadata):
                          'date', 'expires']:
             final_headers[k] = metadata[k]
         else:
-            final_headers[METADATA_PREFIX + k] = metadata[k]
+            final_headers[metadata_prefix + k] = metadata[k]
 
     return final_headers
 
-def get_aws_metadata(headers):
+def get_aws_metadata(headers, provider=None):
+    if not provider:
+        provider = boto.provider.get_default()
+    metadata_prefix = provider.metadata_prefix
     metadata = {}
     for hkey in headers.keys():
-        if hkey.lower().startswith(METADATA_PREFIX):
+        if hkey.lower().startswith(metadata_prefix):
             val = urllib.unquote_plus(headers[hkey])
-            metadata[hkey[len(METADATA_PREFIX):]] = unicode(val, 'utf-8')
+            metadata[hkey[len(metadata_prefix):]] = unicode(val, 'utf-8')
             del headers[hkey]
     return metadata
 

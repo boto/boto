@@ -1,4 +1,6 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -63,13 +65,13 @@ class _CallingFormat:
         return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
-    
+
     @assert_case_insensitive
     def get_bucket_server(self, server, bucket):
         return '%s.%s' % (bucket, server)
 
 class VHostCallingFormat(_CallingFormat):
-    
+
     @assert_case_insensitive
     def get_bucket_server(self, server, bucket):
         return bucket
@@ -91,7 +93,7 @@ class Location:
     USWest = 'us-west-1'
 
 #boto.set_stream_logger('s3')
-    
+
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = 's3.amazonaws.com'
@@ -101,8 +103,10 @@ class S3Connection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/', provider='aws'):
+                 calling_format=SubdomainCallingFormat(), path='/', provider='aws',
+                 bucket_class=Bucket):
         self.calling_format = calling_format
+        self.bucket_class = bucket_class
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -115,6 +119,17 @@ class S3Connection(AWSAuthConnection):
 
     def __contains__(self, bucket_name):
        return not (self.lookup(bucket_name) is None)
+
+    def set_bucket_class(self, bucket_class):
+        """
+        Set the Bucket class associated with this bucket.  By default, this
+        would be the boto.s3.key.Bucket class but if you want to subclass that
+        for some reason this allows you to associate your new class.
+        
+        :type bucket_class: class
+        :param bucket_class: A subclass of Bucket that can be more specific
+        """
+        self.bucket_class = bucket_class
 
     def build_post_policy(self, expiration_time, conditions):
         """
@@ -218,7 +233,7 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "key", "value": key})
 
         # HTTPS protocol will be used if the secure HTTP option is enabled.
-        url = '%s://%s.s3.amazonaws.com/' % (http_method, bucket_name)
+        url = '%s://%s.%s/' % (http_method, bucket_name, self.host)
 
         return {"action": url, "fields": fields}
 
@@ -231,7 +246,8 @@ class S3Connection(AWSAuthConnection):
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
         canonical_str = boto.utils.canonical_string(method, auth_path,
-                                                    headers, expires)
+                                                    headers, expires,
+                                                    self.provider)
         hmac_copy = self.hmac.copy()
         hmac_copy.update(canonical_str)
         b64_hmac = base64.encodestring(hmac_copy.digest()).strip()
@@ -240,8 +256,10 @@ class S3Connection(AWSAuthConnection):
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                              self.aws_access_key_id)
-            if 'x-amz-security-token' in headers:
-                query_part += '&x-amz-security-token=%s' % urllib.quote(headers['x-amz-security-token']);
+            sec_hdr = self.provider.security_token_header
+            if sec_hdr in headers:
+                query_part += ('&%s=%s' % (sec_hdr,
+                                           urllib.quote(headers[sec_hdr])));
         else:
             query_part = ''
         if force_http:
@@ -258,7 +276,7 @@ class S3Connection(AWSAuthConnection):
         body = response.read()
         if response.status > 300:
             raise S3ResponseError(response.status, response.reason, body)
-        rs = ResultSet([('Bucket', Bucket)])
+        rs = ResultSet([('Bucket', self.bucket_class)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
@@ -278,7 +296,7 @@ class S3Connection(AWSAuthConnection):
         return rs.ID
 
     def get_bucket(self, bucket_name, validate=True, headers=None):
-        bucket = Bucket(self, bucket_name)
+        bucket = self.bucket_class(self, bucket_name)
         if validate:
             bucket.get_all_keys(headers, maxkeys=0)
         return bucket
@@ -315,9 +333,9 @@ class S3Connection(AWSAuthConnection):
 
         if policy:
             if headers:
-                headers['x-amz-acl'] = policy
+                headers[self.provider.acl_header] = policy
             else:
-                headers = {'x-amz-acl' : policy}
+                headers = {self.provider.acl_header : policy}
         if location == Location.DEFAULT:
             data = ''
         else:
@@ -329,7 +347,7 @@ class S3Connection(AWSAuthConnection):
         if response.status == 409:
             raise S3CreateError(response.status, response.reason, body)
         if response.status == 200:
-            return Bucket(self, bucket_name)
+            return self.bucket_class(self, bucket_name)
         else:
             raise S3ResponseError(response.status, response.reason, body)
 
@@ -341,7 +359,7 @@ class S3Connection(AWSAuthConnection):
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
             query_args=None, sender=None):
-        if isinstance(bucket, Bucket):
+        if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
             key = key.name
