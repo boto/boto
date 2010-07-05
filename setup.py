@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -39,7 +41,7 @@ setup(name = "boto",
                  "bin/list_instances", "bin/taskadmin", "bin/kill_instance", 
                  "bin/bundle_image", "bin/pyami_sendmail"],
       url = "http://code.google.com/p/boto/",
-      packages = [ 'boto', 'boto.sqs', 'boto.s3',
+      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.gs', 'boto.file',
                    'boto.ec2', 'boto.ec2.cloudwatch', 'boto.ec2.autoscale', 'boto.ec2.elb',
                    'boto.sdb', 'boto.sdb.persist', 'boto.sdb.db', 'boto.sdb.db.manager',
                    'boto.mturk', 'boto.pyami', 'boto.mashups', 'boto.contrib', 'boto.manage',
