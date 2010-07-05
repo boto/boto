@@ -28,7 +28,7 @@ import logging
 import logging.config
 from boto.exception import InvalidUriError
 
-__verion__ = '2.0a1'
+__version__ = '2.0a1'
 Version = __version__ # for backware compatibility
 __svn_version__ = '$Rev$'
 
