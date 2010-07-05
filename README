@@ -1,7 +1,9 @@
-boto 1.9a
-22-Dec-2009
+boto 2.0a1
+05-Jul-2010
 
-Copyright (c) 2006-2009 Mitch Garnaat <mitch@garnaat.org>
+Copyright (c) 2006-2010 Mitch Garnaat <mitch@garnaat.org>
+Copyright (c) 2010, Eucalyptus Systems, Inc.
+All rights reserved.
 
 http://code.google.com/p/boto
 
