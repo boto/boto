@@ -69,7 +69,7 @@ class EC2Connection(AWSQueryConnection):
         B{Note:} The host argument is overridden by the host specified in the boto configuration file.
         """
         if not region:
-            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint, EC2Connection)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -1430,7 +1430,10 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
         """
-        return self.get_list('DescribeRegions', None, [('item', RegionInfo)])
+        regions =  self.get_list('DescribeRegions', None, [('item', RegionInfo)])
+        for region in regions:
+            region.connection_cls = EC2Connection
+        return regions
 
     #
     # Reservation methods
