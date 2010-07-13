@@ -183,6 +183,11 @@ class Model(object):
         if self.id and not self._loaded:
             self._manager.load_object(self)
 
+    def reload(self):
+        if self.id:
+            self._loaded = False
+            self._manager.load_object(self)
+
     def put(self):
         self._manager.save_object(self)
 
