@@ -26,7 +26,7 @@ Auto Scaling service.
 
 import boto
 from boto.connection import AWSQueryConnection
-from boto.region import RegionInfo
+from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
