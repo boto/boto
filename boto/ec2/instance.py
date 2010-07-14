@@ -100,6 +100,7 @@ class Instance(EC2Object):
         self.root_device_type = None
         self.block_device_mapping = None
         self.state_reason = None
+        self.group_name = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -185,6 +186,9 @@ class Instance(EC2Object):
                 self.persistent = True
             else:
                 self.persistent = False
+        elif name == 'groupName':
+            if self._in_monitoring_element:
+                self.group_name = value
         else:
             setattr(self, name, value)
 

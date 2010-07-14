@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -46,13 +46,14 @@ from boto.ec2.spotinstancerequest import SpotInstanceRequest
 from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
+from boto.ec2.placementgroup import PlacementGroup
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-11-30')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2010-06-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
@@ -69,7 +70,7 @@ class EC2Connection(AWSQueryConnection):
         B{Note:} The host argument is overridden by the host specified in the boto configuration file.
         """
         if not region:
-            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint, EC2Connection)
+            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -382,7 +383,8 @@ class EC2Connection(AWSQueryConnection):
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
                       disable_api_termination=False,
-                      instance_initiated_shutdown_behavior=None):
+                      instance_initiated_shutdown_behavior=None,
+                      placement_group=None):
         """
         Runs an image on EC2.
 
@@ -428,8 +430,9 @@ class EC2Connection(AWSQueryConnection):
                                  with the Image.
 
         :type disable_api_termination: bool
-        :param disable_api_termination: If True, the instances will be locked and will
-                                        not be able to be terminated via the API.
+        :param disable_api_termination: If True, the instances will be locked
+                                        and will not be able to be terminated
+                                        via the API.
 
         :type instance_initiated_shutdown_behavior: string
         :param instance_initiated_shutdown_behavior: Specifies whether the instance's
@@ -438,6 +441,10 @@ class EC2Connection(AWSQueryConnection):
                                                      the instance is shutdown by the
                                                      owner.  Valid values are:
                                                      stop | terminate
+
+        :type placement_group: string
+        :param placement_group: If specified, this is the name of the placement
+                                group in which the instance(s) will be launched.
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
@@ -463,6 +470,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceType'] = instance_type
         if placement:
             params['Placement.AvailabilityZone'] = placement
+        if placement_group:
+            params['Placement.GroupName'] = placement_group
         if kernel_id:
             params['KernelId'] = kernel_id
         if ramdisk_id:
@@ -1617,3 +1626,54 @@ class EC2Connection(AWSQueryConnection):
         rs = self.get_object('GetPasswordData', params, ResultSet)
         return rs.passwordData
 
+    # 
+    # Cluster Placement Groups
+    #
+
+    def get_all_placement_groups(self, groupnames=None):
+        """
+        Get all placement groups associated with your account in a region.
+
+        :type groupnames: list
+        :param groupnames: A list of the names of placement groups to retrieve.
+                           If not provided, all placement groups will be returned.
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.placementgroup.PlacementGroup`
+        """
+        params = {}
+        if groupnames:
+            self.build_list_params(params, groupnames, 'GroupName')
+        return self.get_list('DescribePlacementGroups', params, [('item', PlacementGroup)])
+
+    def create_placement_group(self, name, strategy='cluster'):
+        """
+        Create a new placement group for your account.
+        This will create the placement group within the region you
+        are currently connected to.
+
+        :type name: string
+        :param name: The name of the new placement group
+
+        :type strategy: string
+        :param strategy: The placement strategy of the new placement group.
+                         Currently, the only acceptable value is "cluster".
+
+        :rtype: :class:`boto.ec2.placementgroup.PlacementGroup`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+        """
+        params = {'GroupName':name, 'Strategy':strategy}
+        group = self.get_status('CreatePlacementGroup', params)
+        return group
+
+    def delete_placement_group(self, name):
+        """
+        Delete a placement group from your account.
+
+        :type key_name: string
+        :param key_name: The name of the keypair to delete
+        """
+        params = {'GroupName':name}
+        return self.get_status('DeletePlacementGroup', params)
+
+    
