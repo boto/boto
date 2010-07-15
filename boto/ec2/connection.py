@@ -382,7 +382,8 @@ class EC2Connection(AWSQueryConnection):
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
                       disable_api_termination=False,
-                      instance_initiated_shutdown_behavior=None):
+                      instance_initiated_shutdown_behavior=None,
+                      private_ip_address=None):
         """
         Runs an image on EC2.
 
@@ -421,6 +422,12 @@ class EC2Connection(AWSQueryConnection):
 
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances for VPC.
+
+        :type private_ip_address: string
+        :param private_ip_address: If you're using VPC, you can optionally use
+                                   this parameter to assign the instance a
+                                   specific available IP address from the
+                                   subnet (e.g., 10.0.0.25).
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -471,6 +478,8 @@ class EC2Connection(AWSQueryConnection):
             params['Monitoring.Enabled'] = 'true'
         if subnet_id:
             params['SubnetId'] = subnet_id
+        if private_ip_address:
+            params['PrivateIpAddress'] = private_ip_address
         if block_device_map:
             block_device_map.build_list_params(params)
         if disable_api_termination:
