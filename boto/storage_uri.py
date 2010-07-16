@@ -49,6 +49,12 @@ class StorageUri(object):
         """Returns true if two URIs are equal."""
         return self.uri == uri.uri
 
+    def check_response(self, resp, level, uri):
+        if resp is None:
+            raise InvalidUriError('Attempt to get %s for "%s" failed. This '
+                                  'probably indicates the URI is invalid.' %
+                                  (level, uri))
+
     def connect(self, access_key_id=None, secret_access_key=None, **kwargs):
         """
         Opens a connection to appropriate provider, depending on provider
@@ -96,13 +102,17 @@ class StorageUri(object):
             raise InvalidUriError('get_bucket on bucket-less URI (%s)' %
                                   self.uri)
         conn = self.connect()
-        return conn.get_bucket(self.bucket_name, validate, headers)
+        bucket = conn.get_bucket(self.bucket_name, validate, headers)
+        self.check_response(bucket, 'bucket', self.uri)
+        return bucket
 
     def get_key(self, validate=True, headers=None, version_id=None):
         if not self.object_name:
             raise InvalidUriError('get_key on object-less URI (%s)' % self.uri)
         bucket = self.get_bucket(validate, headers)
-        return bucket.get_key(self.object_name, headers, version_id)
+        key = bucket.get_key(self.object_name, headers, version_id)
+        self.check_response(key, 'key', self.uri)
+        return key
 
     def new_key(self, validate=True, headers=None):
         if not self.object_name:
@@ -124,14 +134,18 @@ class StorageUri(object):
             raise InvalidUriError('acl_class on bucket-less URI (%s)' %
                                   self.uri)
         conn = self.connect()
-        return conn.provider.acl_class
+        acl_class = conn.provider.acl_class
+        self.check_response(acl_class, 'acl_class', self.uri)
+        return acl_class
 
     def canned_acls(self):
         if self.bucket_name is None:
             raise InvalidUriError('canned_acls on bucket-less URI (%s)' %
                                   self.uri)
         conn = self.connect()
-        return conn.provider.canned_acls
+        canned_acls = conn.provider.canned_acls
+        self.check_response(canned_acls, 'canned_acls', self.uri)
+        return canned_acls
 
 
 class BucketStorageUri(StorageUri):
@@ -188,7 +202,9 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         # This works for both bucket- and object- level ACLs (former passes
         # key_name=None):
-        return bucket.get_acl(self.object_name, headers, version_id)
+        acl = bucket.get_acl(self.object_name, headers, version_id)
+        self.check_response(acl, 'acl', self.uri)
+        return acl
 
     def add_email_grant(self, permission, email_address, recursive=False,
                         validate=True, headers=None):
@@ -256,7 +272,9 @@ class BucketStorageUri(StorageUri):
 
     def get_provider(self):
         conn = self.connect()
-        return conn.provider
+        provider = conn.provider
+        self.check_response(provider, 'provider', self.uri)
+        return provider
 
     def set_acl(self, acl_or_str, key_name='', validate=True, headers=None,
                 version_id=None):
