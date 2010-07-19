@@ -381,7 +381,7 @@ class MTurkConnection(AWSQueryConnection):
         """
         Helper to process the xml response from AWS
         """
-        response = self.make_request(request_type, params)
+        response = self.make_request(request_type, params, verb='POST')
         return self._process_response(response, marker_elems)
 
     def _process_response(self, response, marker_elems=None):
