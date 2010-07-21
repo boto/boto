@@ -407,7 +407,10 @@ class EC2Connection(AWSQueryConnection):
         :param user_data: The user data passed to the launched instances
 
         :type instance_type: string
-        :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+        :param instance_type: The type of instance to run.  Current choices are:
+                              m1.small | m1.large | m1.xlarge | c1.medium |
+                              c1.xlarge | m2.xlarge | m2.2xlarge |
+                              m2.4xlarge | cc1.4xlarge
 
         :type placement: string
         :param placement: The availability zone in which to launch the instances
