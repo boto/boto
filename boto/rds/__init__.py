@@ -191,7 +191,7 @@ class RDSConnection(AWSQueryConnection):
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
         if multi_az:
-            param['MultiAZ'] = 'true'
+            params['MultiAZ'] = 'true'
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 
@@ -330,7 +330,7 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBInstanceIdentifier' : id}
         return self.get_object('RebootDBInstance', params, DBInstance)
-    
+
     # DBParameterGroup methods
 
     def get_all_dbparameter_groups(self, groupname=None, max_records=None,
