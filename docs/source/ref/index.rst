@@ -21,6 +21,7 @@ API Reference
    s3
    sdb
    services
+   sns
    sqs
    vpc
    emr
