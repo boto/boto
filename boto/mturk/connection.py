@@ -179,6 +179,19 @@ class MTurkConnection(AWSQueryConnection):
         # Submit
         return self._process_request('CreateHIT', params, [('HIT', HIT),])
 
+    def change_hit_type_of_hit(self, hit_id, hit_type):
+        """
+        Change the HIT type of an existing HIT. Note that the reward associated
+        with the new HIT type must match the reward of the current HIT type in
+        order for the operation to be valid.
+        \thit_id is a string
+        \thit_type is a string
+        """
+        params = {'HITId' : hit_id,
+                  'HITTypeId': hit_type}
+
+        return self._process_request('ChangeHITTypeOfHIT', params)
+    
     def get_reviewable_hits(self, hit_type=None, status='Reviewable',
                             sort_by='Expiration', sort_direction='Ascending', 
                             page_size=10, page_number=1):
@@ -318,12 +331,12 @@ class MTurkConnection(AWSQueryConnection):
         """
         Expire a HIT that is no longer needed.
 
-    The effect is identical to the HIT expiring on its own. The HIT no longer appears on the 
-    Mechanical Turk web site, and no new Workers are allowed to accept the HIT. Workers who 
-    have accepted the HIT prior to expiration are allowed to complete it or return it, or 
-    allow the assignment duration to elapse (abandon the HIT). Once all remaining assignments 
-    have been submitted, the expired HIT becomes "reviewable", and will be returned by a call 
-    to GetReviewableHITs.
+        The effect is identical to the HIT expiring on its own. The HIT no longer appears on the 
+        Mechanical Turk web site, and no new Workers are allowed to accept the HIT. Workers who 
+        have accepted the HIT prior to expiration are allowed to complete it or return it, or 
+        allow the assignment duration to elapse (abandon the HIT). Once all remaining assignments 
+        have been submitted, the expired HIT becomes "reviewable", and will be returned by a call 
+        to GetReviewableHITs.
         """
         params = {'HITId' : hit_id,}
         return self._process_request('ForceExpireHIT', params)
