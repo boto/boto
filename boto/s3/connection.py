@@ -33,17 +33,22 @@ from boto.resultset import ResultSet
 from boto.exception import S3ResponseError, S3CreateError, BotoClientError
 
 def check_lowercase_bucketname(n):
-    """ Bucket names must not contain uppercase characters. We check for
-        this by appending a lowercase character and testing with islower().
-        Note this also covers cases like numeric bucket names with dashes.
-        >>> check_lowercase_bucketname("Aaaa")
-        Traceback (most recent call last):
-        ...
-        BotoClientError: S3Error: Bucket names cannot contain upper-case characters when using either the sub-domain or virtual hosting calling format.
-        >>> check_lowercase_bucketname("1234-5678-9123")
-        True
-        >>> check_lowercase_bucketname("abcdefg1234")
-        True
+    """
+    Bucket names must not contain uppercase characters. We check for
+    this by appending a lowercase character and testing with islower().
+    Note this also covers cases like numeric bucket names with dashes.
+        
+    >>> check_lowercase_bucketname("Aaaa")
+    Traceback (most recent call last):
+    ...
+    BotoClientError: S3Error: Bucket names cannot contain upper-case
+    characters when using either the sub-domain or virtual hosting calling
+    format.
+    
+    >>> check_lowercase_bucketname("1234-5678-9123")
+    True
+    >>> check_lowercase_bucketname("abcdefg1234")
+    True
     """
     if not (n + 'a').islower():
         raise BotoClientError("Bucket names cannot contain upper-case " \
