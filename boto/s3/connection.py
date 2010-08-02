@@ -32,12 +32,29 @@ from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import S3ResponseError, S3CreateError, BotoClientError
 
+def check_lowercase_bucketname(n):
+    """ Bucket names must not contain uppercase characters. We check for
+        this by appending a lowercase character and testing with islower().
+        Note this also covers cases like numeric bucket names with dashes.
+        >>> check_lowercase_bucketname("Aaaa")
+        Traceback (most recent call last):
+        ...
+        BotoClientError: S3Error: Bucket names cannot contain upper-case characters when using either the sub-domain or virtual hosting calling format.
+        >>> check_lowercase_bucketname("1234-5678-9123")
+        True
+        >>> check_lowercase_bucketname("abcdefg1234")
+        True
+    """
+    if not (n + 'a').islower():
+        raise BotoClientError("Bucket names cannot contain upper-case " \
+            "characters when using either the sub-domain or virtual " \
+            "hosting calling format.")
+    return True
+
 def assert_case_insensitive(f):
     def wrapper(*args, **kwargs):
-        if len(args) == 3 and not (args[2].islower() or args[2].isalnum()):
-            raise BotoClientError("Bucket names cannot contain upper-case " \
-            "characters when using either the sub-domain or virtual " \
-        "hosting calling format.")
+        if len(args) == 3 and check_lowercase_bucketname(args[2]):
+            pass
         return f(*args, **kwargs)
     return wrapper
 
@@ -327,9 +344,7 @@ class S3Connection(AWSAuthConnection):
         :param policy: A canned ACL policy that will be applied to the new key in S3.
              
         """
-        # TODO: Not sure what Exception Type from boto.exception to use.
-        if not bucket_name.islower():
-            raise Exception("Bucket names must be lower case.")
+        check_lowercase_bucketname(bucket_name)
 
         if policy:
             if headers:
