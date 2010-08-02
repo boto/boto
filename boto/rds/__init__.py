@@ -28,22 +28,51 @@ from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
 from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
+from boto.rds.regioninfo import RDSRegionInfo
+
+def regions():
+    """
+    Get all available regions for the RDS service.
+        
+    :rtype: list
+    :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
+    """
+    return [RDSRegionInfo(name='us-east-1',
+                          endpoint='rds.amazonaws.com'),
+            RDSRegionInfo(name='eu-west-1',
+                          endpoint='eu-west-1.rds.amazonaws.com'),
+            RDSRegionInfo(name='us-west-1',
+                          endpoint='us-west-1.rds.amazonaws.com'),
+            RDSRegionInfo(name='ap-southeast-1',
+                          endpoint='ap-southeast-1.rds.amazonaws.com')
+            ]
+
+def connect_to_region(region_name):
+    for region in regions():
+        if region.name == region_name:
+            return region.connect()
+    return None
 
 #boto.set_stream_logger('rds')
 
 class RDSConnection(AWSQueryConnection):
 
-    DefaultHost = 'rds.amazonaws.com'
+    DefaultRegionName = 'us-east-1'
+    DefaultRegionEndpoint = 'rds.amazonaws.com'
     APIVersion = '2009-10-16'
     SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, host=DefaultHost, debug=0,
-                 https_connection_factory=None, path='/'):
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None, path='/'):
+        if not region:
+            region = RDSRegionInfo(self, self.DefaultRegionName,
+                                   self.DefaultRegionEndpoint)
+        self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user,
-                                    proxy_pass, host, debug,
+                                    proxy_pass, self.region.endpoint, debug,
                                     https_connection_factory, path)
 
     # DB Instance methods

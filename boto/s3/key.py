@@ -83,6 +83,18 @@ class Key(object):
     def __iter__(self):
         return self
 
+    def get_md5_from_hexdigest(self, md5_hexdigest):
+        """
+        A utility function to create the 2-tuple (md5hexdigest, base64md5)
+        from just having a precalculated md5_hexdigest.
+        """
+        import binascii
+        digest = binascii.unhexlify(md5_hexdigest)
+        base64md5 = base64.encodestring(digest)
+        if base64md5[-1] == '\n':
+            base64md5 = base64md5[0:-1]
+        return (md5_hexdigest, base64md5)
+    
     def handle_version_headers(self, resp):
         provider = self.bucket.connection.provider
         self.version_id = resp.getheader(provider.version_id, None)
@@ -552,6 +564,11 @@ class Key(object):
         if self.bucket != None:
             if not md5:
                 md5 = self.compute_md5(fp)
+            else:
+                # even if md5 is provided, still need to set size of content
+                fp.seek(0, 2)
+                self.size = fp.tell()
+                fp.seek(0)
             self.md5 = md5[0]
             self.base64md5 = md5[1]
             if self.name == None:

@@ -788,7 +788,8 @@ class EC2Connection(AWSQueryConnection):
                                  with the Image.
 
         :rtype: Reservation
-        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
+                 associated with the request for machines
         """
         params = {'LaunchSpecification.ImageId':image_id,
                   'SpotPrice' : price}
