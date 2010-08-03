@@ -135,8 +135,8 @@ class LoadBalancer(object):
         return self.connection.delete_load_balancer(self.name)
 
     def configure_health_check(self, health_check):
-        self.connection.configure_health_check(self.name, health_check)
+        return self.connection.configure_health_check(self.name, health_check)
 
     def get_instance_health(self, instances=None):
-        self.connection.describe_instance_health(self.name, instances)
+        return self.connection.describe_instance_health(self.name, instances)
 
