@@ -63,3 +63,43 @@ class Key(S3Key):
         acl = self.get_acl()
         acl.add_user_grant(permission, user_id)
         self.set_acl(acl)
+
+    def add_group_email_grant(self, permission, email_address):
+        """
+        Convenience method that provides a quick way to add an email group grant to a key.
+        This method retrieves the current ACL, creates a new grant based on the parameters
+        passed in, adds that grant to the ACL and then PUT's the new ACL back to GS.
+        
+        :type permission: string
+        :param permission: The permission being granted.  Should be one of:
+                           READ|FULL_CONTROL
+                           See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+                           for more details on permissions.
+        
+        :type email_address: string
+        :param email_address: The email address associated with the Google Group you are granting
+                              the permission to.
+        """
+        acl = self.get_acl()
+        acl.add_group_email_grant(permission, email_address)
+        self.set_acl(acl)
+
+    def add_group_grant(self, permission, group_id):
+        """
+        Convenience method that provides a quick way to add a canonical group grant to a key.
+        This method retrieves the current ACL, creates a new grant based on the parameters
+        passed in, adds that grant to the ACL and then PUT's the new ACL back to GS.
+        
+        :type permission: string
+        :param permission: The permission being granted.  Should be one of:
+                            READ|FULL_CONTROL
+                            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+                            for more details on permissions.
+        
+        :type group_id: string
+        :param group_id: The canonical group id associated with the Google
+                          Groups account you are granting the permission to.
+        """
+        acl = self.get_acl()
+        acl.add_group_grant(permission, group_id)
+        self.set_acl(acl)
