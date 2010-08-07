@@ -56,7 +56,7 @@ class DistributionConfig:
                 
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2008-12-01/">\n'
+        s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
         s += '  <Origin>%s</Origin>\n' % self.origin
         s += '  <CallerReference>%s</CallerReference>\n' % self.caller_reference
         for cname in self.cnames:
