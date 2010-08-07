@@ -86,7 +86,8 @@ class DistributionConfig:
             s += '  <Prefix>%s</Prefix>\n' % self.logging.prefix
             s += '</Logging>\n'
         if self.default_root_object:
-            s += '<DefaultRootObject>%s</DefaultRootObject>\n'
+            dro = self.default_root_object
+            s += '<DefaultRootObject>%s</DefaultRootObject>\n' % dro
         s += '</DistributionConfig>\n'
         return s
 
