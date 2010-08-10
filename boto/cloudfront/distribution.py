@@ -283,8 +283,8 @@ class Distribution:
                                         self.config.enabled, self.config.caller_reference,
                                         self.config.cnames, self.config.comment,
                                         self.config.origin_access_identity,
-                                        self.config.trusted_signers,
-                                        self.default_root_object)
+                                        self.config.trusted_signers)
+                                        self.config.default_root_object)
         if enabled != None:
             new_config.enabled = enabled
         if cnames != None:
