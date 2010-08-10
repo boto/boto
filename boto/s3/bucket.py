@@ -139,7 +139,9 @@ class Bucket(object):
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
-        if response.status == 200:
+        # Allow any success status (2xx) - for example this lets us
+        # support Range gets, which return status 206:
+        if response.status/100 == 2:
             response.read()
             k = self.key_class(self)
             provider = self.connection.provider
