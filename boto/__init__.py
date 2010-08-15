@@ -24,7 +24,7 @@ import os, sys
 import logging
 import logging.config
 
-Version = '1.9b'
+Version = '2.0-jaraco'
 UserAgent = 'Boto/%s (%s)' % (Version, sys.platform)
 config = Config()
 

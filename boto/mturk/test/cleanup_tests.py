@@ -1,67 +1,45 @@
-from boto.mturk.connection import MTurkConnection
+import itertools
+
+from _init_environment import SetHostMTurkConnection
+
+def description_filter(substring):
+	return lambda hit: substring in hit.Title
+
+def disable_hit(hit):
+	return conn.disable_hit(hit.HITId)
+
+def dispose_hit(hit):
+	# assignments must be first approved or rejected
+	for assignment in conn.get_assignments(hit.HITId):
+		if assignment.AssignmentStatus == 'Submitted':
+			conn.approve_assignment(assignment.AssignmentId)
+	return conn.dispose_hit(hit.HITId)
 
 def cleanup():
-    """Remove any boto test related HIT's"""
+	"""Remove any boto test related HIT's"""
 
-    conn = MTurkConnection(host='mechanicalturk.sandbox.amazonaws.com')
-    current_page = 1
-    page_size = 10
-    total_disabled = 0
-    ignored = []
+	global conn
+	
+	conn = SetHostMTurkConnection()
 
-    while True:
-        # reset the total for this loop
-        disabled_count = 0
 
-        # search all the hits in the sandbox
-        search_rs = conn.search_hits(page_size=page_size, page_number=current_page)
+	is_boto = description_filter('Boto')
+	print 'getting hits...'
+	all_hits = list(conn.get_all_hits())
+	is_reviewable = lambda hit: hit.HITStatus == 'Reviewable'
+	is_not_reviewable = lambda hit: not is_reviewable(hit)
+	hits_to_process = filter(is_boto, all_hits)
+	hits_to_disable = filter(is_not_reviewable, hits_to_process)
+	hits_to_dispose = filter(is_reviewable, hits_to_process)
+	print 'disabling/disposing %d/%d hits' % (len(hits_to_disable), len(hits_to_dispose))
+	map(disable_hit, hits_to_disable)
+	map(dispose_hit, hits_to_dispose)
 
-        # success?
-        if search_rs.status:
-            for hit in search_rs:
-                # delete any with Boto in the description
-                print 'hit id:%s Status:%s, desc:%s' %(hit.HITId, hit.HITStatus, hit.Description)
-                if hit.Description.find('Boto') != -1:
-                    if hit.HITStatus != 'Reviewable':
-                        print 'Disabling hit id:%s %s' %(hit.HITId, hit.Description)
-                        disable_rs = conn.disable_hit(hit.HITId)
-                        if disable_rs.status:
-                            disabled_count += 1
-                            # update the running total
-                            total_disabled += 1
-                        else:
-                            print 'Error when disabling, code:%s, message:%s' %(disable_rs.Code, disable_rs.Message)
-                    else:
-                        print 'Disposing hit id:%s %s' %(hit.HITId, hit.Description)
-                        dispose_rs = conn.dispose_hit(hit.HITId)
-                        if dispose_rs.status:
-                            disabled_count += 1
-                            # update the running total
-                            total_disabled += 1
-                        else:
-                            print 'Error when disposing, code:%s, message:%s' %(dispose_rs.Code, dispose_rs.Message)
+	total_hits = len(all_hits)
+	hits_processed = len(hits_to_process)
+	skipped = total_hits - hits_processed
+	fmt = 'Processed: %(total_hits)d HITs, disabled/disposed: %(hits_processed)d, skipped: %(skipped)d'
+	print fmt % vars()
 
-                else:
-                    if hit.HITId not in ignored:
-                        print 'ignored:%s' %hit.HITId
-                        ignored.append(hit.HITId)
-
-            # any more results?
-            if int(search_rs.TotalNumResults) > current_page*page_size:
-                # if we have disabled any HITs on this page
-                # then we don't need to go to a new page
-                # otherwise we do
-                if not disabled_count:
-                    current_page += 1
-            else:
-                # no, we're done
-                break
-        else:
-            print 'Error performing search, code:%s, message:%s' %(search_rs.Code, search_rs.Message)
-            break
-
-    total_ignored = len(ignored)
-    print 'Processed: %d HITs, disabled/disposed: %d, ignored: %d' %(total_ignored + total_disabled, total_disabled, total_ignored)
-
-if __name__ == '__main__':    
-    cleanup()
+if __name__ == '__main__':
+	cleanup()
