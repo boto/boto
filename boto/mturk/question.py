@@ -20,42 +20,49 @@
 # IN THE SOFTWARE.
 
 class Question(object):
+    template = "<Question>%(items)s</Question>"
     
-    QUESTION_XML_TEMPLATE = """<Question><QuestionIdentifier>%s</QuestionIdentifier>%s<IsRequired>%s</IsRequired>%s%s</Question>"""
-    DISPLAY_NAME_XML_TEMPLATE = """<DisplayName>%s</DisplayName>"""
-    
-    def __init__(self, identifier, content, answer_spec, is_required=False, display_name=None): #amount=0.0, currency_code='USD'):
-        self.identifier = identifier
-        self.content = content
-        self.answer_spec = answer_spec
-        self.is_required = is_required
-        self.display_name = display_name
-    
-    def get_as_params(self, label='Question', identifier=None):
-        
-        if identifier is None:
-            raise ValueError("identifier (QuestionIdentifier) is required per MTurk spec.")
-        
+    def __init__(self, identifier, content, answer_spec, is_required=False, display_name=None):
+        # copy all of the parameters into object attributes
+        self.__dict__.update(vars())
+        del self.self
+
+    def get_as_params(self, label='Question'):
         return { label : self.get_as_xml() }
-    
+
     def get_as_xml(self):
-        # add the display name if required
-        display_name_xml = ''
-        if self.display_name:
-            display_name_xml = self.DISPLAY_NAME_XML_TEMPLATE %(self.display_name)
+        items = [
+            SimpleField('QuestionIdentifier', self.identifier),
+            SimpleField('IsRequired', str(self.is_required).lower()),
+            self.content,
+            self.answer_spec,
+        ]
+        if self.display_name is not None:
+            items.insert(1, SimpleField('DisplayName', self.display_name))
+        items = ''.join(item.get_as_xml() for item in items)
+        return self.template % vars()
 
-        ret = Question.QUESTION_XML_TEMPLATE % (self.identifier, 
-                                                display_name_xml,
-                                                str(self.is_required).lower(),
-                                                self.content.get_as_xml(), 
-                                                self.answer_spec.get_as_xml())
+try:
+	from lxml import etree
+	class ValidatingXML(object):
+		def validate(self):
+			import urllib2
+			schema_src_file = urllib2.urlopen(self.schema_url)
+			schema_doc = etree.parse(schema_src_file)
+			schema = etree.XMLSchema(schema_doc)
+			doc = etree.fromstring(self.get_as_xml())
+			schema.assertValid(doc)
+except ImportError:
+	class ValidatingXML(object):
+		def validate(self): pass
 
-        return ret
 
-class ExternalQuestion(object):
-    
-    EXTERNAL_QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd"
-    EXTERNAL_QUESTION_XML_TEMPLATE = """<ExternalQuestion xmlns="%s"><ExternalURL>%s</ExternalURL><FrameHeight>%s</FrameHeight></ExternalQuestion>"""
+class ExternalQuestion(ValidatingXML):
+    """
+    An object for constructing an External Question.
+    """
+    schema_url = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd"
+    template = '<ExternalQuestion xmlns="%(schema_url)s"><ExternalURL>%%(external_url)s</ExternalURL><FrameHeight>%%(frame_height)s</FrameHeight></ExternalQuestion>' % vars()
     
     def __init__(self, external_url, frame_height):
         self.external_url = external_url
@@ -65,196 +72,236 @@ class ExternalQuestion(object):
         return { label : self.get_as_xml() }
     
     def get_as_xml(self):
-        ret = ExternalQuestion.EXTERNAL_QUESTION_XML_TEMPLATE % (ExternalQuestion.EXTERNAL_QUESTIONFORM_SCHEMA_LOCATION,
-                                                self.external_url,
-                                                self.frame_height)
-        return ret
+        return self.template % vars(self)
 
-class OrderedContent(object):
-    def __init__(self):
-        self.items = []
+class XMLTemplate:
+    def get_as_xml(self):
+        return self.template % vars(self)
 
-    def append(self, field, value):
-        "Expects field type and value"
-        self.items.append((field, value))
-
-    def get_binary_xml(self, field, value):
-        return """
-<Binary>
-  <MimeType>
-    <Type>%s</Type>
-    <SubType>%s</SubType>
-  </MimeType>
-  <DataURL>%s</DataURL>
-  <AltText>%s</AltText>
-</Binary>""" % (value['type'],
-                value['subtype'],
-                value['dataurl'],
-                value['alttext'])
+class SimpleField(object, XMLTemplate):
+    """
+    A Simple name/value pair that can be easily rendered as XML.
     
-    def get_application_xml(self, field, value):
-        raise NotImplementedError("Application question content is not yet supported.")
+    >>> SimpleField('Text', 'A text string').get_as_xml()
+    '<Text>A text string</Text>'
+    """
+    template = '<%(field)s>%(value)s</%(field)s>'
+    
+    def __init__(self, field, value):
+        self.field = field
+        self.value = value
+
+class Binary(object, XMLTemplate):
+    template = """<Binary><MimeType><Type>%(type)s</Type><SubType>%(subtype)s</SubType></MimeType><DataURL>%(url)s</DataURL><AltText>%(alt_text)s</AltText></Binary>"""
+    def __init__(self, type, subtype, url, alt_text):
+        self.__dict__.update(vars())
+        del self.self
+
+class List(list):
+    """A bulleted list suitable for OrderedContent or Overview content"""
+    def get_as_xml(self):
+        items = ''.join('<ListItem>%s</ListItem>' % item for item in self)
+        return '<List>%s</List>' % items
+
+class Application(object):
+    template = "<Application><%(class_)s>%(content)s</%(class_)s></Application>"
+    parameter_template = "<Name>%(name)s</Name><Value>%(value)s</Value>"
+
+    def __init__(self, width, height, **parameters):
+        self.width = width
+        self.height = height
+        self.parameters = parameters
+
+    def get_inner_content(self, content):
+        content.append_field('Width', self.width)
+        content.append_field('Height', self.height)
+        for name, value in self.parameters.items():
+            value = self.parameter_template % vars()
+            content.append_field('ApplicationParameter', value)
 
     def get_as_xml(self):
-        default_handler = lambda f,v: '<%s>%s</%s>' % (f,v,f)
-        bulleted_list_handler = lambda _,list: '<List>%s</List>' % ''.join([('<ListItem>%s</ListItem>' % item) for item in list])
-        formatted_content_handler = lambda _,content: "<FormattedContent><![CDATA[%s]]></FormattedContent>" % content
-        application_handler = self.get_application_xml
-        binary_handler = self.get_binary_xml
-        
-        children = ''
-        for (field,value) in self.items:
-            handler = default_handler
-            if field == 'List':
-                handler = bulleted_list_handler
-            elif field == 'Application':
-                handler = application_handler
-            elif field == 'Binary':
-                handler = binary_handler
-            elif field == 'FormattedContent':
-                handler = formatted_content_handler
-            children = children + handler(field, value)
+        content = OrderedContent()
+        self.get_inner_content(content)
+        content = content.get_as_xml()
+        class_ = self.__class__.__name__
+        return self.template % vars()
 
-        return children    
+class JavaApplet(Application):
+    def __init__(self, path, filename, *args, **kwargs):
+        self.path = path
+        self.filename = filename
+        super(JavaApplet, self).__init__(*args, **kwargs)
 
-class Overview(object):
-    OVERVIEW_XML_TEMPLATE = """<Overview>%s</Overview>"""
-    
-    def __init__(self):
-        self.ordered_content = OrderedContent()
+    def get_inner_content(self, content):
+        content = OrderedContent()
+        content.append_field('AppletPath', self.path)
+        content.append_field('AppletFilename', self.filename)
+        super(JavaApplet, self).get_inner_content(content)
 
-    def append(self, field, value):
-        self.ordered_content.append(field,value)
-    
+class Flash(Application):
+    def __init__(self, url, *args, **kwargs):
+        self.url = url
+        super(Flash, self).__init__(*args, **kwargs)
+
+    def get_inner_content(self, content):
+        content = OrderedContent()
+        content.append_field('FlashMovieURL', self.url)
+        super(Flash, self).get_inner_content(content)
+
+class FormattedContent(object, XMLTemplate):
+    schema_url = 'http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/FormattedContentXHTMLSubset.xsd'
+    template = '<FormattedContent><![CDATA[%(content)s]]></FormattedContent>'
+    def __init__(self, content):
+        self.content = content
+
+class OrderedContent(list):
+
+    def append_field(self, field, value):
+        self.append(SimpleField(field, value))
+
+    def get_as_xml(self):
+        return ''.join(item.get_as_xml() for item in self)
+
+class Overview(OrderedContent):
+    template = '<Overview>%(content)s</Overview>'
+
     def get_as_params(self, label='Overview'):
         return { label : self.get_as_xml() }
     
     def get_as_xml(self):
-        ret = Overview.OVERVIEW_XML_TEMPLATE % (self.ordered_content.get_as_xml())
+        content = super(Overview, self).get_as_xml()
+        return self.template % vars()
 
-        return ret
+class QuestionForm(ValidatingXML, list):
+    """
+    From the AMT API docs:
     
-
-class QuestionForm(object):
+    The top-most element of the QuestionForm data structure is a QuestionForm element. This
+    element contains optional Overview elements and one or more Question elements. There can be
+    any number of these two element types listed in any order. The following example structure has an
+    Overview element and a Question element followed by a second Overview element and Question
+    element--all within the same QuestionForm.
     
-    QUESTIONFORM_SCHEMA_LOCATION = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
-    QUESTIONFORM_XML_TEMPLATE = """<QuestionForm xmlns="%s">%s</QuestionForm>"""
+    <QuestionForm xmlns="[the QuestionForm schema URL]">
+        <Overview>
+            [...]
+        </Overview>
+        <Question>
+            [...]
+        </Question>
+        <Overview>
+            [...]
+        </Overview>
+        <Question>
+            [...]
+        </Question>
+        [...]
+    </QuestionForm>
+    
+    QuestionForm is implemented as a list, so to construct a
+    QuestionForm, simply append Questions and Overviews (with at least
+    one Question).
+    """
+    schema_url = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd"
+    xml_template = """<QuestionForm xmlns="%(schema_url)s">%%(items)s</QuestionForm>""" % vars()
 
-    def __init__(self):
-        self.items = []
+    def is_valid(self):
+        return (
+            any(isinstance(item, Question) for item in self)
+            and
+            all(isinstance(item, (Question, Overview)) for item in self)
+            )
 
-    def append(self, item):
-        "Expects field type and value"
-        self.items.append(item)
-        
     def get_as_xml(self):
-        xml = ''
-        for item in self.items:
-            xml = xml + item.get_as_xml()
-        return QuestionForm.QUESTIONFORM_XML_TEMPLATE % (QuestionForm.QUESTIONFORM_SCHEMA_LOCATION, xml)
-        
-class QuestionContent(object):
-    QUESTIONCONTENT_XML_TEMPLATE = """<QuestionContent>%s</QuestionContent>"""
-    
-    def __init__(self):
-        self.ordered_content = OrderedContent()
+        assert self.is_valid(), "QuestionForm contains invalid elements"
+        items = ''.join(item.get_as_xml() for item in self)
+        return self.xml_template % vars()
 
-    def append(self, field, value):
-        self.ordered_content.append(field,value)
-    
+class QuestionContent(OrderedContent):
+    template = '<QuestionContent>%(content)s</QuestionContent>'
+
     def get_as_xml(self):
-        ret = QuestionContent.QUESTIONCONTENT_XML_TEMPLATE % (self.ordered_content.get_as_xml())
-
-        return ret
-
+        content = super(QuestionContent, self).get_as_xml()
+        return self.template % vars()
 
 class AnswerSpecification(object):
-    
-    ANSWERSPECIFICATION_XML_TEMPLATE = """<AnswerSpecification>%s</AnswerSpecification>"""
-    
+    template = '<AnswerSpecification>%(spec)s</AnswerSpecification>'
+
     def __init__(self, spec):
         self.spec = spec
+
     def get_as_xml(self):
-        values = () # TODO
-        return AnswerSpecification.ANSWERSPECIFICATION_XML_TEMPLATE % self.spec.get_as_xml()
+        spec = self.spec.get_as_xml()
+        return self.template % vars()
+
+class Constraints(OrderedContent):
+    template = '<Constraints>%(content)s</Constraints>'
+
+    def get_as_xml(self):
+        content = super(Constraints, self).get_as_xml()
+        return self.template % vars()
+
+class Constraint(object):
+    def get_attributes(self):
+        pairs = zip(self.attribute_names, self.attribute_values)
+        attrs = ' '.join(
+            '%s="%d"' % (name,value)
+            for (name,value) in pairs
+            if value is not None
+            )
+        return attrs
+
+    def get_as_xml(self):
+        attrs = self.get_attributes()
+        return self.template % vars()
+
+class NumericConstraint(Constraint):
+    attribute_names = 'minValue', 'maxValue'
+    template = '<IsNumeric %(attrs)s />'
+
+    def __init__(self, min_value=None, max_value=None):
+        self.attribute_values = min_value, max_value
+
+class LengthConstraint(Constraint):
+    attribute_names = 'minLength', 'maxLength'
+    template = '<Length %(attrs)s />'
+
+    def __init__(self, min_length=None, max_length=None):
+        self.attribute_values = min_length, max_length
+
+class RegExConstraint(Constraint):
+    attribute_names = 'regex', 'errorText', 'flags'
+    template = '<AnswerFormatRegex %(attrs)s />'
+
+    def __init__(self, pattern, error_text=None, flags=None):
+        self.attribute_values = pattern, error_text, flags
 
 class FreeTextAnswer(object):
-    
-    FREETEXTANSWER_XML_TEMPLATE = """<FreeTextAnswer>%s%s</FreeTextAnswer>""" # (constraints, default)
-    FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE = """<Constraints>%s%s%s</Constraints>""" # (is_numeric_xml, length_xml, regex_xml)
-    FREETEXTANSWER_LENGTH_XML_TEMPLATE = """<Length %s %s />""" # (min_length_attr, max_length_attr)
-    FREETEXTANSWER_ISNUMERIC_XML_TEMPLATE = """<IsNumeric %s %s />""" # (min_value_attr, max_value_attr)
-    FREETEXTANSWER_DEFAULTTEXT_XML_TEMPLATE = """<DefaultText>%s</DefaultText>""" # (default)
-    
-    def __init__(self, default=None, min_length=None, max_length=None, is_numeric=False, min_value=None, max_value=None, format_regex=None):
+    template = '<FreeTextAnswer>%(items)s</FreeTextAnswer>'
+
+    def __init__(self, default=None, constraints=None):
         self.default = default
-        self.min_length = min_length
-        self.max_length = max_length
-        self.is_numeric = is_numeric
-        self.min_value = min_value
-        self.max_value = max_value
-        self.format_regex = format_regex
-    
+        if constraints is None: constraints = Constraints()
+        self.constraints = Constraints(constraints)
+
     def get_as_xml(self):
-        is_numeric_xml = ""
-        if self.is_numeric:
-            min_value_attr = ""
-            max_value_attr = ""
-            if self.min_value:
-                min_value_attr = """minValue="%d" """ % self.min_value
-            if self.max_value:
-                max_value_attr = """maxValue="%d" """ % self.max_value
-            is_numeric_xml = FreeTextAnswer.FREETEXTANSWER_ISNUMERIC_XML_TEMPLATE % (min_value_attr, max_value_attr)
-        
-        length_xml = ""
-        if self.min_length or self.max_length:
-            min_length_attr = ""
-            max_length_attr = ""
-            if self.min_length:
-                min_length_attr = """minLength="%d" """
-            if self.max_length:
-                max_length_attr = """maxLength="%d" """
-            length_xml = FreeTextAnswer.FREETEXTANSWER_LENGTH_XML_TEMPLATE % (min_length_attr, max_length_attr)
-
-        regex_xml = ""
-        if self.format_regex:
-            format_regex_attribs = '''regex="%s"''' %self.format_regex['regex']
-
-            error_text = self.format_regex.get('error_text', None)
-            if error_text:
-                format_regex_attribs += ' errorText="%s"' %error_text
-
-            flags = self.format_regex.get('flags', None)
-            if flags:
-                format_regex_attribs += ' flags="%s"' %flags
-
-            regex_xml = """<AnswerFormatRegex %s/>""" %format_regex_attribs
-            
-        constraints_xml = ""
-        if is_numeric_xml or length_xml or regex_xml:
-            constraints_xml = FreeTextAnswer.FREETEXTANSWER_CONSTRAINTS_XML_TEMPLATE % (is_numeric_xml, length_xml, regex_xml)
-        
-        default_xml = ""
-        if self.default is not None:
-            default_xml = FreeTextAnswer.FREETEXTANSWER_DEFAULTTEXT_XML_TEMPLATE % self.default
-            
-        return FreeTextAnswer.FREETEXTANSWER_XML_TEMPLATE % (constraints_xml, default_xml)
+        constraints = Constraints()
+        items = [constraints]
+        if self.default:
+            items.append(SimpleField('DefaultText', self.default))
+        items = ''.join(item.get_as_xml() for item in items)
+        return self.template % vars()
 
 class FileUploadAnswer(object):
-    FILEUPLOADANSWER_XML_TEMLPATE = """<FileUploadAnswer><MinFileSizeInBytes>%d</MinFileSizeInBytes><MaxFileSizeInBytes>%d</MaxFileSizeInBytes></FileUploadAnswer>""" # (min, max)
-    DEFAULT_MIN_SIZE = 1024 # 1K (completely arbitrary!)
-    DEFAULT_MAX_SIZE = 5 * 1024 * 1024 # 5MB (completely arbitrary!)
+    template = """<FileUploadAnswer><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes></FileUploadAnswer>"""
     
-    def __init__(self, min=None, max=None):
-        self.min = min
-        self.max = max
-        if self.min is None:
-            self.min = FileUploadAnswer.DEFAULT_MIN_SIZE
-        if self.max is None:
-            self.max = FileUploadAnswer.DEFAULT_MAX_SIZE
+    def __init__(self, min_bytes, max_bytes):
+        assert 0 <= min_bytes <= max_bytes <= 2*10**9
+        self.min_bytes = min_bytes
+        self.max_bytes = max_bytes
     
     def get_as_xml(self):
-        return FileUploadAnswer.FILEUPLOADANSWER_XML_TEMLPATE % (self.min, self.max)
+        return self.template % vars(self)
 
 class SelectionAnswer(object):
     """

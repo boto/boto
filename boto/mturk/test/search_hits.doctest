@@ -1,5 +1,5 @@
->>> from boto.mturk.connection import MTurkConnection
->>> conn = MTurkConnection(host='mechanicalturk.sandbox.amazonaws.com')
+>>> from _init_environment import MTurkConnection, mturk_host
+>>> conn = MTurkConnection(host=mturk_host)
 
 # should have some HIT's returned by a search (but only if your account has existing HIT's)
 >>> search_rs = conn.search_hits()
