@@ -114,11 +114,16 @@ True
 
 >>> answer = assignment.answers[0][0]
 
-# answer should be a FreeTextAnswer
->>> answer.FreeText # doctest: +ELLIPSIS
+# the answer should have exactly one field
+>>> len(answer.fields)
+1
+
+>>> qid, text = answer.fields[0]
+
+>>> text # doctest: +ELLIPSIS
 u'...'
 
 # question identifier should be a unicode string
->>> answer.QuestionIdentifier # doctest: +ELLIPSIS
+>>> qid # doctest: +ELLIPSIS
 u'...'
 
