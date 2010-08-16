@@ -70,13 +70,15 @@ class MTurkConnection(AWSQueryConnection):
                 self.duration_as_seconds(duration),
             )
         params.update(MTurkConnection.get_price_as_price(reward).get_as_params('Reward'))
-        params.update(qual_req.get_as_params())
 
         if keywords:
             params['Keywords'] = self.get_keywords_as_string(keywords)
 
         if approval_delay is not None:
             params['AutoApprovalDelayInSeconds']= approval_delay
+
+        if qual_req is not None:
+            params.update(qual_req.get_as_params())
 
         return self._process_request('RegisterHITType', params)
 
