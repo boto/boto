@@ -533,6 +533,7 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=[], a
             from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
             msg = MIMEMultipart()
             msg['From'] = from_string
+            msg['Reply-To'] = from_string
             msg['To'] = to_string
             msg['Date'] = formatdate(localtime=True)
             msg['Subject'] = subject
