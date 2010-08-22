@@ -112,8 +112,8 @@ class Provider(object):
     
     def __init__(self, name, access_key=None, secret_key=None):
         self.host = None
-        self.access_key = None
-        self.secret_key = None
+        self.access_key = access_key
+        self.secret_key = secret_key
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
@@ -126,14 +126,14 @@ class Provider(object):
 
     def get_credentials(self, access_key=None, secret_key=None):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
-        if access_key:
+        if access_key is not None:
             self.access_key = access_key
         elif os.environ.has_key(access_key_name.upper()):
             self.access_key = os.environ[access_key_name.upper()]
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
 
-        if secret_key:
+        if secret_key is not None:
             self.secret_key = secret_key
         elif os.environ.has_key(secret_key_name.upper()):
             self.secret_key = os.environ[secret_key_name.upper()]
