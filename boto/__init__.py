@@ -324,13 +324,21 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_scheme='file', debug=False):
+def storage_uri(uri_str, default_scheme='file', debug=False, validate=True):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
     :type default_scheme: string
     :param default_scheme: default scheme for scheme-less URIs.
+    :type debug: bool
+    :param debug: whether to enable connection-level debugging.
+    :type validate: bool
+    :param validate: whether to check for bucket name validity.
+
+    We allow validate to be disabled to allow caller
+    to implement bucket-level wildcarding (outside the boto library;
+    see gsutil).
 
     :rtype: :class:`boto.StorageUri` subclass
     :return: StorageUri subclass for given URI.
@@ -364,13 +372,14 @@ def storage_uri(uri_str, default_scheme='file', debug=False):
     else:
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]
-        # Ensure the bucket name is valid, to avoid possibly confusing other
-        # parts of the code. (For example if we didn't catch bucket names
-        # containing ':', when a user tried to connect to the server with that
-        # name they might get a confusing error about non-integer port numbers.)
-        if (bucket_name and
+        if (validate and bucket_name and
             not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)):
-          raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+            raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+        # If enabled, ensure the bucket name is valid, to avoid possibly
+        # confusing other parts of the code. (For example if we didn't
+        # catch bucket names containing ':', when a user tried to connect to
+        # the server with that name they might get a confusing error about
+        # non-integer port numbers.)
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]
