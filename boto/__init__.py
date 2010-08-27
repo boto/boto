@@ -360,7 +360,7 @@ def storage_uri(uri_str, default_scheme='file', debug=False, validate=True):
         # Check for common error: user specifies gs:bucket instead
         # of gs://bucket. Some URI parsers allow this, but it can cause
         # confusion for callers, so we don't.
-        if uri_str.find(':'):
+        if uri_str.find(':') != -1:
             raise InvalidUriError('"%s" contains ":" instead of "://"' % uri_str)
         scheme = default_scheme.lower()
         path = uri_str
