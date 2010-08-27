@@ -139,7 +139,7 @@ class Parameter(object):
             choices = self.allowed_values.split(',')
             if value not in choices:
                 raise ValueError, 'value must be in %s' % self.allowed_values
-        set._value = value
+        self._value = value
 
     def _set_integer_value(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
