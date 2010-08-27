@@ -357,11 +357,16 @@ def storage_uri(uri_str, default_scheme='file', debug=False, validate=True):
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')
     if end_scheme_idx == -1:
-      scheme = default_scheme.lower()
-      path = uri_str
+        # Check for common error: user specifies gs:bucket instead
+        # of gs://bucket. Some URI parsers allow this, but it can cause
+        # confusion for callers, so we don't.
+        if uri_str.find(':'):
+            raise InvalidUriError('"%s" contains ":" instead of "://"' % uri_str)
+        scheme = default_scheme.lower()
+        path = uri_str
     else:
-      scheme = uri_str[0:end_scheme_idx].lower()
-      path = uri_str[end_scheme_idx + 3:]
+        scheme = uri_str[0:end_scheme_idx].lower()
+        path = uri_str[end_scheme_idx + 3:]
 
     if scheme not in ['file', 's3', 'gs']:
         raise InvalidUriError('Unrecognized scheme "%s"' % scheme)
