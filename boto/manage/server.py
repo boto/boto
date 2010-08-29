@@ -143,6 +143,7 @@ class CommandLineGetter(object):
         if not region:
             prop = self.cls.find_property('region_name')
             params['region'] = propget.get(prop, choices=boto.ec2.regions)
+        self.ec2 = params['region'].connect()
 
     def get_name(self, params):
         if not params.get('name', None):
@@ -172,15 +173,19 @@ class CommandLineGetter(object):
             params['zone'] = propget.get(prop)
             
     def get_ami_id(self, params):
-        ami = params.get('ami', None)
-        if isinstance(ami, str) or isinstance(ami, unicode):
-            for a in self.ec2.get_all_images():
-                if a.id == ami:
-                    params['ami'] = a
-        if not params.get('ami', None):
-            prop = StringProperty(name='ami', verbose_name='AMI',
-                                  choices=self.get_ami_list)
-            params['ami'] = propget.get(prop)
+        valid = False
+        while not valid:
+            ami = params.get('ami', None)
+            if not ami:
+                prop = StringProperty(name='ami', verbose_name='AMI')
+                ami = propget.get(prop)
+            try:
+                rs = self.ec2.get_all_images([ami])
+                if len(rs) == 1:
+                    valid = True
+                    params['ami'] = rs[0]
+            except EC2ResponseError:
+                pass
 
     def get_group(self, params):
         group = params.get('group', None)
@@ -261,26 +266,26 @@ class Server(Model):
         cfg.set('DB_Server', 'db_type', 'SimpleDB')
         cfg.set('DB_Server', 'db_name', cls._manager.domain.name)
 
-    '''
-    Create a new instance based on the specified configuration file or the specified
-    configuration and the passed in parameters.
-    
-    If the config_file argument is not None, the configuration is read from there. 
-    Otherwise, the cfg argument is used.
-
-    The config file may include other config files with a #import reference. The included
-    config files must reside in the same directory as the specified file. 
-    
-    The logical_volume argument, if supplied, will be used to get the current physical 
-    volume ID and use that as an override of the value specified in the config file. This 
-    may be useful for debugging purposes when you want to debug with a production config 
-    file but a test Volume. 
-    
-    The dictionary argument may be used to override any EC2 configuration values in the 
-    config file. 
-    '''
     @classmethod
     def create(cls, config_file=None, logical_volume = None, cfg = None, **params):
+        """
+        Create a new instance based on the specified configuration file or the specified
+        configuration and the passed in parameters.
+        
+        If the config_file argument is not None, the configuration is read from there. 
+        Otherwise, the cfg argument is used.
+        
+        The config file may include other config files with a #import reference. The included
+        config files must reside in the same directory as the specified file. 
+        
+        The logical_volume argument, if supplied, will be used to get the current physical 
+        volume ID and use that as an override of the value specified in the config file. This 
+        may be useful for debugging purposes when you want to debug with a production config 
+        file but a test Volume. 
+        
+        The dictionary argument may be used to override any EC2 configuration values in the 
+        config file. 
+        """
         if config_file:
             cfg = Config(path=config_file)
         if cfg.has_section('EC2'):

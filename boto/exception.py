@@ -40,10 +40,10 @@ class BotoClientError(StandardError):
         self.reason = reason
 
     def __repr__(self):
-        return 'S3Error: %s' % self.reason
+        return 'BotoClientError: %s' % self.reason
 
     def __str__(self):
-        return 'S3Error: %s' % self.reason
+        return 'BotoClientError: %s' % self.reason
 
 class SDBPersistenceError(StandardError):
 

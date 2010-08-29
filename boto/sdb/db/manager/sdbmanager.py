@@ -445,13 +445,17 @@ class SDBManager(object):
         query.rs = rs
         return self._object_lister(query.model_class, rs)
 
-    def count(self, cls, filters):
+    def count(self, cls, filters, quick=True):
         """
         Get the number of results that would
         be returned in this query
         """
         query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
-        count =  int(self.domain.select(query).next()["Count"])
+        count = 0
+        for row in self.domain.select(query):
+            count += int(row['Count'])
+            if quick:
+                return count
         return count
 
 

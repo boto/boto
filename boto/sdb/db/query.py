@@ -53,8 +53,8 @@ class Query(object):
         self.offset = offset
         return self
 
-    def count(self):
-        return self.manager.count(self.model_class, self.filters)
+    def count(self, quick=True):
+        return self.manager.count(self.model_class, self.filters, quick)
 
     def get_query(self):
         return self.manager._build_filter_part(self.model_class, self.filters, self.sort_by)

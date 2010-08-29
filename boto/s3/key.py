@@ -218,9 +218,15 @@ class Key(object):
                            will be used.
                                   
         """
-        self.storage_class = new_storage_class
-        return self.copy(self.bucket.name, self.name,
-                         reduced_redundancy=True, preserve_acl=True)
+        if new_storage_class == 'STANDARD':
+            return self.copy(self.bucket.name, self.name,
+                             reduced_redundancy=False, preserve_acl=True)
+        elif new_storage_class == 'REDUCED_REDUNDANCY':
+            return self.copy(self.bucket.name, self.name,
+                             reduced_redundancy=True, preserve_acl=True)
+        else:
+            raise BotoClientError('Invalid storage class: %s' %
+                                  new_storage_class)
 
     def copy(self, dst_bucket, dst_key, metadata=None,
              reduced_redundancy=False, preserve_acl=False):

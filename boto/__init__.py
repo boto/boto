@@ -28,7 +28,7 @@ import logging
 import logging.config
 from boto.exception import InvalidUriError
 
-__version__ = '2.0b1'
+__version__ = '2.0b2'
 Version = __version__ # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
@@ -324,13 +324,21 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_scheme='file', debug=False):
+def storage_uri(uri_str, default_scheme='file', debug=False, validate=True):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
     :type default_scheme: string
     :param default_scheme: default scheme for scheme-less URIs.
+    :type debug: bool
+    :param debug: whether to enable connection-level debugging.
+    :type validate: bool
+    :param validate: whether to check for bucket name validity.
+
+    We allow validate to be disabled to allow caller
+    to implement bucket-level wildcarding (outside the boto library;
+    see gsutil).
 
     :rtype: :class:`boto.StorageUri` subclass
     :return: StorageUri subclass for given URI.
@@ -349,11 +357,16 @@ def storage_uri(uri_str, default_scheme='file', debug=False):
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')
     if end_scheme_idx == -1:
-      scheme = default_scheme.lower()
-      path = uri_str
+        # Check for common error: user specifies gs:bucket instead
+        # of gs://bucket. Some URI parsers allow this, but it can cause
+        # confusion for callers, so we don't.
+        if uri_str.find(':') != -1:
+            raise InvalidUriError('"%s" contains ":" instead of "://"' % uri_str)
+        scheme = default_scheme.lower()
+        path = uri_str
     else:
-      scheme = uri_str[0:end_scheme_idx].lower()
-      path = uri_str[end_scheme_idx + 3:]
+        scheme = uri_str[0:end_scheme_idx].lower()
+        path = uri_str[end_scheme_idx + 3:]
 
     if scheme not in ['file', 's3', 'gs']:
         raise InvalidUriError('Unrecognized scheme "%s"' % scheme)
@@ -364,13 +377,14 @@ def storage_uri(uri_str, default_scheme='file', debug=False):
     else:
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]
-        # Ensure the bucket name is valid, to avoid possibly confusing other
-        # parts of the code. (For example if we didn't catch bucket names
-        # containing ':', when a user tried to connect to the server with that
-        # name they might get a confusing error about non-integer port numbers.)
-        if (bucket_name and
+        if (validate and bucket_name and
             not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)):
-          raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+            raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+        # If enabled, ensure the bucket name is valid, to avoid possibly
+        # confusing other parts of the code. (For example if we didn't
+        # catch bucket names containing ':', when a user tried to connect to
+        # the server with that name they might get a confusing error about
+        # non-integer port numbers.)
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]

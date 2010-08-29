@@ -601,8 +601,9 @@ class EC2Connection(AWSQueryConnection):
                           instanceInitiatedShutdownBehavior|
                           rootDeviceName|blockDeviceMapping
 
-        :rtype: :class:`boto.ec2.image.ImageAttribute`
-        :return: An ImageAttribute object representing the value of the attribute requested
+        :rtype: :class:`boto.ec2.image.InstanceAttribute`
+        :return: An InstanceAttribute object representing the value of the
+                 attribute requested
         """
         params = {'InstanceId' : instance_id}
         if attribute:

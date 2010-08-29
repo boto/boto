@@ -112,6 +112,21 @@ class Image(EC2Object):
         else:
             setattr(self, name, value)
 
+    def _update(self, updated):
+        self.__dict__.update(updated.__dict__)
+
+    def update(self):
+        """
+        Update the image's state information by making a call to fetch
+        the current image attributes from the service.
+        """
+        rs = self.connection.get_all_images([self.id])
+        if len(rs) > 0:
+            img = rs[0]
+            if img.id == self.id:
+                self._update(img)
+        return self.state
+
     def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
