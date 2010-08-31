@@ -458,10 +458,10 @@ class Key(object):
         if self.storage_class != 'STANDARD':
             provider = self.bucket.connection.provider
             headers[provider.storage_class_header] = self.storage_class
-        if headers.has_key('Content-Type'):
-            self.content_type = headers['Content-Type']
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
+        if headers.has_key('Content-Type'):
+            self.content_type = headers['Content-Type']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
