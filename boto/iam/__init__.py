@@ -132,6 +132,18 @@ class IAMConnection(AWSQueryConnection):
                   'Path' : path}
         return self.get_response('CreateGroup', params)
 
+    def delete_group(self, group_name):
+        """
+        Delete a group. The group must not contain any Users or
+        have any attached policies
+
+        :type group_name: string
+        :param group_name: The name of the group to delete.
+
+        """
+        params = {'GroupName' : group_name}
+        return self.get_response('DeleteGroup', params)
+
     def update_group(self, group_name, new_group_name=None, new_path=None):
         """
         Update a group by adding or removing a user to/from it.
@@ -310,7 +322,7 @@ class IAMConnection(AWSQueryConnection):
 
     def delete_user(self, user_name):
         """
-        Create a user including the user's path, GUID and ARN.
+        Delete a user including the user's path, GUID and ARN.
 
         If the user_name is not specified, the user_name is determined
         implicitly based on the AWS Access Key ID used to sign the request.
