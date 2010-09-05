@@ -32,8 +32,8 @@ from boto.resultset import ResultSet
 from boto.mturk.question import QuestionForm, ExternalQuestion
 
 class MTurkRequestError(EC2ResponseError):
-	"Error for MTurk Requests"
-	# todo: subclass from an abstract parent of EC2ResponseError
+    "Error for MTurk Requests"
+    # todo: subclass from an abstract parent of EC2ResponseError
 
 class MTurkConnection(AWSQueryConnection):
     
@@ -79,7 +79,8 @@ class MTurkConnection(AWSQueryConnection):
             params['Keywords'] = self.get_keywords_as_string(keywords)
 
         if approval_delay is not None:
-            params['AutoApprovalDelayInSeconds']= approval_delay
+            d = self.duration_as_seconds(approval_delay)
+            params['AutoApprovalDelayInSeconds'] = d
 
         if qual_req is not None:
             params.update(qual_req.get_as_params())
@@ -163,7 +164,8 @@ class MTurkConnection(AWSQueryConnection):
         
         # Handle basic required arguments and set up params dict
         params = {'Question': question_param.get_as_xml(),
-                  'LifetimeInSeconds' : lifetime,
+                  'LifetimeInSeconds' :
+                      self.duration_as_seconds(lifetime),
                   'MaxAssignments' : max_assignments,
                   }
 
@@ -189,7 +191,8 @@ class MTurkConnection(AWSQueryConnection):
             additional_params.update(final_price.get_as_params('Reward'))
 
             if approval_delay is not None:
-                additional_params['AutoApprovalDelayInSeconds'] = approval_delay
+                d = self.duration_as_seconds(approval_delay)
+                additional_params['AutoApprovalDelayInSeconds'] = d
 
             # add these params to the others
             params.update(additional_params)
@@ -546,7 +549,7 @@ class BaseAutoResultElement:
     Base class to automatically add attributes when parsing XML
     """
     def __init__(self, connection):
-		pass
+        pass
 
     def startElement(self, name, attrs, connection):
         return None

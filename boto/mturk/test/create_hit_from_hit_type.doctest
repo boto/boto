@@ -68,7 +68,7 @@ u'3600'
 >>> expected_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=3900)
 >>> expiration_datetime = datetime.datetime.strptime(hit.Expiration, '%Y-%m-%dT%H:%M:%SZ')
 >>> delta = expected_datetime - expiration_datetime
->>> delta.seconds < 5
+>>> abs(delta).seconds < 5
 True
 
 # duration is as specified for the HIT type

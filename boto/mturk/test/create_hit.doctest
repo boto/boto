@@ -18,8 +18,9 @@
 # now, create the actual HIT for the question without using a HIT type
 # NOTE - the response_groups are specified to get back additional information for testing
 >>> keywords=['boto', 'test', 'doctest']
+>>> lifetime = datetime.timedelta(minutes=65)
 >>> create_hit_rs = conn.create_hit(question=qn,
-...                                 lifetime=60*65,
+...                                 lifetime=lifetime,
 ...                                 max_assignments=2,
 ...                                 title='Boto create_hit title',
 ...                                 description='Boto create_hit description',
@@ -53,11 +54,11 @@ u'2'
 >>> hit.AutoApprovalDelayInSeconds
 u'3600'
 
-# expiration should be very close to now + the lifetime in seconds
->>> expected_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=3900)
+# expiration should be very close to now + the lifetime
+>>> expected_datetime = datetime.datetime.utcnow() + lifetime
 >>> expiration_datetime = datetime.datetime.strptime(hit.Expiration, '%Y-%m-%dT%H:%M:%SZ')
 >>> delta = expected_datetime - expiration_datetime
->>> delta.seconds < 5
+>>> abs(delta).seconds < 5
 True
 
 # duration is as specified for the HIT type
