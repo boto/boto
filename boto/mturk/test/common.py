@@ -1,5 +1,6 @@
 import unittest
 import uuid
+import datetime
 
 from boto.mturk.question import (
 	Question, QuestionContent, AnswerSpecification, FreeTextAnswer,
@@ -26,13 +27,13 @@ class MTurkCommon(unittest.TestCase):
 	@staticmethod
 	def get_hit_params():
 		return dict(
-			lifetime=60*65,
+			lifetime=datetime.timedelta(minutes=65),
 			max_assignments=2,
 			title='Boto create_hit title',
 			description='Boto create_hit description',
 			keywords=['boto', 'test'],
 			reward=0.23,
-			duration=60*6,
+			duration=datetime.timedelta(minutes=6),
 			approval_delay=60*60,
 			annotation='An annotation from boto create_hit test',
 			response_groups=['Minimal',
