@@ -24,9 +24,8 @@ from boto.connection import AWSQueryConnection, AWSAuthConnection
 import time
 import urllib
 import xml.sax
-from boto.ecs.item import Item
+from boto.ecs.item import Item, ItemSet
 from boto import handler
-from boto.resultset import ResultSet
 
 class ECSConnection(AWSQueryConnection):
     """ECommerse Connection"""
@@ -64,12 +63,14 @@ class ECSConnection(AWSQueryConnection):
                                               headers=headers)
 
 
-    def get_response(self, action, params, list_marker):
+    def get_response(self, action, params, page=0, itemSet=None):
         """
         Utility method to handle calls to ECS and parsing of responses.
         """
         params['Service'] = "AWSECommerceService"
         params['Operation'] = action
+        if page:
+            params['ItemPage'] = page
         response = self.make_request("GET", params, "/onca/xml")
         body = response.read()
         boto.log.debug(body)
@@ -79,7 +80,10 @@ class ECSConnection(AWSQueryConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-        rs = ResultSet([('Item', Item)])
+        if itemSet == None:
+            rs = ItemSet(self, action, params, [('Item', Item)], page)
+        else:
+            rs = itemSet
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
@@ -97,4 +101,4 @@ class ECSConnection(AWSQueryConnection):
         :see: http://docs.amazonwebservices.com/AWSECommerceService/2010-09-01/DG/index.html?ItemSearch.html
         """
         params['SearchIndex'] = search_index
-        return self.get_response('ItemSearch', params, list_marker="Items")
+        return self.get_response('ItemSearch', params)

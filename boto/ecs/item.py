@@ -38,3 +38,57 @@ class Item(object):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
+
+class ItemSet(object):
+    """
+    The ItemSet is strongly based off of the ResultSet, but has
+    slightly different functionality, specifically for the paging mechanism
+    that ECS uses (which is page-based, instead of token-based)
+    """
+
+    def __init__(self, connection, action, params, marker_elem=None, page=0):
+        self.objs = []
+        self.iter = None
+        self.page = page
+        self.connection = connection
+        self.action = action
+        self.params = params
+        if isinstance(marker_elem, list):
+            self.markers = marker_elem
+        else:
+            self.markers = [marker_elem]
+
+    def startElement(self, name, attrs, connection):
+        for t in self.markers:
+            if name == t[0]:
+                obj = t[1](connection)
+                self.objs.append(obj)
+                return obj
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'TotalResults':
+            self.total_results = value
+        elif name == 'TotalPages':
+            self.total_pages = value
+        else:
+            setattr(self, name, value)
+
+    def next(self):
+        """Special paging functionality"""
+        if self.iter == None:
+            self.iter = iter(self.objs)
+        try:
+            return self.iter.next()
+        except StopIteration:
+            self.iter = None
+            self.objs = []
+            if int(self.page) < int(self.total_pages):
+                self.page += 1
+                self.connection.get_response(self.action, self.params, self.page, self)
+                return self.next()
+            else:
+                raise
+
+    def __iter__(self):
+        return self
