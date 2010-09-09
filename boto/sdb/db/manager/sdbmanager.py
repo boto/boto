@@ -272,7 +272,7 @@ class SDBConverter:
 
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
-            return 'None'
+            return None
         if isinstance(value, str) or isinstance(value, unicode):
             return value
         else:
@@ -462,7 +462,7 @@ class SDBManager(object):
     def _build_filter(self, property, name, op, val):
         if val == None:
             if op in ('is','='):
-                return "`%s` is null" % name
+                return "`%(name)s` is null or `%(name)s` = 'None'" % {"name": name}
             elif op in ('is not', '!='):
                 return "`%s` is not null" % name
             else:
@@ -557,12 +557,16 @@ class SDBManager(object):
         attrs = {'__type__' : obj.__class__.__name__,
                  '__module__' : obj.__class__.__module__,
                  '__lineage__' : obj.get_lineage()}
+        del_attrs = []
         for property in obj.properties(hidden=False):
             value = property.get_value_for_datastore(obj)
             if value is not None:
                 value = self.encode_value(property, value)
             if value == []:
                 value = None
+            if value == None:
+                del_attrs.append(property.name)
+                continue
             attrs[property.name] = value
             if property.unique:
                 try:
@@ -573,6 +577,9 @@ class SDBManager(object):
                 except(StopIteration):
                     pass
         self.domain.put_attributes(obj.id, attrs, replace=True)
+        if len(del_attrs) > 0:
+            self.domain.delete_attributes(obj.id, del_attrs)
+        return obj
 
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)
