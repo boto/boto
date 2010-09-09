@@ -19,51 +19,89 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class Item(object):
-    """A single Item"""
 
-    def __init__(self, connection=None):
+import xml.sax
+
+class ResponseGroup(xml.sax.ContentHandler):
+    """A Generic "Response Group", which can
+    be anything from the entire list of Items to 
+    specific response elements within an item"""
+
+    def __init__(self, connection=None, nodename=None):
         """Initialize this Item"""
-        self.connection = connection
+        self._connection = connection
+        self._nodename = nodename
+        self._nodepath = []
+        self._curobj = None
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.__dict__)
 
+    #
+    # Attribute Functions
+    #
+    def get(self, name):
+        return self.__dict__.get(name)
+    
+    def set(self, name, value):
+        self.__dict__[name] = value
 
     #
     # XML Parser functions
     #
     def startElement(self, name, attrs, connection):
+        self._nodepath.append(name)
+        if len(self._nodepath) == 1:
+            obj = ResponseGroup(self._connection)
+            self.set(name, obj)
+            self._curobj = obj
+        elif self._curobj:
+            self._curobj.startElement(name, attrs, connection)
         return None
 
     def endElement(self, name, value, connection):
-        setattr(self, name, value)
+        if len(self._nodepath) == 0:
+            return
+        obj = None
+        curval = self.get(name)
+        if len(self._nodepath) == 1:
+            if value or not curval:
+                self.set(name, value)
+            if self._curobj:
+                self._curobj = None
+        #elif len(self._nodepath) == 2:
+            #self._curobj = None
+        elif self._curobj:
+            self._curobj.endElement(name, value, connection)
+        self._nodepath.pop()
+        return None
 
-class ItemSet(object):
-    """
-    The ItemSet is strongly based off of the ResultSet, but has
-    slightly different functionality, specifically for the paging mechanism
-    that ECS uses (which is page-based, instead of token-based)
-    """
 
-    def __init__(self, connection, action, params, marker_elem=None, page=0):
+class Item(ResponseGroup):
+    """A single Item"""
+
+    def __init__(self, connection=None):
+        """Initialize this Item"""
+        ResponseGroup.__init__(self, connection, "Item")
+
+class ItemSet(ResponseGroup):
+    """A special ResponseGroup that has built-in paging, and
+    only creates new Items on the "Item" tag"""
+
+    def __init__(self, connection, action, params, page=0):
         self.objs = []
         self.iter = None
         self.page = page
         self.connection = connection
         self.action = action
         self.params = params
-        if isinstance(marker_elem, list):
-            self.markers = marker_elem
-        else:
-            self.markers = [marker_elem]
+        self.curItem = None
 
     def startElement(self, name, attrs, connection):
-        for t in self.markers:
-            if name == t[0]:
-                obj = t[1](connection)
-                self.objs.append(obj)
-                return obj
+        if name == "Item":
+            self.curItem = Item(self.connection)
+        elif self.curItem != None:
+            self.curItem.startElement(name, attrs, connection)
         return None
 
     def endElement(self, name, value, connection):
@@ -71,8 +109,12 @@ class ItemSet(object):
             self.total_results = value
         elif name == 'TotalPages':
             self.total_pages = value
-        else:
-            setattr(self, name, value)
+        elif name == "Item":
+            self.objs.append(self.curItem)
+            self.curItem = None
+        elif self.curItem != None:
+            self.curItem.endElement(name, value, connection)
+        return None
 
     def next(self):
         """Special paging functionality"""

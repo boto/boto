@@ -24,7 +24,7 @@ from boto.connection import AWSQueryConnection, AWSAuthConnection
 import time
 import urllib
 import xml.sax
-from boto.ecs.item import Item, ItemSet
+from boto.ecs.item import ItemSet
 from boto import handler
 
 class ECSConnection(AWSQueryConnection):
@@ -81,7 +81,7 @@ class ECSConnection(AWSQueryConnection):
             raise self.ResponseError(response.status, response.reason, body)
 
         if itemSet == None:
-            rs = ItemSet(self, action, params, [('Item', Item)], page)
+            rs = ItemSet(self, action, params, page)
         else:
             rs = itemSet
         h = handler.XmlHandler(rs, self)
