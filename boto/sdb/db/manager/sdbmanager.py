@@ -103,7 +103,7 @@ class SDBConverter:
             if Model in item_type.mro():
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
-            if encoded_value != None and encoded_value != "None":
+            if encoded_value != None:
                 new_value.append('%s:%s' % (key, encoded_value))
         return new_value
 
@@ -122,7 +122,7 @@ class SDBConverter:
             item_type = getattr(prop, "item_type")
             dec_val = {}
             for val in value:
-                if val != "None" and val != None:
+                if val != None:
                     k,v = self.decode_map_element(item_type, val)
                     try:
                         k = int(k)
@@ -462,7 +462,7 @@ class SDBManager(object):
     def _build_filter(self, property, name, op, val):
         if val == None:
             if op in ('is','='):
-                return "`%(name)s` is null or `%(name)s` = 'None'" % {"name": name}
+                return "`%(name)s` is null" % {"name": name}
             elif op in ('is not', '!='):
                 return "`%s` is not null" % name
             else:
