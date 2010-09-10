@@ -21,6 +21,7 @@
 
 
 import xml.sax
+import cgi
 from StringIO import StringIO
 
 class ResponseGroup(xml.sax.ContentHandler):
@@ -66,7 +67,7 @@ class ResponseGroup(xml.sax.ContentHandler):
         return None
 
     def endElement(self, name, value, connection):
-        self._xml.write("%s</%s>" % (value, name))
+        self._xml.write("%s</%s>" % (cgi.escape(value).replace("&amp;amp;", "&amp;"), name))
         if len(self._nodepath) == 0:
             return
         obj = None
@@ -142,3 +143,9 @@ class ItemSet(ResponseGroup):
 
     def __iter__(self):
         return self
+
+    def to_xml(self):
+        """Override to first fetch everything"""
+        for item in self:
+            pass
+        return ResponseGroup.to_xml(self)
