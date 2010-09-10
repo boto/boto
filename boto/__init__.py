@@ -324,15 +324,15 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_scheme='file', debug=False, validate=True):
+def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
     :type default_scheme: string
     :param default_scheme: default scheme for scheme-less URIs.
-    :type debug: bool
-    :param debug: whether to enable connection-level debugging.
+    :type debug: int
+    :param debug: debug level to pass in to boto connection (range 0..2).
     :type validate: bool
     :param validate: whether to check for bucket name validity.
 
