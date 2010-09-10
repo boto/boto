@@ -21,6 +21,7 @@
 
 
 import xml.sax
+from StringIO import StringIO
 
 class ResponseGroup(xml.sax.ContentHandler):
     """A Generic "Response Group", which can
@@ -33,6 +34,7 @@ class ResponseGroup(xml.sax.ContentHandler):
         self._nodename = nodename
         self._nodepath = []
         self._curobj = None
+        self._xml = StringIO()
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.__dict__)
@@ -46,10 +48,14 @@ class ResponseGroup(xml.sax.ContentHandler):
     def set(self, name, value):
         self.__dict__[name] = value
 
+    def to_xml(self):
+        return "<%s>%s</%s>" % (self._nodename, self._xml.getvalue(), self._nodename)
+
     #
     # XML Parser functions
     #
     def startElement(self, name, attrs, connection):
+        self._xml.write("<%s>" % name)
         self._nodepath.append(name)
         if len(self._nodepath) == 1:
             obj = ResponseGroup(self._connection)
@@ -60,6 +66,7 @@ class ResponseGroup(xml.sax.ContentHandler):
         return None
 
     def endElement(self, name, value, connection):
+        self._xml.write("%s</%s>" % (value, name))
         if len(self._nodepath) == 0:
             return
         obj = None
@@ -89,17 +96,17 @@ class ItemSet(ResponseGroup):
     only creates new Items on the "Item" tag"""
 
     def __init__(self, connection, action, params, page=0):
+        ResponseGroup.__init__(self, connection, "Items")
         self.objs = []
         self.iter = None
         self.page = page
-        self.connection = connection
         self.action = action
         self.params = params
         self.curItem = None
 
     def startElement(self, name, attrs, connection):
         if name == "Item":
-            self.curItem = Item(self.connection)
+            self.curItem = Item(self._connection)
         elif self.curItem != None:
             self.curItem.startElement(name, attrs, connection)
         return None
@@ -111,6 +118,7 @@ class ItemSet(ResponseGroup):
             self.total_pages = value
         elif name == "Item":
             self.objs.append(self.curItem)
+            self._xml.write(self.curItem.to_xml())
             self.curItem = None
         elif self.curItem != None:
             self.curItem.endElement(name, value, connection)
@@ -127,7 +135,7 @@ class ItemSet(ResponseGroup):
             self.objs = []
             if int(self.page) < int(self.total_pages):
                 self.page += 1
-                self.connection.get_response(self.action, self.params, self.page, self)
+                self._connection.get_response(self.action, self.params, self.page, self)
                 return self.next()
             else:
                 raise
