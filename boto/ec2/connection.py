@@ -1,4 +1,5 @@
 # Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -47,22 +48,23 @@ from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
+from boto.ec2.tag import Tag
 from boto.exception import EC2ResponseError
 
-#boto.set_stream_logger('ec2')
+boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2010-06-15')
-    DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2010-08-31')
+    DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'tag-beta')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
-                                            'ec2.amazonaws.com')
+                                            'ec2-syrah.amazonaws.com')
     SignatureVersion = '2'
     ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=0,
+                 proxy_user=None, proxy_pass=None, debug=2,
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2.
@@ -1690,4 +1692,46 @@ class EC2Connection(AWSQueryConnection):
         params = {'GroupName':name}
         return self.get_status('DeletePlacementGroup', params)
 
-    
+    # Tag methods
+
+    def build_tag_param_list(self, params, tags):
+        keys = tags.keys()
+        keys.sort()
+        i = 1
+        for key in keys:
+            value = tags[key]
+            params['Tag.%d.Key'%i] = key
+            params['Tag.%d.Value'%i] = value
+            i += 1
+        
+    def get_all_tags(self, tags=None):
+        """
+        Retrieve all the metadata tags associated with your account.
+
+        :type tags: list
+        :param tags: A list of mumble
+
+        :rtype: dict
+        :return: A dictionary containing metadata tags
+        """
+        params = {}
+        if tags:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('DescribeTags', params, [('item', Tag)])
+
+    def create_tags(self, resource_ids, tags):
+        """
+        Create new metadata tags for the specified resource ids.
+
+        :type resource_ids: list
+        :param resource_ids: List of strings
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs
+
+        """
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        return self.get_status('CreateTags', params)
+
