@@ -1701,7 +1701,8 @@ class EC2Connection(AWSQueryConnection):
         for key in keys:
             value = tags[key]
             params['Tag.%d.Key'%i] = key
-            params['Tag.%d.Value'%i] = value
+            if value is not None:
+                params['Tag.%d.Value'%i] = value
             i += 1
         
     def get_all_tags(self, tags=None):
@@ -1734,4 +1735,26 @@ class EC2Connection(AWSQueryConnection):
         self.build_list_params(params, resource_ids, 'ResourceId')
         self.build_tag_param_list(params, tags)
         return self.get_status('CreateTags', params)
+
+    def delete_tags(self, resource_ids, tags):
+        """
+        Delete metadata tags for the specified resource ids.
+
+        :type resource_ids: list
+        :param resource_ids: List of strings
+
+        :type tags: dict or list
+        :param tags: Either a dictionary containing name/value pairs
+                     or a list containing just tag names.
+                     If you pass in a dictionary, the values must
+                     match the actual tag values or the tag will
+                     not be deleted.
+
+        """
+        if isinstance(tags, list):
+            tags = {}.fromkeys(tags, None)
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        return self.get_status('DeleteTags', params)
 
