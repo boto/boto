@@ -921,7 +921,7 @@ class Key(object):
         policy.acl.add_email_grant(permission, email_address)
         self.set_acl(policy, headers=headers)
 
-    def add_user_grant(self, permission, user_id):
+    def add_user_grant(self, permission, user_id, headers=None):
         """
         Convenience method that provides a quick way to add a canonical user grant to a key.
         This method retrieves the current ACL, creates a new grant based on the parameters
@@ -939,4 +939,4 @@ class Key(object):
         """
         policy = self.get_acl()
         policy.acl.add_user_grant(permission, user_id)
-        self.set_acl(policy)
+        self.set_acl(policy, headers=headers)
