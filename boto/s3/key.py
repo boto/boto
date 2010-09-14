@@ -458,8 +458,19 @@ class Key(object):
         if self.storage_class != 'STANDARD':
             provider = self.bucket.connection.provider
             headers[provider.storage_class_header] = self.storage_class
-        if headers.has_key('Content-Encoding'):
+        #
+        # If values are passed in the headers param, they take precedence
+        # and will override the object attributes.  If not, the value of
+        # the attributes will be used unless they are still set to None
+        #
+        if 'Content-Encoding' in headers:
             self.content_encoding = headers['Content-Encoding']
+        elif self.content_encoding:
+            headers['Content-Encoding'] = self.content_encoding
+        if 'Cache-Control' in headers:
+            self.cache_control = headers['Cache-Control']
+        elif self.cache_control:
+            headers['Cache-Control'] = self.cache_control
         if headers.has_key('Content-Type'):
             self.content_type = headers['Content-Type']
         elif self.path:
