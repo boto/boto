@@ -106,8 +106,10 @@ class Element(dict):
             self.stack.pop()
         value = value.strip()
         if value:
-            if self.parent:
+            if isinstance(self.parent, Element):
                 self.parent[pythonize_name(name)] = value
+            elif isinstance(self.parent, ListElement):
+                self.parent.append(value)
 
 class ListElement(list):
 
@@ -125,7 +127,7 @@ class ListElement(list):
             setattr(self, pythonize_name(name), l)
             return l
         elif name == self.item_marker:
-            e = Element(self.connection, name)
+            e = Element(self.connection, name, parent=self)
             self.append(e)
             return e
         else:
@@ -133,6 +135,13 @@ class ListElement(list):
 
     def endElement(self, name, value, connection):
         if name == self.element_name:
-            pass
+            if len(self) > 0:
+                empty = []
+                for e in self:
+                    if isinstance(e, Element):
+                        if len(e) == 0:
+                            empty.append(e)
+                for e in empty:
+                    self.remove(e)
         else:
             setattr(self, pythonize_name(name), value)
