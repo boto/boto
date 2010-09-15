@@ -27,10 +27,11 @@ import time
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
+from boto.provider import Provider
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
-from boto.exception import S3ResponseError, S3CreateError, BotoClientError
+from boto.exception import BotoClientError
 
 def check_lowercase_bucketname(n):
     """
@@ -297,7 +298,8 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('GET')
         body = response.read()
         if response.status > 300:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.provider.storage_response_error(
+                response.status, response.reason, body)
         rs = ResultSet([('Bucket', self.bucket_class)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
@@ -365,17 +367,20 @@ class S3Connection(AWSAuthConnection):
                 data=data)
         body = response.read()
         if response.status == 409:
-            raise S3CreateError(response.status, response.reason, body)
+            raise self.provider.storage_create_error(
+                response.status, response.reason, body)
         if response.status == 200:
             return self.bucket_class(self, bucket_name)
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def delete_bucket(self, bucket, headers=None):
         response = self.make_request('DELETE', bucket, headers=headers)
         body = response.read()
         if response.status != 204:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.storage_response_error(
+                response.status, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
             query_args=None, sender=None):
