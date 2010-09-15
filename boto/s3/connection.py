@@ -379,7 +379,7 @@ class S3Connection(AWSAuthConnection):
         response = self.make_request('DELETE', bucket, headers=headers)
         body = response.read()
         if response.status != 204:
-            raise self.connection.storage_response_error(
+            raise self.provider.storage_response_error(
                 response.status, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
