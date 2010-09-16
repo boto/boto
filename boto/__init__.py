@@ -287,6 +287,72 @@ def connect_sns(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     return SNSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 
+def connect_iam(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.iam.IAMConnection`
+    :return: A connection to Amazon's IAM
+    """
+    from boto.iam import IAMConnection
+    return IAMConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
+                 port=8773, path='/services/Eucalyptus', is_secure=False,
+                 **kwargs):
+    """
+    Connect to a Eucalyptus service.
+
+    :type host: string
+    :param host: the host name or ip address of the Eucalyptus server
+    
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ec2.connection.EC2Connection`
+    :return: A connection to Eucalyptus server
+    """
+    from boto.ec2 import EC2Connection
+    from boto.ec2.regioninfo import RegionInfo
+
+    reg = RegionInfo(name='eucalyptus', endpoint=host)
+    return EC2Connection(aws_access_key_id, aws_secret_access_key,
+                         region=reg, port=port, path=path,
+                         is_secure=is_secure, **kwargs)
+
+def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
+                   port=8773, path='/services/Walrus', is_secure=False,
+                   **kwargs):
+    """
+    Connect to a Walrus service.
+
+    :type host: string
+    :param host: the host name or ip address of the Walrus server
+    
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.s3.connection.S3Connection`
+    :return: A connection to Walrus
+    """
+    from boto.s3.connection import S3Connection
+    from boto.s3.connection import OrdinaryCallingFormat
+
+    return S3Connection(aws_access_key_id, aws_secret_access_key,
+                        host=host, port=port, path=path,
+                        calling_format=OrdinaryCallingFormat(),
+                        is_secure=is_secure, **kwargs)
+
 def check_extensions(module_name, module_path):
     """
     This function checks for extensions to boto modules.  It should be called in the
@@ -324,15 +390,15 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_scheme='file', debug=False, validate=True):
+def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
     :type default_scheme: string
     :param default_scheme: default scheme for scheme-less URIs.
-    :type debug: bool
-    :param debug: whether to enable connection-level debugging.
+    :type debug: int
+    :param debug: debug level to pass in to boto connection (range 0..2).
     :type validate: bool
     :param validate: whether to check for bucket name validity.
 

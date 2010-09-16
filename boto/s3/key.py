@@ -25,7 +25,8 @@ import rfc822
 import StringIO
 import base64
 import boto.utils
-from boto.exception import S3ResponseError, S3DataError, BotoClientError
+from boto.exception import BotoClientError
+from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
 try:
@@ -117,15 +118,16 @@ class Key(object):
         if self.resp == None:
             self.mode = 'r'
             
+            provider = self.bucket.connection.provider
             self.resp = self.bucket.connection.make_request('GET',
                                                             self.bucket.name,
                                                             self.name, headers,
                                                             query_args=query_args)
             if self.resp.status < 199 or self.resp.status > 299:
                 body = self.resp.read()
-                raise S3ResponseError(self.resp.status, self.resp.reason, body)
+                raise provider.storage_response_error(self.resp.status,
+                                                      self.resp.reason, body)
             response_headers = self.resp.msg
-            provider = self.bucket.connection.provider
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
             for name,value in response_headers.items():
@@ -404,6 +406,8 @@ class Key(object):
                        your callback to be called with each buffer read.
              
         """
+        provider = self.bucket.connection.provider
+
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest(method, path)
             for key in headers:
@@ -444,10 +448,12 @@ class Key(object):
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
                 if self.etag != '"%s"'  % self.md5:
-                    raise S3DataError('ETag from S3 did not match computed MD5')
+                    raise provider.storage_data_error(
+                        'ETag from S3 did not match computed MD5')
                 return response
             else:
-                raise S3ResponseError(response.status, response.reason, body)
+                raise provider.storage_response_error(
+                    response.status, response.reason, body)
 
         if not headers:
             headers = {}
@@ -456,12 +462,11 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
-            provider = self.bucket.connection.provider
             headers[provider.storage_class_header] = self.storage_class
-        if headers.has_key('Content-Type'):
-            self.content_type = headers['Content-Type']
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
+        if headers.has_key('Content-Type'):
+            self.content_type = headers['Content-Type']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
@@ -471,8 +476,7 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
-        headers = boto.utils.merge_meta(headers, self.metadata,
-                                        self.bucket.connection.provider)
+        headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
                                                    sender=sender)

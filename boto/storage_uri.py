@@ -155,7 +155,7 @@ class BucketStorageUri(StorageUri):
     """
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=False):
+                 debug=0):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -164,8 +164,8 @@ class BucketStorageUri(StorageUri):
         @param bucket_name: bucket name
         @type object_name: string
         @param object_name: object name
-        @type debug: bool
-        @param debug: whether to turn on debugging on calls to this class
+        @type debug: int
+        @param debug: debug level to pass in to connection (range 0..2)
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
