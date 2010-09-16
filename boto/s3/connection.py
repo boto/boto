@@ -115,6 +115,14 @@ class Location:
     EU = 'EU'
     USWest = 'us-west-1'
 
+def _environ_get_s3_headers():
+    s3_headers = os.environ.get('AWS_S3_HEADERS')
+    if not s3_headers:
+        return {}
+
+    return dict([ s3_header.split('=', 1) 
+                  for s3_header in s3_headers.split(':') ])
+
 #boto.set_stream_logger('s3')
 
 class S3Connection(AWSAuthConnection):
@@ -127,9 +135,13 @@ class S3Connection(AWSAuthConnection):
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/', provider='aws',
-                 bucket_class=Bucket):
+                 bucket_class=Bucket, headers=None):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
+        self.headers = _environ_get_s3_headers()
+        if headers is not None:
+            self.headers.update(headers)
+        
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -388,6 +400,8 @@ class S3Connection(AWSAuthConnection):
             bucket = bucket.name
         if isinstance(key, Key):
             key = key.name
+        if headers is None:
+            headers = self.headers
         path = self.calling_format.build_path_base(bucket, key)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         host = self.calling_format.build_host(self.server_name(), bucket)
