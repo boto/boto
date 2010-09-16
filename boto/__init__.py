@@ -295,7 +295,7 @@ def connect_iam(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.sns.IAMConnection`
+    :rtype: :class:`boto.iam.IAMConnection`
     :return: A connection to Amazon's IAM
     """
     from boto.iam import IAMConnection
@@ -316,8 +316,8 @@ def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.sns.IAMConnection`
-    :return: A connection to Amazon's IAM
+    :rtype: :class:`boto.ec2.connection.EC2Connection`
+    :return: A connection to Eucalyptus server
     """
     from boto.ec2 import EC2Connection
     from boto.ec2.regioninfo import RegionInfo
@@ -342,8 +342,8 @@ def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.sns.IAMConnection`
-    :return: A connection to Amazon's IAM
+    :rtype: :class:`boto.s3.connection.S3Connection`
+    :return: A connection to Walrus
     """
     from boto.s3.connection import S3Connection
     from boto.s3.connection import OrdinaryCallingFormat
