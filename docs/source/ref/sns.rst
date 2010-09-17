@@ -1,4 +1,4 @@
-.. _ref-sns:
+.. ref-sns
 
 ====
 SNS 
