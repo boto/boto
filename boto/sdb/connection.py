@@ -248,16 +248,16 @@ class SDBConnection(AWSQueryConnection):
                        replace=True, expected_value=None):
         """
         Store attributes for a given item in a domain.
-
+        
         :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
         :param domain_or_name: Either the name of a domain or a Domain object
-
+        
         :type item_name: string
         :param item_name: The name of the item whose attributes are being stored.
-
+        
         :type attribute_names: dict or dict-like object
         :param attribute_names: The name/value pairs to store as attributes
-
+        
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
                                of a single attribute name and expected value.
@@ -272,12 +272,12 @@ class SDBConnection(AWSQueryConnection):
                                 * ['name', True|False]
                                which will simply check for the existence (True)
                                or non-existencve (False) of the attribute.
-
+        
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
                         Defaults to True.
-
+        
         :rtype: bool
         :return: True if successful
         """
@@ -292,7 +292,7 @@ class SDBConnection(AWSQueryConnection):
     def batch_put_attributes(self, domain_or_name, items, replace=True):
         """
         Store attributes for multiple items in a domain.
-
+        
         :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
         :param domain_or_name: Either the name of a domain or a Domain object
 
@@ -302,12 +302,12 @@ class SDBConnection(AWSQueryConnection):
                       of attribute names/values, exactly the same as the
                       attribute_names parameter of the scalar put_attributes
                       call.
-
+        
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
                         existing values or will be added as addition values.
                         Defaults to True.
-
+        
         :rtype: bool
         :return: True if successful
         """
@@ -381,14 +381,18 @@ class SDBConnection(AWSQueryConnection):
         :param expected_value: If supplied, this is a list or tuple consisting
                                of a single attribute name and expected value.
                                The list can be of the form:
+                               
                                 * ['name', 'value']
+                               
                                In which case the call will first verify
                                that the attribute "name" of this item has
                                a value of "value".  If it does, the delete
                                will proceed, otherwise a ConditionalCheckFailed
                                error will be returned.
                                The list can also be of the form:
+                               
                                 * ['name', True|False]
+                               
                                which will simply check for the existence (True)
                                or non-existencve (False) of the attribute.
 

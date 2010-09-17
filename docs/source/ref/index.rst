@@ -13,7 +13,6 @@ API Reference
    ec2
    fps
    manage
-   mapreduce
    mashups
    mturk
    pyami
