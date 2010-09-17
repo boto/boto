@@ -12,9 +12,11 @@ Currently, this includes:
 - Simple Storage Service (S3)
 - Simple Queue Service (SQS)
 - Elastic Compute Cloud (EC2)
- * Elastic Load Balancer (ELB)
- * CloudWatch
- * AutoScale
+
+ - Elastic Load Balancer (ELB)
+ - CloudWatch
+ - AutoScale
+ 
 - Mechanical Turk
 - SimpleDB (SDB) - See SimpleDbPage for details
 - CloudFront
