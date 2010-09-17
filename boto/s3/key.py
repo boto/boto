@@ -96,9 +96,15 @@ class Key(object):
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
     
-    def handle_version_headers(self, resp):
+    def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
-        self.version_id = resp.getheader(provider.version_id, None)
+        # If the Key object already has a version_id attribute value, it
+        # means that it represents an explicit version and the user is
+        # doing a get_contents_*(version_id=<foo>) to retrieve another
+        # version of the Key.  In that case, we don't really want to
+        # overwrite the version_id in this Key object.  Comprende?
+        if self.version_id is None or force:
+            self.version_id = resp.getheader(provider.version_id, None)
         self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
         if resp.getheader(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
@@ -322,7 +328,7 @@ class Key(object):
         """
         Delete this key from S3
         """
-        return self.bucket.delete_key(self.name)
+        return self.bucket.delete_key(self.name, version_id=self.version_id)
 
     def get_metadata(self, name):
         return self.metadata.get(name)
@@ -480,7 +486,7 @@ class Key(object):
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
                                                    sender=sender)
-        self.handle_version_headers(resp)
+        self.handle_version_headers(resp, force=True)
 
     def compute_md5(self, fp):
         """
@@ -734,7 +740,12 @@ class Key(object):
         query_args = ''
         if torrent:
             query_args = 'torrent'
-        elif version_id:
+        # If a version_id is passed in, use that.  If not, check to see
+        # if the Key object has an explicit version_id and, if so, use that.
+        # Otherwise, don't pass a version_id query param.
+        if version_id is None:
+            version_id = self.version_id
+        if version_id:
             query_args = 'versionId=%s' % version_id
         self.open('r', headers, query_args=query_args)
         for bytes in self:
