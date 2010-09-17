@@ -12,15 +12,21 @@ Currently, this includes:
 - Simple Storage Service (S3)
 - Simple Queue Service (SQS)
 - Elastic Compute Cloud (EC2)
-
  * Elastic Load Balancer (ELB)
  * CloudWatch
  * AutoScale
-
 - Mechanical Turk
 - SimpleDB (SDB) - See SimpleDbPage for details
 - CloudFront
 - Virtual Private Cloud (VPC)
+- Relational Data Services (RDS)
+- Elastic Map Reduce (EMR)
+- Flexible Payment Service (FPS)
+- Identity and Access Management (IAM)
+
+The boto project page is at http://boto.googlecode.com/
+
+The boto source repository is at http://github.com/boto
 
 Follow project updates on Twitter (http://twitter.com/pythonboto).
 

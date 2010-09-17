@@ -25,3 +25,4 @@ API Reference
    sqs
    vpc
    emr
+   iam
