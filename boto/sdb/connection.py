@@ -27,9 +27,6 @@ from boto.sdb.domain import Domain, DomainMetaData
 from boto.sdb.item import Item
 from boto.sdb.regioninfo import SDBRegionInfo
 from boto.exception import SDBResponseError
-from boto.resultset import ResultSet
-import warnings
-
 
 class ItemThread(threading.Thread):
     

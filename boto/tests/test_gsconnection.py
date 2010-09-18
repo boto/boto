@@ -30,7 +30,6 @@ Some unit tests for the GSConnection
 import unittest
 import time
 import os
-import urllib
 from boto.gs.connection import GSConnection
 
 class GSConnectionTest (unittest.TestCase):

@@ -93,7 +93,7 @@ class StorageUri(object):
         return bucket.delete_key(self.object_name, headers, version_id,
                                  mfa_token)
 
-    def get_all_keys(self, headers=None, **params):
+    def get_all_keys(self, validate=True, headers=None, **params):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_all_keys(headers, params)
 
