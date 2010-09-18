@@ -27,8 +27,8 @@ from boto.exception import InvalidUriError
 class StorageUri(object):
     """
     Base class for representing storage provider-independent bucket and
-    object name with a shorthand URI-like syntax.
-
+    object name with a shorthand URI-like
+    
     This is an abstract class: the constructor cannot be called (throws an
     exception if you try).
     """

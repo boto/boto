@@ -262,14 +262,18 @@ class SDBConnection(AWSQueryConnection):
         :param expected_value: If supplied, this is a list or tuple consisting
                                of a single attribute name and expected value.
                                The list can be of the form:
-                                * ['name', 'value']
+                               
+                               * ['name', 'value']
+                                
                                In which case the call will first verify
                                that the attribute "name" of this item has
                                a value of "value".  If it does, the delete
                                will proceed, otherwise a ConditionalCheckFailed
                                error will be returned.
                                The list can also be of the form:
-                                * ['name', True|False]
+                               
+                               * ['name', True|False]
+                                
                                which will simply check for the existence (True)
                                or non-existencve (False) of the attribute.
         
@@ -382,7 +386,7 @@ class SDBConnection(AWSQueryConnection):
                                of a single attribute name and expected value.
                                The list can be of the form:
                                
-                                * ['name', 'value']
+                               * ['name', 'value']
                                
                                In which case the call will first verify
                                that the attribute "name" of this item has
@@ -391,7 +395,7 @@ class SDBConnection(AWSQueryConnection):
                                error will be returned.
                                The list can also be of the form:
                                
-                                * ['name', True|False]
+                               * ['name', True|False]
                                
                                which will simply check for the existence (True)
                                or non-existencve (False) of the attribute.

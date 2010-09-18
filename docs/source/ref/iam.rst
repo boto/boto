@@ -12,7 +12,7 @@ boto.iam
    :undoc-members:
 
 boto.iam.response
-----------------
+-----------------
 
 .. automodule:: boto.iam.response
    :members:   
