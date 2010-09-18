@@ -20,8 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-import boto
-
 from regioninfo import SQSRegionInfo
 
 def regions():

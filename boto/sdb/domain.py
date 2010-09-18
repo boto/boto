@@ -22,7 +22,7 @@
 """
 Represents an SDB Domain
 """
-from boto.sdb.queryresultset import QueryResultSet, SelectResultSet
+from boto.sdb.queryresultset import SelectResultSet
 
 class Domain:
     

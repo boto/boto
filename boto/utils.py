@@ -38,9 +38,6 @@
 Some handy utility functions used by several classes.
 """
 
-import base64
-import hmac
-import re
 import urllib
 import urllib2
 import imp

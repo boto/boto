@@ -53,7 +53,7 @@ import os
 import xml.sax
 import Queue
 import boto
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.exception import BotoClientError, BotoServerError
 from boto.resultset import ResultSet
 from boto.provider import Provider
 import boto.utils

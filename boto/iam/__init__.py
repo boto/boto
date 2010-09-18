@@ -447,7 +447,7 @@ class IAMConnection(AWSQueryConnection):
         :param policy_name: The policy document to delete.
         
         """
-        params = {'UserName' : user,
+        params = {'UserName' : user_name,
                   'PolicyName' : policy_name}
         return self.get_response('DeleteUserPolicy', params, verb='POST')
 

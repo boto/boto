@@ -22,7 +22,6 @@
 import boto
 from boto import handler
 from boto.exception import InvalidAclError
-from boto.provider import Provider
 from boto.gs.acl import ACL
 from boto.gs.acl import SupportedPermissions as GSPermissions
 from boto.gs.key import Key as GSKey
