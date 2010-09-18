@@ -38,6 +38,7 @@
 Some handy utility functions used by several classes.
 """
 
+import re
 import urllib
 import urllib2
 import imp
