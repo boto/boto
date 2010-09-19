@@ -147,7 +147,7 @@ class Image(EC2Object):
         :param max_count: The maximum number of instances to start
         
         :type key_name: string
-        :param key_name: The keypair to run this instance with.
+        :param key_name: The name of the keypair to run this instance with.
         
         :type security_groups: 
         :param security_groups:
