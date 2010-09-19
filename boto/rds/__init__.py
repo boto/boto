@@ -202,7 +202,7 @@ class RDSConnection(AWSQueryConnection):
         if db_name:
             params['DBName'] = db_name
         if param_group:
-            params['DBParameterGroup'] = param_group
+            params['DBParameterGroupName'] = param_group
         if security_groups:
             l = []
             for group in security_groups:
