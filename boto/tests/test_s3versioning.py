@@ -29,8 +29,6 @@ Some unit tests for the S3 Versioning and MfaDelete
 
 import unittest
 import time
-import os
-import urllib
 from boto.s3.connection import S3Connection
 from boto.exception import S3ResponseError
 from boto.s3.deletemarker import DeleteMarker
@@ -78,7 +76,7 @@ class S3VersionTest (unittest.TestCase):
         time.sleep(5)
         
         # now retrieve the contents as a string and compare
-        s3 = k.get_contents_as_string()
+        s3 = k.get_contents_as_string(version_id=v2)
         assert s3 == s2
         
         # Now list all versions and compare to what we have

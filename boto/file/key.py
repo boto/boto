@@ -21,7 +21,7 @@
 
 # File representation of key, for use with "file://" URIs.
 
-import os, shutil
+import os, shutil, StringIO
 
 class Key(object):
 

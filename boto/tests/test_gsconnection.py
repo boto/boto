@@ -30,9 +30,7 @@ Some unit tests for the GSConnection
 import unittest
 import time
 import os
-import urllib
 from boto.gs.connection import GSConnection
-from boto.exception import S3PermissionsError
 
 class GSConnectionTest (unittest.TestCase):
 

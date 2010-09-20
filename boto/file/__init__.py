@@ -21,8 +21,6 @@
 
 import boto
 
-boto.check_extensions(__name__, __path__)
-
 from connection import FileConnection as Connection
 from key import Key
 from bucket import Bucket

@@ -1,4 +1,4 @@
-.. _ref-sqs:
+.. ref-sqs
 
 ====
 SQS 

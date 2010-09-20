@@ -21,7 +21,7 @@
 
 import boto
 from boto import handler
-from boto.exception import InvalidAclError, S3ResponseError, S3PermissionsError
+from boto.exception import InvalidAclError
 from boto.gs.acl import ACL
 from boto.gs.acl import SupportedPermissions as GSPermissions
 from boto.gs.key import Key as GSKey
@@ -52,7 +52,8 @@ class Bucket(S3Bucket):
             xml.sax.parseString(body, h)
             return acl
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.
@@ -82,7 +83,8 @@ class Bucket(S3Bucket):
                           a long time!
         """
         if permission not in GSPermissions:
-            raise S3PermissionsError('Unknown Permission: %s' % permission)
+            raise self.connection.provider.storage_permissions_error(
+                'Unknown Permission: %s' % permission)
         acl = self.get_acl(headers=headers)
         acl.add_email_grant(permission, email_address)
         self.set_acl(acl, headers=headers)
@@ -116,7 +118,8 @@ class Bucket(S3Bucket):
                           a long time!
         """
         if permission not in GSPermissions:
-            raise S3PermissionsError('Unknown Permission: %s' % permission)
+            raise self.connection.provider.storage_permissions_error(
+                'Unknown Permission: %s' % permission)
         acl = self.get_acl(headers=headers)
         acl.add_user_grant(permission, user_id)
         self.set_acl(acl, headers=headers)

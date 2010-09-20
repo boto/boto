@@ -88,6 +88,14 @@ class Item(dict):
 
     def save(self, replace=True):
         self.domain.put_attributes(self.name, self, replace)
+        # Delete any attributes set to "None"
+        if replace:
+            del_attrs = []
+            for name in self:
+                if self[name] == None:
+                    del_attrs.append(name)
+            if len(del_attrs) > 0:
+                self.domain.delete_attributes(self.name, del_attrs)
 
     def add_value(self, key, value):
         if key in self:
