@@ -1287,6 +1287,42 @@ class EC2Connection(AWSQueryConnection):
         params = {'KeyName':key_name}
         return self.get_status('DeleteKeyPair', params)
 
+    def import_key_pair(self, key_name, public_key_material):
+        """
+        mports the public key from an RSA key pair that you created
+        with a third-party tool.
+
+        Supported formats:
+
+        * OpenSSH public key format (e.g., the format
+          in ~/.ssh/authorized_keys)
+
+        * Base64 encoded DER format
+
+        * SSH public key file format as specified in RFC4716
+
+        DSA keys are not supported. Make sure your key generator is
+        set up to create RSA keys.
+
+        Supported lengths: 1024, 2048, and 4096.
+
+        :type key_name: string
+        :param key_name: The name of the new keypair
+
+        :type public_key_material: string
+        :param public_key_material: The public key. You must base64 encode
+                                    the public key material before sending
+                                    it to AWS.
+
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+                 The material attribute of the new KeyPair object
+                 will contain the the unencrypted PEM encoded RSA private key.
+        """
+        params = {'KeyName' : key_name,
+                  'PublicKeyMaterial' : public_key_material}
+        return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
+
     # SecurityGroup methods
 
     def get_all_security_groups(self, groupnames=None):
