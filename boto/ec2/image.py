@@ -115,16 +115,25 @@ class Image(EC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self):
+    def update(self, validate=False):
         """
         Update the image's state information by making a call to fetch
         the current image attributes from the service.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         image the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
         """
         rs = self.connection.get_all_images([self.id])
         if len(rs) > 0:
             img = rs[0]
             if img.id == self.id:
                 self._update(img)
+        elif validate:
+            raise ValueError
         return self.state
 
     def run(self, min_count=1, max_count=1, key_name=None,
