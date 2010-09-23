@@ -23,7 +23,8 @@ from boto.s3.user import User
 
 
 CannedACLStrings = ['private', 'public-read',
-                    'public-read-write', 'authenticated-read']
+                    'public-read-write', 'authenticated-read',
+                    'bucket-owner-read', 'bucket-owner-full-control']
 
 
 class Policy:

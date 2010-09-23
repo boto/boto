@@ -25,7 +25,7 @@ from boto.sqs.connection import SQSConnection
 from boto.exception import SQSError
 
 def usage():
-    print 'cq.py [-c] [-q queue_name] [-o output_file] [-t timeout]'
+    print 'cq [-c] [-q queue_name] [-o output_file] [-t timeout]'
   
 def main():
     try:

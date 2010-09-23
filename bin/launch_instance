@@ -80,6 +80,7 @@ if __name__ == "__main__":
     except ImportError:
         pass
     import boto
+    from boto.ec2 import regions
     from optparse import OptionParser
     from boto.mashups.iobject import IObject
     parser = OptionParser(version=VERSION, usage="%prog [options] config_url")
@@ -90,6 +91,7 @@ if __name__ == "__main__":
     parser.add_option("-t", "--type", help="Type of Instance (default m1.small)", dest="type", default="m1.small")
     parser.add_option("-k", "--key", help="Keypair", dest="key_name")
     parser.add_option("-z", "--zone", help="Zone (default us-east-1a)", dest="zone", default="us-east-1a")
+    parser.add_option("-r", "--region", help="Region (default us-east-1)", dest="region", default="us-east-1")
     parser.add_option("-i", "--ip", help="Elastic IP", dest="elastic_ip")
     parser.add_option("-n", "--no-add-cred", help="Don't add a credentials section", default=False, action="store_true", dest="nocred")
 
@@ -100,10 +102,18 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     file_url = os.path.expanduser(args[0])
-    ec2 = boto.connect_ec2()
 
     cfg = Config()
     cfg.add_config(file_url)
+
+    for r in regions():
+        if r.name == options.region:
+            region = r
+            break
+    else:
+        print "Region %s not found." % options.region
+        sys.exit(1)
+    ec2 = boto.connect_ec2(region=region)
     if not options.nocred:
         cfg.add_creds(ec2)
 

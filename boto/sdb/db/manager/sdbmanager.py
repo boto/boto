@@ -103,7 +103,7 @@ class SDBConverter:
             if Model in item_type.mro():
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
-            if encoded_value != None and encoded_value != "None":
+            if encoded_value != None:
                 new_value.append('%s:%s' % (key, encoded_value))
         return new_value
 
@@ -122,7 +122,7 @@ class SDBConverter:
             item_type = getattr(prop, "item_type")
             dec_val = {}
             for val in value:
-                if val != "None" and val != None:
+                if val != None:
                     k,v = self.decode_map_element(item_type, val)
                     try:
                         k = int(k)
@@ -272,7 +272,7 @@ class SDBConverter:
 
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
-            return 'None'
+            return None
         if isinstance(value, str) or isinstance(value, unicode):
             return value
         else:
@@ -445,20 +445,24 @@ class SDBManager(object):
         query.rs = rs
         return self._object_lister(query.model_class, rs)
 
-    def count(self, cls, filters):
+    def count(self, cls, filters, quick=True):
         """
         Get the number of results that would
         be returned in this query
         """
         query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
-        count =  int(self.domain.select(query).next()["Count"])
+        count = 0
+        for row in self.domain.select(query):
+            count += int(row['Count'])
+            if quick:
+                return count
         return count
 
 
     def _build_filter(self, property, name, op, val):
         if val == None:
             if op in ('is','='):
-                return "`%s` is null" % name
+                return "`%(name)s` is null" % {"name": name}
             elif op in ('is not', '!='):
                 return "`%s` is not null" % name
             else:
@@ -553,12 +557,16 @@ class SDBManager(object):
         attrs = {'__type__' : obj.__class__.__name__,
                  '__module__' : obj.__class__.__module__,
                  '__lineage__' : obj.get_lineage()}
+        del_attrs = []
         for property in obj.properties(hidden=False):
             value = property.get_value_for_datastore(obj)
             if value is not None:
                 value = self.encode_value(property, value)
             if value == []:
                 value = None
+            if value == None:
+                del_attrs.append(property.name)
+                continue
             attrs[property.name] = value
             if property.unique:
                 try:
@@ -569,6 +577,9 @@ class SDBManager(object):
                 except(StopIteration):
                     pass
         self.domain.put_attributes(obj.id, attrs, replace=True)
+        if len(del_attrs) > 0:
+            self.domain.delete_attributes(obj.id, del_attrs)
+        return obj
 
     def delete_object(self, obj):
         self.domain.delete_attributes(obj.id)

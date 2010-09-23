@@ -25,7 +25,8 @@ import rfc822
 import StringIO
 import base64
 import boto.utils
-from boto.exception import S3ResponseError, S3DataError, BotoClientError
+from boto.exception import BotoClientError
+from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
 try:
@@ -83,9 +84,27 @@ class Key(object):
     def __iter__(self):
         return self
 
-    def handle_version_headers(self, resp):
+    def get_md5_from_hexdigest(self, md5_hexdigest):
+        """
+        A utility function to create the 2-tuple (md5hexdigest, base64md5)
+        from just having a precalculated md5_hexdigest.
+        """
+        import binascii
+        digest = binascii.unhexlify(md5_hexdigest)
+        base64md5 = base64.encodestring(digest)
+        if base64md5[-1] == '\n':
+            base64md5 = base64md5[0:-1]
+        return (md5_hexdigest, base64md5)
+    
+    def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
-        self.version_id = resp.getheader(provider.version_id, None)
+        # If the Key object already has a version_id attribute value, it
+        # means that it represents an explicit version and the user is
+        # doing a get_contents_*(version_id=<foo>) to retrieve another
+        # version of the Key.  In that case, we don't really want to
+        # overwrite the version_id in this Key object.  Comprende?
+        if self.version_id is None or force:
+            self.version_id = resp.getheader(provider.version_id, None)
         self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
         if resp.getheader(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
@@ -105,15 +124,16 @@ class Key(object):
         if self.resp == None:
             self.mode = 'r'
             
+            provider = self.bucket.connection.provider
             self.resp = self.bucket.connection.make_request('GET',
                                                             self.bucket.name,
                                                             self.name, headers,
                                                             query_args=query_args)
             if self.resp.status < 199 or self.resp.status > 299:
                 body = self.resp.read()
-                raise S3ResponseError(self.resp.status, self.resp.reason, body)
+                raise provider.storage_response_error(self.resp.status,
+                                                      self.resp.reason, body)
             response_headers = self.resp.msg
-            provider = self.bucket.connection.provider
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
             for name,value in response_headers.items():
@@ -206,9 +226,15 @@ class Key(object):
                            will be used.
                                   
         """
-        self.storage_class = new_storage_class
-        return self.copy(self.bucket.name, self.name,
-                         reduced_redundancy=True, preserve_acl=True)
+        if new_storage_class == 'STANDARD':
+            return self.copy(self.bucket.name, self.name,
+                             reduced_redundancy=False, preserve_acl=True)
+        elif new_storage_class == 'REDUCED_REDUNDANCY':
+            return self.copy(self.bucket.name, self.name,
+                             reduced_redundancy=True, preserve_acl=True)
+        else:
+            raise BotoClientError('Invalid storage class: %s' %
+                                  new_storage_class)
 
     def copy(self, dst_bucket, dst_key, metadata=None,
              reduced_redundancy=False, preserve_acl=False):
@@ -302,7 +328,7 @@ class Key(object):
         """
         Delete this key from S3
         """
-        return self.bucket.delete_key(self.name)
+        return self.bucket.delete_key(self.name, version_id=self.version_id)
 
     def get_metadata(self, name):
         return self.metadata.get(name)
@@ -386,6 +412,8 @@ class Key(object):
                        your callback to be called with each buffer read.
              
         """
+        provider = self.bucket.connection.provider
+
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest(method, path)
             for key in headers:
@@ -426,10 +454,12 @@ class Key(object):
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
                 if self.etag != '"%s"'  % self.md5:
-                    raise S3DataError('ETag from S3 did not match computed MD5')
+                    raise provider.storage_data_error(
+                        'ETag from S3 did not match computed MD5')
                 return response
             else:
-                raise S3ResponseError(response.status, response.reason, body)
+                raise provider.storage_response_error(
+                    response.status, response.reason, body)
 
         if not headers:
             headers = {}
@@ -438,12 +468,11 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
-            provider = self.bucket.connection.provider
             headers[provider.storage_class_header] = self.storage_class
-        if headers.has_key('Content-Type'):
-            self.content_type = headers['Content-Type']
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
+        if headers.has_key('Content-Type'):
+            self.content_type = headers['Content-Type']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
@@ -453,12 +482,11 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
-        headers = boto.utils.merge_meta(headers, self.metadata,
-                                        self.bucket.connection.provider)
+        headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
                                                    sender=sender)
-        self.handle_version_headers(resp)
+        self.handle_version_headers(resp, force=True)
 
     def compute_md5(self, fp):
         """
@@ -552,6 +580,11 @@ class Key(object):
         if self.bucket != None:
             if not md5:
                 md5 = self.compute_md5(fp)
+            else:
+                # even if md5 is provided, still need to set size of content
+                fp.seek(0, 2)
+                self.size = fp.tell()
+                fp.seek(0)
             self.md5 = md5[0]
             self.base64md5 = md5[1]
             if self.name == None:
@@ -707,7 +740,12 @@ class Key(object):
         query_args = ''
         if torrent:
             query_args = 'torrent'
-        elif version_id:
+        # If a version_id is passed in, use that.  If not, check to see
+        # if the Key object has an explicit version_id and, if so, use that.
+        # Otherwise, don't pass a version_id query param.
+        if version_id is None:
+            version_id = self.version_id
+        if version_id:
             query_args = 'versionId=%s' % version_id
         self.open('r', headers, query_args=query_args)
         for bytes in self:

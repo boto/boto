@@ -44,38 +44,39 @@ def list(elb):
 
 def get(elb, name):
     """Get details about ELB <name>"""
-    b = elb.get_all_load_balancers(name)
-    if len(b) < 1:
+    elbs = elb.get_all_load_balancers(name)
+    if len(elbs) < 1:
         print "No load balancer by the name of %s found" % name
         return
-    b = b[0]
+    for b in elbs:
+        if name in b.name:
+            print "="*80
+            print "Name: %s" % b.name
+            print "DNS Name: %s" % b.dns_name
 
-    print "Name: %s" % b.name
-    print "DNS Name: %s" % b.dns_name
+            print
 
-    print
+            print "Listeners"
+            print "---------"
+            print "%-8s %-8s %s" % ("IN", "OUT", "PROTO")
+            for l in b.listeners:
+                print "%-8s %-8s %s" % (l[0], l[1], l[2])
 
-    print "Listeners"
-    print "---------"
-    print "%-8s %-8s %s" % ("IN", "OUT", "PROTO")
-    for l in b.listeners:
-        print "%-8s %-8s %s" % (l[0], l[1], l[2])
+            print
 
-    print
+            print "  Zones  "
+            print "---------"
+            for z in b.availability_zones:
+                print z
 
-    print "  Zones  "
-    print "---------"
-    for z in b.availability_zones:
-        print z
+            print
 
-    print
+            print "Instances"
+            print "---------"
+            for i in b.instances:
+                print i.id
 
-    print "Instances"
-    print "---------"
-    for i in b.instances:
-        print i.id
-
-    print
+            print
 
 def create(elb, name, zones, listeners):
     """Create an ELB named <name>"""
@@ -93,8 +94,9 @@ def delete(elb, name):
     if len(b) < 1:
         print "No load balancer by the name of %s found" % name
         return
-    b = b[0]
-    b.delete()
+    for i in b:
+        if name in i.name:
+            i.delete()
     print "Load Balancer %s deleted" % name
 
 def add_instance(elb, name, instance):
@@ -103,8 +105,9 @@ def add_instance(elb, name, instance):
     if len(b) < 1:
         print "No load balancer by the name of %s found" % name
         return
-    b = b[0]
-    b.register_instances([instance])
+    for i in b:
+        if name in i.name:
+            i.register_instances([instance])
     return get(elb, name)
 
 
@@ -114,8 +117,9 @@ def remove_instance(elb, name, instance):
     if len(b) < 1:
         print "No load balancer by the name of %s found" % name
         return
-    b = b[0]
-    b.deregister_instances([instance])
+    for i in b:
+        if name in i.name:
+            i.deregister_instances([instance])
     return get(elb, name)
 
 def enable_zone(elb, name, zone):

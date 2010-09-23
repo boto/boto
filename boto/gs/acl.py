@@ -75,6 +75,15 @@ class ACL:
         entry = Entry(permission=permission, type=USER_BY_ID, id=user_id)
         self.entries.entry_list.append(entry)
 
+    def add_group_email_grant(self, permission, email_address):
+        entry = Entry(type=GROUP_BY_EMAIL, email_address=email_address,
+                      permission=permission)
+        self.entries.entry_list.append(entry)
+
+    def add_group_grant(self, permission, group_id):
+        entry = Entry(type=GROUP_BY_ID, id=group_id, permission=permission)
+        self.entries.entry_list.append(entry)
+
     def startElement(self, name, attrs, connection):
         if name == OWNER:
             self.owner = User(self)

@@ -1,4 +1,4 @@
-# Copyright 2010 Google Inc.
+# Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -18,11 +18,34 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+"""
+Represents an EC2 Placement Group
+"""
+from boto.ec2.ec2object import EC2Object
+from boto.exception import BotoClientError
 
-import boto
+class PlacementGroup(EC2Object):
+    
+    def __init__(self, connection=None, name=None, strategy=None, state=None):
+        EC2Object.__init__(self, connection)
+        self.name = name
+        self.strategy = strategy
+        self.state = state
 
-from connection import FileConnection as Connection
-from key import Key
-from bucket import Bucket
+    def __repr__(self):
+        return 'PlacementGroup:%s' % self.name
 
-__all__ = ['Connection', 'Key', 'Bucket']
+    def endElement(self, name, value, connection):
+        if name == 'groupName':
+            self.name = value
+        elif name == 'strategy':
+            self.strategy = value
+        elif name == 'state':
+            self.state = value
+        else:
+            setattr(self, name, value)
+
+    def delete(self):
+        return self.connection.delete_placement_group(self.name)
+
+

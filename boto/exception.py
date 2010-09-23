@@ -40,18 +40,30 @@ class BotoClientError(StandardError):
         self.reason = reason
 
     def __repr__(self):
-        return 'S3Error: %s' % self.reason
+        return 'BotoClientError: %s' % self.reason
 
     def __str__(self):
-        return 'S3Error: %s' % self.reason
+        return 'BotoClientError: %s' % self.reason
 
 class SDBPersistenceError(StandardError):
 
     pass
 
-class S3PermissionsError(BotoClientError):
+class StoragePermissionsError(BotoClientError):
+    """
+    Permissions error when accessing a bucket or key on a storage service.
+    """
+    pass
+
+class S3PermissionsError(StoragePermissionsError):
     """
     Permissions error when accessing a bucket or key on S3.
+    """
+    pass
+
+class GSPermissionsError(StoragePermissionsError):
+    """
+    Permissions error when accessing a bucket or key on GS.
     """
     pass
 
@@ -135,9 +147,9 @@ class ConsoleOutput:
         else:
             setattr(self, name, value)
 
-class S3CreateError(BotoServerError):
+class StorageCreateError(BotoServerError):
     """
-    Error creating a bucket or key on S3.
+    Error creating a bucket or key on a storage service.
     """
     def __init__(self, status, reason, body=None):
         self.bucket = None
@@ -149,9 +161,33 @@ class S3CreateError(BotoServerError):
         else:
             return BotoServerError.endElement(self, name, value, connection)
 
-class S3CopyError(BotoServerError):
+class S3CreateError(StorageCreateError):
+    """
+    Error creating a bucket or key on S3.
+    """
+    pass
+
+class GSCreateError(StorageCreateError):
+    """
+    Error creating a bucket or key on GS.
+    """
+    pass
+
+class StorageCopyError(BotoServerError):
+    """
+    Error copying a key on a storage service.
+    """
+    pass
+
+class S3CopyError(StorageCopyError):
     """
     Error copying a key on S3.
+    """
+    pass
+
+class GSCopyError(StorageCopyError):
+    """
+    Error copying a key on GS.
     """
     pass
 
@@ -193,10 +229,10 @@ class SQSDecodeError(BotoClientError):
 
     def __str__(self):
         return 'SQSDecodeError: %s' % self.reason
-    
-class S3ResponseError(BotoServerError):
+
+class StorageResponseError(BotoServerError):
     """
-    Error in response from S3.
+    Error in response from a storage service.
     """
     def __init__(self, status, reason, body=None):
         self.resource = None
@@ -215,6 +251,18 @@ class S3ResponseError(BotoServerError):
         BotoServerError._cleanupParsedProperties(self)
         for p in ('resource'):
             setattr(self, p, None)
+
+class S3ResponseError(StorageResponseError):
+    """
+    Error in response from S3.
+    """
+    pass
+
+class GSResponseError(StorageResponseError):
+    """
+    Error in response from GS.
+    """
+    pass
 
 class EC2ResponseError(BotoServerError):
     """
@@ -285,9 +333,21 @@ class AWSConnectionError(BotoClientError):
     """
     pass
 
-class S3DataError(BotoClientError):
+class StorageDataError(BotoClientError):
+    """
+    Error receiving data from a storage service.
+    """ 
+    pass
+
+class S3DataError(StorageDataError):
     """
     Error receiving data from S3.
+    """ 
+    pass
+
+class GSDataError(StorageDataError):
+    """
+    Error receiving data from GS.
     """ 
     pass
 

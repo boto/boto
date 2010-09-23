@@ -1,8 +1,8 @@
 .. _emr_tut:
 
-=======================================
+=====================================================
 An Introduction to boto's Elastic Mapreduce interface
-=======================================
+=====================================================
 
 This tutorial focuses on the boto interface to Elastic Mapreduce from
 Amazon Web Services.  This tutorial assumes that you have already
@@ -37,7 +37,7 @@ In either case, conn points to an EmrConnection object which we will use
 throughout the remainder of this tutorial.
 
 Creating Streaming JobFlow Steps
----------------------
+--------------------------------
 Upon creating a connection to Elastic Mapreduce you will next 
 want to create one or more jobflow steps.  There are two types of steps, streaming
 and custom jar, both of which have a class in the boto Elastic Mapreduce implementation.
@@ -58,7 +58,7 @@ Note that this statement does not run the step, that is accomplished later when 
 Additional arguments of note to the streaming jobflow step are cache_files, cache_archive and step_args.  The options cache_files and cache_archive enable you to use the Hadoops distributed cache to share files amongst the instances that run the step.  The argument step_args allows one to pass additional arguments to Hadoop streaming, for example modifications to the Hadoop job configuration.
 
 Creating Custom Jar Job Flow Steps
----------------------
+----------------------------------
 
 The second type of jobflow step executes tasks written with a custom jar.  Creating a custom jar step for the AWS CloudBurst example can be accomplished by:
 
@@ -73,7 +73,7 @@ The second type of jobflow step executes tasks written with a custom jar.  Creat
 Note that this statement does not actually run the step, that is accomplished later when we create a jobflow.  Also note that this JarStep does not include a main_class argument since the jar MANIFEST.MF has a Main-Class entry.
 
 Creating JobFlows
----------------------
+-----------------
 Once you have created one or more jobflow steps, you will next want to create and run a jobflow.  Creating a jobflow that executes either of the steps we created above can be accomplished by:
 
 >>> import boto
@@ -99,7 +99,7 @@ If you wish to add additional steps to a running jobflow you may want to set the
 The run_jobflow method has a number of important parameters that are worth investigating.  They include parameters to change the number and type of EC2 instances on which the jobflow is executed, set a SSH key for manual debugging and enable AWS console debugging.
 
 Terminating JobFlows
----------------------
+--------------------
 By default when all the steps of a jobflow have finished or failed the jobflow terminates.  However, if you set the keep_alive parameter to True or just want to halt the execution of a jobflow early you can terminate a jobflow by:
 
 >>> import boto

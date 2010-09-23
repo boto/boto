@@ -24,7 +24,6 @@
 import os
 from key import Key
 from boto.file.simpleresultset import SimpleResultSet
-from boto.exception import S3ResponseError
 from boto.s3.bucketlistresultset import BucketListResultSet
 
 class Bucket(object):
@@ -54,10 +53,7 @@ class Bucket(object):
         :type mfa_token: tuple or list of strings
         :param mfa_token: Unused in this subclass.
         """
-        try:
-          os.remove(key_name)
-        except OSError, e:
-          raise S3ResponseError(409, e.strerror)
+        os.remove(key_name)
 
     def get_all_keys(self, headers=None, **params):
         """
@@ -85,11 +81,8 @@ class Bucket(object):
         :rtype: :class:`boto.file.key.Key`
         :returns: A Key object from this bucket.
         """
-        try:
-            fp = open(key_name, 'rb')
-            return Key(self.name, key_name, fp)
-        except OSError, e:
-            raise S3ResponseError(409, e.strerror)
+        fp = open(key_name, 'rb')
+        return Key(self.name, key_name, fp)
 
     def new_key(self, key_name=None):
         """
@@ -104,8 +97,5 @@ class Bucket(object):
         dir_name = os.path.dirname(key_name)
         if dir_name and not os.path.exists(dir_name):
             os.makedirs(dir_name)
-        try:
-            fp = open(key_name, 'wb')
-            return Key(self.name, key_name, fp)
-        except OSError, e:
-            raise S3ResponseError(409, e.strerror)
+        fp = open(key_name, 'wb')
+        return Key(self.name, key_name, fp)

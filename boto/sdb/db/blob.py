@@ -38,9 +38,13 @@ class Blob(object):
 
     def __str__(self):
         if hasattr(self.file, "get_contents_as_string"):
-            return str(self.file.get_contents_as_string())
+            value = self.file.get_contents_as_string()
         else:
-            return str(self.file.getvalue())
+            value = self.file.getvalue()
+        try:
+            return str(value)
+        except:
+            return unicode(value)
 
     def read(self):
         return self.file.read()

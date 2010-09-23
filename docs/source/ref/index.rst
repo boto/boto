@@ -13,7 +13,6 @@ API Reference
    ec2
    fps
    manage
-   mapreduce
    mashups
    mturk
    pyami
@@ -21,6 +20,8 @@ API Reference
    s3
    sdb
    services
+   sns
    sqs
    vpc
    emr
+   iam

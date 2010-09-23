@@ -53,7 +53,7 @@ import os
 import xml.sax
 import Queue
 import boto
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.exception import BotoClientError, BotoServerError
 from boto.resultset import ResultSet
 from boto.provider import Provider
 import boto.utils
@@ -201,10 +201,12 @@ class AWSAuthConnection(_BlockingAwareRequestHandler):
         if self.provider.host:
             self.host = self.provider.host
 
+        if self.secret_key is None:
+            raise BotoClientError('No credentials have been supplied')
         # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(self.aws_secret_access_key, digestmod=sha)
+        self.hmac = hmac.new(self.secret_key, digestmod=sha)
         if sha256:
-            self.hmac_256 = hmac.new(self.aws_secret_access_key, digestmod=sha256)
+            self.hmac_256 = hmac.new(self.secret_key, digestmod=sha256)
         else:
             self.hmac_256 = None
 

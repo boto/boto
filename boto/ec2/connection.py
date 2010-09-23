@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -46,13 +47,15 @@ from boto.ec2.spotinstancerequest import SpotInstanceRequest
 from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
+from boto.ec2.placementgroup import PlacementGroup
+from boto.ec2.tag import Tag
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2009-11-30')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2010-08-31')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
@@ -69,7 +72,7 @@ class EC2Connection(AWSQueryConnection):
         B{Note:} The host argument is overridden by the host specified in the boto configuration file.
         """
         if not region:
-            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint, EC2Connection)
+            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -382,7 +385,9 @@ class EC2Connection(AWSQueryConnection):
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
                       disable_api_termination=False,
-                      instance_initiated_shutdown_behavior=None):
+                      instance_initiated_shutdown_behavior=None,
+                      private_ip_address=None,
+                      placement_group=None):
         """
         Runs an image on EC2.
 
@@ -405,7 +410,10 @@ class EC2Connection(AWSQueryConnection):
         :param user_data: The user data passed to the launched instances
 
         :type instance_type: string
-        :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+        :param instance_type: The type of instance to run.  Current choices are:
+                              m1.small | m1.large | m1.xlarge | c1.medium |
+                              c1.xlarge | m2.xlarge | m2.2xlarge |
+                              m2.4xlarge | cc1.4xlarge
 
         :type placement: string
         :param placement: The availability zone in which to launch the instances
@@ -422,14 +430,21 @@ class EC2Connection(AWSQueryConnection):
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances for VPC.
 
+        :type private_ip_address: string
+        :param private_ip_address: If you're using VPC, you can optionally use
+                                   this parameter to assign the instance a
+                                   specific available IP address from the
+                                   subnet (e.g., 10.0.0.25).
+
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
                                  describing the EBS volumes associated
                                  with the Image.
 
         :type disable_api_termination: bool
-        :param disable_api_termination: If True, the instances will be locked and will
-                                        not be able to be terminated via the API.
+        :param disable_api_termination: If True, the instances will be locked
+                                        and will not be able to be terminated
+                                        via the API.
 
         :type instance_initiated_shutdown_behavior: string
         :param instance_initiated_shutdown_behavior: Specifies whether the instance's
@@ -438,6 +453,10 @@ class EC2Connection(AWSQueryConnection):
                                                      the instance is shutdown by the
                                                      owner.  Valid values are:
                                                      stop | terminate
+
+        :type placement_group: string
+        :param placement_group: If specified, this is the name of the placement
+                                group in which the instance(s) will be launched.
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
@@ -463,6 +482,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceType'] = instance_type
         if placement:
             params['Placement.AvailabilityZone'] = placement
+        if placement_group:
+            params['Placement.GroupName'] = placement_group
         if kernel_id:
             params['KernelId'] = kernel_id
         if ramdisk_id:
@@ -471,6 +492,8 @@ class EC2Connection(AWSQueryConnection):
             params['Monitoring.Enabled'] = 'true'
         if subnet_id:
             params['SubnetId'] = subnet_id
+        if private_ip_address:
+            params['PrivateIpAddress'] = private_ip_address
         if block_device_map:
             block_device_map.build_list_params(params)
         if disable_api_termination:
@@ -580,8 +603,9 @@ class EC2Connection(AWSQueryConnection):
                           instanceInitiatedShutdownBehavior|
                           rootDeviceName|blockDeviceMapping
 
-        :rtype: :class:`boto.ec2.image.ImageAttribute`
-        :return: An ImageAttribute object representing the value of the attribute requested
+        :rtype: :class:`boto.ec2.image.InstanceAttribute`
+        :return: An InstanceAttribute object representing the value of the
+                 attribute requested
         """
         params = {'InstanceId' : instance_id}
         if attribute:
@@ -767,7 +791,8 @@ class EC2Connection(AWSQueryConnection):
                                  with the Image.
 
         :rtype: Reservation
-        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
+                 associated with the request for machines
         """
         params = {'LaunchSpecification.ImageId':image_id,
                   'SpotPrice' : price}
@@ -1262,6 +1287,42 @@ class EC2Connection(AWSQueryConnection):
         params = {'KeyName':key_name}
         return self.get_status('DeleteKeyPair', params)
 
+    def import_key_pair(self, key_name, public_key_material):
+        """
+        mports the public key from an RSA key pair that you created
+        with a third-party tool.
+
+        Supported formats:
+
+        * OpenSSH public key format (e.g., the format
+          in ~/.ssh/authorized_keys)
+
+        * Base64 encoded DER format
+
+        * SSH public key file format as specified in RFC4716
+
+        DSA keys are not supported. Make sure your key generator is
+        set up to create RSA keys.
+
+        Supported lengths: 1024, 2048, and 4096.
+
+        :type key_name: string
+        :param key_name: The name of the new keypair
+
+        :type public_key_material: string
+        :param public_key_material: The public key. You must base64 encode
+                                    the public key material before sending
+                                    it to AWS.
+
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+                 The material attribute of the new KeyPair object
+                 will contain the the unencrypted PEM encoded RSA private key.
+        """
+        params = {'KeyName' : key_name,
+                  'PublicKeyMaterial' : public_key_material}
+        return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
+
     # SecurityGroup methods
 
     def get_all_security_groups(self, groupnames=None):
@@ -1616,4 +1677,120 @@ class EC2Connection(AWSQueryConnection):
         params = {'InstanceId' : instance_id}
         rs = self.get_object('GetPasswordData', params, ResultSet)
         return rs.passwordData
+
+    # 
+    # Cluster Placement Groups
+    #
+
+    def get_all_placement_groups(self, groupnames=None):
+        """
+        Get all placement groups associated with your account in a region.
+
+        :type groupnames: list
+        :param groupnames: A list of the names of placement groups to retrieve.
+                           If not provided, all placement groups will be returned.
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.placementgroup.PlacementGroup`
+        """
+        params = {}
+        if groupnames:
+            self.build_list_params(params, groupnames, 'GroupName')
+        return self.get_list('DescribePlacementGroups', params, [('item', PlacementGroup)])
+
+    def create_placement_group(self, name, strategy='cluster'):
+        """
+        Create a new placement group for your account.
+        This will create the placement group within the region you
+        are currently connected to.
+
+        :type name: string
+        :param name: The name of the new placement group
+
+        :type strategy: string
+        :param strategy: The placement strategy of the new placement group.
+                         Currently, the only acceptable value is "cluster".
+
+        :rtype: :class:`boto.ec2.placementgroup.PlacementGroup`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+        """
+        params = {'GroupName':name, 'Strategy':strategy}
+        group = self.get_status('CreatePlacementGroup', params)
+        return group
+
+    def delete_placement_group(self, name):
+        """
+        Delete a placement group from your account.
+
+        :type key_name: string
+        :param key_name: The name of the keypair to delete
+        """
+        params = {'GroupName':name}
+        return self.get_status('DeletePlacementGroup', params)
+
+    # Tag methods
+
+    def build_tag_param_list(self, params, tags):
+        keys = tags.keys()
+        keys.sort()
+        i = 1
+        for key in keys:
+            value = tags[key]
+            params['Tag.%d.Key'%i] = key
+            if value is not None:
+                params['Tag.%d.Value'%i] = value
+            i += 1
+        
+    def get_all_tags(self, tags=None):
+        """
+        Retrieve all the metadata tags associated with your account.
+
+        :type tags: list
+        :param tags: A list of mumble
+
+        :rtype: dict
+        :return: A dictionary containing metadata tags
+        """
+        params = {}
+        if tags:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('DescribeTags', params, [('item', Tag)])
+
+    def create_tags(self, resource_ids, tags):
+        """
+        Create new metadata tags for the specified resource ids.
+
+        :type resource_ids: list
+        :param resource_ids: List of strings
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs
+
+        """
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        return self.get_status('CreateTags', params)
+
+    def delete_tags(self, resource_ids, tags):
+        """
+        Delete metadata tags for the specified resource ids.
+
+        :type resource_ids: list
+        :param resource_ids: List of strings
+
+        :type tags: dict or list
+        :param tags: Either a dictionary containing name/value pairs
+                     or a list containing just tag names.
+                     If you pass in a dictionary, the values must
+                     match the actual tag values or the tag will
+                     not be deleted.
+
+        """
+        if isinstance(tags, list):
+            tags = {}.fromkeys(tags, None)
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        return self.get_status('DeleteTags', params)
 

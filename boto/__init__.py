@@ -28,9 +28,8 @@ import logging
 import logging.config
 from boto.exception import InvalidUriError
 
-__version__ = '2.0a2'
+__version__ = '2.0b2'
 Version = __version__ # for backware compatibility
-__svn_version__ = '$Rev$'
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
 config = Config()
@@ -203,6 +202,20 @@ def connect_fps(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.fps.connection import FPSConnection
     return FPSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def connect_mturk(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.mturk.connection.MTurkConnection`
+    :return: A connection to MTurk
+    """
+    from boto.mturk.connection import MTurkConnection
+    return MTurkConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
 def connect_cloudfront(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     :type aws_access_key_id: string
@@ -274,6 +287,72 @@ def connect_sns(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     return SNSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 
+def connect_iam(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.iam.IAMConnection`
+    :return: A connection to Amazon's IAM
+    """
+    from boto.iam import IAMConnection
+    return IAMConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
+                 port=8773, path='/services/Eucalyptus', is_secure=False,
+                 **kwargs):
+    """
+    Connect to a Eucalyptus service.
+
+    :type host: string
+    :param host: the host name or ip address of the Eucalyptus server
+    
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ec2.connection.EC2Connection`
+    :return: A connection to Eucalyptus server
+    """
+    from boto.ec2 import EC2Connection
+    from boto.ec2.regioninfo import RegionInfo
+
+    reg = RegionInfo(name='eucalyptus', endpoint=host)
+    return EC2Connection(aws_access_key_id, aws_secret_access_key,
+                         region=reg, port=port, path=path,
+                         is_secure=is_secure, **kwargs)
+
+def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
+                   port=8773, path='/services/Walrus', is_secure=False,
+                   **kwargs):
+    """
+    Connect to a Walrus service.
+
+    :type host: string
+    :param host: the host name or ip address of the Walrus server
+    
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.s3.connection.S3Connection`
+    :return: A connection to Walrus
+    """
+    from boto.s3.connection import S3Connection
+    from boto.s3.connection import OrdinaryCallingFormat
+
+    return S3Connection(aws_access_key_id, aws_secret_access_key,
+                        host=host, port=port, path=path,
+                        calling_format=OrdinaryCallingFormat(),
+                        is_secure=is_secure, **kwargs)
+
 def check_extensions(module_name, module_path):
     """
     This function checks for extensions to boto modules.  It should be called in the
@@ -311,13 +390,21 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_scheme='file', debug=False):
+def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
     :type default_scheme: string
     :param default_scheme: default scheme for scheme-less URIs.
+    :type debug: int
+    :param debug: debug level to pass in to boto connection (range 0..2).
+    :type validate: bool
+    :param validate: whether to check for bucket name validity.
+
+    We allow validate to be disabled to allow caller
+    to implement bucket-level wildcarding (outside the boto library;
+    see gsutil).
 
     :rtype: :class:`boto.StorageUri` subclass
     :return: StorageUri subclass for given URI.
@@ -336,11 +423,16 @@ def storage_uri(uri_str, default_scheme='file', debug=False):
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')
     if end_scheme_idx == -1:
-      scheme = default_scheme.lower()
-      path = uri_str
+        # Check for common error: user specifies gs:bucket instead
+        # of gs://bucket. Some URI parsers allow this, but it can cause
+        # confusion for callers, so we don't.
+        if uri_str.find(':') != -1:
+            raise InvalidUriError('"%s" contains ":" instead of "://"' % uri_str)
+        scheme = default_scheme.lower()
+        path = uri_str
     else:
-      scheme = uri_str[0:end_scheme_idx].lower()
-      path = uri_str[end_scheme_idx + 3:]
+        scheme = uri_str[0:end_scheme_idx].lower()
+        path = uri_str[end_scheme_idx + 3:]
 
     if scheme not in ['file', 's3', 'gs']:
         raise InvalidUriError('Unrecognized scheme "%s"' % scheme)
@@ -351,13 +443,14 @@ def storage_uri(uri_str, default_scheme='file', debug=False):
     else:
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]
-        # Ensure the bucket name is valid, to avoid possibly confusing other
-        # parts of the code. (For example if we didn't catch bucket names
-        # containing ':', when a user tried to connect to the server with that
-        # name they might get a confusing error about non-integer port numbers.)
-        if (bucket_name and
+        if (validate and bucket_name and
             not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)):
-          raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+            raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+        # If enabled, ensure the bucket name is valid, to avoid possibly
+        # confusing other parts of the code. (For example if we didn't
+        # catch bucket names containing ':', when a user tried to connect to
+        # the server with that name they might get a confusing error about
+        # non-integer port numbers.)
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]

@@ -30,13 +30,14 @@ from boto.cloudfront.distribution import StreamingDistribution, StreamingDistrib
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.identity import OriginAccessIdentitySummary
 from boto.cloudfront.identity import OriginAccessIdentityConfig
+from boto.cloudfront.invalidation import InvalidationBatch
 from boto.resultset import ResultSet
 from boto.cloudfront.exception import CloudFrontServerError
 
 class CloudFrontConnection(AWSAuthConnection):
 
     DefaultHost = 'cloudfront.amazonaws.com'
-    Version = '2009-12-01'
+    Version = '2010-08-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
@@ -220,4 +221,24 @@ class CloudFrontConnection(AWSAuthConnection):
         return self._delete_object(access_id, etag,
                                    'origin-access-identity/cloudfront')
 
+    # Object Invalidation
+    
+    def create_invalidation_request(self, distribution_id, paths, caller_reference=None):
+        """Creates a new invalidation request
+            :see: http://docs.amazonwebservices.com/AmazonCloudFront/2010-08-01/APIReference/index.html?CreateInvalidation.html
+        """
+        # We allow you to pass in either an array or
+        # an InvalidationBatch object
+        if not isinstance(paths, InvalidationBatch):
+            paths = InvalidationBatch(paths)
+        paths.connection = self
+        response = self.make_request('POST', '/%s/distribution/%s/invalidation' % (self.Version, distribution_id),
+                                     {'Content-Type' : 'text/xml'}, data=paths.to_xml())
+        body = response.read()
+        if response.status == 201:
+            h = handler.XmlHandler(paths, self)
+            xml.sax.parseString(body, h)
+            return paths
+        else:
+            raise CloudFrontServerError(response.status, response.reason, body)
 

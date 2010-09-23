@@ -112,12 +112,40 @@ class Image(EC2Object):
         else:
             setattr(self, name, value)
 
+    def _update(self, updated):
+        self.__dict__.update(updated.__dict__)
+
+    def update(self, validate=False):
+        """
+        Update the image's state information by making a call to fetch
+        the current image attributes from the service.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         image the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
+        """
+        rs = self.connection.get_all_images([self.id])
+        if len(rs) > 0:
+            img = rs[0]
+            if img.id == self.id:
+                self._update(img)
+        elif validate:
+            raise ValueError
+        return self.state
+
     def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
             kernel_id=None, ramdisk_id=None,
             monitoring_enabled=False, subnet_id=None,
-            block_device_map=None):
+            block_device_map=None,
+            disable_api_termination=False,
+            instance_initiated_shutdown_behavior=None,
+            private_ip_address=None,
+            placement_group=None):
         """
         Runs this instance.
         
@@ -128,7 +156,7 @@ class Image(EC2Object):
         :param max_count: The maximum number of instances to start
         
         :type key_name: string
-        :param key_name: The keypair to run this instance with.
+        :param key_name: The name of the keypair to run this instance with.
         
         :type security_groups: 
         :param security_groups:
@@ -140,10 +168,13 @@ class Image(EC2Object):
         :param daddressing_type:
         
         :type instance_type: string
-        :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+        :param instance_type: The type of instance to run.  Current choices are:
+                              m1.small | m1.large | m1.xlarge | c1.medium |
+                              c1.xlarge | m2.xlarge | m2.2xlarge |
+                              m2.4xlarge | cc1.4xlarge
         
-        :type placement: 
-        :param placement:
+        :type placement: string
+        :param placement: The availability zone in which to launch the instances
 
         :type kernel_id: string
         :param kernel_id: The ID of the kernel with which to launch the instances
@@ -157,10 +188,33 @@ class Image(EC2Object):
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances for VPC.
         
+        :type private_ip_address: string
+        :param private_ip_address: If you're using VPC, you can optionally use
+                                   this parameter to assign the instance a
+                                   specific available IP address from the
+                                   subnet (e.g., 10.0.0.25).
+
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
                                  describing the EBS volumes associated
                                  with the Image.
+
+        :type disable_api_termination: bool
+        :param disable_api_termination: If True, the instances will be locked
+                                        and will not be able to be terminated
+                                        via the API.
+
+        :type instance_initiated_shutdown_behavior: string
+        :param instance_initiated_shutdown_behavior: Specifies whether the instance's
+                                                     EBS volues are stopped (i.e. detached)
+                                                     or terminated (i.e. deleted) when
+                                                     the instance is shutdown by the
+                                                     owner.  Valid values are:
+                                                     stop | terminate
+
+        :type placement_group: string
+        :param placement_group: If specified, this is the name of the placement
+                                group in which the instance(s) will be launched.
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
@@ -171,7 +225,10 @@ class Image(EC2Object):
                                              instance_type, placement,
                                              kernel_id, ramdisk_id,
                                              monitoring_enabled, subnet_id,
-                                             block_device_map)
+                                             block_device_map, disable_api_termination,
+                                             instance_initiated_shutdown_behavior,
+                                             private_ip_address,
+                                             placement_group)
 
     def deregister(self):
         return self.connection.deregister_image(self.id)

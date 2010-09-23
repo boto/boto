@@ -1,5 +1,5 @@
-boto 2.0a2
-05-Jul-2010
+boto 2.0b2
+20-Aug-2010
 
 Copyright (c) 2006-2010 Mitch Garnaat <mitch@garnaat.org>
 Copyright (c) 2010, Eucalyptus Systems, Inc.
@@ -10,15 +10,20 @@ http://code.google.com/p/boto
 Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
 
- * S3 (Simple Storage Service) via the REST API
- * SQS (SimpleQueue Service) via the Query API
- * EC2 (Elastic Compute Cloud) via the Query API
- * Mechanical Turk via the Query API
- * SimpleDB via the Query API.
- * CloudFront via the REST API
- * CloudWatch via the Query API
- * AutoScale via the Query API
- * Elastic Load Balancer via the Query API
+ * Simple Storage Service (S3)
+ * SimpleQueue Service (SQS)
+ * Elastic Compute Cloud (EC2)
+ * Mechanical Turk
+ * SimpleDB
+ * CloudFront
+ * CloudWatch
+ * AutoScale
+ * Elastic Load Balancer (ELB)
+ * Virtual Private Cloud (VPC)
+ * Elastic Map Reduce (EMR)
+ * Relational Data Service (RDS) 
+ * Simple Notification Server (SNS)
+ * Google Storage
 
 The intent is to support additional services in the future.
 
@@ -29,27 +34,26 @@ features I need to do what I want to do are supported first.  Other
 features and requests are welcome and will be accomodated to the best
 of my ability.  Patches and contributions are welcome!
 
-Boto was written using Python 2.5.1 on Mac OSX.  It has also been tested
-on Linux Ubuntu using Python 2.5.1.  Boto requires no additional
-libraries or packages other than those that are distributed with Python 2.5.1.
+Boto was written using Python 2.6.5 on Mac OSX.  It has also been tested
+on Linux Ubuntu using Python 2.6.5.  Boto requires no additional
+libraries or packages other than those that are distributed with Python 2.6.5.
 Efforts are made to keep boto compatible with Python 2.4.x but no
-guarantees are made.  Boto should also run on Python 2.6, albeit with
-a few deprecation warnings.
+guarantees are made.
 
-There is some documentation for boto, mainly in the form of tutorials.
-Check in the doc directory of the distribution.  You can also check out
-the unit tests in the tests directory of the distribution for examples of use.
+Documentation for boto can be found at:
 
-You AWS credentials can be passed into the methods that create S3 and SQS
+http://boto.cloudhackers.com/
+
+Your credentials can be passed into the methods that create 
 connections.  Alternatively, boto will check for the existance of the
 following environment variables to ascertain your credentials:
 
 AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
-Changes
+Credentials and other boto-related settings can also be stored in a boto config
+file.  See:
 
-Rather than list changes in the README file, I have decided to refer people to the
-excellent subversion browsing available on googlecode.
+http://code.google.com/p/boto/wiki/BotoConfig
 
-http://code.google.com/p/boto/source/browse
+for details.

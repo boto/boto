@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,4 +22,11 @@
 # IN THE SOFTWARE.
 #
 
+from boto.regioninfo import RegionInfo
 
+class RDSRegionInfo(RegionInfo):
+
+    def __init__(self, connection=None, name=None, endpoint=None):
+        from boto.rds import RDSConnection
+        RegionInfo.__init__(self, connection, name, endpoint,
+                            RDSConnection)

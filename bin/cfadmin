@@ -46,6 +46,20 @@ def ls(cf):
 	print "Streaming Distributions"
 	_print_distributions(cf.get_all_streaming_distributions())
 
+def invalidate(cf, origin_or_id, *paths):
+	"""Create a cloudfront invalidation request"""
+	if not paths:
+		print "Usage: cfadmin invalidate distribution_origin_or_id [path] [path2]..."
+		sys.exit(1)
+	dist = None
+	for d in cf.get_all_distributions():
+		if d.id == origin_or_id or d.origin == origin_or_id:
+			dist = d
+			break
+	if not dist:
+		print "Distribution not found: %s" % origin_or_id
+		sys.exit(1)
+	cf.create_invalidation_request(dist.id, paths)
 
 if __name__ == "__main__":
 	import boto

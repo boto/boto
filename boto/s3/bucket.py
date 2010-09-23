@@ -23,13 +23,13 @@
 
 import boto
 from boto import handler
+from boto.provider import Provider
 from boto.resultset import ResultSet
 from boto.s3.acl import ACL, Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
 from boto.s3.user import User
-from boto.exception import S3ResponseError, S3PermissionsError, S3CopyError
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 import boto.utils
@@ -139,7 +139,9 @@ class Bucket(object):
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
-        if response.status == 200:
+        # Allow any success status (2xx) - for example this lets us
+        # support Range gets, which return status 206:
+        if response.status/100 == 2:
             response.read()
             k = self.key_class(self)
             provider = self.connection.provider
@@ -157,7 +159,8 @@ class Bucket(object):
                 response.read()
                 return None
             else:
-                raise S3ResponseError(response.status, response.reason, '')
+                raise self.connection.provider.storage_response_error(
+                    response.status, response.reason, '')
 
     def list(self, prefix='', delimiter='', marker='', headers=None):
         """
@@ -246,7 +249,8 @@ class Bucket(object):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def get_all_keys(self, headers=None, **params):
         """
@@ -358,6 +362,7 @@ class Bucket(object):
                           deleting versioned objects from a bucket
                           that has the MFADelete option on the bucket.
         """
+        provider = self.connection.provider
         if version_id:
             query_args = 'versionId=%s' % version_id
         else:
@@ -365,14 +370,14 @@ class Bucket(object):
         if mfa_token:
             if not headers:
                 headers = {}
-            provider = self.connection.provider
             headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
         body = response.read()
         if response.status != 204:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise provider.storage_response_error(response.status,
+                                                  response.reason, body)
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
@@ -432,7 +437,7 @@ class Bucket(object):
         provider = self.connection.provider
         headers = {provider.copy_source_header : src}
         if storage_class != 'STANDARD':
-            headers[provider.storage_class] = storage_class
+            headers[provider.storage_class_header] = storage_class
         if metadata:
             headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata)
@@ -446,13 +451,13 @@ class Bucket(object):
             h = handler.XmlHandler(key, self)
             xml.sax.parseString(body, h)
             if hasattr(key, 'Error'):
-                raise S3CopyError(key.Code, key.Message, body)
+                raise provider.storage_copy_error(key.Code, key.Message, body)
             key.handle_version_headers(response)
             if preserve_acl:
                 self.set_xml_acl(acl, new_key_name)
             return key
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise provider.storage_response_error(response.status, response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name='', headers=None,
                        version_id=None):
@@ -470,7 +475,8 @@ class Bucket(object):
                 headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def get_xml_acl(self, key_name='', headers=None, version_id=None):
         query_args = 'acl'
@@ -481,7 +487,8 @@ class Bucket(object):
                                                 headers=headers)
         body = response.read()
         if response.status != 200:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
         return body
 
     def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None):
@@ -494,7 +501,8 @@ class Bucket(object):
                                                 headers=headers)
         body = response.read()
         if response.status != 200:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
         if isinstance(acl_or_str, Policy):
@@ -518,7 +526,8 @@ class Bucket(object):
             xml.sax.parseString(body, h)
             return policy
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def make_public(self, recursive=False, headers=None):
         self.set_canned_acl('public-read', headers=headers)
@@ -552,7 +561,8 @@ class Bucket(object):
                           a long time!
         """
         if permission not in S3Permissions:
-            raise S3PermissionsError('Unknown Permission: %s' % permission)
+            raise self.connection.provider.storage_permissions_error(
+                'Unknown Permission: %s' % permission)
         policy = self.get_acl(headers=headers)
         policy.acl.add_email_grant(permission, email_address)
         self.set_acl(policy, headers=headers)
@@ -584,7 +594,8 @@ class Bucket(object):
                           a long time!
         """
         if permission not in S3Permissions:
-            raise S3PermissionsError('Unknown Permission: %s' % permission)
+            raise self.connection.provider.storage_permissions_error(
+                'Unknown Permission: %s' % permission)
         policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id)
         self.set_acl(policy, headers=headers)
@@ -613,7 +624,8 @@ class Bucket(object):
             xml.sax.parseString(body, h)
             return rs.LocationConstraint
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def enable_logging(self, target_bucket, target_prefix='', headers=None):
         if isinstance(target_bucket, Bucket):
@@ -625,7 +637,8 @@ class Bucket(object):
         if response.status == 200:
             return True
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
         
     def disable_logging(self, headers=None):
         body = self.EmptyBucketLoggingBody
@@ -635,7 +648,8 @@ class Bucket(object):
         if response.status == 200:
             return True
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def get_logging_status(self, headers=None):
         response = self.connection.make_request('GET', self.name,
@@ -644,7 +658,8 @@ class Bucket(object):
         if response.status == 200:
             return body
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def set_as_logging_target(self, headers=None):
         policy = self.get_acl(headers=headers)
@@ -661,7 +676,8 @@ class Bucket(object):
         if response.status == 200:
             return body
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def set_request_payment(self, payer='BucketOwner', headers=None):
         body = self.BucketPaymentBody % payer
@@ -671,7 +687,8 @@ class Bucket(object):
         if response.status == 200:
             return True
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
         
     def configure_versioning(self, versioning, mfa_delete=False,
                              mfa_token=None, headers=None):
@@ -720,7 +737,8 @@ class Bucket(object):
         if response.status == 200:
             return True
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
         
     def get_versioning_status(self, headers=None):
         """
@@ -748,7 +766,8 @@ class Bucket(object):
                 d['MfaDelete'] = mfa.group(1)
             return d
         else:
-            raise S3ResponseError(response.status, response.reason, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)

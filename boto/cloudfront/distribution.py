@@ -30,7 +30,8 @@ class DistributionConfig:
 
     def __init__(self, connection=None, origin='', enabled=False,
                  caller_reference='', cnames=None, comment='',
-                 origin_access_identity=None, trusted_signers=None):
+                 origin_access_identity=None, trusted_signers=None,
+                 default_root_object=None):
         self.connection = connection
         self.origin = origin
         self.enabled = enabled
@@ -45,6 +46,7 @@ class DistributionConfig:
         self.origin_access_identity = origin_access_identity
         self.trusted_signers = trusted_signers
         self.logging = None
+        self.default_root_object = default_root_object
 
     def get_oai_value(self):
         if isinstance(self.origin_access_identity, OriginAccessIdentity):
@@ -54,7 +56,7 @@ class DistributionConfig:
                 
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2008-12-01/">\n'
+        s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
         s += '  <Origin>%s</Origin>\n' % self.origin
         s += '  <CallerReference>%s</CallerReference>\n' % self.caller_reference
         for cname in self.cnames:
@@ -83,6 +85,9 @@ class DistributionConfig:
             s += '  <Bucket>%s</Bucket>\n' % self.logging.bucket
             s += '  <Prefix>%s</Prefix>\n' % self.logging.prefix
             s += '</Logging>\n'
+        if self.default_root_object:
+            dro = self.default_root_object
+            s += '<DefaultRootObject>%s</DefaultRootObject>\n' % dro
         s += '</DistributionConfig>\n'
         return s
 
@@ -112,6 +117,8 @@ class DistributionConfig:
             self.caller_reference = value
         elif name == 'OriginAccessIdentity':
             self.origin_access_identity = value
+        elif name == 'DefaultRootObject':
+            self.default_root_object = value
         else:
             setattr(self, name, value)
 
@@ -242,7 +249,8 @@ class Distribution:
 
     def update(self, enabled=None, cnames=None, comment=None,
                origin_access_identity=None,
-               trusted_signers=None):
+               trusted_signers=None,
+               default_root_object=None):
         """
         Update the configuration of the Distribution.
 
@@ -266,12 +274,17 @@ class Distribution:
         :param trusted_signers: The AWS users who are authorized to sign
                                 URL's for private content in this Distribution.
 
+        :type default_root_object: str
+        :param default_root_object: An option field that specifies a default
+                                    root object for the distribution (e.g. index.html)
+
         """
         new_config = DistributionConfig(self.connection, self.config.origin,
                                         self.config.enabled, self.config.caller_reference,
                                         self.config.cnames, self.config.comment,
                                         self.config.origin_access_identity,
-                                        self.config.trusted_signers)
+                                        self.config.trusted_signers,
+                                        self.config.default_root_object)
         if enabled != None:
             new_config.enabled = enabled
         if cnames != None:
@@ -282,6 +295,8 @@ class Distribution:
             new_config.origin_access_identity = origin_access_identity
         if trusted_signers:
             new_config.trusted_signers = trusted_signers
+        if default_root_object:
+            new_config.default_root_object = default_root_object
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
         self._object_class = Object
