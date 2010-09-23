@@ -103,11 +103,29 @@ class ConnectionPool:
     def __repr__(self):
         return 'ConnectionPool:%s' % ','.join(self._hosts._dict.keys())
 
-class AWSAuthConnection(object):
+
+class _BlockingAwareRequestHandler(object):
+    """ This mixin provides tools for writing request and response handlers for calls that may
+    be synchronous or asynchronous.
+    """
+    def call(self, func, maybe_res):
+        """ Handle the result of an (a)sync request - maybe_res can either be a request result or a
+        Deferred. func is a function (under closure) that takes a result and does post-processing on it.
+        Returns another maybe_res
+        """
+        if self.blocking:
+            return func(maybe_res)
+        else:
+            # async case - that is Twisted
+            # maybe_res should be a Deferred
+            return maybe_res.addBoth(func)
+
+
+class AWSAuthConnection(_BlockingAwareRequestHandler):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, path='/', provider='aws'):
+                 https_connection_factory=None, path='/', provider='aws', blocking=True):
         """
         :type host: string
         :param host: The host to make the connection to
@@ -143,6 +161,7 @@ class AWSAuthConnection(object):
         :param port: The port to use to connect
         """
 
+        self.blocking = blocking
         self.num_retries = 5
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
@@ -177,7 +196,7 @@ class AWSAuthConnection(object):
         self.provider = Provider(provider,
                                  aws_access_key_id,
                                  aws_secret_access_key)
-        
+
         # allow config file to override default host
         if self.provider.host:
             self.host = self.provider.host
@@ -193,6 +212,9 @@ class AWSAuthConnection(object):
         self._pool = ConnectionPool(20, 20)
         self._connection = (self.server_name(), self.is_secure)
         self._last_rs = None
+
+        # async connection class
+        self._cached_async_class = None
 
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
@@ -359,7 +381,7 @@ class AWSAuthConnection(object):
         resp.close()
 
         h = httplib.HTTPConnection(host)
-        
+
         # Wrap the socket in an SSL socket
         if hasattr(httplib, 'ssl'):
             sslSock = httplib.ssl.SSLSocket(sock)
@@ -474,7 +496,14 @@ class AWSAuthConnection(object):
             if isinstance(val, unicode):
                 headers[key] = urllib.quote_plus(val.encode('utf-8'))
         self.add_aws_auth_header(headers, method, request_string)
-        return self._mexe(method, path, data, headers, host, sender)
+        if self.blocking:
+            return self._mexe(method, path, data, headers, host, sender)
+        else:
+            # perform this request via Twisted
+            if not self._cached_async_class:
+                from boto.async import AsyncHTTP
+                self._cached_async_class = AsyncHTTP
+            return self._cached_async_class.make_request(method, path, data, headers, 'https://' + self.host, sender)
 
     def add_aws_auth_header(self, headers, method, path):
         path = self.get_path(path)
@@ -500,6 +529,8 @@ class AWSAuthConnection(object):
         boto.log.debug('closing all HTTP connections')
         self.connection = None  # compat field
 
+
+
 class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''
@@ -509,10 +540,10 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, path='/'):
+                 https_connection_factory=None, path='/', blocking=True):
         AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug,  https_connection_factory, path)
+                                   debug,  https_connection_factory, path, blocking=blocking)
 
     def get_utf8_value(self, value):
         if not isinstance(value, str) and not isinstance(value, unicode):
@@ -603,6 +634,7 @@ class AWSQueryConnection(AWSAuthConnection):
         else:
             request_body = ''
             qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
+
         return AWSAuthConnection.make_request(self, verb, qs,
                                               data=request_body,
                                               headers=headers)
@@ -619,46 +651,53 @@ class AWSQueryConnection(AWSAuthConnection):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            rs = ResultSet(markers)
-            h = handler.XmlHandler(rs, parent)
-            xml.sax.parseString(body, h)
-            return rs
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        def process(response):
+            body = response.read()
+            boto.log.debug(body)
+            if response.status == 200:
+                rs = ResultSet(markers)
+                h = handler.XmlHandler(rs, parent)
+                xml.sax.parseString(body, h)
+                return rs
+            else:
+                boto.log.error('%s %s' % (response.status, response.reason))
+                boto.log.error('%s' % body)
+                raise self.ResponseError(response.status, response.reason, body)
+        return self.call(process, response)
 
     def get_object(self, action, params, cls, path='/', parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            obj = cls(parent)
-            h = handler.XmlHandler(obj, parent)
-            xml.sax.parseString(body, h)
-            return obj
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        def process(response):
+            body = response.read()
+            boto.log.debug(body)
+            if response.status == 200:
+                obj = cls(parent)
+                h = handler.XmlHandler(obj, parent)
+                xml.sax.parseString(body, h)
+                return obj
+            else:
+                boto.log.error('%s %s' % (response.status, response.reason))
+                boto.log.error('%s' % body)
+                raise self.ResponseError(response.status, response.reason, body)
+        return self.call(process, response)
 
     def get_status(self, action, params, path='/', parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            rs = ResultSet()
-            h = handler.XmlHandler(rs, parent)
-            xml.sax.parseString(body, h)
-            return rs.status
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        def process(response):
+            body = response.read()
+            boto.log.debug(body)
+            if response.status == 200:
+                rs = ResultSet()
+                h = handler.XmlHandler(rs, parent)
+                xml.sax.parseString(body, h)
+                return rs.status
+            else:
+                boto.log.error('%s %s' % (response.status, response.reason))
+                boto.log.error('%s' % body)
+                raise self.ResponseError(response.status, response.reason, body)
+        return self.call(process, response)
+

@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -32,7 +32,7 @@ import warnings
 
 
 class ItemThread(threading.Thread):
-    
+
     def __init__(self, name, domain_name, item_names):
         threading.Thread.__init__(self, name=name)
         print 'starting %s with %d items' % (name, len(item_names))
@@ -40,7 +40,7 @@ class ItemThread(threading.Thread):
         self.conn = SDBConnection()
         self.item_names = item_names
         self.items = []
-        
+
     def run(self):
         for item_name in self.item_names:
             item = self.conn.get_attributes(self.domain_name, item_name)
@@ -59,13 +59,13 @@ class SDBConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/', converter=None):
+                 https_connection_factory=None, region=None, path='/', converter=None, blocking=True):
         if not region:
             region = SDBRegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+                                    self.region.endpoint, debug, https_connection_factory, path, blocking=blocking)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item
@@ -106,7 +106,7 @@ class SDBConnection(AWSQueryConnection):
             params['Expected.1.Exists'] = 'false'
         else:
             params['Expected.1.Value'] = expected_value[1]
-            
+
 
     def build_batch_list(self, params, items, replace=False):
         item_names = items.keys()
@@ -163,9 +163,12 @@ class SDBConnection(AWSQueryConnection):
 
     def get_domain(self, domain_name, validate=True):
         domain = Domain(self, domain_name)
+        d = None
         if validate:
-            self.select(domain, """select * from `%s` limit 1""" % domain_name)
-        return domain
+            d = self.select(domain, """select * from `%s` limit 1""" % domain_name)
+        def process(d):
+            return domain
+        return self.call(process, d)
 
     def lookup(self, domain_name, validate=True):
         """
@@ -190,7 +193,7 @@ class SDBConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         return self.get_list('ListDomains', params, [('DomainName', Domain)])
-        
+
     def create_domain(self, domain_name):
         """
         Create a SimpleDB domain.
@@ -203,15 +206,17 @@ class SDBConnection(AWSQueryConnection):
         """
         params = {'DomainName':domain_name}
         d = self.get_object('CreateDomain', params, Domain)
-        d.name = domain_name
-        return d
+        def process(d):
+            d.name = domain_name
+            return d
+        return self.call(process, d)
 
     def get_domain_and_name(self, domain_or_name):
         if (isinstance(domain_or_name, Domain)):
             return (domain_or_name, domain_or_name.name)
         else:
             return (self.get_domain(domain_or_name), domain_or_name)
-        
+
     def delete_domain(self, domain_or_name):
         """
         Delete a SimpleDB domain.
@@ -221,13 +226,13 @@ class SDBConnection(AWSQueryConnection):
 
         :rtype: bool
         :return: True if successful
-        
+
         B{Note:} This will delete the domain and all items within the domain.
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
         return self.get_status('DeleteDomain', params)
-        
+
     def domain_metadata(self, domain_or_name):
         """
         Get the Metadata for a SimpleDB domain.
@@ -241,9 +246,11 @@ class SDBConnection(AWSQueryConnection):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
         d = self.get_object('DomainMetadata', params, DomainMetaData)
-        d.domain = domain
-        return d
-        
+        def process(d):
+            d.domain = domain
+            return d
+        return self.call(process, d)
+
     def put_attributes(self, domain_or_name, item_name, attributes,
                        replace=True, expected_value=None):
         """
@@ -349,16 +356,18 @@ class SDBConnection(AWSQueryConnection):
                 attribute_names = [attribute_names]
             self.build_list_params(params, attribute_names, 'AttributeName')
         response = self.make_request('GetAttributes', params)
-        body = response.read()
-        if response.status == 200:
-            if item == None:
-                item = self.item_cls(domain, item_name)
-            h = handler.XmlHandler(item, self)
-            xml.sax.parseString(body, h)
-            return item
-        else:
-            raise SDBResponseError(response.status, response.reason, body)
-        
+        def process(response):
+            body = response.read()
+            if response.status == 200:
+                if item == None:
+                    item = self.item_cls(domain, item_name)
+                h = handler.XmlHandler(item, self)
+                xml.sax.parseString(body, h)
+                return item
+            else:
+                raise SDBResponseError(response.status, response.reason, body)
+        return self.call(process, response)
+
     def delete_attributes(self, domain_or_name, item_name, attr_names=None,
                           expected_value=None):
         """
@@ -376,7 +385,7 @@ class SDBConnection(AWSQueryConnection):
                            a dict or Item containing the attribute names and keys and list
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
-                           
+
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
                                of a single attribute name and expected value.
@@ -406,7 +415,7 @@ class SDBConnection(AWSQueryConnection):
         if expected_value:
             self.build_expected_value(params, expected_value)
         return self.get_status('DeleteAttributes', params)
-        
+
     def select(self, domain_or_name, query='', next_token=None,
                consistent_read=False):
         """
@@ -416,7 +425,7 @@ class SDBConnection(AWSQueryConnection):
         Even though the select request does not require a domain object, a domain
         object must be passed into this method so the Item objects returned can
         point to the appropriate domain.
-        
+
         :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
         :param domain_or_name: Either the name of a domain or a Domain object
 
