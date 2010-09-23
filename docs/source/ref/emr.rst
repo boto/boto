@@ -1,7 +1,7 @@
 .. _ref-emr:
 
 ===
-EMR 
+EMR
 ===
 
 boto.emr
@@ -12,21 +12,21 @@ boto.emr
    :undoc-members:
 
 boto.emr.connection
---------
+-------------------
 
 .. automodule:: boto.emr.connection
    :members:
    :undoc-members:
 
 boto.emr.step
---------
+-------------
 
 .. automodule:: boto.emr.step
    :members:
    :undoc-members:
 
 boto.emr.emrobject
---------
+------------------
 
 .. automodule:: boto.emr.emrobject
    :members:

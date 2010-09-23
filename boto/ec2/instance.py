@@ -195,10 +195,17 @@ class Instance(EC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self):
+    def update(self, validate=False):
         """
         Update the instance's state information by making a call to fetch
         the current instance attributes from the service.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         instance the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
         """
         rs = self.connection.get_all_instances([self.id])
         if len(rs) > 0:
@@ -206,6 +213,8 @@ class Instance(EC2Object):
             for i in r.instances:
                 if i.id == self.id:
                     self._update(i)
+        elif validate:
+            raise ValueError
         return self.state
 
     def terminate(self):

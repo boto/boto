@@ -27,8 +27,8 @@ from boto.exception import InvalidUriError
 class StorageUri(object):
     """
     Base class for representing storage provider-independent bucket and
-    object name with a shorthand URI-like syntax.
-
+    object name with a shorthand URI-like
+    
     This is an abstract class: the constructor cannot be called (throws an
     exception if you try).
     """
@@ -93,7 +93,7 @@ class StorageUri(object):
         return bucket.delete_key(self.object_name, headers, version_id,
                                  mfa_token)
 
-    def get_all_keys(self, headers=None, **params):
+    def get_all_keys(self, validate=True, headers=None, **params):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_all_keys(headers, params)
 

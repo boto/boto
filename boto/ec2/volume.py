@@ -66,10 +66,22 @@ class Volume(EC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self):
+    def update(self, validate=False):
+        """
+        Update the data associated with this volume by querying EC2.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         volume the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
+        """
         rs = self.connection.get_all_volumes([self.id])
         if len(rs) > 0:
             self._update(rs[0])
+        elif validate:
+            raise ValueError
         return self.status
 
     def delete(self):

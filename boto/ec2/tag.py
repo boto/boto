@@ -1,4 +1,5 @@
-# Copyright 2010 Google Inc.
+# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,10 +20,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import boto
+class Tag(object):
+    """
+    Represents EC2 metadata tag
+    """
+    
+    def __init__(self, connection=None, res_id=None, res_type=None,
+                 name=None, value=None):
+        self.connection = connection
+        self.res_id = res_id
+        self.res_type = res_type
+        self.name = name
+        self.value = value
 
-from connection import FileConnection as Connection
-from key import Key
-from bucket import Bucket
+    def __repr__(self):
+        return 'Tag:%s' % self.name
 
-__all__ = ['Connection', 'Key', 'Bucket']
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'resourceId':
+            self.res_id = value
+        elif name == 'resourceType':
+            self.res_type = value
+        elif name == 'key':
+            self.name = value
+        elif name == 'value':
+            self.value = value
+        else:
+            setattr(self, name, value)
+
+
+            
+

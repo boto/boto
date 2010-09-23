@@ -24,7 +24,6 @@
 import os
 from key import Key
 from boto.file.simpleresultset import SimpleResultSet
-from boto.provider import Provider
 from boto.s3.bucketlistresultset import BucketListResultSet
 
 class Bucket(object):

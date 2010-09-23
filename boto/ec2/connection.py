@@ -1,4 +1,5 @@
 # Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -47,13 +48,14 @@ from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
+from boto.ec2.tag import Tag
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2010-06-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2010-08-31')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
@@ -1285,6 +1287,42 @@ class EC2Connection(AWSQueryConnection):
         params = {'KeyName':key_name}
         return self.get_status('DeleteKeyPair', params)
 
+    def import_key_pair(self, key_name, public_key_material):
+        """
+        mports the public key from an RSA key pair that you created
+        with a third-party tool.
+
+        Supported formats:
+
+        * OpenSSH public key format (e.g., the format
+          in ~/.ssh/authorized_keys)
+
+        * Base64 encoded DER format
+
+        * SSH public key file format as specified in RFC4716
+
+        DSA keys are not supported. Make sure your key generator is
+        set up to create RSA keys.
+
+        Supported lengths: 1024, 2048, and 4096.
+
+        :type key_name: string
+        :param key_name: The name of the new keypair
+
+        :type public_key_material: string
+        :param public_key_material: The public key. You must base64 encode
+                                    the public key material before sending
+                                    it to AWS.
+
+        :rtype: :class:`boto.ec2.keypair.KeyPair`
+        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+                 The material attribute of the new KeyPair object
+                 will contain the the unencrypted PEM encoded RSA private key.
+        """
+        params = {'KeyName' : key_name,
+                  'PublicKeyMaterial' : public_key_material}
+        return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
+
     # SecurityGroup methods
 
     def get_all_security_groups(self, groupnames=None):
@@ -1690,4 +1728,69 @@ class EC2Connection(AWSQueryConnection):
         params = {'GroupName':name}
         return self.get_status('DeletePlacementGroup', params)
 
-    
+    # Tag methods
+
+    def build_tag_param_list(self, params, tags):
+        keys = tags.keys()
+        keys.sort()
+        i = 1
+        for key in keys:
+            value = tags[key]
+            params['Tag.%d.Key'%i] = key
+            if value is not None:
+                params['Tag.%d.Value'%i] = value
+            i += 1
+        
+    def get_all_tags(self, tags=None):
+        """
+        Retrieve all the metadata tags associated with your account.
+
+        :type tags: list
+        :param tags: A list of mumble
+
+        :rtype: dict
+        :return: A dictionary containing metadata tags
+        """
+        params = {}
+        if tags:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('DescribeTags', params, [('item', Tag)])
+
+    def create_tags(self, resource_ids, tags):
+        """
+        Create new metadata tags for the specified resource ids.
+
+        :type resource_ids: list
+        :param resource_ids: List of strings
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs
+
+        """
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        return self.get_status('CreateTags', params)
+
+    def delete_tags(self, resource_ids, tags):
+        """
+        Delete metadata tags for the specified resource ids.
+
+        :type resource_ids: list
+        :param resource_ids: List of strings
+
+        :type tags: dict or list
+        :param tags: Either a dictionary containing name/value pairs
+                     or a list containing just tag names.
+                     If you pass in a dictionary, the values must
+                     match the actual tag values or the tag will
+                     not be deleted.
+
+        """
+        if isinstance(tags, list):
+            tags = {}.fromkeys(tags, None)
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        return self.get_status('DeleteTags', params)
+

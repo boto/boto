@@ -66,11 +66,8 @@ class Trigger(object):
         :param period: The period associated with the metric statistics in
                        seconds. Valid Values: 60 or a multiple of 60.
         
-        :type unit:
-        :param unit
-        
-        :type lower_threshold:
-        :param lower_threshold
+        :type unit: str
+        :param unit: The unit of measurement.
         """
         self.name = name
         self.connection = connection
