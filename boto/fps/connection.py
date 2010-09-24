@@ -315,7 +315,7 @@ class FPSConnection(AWSQueryConnection):
 
     def verify_signature(self, end_point_url, http_parameters):
         params = dict(
-            EndPointUrl = end_point_url,
+            UrlEndPoint = end_point_url,
             HttpParameters = http_parameters,
             )
         import pdb; pdb.set_trace()
