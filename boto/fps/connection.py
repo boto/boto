@@ -312,3 +312,18 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
+
+    def verify_signature(self, end_point_url, http_parameters):
+        params = dict(
+            EndPointUrl = end_point_url,
+            HttpParameters = http_parameters,
+            )
+        import pdb; pdb.set_trace()
+        response = self.make_request("VerifySignature", params)
+        body = response.read()
+        if(response.status != 200):
+            raise FPSResponseError(response.status, response.reason, body)
+        rs = ResultSet()
+        h = handler.XmlHandler(rs, self)
+        xml.sax.parseString(body, h)
+        return rs
