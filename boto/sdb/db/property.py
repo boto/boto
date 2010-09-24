@@ -43,7 +43,10 @@ class Property(object):
         self.required = required
         self.validator = validator
         self.choices = choices
-        self.slot_name = '_'
+        if self.name:
+            self.slot_name = '_' + self.name
+        else:
+            self.slot_name = '_'
         self.unique = unique
         
     def __get__(self, obj, objtype):
