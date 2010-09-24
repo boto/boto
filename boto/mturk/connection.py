@@ -431,6 +431,22 @@ class MTurkConnection(AWSQueryConnection):
 
         return self._process_request('GrantBonus', params)
 
+    def block_worker(self, worker_id, reason):
+        """
+        Block a worker from working on my tasks.
+        """
+        params = {'WorkerId': worker_id, 'Reason': reason}
+
+        return self._process_request('BlockWorker', params)
+
+    def unblock_worker(self, worker_id, reason):
+        """
+        Unblock a worker from working on my tasks.
+        """
+        params = {'WorkerId': worker_id, 'Reason': reason}
+
+        return self._process_request('UnblockWorker', params)
+    
     def _process_request(self, request_type, params, marker_elems=None):
         """
         Helper to process the xml response from AWS
