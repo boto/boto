@@ -147,12 +147,12 @@ class FPSConnection(AWSQueryConnection):
         """
         params = {}
         params['SenderTokenId'] = senderTokenId
-        params['TransactionAmount.Value'] = str(transactionAmount)
+        params['TransactionAmount.Amount'] = str(transactionAmount)
         params['TransactionAmount.CurrencyCode'] = "USD"
         params['ChargeFeeTo'] = chargeFeeTo
         
-        #params['RecipientTokenId'] = boto.config.get("FPS", "recipient_token")
-        #params['CallerTokenId'] = boto.config.get("FPS", "caller_token")
+        params['RecipientTokenId'] = boto.config.get("FPS", "recipient_token")
+        params['CallerTokenId'] = boto.config.get("FPS", "caller_token")
         if(transactionDate != None):
             params['TransactionDate'] = transactionDate
         if(senderReference != None):
@@ -167,8 +167,6 @@ class FPSConnection(AWSQueryConnection):
             params['CallerDescription'] = callerDescription
         if(metadata != None):
             params['MetaData'] = metadata
-        if(transactionDate != None):
-            params['TransactionDate'] = transactionDate
         if(callerReference == None):
             callerReference = uuid.uuid4()
         params['CallerReference'] = callerReference
