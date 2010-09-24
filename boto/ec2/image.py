@@ -133,7 +133,7 @@ class Image(EC2Object):
             if img.id == self.id:
                 self._update(img)
         elif validate:
-            raise ValueError
+            raise ValueError('%s is not a valid Image ID' % self.id)
         return self.state
 
     def run(self, min_count=1, max_count=1, key_name=None,
