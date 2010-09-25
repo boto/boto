@@ -1,4 +1,5 @@
 # Copyright (c) 2008 Chris Moyer http://coredumped.org/
+# Copyringt (c) 2010 Jason R. Coombs http://www.jaraco.com/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -137,7 +138,9 @@ class FPSConnection(AWSQueryConnection):
         
         return "https://authorize.payments-sandbox.amazon.com%s&awsSignature=%s" % (url, signature)
 
-    def pay(self, transactionAmount, senderTokenId, chargeFeeTo="Recipient",
+    def pay(self, transactionAmount, senderTokenId,
+            recipientTokenId=None, callerTokenId=None,
+            chargeFeeTo="Recipient",
             callerReference=None, senderReference=None, recipientReference=None,
             senderDescription=None, recipientDescription=None, callerDescription=None,
             metadata=None, transactionDate=None, reserve=False):
@@ -147,12 +150,20 @@ class FPSConnection(AWSQueryConnection):
         """
         params = {}
         params['SenderTokenId'] = senderTokenId
-        params['TransactionAmount.Value'] = str(transactionAmount)
-        params['TransactionAmount.CurrencyCode'] = "USD"
+        # this is for 2008-09-17 specification
+        #params['TransactionAmount.Value'] = str(transactionAmount)
+        #params['TransactionAmount.CurrencyCode'] = "USD"
+        params['TransactionAmount'] = str(transactionAmount)
         params['ChargeFeeTo'] = chargeFeeTo
         
-        #params['RecipientTokenId'] = boto.config.get("FPS", "recipient_token")
-        #params['CallerTokenId'] = boto.config.get("FPS", "caller_token")
+        params['RecipientTokenId'] = (
+            recipientTokenId if recipientTokenId is not None
+            else boto.config.get("FPS", "recipient_token")
+            )
+        params['CallerTokenId'] = (
+            callerTokenId if callerTokenId is not None
+            else boto.config.get("FPS", "caller_token")
+            )
         if(transactionDate != None):
             params['TransactionDate'] = transactionDate
         if(senderReference != None):
