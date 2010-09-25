@@ -318,7 +318,6 @@ class FPSConnection(AWSQueryConnection):
             UrlEndPoint = end_point_url,
             HttpParameters = http_parameters,
             )
-        import pdb; pdb.set_trace()
         response = self.make_request("VerifySignature", params)
         body = response.read()
         if(response.status != 200):
