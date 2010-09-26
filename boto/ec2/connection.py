@@ -693,11 +693,11 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieve all the spot instances requests associated with your account.
         
-        @type request_ids: list
-        @param request_ids: A list of strings of spot instance request IDs
+        :type request_ids: list
+        :param request_ids: A list of strings of spot instance request IDs
         
-        @rtype: list
-        @return: A list of
+        :rtype: list
+        :return: A list of
                  :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
         """
         params = {}
@@ -711,23 +711,23 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieve the recent history of spot instances pricing.
         
-        @type start_time: str
-        @param start_time: An indication of how far back to provide price
+        :type start_time: str
+        :param start_time: An indication of how far back to provide price
                            changes for. An ISO8601 DateTime string.
         
-        @type end_time: str
-        @param end_time: An indication of how far forward to provide price
+        :type end_time: str
+        :param end_time: An indication of how far forward to provide price
                          changes for.  An ISO8601 DateTime string.
         
-        @type instance_type: str
-        @param instance_type: Filter responses to a particular instance type.
+        :type instance_type: str
+        :param instance_type: Filter responses to a particular instance type.
         
-        @type product_description: str
-        @param product_descripton: Filter responses to a particular platform.
+        :type product_description: str
+        :param product_descripton: Filter responses to a particular platform.
                                    Valid values are currently: Linux
         
-        @rtype: list
-        @return: A list tuples containing price and timestamp.
+        :rtype: list
+        :return: A list tuples containing price and timestamp.
         """
         params = {}
         if start_time:
@@ -949,7 +949,7 @@ class EC2Connection(AWSQueryConnection):
                       only the Zones associated with these zone names
                       will be returned.
 
-        :rtype: list of L{boto.ec2.zone.Zone}
+        :rtype: list of :class:`boto.ec2.zone.Zone`
         :return: The requested Zone objects
         """
         params = {}
@@ -968,7 +968,7 @@ class EC2Connection(AWSQueryConnection):
                            only the Addresses associated with these addresses
                            will be returned.
 
-        :rtype: list of L{boto.ec2.address.Address}
+        :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
         """
         params = {}
@@ -980,7 +980,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
-        :rtype: L{boto.ec2.address.Address}
+        :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
         """
         return self.get_object('AllocateAddress', None, Address)
@@ -1038,7 +1038,7 @@ class EC2Connection(AWSQueryConnection):
                            only the volumes associated with these volume ids
                            will be returned.
 
-        :rtype: list of L{boto.ec2.volume.Volume}
+        :rtype: list of :class:`boto.ec2.volume.Volume`
         :return: The requested Volume objects
         """
         params = {}
@@ -1053,10 +1053,10 @@ class EC2Connection(AWSQueryConnection):
         :type size: int
         :param size: The size of the new volume, in GiB
 
-        :type zone: string or L{boto.ec2.zone.Zone}
+        :type zone: string or :class:`boto.ec2.zone.Zone`
         :param zone: The availability zone in which the Volume will be created.
 
-        :type snapshot: string or L{boto.ec2.snapshot.Snapshot}
+        :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
         :param snapshot: The snapshot from which the new Volume will be created.
         """
         if isinstance(zone, Zone):
@@ -1167,7 +1167,7 @@ class EC2Connection(AWSQueryConnection):
         :param restorable_by: If present, only the snapshots that are restorable
                               by the specified account id will be returned.
 
-        :rtype: list of L{boto.ec2.snapshot.Snapshot}
+        :rtype: list of :class:`boto.ec2.snapshot.Snapshot`
         :return: The requested Snapshot objects
         """
         params = {}
@@ -1216,7 +1216,7 @@ class EC2Connection(AWSQueryConnection):
         
                           * createVolumePermission
 
-        :rtype: list of L{boto.ec2.snapshotattribute.SnapshotAttribute}
+        :rtype: list of :class:`boto.ec2.snapshotattribute.SnapshotAttribute`
         :return: The requested Snapshot attribute
         """
         params = {'Attribute' : attribute}
