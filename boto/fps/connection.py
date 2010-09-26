@@ -135,8 +135,14 @@ class FPSConnection(AWSQueryConnection):
         hmac = self.hmac.copy()
         hmac.update(canonical)
         signature = urllib.quote_plus(base64.encodestring(hmac.digest()).strip())
-        
-        return "https://authorize.payments-sandbox.amazon.com%s&awsSignature=%s" % (url, signature)
+
+        # use the sandbox authorization endpoint if we're using the
+        #  sandbox for API calls.
+        endpoint_host = 'authorize.payments.amazon.com'
+        if 'sandbox' in self.host:
+            endpoint_host = 'authorize.payments-sandbox.amazon.com'
+        fmt = "https://%(endpoint_host)s%(url)s&awsSignature=%(signature)s"
+        return fmt % vars()
 
     def pay(self, transactionAmount, senderTokenId,
             recipientTokenId=None, callerTokenId=None,
