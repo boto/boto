@@ -168,8 +168,17 @@ class Bucket(object):
         BucketListResultSet that automatically handles all of the result
         paging, etc. from S3.  You just need to keep iterating until
         there are no more results.
+        
         Called with no arguments, this will return an iterator object across
         all keys within the bucket.
+
+        The Key objects returned by the iterator are obtained by parsing
+        the results of a GET on the bucket, also known as the List Objects
+        request.  The XML returned by this request contains only a subset
+        of the information about each key.  Certain metadata fields such
+        as Content-Type and user metadata are not available in the XML.
+        Therefore, if you want these additional metadata fields you will
+        have to do a HEAD request on the Key in the bucket.
         
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
