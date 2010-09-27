@@ -214,7 +214,7 @@ class Instance(EC2Object):
                 if i.id == self.id:
                     self._update(i)
         elif validate:
-            raise ValueError
+            raise ValueError('%s is not a valid Instance ID' % self.id)
         return self.state
 
     def terminate(self):

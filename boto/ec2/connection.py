@@ -69,10 +69,12 @@ class EC2Connection(AWSQueryConnection):
         """
         Init method to create a new connection to EC2.
 
-        B{Note:} The host argument is overridden by the host specified in the boto configuration file.
+        B{Note:} The host argument is overridden by the host specified in the
+                 boto configuration file.
         """
         if not region:
-            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -123,8 +125,9 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_kernels(self, kernel_ids=None, owners=None):
         """
-        Retrieve all the EC2 kernels available on your account.  Simply filters the list returned
-        by get_all_images because EC2 does not provide a way to filter server-side.
+        Retrieve all the EC2 kernels available on your account.  Simply filters
+        the list returned by get_all_images because EC2 does not provide a way
+        to filter server-side.
 
         :type kernel_ids: list
         :param kernel_ids: A list of strings with the image IDs wanted
@@ -285,7 +288,6 @@ class EC2Connection(AWSQueryConnection):
     def get_image_attribute(self, image_id, attribute='launchPermission'):
         """
         Gets an attribute from an image.
-        See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-DescribeImageAttribute.html
 
         :type image_id: string
         :param image_id: The Amazon image id for which you want info about
@@ -298,7 +300,8 @@ class EC2Connection(AWSQueryConnection):
                           * blockDeviceMapping
 
         :rtype: :class:`boto.ec2.image.ImageAttribute`
-        :return: An ImageAttribute object representing the value of the attribute requested
+        :return: An ImageAttribute object representing the value of the
+                 attribute requested
         """
         params = {'ImageId' : image_id,
                   'Attribute' : attribute}
@@ -309,7 +312,6 @@ class EC2Connection(AWSQueryConnection):
                                product_codes=None):
         """
         Changes an attribute of an image.
-        See http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyImageAttribute.html
 
         :type image_id: string
         :param image_id: The image id you wish to change
@@ -318,7 +320,8 @@ class EC2Connection(AWSQueryConnection):
         :param attribute: The attribute you wish to change
 
         :type operation: string
-        :param operation: Either add or remove (this is required for changing launchPermissions)
+        :param operation: Either add or remove (this is required for changing
+                          launchPermissions)
 
         :type user_ids: list
         :param user_ids: The Amazon IDs of users to add/remove attributes
@@ -345,7 +348,6 @@ class EC2Connection(AWSQueryConnection):
     def reset_image_attribute(self, image_id, attribute='launchPermission'):
         """
         Resets an attribute of an AMI to its default value.
-        See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-ResetImageAttribute.html
 
         :type image_id: string
         :param image_id: ID of the AMI for which an attribute will be described
@@ -404,31 +406,43 @@ class EC2Connection(AWSQueryConnection):
         :param key_name: The name of the key pair with which to launch instances
 
         :type security_groups: list of strings
-        :param security_groups: The names of the security groups with which to associate instances
+        :param security_groups: The names of the security groups with which to
+                                associate instances
 
         :type user_data: string
         :param user_data: The user data passed to the launched instances
 
         :type instance_type: string
-        :param instance_type: The type of instance to run.  Current choices are:
-                              m1.small | m1.large | m1.xlarge | c1.medium |
-                              c1.xlarge | m2.xlarge | m2.2xlarge |
-                              m2.4xlarge | cc1.4xlarge
+        :param instance_type: The type of instance to run:
+                              
+                              * m1.small
+                              * m1.large
+                              * m1.xlarge
+                              * c1.medium
+                              * c1.xlarge
+                              * m2.xlarge
+                              * m2.2xlarge
+                              * m2.4xlarge
+                              * cc1.4xlarge
+                              * t1.micro
 
         :type placement: string
         :param placement: The availability zone in which to launch the instances
 
         :type kernel_id: string
-        :param kernel_id: The ID of the kernel with which to launch the instances
+        :param kernel_id: The ID of the kernel with which to launch the
+                          instances
 
         :type ramdisk_id: string
-        :param ramdisk_id: The ID of the RAM disk with which to launch the instances
+        :param ramdisk_id: The ID of the RAM disk with which to launch the
+                           instances
 
         :type monitoring_enabled: bool
         :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
 
         :type subnet_id: string
-        :param subnet_id: The subnet ID within which to launch the instances for VPC.
+        :param subnet_id: The subnet ID within which to launch the instances
+                          for VPC.
 
         :type private_ip_address: string
         :param private_ip_address: If you're using VPC, you can optionally use
@@ -447,19 +461,24 @@ class EC2Connection(AWSQueryConnection):
                                         via the API.
 
         :type instance_initiated_shutdown_behavior: string
-        :param instance_initiated_shutdown_behavior: Specifies whether the instance's
-                                                     EBS volues are stopped (i.e. detached)
-                                                     or terminated (i.e. deleted) when
-                                                     the instance is shutdown by the
+        :param instance_initiated_shutdown_behavior: Specifies whether the
+                                                     instance's EBS volues are
+                                                     stopped (i.e. detached) or
+                                                     terminated (i.e. deleted)
+                                                     when the instance is
+                                                     shutdown by the
                                                      owner.  Valid values are:
-                                                     stop | terminate
+                                                     
+                                                     * stop
+                                                     * terminate
 
         :type placement_group: string
         :param placement_group: If specified, this is the name of the placement
                                 group in which the instance(s) will be launched.
 
         :rtype: Reservation
-        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        :return: The :class:`boto.ec2.instance.Reservation` associated with
+                 the request for machines
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
@@ -556,7 +575,6 @@ class EC2Connection(AWSQueryConnection):
     def get_console_output(self, instance_id):
         """
         Retrieves the console output for the specified instance.
-        See http://docs.amazonwebservices.com/AWSEC2/2008-02-01/DeveloperGuide/ApiReference-Query-GetConsoleOutput.html
 
         :type instance_id: string
         :param instance_id: The instance ID of a running instance on the cloud.
@@ -598,10 +616,11 @@ class EC2Connection(AWSQueryConnection):
         :type attribute: string
         :param attribute: The attribute you need information about
                           Valid choices are:
-                          instanceType|kernel|ramdisk|userData|
-                          disableApiTermination|
-                          instanceInitiatedShutdownBehavior|
-                          rootDeviceName|blockDeviceMapping
+                          
+                          * instanceType|kernel|ramdisk|userData|
+                          * disableApiTermination|
+                          * instanceInitiatedShutdownBehavior|
+                          * rootDeviceName|blockDeviceMapping
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -610,7 +629,8 @@ class EC2Connection(AWSQueryConnection):
         params = {'InstanceId' : instance_id}
         if attribute:
             params['Attribute'] = attribute
-        return self.get_object('DescribeInstanceAttribute', params, InstanceAttribute)
+        return self.get_object('DescribeInstanceAttribute', params,
+                               InstanceAttribute)
 
     def modify_instance_attribute(self, instance_id, attribute, value):
         """
@@ -621,14 +641,15 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: string
         :param attribute: The attribute you wish to change.
-                          AttributeName - Expected value (default)
-                          instanceType - A valid instance type (m1.small)
-                          kernel - Kernel ID (None)
-                          ramdisk - Ramdisk ID (None)
-                          userData - Base64 encoded String (None)
-                          disableApiTermination - Boolean (true)
-                          instanceInitiatedShutdownBehavior - stop|terminate
-                          rootDeviceName - device name (None)
+        
+                          * AttributeName - Expected value (default)
+                          * instanceType - A valid instance type (m1.small)
+                          * kernel - Kernel ID (None)
+                          * ramdisk - Ramdisk ID (None)
+                          * userData - Base64 encoded String (None)
+                          * disableApiTermination - Boolean (true)
+                          * instanceInitiatedShutdownBehavior - stop|terminate
+                          * rootDeviceName - device name (None)
 
         :type value: string
         :param value: The new value for the attribute
@@ -672,11 +693,11 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieve all the spot instances requests associated with your account.
         
-        @type request_ids: list
-        @param request_ids: A list of strings of spot instance request IDs
+        :type request_ids: list
+        :param request_ids: A list of strings of spot instance request IDs
         
-        @rtype: list
-        @return: A list of
+        :rtype: list
+        :return: A list of
                  :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
         """
         params = {}
@@ -690,23 +711,23 @@ class EC2Connection(AWSQueryConnection):
         """
         Retrieve the recent history of spot instances pricing.
         
-        @type start_time: str
-        @param start_time: An indication of how far back to provide price
+        :type start_time: str
+        :param start_time: An indication of how far back to provide price
                            changes for. An ISO8601 DateTime string.
         
-        @type end_time: str
-        @param end_time: An indication of how far forward to provide price
+        :type end_time: str
+        :param end_time: An indication of how far forward to provide price
                          changes for.  An ISO8601 DateTime string.
         
-        @type instance_type: str
-        @param instance_type: Filter responses to a particular instance type.
+        :type instance_type: str
+        :param instance_type: Filter responses to a particular instance type.
         
-        @type product_description: str
-        @param product_descripton: Filter responses to a particular platform.
+        :type product_description: str
+        :param product_descripton: Filter responses to a particular platform.
                                    Valid values are currently: Linux
         
-        @rtype: list
-        @return: A list tuples containing price and timestamp.
+        :rtype: list
+        :return: A list tuples containing price and timestamp.
         """
         params = {}
         if start_time:
@@ -717,7 +738,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceType'] = instance_type
         if product_description:
             params['ProductDescription'] = product_description
-        return self.get_list('DescribeSpotPriceHistory', params, [('item', SpotPriceHistory)])
+        return self.get_list('DescribeSpotPriceHistory', params,
+                             [('item', SpotPriceHistory)])
 
     def request_spot_instances(self, price, image_id, count=1, type=None,
                                valid_from=None, valid_until=None,
@@ -755,35 +777,51 @@ class EC2Connection(AWSQueryConnection):
                              as a group.
                              
         :type availability_zone_group: str
-        :param availability_zone_group: If supplied, all requests will be fulfilled
-                                        within a single availability zone.
+        :param availability_zone_group: If supplied, all requests will be
+                                        fulfilled within a single
+                                        availability zone.
                              
         :type key_name: string
         :param key_name: The name of the key pair with which to launch instances
 
         :type security_groups: list of strings
-        :param security_groups: The names of the security groups with which to associate instances
+        :param security_groups: The names of the security groups with which to
+                                associate instances
 
         :type user_data: string
         :param user_data: The user data passed to the launched instances
 
         :type instance_type: string
-        :param instance_type: The type of instance to run (m1.small, m1.large, m1.xlarge)
+        :param instance_type: The type of instance to run:
+                              
+                              * m1.small
+                              * m1.large
+                              * m1.xlarge
+                              * c1.medium
+                              * c1.xlarge
+                              * m2.xlarge
+                              * m2.2xlarge
+                              * m2.4xlarge
+                              * cc1.4xlarge
+                              * t1.micro
 
         :type placement: string
         :param placement: The availability zone in which to launch the instances
 
         :type kernel_id: string
-        :param kernel_id: The ID of the kernel with which to launch the instances
+        :param kernel_id: The ID of the kernel with which to launch the
+                          instances
 
         :type ramdisk_id: string
-        :param ramdisk_id: The ID of the RAM disk with which to launch the instances
+        :param ramdisk_id: The ID of the RAM disk with which to launch the
+                           instances
 
         :type monitoring_enabled: bool
         :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
 
         :type subnet_id: string
-        :param subnet_id: The subnet ID within which to launch the instances for VPC.
+        :param subnet_id: The subnet ID within which to launch the instances
+                          for VPC.
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -853,7 +891,8 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if request_ids:
             self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
-        return self.get_list('CancelSpotInstanceRequests', params, [('item', Instance)])
+        return self.get_list('CancelSpotInstanceRequests', params,
+                             [('item', Instance)])
 
     def get_spot_datafeed_subscription(self):
         """
@@ -910,7 +949,7 @@ class EC2Connection(AWSQueryConnection):
                       only the Zones associated with these zone names
                       will be returned.
 
-        :rtype: list of L{boto.ec2.zone.Zone}
+        :rtype: list of :class:`boto.ec2.zone.Zone`
         :return: The requested Zone objects
         """
         params = {}
@@ -929,7 +968,7 @@ class EC2Connection(AWSQueryConnection):
                            only the Addresses associated with these addresses
                            will be returned.
 
-        :rtype: list of L{boto.ec2.address.Address}
+        :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
         """
         params = {}
@@ -941,7 +980,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
-        :rtype: L{boto.ec2.address.Address}
+        :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
         """
         return self.get_object('AllocateAddress', None, Address)
@@ -999,7 +1038,7 @@ class EC2Connection(AWSQueryConnection):
                            only the volumes associated with these volume ids
                            will be returned.
 
-        :rtype: list of L{boto.ec2.volume.Volume}
+        :rtype: list of :class:`boto.ec2.volume.Volume`
         :return: The requested Volume objects
         """
         params = {}
@@ -1014,10 +1053,10 @@ class EC2Connection(AWSQueryConnection):
         :type size: int
         :param size: The size of the new volume, in GiB
 
-        :type zone: string or L{boto.ec2.zone.Zone}
+        :type zone: string or :class:`boto.ec2.zone.Zone`
         :param zone: The availability zone in which the Volume will be created.
 
-        :type snapshot: string or L{boto.ec2.snapshot.Snapshot}
+        :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
         :param snapshot: The snapshot from which the new Volume will be created.
         """
         if isinstance(zone, Zone):
@@ -1067,7 +1106,8 @@ class EC2Connection(AWSQueryConnection):
                   'Device' : device}
         return self.get_status('AttachVolume', params)
 
-    def detach_volume(self, volume_id, instance_id=None, device=None, force=False):
+    def detach_volume(self, volume_id, instance_id=None,
+                      device=None, force=False):
         """
         Detach an EBS volume from an EC2 instance.
 
@@ -1105,25 +1145,29 @@ class EC2Connection(AWSQueryConnection):
 
     # Snapshot methods
 
-    def get_all_snapshots(self, snapshot_ids=None, owner=None, restorable_by=None):
+    def get_all_snapshots(self, snapshot_ids=None,
+                          owner=None, restorable_by=None):
         """
         Get all EBS Snapshots associated with the current credentials.
 
         :type snapshot_ids: list
-        :param snapshot_ids: Optional list of snapshot ids.  If this list is present,
-                           only the Snapshots associated with these snapshot ids
-                           will be returned.
+        :param snapshot_ids: Optional list of snapshot ids.  If this list is
+                             present, only the Snapshots associated with
+                             these snapshot ids will be returned.
 
         :type owner: str
         :param owner: If present, only the snapshots owned by the specified user
                       will be returned.  Valid values are:
-                      self | amazon | AWS Account ID
+                      
+                      * self
+                      * amazon
+                      * AWS Account ID
 
         :type restorable_by: str
         :param restorable_by: If present, only the snapshots that are restorable
                               by the specified account id will be returned.
 
-        :rtype: list of L{boto.ec2.snapshot.Snapshot}
+        :rtype: list of :class:`boto.ec2.snapshot.Snapshot`
         :return: The requested Snapshot objects
         """
         params = {}
@@ -1143,7 +1187,8 @@ class EC2Connection(AWSQueryConnection):
         :param volume_id: The ID of the volume to be snapshot'ed
 
         :type description: str
-        :param description: A description of the snapshot.  Limited to 255 characters.
+        :param description: A description of the snapshot.
+                            Limited to 255 characters.
 
         :rtype: bool
         :return: True if successful
@@ -1157,27 +1202,31 @@ class EC2Connection(AWSQueryConnection):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params)
 
-    def get_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission'):
+    def get_snapshot_attribute(self, snapshot_id,
+                               attribute='createVolumePermission'):
         """
-        Get information about an attribute of a snapshot.  Only one attribute can be
-        specified per call.
+        Get information about an attribute of a snapshot.  Only one attribute
+        can be specified per call.
 
         :type snapshot_id: str
         :param snapshot_id: The ID of the snapshot.
 
         :type attribute: str
         :param attribute: The requested attribute.  Valid values are:
-                          createVolumePermission
+        
+                          * createVolumePermission
 
-        :rtype: list of L{boto.ec2.snapshotattribute.SnapshotAttribute}
+        :rtype: list of :class:`boto.ec2.snapshotattribute.SnapshotAttribute`
         :return: The requested Snapshot attribute
         """
         params = {'Attribute' : attribute}
         if snapshot_id:
             params['SnapshotId'] = snapshot_id
-        return self.get_object('DescribeSnapshotAttribute', params, SnapshotAttribute)
+        return self.get_object('DescribeSnapshotAttribute', params,
+                               SnapshotAttribute)
 
-    def modify_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission',
+    def modify_snapshot_attribute(self, snapshot_id,
+                                  attribute='createVolumePermission',
                                   operation='add', user_ids=None, groups=None):
         """
         Changes an attribute of an image.
@@ -1210,7 +1259,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, groups, 'UserGroup')
         return self.get_status('ModifySnapshotAttribute', params)
 
-    def reset_snapshot_attribute(self, snapshot_id, attribute='createVolumePermission'):
+    def reset_snapshot_attribute(self, snapshot_id,
+                                 attribute='createVolumePermission'):
         """
         Resets an attribute of a snapshot to its default value.
 
@@ -1331,7 +1381,8 @@ class EC2Connection(AWSQueryConnection):
 
         :type groupnames: list
         :param groupnames: A list of the names of security groups to retrieve.
-                           If not provided, all security groups will be returned.
+                           If not provided, all security groups will be
+                           returned.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.securitygroup.SecurityGroup`
@@ -1339,7 +1390,8 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
-        return self.get_list('DescribeSecurityGroups', params, [('item', SecurityGroup)])
+        return self.get_list('DescribeSecurityGroups', params,
+                             [('item', SecurityGroup)])
 
     def create_security_group(self, name, description):
         """
@@ -1392,8 +1444,8 @@ class EC2Connection(AWSQueryConnection):
                                         granting access to.
 
         :type src_security_group_owner_id: string
-        :param src_security_group_owner_id: The ID of the owner of the security group you are
-                                            granting access to.
+        :param src_security_group_owner_id: The ID of the owner of the security
+                                            group you are granting access to.
 
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
@@ -1446,8 +1498,8 @@ class EC2Connection(AWSQueryConnection):
                                         revoking access to.
 
         :type src_security_group_owner_id: string
-        :param src_security_group_owner_id: The ID of the owner of the security group you are
-                                            revoking access to.
+        :param src_security_group_owner_id: The ID of the owner of the security
+                                            group you are revoking access to.
 
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
@@ -1508,16 +1560,20 @@ class EC2Connection(AWSQueryConnection):
         Describes Reserved Instance offerings that are available for purchase.
 
         :type reserved_instances_id: str
-        :param reserved_instances_id: Displays Reserved Instances with the specified offering IDs.
+        :param reserved_instances_id: Displays Reserved Instances with the
+                                      specified offering IDs.
 
         :type instance_type: str
-        :param instance_type: Displays Reserved Instances of the specified instance type.
+        :param instance_type: Displays Reserved Instances of the specified
+                              instance type.
 
         :type availability_zone: str
-        :param availability_zone: Displays Reserved Instances within the specified Availability Zone.
+        :param availability_zone: Displays Reserved Instances within the
+                                  specified Availability Zone.
 
         :type product_description: str
-        :param product_description: Displays Reserved Instances with the specified product description.
+        :param product_description: Displays Reserved Instances with the
+                                    specified product description.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`
@@ -1540,15 +1596,17 @@ class EC2Connection(AWSQueryConnection):
         Describes Reserved Instance offerings that are available for purchase.
 
         :type reserved_instance_ids: list
-        :param reserved_instance_ids: A list of the reserved instance ids that will be returned.
-                                      If not provided, all reserved instances will be returned.
+        :param reserved_instance_ids: A list of the reserved instance ids that
+                                      will be returned. If not provided, all
+                                      reserved instances will be returned.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
         """
         params = {}
         if reserved_instances_id:
-            self.build_list_params(params, reserved_instances_id, 'ReservedInstancesId')
+            self.build_list_params(params, reserved_instances_id,
+                                   'ReservedInstancesId')
         return self.get_list('DescribeReservedInstances',
                              params, [('item', ReservedInstance)])
 
@@ -1573,7 +1631,8 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'ReservedInstancesOfferingId' : reserved_instances_offering_id,
                   'InstanceCount' : instance_count}
-        return self.get_object('PurchaseReservedInstancesOffering', params, ReservedInstance)
+        return self.get_object('PurchaseReservedInstancesOffering', params,
+                               ReservedInstance)
 
     #
     # Monitoring
@@ -1590,7 +1649,8 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
         params = {'InstanceId' : instance_id}
-        return self.get_list('MonitorInstances', params, [('item', InstanceInfo)])
+        return self.get_list('MonitorInstances', params,
+                             [('item', InstanceInfo)])
 
     def unmonitor_instance(self, instance_id):
         """
@@ -1603,7 +1663,8 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
         params = {'InstanceId' : instance_id}
-        return self.get_list('UnmonitorInstances', params, [('item', InstanceInfo)])
+        return self.get_list('UnmonitorInstances', params,
+                             [('item', InstanceInfo)])
 
     # 
     # Bundle Windows Instances
@@ -1626,8 +1687,9 @@ class EC2Connection(AWSQueryConnection):
         :param s3_prefix: The beginning of the file name for the AMI.
 
         :type s3_upload_policy: string
-        :param s3_upload_policy: Base64 encoded policy that specifies condition and permissions
-                                 for Amazon EC2 to upload the user's image into Amazon S3.
+        :param s3_upload_policy: Base64 encoded policy that specifies condition
+                                 and permissions for Amazon EC2 to upload the
+                                 user's image into Amazon S3.
         """
 
         params = {'InstanceId' : instance_id,
@@ -1643,7 +1705,8 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_bundle_tasks(self, bundle_ids=None):
         """
-        Retrieve current bundling tasks. If no bundle id is specified, all tasks are retrieved.
+        Retrieve current bundling tasks. If no bundle id is specified, all
+        tasks are retrieved.
 
         :type bundle_ids: list
         :param bundle_ids: A list of strings containing identifiers for 
@@ -1653,7 +1716,8 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if bundle_ids:
             self.build_list_params(params, bundle_ids, 'BundleId')
-        return self.get_list('DescribeBundleTasks', params, [('item', BundleInstanceTask)])
+        return self.get_list('DescribeBundleTasks', params,
+                             [('item', BundleInstanceTask)])
 
     def cancel_bundle_task(self, bundle_id):
         """
@@ -1671,7 +1735,8 @@ class EC2Connection(AWSQueryConnection):
         Get encrypted administrator password for a Windows instance.
 
         :type instance_id: string
-        :param instance_id: The identifier of the instance to retrieve the password for.
+        :param instance_id: The identifier of the instance to retrieve the
+                            password for.
         """
 
         params = {'InstanceId' : instance_id}
@@ -1688,7 +1753,8 @@ class EC2Connection(AWSQueryConnection):
 
         :type groupnames: list
         :param groupnames: A list of the names of placement groups to retrieve.
-                           If not provided, all placement groups will be returned.
+                           If not provided, all placement groups will be
+                           returned.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.placementgroup.PlacementGroup`
@@ -1696,7 +1762,8 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
-        return self.get_list('DescribePlacementGroups', params, [('item', PlacementGroup)])
+        return self.get_list('DescribePlacementGroups', params,
+                             [('item', PlacementGroup)])
 
     def create_placement_group(self, name, strategy='cluster'):
         """

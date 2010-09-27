@@ -80,7 +80,7 @@ class Snapshot(EC2Object):
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
-            raise ValueError
+            raise ValueError('%s is not a valid Snapshot ID' % self.id)
         return self.progress
     
     def delete(self):

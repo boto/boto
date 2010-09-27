@@ -81,7 +81,7 @@ class Volume(EC2Object):
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
-            raise ValueError
+            raise ValueError('%s is not a valid Volume ID' % self.id)
         return self.status
 
     def delete(self):
