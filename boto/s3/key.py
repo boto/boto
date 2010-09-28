@@ -46,7 +46,7 @@ class Key(object):
         self.name = name
         self.metadata = {}
         self.cache_control = None
-        self.content_type = None
+        self.content_type = self.DefaultContentType
         self.content_encoding = None
         self.filename = None
         self.etag = None
