@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -150,31 +150,31 @@ class CloudWatchConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=Endpoint, debug=0,
-                 https_connection_factory=None, path='/'):
+                 https_connection_factory=None, path='/', blocking=True):
         """
         Init method to create a new connection to EC2 Monitoring Service.
-        
-        B{Note:} The host argument is overridden by the host specified in the boto configuration file.        
+
+        B{Note:} The host argument is overridden by the host specified in the boto configuration file.
         """
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory, path)
+                                    host, debug, https_connection_factory, path, blocking=blocking)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
             items = [items]
         for i in range(1, len(items)+1):
             params[label % i] = items[i-1]
-            
+
     def get_metric_statistics(self, period, start_time, end_time, measure_name,
                               namespace, statistics=None, dimensions=None, unit=None):
         """
         Get time-series data for one or more statistics of a given metric.
-        
+
         :type measure_name: string
         :param measure_name: CPUUtilization|NetworkIO-in|NetworkIO-out|DiskIO-ALL-read|
                              DiskIO-ALL-write|DiskIO-ALL-read-bytes|DiskIO-ALL-write-bytes
-        
+
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
         """
@@ -208,6 +208,6 @@ class CloudWatchConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         return self.get_list('ListMetrics', params, [('member', Metric)])
-        
 
-    
+
+

@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyrigh (c) 2006-2010 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,7 +65,7 @@ class EC2Connection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/', blocking=True):
         """
         Init method to create a new connection to EC2.
 
@@ -81,7 +81,7 @@ class EC2Connection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path, blocking=blocking)
 
     def get_params(self):
         """
@@ -139,11 +139,13 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.image.Image`
         """
         rs = self.get_all_images(kernel_ids, owners)
-        kernels = []
-        for image in rs:
-            if image.type == 'kernel':
-                kernels.append(image)
-        return kernels
+        def process(rs):
+            kernels = []
+            for image in rs:
+                if image.type == 'kernel':
+                    kernels.append(image)
+            return kernels
+        return self.call(process, rs)
 
     def get_all_ramdisks(self, ramdisk_ids=None, owners=None):
         """
@@ -161,11 +163,13 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.image.Image`
         """
         rs = self.get_all_images(ramdisk_ids, owners)
-        ramdisks = []
-        for image in rs:
-            if image.type == 'ramdisk':
-                ramdisks.append(image)
-        return ramdisks
+        def process(rs):
+            ramdisks = []
+            for image in rs:
+                if image.type == 'ramdisk':
+                    ramdisks.append(image)
+            return ramdisks
+        return self.call(process, rs)
 
     def get_image(self, image_id):
         """
@@ -234,8 +238,10 @@ class EC2Connection(AWSQueryConnection):
         if block_device_map:
             block_device_map.build_list_params(params)
         rs = self.get_object('RegisterImage', params, ResultSet)
-        image_id = getattr(rs, 'imageId', None)
-        return image_id
+        def process(rs):
+            image_id = getattr(rs, 'imageId', None)
+            return image_id
+        return self.call(process, rs)
 
     def deregister_image(self, image_id):
         """
@@ -253,7 +259,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Will create an AMI from the instance in the running or stopped
         state.
-        
+
         :type instance_id: string
         :param instance_id: the ID of the instance to image.
 
@@ -270,7 +276,7 @@ class EC2Connection(AWSQueryConnection):
                           bundling.  If this flag is True, the responsibility
                           of maintaining file system integrity is left to the
                           owner of the instance.
-        
+
         :rtype: string
         :return: The new image id
         """
@@ -281,8 +287,10 @@ class EC2Connection(AWSQueryConnection):
         if no_reboot:
             params['NoReboot'] = 'true'
         img = self.get_object('CreateImage', params, Image)
-        return img.id
-        
+        def process(img):
+            return img.id
+        return self.call(process, img)
+
     # ImageAttribute methods
 
     def get_image_attribute(self, image_id, attribute='launchPermission'):
@@ -414,7 +422,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
-                              
+
                               * m1.small
                               * m1.large
                               * m1.xlarge
@@ -468,7 +476,7 @@ class EC2Connection(AWSQueryConnection):
                                                      when the instance is
                                                      shutdown by the
                                                      owner.  Valid values are:
-                                                     
+
                                                      * stop
                                                      * terminate
 
@@ -540,13 +548,13 @@ class EC2Connection(AWSQueryConnection):
     def stop_instances(self, instance_ids=None, force=False):
         """
         Stop the instances specified
-        
+
         :type instance_ids: list
         :param instance_ids: A list of strings of the Instance IDs to stop
 
         :type force: bool
         :param force: Forces the instance to stop
-        
+
         :rtype: list
         :return: A list of the instances stopped
         """
@@ -560,10 +568,10 @@ class EC2Connection(AWSQueryConnection):
     def start_instances(self, instance_ids=None):
         """
         Start the instances specified
-        
+
         :type instance_ids: list
         :param instance_ids: A list of strings of the Instance IDs to start
-        
+
         :rtype: list
         :return: A list of the instances started
         """
@@ -602,7 +610,9 @@ class EC2Connection(AWSQueryConnection):
         params = {'ProductCode' : product_code,
                   'InstanceId' : instance_id}
         rs = self.get_object('ConfirmProductInstance', params, ResultSet)
-        return (rs.status, rs.ownerId)
+        def process(rs):
+            return (rs.status, rs.ownerId)
+        return self.call(process, rs)
 
     # InstanceAttribute methods
 
@@ -616,7 +626,7 @@ class EC2Connection(AWSQueryConnection):
         :type attribute: string
         :param attribute: The attribute you need information about
                           Valid choices are:
-                          
+
                           * instanceType|kernel|ramdisk|userData|
                           * disableApiTermination|
                           * instanceInitiatedShutdownBehavior|
@@ -641,7 +651,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: string
         :param attribute: The attribute you wish to change.
-        
+
                           * AttributeName - Expected value (default)
                           * instanceType - A valid instance type (m1.small)
                           * kernel - Kernel ID (None)
@@ -692,10 +702,10 @@ class EC2Connection(AWSQueryConnection):
     def get_all_spot_instance_requests(self, request_ids=None):
         """
         Retrieve all the spot instances requests associated with your account.
-        
+
         :type request_ids: list
         :param request_ids: A list of strings of spot instance request IDs
-        
+
         :rtype: list
         :return: A list of
                  :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
@@ -710,22 +720,22 @@ class EC2Connection(AWSQueryConnection):
                                instance_type=None, product_description=None):
         """
         Retrieve the recent history of spot instances pricing.
-        
+
         :type start_time: str
         :param start_time: An indication of how far back to provide price
                            changes for. An ISO8601 DateTime string.
-        
+
         :type end_time: str
         :param end_time: An indication of how far forward to provide price
                          changes for.  An ISO8601 DateTime string.
-        
+
         :type instance_type: str
         :param instance_type: Filter responses to a particular instance type.
-        
+
         :type product_description: str
         :param product_descripton: Filter responses to a particular platform.
                                    Valid values are currently: Linux
-        
+
         :rtype: list
         :return: A list tuples containing price and timestamp.
         """
@@ -755,13 +765,13 @@ class EC2Connection(AWSQueryConnection):
 
         :type price: str
         :param price: The maximum price of your bid
-        
+
         :type image_id: string
         :param image_id: The ID of the image to run
 
         :type count: int
         :param count: The of instances to requested
-        
+
         :type type: str
         :param type: Type of request. Can be 'one-time' or 'persistent'.
                      Default is one-time.
@@ -775,12 +785,12 @@ class EC2Connection(AWSQueryConnection):
         :type launch_group: str
         :param launch_group: If supplied, all requests will be fulfilled
                              as a group.
-                             
+
         :type availability_zone_group: str
         :param availability_zone_group: If supplied, all requests will be
                                         fulfilled within a single
                                         availability zone.
-                             
+
         :type key_name: string
         :param key_name: The name of the key pair with which to launch instances
 
@@ -793,7 +803,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
-                              
+
                               * m1.small
                               * m1.large
                               * m1.xlarge
@@ -877,14 +887,14 @@ class EC2Connection(AWSQueryConnection):
                              [('item', SpotInstanceRequest)],
                              verb='POST')
 
-        
+
     def cancel_spot_instance_requests(self, request_ids):
         """
         Cancel the specified Spot Instance Requests.
-        
+
         :type request_ids: list
         :param request_ids: A list of strings of the Request IDs to terminate
-        
+
         :rtype: list
         :return: A list of the instances terminated
         """
@@ -898,7 +908,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Return the current spot instance data feed subscription
         associated with this account, if any.
-        
+
         :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
@@ -918,7 +928,7 @@ class EC2Connection(AWSQueryConnection):
         :type prefix: str or unicode
         :param prefix: An optional prefix that will be pre-pended to all
                        data files written to the bucket.
-                       
+
         :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
@@ -932,7 +942,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Delete the current spot instance data feed subscription
         associated with this account
-        
+
         :rtype: bool
         :return: True if successful
         """
@@ -1158,7 +1168,7 @@ class EC2Connection(AWSQueryConnection):
         :type owner: str
         :param owner: If present, only the snapshots owned by the specified user
                       will be returned.  Valid values are:
-                      
+
                       * self
                       * amazon
                       * AWS Account ID
@@ -1213,7 +1223,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: str
         :param attribute: The requested attribute.  Valid values are:
-        
+
                           * createVolumePermission
 
         :rtype: list of :class:`boto.ec2.snapshotattribute.SnapshotAttribute`
@@ -1410,9 +1420,11 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'GroupName':name, 'GroupDescription':description}
         group = self.get_object('CreateSecurityGroup', params, SecurityGroup)
-        group.name = name
-        group.description = description
-        return group
+        def process(group):
+            group.name = name
+            group.description = description
+            return group
+        return self.call(process, group)
 
     def delete_security_group(self, name):
         """
@@ -1544,9 +1556,11 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
         """
         regions =  self.get_list('DescribeRegions', None, [('item', RegionInfo)])
-        for region in regions:
-            region.connection_cls = EC2Connection
-        return regions
+        def process(regions):
+            for region in regions:
+                region.connection_cls = EC2Connection
+            return regions
+        return self.call(process, regions)
 
     #
     # Reservation methods
@@ -1666,12 +1680,12 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('UnmonitorInstances', params,
                              [('item', InstanceInfo)])
 
-    # 
+    #
     # Bundle Windows Instances
     #
 
     def bundle_instance(self, instance_id,
-                        s3_bucket, 
+                        s3_bucket,
                         s3_prefix,
                         s3_upload_policy):
         """
@@ -1701,7 +1715,7 @@ class EC2Connection(AWSQueryConnection):
         local_hmac.update(s3_upload_policy)
         s3_upload_policy_signature = base64.b64encode(local_hmac.digest())
         params['Storage.S3.UploadPolicySignature'] = s3_upload_policy_signature
-        return self.get_object('BundleInstance', params, BundleInstanceTask) 
+        return self.get_object('BundleInstance', params, BundleInstanceTask)
 
     def get_all_bundle_tasks(self, bundle_ids=None):
         """
@@ -1709,10 +1723,10 @@ class EC2Connection(AWSQueryConnection):
         tasks are retrieved.
 
         :type bundle_ids: list
-        :param bundle_ids: A list of strings containing identifiers for 
-                           previously created bundling tasks. 
+        :param bundle_ids: A list of strings containing identifiers for
+                           previously created bundling tasks.
         """
- 
+
         params = {}
         if bundle_ids:
             self.build_list_params(params, bundle_ids, 'BundleId')
@@ -1722,10 +1736,10 @@ class EC2Connection(AWSQueryConnection):
     def cancel_bundle_task(self, bundle_id):
         """
         Cancel a previously submitted bundle task
- 
+
         :type bundle_id: string
         :param bundle_id: The identifier of the bundle task to cancel.
-        """                        
+        """
 
         params = {'BundleId' : bundle_id}
         return self.get_object('CancelBundleTask', params, BundleInstanceTask)
@@ -1741,9 +1755,11 @@ class EC2Connection(AWSQueryConnection):
 
         params = {'InstanceId' : instance_id}
         rs = self.get_object('GetPasswordData', params, ResultSet)
-        return rs.passwordData
+        def process(rs):
+            return rs.passwordData
+        return self.call(process, rs)
 
-    # 
+    #
     # Cluster Placement Groups
     #
 
@@ -1783,7 +1799,9 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'GroupName':name, 'Strategy':strategy}
         group = self.get_status('CreatePlacementGroup', params)
-        return group
+        def process(group):
+            return group
+        return self.call(process, group)
 
     def delete_placement_group(self, name):
         """
@@ -1807,7 +1825,7 @@ class EC2Connection(AWSQueryConnection):
             if value is not None:
                 params['Tag.%d.Value'%i] = value
             i += 1
-        
+
     def get_all_tags(self, tags=None):
         """
         Retrieve all the metadata tags associated with your account.
