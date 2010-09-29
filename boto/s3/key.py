@@ -26,7 +26,6 @@ import StringIO
 import base64
 import boto.utils
 from boto.exception import BotoClientError
-from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
 try:
@@ -84,6 +83,14 @@ class Key(object):
     def __iter__(self):
         return self
 
+    @property
+    def provider(self):
+        provider = None
+        if self.bucket:
+            if self.bucket.connection:
+                provider = self.bucket.connection.provider
+        return provider
+    
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
         A utility function to create the 2-tuple (md5hexdigest, base64md5)
@@ -97,16 +104,15 @@ class Key(object):
         return (md5_hexdigest, base64md5)
     
     def handle_version_headers(self, resp, force=False):
-        provider = self.bucket.connection.provider
         # If the Key object already has a version_id attribute value, it
         # means that it represents an explicit version and the user is
         # doing a get_contents_*(version_id=<foo>) to retrieve another
         # version of the Key.  In that case, we don't really want to
         # overwrite the version_id in this Key object.  Comprende?
         if self.version_id is None or force:
-            self.version_id = resp.getheader(provider.version_id, None)
-        self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
-        if resp.getheader(provider.delete_marker, 'false') == 'true':
+            self.version_id = resp.getheader(self.provider.version_id, None)
+        self.source_version_id = resp.getheader(self.provider.copy_source_version_id, None)
+        if resp.getheader(self.provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
         else:
             self.delete_marker = False
@@ -124,18 +130,18 @@ class Key(object):
         if self.resp == None:
             self.mode = 'r'
             
-            provider = self.bucket.connection.provider
             self.resp = self.bucket.connection.make_request('GET',
                                                             self.bucket.name,
                                                             self.name, headers,
                                                             query_args=query_args)
             if self.resp.status < 199 or self.resp.status > 299:
                 body = self.resp.read()
-                raise provider.storage_response_error(self.resp.status,
-                                                      self.resp.reason, body)
+                raise self.provider.storage_response_error(self.resp.status,
+                                                           self.resp.reason,
+                                                           body)
             response_headers = self.resp.msg
             self.metadata = boto.utils.get_aws_metadata(response_headers,
-                                                        provider)
+                                                        self.provider)
             for name,value in response_headers.items():
                 if name.lower() == 'content-length':
                     self.size = int(value)
@@ -412,8 +418,6 @@ class Key(object):
                        your callback to be called with each buffer read.
              
         """
-        provider = self.bucket.connection.provider
-
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest(method, path)
             for key in headers:
@@ -454,11 +458,11 @@ class Key(object):
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
                 if self.etag != '"%s"'  % self.md5:
-                    raise provider.storage_data_error(
+                    raise self.provider.storage_data_error(
                         'ETag from S3 did not match computed MD5')
                 return response
             else:
-                raise provider.storage_response_error(
+                raise self.provider.storage_response_error(
                     response.status, response.reason, body)
 
         if not headers:
@@ -468,7 +472,7 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
-            headers[provider.storage_class_header] = self.storage_class
+            headers[self.provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
         if headers.has_key('Content-Type'):
@@ -482,7 +486,7 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
-        headers = boto.utils.merge_meta(headers, self.metadata, provider)
+        headers = boto.utils.merge_meta(headers, self.metadata, self.provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
                                                    sender=sender)
@@ -564,15 +568,14 @@ class Key(object):
                                    redundancy at lower storage cost.
 
         """
-        provider = self.bucket.connection.provider
         if headers is None:
             headers = {}
         if policy:
-            headers[provider.acl_header] = policy
+            headers[self.provider.acl_header] = policy
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
-            if provider.storage_class_header:
-                headers[provider.storage_class_header] = self.storage_class
+            if self.provider.storage_class_header:
+                headers[self.provider.storage_class_header] = self.storage_class
                 # TODO - What if the provider doesn't support reduced reduncancy?
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
