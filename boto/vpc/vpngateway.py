@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2010 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,7 +23,7 @@
 Represents a Vpn Gateway
 """
 
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 
 class Attachment(object):
 
@@ -42,10 +42,10 @@ class Attachment(object):
         else:
             setattr(self, name, value)
             
-class VpnGateway(EC2Object):
+class VpnGateway(TaggedEC2Object):
 
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.type = None
         self.state = None
@@ -56,6 +56,9 @@ class VpnGateway(EC2Object):
         return 'VpnGateway:%s' % self.id
 
     def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
         if name == 'item':
             att = Attachment()
             self.attachments.append(att)

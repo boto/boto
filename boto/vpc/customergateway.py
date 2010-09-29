@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2010 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,12 +23,12 @@
 Represents a Customer Gateway
 """
 
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 
-class CustomerGateway(EC2Object):
+class CustomerGateway(TaggedEC2Object):
 
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.type = None
         self.state = None

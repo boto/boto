@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2010 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,7 +23,7 @@
 Represents a DHCP Options set
 """
 
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 
 class DhcpValueSet(list):
 
@@ -46,10 +46,10 @@ class DhcpConfigSet(dict):
         if name == 'key':
             self._name = value
     
-class DhcpOptions(EC2Object):
+class DhcpOptions(TaggedEC2Object):
 
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.options = None
 
@@ -57,6 +57,9 @@ class DhcpOptions(EC2Object):
         return 'DhcpOptions:%s' % self.id
     
     def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
         if name == 'dhcpConfigurationSet':
             self.options = DhcpConfigSet()
             return self.options
