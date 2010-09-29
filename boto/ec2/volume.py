@@ -1,4 +1,5 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,12 +23,12 @@
 """
 Represents an EC2 Elastic Block Storage Volume
 """
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 
-class Volume(EC2Object):
+class Volume(TaggedEC2Object):
     
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.create_time = None
         self.status = None
@@ -40,9 +41,15 @@ class Volume(EC2Object):
         return 'Volume:%s' % self.id
 
     def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
         if name == 'attachmentSet':
             self.attach_data = AttachmentSet()
             return self.attach_data
+        elif name == 'tagSet':
+            self.tags = boto.resultset.ResultSet([('item', Tag)])
+            return self.tags
         else:
             return None
 

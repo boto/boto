@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,7 +24,7 @@
 Represents an EC2 Instance
 """
 import boto
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 from boto.resultset import ResultSet
 from boto.ec2.address import Address
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
@@ -64,10 +65,10 @@ class Reservation(EC2Object):
         for instance in self.instances:
             instance.stop()
             
-class Instance(EC2Object):
+class Instance(TaggedEC2Object):
     
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.dns_name = None
         self.public_dns_name = None
@@ -106,6 +107,9 @@ class Instance(EC2Object):
         return 'Instance:%s' % self.id
 
     def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
         if name == 'monitoring':
             self._in_monitoring_element = True
         elif name == 'blockDeviceMapping':

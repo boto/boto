@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2008 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,6 +23,7 @@
 """
 Represents an EC2 Object
 """
+from boto.ec2.tag import TagSet
 
 class EC2Object(object):
 
@@ -39,3 +41,24 @@ class EC2Object(object):
         setattr(self, name, value)
 
     
+class TaggedEC2Object(EC2Object):
+    """
+    Any EC2 resource that can be tagged should be represented
+    by a Python object that subclasses this class.  This class
+    has the mechanism in place to handle the tagSet element in
+    the Describe* responses.  If tags are found, it will create
+    a TagSet object and allow it to parse and collect the tags
+    into a dict that is stored in the "tags" attribute of the
+    object.
+    """
+
+    def __init__(self, connection=None):
+        EC2Object.__init__(self, connection)
+        self.tags = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'tagSet':
+            self.tags = TagSet()
+            return self.tags
+        else:
+            return None

@@ -1,4 +1,5 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
 
 class ProductCodes(list):
@@ -31,13 +32,13 @@ class ProductCodes(list):
         if name == 'productCode':
             self.append(value)
     
-class Image(EC2Object):
+class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
     """
     
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.location = None
         self.state = None
@@ -60,6 +61,9 @@ class Image(EC2Object):
         return 'Image:%s' % self.id
 
     def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
         if name == 'blockDeviceMapping':
             self.block_device_mapping = BlockDeviceMapping()
             return self.block_device_mapping
