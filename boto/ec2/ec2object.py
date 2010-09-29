@@ -62,3 +62,40 @@ class TaggedEC2Object(EC2Object):
             return self.tags
         else:
             return None
+
+    def add_tag(self, key, value=None):
+        """
+        Add a tag to this object.  Tag's are stored by AWS and can be used
+        to organize and filter resources.  Adding a tag involves a round-trip
+        to the EC2 service.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+        """
+        status = self.connection.create_tags([self.id], {key : value})
+        self.tags[key] = value
+
+    def remove_tag(self, key, value=None):
+        """
+        Remove a tag from this object.  Removing a tag involves a round-trip
+        to the EC2 service.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+                      If a value is provided, it must match the value
+                      currently stored in EC2.  If not, the tag will not
+                      be removed.
+        """
+        if value:
+            tags = {key : value}
+        else:
+            tags = [key]
+        status = self.connection.delete_tags([self.id], tags)
+        if key in self.tags:
+            del self.tags[key]
