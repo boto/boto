@@ -441,6 +441,9 @@ class SDBConnection(AWSQueryConnection):
             params['ConsistentRead'] = 'true'
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('Select', params, [('Item', self.item_cls)],
+        try:
+            return self.get_list('Select', params, [('Item', self.item_cls)],
                              parent=domain)
-
+        except SDBResponseError, e:
+            e.body = "Query: %s\n%s" % (query, e.body)
+            raise e
