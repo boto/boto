@@ -211,7 +211,7 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {'LoadBalancerName' : load_balancer_name}
         if instances:
-            self.build_list_params(params, instances, 'instances.member.%d')
+            self.build_list_params(params, instances, 'Instances.member.%d')
         return self.get_list('DescribeInstanceHealth', params, [('member', InstanceState)])
 
     def configure_health_check(self, name, health_check):
