@@ -51,7 +51,7 @@ from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
 from boto.exception import EC2ResponseError
 
-#boto.set_stream_logger('ec2')
+boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
@@ -64,7 +64,7 @@ class EC2Connection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=0,
+                 proxy_user=None, proxy_pass=None, debug=2,
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2.
@@ -96,9 +96,24 @@ class EC2Connection(AWSQueryConnection):
             params[name] = getattr(self, name)
         return params
 
+    def build_filter_params(self, params, filters):
+        i = 1
+        for name in filters:
+            aws_name = name.replace('_', '-')
+            params['Filter.%d.Name' % i] = aws_name
+            value = filters[name]
+            if not isinstance(value, list):
+                value = [value]
+            j = 1
+            for v in value:
+                params['Filter.%d.Value.%d' % (i,j)] = v
+                j += 1
+            i += 1
+
     # Image methods
 
-    def get_all_images(self, image_ids=None, owners=None, executable_by=None):
+    def get_all_images(self, image_ids=None, owners=None,
+                       executable_by=None, filters=None):
         """
         Retrieve all the EC2 images available on your account.
 
@@ -108,8 +123,19 @@ class EC2Connection(AWSQueryConnection):
         :type owners: list
         :param owners: A list of owner IDs
 
-        :type executable_by:
-        :param executable_by:
+        :type executable_by: list
+        :param executable_by: Returns AMIs for which the specified
+                              user ID has explicit launch permissions
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
@@ -121,13 +147,14 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, owners, 'Owner')
         if executable_by:
             self.build_list_params(params, executable_by, 'ExecutableBy')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeImages', params, [('item', Image)])
 
     def get_all_kernels(self, kernel_ids=None, owners=None):
         """
-        Retrieve all the EC2 kernels available on your account.  Simply filters
-        the list returned by get_all_images because EC2 does not provide a way
-        to filter server-side.
+        Retrieve all the EC2 kernels available on your account.
+        Constructs a filter to allow the processing to happen server side.
 
         :type kernel_ids: list
         :param kernel_ids: A list of strings with the image IDs wanted
@@ -138,18 +165,19 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
         """
-        rs = self.get_all_images(kernel_ids, owners)
-        kernels = []
-        for image in rs:
-            if image.type == 'kernel':
-                kernels.append(image)
-        return kernels
+        params = {}
+        if kernel_ids:
+            self.build_list_params(params, kernel_ids, 'ImageId')
+        if owners:
+            self.build_list_params(params, owners, 'Owner')
+        filter = {'image-type' : 'kernel'}
+        self.build_filter_params(params, filter)
+        return self.get_list('DescribeImages', params, [('item', Image)])
 
     def get_all_ramdisks(self, ramdisk_ids=None, owners=None):
         """
         Retrieve all the EC2 ramdisks available on your account.
-        Simply filters the list returned by get_all_images because
-        EC2 does not provide a way to filter server-side.
+        Constructs a filter to allow the processing to happen server side.
 
         :type ramdisk_ids: list
         :param ramdisk_ids: A list of strings with the image IDs wanted
@@ -160,12 +188,14 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
         """
-        rs = self.get_all_images(ramdisk_ids, owners)
-        ramdisks = []
-        for image in rs:
-            if image.type == 'ramdisk':
-                ramdisks.append(image)
-        return ramdisks
+        params = {}
+        if ramdisk_ids:
+            self.build_list_params(params, ramdisk_ids, 'ImageId')
+        if owners:
+            self.build_list_params(params, owners, 'Owner')
+        filter = {'image-type' : 'ramdisk'}
+        self.build_filter_params(params, filter)
+        return self.get_list('DescribeImages', params, [('item', Image)])
 
     def get_image(self, image_id):
         """
@@ -364,12 +394,22 @@ class EC2Connection(AWSQueryConnection):
 
     # Instance methods
 
-    def get_all_instances(self, instance_ids=None):
+    def get_all_instances(self, instance_ids=None, filters=None):
         """
         Retrieve all the instances associated with your account.
 
         :type instance_ids: list
         :param instance_ids: A list of strings of instance IDs
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
 
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
@@ -377,7 +417,10 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
-        return self.get_list('DescribeInstances', params, [('item', Reservation)])
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeInstances', params,
+                             [('item', Reservation)])
 
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,
@@ -689,13 +732,24 @@ class EC2Connection(AWSQueryConnection):
 
     # Spot Instances
 
-    def get_all_spot_instance_requests(self, request_ids=None):
+    def get_all_spot_instance_requests(self, request_ids=None,
+                                       filters=None):
         """
         Retrieve all the spot instances requests associated with your account.
         
         :type request_ids: list
         :param request_ids: A list of strings of spot instance request IDs
         
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list
         :return: A list of
                  :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
@@ -703,6 +757,8 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if request_ids:
             self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeSpotInstanceRequests', params,
                              [('item', SpotInstanceRequest)])
 
@@ -940,7 +996,7 @@ class EC2Connection(AWSQueryConnection):
 
     # Zone methods
 
-    def get_all_zones(self, zones=None):
+    def get_all_zones(self, zones=None, filters=None):
         """
         Get all Availability Zones associated with the current region.
 
@@ -949,17 +1005,29 @@ class EC2Connection(AWSQueryConnection):
                       only the Zones associated with these zone names
                       will be returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list of :class:`boto.ec2.zone.Zone`
         :return: The requested Zone objects
         """
         params = {}
         if zones:
             self.build_list_params(params, zones, 'ZoneName')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeAvailabilityZones', params, [('item', Zone)])
 
     # Address methods
 
-    def get_all_addresses(self, addresses=None):
+    def get_all_addresses(self, addresses=None, filters=None):
         """
         Get all EIP's associated with the current credentials.
 
@@ -968,12 +1036,24 @@ class EC2Connection(AWSQueryConnection):
                            only the Addresses associated with these addresses
                            will be returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
         """
         params = {}
         if addresses:
             self.build_list_params(params, addresses, 'PublicIp')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeAddresses', params, [('item', Address)])
 
     def allocate_address(self):
@@ -1029,7 +1109,7 @@ class EC2Connection(AWSQueryConnection):
 
     # Volume methods
 
-    def get_all_volumes(self, volume_ids=None):
+    def get_all_volumes(self, volume_ids=None, filters=None):
         """
         Get all Volumes associated with the current credentials.
 
@@ -1038,12 +1118,24 @@ class EC2Connection(AWSQueryConnection):
                            only the volumes associated with these volume ids
                            will be returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list of :class:`boto.ec2.volume.Volume`
         :return: The requested Volume objects
         """
         params = {}
         if volume_ids:
             self.build_list_params(params, volume_ids, 'VolumeId')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeVolumes', params, [('item', Volume)])
 
     def create_volume(self, size, zone, snapshot=None):
@@ -1146,7 +1238,8 @@ class EC2Connection(AWSQueryConnection):
     # Snapshot methods
 
     def get_all_snapshots(self, snapshot_ids=None,
-                          owner=None, restorable_by=None):
+                          owner=None, restorable_by=None,
+                          filters=None):
         """
         Get all EBS Snapshots associated with the current credentials.
 
@@ -1167,6 +1260,16 @@ class EC2Connection(AWSQueryConnection):
         :param restorable_by: If present, only the snapshots that are restorable
                               by the specified account id will be returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list of :class:`boto.ec2.snapshot.Snapshot`
         :return: The requested Snapshot objects
         """
@@ -1177,6 +1280,8 @@ class EC2Connection(AWSQueryConnection):
             params['Owner'] = owner
         if restorable_by:
             params['RestorableBy'] = restorable_by
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeSnapshots', params, [('item', Snapshot)])
 
     def create_snapshot(self, volume_id, description=None):
@@ -1279,7 +1384,7 @@ class EC2Connection(AWSQueryConnection):
 
     # Keypair methods
 
-    def get_all_key_pairs(self, keynames=None):
+    def get_all_key_pairs(self, keynames=None, filters=None):
         """
         Get all key pairs associated with your account.
 
@@ -1287,12 +1392,24 @@ class EC2Connection(AWSQueryConnection):
         :param keynames: A list of the names of keypairs to retrieve.
                          If not provided, all key pairs will be returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.keypair.KeyPair`
         """
         params = {}
         if keynames:
             self.build_list_params(params, keynames, 'KeyName')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeKeyPairs', params, [('item', KeyPair)])
 
     def get_key_pair(self, keyname):
@@ -1375,7 +1492,7 @@ class EC2Connection(AWSQueryConnection):
 
     # SecurityGroup methods
 
-    def get_all_security_groups(self, groupnames=None):
+    def get_all_security_groups(self, groupnames=None, filters=None):
         """
         Get all security groups associated with your account in a region.
 
@@ -1384,12 +1501,24 @@ class EC2Connection(AWSQueryConnection):
                            If not provided, all security groups will be
                            returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.securitygroup.SecurityGroup`
         """
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeSecurityGroups', params,
                              [('item', SecurityGroup)])
 
@@ -1536,14 +1665,27 @@ class EC2Connection(AWSQueryConnection):
     # Regions
     #
 
-    def get_all_regions(self):
+    def get_all_regions(self, filters=None):
         """
         Get all available regions for the EC2 service.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
         """
-        regions =  self.get_list('DescribeRegions', None, [('item', RegionInfo)])
+        params = {}
+        if filters:
+            self.build_filter_params(params, filters)
+        regions =  self.get_list('DescribeRegions', params, [('item', RegionInfo)])
         for region in regions:
             region.connection_cls = EC2Connection
         return regions
@@ -1555,7 +1697,8 @@ class EC2Connection(AWSQueryConnection):
     def get_all_reserved_instances_offerings(self, reserved_instances_id=None,
                                              instance_type=None,
                                              availability_zone=None,
-                                             product_description=None):
+                                             product_description=None,
+                                             filters=None):
         """
         Describes Reserved Instance offerings that are available for purchase.
 
@@ -1575,6 +1718,16 @@ class EC2Connection(AWSQueryConnection):
         :param product_description: Displays Reserved Instances with the
                                     specified product description.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`
         """
@@ -1587,11 +1740,14 @@ class EC2Connection(AWSQueryConnection):
             params['AvailabilityZone'] = availability_zone
         if product_description:
             params['ProductDescription'] = product_description
+        if filters:
+            self.build_filter_params(params, filters)
 
         return self.get_list('DescribeReservedInstancesOfferings',
                              params, [('item', ReservedInstancesOffering)])
 
-    def get_all_reserved_instances(self, reserved_instances_id=None):
+    def get_all_reserved_instances(self, reserved_instances_id=None,
+                                   filters=None):
         """
         Describes Reserved Instance offerings that are available for purchase.
 
@@ -1600,6 +1756,16 @@ class EC2Connection(AWSQueryConnection):
                                       will be returned. If not provided, all
                                       reserved instances will be returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
         """
@@ -1607,6 +1773,8 @@ class EC2Connection(AWSQueryConnection):
         if reserved_instances_id:
             self.build_list_params(params, reserved_instances_id,
                                    'ReservedInstancesId')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeReservedInstances',
                              params, [('item', ReservedInstance)])
 
@@ -1703,19 +1871,32 @@ class EC2Connection(AWSQueryConnection):
         params['Storage.S3.UploadPolicySignature'] = s3_upload_policy_signature
         return self.get_object('BundleInstance', params, BundleInstanceTask) 
 
-    def get_all_bundle_tasks(self, bundle_ids=None):
+    def get_all_bundle_tasks(self, bundle_ids=None, filters=None):
         """
         Retrieve current bundling tasks. If no bundle id is specified, all
         tasks are retrieved.
 
         :type bundle_ids: list
         :param bundle_ids: A list of strings containing identifiers for 
-                           previously created bundling tasks. 
+                           previously created bundling tasks.
+                           
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         """
  
         params = {}
         if bundle_ids:
             self.build_list_params(params, bundle_ids, 'BundleId')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeBundleTasks', params,
                              [('item', BundleInstanceTask)])
 
@@ -1747,7 +1928,7 @@ class EC2Connection(AWSQueryConnection):
     # Cluster Placement Groups
     #
 
-    def get_all_placement_groups(self, groupnames=None):
+    def get_all_placement_groups(self, groupnames=None, filters=None):
         """
         Get all placement groups associated with your account in a region.
 
@@ -1756,12 +1937,24 @@ class EC2Connection(AWSQueryConnection):
                            If not provided, all placement groups will be
                            returned.
 
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.placementgroup.PlacementGroup`
         """
         params = {}
         if groupnames:
             self.build_list_params(params, groupnames, 'GroupName')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribePlacementGroups', params,
                              [('item', PlacementGroup)])
 
@@ -1808,12 +2001,22 @@ class EC2Connection(AWSQueryConnection):
                 params['Tag.%d.Value'%i] = value
             i += 1
         
-    def get_all_tags(self, tags=None):
+    def get_all_tags(self, tags=None, filters=None):
         """
         Retrieve all the metadata tags associated with your account.
 
         :type tags: list
         :param tags: A list of mumble
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
 
         :rtype: dict
         :return: A dictionary containing metadata tags
@@ -1821,6 +2024,8 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if tags:
             self.build_list_params(params, instance_ids, 'InstanceId')
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeTags', params, [('item', Tag)])
 
     def create_tags(self, resource_ids, tags):
