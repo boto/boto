@@ -80,14 +80,10 @@ class Bootstrap(ScriptBase):
 
     def fetch_s3_file(self, s3_file):
         try:
-            if s3_file.startswith('s3:'):
-                bucket_name, key_name = s3_file[len('s3:'):].split('/')
-                c = boto.connect_s3()
-                bucket = c.get_bucket(bucket_name)
-                key = bucket.get_key(key_name)
-                boto.log.info('Fetching %s/%s' % (bucket.name, key.name))
-                path = os.path.join(self.working_dir, key.name)
-                key.get_contents_to_filename(path)
+            from boto.utils import fetch_file
+            f = fetch_file(s3_file)
+            path = os.path.join(self.working_dir, f.name)
+            open(path, "w").write(f.read())
         except:
             boto.log.exception('Problem Retrieving file: %s' % s3_file)
             path = None
