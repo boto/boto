@@ -66,7 +66,22 @@ class Step(EmrObject):
         if name == 'Args':
             self.args = ResultSet([('member', Arg)])
             return self.args
- 
+
+
+class BootstrapAction(EmrObject):
+    Fields = set(['Name',
+                  'Path'])
+    
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.args = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Args':
+            self.args = ResultSet([('member', Arg)])
+            return self.args
+
+
 class JobFlow(EmrObject):
     Fields = set(['CreationDateTime',
                   'StartDateTime',
@@ -94,11 +109,16 @@ class JobFlow(EmrObject):
     def __init__(self, connection=None):
         self.connection = connection
         self.steps = None
+        self.bootstrap_actions = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Steps':
             self.steps = ResultSet([('member', Step)])
             return self.steps
+        elif name == 'BootstrapActions':
+            print 'Parsing Bootstrap Actions!'
+            self.bootstrap_actions = ResultSet([('member', BootstrapAction)])
+            return self.bootstrap_actions
         else:
             return None
 
