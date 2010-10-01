@@ -82,7 +82,7 @@ class Bootstrap(ScriptBase):
         try:
             from boto.utils import fetch_file
             f = fetch_file(s3_file)
-            path = os.path.join(self.working_dir, f.name)
+            path = os.path.join(self.working_dir, s3_file.split("/")[-1])
             open(path, "w").write(f.read())
         except:
             boto.log.exception('Problem Retrieving file: %s' % s3_file)
