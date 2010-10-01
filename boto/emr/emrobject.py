@@ -116,7 +116,6 @@ class JobFlow(EmrObject):
             self.steps = ResultSet([('member', Step)])
             return self.steps
         elif name == 'BootstrapActions':
-            print 'Parsing Bootstrap Actions!'
             self.bootstrap_actions = ResultSet([('member', BootstrapAction)])
             return self.bootstrap_actions
         else:
