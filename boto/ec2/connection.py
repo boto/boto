@@ -51,7 +51,7 @@ from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
 from boto.exception import EC2ResponseError
 
-boto.set_stream_logger('ec2')
+#boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
@@ -64,7 +64,7 @@ class EC2Connection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=2,
+                 proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2.
