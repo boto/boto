@@ -54,11 +54,10 @@ class TaggedEC2Object(EC2Object):
 
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
-        self.tags = None
+        self.tags = TagSet()
 
     def startElement(self, name, attrs, connection):
         if name == 'tagSet':
-            self.tags = TagSet()
             return self.tags
         else:
             return None
