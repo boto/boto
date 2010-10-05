@@ -98,6 +98,7 @@ if __name__ == "__main__":
     parser.add_option("-n", "--no-add-cred", help="Don't add a credentials section", default=False, action="store_true", dest="nocred")
     parser.add_option("-w", "--wait", help="Wait until instance is running", default=False, action="store_true", dest="wait")
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
+    parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
 
     (options, args) = parser.parse_args()
 
@@ -150,18 +151,28 @@ if __name__ == "__main__":
             security_groups=groups, instance_type=options.type,
             placement=options.zone)
 
+    instance = r.instances[0]
+
+    if options.tags:
+        for tag_pair in options.tags:
+            name = tag_pair
+            value = ''
+            if ':' in tag_pair:
+                name, value = tag_pair.split(':', 1)
+            instance.add_tag(name, value)
+
     if options.dns:
         options.wait = True
 
     if not options.wait:
         sys.exit(0)
 
-    instance = r.instances[0]
     while True:
         instance.update()
         if instance.state == 'running':
             break
         time.sleep(3)
+
     if options.dns:
         print "Public DNS name: %s" % instance.public_dns_name
         print "Private DNS name: %s" % instance.private_dns_name
