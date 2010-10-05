@@ -115,7 +115,9 @@ class RDSConnection(AWSQueryConnection):
                           preferred_maintenance_window=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
-                          multi_az=False):
+                          multi_az=False,
+                          engine_version=None,
+                          auto_minor_version_upgrade=True):
         """
         Create a new DBInstance.
 
@@ -131,17 +133,23 @@ class RDSConnection(AWSQueryConnection):
 
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the DBInstance.
+                               
                                Valid values are:
-                               db.m1.small | db.m1.large | db.m1.xlarge |
-                               db.m2.2xlarge | db.m2.4xlarge
+                               
+                               * db.m1.small
+                               * db.m1.large
+                               * db.m1.xlarge
+                               * db.m2.xlarge
+                               * db.m2.2xlarge
+                               * db.m2.4xlarge
 
         :type engine: str
         :param engine: Name of database engine. Must be MySQL5.1 for now.
 
         :type master_username: str
         :param master_username: Name of master user for the DBInstance.
-                                Must be 1-15 alphanumeric characters, first must be
-                                a letter.
+                                Must be 1-15 alphanumeric characters, first
+                                must be a letter.
 
         :type master_password: str
         :param master_password: Password of master user for the DBInstance.
@@ -169,8 +177,8 @@ class RDSConnection(AWSQueryConnection):
                                   DBInstance into.
 
         :type preferred_maintenance_window: str
-        :param preferred_maintenance_window: The weekly time range (in UTC) during
-                                             which maintenance can occur.
+        :param preferred_maintenance_window: The weekly time range (in UTC)
+                                             during which maintenance can occur.
                                              Default is Sun:05:00-Sun:09:00
 
         :type backup_retention_period: int
@@ -188,6 +196,16 @@ class RDSConnection(AWSQueryConnection):
         :param multi_az: If True, specifies the DB Instance will be
                          deployed in multiple availability zones.
 
+        :type engine_version: str
+        :param engine_version: Version number of the database engine to use.
+
+        :type auto_minor_version_upgrade: bool
+        :param auto_minor_version_upgrade: Indicates that minor engine
+                                           upgrades will be applied
+                                           automatically to the Read Replica
+                                           during the maintenance window.
+                                           Default is True.
+                                           
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -221,8 +239,81 @@ class RDSConnection(AWSQueryConnection):
             params['PreferredBackupWindow'] = preferred_backup_window
         if multi_az:
             params['MultiAZ'] = 'true'
+        if engine_version:
+            params['EngineVersion'] = engine_version
+        if auto_minor_version_upgrade is False:
+            params['AutoMinorVersionUpgrade'] = 'false'
 
         return self.get_object('CreateDBInstance', params, DBInstance)
+
+    def create_dbinstance_read_replica(self, id, source_id,
+                                       instance_class=None,
+                                       port=3306,
+                                       availability_zone=None,
+                                       auto_minor_version_upgrade=None):
+        """
+        Create a new DBInstance Read Replica.
+
+        :type id: str
+        :param id: Unique identifier for the new instance.
+                   Must contain 1-63 alphanumeric characters.
+                   First character must be a letter.
+                   May not end with a hyphen or contain two consecutive hyphens
+
+        :type source_id: str
+        :param source_id: Unique identifier for the DB Instance for which this
+                          DB Instance will act as a Read Replica.
+
+        :type instance_class: str
+        :param instance_class: The compute and memory capacity of the
+                               DBInstance.  Default is to inherit from
+                               the source DB Instance.
+                               
+                               Valid values are:
+                               
+                               * db.m1.small
+                               * db.m1.large
+                               * db.m1.xlarge
+                               * db.m2.xlarge
+                               * db.m2.2xlarge
+                               * db.m2.4xlarge
+
+        :type port: int
+        :param port: Port number on which database accepts connections.
+                     Default is to inherit from source DB Instance.
+                     Valid values [1115-65535].  Defaults to 3306.
+
+        :type availability_zone: str
+        :param availability_zone: Name of the availability zone to place
+                                  DBInstance into.
+
+        :type auto_minor_version_upgrade: bool
+        :param auto_minor_version_upgrade: Indicates that minor engine
+                                           upgrades will be applied
+                                           automatically to the Read Replica
+                                           during the maintenance window.
+                                           Default is to inherit this value
+                                           from the source DB Instance.
+                                           
+        :rtype: :class:`boto.rds.dbinstance.DBInstance`
+        :return: The new db instance.
+        """
+        params = {'DBInstanceIdentifier' : id,
+                  'SourceDBInstanceIdentifier' : source_id}
+        if instance_class:
+            params['DBInstanceClass'] = instance_class
+        if port:
+            params['Port'] = port
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
+        if auto_minor_version_upgrade is not None:
+            if auto_minor_version_upgrade is True:
+                params['AutoMinorVersionUpgrade'] = 'true'
+            else:
+                params['AutoMinorVersionUpgrade'] = 'false'
+
+        return self.get_object('CreateDBInstanceReadReplica',
+                               params, DBInstance)
 
     def modify_dbinstance(self, id, param_group=None, security_groups=None,
                           preferred_maintenance_window=None,
@@ -243,8 +334,9 @@ class RDSConnection(AWSQueryConnection):
                                 this DBInstance.
 
         :type preferred_maintenance_window: str
-        :param preferred_maintenance_window: The weekly time range (in UTC) during
-                                             which maintenance can occur.
+        :param preferred_maintenance_window: The weekly time range (in UTC)
+                                             during which maintenance can
+                                             occur.
                                              Default is Sun:05:00-Sun:09:00
 
         :type master_password: str
@@ -256,12 +348,19 @@ class RDSConnection(AWSQueryConnection):
                                   Valid values are [5-1024]
 
         :type instance_class: str
-        :param instance_class: The compute and memory capacity of the DBInstance.
-                               Changes will be applied at next maintenance
-                               window unless apply_immediately is True.
+        :param instance_class: The compute and memory capacity of the
+                               DBInstance.  Changes will be applied at
+                               next maintenance window unless
+                               apply_immediately is True.
+
                                Valid values are:
-                               db.m1.small | db.m1.large | db.m1.xlarge |
-                               db.m2.2xlarge | db.m2.4xlarge
+                               
+                               * db.m1.small
+                               * db.m1.large
+                               * db.m1.xlarge
+                               * db.m2.xlarge
+                               * db.m2.2xlarge
+                               * db.m2.4xlarge
 
         :type apply_immediately: bool
         :param apply_immediately: If true, the modifications will be applied
