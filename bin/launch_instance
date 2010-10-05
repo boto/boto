@@ -22,8 +22,14 @@
 #
 # Utility to launch an EC2 Instance
 #
-VERSION="0.1"
+VERSION="0.2"
 
+
+CLOUD_INIT_SCRIPT = """#!/usr/bin/env python
+f = open("/etc/boto.cfg", "w")
+f.write(\"\"\"%s\"\"\")
+f.close()
+"""
 import boto.pyami.config
 from boto.utils import fetch_file
 import re, os
@@ -88,6 +94,7 @@ if __name__ == "__main__":
     parser = OptionParser(version=VERSION, usage="%prog [options] config_url")
     parser.add_option("-c", "--max-count", help="Maximum number of this type of instance to launch", dest="max_count", default="1")
     parser.add_option("--min-count", help="Minimum number of this type of instance to launch", dest="min_count", default="1")
+    parser.add_option("--cloud-init", help="Indicates that this is an instance that uses 'CloudInit', Ubuntu's cloud bootstrap process. This wraps the config in a shell script command instead of just passing it in directly", dest="cloud_init", default=False, action="store_true")
     parser.add_option("-g", "--groups", help="Security Groups to add this instance to",  action="append", dest="groups")
     parser.add_option("-a", "--ami", help="AMI to launch", dest="ami_id")
     parser.add_option("-t", "--type", help="Type of Instance (default m1.small)", dest="type", default="m1.small")
@@ -96,6 +103,7 @@ if __name__ == "__main__":
     parser.add_option("-r", "--region", help="Region (default us-east-1)", dest="region", default="us-east-1")
     parser.add_option("-i", "--ip", help="Elastic IP", dest="elastic_ip")
     parser.add_option("-n", "--no-add-cred", help="Don't add a credentials section", default=False, action="store_true", dest="nocred")
+    parser.add_option("--save-ebs", help="Save the EBS volume on shutdown, instead of deleting it", default=False, action="store_true", dest="save_ebs")
     parser.add_option("-w", "--wait", help="Wait until instance is running", default=False, action="store_true", dest="wait")
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
     parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
@@ -146,10 +154,20 @@ if __name__ == "__main__":
             l.remove((g, g.name, g.description))
             g = iobj.choose_from_list(l, prompt='Choose Additional Security Group (0 to quit)')
 
+    user_data = str(cfg)
+    # If it's a cloud init AMI,
+    # then we need to wrap the config in our
+    # little wrapper shell script
+    if options.cloud_init:
+        user_data = CLOUD_INIT_SCRIPT % user_data
+    shutdown_proc = "terminate"
+    if options.save_ebs:
+        shutdown_proc = "save"
+
     r = ami.run(min_count=int(options.min_count), max_count=int(options.max_count),
-            key_name=key_name, user_data=str(cfg),
+            key_name=key_name, user_data=user_data,
             security_groups=groups, instance_type=options.type,
-            placement=options.zone)
+            placement=options.zone, instance_initiated_shutdown_behavior=shutdown_proc)
 
     instance = r.instances[0]
 

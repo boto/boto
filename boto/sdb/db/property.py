@@ -109,7 +109,9 @@ class Property(object):
         return self.choices
 
 def validate_string(value):
-    if isinstance(value, str) or isinstance(value, unicode):
+    if value == None:
+        return
+    elif isinstance(value, str) or isinstance(value, unicode):
         if len(value) > 1024:
             raise ValueError, 'Length of value greater than maxlength'
     else:
