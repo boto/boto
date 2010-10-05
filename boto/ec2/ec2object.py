@@ -76,6 +76,8 @@ class TaggedEC2Object(EC2Object):
         :param value: An optional value that can be stored with the tag.
         """
         status = self.connection.create_tags([self.id], {key : value})
+        if self.tags is None:
+            self.tags = TagSet()
         self.tags[key] = value
 
     def remove_tag(self, key, value=None):
