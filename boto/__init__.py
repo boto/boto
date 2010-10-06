@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import boto
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
 import os, re, sys
@@ -455,3 +456,16 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
         if len(path_parts) > 1:
             object_name = path_parts[1]
         return BucketStorageUri(scheme, bucket_name, object_name, debug)
+
+def storage_uri_for_key(key):
+    """Returns a StorageUri for the given key.
+
+    :type key: :class:`boto.s3.key.Key` or subclass
+    :param key: URI naming bucket + optional object.
+    """
+    if not isinstance(key, boto.s3.key.Key):
+        raise InvalidUriError('Requested key (%s) is not a subclass of '
+                              'boto.s3.key.Key' % str(type(key)))
+    prov_name = key.bucket.connection.provider.get_provider_name()
+    uri_str = '%s://%s/%s' % (prov_name, key.bucket.name, key.name)
+    return storage_uri(uri_str)

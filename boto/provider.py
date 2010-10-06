@@ -46,6 +46,7 @@ COPY_SOURCE_VERSION_ID_HEADER_KEY = 'copy-source-version-id-header'
 DELETE_MARKER_HEADER_KEY = 'delete-marker-header'
 DATE_HEADER_KEY = 'date-header'
 METADATA_DIRECTIVE_HEADER_KEY = 'metadata-directive-header'
+RESUMABLE_UPLOAD_HEADER_KEY = 'resumable-upload-header'
 SECURITY_TOKEN_HEADER_KEY = 'security-token-header'
 STORAGE_CLASS_HEADER_KEY = 'storage-class'
 MFA_HEADER_KEY = 'mfa-header'
@@ -93,6 +94,7 @@ class Provider(object):
             DELETE_MARKER_HEADER_KEY : AWS_HEADER_PREFIX + 'delete-marker',
             METADATA_DIRECTIVE_HEADER_KEY : AWS_HEADER_PREFIX +
                                             'metadata-directive',
+            RESUMABLE_UPLOAD_HEADER_KEY : None,
             SECURITY_TOKEN_HEADER_KEY : AWS_HEADER_PREFIX + 'security-token',
             VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY : AWS_HEADER_PREFIX + 'storage-class',
@@ -110,6 +112,7 @@ class Provider(object):
             DELETE_MARKER_HEADER_KEY : GOOG_HEADER_PREFIX + 'delete-marker',
             METADATA_DIRECTIVE_HEADER_KEY : GOOG_HEADER_PREFIX  +
                                             'metadata-directive',
+            RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
             SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
             VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY : None,
@@ -133,7 +136,7 @@ class Provider(object):
             STORAGE_RESPONSE_ERROR : boto.exception.GSResponseError,
         }
     }
-    
+
     def __init__(self, name, access_key=None, secret_key=None):
         self.host = None
         self.access_key = access_key
@@ -146,7 +149,7 @@ class Provider(object):
         self.configure_errors()
         # allow config file to override default host
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
-        if (config.has_option('Credentials', host_opt_name)):
+        if config.has_option('Credentials', host_opt_name):
             self.host = config.get('Credentials', host_opt_name)
 
     def get_credentials(self, access_key=None, secret_key=None):
@@ -179,6 +182,8 @@ class Provider(object):
         self.metadata_directive_header = (
             header_info_map[METADATA_DIRECTIVE_HEADER_KEY])
         self.security_token_header = header_info_map[SECURITY_TOKEN_HEADER_KEY]
+        self.resumable_upload_header = (
+            header_info_map[RESUMABLE_UPLOAD_HEADER_KEY])
         self.storage_class_header = header_info_map[STORAGE_CLASS_HEADER_KEY]
         self.version_id = header_info_map[VERSION_ID_HEADER_KEY]
         self.mfa_header = header_info_map[MFA_HEADER_KEY]
@@ -190,6 +195,9 @@ class Provider(object):
         self.storage_data_error = error_map[STORAGE_DATA_ERROR]
         self.storage_permissions_error = error_map[STORAGE_PERMISSIONS_ERROR]
         self.storage_response_error = error_map[STORAGE_RESPONSE_ERROR]
+
+    def get_provider_name(self):
+        return self.HostKeyMap[self.name]
 
 # Static utility method for getting default Provider.
 def get_default():

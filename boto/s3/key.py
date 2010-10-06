@@ -26,6 +26,7 @@ import StringIO
 import base64
 import boto.utils
 from boto.exception import BotoClientError
+from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
 try:
@@ -104,20 +105,22 @@ class Key(object):
         return (md5_hexdigest, base64md5)
     
     def handle_version_headers(self, resp, force=False):
+        provider = self.bucket.connection.provider
         # If the Key object already has a version_id attribute value, it
         # means that it represents an explicit version and the user is
         # doing a get_contents_*(version_id=<foo>) to retrieve another
         # version of the Key.  In that case, we don't really want to
         # overwrite the version_id in this Key object.  Comprende?
         if self.version_id is None or force:
-            self.version_id = resp.getheader(self.provider.version_id, None)
-        self.source_version_id = resp.getheader(self.provider.copy_source_version_id, None)
-        if resp.getheader(self.provider.delete_marker, 'false') == 'true':
+            self.version_id = resp.getheader(provider.version_id, None)
+        self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
+        if resp.getheader(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
         else:
             self.delete_marker = False
 
-    def open_read(self, headers=None, query_args=None):
+    def open_read(self, headers=None, query_args=None,
+                  override_num_retries=None):
         """
         Open this key for reading
         
@@ -126,22 +129,26 @@ class Key(object):
         
         :type query_args: string
         :param query_args: Arguments to pass in the query string (ie, 'torrent')
+        
+        :type override_num_retries: int
+        :param override_num_retries: If not None will override configured
+                                     num_retries parameter for underlying GET.
         """
         if self.resp == None:
             self.mode = 'r'
             
-            self.resp = self.bucket.connection.make_request('GET',
-                                                            self.bucket.name,
-                                                            self.name, headers,
-                                                            query_args=query_args)
+            provider = self.bucket.connection.provider
+            self.resp = self.bucket.connection.make_request(
+                'GET', self.bucket.name, self.name, headers,
+                query_args=query_args,
+                override_num_retries=override_num_retries)
             if self.resp.status < 199 or self.resp.status > 299:
                 body = self.resp.read()
-                raise self.provider.storage_response_error(self.resp.status,
-                                                           self.resp.reason,
-                                                           body)
+                raise provider.storage_response_error(self.resp.status,
+                                                      self.resp.reason, body)
             response_headers = self.resp.msg
             self.metadata = boto.utils.get_aws_metadata(response_headers,
-                                                        self.provider)
+                                                        provider)
             for name,value in response_headers.items():
                 if name.lower() == 'content-length':
                     self.size = int(value)
@@ -157,23 +164,30 @@ class Key(object):
                     self.cache_control = value
             self.handle_version_headers(self.resp)
 
-    def open_write(self, headers=None):
+    def open_write(self, headers=None, override_num_retries=None):
         """
         Open this key for writing. 
         Not yet implemented
         
         :type headers: dict
         :param headers: Headers to pass in the write request
+
+        :type override_num_retries: int
+        :param override_num_retries: If not None will override configured
+                                     num_retries parameter for underlying PUT.
         """
         raise BotoClientError('Not Implemented')
 
-    def open(self, mode='r', headers=None, query_args=None):
+    def open(self, mode='r', headers=None, query_args=None,
+             override_num_retries=None):
         if mode == 'r':
             self.mode = 'r'
-            self.open_read(headers=headers, query_args=query_args)
+            self.open_read(headers=headers, query_args=query_args,
+                           override_num_retries=override_num_retries)
         elif mode == 'w':
             self.mode = 'w'
-            self.open_write(headers=headers)
+            self.open_write(headers=headers,
+                            override_num_retries=override_num_retries)
         else:
             raise BotoClientError('Invalid mode: %s' % mode)
 
@@ -418,6 +432,8 @@ class Key(object):
                        your callback to be called with each buffer read.
              
         """
+        provider = self.bucket.connection.provider
+
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest(method, path)
             for key in headers:
@@ -426,6 +442,7 @@ class Key(object):
             fp.seek(0)
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
+            http_conn.set_debuglevel(0)
             if cb:
                 if num_cb > 2:
                     cb_count = self.size / self.BufferSize / (num_cb-2)
@@ -450,6 +467,7 @@ class Key(object):
             response = http_conn.getresponse()
             body = response.read()
             fp.seek(0)
+            http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
             if response.status == 500 or response.status == 503 or \
                     response.getheader('location'):
@@ -458,11 +476,11 @@ class Key(object):
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
                 if self.etag != '"%s"'  % self.md5:
-                    raise self.provider.storage_data_error(
+                    raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5')
                 return response
             else:
-                raise self.provider.storage_response_error(
+                raise provider.storage_response_error(
                     response.status, response.reason, body)
 
         if not headers:
@@ -472,7 +490,7 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
-            headers[self.provider.storage_class_header] = self.storage_class
+            headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
         if headers.has_key('Content-Type'):
@@ -486,7 +504,7 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
-        headers = boto.utils.merge_meta(headers, self.metadata, self.provider)
+        headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
                                                    sender=sender)
@@ -568,14 +586,15 @@ class Key(object):
                                    redundancy at lower storage cost.
 
         """
+        provider = self.bucket.connection.provider
         if headers is None:
             headers = {}
         if policy:
-            headers[self.provider.acl_header] = policy
+            headers[provider.acl_header] = policy
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
-            if self.provider.storage_class_header:
-                headers[self.provider.storage_class_header] = self.storage_class
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
                 # TODO - What if the provider doesn't support reduced reduncancy?
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
@@ -703,7 +722,7 @@ class Key(object):
         return r
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
-                 torrent=False, version_id=None):
+                 torrent=False, version_id=None, override_num_retries=None):
         """
         Retrieves a file from an S3 Key
         
@@ -728,10 +747,16 @@ class Key(object):
              
         :type torrent: bool
         :param torrent: Flag for whether to get a torrent for the file
+
+        :type override_num_retries: int
+        :param override_num_retries: If not None will override configured
+                                     num_retries parameter for underlying GET.
         """
         if cb:
             if num_cb > 2:
                 cb_count = self.size / self.BufferSize / (num_cb-2)
+            elif num_cb < 0:
+                cb_count = -1
             else:
                 cb_count = 0
             i = total_bytes = 0
@@ -750,13 +775,14 @@ class Key(object):
             version_id = self.version_id
         if version_id:
             query_args = 'versionId=%s' % version_id
-        self.open('r', headers, query_args=query_args)
+        self.open('r', headers, query_args=query_args,
+                  override_num_retries=override_num_retries)
         for bytes in self:
             fp.write(bytes)
             if cb:
                 total_bytes += len(bytes)
                 i += 1
-                if i == cb_count:
+                if i == cb_count or cb_count == -1:
                     cb(total_bytes, self.size)
                     i = 0
         if cb:
@@ -788,7 +814,8 @@ class Key(object):
     def get_contents_to_file(self, fp, headers=None,
                              cb=None, num_cb=10,
                              torrent=False,
-                             version_id=None):
+                             version_id=None,
+                             res_download_handler=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Write the contents of the object to the file pointed
@@ -816,15 +843,25 @@ class Key(object):
         :type torrent: bool
         :param torrent: If True, returns the contents of a torrent file as a string.
 
+        :type res_upload_handler: ResumableDownloadHandler
+        :param res_download_handler: If provided, this handler will perform the
+            download.
+
         """
         if self.bucket != None:
-            self.get_file(fp, headers, cb, num_cb, torrent=torrent,
-                          version_id=version_id)
+            if res_download_handler:
+                res_download_handler.get_file(self, fp, headers, cb, num_cb,
+                                              torrent=torrent,
+                                              version_id=version_id)
+            else:
+                self.get_file(fp, headers, cb, num_cb, torrent=torrent,
+                              version_id=version_id)
 
     def get_contents_to_filename(self, filename, headers=None,
                                  cb=None, num_cb=10,
                                  torrent=False,
-                                 version_id=None):
+                                 version_id=None,
+                                 res_download_handler=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Store contents of the object to a file named by 'filename'.
@@ -852,11 +889,16 @@ class Key(object):
              
         :type torrent: bool
         :param torrent: If True, returns the contents of a torrent file as a string.
-        
+
+        :type res_upload_handler: ResumableDownloadHandler
+        :param res_download_handler: If provided, this handler will perform the
+            download.
+
         """
         fp = open(filename, 'wb')
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id)
+                                  version_id=version_id,
+                                  res_download_handler=res_download_handler)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:

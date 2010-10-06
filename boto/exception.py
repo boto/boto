@@ -336,34 +336,80 @@ class AWSConnectionError(BotoClientError):
 class StorageDataError(BotoClientError):
     """
     Error receiving data from a storage service.
-    """ 
+    """
     pass
 
 class S3DataError(StorageDataError):
     """
     Error receiving data from S3.
-    """ 
+    """
     pass
 
 class GSDataError(StorageDataError):
     """
     Error receiving data from GS.
-    """ 
+    """
     pass
 
 class FPSResponseError(BotoServerError):
     pass
 
 class InvalidUriError(Exception):
-  """Exception raised when URI is invalid."""
+    """Exception raised when URI is invalid."""
 
-  def __init__(self, message):
-    Exception.__init__(self)
-    self.message = message
+    def __init__(self, message):
+        Exception.__init__(self)
+        self.message = message
 
 class InvalidAclError(Exception):
-  """Exception raised when ACL XML is invalid."""
+    """Exception raised when ACL XML is invalid."""
 
-  def __init__(self, message):
-    Exception.__init__(self)
-    self.message = message
+    def __init__(self, message):
+        Exception.__init__(self)
+        self.message = message
+
+# Enum class for resumable upload failure disposition.
+class ResumableTransferDisposition(object):
+    # START_OVER means an attempt to resume an existing transfer failed,
+    # and a new resumable upload should be attempted (without delay).
+    START_OVER = 'START_OVER'
+
+    # WAIT_BEFORE_RETRY means the resumable transfer failed but that it can
+    # be retried after a time delay.
+    WAIT_BEFORE_RETRY = 'WAIT_BEFORE_RETRY'
+
+    # ABORT means the resumable transfer failed and that delaying/retrying
+    # within the current process will not help.
+    ABORT = 'ABORT'
+
+class ResumableUploadException(Exception):
+    """
+    Exception raised for various resumable upload problems.
+
+    self.disposition is of type ResumableTransferDisposition.
+    """
+
+    def __init__(self, message, disposition):
+        Exception.__init__(self)
+        self.message = message
+        self.disposition = disposition
+
+    def __repr__(self):
+        return 'ResumableUploadException("%s", %s)' % (
+            self.message, self.disposition)
+
+class ResumableDownloadException(Exception):
+    """
+    Exception raised for various resumable download problems.
+
+    self.disposition is of type ResumableTransferDisposition.
+    """
+
+    def __init__(self, message, disposition):
+        Exception.__init__(self)
+        self.message = message
+        self.disposition = disposition
+
+    def __repr__(self):
+        return 'ResumableDownloadException("%s", %s)' % (
+            self.message, self.disposition)

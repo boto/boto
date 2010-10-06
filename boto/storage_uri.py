@@ -27,8 +27,8 @@ from boto.exception import InvalidUriError
 class StorageUri(object):
     """
     Base class for representing storage provider-independent bucket and
-    object name with a shorthand URI-like
-    
+    object name with a shorthand URI-like syntax.
+
     This is an abstract class: the constructor cannot be called (throws an
     exception if you try).
     """
@@ -52,7 +52,7 @@ class StorageUri(object):
     def check_response(self, resp, level, uri):
         if resp is None:
             raise InvalidUriError('Attempt to get %s for "%s" failed. This '
-                                  'probably indicates the URI is invalid.' %
+                                  'probably indicates the URI is invalid' %
                                   (level, uri))
 
     def connect(self, access_key_id=None, secret_access_key=None, **kwargs):
@@ -93,9 +93,9 @@ class StorageUri(object):
         return bucket.delete_key(self.object_name, headers, version_id,
                                  mfa_token)
 
-    def get_all_keys(self, validate=True, headers=None, **params):
+    def get_all_keys(self, validate=True, headers=None):
         bucket = self.get_bucket(validate, headers)
-        return bucket.get_all_keys(headers, params)
+        return bucket.get_all_keys(headers)
 
     def get_bucket(self, validate=True, headers=None):
         if self.bucket_name is None:
@@ -222,7 +222,8 @@ class BucketStorageUri(StorageUri):
     def add_user_grant(self, permission, user_id, recursive=False,
                        validate=True, headers=None):
         if not self.bucket_name:
-            raise InvalidUriError('add_user_grant on bucket-less URI (%s)' % self.uri)
+            raise InvalidUriError('add_user_grant on bucket-less URI (%s)' %
+                                  self.uri)
         if not self.object_name:
             bucket = self.get_bucket(validate, headers)
             bucket.add_user_grant(permission, user_id, recursive, headers)
@@ -232,19 +233,20 @@ class BucketStorageUri(StorageUri):
 
     def list_grants(self, headers=None):
         if not self.bucket_name:
-            raise InvalidUriError('list_grants on bucket-less URI (%s)' % self.uri)
+            raise InvalidUriError('list_grants on bucket-less URI (%s)' %
+                                  self.uri)
         bucket = self.get_bucket(headers)
         return bucket.list_grants(headers)
 
     def names_container(self):
         """Returns True if this URI names a bucket (vs. an object).
         """
-        return self.object_name is None or self.object_name == ''
+        return not self.object_name
 
     def names_singleton(self):
         """Returns True if this URI names an object (vs. a bucket).
         """
-        return self.object_name is not None and self.object_name != ''
+        return self.object_name
 
     def is_file_uri(self):
         return False
@@ -281,8 +283,8 @@ class BucketStorageUri(StorageUri):
         if not self.bucket_name:
             raise InvalidUriError('set_acl on bucket-less URI (%s)' %
                                   self.uri)
-        self.get_bucket(validate, headers).set_acl(acl_or_str, key_name, headers,
-                        version_id)
+        self.get_bucket(validate, headers).set_acl(acl_or_str, key_name,
+                                                   headers, version_id)
 
     def set_canned_acl(self, acl_str, validate=True, headers=None,
                        version_id=None):

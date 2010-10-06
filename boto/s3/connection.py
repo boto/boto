@@ -383,7 +383,7 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
-            query_args=None, sender=None):
+            query_args=None, sender=None, override_num_retries=None):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -395,5 +395,6 @@ class S3Connection(AWSAuthConnection):
             path += '?' + query_args
             auth_path += '?' + query_args
         return AWSAuthConnection.make_request(self, method, path, headers,
-                data, host, auth_path, sender)
+                data, host, auth_path, sender,
+                override_num_retries=override_num_retries)
 
