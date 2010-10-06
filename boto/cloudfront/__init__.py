@@ -125,6 +125,7 @@ class CloudFrontConnection(AWSAuthConnection):
             d = dist_class(connection=self)
             h = handler.XmlHandler(d, self)
             xml.sax.parseString(body, h)
+            d.etag = self.get_etag(response)
             return d
         else:
             raise CloudFrontServerError(response.status, response.reason, body)
