@@ -23,7 +23,10 @@ import boto.ec2
 from boto.sdb.db.property import StringProperty, IntegerProperty
 from boto.manage import propget
 
-InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
+InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
+                 'c1.medium', 'c1.xlarge', 'm2.xlarge',
+                 'm2.2xlarge', 'm2.4xlarge', 'cc1.4xlarge',
+                 't1.micro']
 
 class BuyReservation(object):
 
