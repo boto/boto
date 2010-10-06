@@ -113,9 +113,9 @@ class CloudFrontConnection(AWSAuthConnection):
         headers = {'If-Match' : etag, 'Content-Type' : 'text/xml'}
         response = self.make_request('PUT', uri, headers, config.to_xml())
         body = response.read()
-        return self.get_etag(response)
         if response.status != 200:
             raise CloudFrontServerError(response.status, response.reason, body)
+        return self.get_etag(response)
     
     def _create_object(self, config, resource, dist_class):
         response = self.make_request('POST', '/%s/%s' % (self.Version, resource),
