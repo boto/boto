@@ -505,7 +505,8 @@ class IAMConnection(AWSQueryConnection):
             params['Marker'] = marker
         if max_items:
             params['MaxItems'] = max_items
-        return self.get_response('ListAccessKeys', params, list_marker='AccessKeys')
+        return self.get_response('ListAccessKeys', params,
+                                 list_marker='AccessKeyMetadata')
 
     def create_access_key(self, user_name=None):
         """
