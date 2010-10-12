@@ -797,7 +797,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSpotPriceHistory', params,
                              [('item', SpotPriceHistory)])
 
-    def request_spot_instances(self, price, image_id, count=1, type=None,
+    def request_spot_instances(self, price, image_id, count=1, type='one-time',
                                valid_from=None, valid_until=None,
                                launch_group=None, availability_zone_group=None,
                                key_name=None, security_groups=None,
@@ -889,6 +889,7 @@ class EC2Connection(AWSQueryConnection):
                  associated with the request for machines
         """
         params = {'LaunchSpecification.ImageId':image_id,
+                  'Type' : type,
                   'SpotPrice' : price}
         if count:
             params['InstanceCount'] = count
