@@ -1,5 +1,58 @@
->>> from boto.mturk.connection import MTurkConnection
->>> conn = MTurkConnection(host='mechanicalturk.sandbox.amazonaws.com')
+>>> import uuid
+>>> import datetime
+>>> from _init_environment import MTurkConnection, mturk_host
+>>> from boto.mturk.question import Question, QuestionContent, AnswerSpecification, FreeTextAnswer
+
+>>> conn = MTurkConnection(host=mturk_host)
+
+# create content for a question
+>>> qn_content = QuestionContent()
+>>> qn_content.append_field('Title', 'Boto no hit type question content')
+>>> qn_content.append_field('Text', 'What is a boto no hit type?')
+
+# create the question specification
+>>> qn = Question(identifier=str(uuid.uuid4()),
+...               content=qn_content,
+...               answer_spec=AnswerSpecification(FreeTextAnswer()))
+
+# now, create the actual HIT for the question without using a HIT type
+# NOTE - the response_groups are specified to get back additional information for testing
+>>> keywords=['boto', 'test', 'doctest']
+>>> create_hit_rs = conn.create_hit(question=qn,
+...                                 lifetime=60*65,
+...                                 max_assignments=1,
+...                                 title='Boto Hit to be Reviewed',
+...                                 description='Boto reviewable_hits description',
+...                                 keywords=keywords,
+...                                 reward=0.23,
+...                                 duration=60*6,
+...                                 approval_delay=60*60,
+...                                 annotation='An annotation from boto create_hit test',
+...                                 response_groups=['Minimal',
+...                                                  'HITDetail',
+...                                                  'HITQuestion',
+...                                                  'HITAssignmentSummary',])
+
+# this is a valid request
+>>> create_hit_rs.status
+True
+
+>>> len(create_hit_rs)
+1
+>>> hit = create_hit_rs[0]
+
+# for the requested hit type id
+# the HIT Type Id is a unicode string
+>>> hit_type_id = hit.HITTypeId
+>>> hit_type_id # doctest: +ELLIPSIS
+u'...'
+
+>>> from selenium_support import complete_hit, has_selenium
+>>> if has_selenium(): complete_hit(hit_type_id, response='reviewable_hits_test')
+>>> import time
+
+Give mechanical turk some time to process the hit
+>>> if has_selenium(): time.sleep(10)
 
 # should have some reviewable HIT's returned, especially if returning all HIT type's
 # NOTE: but only if your account has existing HIT's in the reviewable state
@@ -9,7 +62,7 @@
 >>> reviewable_rs.status
 True
 
->>> len(reviewable_rs) > 1
+>>> len(reviewable_rs) >= 1
 True
 
 # should contain at least one HIT object
@@ -25,7 +78,7 @@ True
 >>> assignments_rs.status
 True
 
->>> assignments_rs.NumResults >= 1
+>>> int(assignments_rs.NumResults) >= 1
 True
 
 >>> len(assignments_rs) == int(assignments_rs.NumResults)
@@ -61,11 +114,16 @@ True
 
 >>> answer = assignment.answers[0][0]
 
-# answer should be a FreeTextAnswer
->>> answer.FreeText # doctest: +ELLIPSIS
+# the answer should have exactly one field
+>>> len(answer.fields)
+1
+
+>>> qid, text = answer.fields[0]
+
+>>> text # doctest: +ELLIPSIS
 u'...'
 
 # question identifier should be a unicode string
->>> answer.QuestionIdentifier # doctest: +ELLIPSIS
+>>> qid # doctest: +ELLIPSIS
 u'...'
 

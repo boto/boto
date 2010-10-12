@@ -609,7 +609,7 @@ class AWSQueryConnection(AWSAuthConnection):
         params['Version'] = self.APIVersion
         params['AWSAccessKeyId'] = self.aws_access_key_id
         params['SignatureVersion'] = self.SignatureVersion
-        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         qs, signature = self.get_signature(params, verb, self.get_path(path))
         if verb == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'

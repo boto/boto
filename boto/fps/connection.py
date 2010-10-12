@@ -1,4 +1,5 @@
 # Copyright (c) 2008 Chris Moyer http://coredumped.org/
+# Copyringt (c) 2010 Jason R. Coombs http://www.jaraco.com/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -134,10 +135,18 @@ class FPSConnection(AWSQueryConnection):
         hmac = self.hmac.copy()
         hmac.update(canonical)
         signature = urllib.quote_plus(base64.encodestring(hmac.digest()).strip())
-        
-        return "https://authorize.payments-sandbox.amazon.com%s&awsSignature=%s" % (url, signature)
 
-    def pay(self, transactionAmount, senderTokenId, chargeFeeTo="Recipient",
+        # use the sandbox authorization endpoint if we're using the
+        #  sandbox for API calls.
+        endpoint_host = 'authorize.payments.amazon.com'
+        if 'sandbox' in self.host:
+            endpoint_host = 'authorize.payments-sandbox.amazon.com'
+        fmt = "https://%(endpoint_host)s%(url)s&awsSignature=%(signature)s"
+        return fmt % vars()
+
+    def pay(self, transactionAmount, senderTokenId,
+            recipientTokenId=None, callerTokenId=None,
+            chargeFeeTo="Recipient",
             callerReference=None, senderReference=None, recipientReference=None,
             senderDescription=None, recipientDescription=None, callerDescription=None,
             metadata=None, transactionDate=None, reserve=False):
@@ -147,12 +156,20 @@ class FPSConnection(AWSQueryConnection):
         """
         params = {}
         params['SenderTokenId'] = senderTokenId
-        params['TransactionAmount.Amount'] = str(transactionAmount)
-        params['TransactionAmount.CurrencyCode'] = "USD"
+        # this is for 2008-09-17 specification
+        #params['TransactionAmount.Value'] = str(transactionAmount)
+        #params['TransactionAmount.CurrencyCode'] = "USD"
+        params['TransactionAmount'] = str(transactionAmount)
         params['ChargeFeeTo'] = chargeFeeTo
         
-        params['RecipientTokenId'] = boto.config.get("FPS", "recipient_token")
-        params['CallerTokenId'] = boto.config.get("FPS", "caller_token")
+        params['RecipientTokenId'] = (
+            recipientTokenId if recipientTokenId is not None
+            else boto.config.get("FPS", "recipient_token")
+            )
+        params['CallerTokenId'] = (
+            callerTokenId if callerTokenId is not None
+            else boto.config.get("FPS", "caller_token")
+            )
         if(transactionDate != None):
             params['TransactionDate'] = transactionDate
         if(senderReference != None):
@@ -310,3 +327,17 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
+
+    def verify_signature(self, end_point_url, http_parameters):
+        params = dict(
+            UrlEndPoint = end_point_url,
+            HttpParameters = http_parameters,
+            )
+        response = self.make_request("VerifySignature", params)
+        body = response.read()
+        if(response.status != 200):
+            raise FPSResponseError(response.status, response.reason, body)
+        rs = ResultSet()
+        h = handler.XmlHandler(rs, self)
+        xml.sax.parseString(body, h)
+        return rs

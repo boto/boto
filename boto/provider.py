@@ -167,6 +167,10 @@ class Provider(object):
             self.secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
+        if isinstance(self.secret_key, unicode):
+            # the secret key must be bytes and not unicode to work
+            #  properly with hmac.new (see http://bugs.python.org/issue5285)
+            self.secret_key = str(self.secret_key)
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]

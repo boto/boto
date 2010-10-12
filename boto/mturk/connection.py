@@ -21,6 +21,7 @@
 
 import xml.sax
 import datetime
+import itertools
 
 from boto import handler
 from boto.mturk.price import Price
@@ -28,6 +29,11 @@ import boto.mturk.notification
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
+from boto.mturk.question import QuestionForm, ExternalQuestion
+
+class MTurkRequestError(EC2ResponseError):
+    "Error for MTurk Requests"
+    # todo: subclass from an abstract parent of EC2ResponseError
 
 class MTurkConnection(AWSQueryConnection):
     
@@ -59,19 +65,25 @@ class MTurkConnection(AWSQueryConnection):
         Register a new HIT Type
         \ttitle, description are strings
         \treward is a Price object
-        \tduration can be an integer or string
+        \tduration can be a timedelta, or an object castable to an int
         """
-        params = {'Title' : title,
-                  'Description' : description,
-                  'AssignmentDurationInSeconds' : duration}
+        params = dict(
+            Title=title,
+            Description=description,
+            AssignmentDurationInSeconds=
+                self.duration_as_seconds(duration),
+            )
         params.update(MTurkConnection.get_price_as_price(reward).get_as_params('Reward'))
-        params.update(qual_req.get_as_params())
 
         if keywords:
-            params['Keywords'] = keywords
+            params['Keywords'] = self.get_keywords_as_string(keywords)
 
         if approval_delay is not None:
-            params['AutoApprovalDelayInSeconds']= approval_delay
+            d = self.duration_as_seconds(approval_delay)
+            params['AutoApprovalDelayInSeconds'] = d
+
+        if qual_req is not None:
+            params.update(qual_req.get_as_params())
 
         return self._process_request('RegisterHITType', params)
 
@@ -124,10 +136,14 @@ class MTurkConnection(AWSQueryConnection):
         # Execute operation
         return self._process_request('SetHITTypeNotification', params)
     
-    def create_hit(self, hit_type=None, question=None, lifetime=60*60*24*7, max_assignments=1, 
-                   title=None, description=None, keywords=None, reward=None,
-                   duration=60*60*24*7, approval_delay=None, annotation=None,
-                   questions=None, qualifications=None, response_groups=None):
+    def create_hit(self, hit_type=None, question=None,
+                   lifetime=datetime.timedelta(days=7),
+                   max_assignments=1, 
+                   title=None, description=None, keywords=None,
+                   reward=None, duration=datetime.timedelta(days=7),
+                   approval_delay=None, annotation=None,
+                   questions=None, qualifications=None,
+                   response_groups=None):
         """
         Creates a new HIT.
         Returns a ResultSet
@@ -135,15 +151,21 @@ class MTurkConnection(AWSQueryConnection):
         """
         
         # handle single or multiple questions
-        if question is not None and questions is not None:
-            raise ValueError("Must specify either question (single Question instance) or questions (list), but not both")
-        if question is not None and questions is None:
+        neither = question is None and questions is None
+        both = question is not None and questions is not None
+        if neither or both:
+            raise ValueError("Must specify either question (single Question instance) or questions (list or QuestionForm instance), but not both")
+
+        if question:
             questions = [question]
-        
+        question_param = QuestionForm(questions)
+        if isinstance(question, ExternalQuestion):
+            question_param = question
         
         # Handle basic required arguments and set up params dict
-        params = {'Question': question.get_as_xml(),
-                  'LifetimeInSeconds' : lifetime,
+        params = {'Question': question_param.get_as_xml(),
+                  'LifetimeInSeconds' :
+                      self.duration_as_seconds(lifetime),
                   'MaxAssignments' : max_assignments,
                   }
 
@@ -157,16 +179,20 @@ class MTurkConnection(AWSQueryConnection):
             
             # Handle price argument
             final_price = MTurkConnection.get_price_as_price(reward)
+            
+            final_duration = self.duration_as_seconds(duration)
 
-            additional_params = {'Title': title,
-                                 'Description' : description,
-                                 'Keywords': final_keywords,
-                                 'AssignmentDurationInSeconds' : duration,
-                                 }
+            additional_params = dict(
+                Title=title,
+                Description=description,
+                Keywords=final_keywords,
+                AssignmentDurationInSeconds=final_duration,
+                )
             additional_params.update(final_price.get_as_params('Reward'))
 
             if approval_delay is not None:
-                additional_params['AutoApprovalDelayInSeconds'] = approval_delay
+                d = self.duration_as_seconds(approval_delay)
+                additional_params['AutoApprovalDelayInSeconds'] = d
 
             # add these params to the others
             params.update(additional_params)
@@ -219,15 +245,42 @@ class MTurkConnection(AWSQueryConnection):
 
         return self._process_request('GetReviewableHITs', params, [('HIT', HIT),])
 
+    @staticmethod
+    def _get_pages(page_size, total_records):
+        """
+        Given a page size (records per page) and a total number of
+        records, return the page numbers to be retrieved.
+        """
+        pages = total_records/page_size+bool(total_records%page_size)
+        return range(1, pages+1)
+
+
+    def get_all_hits(self):
+        """
+        Return all of a Requester's HITs
+        
+        Despite what search_hits says, it does not return all hits, but
+        instead returns a page of hits. This method will pull the hits
+        from the server 100 at a time, but will yield the results
+        iteratively, so subsequent requests are made on demand.
+        """
+        page_size = 100
+        search_rs = self.search_hits(page_size=page_size)
+        total_records = int(search_rs.TotalNumResults)
+        get_page_hits = lambda(page): self.search_hits(page_size=page_size, page_number=page)
+        page_nums = self._get_pages(page_size, total_records)
+        hit_sets = itertools.imap(get_page_hits, page_nums)
+        return itertools.chain.from_iterable(hit_sets)
+
     def search_hits(self, sort_by='CreationTime', sort_direction='Ascending', 
                     page_size=10, page_number=1, response_groups=None):
         """
-        Return all of a Requester's HITs, on behalf of the Requester.
-        The operation returns HITs of any status, except for HITs that have been
-        disposed with the DisposeHIT operation.
+        Return a page of a Requester's HITs, on behalf of the Requester.
+        The operation returns HITs of any status, except for HITs that
+        have been disposed with the DisposeHIT operation.
         Note:
-        The SearchHITs operation does not accept any search parameters that
-        filter the results.
+        The SearchHITs operation does not accept any search parameters
+        that filter the results.
         """
         params = {'SortProperty' : sort_by,
                   'SortDirection' : sort_direction,
@@ -466,7 +519,7 @@ class MTurkConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise EC2ResponseError(response.status, response.reason, body)
+            raise MTurkRequestError(response.status, response.reason, body)
 
     @staticmethod
     def get_keywords_as_string(keywords):
@@ -497,12 +550,22 @@ class MTurkConnection(AWSQueryConnection):
             final_price = Price(reward)
         return final_price
 
+    @staticmethod
+    def duration_as_seconds(duration):
+        if isinstance(duration, datetime.timedelta):
+            duration = duration.days*86400 + duration.seconds
+        try:
+            duration = int(duration)
+        except TypeError:
+            raise TypeError("Duration must be a timedelta or int-castable, got %s" % type(duration))
+        return duration
+
 class BaseAutoResultElement:
     """
     Base class to automatically add attributes when parsing XML
     """
     def __init__(self, connection):
-        self.connection = connection
+        pass
 
     def startElement(self, name, attrs, connection):
         return None
@@ -551,7 +614,7 @@ class Assignment(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer),])
             h = handler.XmlHandler(answer_rs, connection)
-            value = self.connection.get_utf8_value(value)
+            value = connection.get_utf8_value(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:
