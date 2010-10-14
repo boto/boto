@@ -669,6 +669,132 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('DeleteSigningCertificate', params)
 
     #
+    # Server Certificates
+    #
+    
+    def get_all_server_certs(self, path_prefix='/',
+                             marker=None, max_items=None):
+        """
+        Lists the server certificates that have the specified path prefix.
+        If none exist, the action returns an empty list.
+
+        :type path_prefix: string
+        :param path_prefix: If provided, only certificates whose paths match
+                            the provided prefix will be returned.
+
+        :type marker: string
+        :param marker: Use this only when paginating results and only in
+                       follow-up request after you've received a response
+                       where the results are truncated.  Set this to the
+                       value of the Marker element in the response you
+                       just received.
+
+        :type max_items: int
+        :param max_items: Use this only when paginating results to indicate
+                          the maximum number of groups you want in the
+                          response.
+                          
+        """
+        params = {}
+        if path_prefix:
+            params['PathPrefix'] = path_prefix
+        if marker:
+            params['Marker'] = marker
+        if max_items:
+            params['MaxItems'] = max_items
+        return self.get_response('ListServerCertificates',
+                                 params,
+                                 list_marker='ServerCertificateMetadataList')
+
+    def update_server_cert(self, cert_name, new_cert_name=None,
+                           new_path=None):
+        """
+        Updates the name and/or the path of the specified server certificate.
+
+        :type cert_name: string
+        :param cert_name: The name of the server certificate that you want
+                          to update.
+
+        :type new_cert_name: string
+        :param new_cert_name: The new name for the server certificate.
+                              Include this only if you are updating the
+                              server certificate's name.
+
+        :type new_path: string
+        :param new_path: If provided, the path of the certificate will be
+                         changed to this path.
+        """
+        params = {'ServerCertificateName' : cert_name}
+        if new_cert_name:
+            params['NewServerCertificateName'] = new_cert_name
+        if new_path:
+            params['NewPath'] = new_path
+        return self.get_response('UpdateServerCertificate', params)
+
+    def upload_server_cert(self, cert_name, cert_body, private_key,
+                           cert_chain=None, path=None):
+        """
+        Uploads a server certificate entity for the AWS Account.
+        The server certificate entity includes a public key certificate,
+        a private key, and an optional certificate chain, which should
+        all be PEM-encoded.
+
+        :type cert_name: string
+        :param cert_name: The name for the server certificate. Do not
+                          include the path in this value.
+
+        :type cert_body: string
+        :param cert_body: The contents of the public key certificate
+                          in PEM-encoded format.
+
+        :type private_key: string
+        :param private_key: The contents of the private key in
+                            PEM-encoded format.
+
+        :type cert_chain: string
+        :param cert_chain: The contents of the certificate chain. This
+                           is typically a concatenation of the PEM-encoded
+                           public key certificates of the chain.
+
+        :type path: string
+        :param path: The path for the server certificate.
+
+        """
+        params = {'ServerCertificateName' : cert_name,
+                  'CertificateBody' : cert_body,
+                  'PrivateKey' : private_key}
+        if cert_chain:
+            params['CertificateChain'] = cert_chain
+        if path:
+            params['Path'] = path
+        return self.get_response('UploadServerCertificate', params,
+                                 verb='POST')
+
+    def get_server_certificate(self, cert_name):
+        """
+        Retrieves information about the specified server certificate.
+
+        :type cert_name: string
+        :param cert_name: The name of the server certificate you want
+                          to retrieve information about.
+        
+        """
+        params = {'ServerCertificateName' : cert_name}
+        return self.get_response('GetServerCertificate', params)
+
+    def delete_server_cert(self, cert_name):
+        """
+        Delete the specified server certificate.
+
+        :type cert_name: string
+        :param cert_name: The name of the server certificate you want
+                          to delete.
+
+        """
+        params = {'ServerCertificateName' : cert_name}
+        return self.get_response('DeleteServerCertificate', params)
+
+    #
     # MFA Devices
     #
     
