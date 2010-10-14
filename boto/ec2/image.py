@@ -42,7 +42,8 @@ class Image(TaggedEC2Object):
         self.id = None
         self.location = None
         self.state = None
-        self.ownerId = None
+        self.ownerId = None  # for backwards compatibility
+        self.owner_id = None
         self.owner_alias = None
         self.is_public = False
         self.architecture = None
@@ -80,7 +81,8 @@ class Image(TaggedEC2Object):
         elif name == 'imageState':
             self.state = value
         elif name == 'imageOwnerId':
-            self.ownerId = value
+            self.ownerId = value # for backwards compatibility
+            self.owner_id = value
         elif name == 'isPublic':
             if value == 'false':
                 self.is_public = False
