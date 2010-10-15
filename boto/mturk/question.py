@@ -276,19 +276,32 @@ class RegExConstraint(Constraint):
     def __init__(self, pattern, error_text=None, flags=None):
         self.attribute_values = pattern, error_text, flags
 
+class NumberOfLinesSuggestion(object):
+    template = '<NumberOfLinesSuggestion>%(num_lines)s</NumberOfLinesSuggestion>'
+
+    def __init__(self, num_lines=1):
+        self.num_lines = num_lines
+        
+    def get_as_xml(self):
+        num_lines = self.num_lines
+        return self.template % vars()
+    
 class FreeTextAnswer(object):
     template = '<FreeTextAnswer>%(items)s</FreeTextAnswer>'
 
-    def __init__(self, default=None, constraints=None):
+    def __init__(self, default=None, constraints=None, num_lines=None):
         self.default = default
         if constraints is None: constraints = Constraints()
         self.constraints = Constraints(constraints)
-
+        self.num_lines = num_lines
+            
     def get_as_xml(self):
         constraints = Constraints()
         items = [constraints]
         if self.default:
             items.append(SimpleField('DefaultText', self.default))
+        if self.num_lines:
+            items.append(NumberOfLinesSuggestion(self.num_lines))
         items = ''.join(item.get_as_xml() for item in items)
         return self.template % vars()
 
