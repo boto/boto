@@ -125,14 +125,15 @@ class DistributionConfig:
 class StreamingDistributionConfig(DistributionConfig):
 
     def __init__(self, connection=None, origin='', enabled=False,
-                 caller_reference='', cnames=None, comment=''):
+                 caller_reference='', cnames=None, comment='',
+                 origin_access_identity=None, trusted_signers=None):
         DistributionConfig.__init__(self, connection, origin,
                                     enabled, caller_reference,
-                                    cnames, comment)
-
+                                    cnames, comment, origin_access_identity,
+                                    trusted_signers)
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        s += '<StreamingDistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2009-12-01/">\n'
+        s += '<StreamingDistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
         s += '  <Origin>%s</Origin>\n' % self.origin
         s += '  <CallerReference>%s</CallerReference>\n' % self.caller_reference
         for cname in self.cnames:
@@ -145,11 +146,24 @@ class StreamingDistributionConfig(DistributionConfig):
         else:
             s += 'false'
         s += '</Enabled>\n'
+        if self.origin_access_identity:
+            val = self.get_oai_value()
+            s += '<OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+        if self.trusted_signers:
+            s += '<TrustedSigners>\n'
+            for signer in self.trusted_signers:
+                if signer == 'Self':
+                    s += '  <Self/>\n'
+                else:
+                    s += '  <AwsAccountNumber>%s</AwsAccountNumber>\n' % signer
+            s += '</TrustedSigners>\n'
+        if self.logging:
+            s += '<Logging>\n'
+            s += '  <Bucket>%s</Bucket>\n' % self.logging.bucket
+            s += '  <Prefix>%s</Prefix>\n' % self.logging.prefix
+            s += '</Logging>\n'
         s += '</StreamingDistributionConfig>\n'
         return s
-
-    def startElement(self, name, attrs, connection):
-        pass
 
 class DistributionSummary:
 
@@ -445,14 +459,16 @@ class StreamingDistribution(Distribution):
             self.config = StreamingDistributionConfig()
             return self.config
         else:
-            return None
+            return Distribution.startElement(self, name, attrs, connection)
 
-    def update(self, enabled=None, cnames=None, comment=None):
+    def update(self, enabled=None, cnames=None, comment=None,
+               origin_access_identity=None,
+               trusted_signers=None):
         """
-        Update the configuration of the Distribution.
+        Update the configuration of the StreamingDistribution.
 
         :type enabled: bool
-        :param enabled: Whether the Distribution is active or not.
+        :param enabled: Whether the StreamingDistribution is active or not.
 
         :type cnames: list of str
         :param cnames: The DNS CNAME's associated with this
@@ -461,24 +477,35 @@ class StreamingDistribution(Distribution):
         :type comment: str or unicode
         :param comment: The comment associated with the Distribution.
 
+        :type origin_access_identity: :class:`boto.cloudfront.identity.OriginAccessIdentity`
+        :param origin_access_identity: The CloudFront origin access identity
+                                       associated with the distribution.  This
+                                       must be provided if you want the
+                                       distribution to serve private content.
+
+        :type trusted_signers: :class:`boto.cloudfront.signers.TrustedSigner`
+        :param trusted_signers: The AWS users who are authorized to sign
+                                URL's for private content in this Distribution.
+
         """
-        new_config = StreamingDistributionConfig(self.connection,
-                                                 self.config.origin,
-                                                 self.config.enabled,
-                                                 self.config.caller_reference,
-                                                 self.config.cnames,
-                                                 self.config.comment)
+        new_config = StreamingDistributionConfig(self.connection, self.config.origin,
+                                        self.config.enabled, self.config.caller_reference,
+                                        self.config.cnames, self.config.comment,
+                                        self.config.origin_access_identity,
+                                        self.config.trusted_signers)
         if enabled != None:
             new_config.enabled = enabled
         if cnames != None:
             new_config.cnames = cnames
         if comment != None:
             new_config.comment = comment
-            
-        self.etag = self.connection.set_streaming_distribution_config(self.id,
-                                                                      self.etag,
-                                                                      new_config)
+        if origin_access_identity != None:
+            new_config.origin_access_identity = origin_access_identity
+        if trusted_signers:
+            new_config.trusted_signers = trusted_signers
+        self.etag = self.connection.set_streaming_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
+        self._object_class = StreamingObject
 
     def delete(self):
         self.connection.delete_streaming_distribution(self.id, self.etag)
