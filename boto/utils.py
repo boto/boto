@@ -107,6 +107,8 @@ def canonical_string(method, path, headers, expires=None,
     # ...unless there is an acl or torrent parameter
     if re.search("[&?]acl($|=|&)", path):
         buf += "?acl"
+    elif re.search("[&?]policy($|=|&)", path):
+        buf += "?policy"
     elif re.search("[&?]logging($|=|&)", path):
         buf += "?logging"
     elif re.search("[&?]torrent($|=|&)", path):

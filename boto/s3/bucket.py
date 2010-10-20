@@ -778,5 +778,25 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def get_policy(self, headers=None):
+        response = self.connection.make_request('GET', self.name,
+                query_args='policy', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def set_policy(self, policy, headers=None):
+        response = self.connection.make_request('PUT', self.name, data=policy,
+                query_args='policy', headers=headers)
+        body = response.read()
+        if response.status >= 200 and response.status <= 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
