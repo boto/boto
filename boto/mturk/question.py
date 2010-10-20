@@ -281,7 +281,7 @@ class NumberOfLinesSuggestion(object):
 
     def __init__(self, num_lines=1):
         self.num_lines = num_lines
-        
+    
     def get_as_xml(self):
         num_lines = self.num_lines
         return self.template % vars()
@@ -294,7 +294,7 @@ class FreeTextAnswer(object):
         if constraints is None: constraints = Constraints()
         self.constraints = Constraints(constraints)
         self.num_lines = num_lines
-            
+    
     def get_as_xml(self):
         constraints = Constraints()
         items = [constraints]
