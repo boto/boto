@@ -45,6 +45,7 @@ class DBInstance(object):
         self.preferred_maintenance_window = None
         self.latest_restorable_time = None
         self.multi_az = False
+        self.pending_modified_values = None
         self._in_endpoint = False
         self._port = None
         self._address = None
@@ -61,6 +62,9 @@ class DBInstance(object):
         elif name == 'DBSecurityGroup':
             self.security_group = DBSecurityGroup(self.connection)
             return self.security_group
+        elif name == 'PendingModifiedValues':
+            self.pending_modified_values = PendingModifiedValues()
+            return self.pending_modified_values
         return None
 
     def endElement(self, name, value, connection):
@@ -147,3 +151,13 @@ class DBInstance(object):
         return self.connection.delete_dbinstance(self.id,
                                                  skip_final_snapshot,
                                                  final_snapshot_id)
+
+class PendingModifiedValues(dict):
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name != 'PendingModifiedValues':
+            self[name] = self.value
+
