@@ -102,6 +102,7 @@ class Instance(TaggedEC2Object):
         self.block_device_mapping = None
         self.state_reason = None
         self.group_name = None
+        self.client_token = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -193,6 +194,8 @@ class Instance(TaggedEC2Object):
         elif name == 'groupName':
             if self._in_monitoring_element:
                 self.group_name = value
+        elif name == 'clientToken':
+            self.client_token = value
         else:
             setattr(self, name, value)
 

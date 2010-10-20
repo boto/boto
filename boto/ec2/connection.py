@@ -432,7 +432,7 @@ class EC2Connection(AWSQueryConnection):
                       disable_api_termination=False,
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
-                      placement_group=None):
+                      placement_group=None, client_token=None):
         """
         Runs an image on EC2.
 
@@ -519,6 +519,11 @@ class EC2Connection(AWSQueryConnection):
         :param placement_group: If specified, this is the name of the placement
                                 group in which the instance(s) will be launched.
 
+        :type client_token: string
+        :param client_token: Unique, case-sensitive identifier you provide
+                             to ensure idempotency of the request.
+                             Maximum 64 ASCII characters
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -563,6 +568,8 @@ class EC2Connection(AWSQueryConnection):
         if instance_initiated_shutdown_behavior:
             val = instance_initiated_shutdown_behavior
             params['InstanceInitiatedShutdownBehavior'] = val
+        if client_token:
+            params['ClientToken'] = client_token
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
