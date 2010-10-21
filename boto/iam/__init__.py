@@ -798,13 +798,12 @@ class IAMConnection(AWSQueryConnection):
     # MFA Devices
     #
     
-    def get_all_mfa_devices(self, marker=None, max_items=None,
-                              user_name=None):
+    def get_all_mfa_devices(self, user_name, marker=None, max_items=None):
         """
         Get all MFA devices associated with an account.
 
-        If the user_name is not specified, it is determined implicitly based
-        on the AWS Access Key ID used to sign the request.
+        :type user_name: string
+        :param user_name: The username of the user
 
         :type marker: string
         :param marker: Use this only when paginating results and only in
@@ -818,17 +817,12 @@ class IAMConnection(AWSQueryConnection):
                           the maximum number of groups you want in the
                           response.
                           
-        :type user_name: string
-        :param user_name: The username of the user
-
         """
-        params = {}
+        params = {'UserName' : user_name}
         if marker:
             params['Marker'] = marker
         if max_items:
             params['MaxItems'] = max_items
-        if user_name:
-            params['UserName'] = user_name
         return self.get_response('ListMFADevices',
                                  params, list_marker='MFADevices')
 
