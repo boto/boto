@@ -391,7 +391,8 @@ def lookup(service, name):
         _aws_cache['.'.join((service,name))] = obj
     return obj
 
-def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
+def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
+                bucket_storage_uri_class=BucketStorageUri):
     """Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
@@ -402,6 +403,8 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
     :param debug: debug level to pass in to boto connection (range 0..2).
     :type validate: bool
     :param validate: whether to check for bucket name validity.
+    :type bucket_storage_uri_class: BucketStorageUri interface.
+    :param bucket_storage_uri_class: Allows mocking for unit tests.
 
     We allow validate to be disabled to allow caller
     to implement bucket-level wildcarding (outside the boto library;
@@ -455,7 +458,7 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True):
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]
-        return BucketStorageUri(scheme, bucket_name, object_name, debug)
+        return bucket_storage_uri_class(scheme, bucket_name, object_name, debug)
 
 def storage_uri_for_key(key):
     """Returns a StorageUri for the given key.

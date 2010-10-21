@@ -126,6 +126,7 @@ class StorageUri(object):
             raise InvalidUriError('get_contents_as_string on object-less URI '
                                   '(%s)' % self.uri)
         key = self.get_key(validate, headers)
+        self.check_response(key, 'key', self.uri)
         return key.get_contents_as_string(headers, cb, num_cb, torrent,
                                           version_id)
 
@@ -217,6 +218,7 @@ class BucketStorageUri(StorageUri):
                                    headers)
         else:
             key = self.get_key(validate, headers)
+            self.check_response(key, 'key', self.uri)
             key.add_email_grant(permission, email_address)
 
     def add_user_grant(self, permission, user_id, recursive=False,
@@ -229,6 +231,7 @@ class BucketStorageUri(StorageUri):
             bucket.add_user_grant(permission, user_id, recursive, headers)
         else:
             key = self.get_key(validate, headers)
+            self.check_response(key, 'key', self.uri)
             key.add_user_grant(permission, user_id)
 
     def list_grants(self, headers=None):
@@ -292,7 +295,16 @@ class BucketStorageUri(StorageUri):
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
                                   self.uri)
         key = self.get_key(validate, headers)
+        self.check_response(key, 'key', self.uri)
         key.set_canned_acl(acl_str, headers, version_id)
+
+    def set_contents_from_string(self, s, headers=None, replace=True,
+                                 cb=None, num_cb=10, policy=None, md5=None,
+                                 reduced_redundancy=False):
+        key = self.new_key(headers=headers)
+        key.set_contents_from_string(s, headers, replace, cb, num_cb, policy,
+                                     md5, reduced_redundancy)
+
 
 
 class FileStorageUri(StorageUri):
