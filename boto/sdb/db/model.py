@@ -215,6 +215,16 @@ class Model(object):
         doc = xmlmanager.marshal_object(self, doc)
         return doc
 
+    @classmethod
+    def find_subclass(cls, name):
+        """Find a subclass with a given name"""
+        if name == cls.__name__:
+            return cls
+        for sc in cls.__sub_classes__:
+            r = sc.find_subclass(name)
+            if r != None:
+                return r
+
 class Expando(Model):
 
     def __setattr__(self, name, value):

@@ -30,6 +30,7 @@ class Query(object):
         else:
             self.manager = self.model_class._manager
         self.filters = []
+        self.select = None
         self.sort_by = None
         self.rs = None
         self.next_token = next_token
@@ -54,10 +55,16 @@ class Query(object):
         return self
 
     def count(self, quick=True):
-        return self.manager.count(self.model_class, self.filters, quick)
+        if self.select:
+            return self.manager.count(self.model_class, self.select, quick)
+        else:
+            return self.manager.count(self.model_class, self.filters, quick)
 
     def get_query(self):
-        return self.manager._build_filter_part(self.model_class, self.filters, self.sort_by)
+        if self.select:
+            return self.manager._build_filter_part(self.model_class, self.select, self.sort_by)
+        else:
+            return self.manager._build_filter_part(self.model_class, self.filters, self.sort_by)
 
     def order(self, key):
         self.sort_by = key

@@ -438,7 +438,10 @@ class SDBManager(object):
         return self.get_object(None, id)
 
     def query(self, query):
-        query_str = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(query.model_class, query.filters, query.sort_by))
+        filters = query.select
+        if not filters:
+            filters = query.filters
+        query_str = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(query.model_class, filters, query.sort_by))
         if query.limit:
             query_str += " limit %s" % query.limit
         rs = self.domain.select(query_str, max_items=query.limit, next_token = query.next_token)
@@ -480,6 +483,8 @@ class SDBManager(object):
         """
         Build the filter part
         """
+        if isinstance(filters, str) or isinstance(filters, unicode):
+            return "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
         import types
         query_parts = []
         order_by_filtered = False
