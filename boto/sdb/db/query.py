@@ -56,9 +56,9 @@ class Query(object):
 
     def count(self, quick=True):
         if self.select:
-            return self.manager.count(self.model_class, self.select, quick)
+            return self.manager.count(self.model_class, self.select, quick, self.sort_by)
         else:
-            return self.manager.count(self.model_class, self.filters, quick)
+            return self.manager.count(self.model_class, self.filters, quick, self.sort_by)
 
     def get_query(self):
         if self.select:

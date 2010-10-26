@@ -448,12 +448,12 @@ class SDBManager(object):
         query.rs = rs
         return self._object_lister(query.model_class, rs)
 
-    def count(self, cls, filters, quick=True):
+    def count(self, cls, filters, quick=True, sort_by=None):
         """
         Get the number of results that would
         be returned in this query
         """
-        query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters))
+        query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters, sort_by))
         count = 0
         for row in self.domain.select(query):
             count += int(row['Count'])
@@ -483,8 +483,6 @@ class SDBManager(object):
         """
         Build the filter part
         """
-        if isinstance(filters, str) or isinstance(filters, unicode):
-            return "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
         import types
         query_parts = []
         order_by_filtered = False
@@ -494,6 +492,11 @@ class SDBManager(object):
                 order_by = order_by[1:]
             else:
                 order_by_method = "asc";
+        if isinstance(filters, str) or isinstance(filters, unicode):
+            query = "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
+            if order_by != None:
+                query += " ORDER BY `%s` %s" % (order_by, order_by_method)
+            return query
 
         for filter in filters:
             filter_parts = []
