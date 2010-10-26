@@ -212,7 +212,7 @@ class Image(TaggedEC2Object):
 
         :type instance_initiated_shutdown_behavior: string
         :param instance_initiated_shutdown_behavior: Specifies whether the instance's
-                                                     EBS volues are stopped (i.e. detached)
+                                                     EBS volumes are stopped (i.e. detached)
                                                      or terminated (i.e. deleted) when
                                                      the instance is shutdown by the
                                                      owner.  Valid values are:

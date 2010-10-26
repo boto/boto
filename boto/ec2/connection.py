@@ -505,7 +505,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type instance_initiated_shutdown_behavior: string
         :param instance_initiated_shutdown_behavior: Specifies whether the
-                                                     instance's EBS volues are
+                                                     instance's EBS volumes are
                                                      stopped (i.e. detached) or
                                                      terminated (i.e. deleted)
                                                      when the instance is
