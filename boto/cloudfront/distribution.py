@@ -306,7 +306,7 @@ class Distribution:
         if comment != None:
             new_config.comment = comment
         if origin_access_identity != None:
-            new_config.origin_access_identity = origin_access_identity
+            new_config.origin_access_identity = new_config.get_oai_value(origin_access_identity)
         if trusted_signers:
             new_config.trusted_signers = trusted_signers
         if default_root_object:
