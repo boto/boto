@@ -448,7 +448,10 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]
         if (validate and bucket_name and
-            not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)):
+            # Disallow buckets violating charset or not [3..255] chars total.
+            (not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)
+            # Disallow buckets with individual DNS labels longer than 63.
+             or re.search('[-_a-z0-9]{64}', bucket_name))):
             raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
         # If enabled, ensure the bucket name is valid, to avoid possibly
         # confusing other parts of the code. (For example if we didn't
