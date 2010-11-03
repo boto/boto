@@ -53,6 +53,12 @@ class Arg(EmrObject):
         self.value = value
 
 
+class BootstrapAction(EmrObject):
+    Fields = set(['Name',
+                  'Args',
+                  'Path'])
+
+
 class Step(EmrObject):
     Fields = set(['Name',
                   'ActionOnFailure',
@@ -85,7 +91,9 @@ class InstanceGroup(EmrObject):
                   'Market',
                   'LastStateChangeReason',
                   'InstanceRole',
-                  'InstanceGroupId'])
+                  'InstanceGroupId',
+                  'LaunchGroup',
+                  'SpotPrice'])
 
 
 class JobFlow(EmrObject):
@@ -96,7 +104,6 @@ class JobFlow(EmrObject):
                   'Id',
                   'InstanceCount',
                   'JobFlowId',
-                  'KeepJobAliveWhenNoSteps',
                   'LogUri',
                   'MasterPublicDnsName',
                   'MasterInstanceId',
@@ -110,12 +117,14 @@ class JobFlow(EmrObject):
                   'MasterInstanceType',
                   'Ec2KeyName',
                   'InstanceCount',
-                  'KeepJobFlowAliveWhenNoSteps'])
+                  'KeepJobFlowAliveWhenNoSteps',
+                  'LastStateChangeReason'])
 
     def __init__(self, connection=None):
         self.connection = connection
         self.steps = None
         self.instancegroups = None
+        self.bootstrapactions = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Steps':
@@ -124,6 +133,9 @@ class JobFlow(EmrObject):
         elif name == 'InstanceGroups':
             self.instancegroups = ResultSet([('member', InstanceGroup)])
             return self.instancegroups
+        elif name == 'BootstrapActions':
+            self.bootstrapactions = ResultSet([('member', BootstrapAction)])
+            return self.bootstrapactions
         else:
             return None
 
