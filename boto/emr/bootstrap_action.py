@@ -36,3 +36,8 @@ class BootstrapAction(object):
             args.extend(self.bootstrap_action_args)
 
         return args
+
+    def __repr__(self):
+        return '%s.%s(name=%r, path=%r, bootstrap_action_args=%r)' % (
+            self.__class__.__module__, self.__class__.__name__,
+            self.name, self.path, self.bootstrap_action_args)

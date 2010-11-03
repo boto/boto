@@ -94,7 +94,7 @@ class StreamingStep(Step):
     """
     Hadoop streaming step
     """
-    def __init__(self, name, mapper, reducer,
+    def __init__(self, name, mapper, reducer=None,
                  action_on_failure='TERMINATE_JOB_FLOW',
                  cache_files=None, cache_archives=None,
                  step_args=None, input=None, output=None):
@@ -141,8 +141,10 @@ class StreamingStep(Step):
         return None
 
     def args(self):
-        args = ['-mapper', self.mapper,
-                '-reducer', self.reducer]
+        args = ['-mapper', self.mapper]
+
+        if self.reducer:
+            args.extend(['-reducer', self.reducer])
 
         if self.input:
             if isinstance(self.input, list):
@@ -164,5 +166,14 @@ class StreamingStep(Step):
         if self.step_args:
             args.extend(self.step_args)
 
+        if not self.reducer:
+            args.extend(['-jobconf', 'mapred.reduce.tasks=0'])
+
         return args
 
+    def __repr__(self):
+        return '%s.%s(name=%r, mapper=%r, reducer=%r, action_on_failure=%r, cache_files=%r, cache_archives=%r, step_args=%r, input=%r, output=%r)' % (
+            self.__class__.__module__, self.__class__.__name__,
+            self.name, self.mapper, self.reducer, self.action_on_failure,
+            self.cache_files, self.cache_archives, self.step_args,
+            self.input, self.output)
