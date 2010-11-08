@@ -238,6 +238,12 @@ class Domain:
         xml.sax.parse(doc, handler)
         return handler
 
+    def delete(self):
+        """
+        Delete this domain, and all items under it
+        """
+        return self.connection.delete(self)
+
 
 class DomainMetaData:
     
