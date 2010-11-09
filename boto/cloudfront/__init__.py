@@ -38,7 +38,7 @@ from boto.cloudfront.exception import CloudFrontServerError
 class CloudFrontConnection(AWSAuthConnection):
 
     DefaultHost = 'cloudfront.amazonaws.com'
-    Version = '2010-08-01'
+    Version = '2010-11-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
