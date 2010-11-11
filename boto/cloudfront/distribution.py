@@ -146,6 +146,8 @@ class DistributionConfig:
             self.caller_reference = value
         elif name == 'DNSName':
             self.origin = value
+        elif name == 'CustomOrigin':
+            self.custom_origin = True            
         elif name == 'OriginAccessIdentity':
             self.origin_access_identity = value
         elif name == 'HTTPPort':
@@ -172,8 +174,14 @@ class StreamingDistributionConfig(DistributionConfig):
                                     trusted_signers, custom_origin=None)
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        s += '<StreamingDistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
-        s += '  <Origin>%s</Origin>\n' % self.origin
+        s += '<StreamingDistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">\n'
+        # s += '  <Origin>%s</Origin>\n' % self.origin
+        s += '<S3Origin>\n'
+        s += '  <DNSName>%s</DNSName>\n' % self.origin            
+        if self.origin_access_identity:
+            val = self.get_oai_value()
+            s += '  <OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+        s += '</S3Origin>\n'
         s += '  <CallerReference>%s</CallerReference>\n' % self.caller_reference
         for cname in self.cnames:
             s += '  <CNAME>%s</CNAME>\n' % cname
@@ -185,9 +193,7 @@ class StreamingDistributionConfig(DistributionConfig):
         else:
             s += 'false'
         s += '</Enabled>\n'
-        if self.origin_access_identity:
-            val = self.get_oai_value()
-            s += '<OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+
         if self.trusted_signers:
             s += '<TrustedSigners>\n'
             for signer in self.trusted_signers:
@@ -208,7 +214,9 @@ class DistributionSummary:
 
     def __init__(self, connection=None, domain_name='', id='',
                  last_modified_time=None, status='', origin='',
-                 cname='', comment='', enabled=False):
+                 cname='', comment='', enabled=False, custom_origin=None, 
+                  https_port=None, http_port=None, 
+                  origin_protocol_policy=None, required_protocols=False):
         self.connection = connection
         self.domain_name = domain_name
         self.id = id
@@ -223,6 +231,10 @@ class DistributionSummary:
         self.trusted_signers = None
         self.etag = None
         self.streaming = False
+        self.custom_origin=custom_origin
+        self.http_port=http_port
+        self.https_port=https_port
+        self.origin_protocol_policy=origin_protocol_policy
 
     def startElement(self, name, attrs, connection):
         if name == 'TrustedSigners':
@@ -239,8 +251,21 @@ class DistributionSummary:
             self.last_modified_time = value
         elif name == 'DomainName':
             self.domain_name = value
-        elif name == 'Origin':
+        # elif name == 'Origin':
+        #     self.origin = value
+        elif name == 'DNSName':
             self.origin = value
+        elif name == 'CustomOrigin':
+            self.custom_origin = True
+        elif name == 'HTTPPort':
+            self.http_port = value
+        elif name == 'HTTPSPort':
+            self.https_port = value
+        elif name == 'OriginProtocolPolicy':
+            self.origin_protocol_policy = value
+                        
+        elif name == 'OriginAccessIdentity':
+            self.origin_access_identity = value            
         elif name == 'CNAME':
             self.cnames.append(value)
         elif name == 'Comment':
@@ -356,14 +381,14 @@ class Distribution:
 
     def enable(self):
         """
-        Deactivate the Distribution.  A convenience wrapper around
+        Activate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=True)
 
     def disable(self):
         """
-        Activate the Distribution.  A convenience wrapper around
+        Deactivate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=False)
