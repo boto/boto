@@ -38,7 +38,7 @@ from boto.cloudfront.exception import CloudFrontServerError
 class CloudFrontConnection(AWSAuthConnection):
 
     DefaultHost = 'cloudfront.amazonaws.com'
-    Version = '2010-08-01'
+    Version = '2010-11-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
@@ -161,10 +161,11 @@ class CloudFrontConnection(AWSAuthConnection):
         return self._set_config(distribution_id, etag, config)
     
     def create_distribution(self, origin, enabled, caller_reference='',
-                            cnames=None, comment=''):
+                            cnames=None, comment='', custom_origin=None):
+        
         config = DistributionConfig(origin=origin, enabled=enabled,
                                     caller_reference=caller_reference,
-                                    cnames=cnames, comment=comment)
+                                    cnames=cnames, comment=comment, custom_origin=custom_origin)
         return self._create_object(config, 'distribution', Distribution)
         
     def delete_distribution(self, distribution_id, etag):

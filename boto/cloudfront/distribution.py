@@ -29,7 +29,7 @@ from boto.s3.acl import ACL
 class DistributionConfig:
 
     def __init__(self, connection=None, origin='', enabled=False,
-                 caller_reference='', cnames=None, comment='',
+                 caller_reference='', cnames=None, comment='', custom_origin=None,
                  origin_access_identity=None, trusted_signers=None,
                  default_root_object=None):
         self.connection = connection
@@ -43,6 +43,7 @@ class DistributionConfig:
         if cnames:
             self.cnames = cnames
         self.comment = comment
+        self.custom_origin=custom_origin
         self.origin_access_identity = origin_access_identity
         self.trusted_signers = trusted_signers
         self.logging = None
@@ -56,8 +57,25 @@ class DistributionConfig:
                 
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
-        s += '  <Origin>%s</Origin>\n' % self.origin
+        s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">\n'
+        
+        ## this is dated
+        ## use: CustomOrigin and S3Origin
+        ## http://docs.amazonwebservices.com/AmazonCloudFront/latest/APIReference/index.html?DistributionConfigDatatype.html#CustomOriginChildElements
+        
+        if self.custom_origin:
+            s += '  <CustomOrigin>\n'
+            s += '      <DNSName>%s</DNSName>\n' % self.origin
+            s += '      <OriginProtocolPolicy>http-only</OriginProtocolPolicy>\n'
+            s += '  </CustomOrigin>\n'
+            
+        else:
+            s += '  <S3Origin>\n'
+            s += '      <DNSName>%s</DNSName>\n' % self.origin            
+            if self.origin_access_identity:
+                val = self.get_oai_value()
+                s += '      <OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+            s += '  </S3Origin>\n'
         s += '  <CallerReference>%s</CallerReference>\n' % self.caller_reference
         for cname in self.cnames:
             s += '  <CNAME>%s</CNAME>\n' % cname
@@ -69,9 +87,9 @@ class DistributionConfig:
         else:
             s += 'false'
         s += '</Enabled>\n'
-        if self.origin_access_identity:
-            val = self.get_oai_value()
-            s += '<OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+        # if self.origin_access_identity:
+        #     val = self.get_oai_value()
+        #     s += '<OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
         if self.trusted_signers:
             s += '<TrustedSigners>\n'
             for signer in self.trusted_signers:
@@ -89,6 +107,7 @@ class DistributionConfig:
             dro = self.default_root_object
             s += '<DefaultRootObject>%s</DefaultRootObject>\n' % dro
         s += '</DistributionConfig>\n'
+        print s
         return s
 
     def startElement(self, name, attrs, connection):
