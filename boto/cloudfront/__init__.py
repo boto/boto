@@ -71,7 +71,6 @@ class CloudFrontConnection(AWSAuthConnection):
             tags=[('DistributionSummary', DistributionSummary)]
         response = self.make_request('GET', '/%s/%s' % (self.Version, resource))
         body = response.read()
-        print body
         boto.log.debug(body)
         if response.status >= 300:
             raise CloudFrontServerError(response.status, response.reason, body)
