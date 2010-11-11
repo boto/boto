@@ -55,11 +55,15 @@ class ACL:
         self.entries = []
 
     def __repr__(self):
-        entries_repr = ['Owner:%s' % self.owner.__repr__()]
+        # Owner is optional in GS ACLs.
+        if hasattr(self, 'owner'):
+            entries_repr = ['']
+        else:
+            entries_repr = ['Owner:%s' % self.owner.__repr__()]
         acl_entries = self.entries
         if acl_entries:
-          for e in acl_entries.entry_list:
-              entries_repr.append(e.__repr__())
+            for e in acl_entries.entry_list:
+                entries_repr.append(e.__repr__())
         return '<%s>' % ', '.join(entries_repr)
 
     # Method with same signature as boto.s3.acl.ACL.add_email_grant(), to allow
@@ -104,7 +108,9 @@ class ACL:
 
     def to_xml(self):
         s = '<%s>' % ACCESS_CONTROL_LIST
-        s += self.owner.to_xml()
+        # Owner is optional in GS ACLs.
+        if hasattr(self, 'owner'):
+            s += self.owner.to_xml()
         acl_entries = self.entries
         if acl_entries:
             s += acl_entries.to_xml()
