@@ -161,11 +161,15 @@ class CloudFrontConnection(AWSAuthConnection):
         return self._set_config(distribution_id, etag, config)
     
     def create_distribution(self, origin, enabled, caller_reference='',
-                            cnames=None, comment='', custom_origin=None):
+                            cnames=None, comment='', custom_origin=None, 
+                            origin_protocol_policy=None, https_port=None, 
+                            http_port=None):
         
         config = DistributionConfig(origin=origin, enabled=enabled,
                                     caller_reference=caller_reference,
-                                    cnames=cnames, comment=comment, custom_origin=custom_origin)
+                                    cnames=cnames, comment=comment, 
+                                    custom_origin=custom_origin, origin_protocol_policy=origin_protocol_policy,
+                                    https_port=https_port, http_port=http_port)
         return self._create_object(config, 'distribution', Distribution)
         
     def delete_distribution(self, distribution_id, etag):

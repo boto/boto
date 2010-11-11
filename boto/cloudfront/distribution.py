@@ -31,7 +31,9 @@ class DistributionConfig:
     def __init__(self, connection=None, origin='', enabled=False,
                  caller_reference='', cnames=None, comment='',
                  origin_access_identity=None, trusted_signers=None,
-                 default_root_object=None, custom_origin=None ):
+                 default_root_object=None, custom_origin=None, 
+                 https_port=None, http_port=None, 
+                 origin_protocol_policy=None, required_protocols=False ):
         self.connection = connection
         self.origin = origin
         self.enabled = enabled
@@ -44,10 +46,16 @@ class DistributionConfig:
             self.cnames = cnames
         self.comment = comment
         self.custom_origin=custom_origin
+        self.http_port=http_port
+        self.https_port=https_port
+        self.origin_protocol_policy=origin_protocol_policy
+
+        self.required_protocols=required_protocols
         self.origin_access_identity = origin_access_identity
         self.trusted_signers = trusted_signers
         self.logging = None
         self.default_root_object = default_root_object
+        
 
     def get_oai_value(self):
         if isinstance(self.origin_access_identity, OriginAccessIdentity):
@@ -59,23 +67,27 @@ class DistributionConfig:
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
         s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">\n'
         
-        ## this is dated
+        ## See Doc for new 10-11-01 API and Custom Origin / S3 Origin server
         ## use: CustomOrigin and S3Origin
         ## http://docs.amazonwebservices.com/AmazonCloudFront/latest/APIReference/index.html?DistributionConfigDatatype.html#CustomOriginChildElements
         
         if self.custom_origin:
-            s += '  <CustomOrigin>\n'
-            s += '      <DNSName>%s</DNSName>\n' % self.origin
-            s += '      <OriginProtocolPolicy>http-only</OriginProtocolPolicy>\n'
-            s += '  </CustomOrigin>\n'
+            s += '<CustomOrigin>\n'
+            s += '    <DNSName>%s</DNSName>\n' % self.origin
+            s += '    <OriginProtocolPolicy>%s</OriginProtocolPolicy>\n' % self.origin_protocol_policy or "match-viewer"
+            if self.https_port:
+                s += '  <HTTPSPort>%s</HTTPSPort>' % self.https_port
+            elif self.http_port:
+                s += '  <HTTPPort>%s</HTTPPort>' % self.http_port
+            s += '</CustomOrigin>\n'
             
         else:
-            s += '  <S3Origin>\n'
-            s += '      <DNSName>%s</DNSName>\n' % self.origin            
+            s += '<S3Origin>\n'
+            s += '  <DNSName>%s</DNSName>\n' % self.origin            
             if self.origin_access_identity:
                 val = self.get_oai_value()
-                s += '      <OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
-            s += '  </S3Origin>\n'
+                s += '  <OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+            s += '</S3Origin>\n'
         s += '  <CallerReference>%s</CallerReference>\n' % self.caller_reference
         for cname in self.cnames:
             s += '  <CNAME>%s</CNAME>\n' % cname
@@ -87,9 +99,10 @@ class DistributionConfig:
         else:
             s += 'false'
         s += '</Enabled>\n'
-        # if self.origin_access_identity:
-        #     val = self.get_oai_value()
-        #     s += '<OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+        
+        if self.required_protocols:
+            s += '<RequiredProtocols>\n  <Protocol>https</Protocol>\n</RequiredProtocols>'
+
         if self.trusted_signers:
             s += '<TrustedSigners>\n'
             for signer in self.trusted_signers:
@@ -107,7 +120,6 @@ class DistributionConfig:
             dro = self.default_root_object
             s += '<DefaultRootObject>%s</DefaultRootObject>\n' % dro
         s += '</DistributionConfig>\n'
-        print s
         return s
 
     def startElement(self, name, attrs, connection):
