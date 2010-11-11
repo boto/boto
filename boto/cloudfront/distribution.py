@@ -29,9 +29,9 @@ from boto.s3.acl import ACL
 class DistributionConfig:
 
     def __init__(self, connection=None, origin='', enabled=False,
-                 caller_reference='', cnames=None, comment='', custom_origin=None,
+                 caller_reference='', cnames=None, comment='',
                  origin_access_identity=None, trusted_signers=None,
-                 default_root_object=None):
+                 default_root_object=None, custom_origin=None ):
         self.connection = connection
         self.origin = origin
         self.enabled = enabled
@@ -149,7 +149,7 @@ class StreamingDistributionConfig(DistributionConfig):
         DistributionConfig.__init__(self, connection, origin,
                                     enabled, caller_reference,
                                     cnames, comment, origin_access_identity,
-                                    trusted_signers)
+                                    trusted_signers, custom_origin=None)
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
         s += '<StreamingDistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
