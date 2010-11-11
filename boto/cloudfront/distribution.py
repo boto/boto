@@ -135,8 +135,6 @@ class DistributionConfig:
     def endElement(self, name, value, connection):
         if name == 'CNAME':
             self.cnames.append(value)
-        elif name == 'Origin':
-            self.origin = value
         elif name == 'Comment':
             self.comment = value
         elif name == 'Enabled':
@@ -146,8 +144,18 @@ class DistributionConfig:
                 self.enabled = False
         elif name == 'CallerReference':
             self.caller_reference = value
+        elif name == 'DNSName':
+            self.origin = value
         elif name == 'OriginAccessIdentity':
             self.origin_access_identity = value
+        elif name == 'HTTPPort':
+            self.http_port = value
+        elif name == 'HTTPSPort':
+            self.https_port = value
+        elif name == 'OriginProtocolPolicy':
+            self.origin_protocol_policy = value
+        elif name == 'Protocol':
+            self.required_protocols = value            
         elif name == 'DefaultRootObject':
             self.default_root_object = value
         else:

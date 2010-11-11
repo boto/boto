@@ -170,6 +170,7 @@ class CloudFrontConnection(AWSAuthConnection):
                                     cnames=cnames, comment=comment, 
                                     custom_origin=custom_origin, origin_protocol_policy=origin_protocol_policy,
                                     https_port=https_port, http_port=http_port)
+                                    
         return self._create_object(config, 'distribution', Distribution)
         
     def delete_distribution(self, distribution_id, etag):
