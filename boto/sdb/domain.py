@@ -52,7 +52,7 @@ class Domain:
         return self._metadata
     
     def put_attributes(self, item_name, attributes,
-                       replace=True, expected_values=None):
+                       replace=True, expected_value=None):
         """
         Store attributes for a given item.
 
@@ -86,7 +86,7 @@ class Domain:
         :return: True if successful
         """
         return self.connection.put_attributes(self, item_name, attributes,
-                                              replace, expected_values)
+                                              replace, expected_value)
 
     def batch_put_attributes(self, items, replace=True):
         """
