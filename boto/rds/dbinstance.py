@@ -152,6 +152,85 @@ class DBInstance(object):
                                                  skip_final_snapshot,
                                                  final_snapshot_id)
 
+    def modify_dbinstance(self, param_group=None, security_groups=None,
+                          preferred_maintenance_window=None,
+                          master_password=None, allocated_storage=None,
+                          instance_class=None,
+                          backup_retention_period=None,
+                          preferred_backup_window=None,
+                          multi_az=False,
+                          apply_immediately=False):
+        """
+        Modify this DBInstance.
+
+        :type security_groups: list of str or list of DBSecurityGroup objects
+        :param security_groups: List of names of DBSecurityGroup to authorize on
+                                this DBInstance.
+
+        :type preferred_maintenance_window: str
+        :param preferred_maintenance_window: The weekly time range (in UTC)
+                                             during which maintenance can
+                                             occur.
+                                             Default is Sun:05:00-Sun:09:00
+
+        :type master_password: str
+        :param master_password: Password of master user for the DBInstance.
+                                Must be 4-15 alphanumeric characters.
+
+        :type allocated_storage: int
+        :param allocated_storage: The new allocated storage size, in GBs.
+                                  Valid values are [5-1024]
+
+        :type instance_class: str
+        :param instance_class: The compute and memory capacity of the
+                               DBInstance.  Changes will be applied at
+                               next maintenance window unless
+                               apply_immediately is True.
+
+                               Valid values are:
+                               
+                               * db.m1.small
+                               * db.m1.large
+                               * db.m1.xlarge
+                               * db.m2.xlarge
+                               * db.m2.2xlarge
+                               * db.m2.4xlarge
+
+        :type apply_immediately: bool
+        :param apply_immediately: If true, the modifications will be applied
+                                  as soon as possible rather than waiting for
+                                  the next preferred maintenance window.
+
+        :type backup_retention_period: int
+        :param backup_retention_period: The number of days for which automated
+                                        backups are retained.  Setting this to
+                                        zero disables automated backups.
+
+        :type preferred_backup_window: str
+        :param preferred_backup_window: The daily time range during which
+                                        automated backups are created (if
+                                        enabled).  Must be in h24:mi-hh24:mi
+                                        format (UTC).
+
+        :type multi_az: bool
+        :param multi_az: If True, specifies the DB Instance will be
+                         deployed in multiple availability zones.
+
+        :rtype: :class:`boto.rds.dbinstance.DBInstance`
+        :return: The modified db instance.
+        """
+        return self.connection.modify_dbinstance(self.id,
+                                                 param_group,
+                                                 security_groups,
+                                                 preferred_maintenance_window,
+                                                 master_password,
+                                                 allocated_storage,
+                                                 instance_class,
+                                                 backup_retention_period,
+                                                 preferred_backup_window,
+                                                 multi_az,
+                                                 apply_immediately)
+        
 class PendingModifiedValues(dict):
 
     def startElement(self, name, attrs, connection):
