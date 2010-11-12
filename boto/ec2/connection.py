@@ -28,7 +28,10 @@ import urllib
 import base64
 import hmac
 import boto
-from hashlib import sha1 as sha
+try:
+    from hashlib import sha1 as sha
+except ImportError:
+    import sha
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
