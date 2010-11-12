@@ -152,14 +152,14 @@ class DBInstance(object):
                                                  skip_final_snapshot,
                                                  final_snapshot_id)
 
-    def modify_dbinstance(self, param_group=None, security_groups=None,
-                          preferred_maintenance_window=None,
-                          master_password=None, allocated_storage=None,
-                          instance_class=None,
-                          backup_retention_period=None,
-                          preferred_backup_window=None,
-                          multi_az=False,
-                          apply_immediately=False):
+    def modify(self, param_group=None, security_groups=None,
+               preferred_maintenance_window=None,
+               master_password=None, allocated_storage=None,
+               instance_class=None,
+               backup_retention_period=None,
+               preferred_backup_window=None,
+               multi_az=False,
+               apply_immediately=False):
         """
         Modify this DBInstance.
 
