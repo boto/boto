@@ -155,15 +155,15 @@ class Sequence(object):
         """Set the value"""
         import time
         now = time.time()
-        expected_values = []
+        expected_value = []
         new_val = {}
         new_val['timestamp'] = now
         if self._value != None:
             new_val['last_value'] = self._value
-            expected_values = ['current_value', str(self._value)]
+            expected_value = ['current_value', str(self._value)]
         new_val['current_value'] = val
         try:
-            self.db.put_attributes(self.id, new_val, expected_values=expected_values)
+            self.db.put_attributes(self.id, new_val, expected_value=expected_value)
             self.timestamp = new_val['timestamp']
         except SDBResponseError, e:
             if e.status == 409:
