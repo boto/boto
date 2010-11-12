@@ -97,9 +97,9 @@ class SDBConnection(AWSQueryConnection):
 
     def build_expected_value(self, params, expected_value):
         params['Expected.1.Name'] = expected_value[0]
-        if expected_value[1] == True:
+        if expected_value[1] is True:
             params['Expected.1.Exists'] = 'true'
-        elif expected_value[1] == False:
+        elif expected_value[1] is False:
             params['Expected.1.Exists'] = 'false'
         else:
             params['Expected.1.Value'] = expected_value[1]
