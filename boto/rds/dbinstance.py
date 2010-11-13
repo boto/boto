@@ -152,7 +152,7 @@ class DBInstance(object):
         return self.status
 
 
-    def stop(self, skip_final_snapshot, final_snapshot_id):
+    def stop(self, skip_final_snapshot=False, final_snapshot_id=''):
         """
         Delete this DBInstance.
 
