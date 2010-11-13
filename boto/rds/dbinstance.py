@@ -130,6 +130,28 @@ class DBInstance(object):
         """
         return self.connection.reboot_dbinstance(self.id)
 
+    def update(self, validate=False):
+        """
+        Update the DB instance's status information by making a call to fetch
+        the current instance attributes from the service.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         instance the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
+        """
+        rs = self.connection.get_all_dbinstances(self.id)
+        if len(rs) > 0:
+            for i in rs:
+                if i.id == self.id:
+                    self.__dict__.update(i.__dict__)
+        elif validate:
+            raise ValueError('%s is not a valid Instance ID' % self.id)
+        return self.status
+
+
     def stop(self, skip_final_snapshot, final_snapshot_id):
         """
         Delete this DBInstance.
@@ -238,5 +260,5 @@ class PendingModifiedValues(dict):
 
     def endElement(self, name, value, connection):
         if name != 'PendingModifiedValues':
-            self[name] = self.value
+            self[name] = value
 
