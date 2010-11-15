@@ -27,11 +27,12 @@ import time
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.resultset import ResultSet
-from boto.cloudfront.exception import CloudFrontServerError
+import exception
+import hostedzone
 
 class DNSConnection(AWSAuthConnection):
 
-    DefaultHost = 'dns.amazonaws.com'
+    DefaultHost = 'route53.amazonaws.com'
     Version = '2010-10-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -66,7 +67,7 @@ class DNSConnection(AWSAuthConnection):
         response = self.make_request('GET', '/%s/%s' % (self.Version, resource))
         body = response.read()
         if response.status >= 300:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
         rs = ResultSet(tags)
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
@@ -77,7 +78,7 @@ class DNSConnection(AWSAuthConnection):
         response = self.make_request('GET', uri)
         body = response.read()
         if response.status >= 300:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
         d = dist_class(connection=self)
         response_headers = response.msg
         for key in response_headers.keys():
@@ -92,7 +93,7 @@ class DNSConnection(AWSAuthConnection):
         response = self.make_request('GET', uri)
         body = response.read()
         if response.status >= 300:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
         d = config_class(connection=self)
         d.etag = self.get_etag(response)
         h = handler.XmlHandler(d, self)
@@ -110,7 +111,7 @@ class DNSConnection(AWSAuthConnection):
         body = response.read()
         return self.get_etag(response)
         if response.status != 200:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
     
     def _create_object(self, config, resource, dist_class):
         response = self.make_request('POST', '/%s/%s' % (self.Version, resource),
@@ -122,23 +123,24 @@ class DNSConnection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return d
         else:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
         
     def _delete_object(self, id, etag, resource):
         uri = '/%s/%s/%s' % (self.Version, resource, id)
         response = self.make_request('DELETE', uri, {'If-Match' : etag})
         body = response.read()
         if response.status != 204:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
 
     # Hosted Zones
         
     def get_all_hosted_zones(self):
-        tags=[('HostedZones', HostedZone)]
+        tags=[('HostedZones', hostedzone.HostedZone)]
         return self._get_all_objects('hostedzone', tags)
 
     def get_hosted_zone(self, hosted_zone_id):
-        return self._get_info(hosted_zone_id, 'hostedzone', HostedZone)
+        return self._get_info(hosted_zone_id, 'hostedzone',
+                              hostedzone.HostedZone)
 
     def create_hosted_zone(self, origin, enabled, caller_reference='',
                             cnames=None, comment=''):
@@ -228,5 +230,5 @@ class DNSConnection(AWSAuthConnection):
             xml.sax.parseString(body, h)
             return paths
         else:
-            raise CloudFrontServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status, response.reason, body)
 
