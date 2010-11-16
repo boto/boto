@@ -54,10 +54,17 @@ class DNSConnection(AWSAuthConnection):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
-        hmac = self.hmac.copy()
+        if self.hmac_256:
+            hmac = self.hmac_256.copy()
+            alg = 'HmacSHA256'
+        else:
+            hmac = self.hmac.copy()
+            alg = 'HmacSHA1'
+
         hmac.update(headers['Date'])
         b64_hmac = base64.encodestring(hmac.digest()).strip()
-        headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
+        s = "AWS3-HTTPS AWSAccessKeyId=%s,Algorithm=%s,Signature=%s" % (self.aws_access_key_id, alg, b64_hmac)
+        headers['X-Amzn-Authorization'] = s
 
     # Generics
     
