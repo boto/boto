@@ -139,10 +139,7 @@ class SecurityGroup(EC2Object):
         :return: True if successful.
         """
         if src_group:
-            from_port = None
-            to_port = None
             cidr_ip = None
-            ip_protocol = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
         else:
@@ -163,10 +160,7 @@ class SecurityGroup(EC2Object):
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
                cidr_ip=None, src_group=None):
         if src_group:
-            from_port=None
-            to_port=None
             cidr_ip=None
-            ip_protocol = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
         else:

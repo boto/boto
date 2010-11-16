@@ -58,33 +58,49 @@ class EC2ConnectionTest (unittest.TestCase):
         d = image.get_launch_permissions()
         assert not d.has_key('groups')
         
-        # create a new security group
-        group_name = 'test-%d' % int(time.time())
+        # create 2 new security groups
+        group1_name = 'test-%d' % int(time.time())
         group_desc = 'This is a security group created during unit testing'
-        group = c.create_security_group(group_name, group_desc)
+        group1 = c.create_security_group(group1_name, group_desc)
+        time.sleep(2)
+        group2_name = 'test-%d' % int(time.time())
+        group_desc = 'This is a security group created during unit testing'
+        group2 = c.create_security_group(group2_name, group_desc)
         # now get a listing of all security groups and look for our new one
         rs = c.get_all_security_groups()
         found = False
         for g in rs:
-            if g.name == group_name:
+            if g.name == group1_name:
                 found = True
         assert found
         # now pass arg to filter results to only our new group
-        rs = c.get_all_security_groups([group_name])
+        rs = c.get_all_security_groups([group1_name])
         assert len(rs) == 1
-        group = rs[0]
-        #
-        # now delete the security group
-        status = c.delete_security_group(group_name)
+        # try some group to group authorizations/revocations
+        # first try the old style
+        status = c.authorize_security_group(group1.name, group2.name, group2.owner_id)
+        assert status
+        status = c.revoke_security_group(group1.name, group2.name, group2.owner_id)
+        assert status
+        # now try specifying a specific port
+        status = c.authorize_security_group(group1.name, group2.name, group2.owner_id,
+                                            'tcp', 22, 22)
+        assert status
+        status = c.revoke_security_group(group1.name, group2.name, group2.owner_id,
+                                         'tcp', 22, 22)
+        assert status
+        
+        # now delete the second security group
+        status = c.delete_security_group(group2_name)
         # now make sure it's really gone
         rs = c.get_all_security_groups()
         found = False
         for g in rs:
-            if g.name == group_name:
+            if g.name == group2_name:
                 found = True
         assert not found
-        # now create it again for use with the instance test
-        group = c.create_security_group(group_name, group_desc)
+
+        group = group1
         
         # now try to launch apache image with our new security group
         rs = c.get_all_images()

@@ -27,6 +27,7 @@ Represents a connection to the EC2 service.
 import urllib
 import base64
 import hmac
+import warnings
 import boto
 try:
     from hashlib import sha1 as sha
@@ -1564,6 +1565,41 @@ class EC2Connection(AWSQueryConnection):
         params = {'GroupName':name}
         return self.get_status('DeleteSecurityGroup', params)
 
+    def _authorize_deprecated(self, group_name, src_security_group_name=None,
+                              src_security_group_owner_id=None):
+        """
+        This method is called only when someone tries to authorize a group
+        without specifying a from_port or to_port.  Until recently, that was
+        the only way to do group authorization but the EC2 API has been
+        changed to now require a from_port and to_port when specifying a
+        group.  This is a much better approach but I don't want to break
+        existing boto applications that depend on the old behavior, hence
+        this kludge.
+
+        :type group_name: string
+        :param group_name: The name of the security group you are adding
+                           the rule to.
+
+        :type src_security_group_name: string
+        :param src_security_group_name: The name of the security group you are
+                                        granting access to.
+
+        :type src_security_group_owner_id: string
+        :param src_security_group_owner_id: The ID of the owner of the security
+                                            group you are granting access to.
+
+        :rtype: bool
+        :return: True if successful.
+        """
+        warnings.warn('FromPort and ToPort now required for group authorization',
+                      DeprecationWarning)
+        params = {'GroupName':group_name}
+        if src_security_group_name:
+            params['SourceSecurityGroupName'] = src_security_group_name
+        if src_security_group_owner_id:
+            params['SourceSecurityGroupOwnerId'] = src_security_group_owner_id
+        return self.get_status('AuthorizeSecurityGroupIngress', params)
+
     def authorize_security_group(self, group_name, src_security_group_name=None,
                                  src_security_group_owner_id=None,
                                  ip_protocol=None, from_port=None, to_port=None,
@@ -1596,27 +1632,67 @@ class EC2Connection(AWSQueryConnection):
         :type to_port: int
         :param to_port: The ending port number you are enabling
 
-        :type to_port: string
-        :param to_port: The CIDR block you are providing access to.
+        :type cidr_ip: string
+        :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :rtype: bool
         :return: True if successful.
         """
+        if src_security_group_name:
+            if from_port is None and to_port is None and ip_protocol is None:
+                return self._authorize_deprecated(group_name,
+                                                  src_security_group_name,
+                                                  src_security_group_owner_id)
+        params = {'GroupName':group_name}
+        if src_security_group_name:
+            params['IpPermissions.1.Groups.1.GroupName'] = src_security_group_name
+        if src_security_group_owner_id:
+            params['IpPermissions.1.Groups.1.UserId'] = src_security_group_owner_id
+        if ip_protocol:
+            params['IpPermissions.1.IpProtocol'] = ip_protocol
+        if from_port:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port:
+            params['IpPermissions.1.ToPort'] = to_port
+        if cidr_ip:
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = urllib.quote(cidr_ip)
+        return self.get_status('AuthorizeSecurityGroupIngress', params)
+
+    def _revoke_deprecated(self, group_name, src_security_group_name=None,
+                           src_security_group_owner_id=None):
+        """
+        This method is called only when someone tries to revoke a group
+        without specifying a from_port or to_port.  Until recently, that was
+        the only way to do group revocation but the EC2 API has been
+        changed to now require a from_port and to_port when specifying a
+        group.  This is a much better approach but I don't want to break
+        existing boto applications that depend on the old behavior, hence
+        this kludge.
+
+        :type group_name: string
+        :param group_name: The name of the security group you are adding
+                           the rule to.
+
+        :type src_security_group_name: string
+        :param src_security_group_name: The name of the security group you are
+                                        granting access to.
+
+        :type src_security_group_owner_id: string
+        :param src_security_group_owner_id: The ID of the owner of the security
+                                            group you are granting access to.
+
+        :rtype: bool
+        :return: True if successful.
+        """
+        warnings.warn('FromPort and ToPort now required for group authorization',
+                      DeprecationWarning)
         params = {'GroupName':group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
         if src_security_group_owner_id:
             params['SourceSecurityGroupOwnerId'] = src_security_group_owner_id
-        if ip_protocol:
-            params['IpProtocol'] = ip_protocol
-        if from_port:
-            params['FromPort'] = from_port
-        if to_port:
-            params['ToPort'] = to_port
-        if cidr_ip:
-            params['CidrIp'] = urllib.quote(cidr_ip)
-        return self.get_status('AuthorizeSecurityGroupIngress', params)
+        return self.get_status('RevokeSecurityGroupIngress', params)
 
     def revoke_security_group(self, group_name, src_security_group_name=None,
                               src_security_group_owner_id=None,
@@ -1650,26 +1726,31 @@ class EC2Connection(AWSQueryConnection):
         :type to_port: int
         :param to_port: The ending port number you are disabling
 
-        :type to_port: string
-        :param to_port: The CIDR block you are revoking access to.
+        :type cidr_ip: string
+        :param cidr_ip: The CIDR block you are revoking access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :rtype: bool
         :return: True if successful.
         """
+        if src_security_group_name:
+            if from_port is None and to_port is None and ip_protocol is None:
+                return self._revoke_deprecated(group_name,
+                                               src_security_group_name,
+                                               src_security_group_owner_id)
         params = {'GroupName':group_name}
         if src_security_group_name:
-            params['SourceSecurityGroupName'] = src_security_group_name
+            params['IpPermissions.1.Groups.1.GroupName'] = src_security_group_name
         if src_security_group_owner_id:
-            params['SourceSecurityGroupOwnerId'] = src_security_group_owner_id
+            params['IpPermissions.1.Groups.1.UserId'] = src_security_group_owner_id
         if ip_protocol:
-            params['IpProtocol'] = ip_protocol
+            params['IpPermissions.1.IpProtocol'] = ip_protocol
         if from_port:
-            params['FromPort'] = from_port
+            params['IpPermissions.1.FromPort'] = from_port
         if to_port:
-            params['ToPort'] = to_port
+            params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            params['CidrIp'] = cidr_ip
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = urllib.quote(cidr_ip)
         return self.get_status('RevokeSecurityGroupIngress', params)
 
     #
