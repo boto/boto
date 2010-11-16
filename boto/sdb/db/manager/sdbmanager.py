@@ -539,7 +539,7 @@ class SDBManager(object):
             order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
 
         if select:
-            query_parts.append(select)
+            query_parts.append("(%s)" % select)
 
         if len(query_parts) > 0:
             return "WHERE %s %s" % (" AND ".join(query_parts), order_by_query)
