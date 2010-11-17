@@ -34,6 +34,7 @@ from boto.cloudfront.identity import OriginAccessIdentityConfig
 from boto.cloudfront.invalidation import InvalidationBatch
 from boto.resultset import ResultSet
 from boto.cloudfront.exception import CloudFrontServerError
+from boto.cloudfront.origin import CustomOrigin
 
 class CloudFrontConnection(AWSAuthConnection):
 
@@ -166,6 +167,22 @@ class CloudFrontConnection(AWSAuthConnection):
                                     caller_reference=caller_reference,
                                     cnames=cnames, comment=comment)
         return self._create_object(config, 'distribution', Distribution)
+        
+    def create_custom_distrubution(self, dns_name, enabled, caller_reference='', 
+                                cnames=None, comment='', use_https=False, port=None ):
+        ## convenience method
+        ## http://docs.amazonwebservices.com/AmazonCloudFront/latest/APIReference/index.html?DistributionConfigDatatype.html#CustomOriginChildElements
+        custom_origin = CustomOrigin( dns_name=dns_name )
+        if use_https:
+            custom_origin.origin_protocol_policy = "match-viewer"
+            if port: custom_origin.https_port=port
+        else:
+            custom_origin.origin_protocol_policy = "http-only"
+            if port: custom_origin.http_port=port
+        config = DistributionConfig(origin=custom_origin, enabled=enabled,
+                                    caller_reference=caller_reference,
+                                    cnames=cnames, comment=comment)
+        return self._create_object(config, 'distribution', Distribution)        
         
     def delete_distribution(self, distribution_id, etag):
         return self._delete_object(distribution_id, etag, 'distribution')
