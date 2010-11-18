@@ -32,7 +32,7 @@ import boto
 
 class ELBConnection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'elb_version', '2009-05-15')
+    APIVersion = boto.config.get('Boto', 'elb_version', '2010-07-01')
     Endpoint = boto.config.get('Boto', 'elb_endpoint', 'elasticloadbalancing.amazonaws.com')
     SignatureVersion = '1'
     #ResponseError = EC2ResponseError
@@ -104,6 +104,30 @@ class ELBConnection(AWSQueryConnection):
         load_balancer.availability_zones = zones
         return load_balancer
 
+    def create_load_balancer_listeners(self, name, listeners):
+        """
+        Creates a Listener (or group of listeners) for an existing Load Balancer
+
+        :type name: string
+        :param name: The name of the load balancer to create the listeners for
+
+        :type listeners: List of tuples
+        :param listeners: Each tuple contains three values.
+                          (LoadBalancerPortNumber, InstancePortNumber, Protocol)
+                          where LoadBalancerPortNumber and InstancePortNumber are
+                          integer values between 1 and 65535 and Protocol is a
+                          string containing either 'TCP' or 'HTTP'.
+
+        :return: The status of the request
+        """
+        params = {'LoadBalancerName' : name}
+        for i in range(0, len(listeners)):
+            params['Listeners.member.%d.LoadBalancerPort' % (i+1)] = listeners[i][0]
+            params['Listeners.member.%d.InstancePort' % (i+1)] = listeners[i][1]
+            params['Listeners.member.%d.Protocol' % (i+1)] = listeners[i][2]
+        return self.get_status('CreateLoadBalancerListeners', params)
+
+
     def delete_load_balancer(self, name):
         """
         Delete a Load Balancer from your account.
@@ -113,6 +137,25 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {'LoadBalancerName': name}
         return self.get_status('DeleteLoadBalancer', params)
+
+    def delete_load_balancer_listeners(self, name, ports):
+        """
+        Deletes a load balancer listener (or group of listeners)
+
+        :type name: string
+        :param name: The name of the load balancer to create the listeners for
+
+        :type ports: List int
+        :param ports: Each int represents the port on the ELB to be removed
+
+        :return: The status of the request
+        """
+        params = {'LoadBalancerName' : name}
+        for i in range(0, len(ports)):
+            params['LoadBalancerPorts.member.%d' % (i+1)] = ports[i]
+        return self.get_status('DeleteLoadBalancerListeners', params)
+
+
 
     def enable_availability_zones(self, load_balancer_name, zones_to_add):
         """
