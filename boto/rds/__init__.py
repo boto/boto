@@ -702,8 +702,8 @@ class RDSConnection(AWSQueryConnection):
             params['CIDRIP'] = urllib.quote(cidr_ip)
         return self.get_object('AuthorizeDBSecurityGroupIngress', params, DBSecurityGroup)
 
-    def revoke_security_group(self, group_name, ec2_security_group_name=None,
-                              ec2_security_group_owner_id=None, cidr_ip=None):
+    def revoke_dbsecurity_group(self, group_name, ec2_security_group_name=None,
+                                ec2_security_group_owner_id=None, cidr_ip=None):
         """
         Remove an existing rule from an existing security group.
         You need to pass in either ec2_security_group_name and
@@ -737,6 +737,10 @@ class RDSConnection(AWSQueryConnection):
             params['CIDRIP'] = cidr_ip
         return self.get_object('RevokeDBSecurityGroupIngress', params, DBSecurityGroup)
 
+    # For backwards compatibility.  This method was improperly named
+    # in previous versions.  I have renamed it to match the others.
+    revoke_security_group = revoke_dbsecurity_group
+    
     # DBSnapshot methods
 
     def get_all_dbsnapshots(self, snapshot_id=None, instance_id=None,
