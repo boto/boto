@@ -47,7 +47,7 @@ class LoadBalancer(object):
         if name == 'HealthCheck':
             self.health_check = HealthCheck(self)
             return self.health_check
-        elif name in ('Listeners', 'ListenerDescriptions'):
+        elif name == 'ListenerDescriptions':
             self.listeners = ResultSet([('member', Listener)])
             return self.listeners
         elif name == 'AvailabilityZones':
