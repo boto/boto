@@ -295,7 +295,7 @@ class S3Connection(AWSAuthConnection):
                                                   bucket, key) + query_part
 
     def get_all_buckets(self, headers=None):
-        response = self.make_request('GET')
+        response = self.make_request('GET', headers=headers)
         body = response.read()
         if response.status > 300:
             raise self.provider.storage_response_error(
