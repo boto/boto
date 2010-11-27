@@ -475,7 +475,7 @@ class IAMConnection(AWSQueryConnection):
             params['Marker'] = marker
         if max_items:
             params['MaxItems'] = max_items
-        return self.get_response('ListUsers', params, list_marker='Groups')
+        return self.get_response('ListGroupsForUser', params, list_marker='Groups')
         
     #
     # Access Keys
