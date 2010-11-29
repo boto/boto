@@ -411,7 +411,7 @@ class Distribution:
         """
         bucket = self._get_bucket()
         for key in bucket:
-            self.set_permissions(key)
+            self.set_permissions(key, replace)
 
     def add_object(self, name, content, headers=None, replace=True):
         """
