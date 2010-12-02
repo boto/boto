@@ -21,6 +21,7 @@
 
 import xml.sax
 import threading
+import boto
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain, DomainMetaData
@@ -43,7 +44,7 @@ class ItemThread(threading.Thread):
             item = self.conn.get_attributes(self.domain_name, item_name)
             self.items.append(item)
 
-#boto.set_stream_logger('sdb')
+boto.set_stream_logger('sdb')
 
 class SDBConnection(AWSQueryConnection):
 
@@ -55,14 +56,19 @@ class SDBConnection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/', converter=None):
+                 proxy_user=None, proxy_pass=None, debug=2,
+                 https_connection_factory=None, region=None, path='/',
+                 converter=None):
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = SDBRegionInfo(self, self.DefaultRegionName,
+                                   self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy,
+                                    proxy_port, proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item
@@ -104,7 +110,6 @@ class SDBConnection(AWSQueryConnection):
         else:
             params['Expected.1.Value'] = expected_value[1]
             
-
     def build_batch_list(self, params, items, replace=False):
         item_names = items.keys()
         i = 0
@@ -132,6 +137,17 @@ class SDBConnection(AWSQueryConnection):
                     if replace:
                         params['Item.%d.Attribute.%d.Replace' % (i,j)] = 'true'
                     j += 1
+            i += 1
+
+    def build_batch_delete_list(self, params, items):
+        item_names = items.keys()
+        i = 0
+        for item_name in item_names:
+            j = 0
+            params['Item.%d.ItemName' % i] = item_name
+            for attr_name in items[item_name]:
+                params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
+                j += 1
             i += 1
 
     def build_name_list(self, params, attribute_names):
@@ -412,6 +428,26 @@ class SDBConnection(AWSQueryConnection):
             self.build_expected_value(params, expected_value)
         return self.get_status('DeleteAttributes', params)
         
+    def batch_delete_attributes(self, domain_or_name, items):
+        """
+        Delete multiple items in a domain.
+        
+        :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
+        :param domain_or_name: Either the name of a domain or a Domain object
+
+        :type item_names: dict
+        :param item_names: A dict object.  The keys in the dictionary are
+                           the item names and the value of each key is a
+                           list of attribute names that you want to delete.
+        
+        :rtype: bool
+        :return: True if successful
+        """
+        domain, domain_name = self.get_domain_and_name(domain_or_name)
+        params = {'DomainName' : domain_name}
+        self.build_batch_delete_list(params, items)
+        return self.get_status('BatchDeleteAttributes', params, verb='POST')
+
     def select(self, domain_or_name, query='', next_token=None,
                consistent_read=False):
         """
