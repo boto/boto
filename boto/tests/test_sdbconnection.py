@@ -99,7 +99,20 @@ class SDBConnectionTest (unittest.TestCase):
         time.sleep(10)
         item = domain.get_attributes('item3')
         assert item['name3_2'] == 'value3_2'
-        
+
+        # now try a batch delete operation (variation #1)
+        items = {'item3' : item3}
+        stat = domain.batch_delete_attributes(items)
+        time.sleep(10)
+        item = domain.get_attributes('item3')
+        assert not item
+
+        # now try a batch delete operation (variation #2)
+        stat = domain.batch_delete_attributes({'item4' : None})
+        time.sleep(10)
+        item = domain.get_attributes('item4')
+        assert not item
+
         # now delete the domain
         stat = c.delete_domain(domain)
         assert stat

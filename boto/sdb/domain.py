@@ -164,6 +164,27 @@ class Domain:
         return self.connection.delete_attributes(self, item_name, attributes,
                                                  expected_values)
 
+    def batch_delete_attributes(self, items):
+        """
+        Delete multiple items in this domain.
+        
+        :type items: dict or dict-like object
+        :param items: A dictionary-like object.  The keys of the dictionary are
+                      the item names and the values are either:
+
+                      * dictionaries of attribute names/values, exactly the
+                        same as the attribute_names parameter of the scalar
+                        put_attributes call.  The attribute name/value pairs
+                        will only be deleted if they match the name/value
+                        pairs passed in.
+                      * None which means that all attributes associated
+                        with the item should be deleted.  
+
+        :rtype: bool
+        :return: True if successful
+        """
+        return self.connection.batch_delete_attributes(self, items)
+    
     def select(self, query='', next_token=None, consistent_read=False, max_items=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
