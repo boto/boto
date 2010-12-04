@@ -80,38 +80,45 @@ class DNSConnection(AWSAuthConnection):
         h.parse(body)
         return e
 
-    def _get_object(self, id, resource, cls):
+    def _get_object(self, id, resource, list_marker, item_marker):
         uri = '/%s/%s/%s' % (self.Version, resource, id)
         response = self.make_request('GET', uri)
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
             raise exception.DNSServerError(response.status, response.reason, body)
-        o = cls(connection=self)
-        h = handler.XmlHandler(o, self)
-        xml.sax.parseString(body, h)
-        return o
+        e = boto.jsonresponse.Element(list_marker=list_marker,
+                                      item_marker=item_marker)
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
 
-    def _create_object(self, xml, resource, cls):
+    def _create_object(self, xml, resource, list_marker, item_marker):
         response = self.make_request('POST', '/%s/%s' % (self.Version, resource),
                                      {'Content-Type' : 'text/xml'}, xml)
         body = response.read()
         boto.log.debug(body)
         if response.status == 201:
-            o = cls()
-            h = handler.XmlHandler(o, self)
-            xml.sax.parseString(body, h)
-            return o
+            e = boto.jsonresponse.Element(list_marker=list_marker,
+                                          item_marker=item_marker)
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
         else:
             raise exception.DNSServerError(response.status, response.reason, body)
         
-    def _delete_object(self, id, etag, resource):
+    def _delete_object(self, id, resource):
         uri = '/%s/%s/%s' % (self.Version, resource, id)
-        response = self.make_request('DELETE', uri, {'If-Match' : etag})
+        response = self.make_request('DELETE', uri)
         body = response.read()
         boto.log.debug(body)
         if response.status != 204:
             raise exception.DNSServerError(response.status, response.reason, body)
+        e = boto.jsonresponse.Element(list_marker=None,
+                                      item_marker=None)
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
 
     # Hosted Zones
 
@@ -131,8 +138,9 @@ class DNSConnection(AWSAuthConnection):
                                      item_marker=('HostedZone',))
     
     def get_hosted_zone(self, hosted_zone_id):
-        return self._get_info(hosted_zone_id, 'hostedzone',
-                              hostedzone.HostedZone)
+        return self._get_object(hosted_zone_id, 'hostedzone',
+                                list_marker='NameServers',
+                                item_marker=('NameServer',))
 
     def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
         if caller_ref is None:
@@ -142,88 +150,10 @@ class DNSConnection(AWSAuthConnection):
                   'comment' : comment,
                   'xmlns' : self.XMLNameSpace}
         xml = self.HZXML % params
-        return self._create_object(xml, 'hostedzone', hostedzone.HostedZone)
+        return self._create_object(xml, 'hostedzone',
+                                   list_marker='NameServers',
+                                   item_marker=('NameServer',))
         
-    def delete_distribution(self, distribution_id, etag):
-        return self._delete_object(distribution_id, etag, 'distribution')
-
-    # Streaming Distributions
-        
-    def get_all_streaming_distributions(self):
-        tags=[('StreamingDistributionSummary', StreamingDistributionSummary)]
-        return self._get_all_objects('streaming-distribution', tags)
-
-    def get_streaming_distribution_info(self, distribution_id):
-        return self._get_info(distribution_id, 'streaming-distribution',
-                              StreamingDistribution)
-
-    def get_streaming_distribution_config(self, distribution_id):
-        return self._get_config(distribution_id, 'streaming-distribution',
-                                StreamingDistributionConfig)
-    
-    def set_streaming_distribution_config(self, distribution_id, etag, config):
-        return self._set_config(distribution_id, etag, config)
-    
-    def create_streaming_distribution(self, origin, enabled,
-                                      caller_reference='',
-                                      cnames=None, comment=''):
-        config = StreamingDistributionConfig(origin=origin, enabled=enabled,
-                                             caller_reference=caller_reference,
-                                             cnames=cnames, comment=comment)
-        return self._create_object(config, 'streaming-distribution',
-                                   StreamingDistribution)
-        
-    def delete_streaming_distribution(self, distribution_id, etag):
-        return self._delete_object(distribution_id, etag, 'streaming-distribution')
-
-    # Origin Access Identity
-
-    def get_all_origin_access_identity(self):
-        tags=[('CloudFrontOriginAccessIdentitySummary',
-               OriginAccessIdentitySummary)]
-        return self._get_all_objects('origin-access-identity/cloudfront', tags)
-
-    def get_origin_access_identity_info(self, access_id):
-        return self._get_info(access_id, 'origin-access-identity/cloudfront',
-                              OriginAccessIdentity)
-
-    def get_origin_access_identity_config(self, access_id):
-        return self._get_config(access_id,
-                                'origin-access-identity/cloudfront',
-                                OriginAccessIdentityConfig)
-    
-    def set_origin_access_identity_config(self, access_id,
-                                          etag, config):
-        return self._set_config(access_id, etag, config)
-    
-    def create_origin_access_identity(self, caller_reference='', comment=''):
-        config = OriginAccessIdentityConfig(caller_reference=caller_reference,
-                                            comment=comment)
-        return self._create_object(config, 'origin-access-identity/cloudfront',
-                                   OriginAccessIdentity)
-        
-    def delete_origin_access_identity(self, access_id, etag):
-        return self._delete_object(access_id, etag,
-                                   'origin-access-identity/cloudfront')
-
-    # Object Invalidation
-    
-    def create_invalidation_request(self, distribution_id, paths, caller_reference=None):
-        """Creates a new invalidation request
-            :see: http://docs.amazonwebservices.com/AmazonCloudFront/2010-08-01/APIReference/index.html?CreateInvalidation.html
-        """
-        # We allow you to pass in either an array or
-        # an InvalidationBatch object
-        if not isinstance(paths, InvalidationBatch):
-            paths = InvalidationBatch(paths)
-        paths.connection = self
-        response = self.make_request('POST', '/%s/distribution/%s/invalidation' % (self.Version, distribution_id),
-                                     {'Content-Type' : 'text/xml'}, data=paths.to_xml())
-        body = response.read()
-        if response.status == 201:
-            h = handler.XmlHandler(paths, self)
-            xml.sax.parseString(body, h)
-            return paths
-        else:
-            raise exception.DNSServerError(response.status, response.reason, body)
+    def delete_hosted_zone(self, hosted_zone_id):
+        return self._delete_object(hosted_zone_id, 'distribution')
 
