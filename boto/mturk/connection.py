@@ -644,7 +644,7 @@ class QuestionFormAnswer(BaseAutoResultElement):
     contains a FreeText element. This element contains the Worker's
     answer
 
-    *NOTE* - currently really only supports free-text answers
+    *NOTE* - currently really only supports free-text and selection answers
     """
 
     def __init__(self, connection):
@@ -655,7 +655,7 @@ class QuestionFormAnswer(BaseAutoResultElement):
     def endElement(self, name, value, connection):
         if name == 'QuestionIdentifier':
             self.qid = value
-        elif name == 'FreeText' and self.qid:
+        elif name in ['FreeText', 'SelectionIdentifier'] and self.qid:
             self.fields.append((self.qid,value))
         elif name == 'Answer':
             self.qid = None
