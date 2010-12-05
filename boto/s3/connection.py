@@ -115,7 +115,7 @@ class Location:
     EU = 'EU'
     USWest = 'us-west-1'
 
-#boto.set_stream_logger('s3')
+boto.set_stream_logger('s3')
 
 class S3Connection(AWSAuthConnection):
 
@@ -125,7 +125,7 @@ class S3Connection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
-                 host=DefaultHost, debug=0, https_connection_factory=None,
+                 host=DefaultHost, debug=2, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/', provider='aws',
                  bucket_class=Bucket):
         self.calling_format = calling_format
@@ -389,11 +389,15 @@ class S3Connection(AWSAuthConnection):
         if isinstance(key, Key):
             key = key.name
         path = self.calling_format.build_path_base(bucket, key)
+        boto.log.debug('path=%s' % path)
         auth_path = self.calling_format.build_auth_path(bucket, key)
+        boto.log.debug('auth_path=%s' % auth_path)
         host = self.calling_format.build_host(self.server_name(), bucket)
         if query_args:
             path += '?' + query_args
+            boto.log.debug('path=%s' % path)
             auth_path += '?' + query_args
+            boto.log.debug('auth_path=%s' % auth_path)
         return AWSAuthConnection.make_request(self, method, path, headers,
                 data, host, auth_path, sender,
                 override_num_retries=override_num_retries)

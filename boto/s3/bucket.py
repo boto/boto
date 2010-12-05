@@ -30,6 +30,7 @@ from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
 from boto.s3.user import User
+from boto.s3.multipart import MultiPartUploadList, MultiPartUpload
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 import boto.utils
@@ -798,5 +799,37 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def initiate_multipart_upload(self, key_name, headers=None):
+        query_args = 'uploads'
+        response = self.connection.make_request('POST', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            resp = MultiPartUpload(self)
+            h = handler.XmlHandler(resp, self)
+            xml.sax.parseString(body, h)
+            return resp
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
+    def get_all_multipart_uploads(self, headers=None):
+        query_args = 'uploads'
+        response = self.connection.make_request('GET', self.name, '',
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            resp = MultiPartUploadList(self)
+            h = handler.XmlHandler(resp, self)
+            xml.sax.parseString(body, h)
+            return resp
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)

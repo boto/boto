@@ -308,8 +308,8 @@ class AWSAuthConnection(object):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
             host = self.server_name()
-        boto.log.debug('establishing HTTP connection')
         if is_secure:
+            boto.log.debug('establishing HTTPS connection')
             if self.use_proxy:
                 connection = self.proxy_ssl()
             elif self.https_connection_factory:
@@ -317,6 +317,7 @@ class AWSAuthConnection(object):
             else:
                 connection = httplib.HTTPSConnection(host)
         else:
+            boto.log.debug('establishing HTTPS connection')
             connection = httplib.HTTPConnection(host)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
@@ -437,8 +438,7 @@ class AWSAuthConnection(object):
                     if query:
                         path += '?' + query
                     boto.log.debug('Redirecting: %s' % scheme + '://' + host + path)
-                    connection = self.get_http_connection(host,
-                            scheme == 'https')
+                    connection = self.get_http_connection(host, scheme == 'https')
                     continue
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')

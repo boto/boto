@@ -38,7 +38,6 @@
 Some handy utility functions used by several classes.
 """
 
-import re
 import urllib
 import urllib2
 import imp
@@ -102,29 +101,22 @@ def canonical_string(method, path, headers, expires=None,
             buf += "%s\n" % val
 
     # don't include anything after the first ? in the resource...
-    buf += "%s" % path.split('?')[0]
+    t =  path.split('?')
+    buf += t[0]
 
-    # ...unless there is an acl or torrent parameter
-    if re.search("[&?]acl($|=|&)", path):
-        buf += "?acl"
-    elif re.search("[&?]policy($|=|&)", path):
-        buf += "?policy"
-    elif re.search("[&?]logging($|=|&)", path):
-        buf += "?logging"
-    elif re.search("[&?]torrent($|=|&)", path):
-        buf += "?torrent"
-    elif re.search("[&?]location($|=|&)", path):
-        buf += "?location"
-    elif re.search("[&?]requestPayment($|=|&)", path):
-        buf += "?requestPayment"
-    elif re.search("[&?]versions($|=|&)", path):
-        buf += "?versions"
-    elif re.search("[&?]versioning($|=|&)", path):
-        buf += "?versioning"
-    else:
-        m = re.search("[&?]versionId=([^&]+)($|=|&)", path)
-        if m:
-            buf += '?versionId=' + m.group(1)
+    # unless it is one of the Query String Arguments of Interest
+    qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
+                       'requestPayment', 'torrent', 'versioning', 'versionId',
+                       'versions', 'uploads', 'uploadId']
+    if len(t) > 1:
+        qsa = t[1].split('&')
+        qsa = [ a.split('=') for a in qsa]
+        qsa = [ a for a in qsa if a[0] in qsa_of_interest ]
+        if len(qsa) > 0:
+            qsa.sort(cmp=lambda x,y:cmp(x[0], y[0]))
+            qsa = [ '='.join(a) for a in qsa ]
+            buf += '?'
+            buf += '&'.join(qsa)
 
     return buf
 

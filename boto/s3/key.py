@@ -406,7 +406,7 @@ class Key(object):
                                                    self.bucket.name, self.name,
                                                    headers, query_auth, force_http)
 
-    def send_file(self, fp, headers=None, cb=None, num_cb=10):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None):
         """
         Upload a file to a key into a bucket on S3.
         
@@ -507,7 +507,8 @@ class Key(object):
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                    self.name, headers,
-                                                   sender=sender)
+                                                   sender=sender,
+                                                   query_args=query_args)
         self.handle_version_headers(resp, force=True)
 
     def compute_md5(self, fp):
@@ -537,7 +538,7 @@ class Key(object):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               reduced_redundancy=False):
+                               reduced_redundancy=False, query_args=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -615,7 +616,7 @@ class Key(object):
                 k = self.bucket.lookup(self.name)
                 if k:
                     return
-            self.send_file(fp, headers, cb, num_cb)
+            self.send_file(fp, headers, cb, num_cb, query_args)
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
