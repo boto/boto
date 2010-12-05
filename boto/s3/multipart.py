@@ -25,21 +25,74 @@ import key
 from boto import handler
 import xml.sax
 
-class Part(object):
+class CompleteMultiPartUpload(object):
+    """
+    Represents a completed MultiPart Upload.  Contains the
+    following useful attributes:
 
-    def __init__(self, parent=None):
-        self.parent = parent
+     * location - The URI of the completed upload
+     * bucket_name - The name of the bucket in which the upload
+                     is contained
+     * key_name - The name of the new, completed key
+     * etag - The MD5 hash of the completed, combined upload
+    """
+
+    def __init__(self, bucket=None):
+        self.bucket = None
+        self.location = None
+        self.bucket_name = None
+        self.key_name = None
+        self.etag = None
+
+    def __repr__(self):
+        return '<CompleteMultiPartUpload: %s.%s>' % (self.bucket_name,
+                                                     self.key_name)
+        
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Location':
+            self.location = value
+        elif name == 'Bucket':
+            self.bucket_name = value
+        elif name == 'Key':
+            self.key_name = value
+        elif name == 'ETag':
+            self.etag = value
+        else:
+            setattr(self, name, value)
+        
+class Part(object):
+    """
+    Represents a single part in a MultiPart upload.
+    Attributes include:
+
+     * part_number - The integer part number
+     * last_modified - The last modified date of this part
+     * etag - The MD5 hash of this part
+     * size - The size, in bytes, of this part
+    """
+
+    def __init__(self, bucket=None):
+        self.bucket = bucket
         self.part_number = None
         self.last_modified = None
         self.etag = None
         self.size = None
 
+    def __repr__(self):
+        if isinstance(self.part_number, int):
+            return '<Part %d>' % self.part_number
+        else:
+            return '<Part %s>' % None
+        
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
         if name == 'PartNumber':
-            self.part_number = value
+            self.part_number = int(value)
         elif name == 'LastModified':
             self.last_modified = value
         elif name == 'ETag':
@@ -49,10 +102,26 @@ class Part(object):
         else:
             setattr(self, name, value)
         
+def part_lister(mpupload, part_number_marker=''):
+    """
+    A generator function for listing parts of a multipart upload.
+    """
+    more_results = True
+    part = None
+    while more_results:
+        parts = mpupload.get_all_parts(None, part_number_marker)
+        for part in parts:
+            yield part
+        part_number_marker = mpupload.next_part_number_marker
+        more_results= mpupload.is_truncated
+        
 class MultiPartUpload(object):
+    """
+    Represents a MultiPart Upload operation.
+    """
     
-    def __init__(self, parent=None):
-        self.parent = parent
+    def __init__(self, bucket=None):
+        self.bucket = bucket
         self.bucket_name = None
         self.key_name = None
         self.id = id
@@ -60,10 +129,28 @@ class MultiPartUpload(object):
         self.owner = None
         self.storage_class = None
         self.initiated = None
-        self.parts = []
+        self.part_number_marker = None
+        self.next_part_number_marker = None
+        self.max_parts = None
+        self.is_truncated = False
+        self._parts = None
 
     def __repr__(self):
-        return '<MultiPartUpload %s>' % self.id
+        return '<MultiPartUpload %s>' % self.key_name
+
+    def __iter__(self):
+        return part_lister(self, part_number_marker=self.part_number_marker)
+
+    def to_xml(self):
+        self.get_all_parts()
+        s = '<CompleteMultipartUpload>\n'
+        for part in self:
+            s += '  <Part>\n'
+            s += '    <PartNumber>%d</PartNumber>\n' % part.part_number
+            s += '    <ETag>%s</ETag>\n' % part.etag
+            s += '  </Part>\n'
+        s += '</CompleteMultipartUpload>'
+        return s
 
     def startElement(self, name, attrs, connection):
         if name == 'Initiator':
@@ -73,8 +160,8 @@ class MultiPartUpload(object):
             self.owner = user.User(self)
             return self.owner
         elif name == 'Part':
-            part = Part(self.parent)
-            self.parts.append(part)
+            part = Part(self.bucket)
+            self._parts.append(part)
             return part
         return None
 
@@ -87,65 +174,85 @@ class MultiPartUpload(object):
             self.id = value
         elif name == 'StorageClass':
             self.storage_class = value
-        elif name == 'Initiated':
-            self.initiated = value
+        elif name == 'PartNumberMarker':
+            self.part_number_marker = value
+        elif name == 'NextPartNumberMarker':
+            self.next_part_number_marker = value
+        elif name == 'MaxParts':
+            self.max_parts = int(value)
+        elif name == 'IsTruncated':
+            if value == 'true':
+                self.is_truncated = True
+            else:
+                self.is_truncated = False
         else:
             setattr(self, name, value)
 
-    def list_parts(self):
+    def get_all_parts(self, max_parts=None, part_number_marker=None):
+        """
+        Return the uploaded parts of this MultiPart Upload.  This is
+        a lower-level method that requires you to manually page through
+        results.  To simplify this process, you can just use the
+        object itself as an iterator and it will automatically handle
+        all of the paging with S3.
+        """
+        self._parts = []
         query_args = 'uploadId=%s' % self.id
-        response = self.parent.connection.make_request('GET', self.parent.name,
+        if max_parts:
+            query_args += '&max_parts=%d' % max_parts
+        if part_number_marker:
+            query_args += '&part-number-marker=%s' % part_number_marker
+        response = self.bucket.connection.make_request('GET', self.bucket.name,
                                                        self.key_name,
                                                        query_args=query_args)
         body = response.read()
         if response.status == 200:
             h = handler.XmlHandler(self, self)
             xml.sax.parseString(body, h)
-            return self.parts
+            return self._parts
 
     def upload_part_from_file(self, fp, part_num, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                reduced_redundancy=False):
+        """
+        Upload another part of this MultiPart Upload.
+        
+        :type fp: file
+        :param fp: The file object you want to upload.
+        
+        :type part_num: int
+        :param part_num: The number of this part.
+
+        The other parameters are exactly as defined for the
+        :class:`boto.s3.key.Key` set_contents_from_file method.
+        """
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
-        key = self.parent.new_key(self.key_name)
+        key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,
                                    md5, reduced_redundancy, query_args)
 
-class MultiPartUploadList(object):
+    def complete_upload(self):
+        """
+        Complete the MultiPart Upload operation.  This method should
+        be called when all parts of the file have been successfully
+        uploaded to S3.
 
-    def __init__(self, parent=None):
-        self.parent = parent
-        self.bucket = None
-        self.key_marker = None
-        self.upload_marker = None
-        self.next_key_marker = None
-        self.next_upload_id_marker = None
-        self.max_uploads = None
-        self.is_truncated = None
-        self.uploads = []
+        :rtype: :class:`boto.s3.multipart.CompletedMultiPartUpload`
+        :returns: An object representing the completed upload.
+        """
+        xml = self.to_xml()
+        self.bucket.complete_multipart_upload(self.key_name,
+                                              self.id, xml)
 
-    def startElement(self, name, attrs, connection):
-        if name == 'Upload':
-            upload = MultiPartUpload(self.parent)
-            self.uploads.append(upload)
-            return upload
-        return None
+    def cancel_upload(self):
+        """
+        Cancels a MultiPart Upload operation.  The storage consumed by
+        any previously uploaded parts will be freed. However, if any
+        part uploads are currently in progress, those part uploads
+        might or might not succeed. As a result, it might be necessary
+        to abort a given multipart upload multiple times in order to
+        completely free all storage consumed by all parts.
+        """
+        self.bucket.cancel_multipart_upload(self.key_name, self.id)
 
-    def endElement(self, name, value, connection):
-        if name == 'Bucket':
-            self.bucket = value
-        elif name == 'KeyMarker':
-            self.key_marker = value
-        elif name == 'UploadId':
-            self.id = value
-        elif name == 'NextKeyMarker':
-            self.next_key_marker = value
-        elif name == 'NextUploadIdMarker':
-            self.next_upload_id_marker = value
-        elif name == 'MaxUploads':
-            self.max_uploads = int(value)
-        elif name == 'IsTruncated':
-            self.is_truncated = value
-        else:
-            setattr(self, name, value)
 

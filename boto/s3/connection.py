@@ -115,7 +115,7 @@ class Location:
     EU = 'EU'
     USWest = 'us-west-1'
 
-boto.set_stream_logger('s3')
+#boto.set_stream_logger('s3')
 
 class S3Connection(AWSAuthConnection):
 
@@ -125,7 +125,7 @@ class S3Connection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
-                 host=DefaultHost, debug=2, https_connection_factory=None,
+                 host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/', provider='aws',
                  bucket_class=Bucket):
         self.calling_format = calling_format

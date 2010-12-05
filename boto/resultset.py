@@ -73,12 +73,20 @@ class ResultSet(list):
             self.marker = value
         elif name == 'KeyMarker':
             self.key_marker = value
-        elif name == 'VersionIdMarker':
-            self.version_id_marker = value
         elif name == 'NextKeyMarker':
             self.next_key_marker = value
+        elif name == 'VersionIdMarker':
+            self.version_id_marker = value
         elif name == 'NextVersionIdMarker':
             self.next_version_id_marker = value
+        elif name == 'UploadIdMarker':
+            self.upload_id_marker = value
+        elif name == 'NextUploadIdMarker':
+            self.next_upload_id_marker = value
+        elif name == 'Bucket':
+            self.bucket = value
+        elif name == 'MaxUploads':
+            self.max_uploads = int(value)
         elif name == 'Prefix':
             self.prefix = value
         elif name == 'return':

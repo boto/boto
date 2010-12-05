@@ -30,9 +30,11 @@ from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
 from boto.s3.user import User
-from boto.s3.multipart import MultiPartUploadList, MultiPartUpload
+from boto.s3.multipart import MultiPartUpload
+from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
+from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 import boto.utils
 import xml.sax
 import urllib
@@ -205,8 +207,8 @@ class Bucket(object):
     def list_versions(self, prefix='', delimiter='', key_marker='',
                       version_id_marker='', headers=None):
         """
-        List key objects within a bucket.  This returns an instance of an
-        BucketListResultSet that automatically handles all of the result
+        List version objects within a bucket.  This returns an instance of an
+        VersionedBucketListResultSet that automatically handles all of the result
         paging, etc. from S3.  You just need to keep iterating until
         there are no more results.
         Called with no arguments, this will return an iterator object across
@@ -233,6 +235,25 @@ class Bucket(object):
         """
         return VersionedBucketListResultSet(self, prefix, delimiter, key_marker,
                                             version_id_marker, headers)
+
+    def list_multipart_uploads(self, key_marker='',
+                               upload_id_marker='',
+                               headers=None):
+        """
+        List multipart upload objects within a bucket.  This returns an
+        instance of an MultiPartUploadListResultSet that automatically
+        handles all of the result paging, etc. from S3.  You just need
+        to keep iterating until there are no more results.
+        
+        :type marker: string
+        :param marker: The "marker" of where you are in the result set
+        
+        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
+        :return: an instance of a BucketListResultSet that handles paging, etc
+        """
+        return MultiPartUploadListResultSet(self, key_marker,
+                                            upload_id_marker,
+                                            headers)
 
     def _get_all(self, element_map, initial_query_string='',
                  headers=None, **params):
@@ -333,6 +354,50 @@ class Bucket(object):
                               ('CommonPrefixes', Prefix),
                               ('DeleteMarker', DeleteMarker)],
                              'versions', headers, **params)
+
+    def get_all_multipart_uploads(self, headers=None, **params):
+        """
+        A lower-level, version-aware method for listing active
+        MultiPart uploads for a bucket.  This closely models the
+        actual S3 API and requires you to manually handle the paging
+        of results.  For a higher-level method that handles the
+        details of paging for you, you can use the list method.
+        
+        :type max_uploads: int
+        :param max_uploads: The maximum number of uploads to retrieve.
+                            Default value is 1000.
+        
+        :type key_marker: string
+        :param key_marker: Together with upload_id_marker, this parameter
+                           specifies the multipart upload after which listing
+                           should begin.  If upload_id_marker is not specified,
+                           only the keys lexicographically greater than the
+                           specified key_marker will be included in the list.
+
+                           If upload_id_marker is specified, any multipart
+                           uploads for a key equal to the key_marker might
+                           also be included, provided those multipart uploads
+                           have upload IDs lexicographically greater than the
+                           specified upload_id_marker.
+        
+        :type upload_id_marker: string
+        :param upload_id_marker: Together with key-marker, specifies
+                                 the multipart upload after which listing
+                                 should begin. If key_marker is not specified,
+                                 the upload_id_marker parameter is ignored.
+                                 Otherwise, any multipart uploads for a key
+                                 equal to the key_marker might be included
+                                 in the list only if they have an upload ID
+                                 lexicographically greater than the specified
+                                 upload_id_marker.
+
+        
+        :rtype: ResultSet
+        :return: The result from S3 listing the uploads requested
+        
+        """
+        return self._get_all([('Upload', MultiPartUpload)],
+                             'uploads', headers, **params)
 
     def new_key(self, key_name=None):
         """
@@ -815,19 +880,34 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
         
-    def get_all_multipart_uploads(self, headers=None):
-        query_args = 'uploads'
-        response = self.connection.make_request('GET', self.name, '',
+    def complete_multipart_upload(self, key_name, upload_id,
+                                  xml_body, headers=None):
+        query_args = 'uploadId=%s' % upload_id
+        if headers is None:
+            headers = {}
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers, data=xml_body)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
-            resp = MultiPartUploadList(self)
+            resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)
             return resp
         else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
+    def cancel_multipart_upload(self, key_name, upload_id, headers=None):
+        query_args = 'uploadId=%s' % upload_id
+        response = self.connection.make_request('DELETE', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 204:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
         
