@@ -80,7 +80,7 @@ class Route53Connection(AWSAuthConnection):
         
     def get_all_hosted_zones(self):
         """
-        Returns a JSON data structure with information about all
+        Returns a Python data structure with information about all
         Hosted Zones defined for the AWS account.
         """
         response = self.make_request('GET', '/%s/hostedzone' % self.Version)
@@ -96,8 +96,7 @@ class Route53Connection(AWSAuthConnection):
     
     def get_hosted_zone(self, hosted_zone_id):
         """
-        Get detailed information (in JSON) about a particular
-        Hosted Zone.
+        Get detailed information about a particular Hosted Zone.
         
         :type hosted_zone_id: str
         :param hosted_zone_id: The unique identifier for the Hosted Zone
@@ -117,7 +116,7 @@ class Route53Connection(AWSAuthConnection):
 
     def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
         """
-        Create a new Hosted Zone.  Returns a JSON data structure with
+        Create a new Hosted Zone.  Returns a Python data structure with
         information about the newly created Hosted Zone.
         
         :type domain_name: str
@@ -203,7 +202,7 @@ class Route53Connection(AWSAuthConnection):
         """
         Create or change the authoritative DNS information for this
         Hosted Zone.
-        Returns a JSON data structure with information about the set of
+        Returns a Python data structure with information about the set of
         changes, including the Change ID.
 
         :type hosted_zone_id: str
@@ -232,7 +231,7 @@ class Route53Connection(AWSAuthConnection):
         """
         Get information about a proposed set of changes, as submitted
         by the change_rrsets method.
-        Returns a JSON data structure with status information about the
+        Returns a Python data structure with status information about the
         changes.
 
         :type change_id: str
