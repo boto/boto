@@ -79,6 +79,10 @@ class Route53Connection(AWSAuthConnection):
       </CreateHostedZoneRequest>"""
         
     def get_all_hosted_zones(self):
+        """
+        Returns a JSON data structure with information about all
+        Hosted Zones defined for the AWS account.
+        """
         response = self.make_request('GET', '/%s/hostedzone' % self.Version)
         body = response.read()
         boto.log.debug(body)
@@ -91,6 +95,14 @@ class Route53Connection(AWSAuthConnection):
         return e
     
     def get_hosted_zone(self, hosted_zone_id):
+        """
+        Get detailed information (in JSON) about a particular
+        Hosted Zone.
+        
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The unique identifier for the Hosted Zone
+
+        """
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri)
         body = response.read()
@@ -104,6 +116,36 @@ class Route53Connection(AWSAuthConnection):
         return e
 
     def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
+        """
+        Create a new Hosted Zone.  Returns a JSON data structure with
+        information about the newly created Hosted Zone.
+        
+        :type domain_name: str
+        :param domain_name: The name of the domain. This should be a
+                            fully-specified domain, and should end with
+                            a final period as the last label indication.
+                            If you omit the final period, Amazon Route 53
+                            assumes the domain is relative to the root.
+                            This is the name you have registered with your
+                            DNS registrar. It is also the name you will
+                            delegate from your registrar to the Amazon
+                            Route 53 delegation servers returned in
+                            response to this request.A list of strings
+                            with the image IDs wanted
+
+        :type caller_ref: str
+        :param caller_ref: A unique string that identifies the request
+                           and that allows failed CreateHostedZone requests
+                           to be retried without the risk of executing the
+                           operation twice.
+                           If you don't provide a value for this, boto will
+                           generate a Type 4 UUID and use that.
+
+        :type comment: str
+        :param comment: Any comments you want to include about the hosted
+                        zone.
+
+        """
         if caller_ref is None:
             caller_ref = str(uuid.uuid4())
         params = {'name' : domain_name,
@@ -141,6 +183,14 @@ class Route53Connection(AWSAuthConnection):
     # Resource Record Sets
 
     def get_all_rrsets(self, hosted_zone_id):
+        """
+        Retrieve the Resource Record Sets defined for this Hosted Zone.
+        Returns the raw XML data returned by the Route53 call.
+        
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The unique identifier for the Hosted Zone
+
+        """
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri)
         body = response.read()
@@ -150,6 +200,20 @@ class Route53Connection(AWSAuthConnection):
         return body
 
     def change_rrsets(self, hosted_zone_id, xml_body):
+        """
+        Create or change the authoritative DNS information for this
+        Hosted Zone.
+        Returns a JSON data structure with information about the set of
+        changes, including the Change ID.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The unique identifier for the Hosted Zone
+
+        :type xml_body: str
+        :param xml_body: The list of changes to be made, defined in the
+                         XML schema defined by the Route53 service.
+
+        """
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('POST', uri,
                                      {'Content-Type' : 'text/xml'},
@@ -165,6 +229,18 @@ class Route53Connection(AWSAuthConnection):
         return e
 
     def get_change(self, change_id):
+        """
+        Get information about a proposed set of changes, as submitted
+        by the change_rrsets method.
+        Returns a JSON data structure with status information about the
+        changes.
+
+        :type change_id: str
+        :param change_id: The unique identifier for the set of changes.
+                          This ID is returned in the response to the
+                          change_rrsets method.
+
+        """
         uri = '/%s/change/%s' % (self.Version, change_id)
         response = self.make_request('GET', uri)
         body = response.read()
