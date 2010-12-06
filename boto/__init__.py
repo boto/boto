@@ -302,7 +302,7 @@ def connect_iam(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.iam import IAMConnection
     return IAMConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
-def connect_dns(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+def connect_route53(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
@@ -310,11 +310,11 @@ def connect_dns(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.dns.DNSConnection`
-    :return: A connection to Amazon's DNS Service
+    :rtype: :class:`boto.dns.Route53Connection`
+    :return: A connection to Amazon's Route53 DNS Service
     """
-    from boto.dns import DNSConnection
-    return DNSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+    from boto.route53 import Route53Connection
+    return Route53Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
                  port=8773, path='/services/Eucalyptus', is_secure=False,

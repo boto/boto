@@ -35,7 +35,7 @@ import hostedzone
 
 boto.set_stream_logger('dns')
 
-class DNSConnection(AWSAuthConnection):
+class Route53Connection(AWSAuthConnection):
 
     DefaultHost = 'route53.amazonaws.com'
     Version = '2010-10-01'
@@ -66,60 +66,6 @@ class DNSConnection(AWSAuthConnection):
         s += "Algorithm=%s,Signature=%s" % (alg, b64_hmac)
         headers['X-Amzn-Authorization'] = s
 
-    # Generics
-    
-    def _get_all_objects(self, resource, list_marker, item_marker):
-        response = self.make_request('GET', '/%s/%s' % (self.Version, resource))
-        body = response.read()
-        boto.log.debug(body)
-        if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker='HostedZones',
-                                      item_marker=('HostedZone',))
-        h = boto.jsonresponse.XmlHandler(e, None)
-        h.parse(body)
-        return e
-
-    def _get_object(self, id, resource, list_marker, item_marker):
-        uri = '/%s/%s/%s' % (self.Version, resource, id)
-        response = self.make_request('GET', uri)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=list_marker,
-                                      item_marker=item_marker)
-        h = boto.jsonresponse.XmlHandler(e, None)
-        h.parse(body)
-        return e
-
-    def _create_object(self, xml, resource, list_marker, item_marker):
-        response = self.make_request('POST', '/%s/%s' % (self.Version, resource),
-                                     {'Content-Type' : 'text/xml'}, xml)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 201:
-            e = boto.jsonresponse.Element(list_marker=list_marker,
-                                          item_marker=item_marker)
-            h = boto.jsonresponse.XmlHandler(e, None)
-            h.parse(body)
-            return e
-        else:
-            raise exception.DNSServerError(response.status, response.reason, body)
-        
-    def _delete_object(self, id, resource):
-        uri = '/%s/%s/%s' % (self.Version, resource, id)
-        response = self.make_request('DELETE', uri)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status != 204:
-            raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
-        h = boto.jsonresponse.XmlHandler(e, None)
-        h.parse(body)
-        return e
-
     # Hosted Zones
 
     HZXML = """
@@ -133,14 +79,29 @@ class DNSConnection(AWSAuthConnection):
       </CreateHostedZoneRequest>"""
         
     def get_all_hosted_zones(self):
-        return self._get_all_objects('hostedzone',
-                                     list_marker='HostedZones',
-                                     item_marker=('HostedZone',))
+        response = self.make_request('GET', '/%s/hostedzone' % self.Version)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status, response.reason, body)
+        e = boto.jsonresponse.Element(list_marker='HostedZones',
+                                      item_marker=('HostedZone',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
     
     def get_hosted_zone(self, hosted_zone_id):
-        return self._get_object(hosted_zone_id, 'hostedzone',
-                                list_marker='NameServers',
-                                item_marker=('NameServer',))
+        uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status, response.reason, body)
+        e = boto.jsonresponse.Element(list_marker='NameServers',
+                                      item_marker=('NameServer',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
 
     def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
         if caller_ref is None:
@@ -150,10 +111,68 @@ class DNSConnection(AWSAuthConnection):
                   'comment' : comment,
                   'xmlns' : self.XMLNameSpace}
         xml = self.HZXML % params
-        return self._create_object(xml, 'hostedzone',
-                                   list_marker='NameServers',
-                                   item_marker=('NameServer',))
+        uri = '/%s/hostedzone' % self.Version
+        response = self.make_request('POST', uri,
+                                     {'Content-Type' : 'text/xml'}, xml)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 201:
+            e = boto.jsonresponse.Element(list_marker='NameServers',
+                                          item_marker=('NameServer',))
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            raise exception.DNSServerError(response.status, response.reason, body)
         
     def delete_hosted_zone(self, hosted_zone_id):
-        return self._delete_object(hosted_zone_id, 'distribution')
+        uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
+        response = self.make_request('DELETE', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 204:
+            raise exception.DNSServerError(response.status, response.reason, body)
+        e = boto.jsonresponse.Element(list_marker=None,
+                                      item_marker=None)
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
 
+    # Resource Record Sets
+
+    def get_all_rrsets(self, hosted_zone_id):
+        uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status, response.reason, body)
+        return body
+
+    def change_rrsets(self, hosted_zone_id, xml_body):
+        uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
+        response = self.make_request('POST', uri,
+                                     {'Content-Type' : 'text/xml'},
+                                     xml_body)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status, response.reason, body)
+        e = boto.jsonresponse.Element(list_marker=None,
+                                      item_marker=None)
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
+
+    def get_change(self, change_id):
+        uri = '/%s/change/%s' % (self.Version, change_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status, response.reason, body)
+        e = boto.jsonresponse.Element(list_marker=None,
+                                      item_marker=None)
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
