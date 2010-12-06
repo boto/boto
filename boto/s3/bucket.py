@@ -154,6 +154,7 @@ class Bucket(object):
             k.content_encoding = response.getheader('content-encoding')
             k.last_modified = response.getheader('last-modified')
             k.size = int(response.getheader('content-length'))
+            k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
             return k
