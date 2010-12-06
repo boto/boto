@@ -18,6 +18,8 @@ API Reference
    pyami
    rds
    s3
+   gs
+   file
    sdb
    services
    sns
