@@ -42,7 +42,7 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
         
-boto.set_stream_logger('dns')
+#boto.set_stream_logger('dns')
 
 class Route53Connection(AWSAuthConnection):
 
@@ -52,7 +52,7 @@ class Route53Connection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=2):
+                 host=DefaultHost, debug=0):
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 True, port, proxy, proxy_port, debug=debug)
