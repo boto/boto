@@ -33,6 +33,15 @@ import boto.jsonresponse
 import exception
 import hostedzone
 
+HZXML = """<?xml version="1.0" encoding="UTF-8"?>
+<CreateHostedZoneRequest xmlns="%(xmlns)s">
+  <Name>%(name)s</Name>
+  <CallerReference>%(caller_ref)s</CallerReference>
+  <HostedZoneConfig>
+    <Comment>%(comment)s</Comment>
+  </HostedZoneConfig>
+</CreateHostedZoneRequest>"""
+        
 boto.set_stream_logger('dns')
 
 class Route53Connection(AWSAuthConnection):
@@ -68,16 +77,6 @@ class Route53Connection(AWSAuthConnection):
 
     # Hosted Zones
 
-    HZXML = """
-    <?xml version="1.0" encoding="UTF-8"?>
-      <CreateHostedZoneRequest xmlns="%(xmlns)s">
-        <Name>%(name)s</Name>
-        <CallerReference>%(caller_ref)s</CallerReference>
-        <HostedZoneConfig>
-          <Comment>%(comment)s</Comment>
-        </HostedZoneConfig>
-      </CreateHostedZoneRequest>"""
-        
     def get_all_hosted_zones(self):
         """
         Returns a Python data structure with information about all
@@ -151,7 +150,7 @@ class Route53Connection(AWSAuthConnection):
                   'caller_ref' : caller_ref,
                   'comment' : comment,
                   'xmlns' : self.XMLNameSpace}
-        xml = self.HZXML % params
+        xml = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
                                      {'Content-Type' : 'text/xml'}, xml)
