@@ -68,8 +68,7 @@ class Route53Connection(AWSAuthConnection):
 
     # Hosted Zones
 
-    HZXML = """
-    <?xml version="1.0" encoding="UTF-8"?>
+    HZXML = """<?xml version="1.0" encoding="UTF-8"?>
       <CreateHostedZoneRequest xmlns="%(xmlns)s">
         <Name>%(name)s</Name>
         <CallerReference>%(caller_ref)s</CallerReference>
