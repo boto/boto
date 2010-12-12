@@ -25,6 +25,7 @@ At the moment, boto supports:
  * Simple Notification Server (SNS)
  * Google Storage
  * Identity and Access Management (IAM)
+ * Route53 DNS Service (route53)
 
 The intent is to support additional services in the future.
 
