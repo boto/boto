@@ -170,10 +170,9 @@ class Route53Connection(AWSAuthConnection):
         response = self.make_request('DELETE', uri)
         body = response.read()
         boto.log.debug(body)
-        if response.status != 204:
+        if response.status in (200, 204):
             raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
+        e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
@@ -220,8 +219,7 @@ class Route53Connection(AWSAuthConnection):
         boto.log.debug(body)
         if response.status >= 300:
             raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
+        e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
@@ -245,8 +243,7 @@ class Route53Connection(AWSAuthConnection):
         boto.log.debug(body)
         if response.status >= 300:
             raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
+        e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
