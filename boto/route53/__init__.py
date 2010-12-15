@@ -170,7 +170,7 @@ class Route53Connection(AWSAuthConnection):
         response = self.make_request('DELETE', uri)
         body = response.read()
         boto.log.debug(body)
-        if response.status in (200, 204):
+        if response.status not in (200, 204):
             raise exception.DNSServerError(response.status, response.reason, body)
         e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
