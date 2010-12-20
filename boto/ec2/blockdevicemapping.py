@@ -25,6 +25,7 @@ class BlockDeviceType(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.ephemeral_name = None
+        self.no_device = False
         self.volume_id = None
         self.snapshot_id = None
         self.status = None
@@ -40,6 +41,8 @@ class BlockDeviceType(object):
             self.volume_id = value
         elif name == 'virtualName':
             self.ephemeral_name = value
+        elif name =='NoDevice':
+            self.no_device = (value == 'true')
         elif name =='snapshotId':
             self.snapshot_id = value
         elif name == 'volumeSize':
@@ -87,6 +90,8 @@ class BlockDeviceMapping(dict):
             if block_dev.ephemeral_name:
                 params['%s.VirtualName' % pre] = block_dev.ephemeral_name
             else:
+                if block_dev.no_device:
+                    params['%s.Ebs.NoDevice' % pre] = 'true'
                 if block_dev.snapshot_id:
                     params['%s.Ebs.SnapshotId' % pre] = block_dev.snapshot_id
                 if block_dev.size:

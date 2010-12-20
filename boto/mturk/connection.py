@@ -166,7 +166,9 @@ class MTurkConnection(AWSQueryConnection):
         if question:
             questions = [question]
         question_param = QuestionForm(questions)
-        if isinstance(question, ExternalQuestion):
+        if isinstance(question, QuestionForm):
+            question_param = question
+        elif isinstance(question, ExternalQuestion):
             question_param = question
         
         # Handle basic required arguments and set up params dict

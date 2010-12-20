@@ -33,7 +33,16 @@ import boto.jsonresponse
 import exception
 import hostedzone
 
-boto.set_stream_logger('dns')
+HZXML = """<?xml version="1.0" encoding="UTF-8"?>
+<CreateHostedZoneRequest xmlns="%(xmlns)s">
+  <Name>%(name)s</Name>
+  <CallerReference>%(caller_ref)s</CallerReference>
+  <HostedZoneConfig>
+    <Comment>%(comment)s</Comment>
+  </HostedZoneConfig>
+</CreateHostedZoneRequest>"""
+        
+#boto.set_stream_logger('dns')
 
 class Route53Connection(AWSAuthConnection):
 
@@ -43,7 +52,7 @@ class Route53Connection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=2):
+                 host=DefaultHost, debug=0):
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 True, port, proxy, proxy_port, debug=debug)
@@ -68,16 +77,6 @@ class Route53Connection(AWSAuthConnection):
 
     # Hosted Zones
 
-    HZXML = """
-    <?xml version="1.0" encoding="UTF-8"?>
-      <CreateHostedZoneRequest xmlns="%(xmlns)s">
-        <Name>%(name)s</Name>
-        <CallerReference>%(caller_ref)s</CallerReference>
-        <HostedZoneConfig>
-          <Comment>%(comment)s</Comment>
-        </HostedZoneConfig>
-      </CreateHostedZoneRequest>"""
-        
     def get_all_hosted_zones(self):
         """
         Returns a Python data structure with information about all
@@ -151,7 +150,7 @@ class Route53Connection(AWSAuthConnection):
                   'caller_ref' : caller_ref,
                   'comment' : comment,
                   'xmlns' : self.XMLNameSpace}
-        xml = self.HZXML % params
+        xml = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
                                      {'Content-Type' : 'text/xml'}, xml)
@@ -171,10 +170,9 @@ class Route53Connection(AWSAuthConnection):
         response = self.make_request('DELETE', uri)
         body = response.read()
         boto.log.debug(body)
-        if response.status != 204:
+        if response.status not in (200, 204):
             raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
+        e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
@@ -221,8 +219,7 @@ class Route53Connection(AWSAuthConnection):
         boto.log.debug(body)
         if response.status >= 300:
             raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
+        e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
@@ -246,8 +243,7 @@ class Route53Connection(AWSAuthConnection):
         boto.log.debug(body)
         if response.status >= 300:
             raise exception.DNSServerError(response.status, response.reason, body)
-        e = boto.jsonresponse.Element(list_marker=None,
-                                      item_marker=None)
+        e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
