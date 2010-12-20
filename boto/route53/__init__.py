@@ -25,6 +25,7 @@ import xml.sax
 import base64
 import time
 import uuid
+import urllib
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -74,6 +75,15 @@ class Route53Connection(AWSAuthConnection):
         s = "AWS3-HTTPS AWSAccessKeyId=%s," % self.aws_access_key_id
         s += "Algorithm=%s,Signature=%s" % (alg, b64_hmac)
         headers['X-Amzn-Authorization'] = s
+        
+    def make_request(self, action, path, headers=None, data='', params=None):
+        if params:
+            pairs = []
+            for key, val in params.iteritems():
+                if val is None: continue
+                pairs.append(key + '=' + urllib.quote(str(val)))
+            path += '?' + '&'.join(pairs)
+        return AWSAuthConnection.make_request(self, action, path, headers, data)
 
     # Hosted Zones
 
@@ -179,7 +189,7 @@ class Route53Connection(AWSAuthConnection):
 
     # Resource Record Sets
 
-    def get_all_rrsets(self, hosted_zone_id):
+    def get_all_rrsets(self, hosted_zone_id, type=None, name=None, maxitems=None):
         """
         Retrieve the Resource Record Sets defined for this Hosted Zone.
         Returns the raw XML data returned by the Route53 call.
@@ -187,9 +197,19 @@ class Route53Connection(AWSAuthConnection):
         :type hosted_zone_id: str
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
+        :type type: str
+        :param type: The type of resource record set to begin the record listing from
+
+        :type name: str
+        :param name: The first name in the lexicographic ordering of domain names to be retrieved
+
+        :type maxitems: int
+        :param maxitems: The maximum number of records
+
         """
+        params = {'type': type, 'name': name, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
-        response = self.make_request('GET', uri)
+        response = self.make_request('GET', uri, params=params)
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
