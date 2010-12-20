@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -136,14 +136,19 @@ about that particular data point.
 
 My server obviously isn't very busy right now!
 """
+try:
+    import simplejson as json
+except ImportError:
+    import json
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
+from boto.ec2.cloudwatch.alarm import MetricAlarm, AlarmHistoryItem
 from boto.ec2.cloudwatch.datapoint import Datapoint
 import boto
 
 class CloudWatchConnection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'cloudwatch_version', '2009-05-15')
+    APIVersion = boto.config.get('Boto', 'cloudwatch_version', '2010-08-01')
     Endpoint = boto.config.get('Boto', 'cloudwatch_endpoint', 'monitoring.amazonaws.com')
     SignatureVersion = '2'
 
@@ -153,8 +158,8 @@ class CloudWatchConnection(AWSQueryConnection):
                  https_connection_factory=None, path='/'):
         """
         Init method to create a new connection to EC2 Monitoring Service.
-        
-        B{Note:} The host argument is overridden by the host specified in the boto configuration file.        
+
+        B{Note:} The host argument is overridden by the host specified in the boto configuration file.
         """
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -165,32 +170,30 @@ class CloudWatchConnection(AWSQueryConnection):
             items = [items]
         for i in range(1, len(items)+1):
             params[label % i] = items[i-1]
-            
-    def get_metric_statistics(self, period, start_time, end_time, measure_name,
-                              namespace, statistics=None, dimensions=None, unit=None):
+
+    def get_metric_statistics(self, period, start_time, end_time, metric_name,
+                              namespace, statistics, dimensions=None, unit=None):
         """
         Get time-series data for one or more statistics of a given metric.
-        
-        :type measure_name: string
-        :param measure_name: CPUUtilization|NetworkIO-in|NetworkIO-out|DiskIO-ALL-read|
+
+        :type metric_name: string
+        :param metric_name: CPUUtilization|NetworkIO-in|NetworkIO-out|DiskIO-ALL-read|
                              DiskIO-ALL-write|DiskIO-ALL-read-bytes|DiskIO-ALL-write-bytes
-        
+
         :rtype: list
-        :return: A list of :class:`boto.ec2.image.Image`
         """
         params = {'Period' : period,
-                  'MeasureName' : measure_name,
+                  'MetricName' : metric_name,
                   'Namespace' : namespace,
                   'StartTime' : start_time.isoformat(),
                   'EndTime' : end_time.isoformat()}
+        self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
             i = 1
             for name in dimensions:
                 params['Dimensions.member.%d.Name' % i] = name
                 params['Dimensions.member.%d.Value' % i] = dimensions[name]
                 i += 1
-        if statistics:
-            self.build_list_params(params, statistics, 'Statistics.member.%d')
         return self.get_list('GetMetricStatistics', params, [('member', Datapoint)])
 
     def list_metrics(self, next_token=None):
@@ -208,6 +211,239 @@ class CloudWatchConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         return self.get_list('ListMetrics', params, [('member', Metric)])
-        
 
-    
+    def describe_alarms(self, action_prefix=None, alarm_name_prefix=None, alarm_names=None,
+                        max_records=None, state_value=None, next_token=None):
+        """
+        Retrieves alarms with the specified names. If no name is specified, all
+        alarms for the user are returned. Alarms can be retrieved by using only
+        a prefix for the alarm name, the alarm state, or a prefix for any
+        action.
+
+        :type action_prefix: string
+        :param action_name: The action name prefix.
+
+        :type alarm_name_prefix: string
+        :param alarm_name_prefix: The alarm name prefix. AlarmNames cannot be specified
+                                  if this parameter is specified.
+
+        :type alarm_names: list
+        :param alarm_names: A list of alarm names to retrieve information for.
+
+        :type max_records: int
+        :param max_records: The maximum number of alarm descriptions to retrieve.
+
+        :type state_value: string
+        :param state_value: The state value to be used in matching alarms.
+
+        :type next_token: string
+        :param next_token: The token returned by a previous call to indicate that there is more data.
+
+        :rtype list
+        """
+        params = {}
+        if action_prefix:
+            params['ActionPrefix'] = action_prefix
+        if alarm_name_prefix:
+            params['AlarmNamePrefix'] = alarm_name_prefix
+        elif alarm_names:
+            self.build_list_params(params, alarm_names, 'AlarmNames.member.%s')
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+        if state_value:
+            params['StateValue'] = state_value
+        return self.get_list('DescribeAlarms', params, [('member', MetricAlarm)])
+
+    def describe_alarm_history(self, alarm_name=None, start_date=None, end_date=None,
+                               max_records=None, history_item_type=None, next_token=None):
+        """
+        Retrieves history for the specified alarm. Filter alarms by date range
+        or item type. If an alarm name is not specified, Amazon CloudWatch
+        returns histories for all of the owner's alarms.
+
+        Amazon CloudWatch retains the history of deleted alarms for a period of
+        six weeks. If an alarm has been deleted, its history can still be
+        queried.
+
+        :type alarm_name: string
+        :param alarm_name: The name of the alarm.
+
+        :type start_date: datetime
+        :param start_date: The starting date to retrieve alarm history.
+
+        :type end_date: datetime
+        :param end_date: The starting date to retrieve alarm history.
+
+        :type history_item_type: string
+        :param history_item_type: The type of alarm histories to retreive (ConfigurationUpdate | StateUpdate | Action)
+
+        :type max_records: int
+        :param max_records: The maximum number of alarm descriptions to retrieve.
+
+        :type next_token: string
+        :param next_token: The token returned by a previous call to indicate that there is more data.
+
+        :rtype list
+        """
+        params = {}
+        if alarm_name:
+            params['AlarmName'] = alarm_name
+        if start_date:
+            params['StartDate'] = start_date.isoformat()
+        if end_date:
+            params['EndDate'] = end_date.isoformat()
+        if history_item_type:
+            params['HistoryItemType'] = history_item_type
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+        return self.get_list('DescribeAlarmHistory', params, [('member', AlarmHistoryItem)])
+
+    def describe_alarms_for_metric(self, metric_name, namespace, period=None, statistic=None, dimensions=None, unit=None):
+        """
+        Retrieves all alarms for a single metric. Specify a statistic, period,
+        or unit to filter the set of alarms further.
+
+        :type metric_name: string
+        :param metric_name: The name of the metric
+
+        :type namespace: string
+        :param namespace: The namespace of the metric.
+
+        :type period: int
+        :param period: The period in seconds over which the statistic is applied.
+
+        :type statistic: string
+        :param statistic: The statistic for the metric.
+
+        :type dimensions: list
+
+        :type unit: string
+
+        :rtype list
+        """
+        params = {
+                    'MetricName'        :   metric_name,
+                    'Namespace'         :   namespace,
+                 }
+        if period:
+            params['Period'] = period
+        if statistic:
+            params['Statistic'] = statistic
+        if dimensions:
+            self.build_list_params(params, dimensions, 'Dimensions.member.%s')
+        if unit:
+            params['Unit'] = unit
+        return self.get_list('DescribeAlarmsForMetric', params, [('member', MetricAlarm)])
+
+    def put_metric_alarm(self, alarm):
+        """
+        Creates or updates an alarm and associates it with the specified Amazon
+        CloudWatch metric. Optionally, this operation can associate one or more
+        Amazon Simple Notification Service resources with the alarm.
+
+        When this operation creates an alarm, the alarm state is immediately
+        set to INSUFFICIENT_DATA. The alarm is evaluated and its StateValue is
+        set appropriately. Any actions associated with the StateValue is then
+        executed.
+
+        When updating an existing alarm, its StateValue is left unchanged.
+
+        :type alarm: boto.ec2.cloudwatch.alarm.MetricAlarm
+        :param alarm: MetricAlarm object.
+        """
+        params = {
+                    'AlarmName'             :       alarm.name,
+                    'MetricName'            :       alarm.metric,
+                    'Namespace'             :       alarm.namespace,
+                    'Statistic'             :       alarm.statistic,
+                    'ComparisonOperator'    :       MetricAlarm._cmp_map[alarm.comparison],
+                    'Threshold'             :       alarm.threshold,
+                    'EvaluationPeriods'     :       alarm.evaluation_periods,
+                    'Period'                :       alarm.period,
+                 }
+        if alarm.actions_enabled is not None:
+            params['ActionsEnabled'] = alarm.actions_enabled
+        if alarm.alarm_actions:
+            self.build_list_params(params, alarm.alarm_actions, 'AlarmActions.member.%s')
+        if alarm.description:
+            params['AlarmDescription'] = alarm.description
+        if alarm.dimensions:
+            self.build_list_params(params, alarm.dimensions, 'Dimensions.member.%s')
+        if alarm.insufficient_data_actions:
+            self.build_list_params(params, alarm.insufficient_data_actions, 'InsufficientDataActions.member.%s')
+        if alarm.ok_actions:
+            self.build_list_params(params, alarm.ok_actions, 'OKActions.member.%s')
+        if alarm.unit:
+            params['Unit'] = alarm.unit
+        alarm.connection = self
+        return self.get_status('PutMetricAlarm', params)
+    create_alarm = put_metric_alarm
+    update_alarm = put_metric_alarm
+
+    def delete_alarms(self, alarms):
+        """
+        Deletes all specified alarms. In the event of an error, no alarms are deleted.
+
+        :type alarms: list
+        :param alarms: List of alarm names.
+        """
+        params = {}
+        self.build_list_params(params, alarms, 'AlarmNames.member.%s')
+        return self.get_status('DeleteAlarms', params)
+
+    def set_alarm_state(self, alarm_name, state_reason, state_value, state_reason_data=None):
+        """
+        Temporarily sets the state of an alarm. When the updated StateValue
+        differs from the previous value, the action configured for the
+        appropriate state is invoked. This is not a permanent change. The next
+        periodic alarm check (in about a minute) will set the alarm to its
+        actual state.
+
+        :type alarm_name: string
+        :param alarm_name: Descriptive name for alarm.
+
+        :type state_reason: string
+        :param state_reason: Human readable reason.
+
+        :type state_value: string
+        :param state_value: OK | ALARM | INSUFFICIENT_DATA
+
+        :type state_reason_data: string
+        :param state_reason_data: Reason string (will be jsonified).
+        """
+        params = {
+                    'AlarmName'             :   alarm_name,
+                    'StateReason'           :   state_reason,
+                    'StateValue'            :   state_value,
+                 }
+        if state_reason_data:
+            params['StateReasonData'] = json.dumps(state_reason_data)
+
+        return self.get_status('SetAlarmState', params)
+
+    def enable_alarm_actions(self, alarm_names):
+        """
+        Enables actions for the specified alarms.
+
+        :type alarms: list
+        :param alarms: List of alarm names.
+        """
+        params = {}
+        self.build_list_params(params, alarm_names, 'AlarmNames.member.%s')
+        return self.get_status('EnableAlarmActions', params)
+
+    def disable_alarm_actions(self, alarm_names):
+        """
+        Disables actions for the specified alarms.
+
+        :type alarms: list
+        :param alarms: List of alarm names.
+        """
+        params = {}
+        self.build_list_params(params, alarm_names, 'AlarmNames.member.%s')
+        return self.get_status('DisableAlarmActions', params)
+

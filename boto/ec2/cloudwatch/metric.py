@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -32,13 +32,13 @@ class Dimensions(dict):
             self[self._name] = value
         elif name != 'Dimensions' and name != 'member':
             self[name] = value
-    
+
 class Metric(object):
 
     Statistics = ['Minimum', 'Maximum', 'Sum', 'Average', 'Samples']
     Units = ['Seconds', 'Percent', 'Bytes', 'Bits', 'Count',
              'Bytes/Second', 'Bits/Second', 'Count/Second']
-    
+
     def __init__(self, connection=None):
         self.connection = connection
         self.name = None
@@ -51,21 +51,30 @@ class Metric(object):
             for name,value in self.dimensions.items():
                 s += '(%s,%s)' % (name, value)
         return s
-        
+
     def startElement(self, name, attrs, connection):
         if name == 'Dimensions':
             self.dimensions = Dimensions()
             return self.dimensions
 
     def endElement(self, name, value, connection):
-        if name == 'MeasureName':
+        if name == 'MetricName':
             self.name = value
         elif name == 'Namespace':
             self.namespace = value
         else:
             setattr(self, name, value)
-    
-    def query(self, start_time, end_time, statistic, unit, period=60):
+
+    def query(self, start_time, end_time, statistic, unit=None, period=60):
         return self.connection.get_metric_statistics(period, start_time, end_time,
                                                      self.name, self.namespace, [statistic],
                                                      self.dimensions, unit)
+
+    def describe_alarms(self, period=None, statistic=None, dimensions=None, unit=None):
+        return self.connection.describe_alarms_for_metric(self.name,
+                                                          self.namespace,
+                                                          period,
+                                                          statistic,
+                                                          dimensions,
+                                                          unit)
+
