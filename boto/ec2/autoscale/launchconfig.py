@@ -20,15 +20,59 @@
 # IN THE SOFTWARE.
 
 
+from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
 from boto.ec2.elb.listelement import ListElement
+
+# this should use the corresponding object from boto.ec2
+class Ebs(object):
+    def __init__(self, connection=None, snapshot_id=None, volume_size=None):
+        self.connection = connection
+        self.snapshot_id = snapshot_id
+        self.volume_size = volume_size
+
+    def __repr__(self):
+        return 'Ebs(%s, %s)' % (self.snapshot_id, self.volume_size)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'SnapshotId':
+            self.snapshot_id = value
+        elif name == 'VolumeSize':
+            self.volume_size = value
+
+
+# this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
+class BlockDeviceMapping(object):
+    def __init__(self, connection=None, device_name=None, virtual_name=None):
+        self.connection = connection
+        self.device_name = None
+        self.virtual_name = None
+        self.ebs = None
+
+    def __repr__(self):
+        return 'BlockDeviceMapping(%s, %s)' % (self.device_name, self.virtual_name)
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Ebs':
+            self.ebs = Ebs(self)
+            return self.ebs
+
+    def endElement(self, name, value, connection):
+        if name == 'DeviceName':
+            self.device_name = value
+        elif name == 'VirtualName':
+            self.virtual_name = value
 
 
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
                  key_name=None, security_groups=None, user_data=None,
                  instance_type='m1.small', kernel_id=None,
-                 ramdisk_id=None, block_device_mappings=None):
+                 ramdisk_id=None, block_device_mappings=None,
+                 instance_monitoring=False):
         """
         A launch configuration.
 
@@ -46,6 +90,23 @@ class LaunchConfiguration(object):
         :param security_groups: Names of the security groups with which to
                                 associate the EC2 instances.
 
+        :type user_data: str
+        :param user_data: The user data available to launched EC2 instances.
+
+        :type instance_type: str
+        :param instance_type: The instance type
+
+        :type kern_id: str
+        :param kern_id: Kernel id for instance
+
+        :type ramdisk_id: str
+        :param ramdisk_id: RAM disk id for instance
+
+        :type block_device_mappings: list
+        :param block_device_mappings: Specifies how block devices are exposed for instances
+
+        :type instance_monitoring: bool
+        :param instance_monitoring: Whether instances in group are launched with detailed monitoring.
         """
         self.connection = connection
         self.name = name
@@ -60,6 +121,8 @@ class LaunchConfiguration(object):
         self.kernel_id = kernel_id
         self.user_data = user_data
         self.created_time = None
+        self.instance_monitoring = instance_monitoring
+        self.launch_configuration_arn = None
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
@@ -67,8 +130,9 @@ class LaunchConfiguration(object):
     def startElement(self, name, attrs, connection):
         if name == 'SecurityGroups':
             return self.security_groups
-        else:
-            return
+        elif name == 'BlockDeviceMappings':
+            self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
+            return self.instances
 
     def endElement(self, name, value, connection):
         if name == 'InstanceType':
@@ -87,6 +151,10 @@ class LaunchConfiguration(object):
             self.ramdisk_id = value
         elif name == 'UserData':
             self.user_data = value
+        elif name == 'LaunchConfigurationARN':
+            self.launch_configuration_arn = value
+        elif name == 'InstanceMonitoring':
+            selfinstance_monitoring = value
         else:
             setattr(self, name, value)
 
