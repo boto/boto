@@ -22,6 +22,7 @@
 from boto.ec2.elb.healthcheck import HealthCheck
 from boto.ec2.elb.listener import Listener
 from boto.ec2.elb.listelement import ListElement
+from boto.ec2.elb.policies import Policies
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 
@@ -35,6 +36,7 @@ class LoadBalancer(object):
         self.name = name
         self.listeners = None
         self.health_check = None
+        self.policies = None
         self.dns_name = None
         self.created_time = None
         self.instances = None
@@ -55,6 +57,9 @@ class LoadBalancer(object):
         elif name == 'Instances':
             self.instances = ResultSet([('member', InstanceInfo)])
             return self.instances
+        elif name == 'Policies':
+            self.policies = Policies(self)
+            return self.policies
         else:
             return None
 
@@ -155,3 +160,23 @@ class LoadBalancer(object):
         if outPort == None:
             outPort = inPort
         return self.delete_listeners([(inPort, outPort, proto)])
+
+    def delete_policy(self, policy_name):
+        """
+        Deletes a policy from the LoadBalancer. The specified policy must not
+        be enabled for any listeners.
+        """
+        return self.connection.delete_lb_policy(self.name, policy_name)
+
+    def set_policies_of_listener(self, lb_port, policies):
+        return self.connection.set_lb_policies_of_listener(self.name, lb_port, policies)
+
+    def create_cookie_stickiness_policy(self, cookie_expiration_period, policy_name):
+        return self.connection.create_lb_cookie_stickiness_policy(cookie_expiration_period, self.name, policy_name)
+
+    def create_app_cookie_stickiness_policy(self, name, policy_name):
+        return self.connection.create_app_cookie_stickiness_policy(name, self.name, policy_name)
+
+    def set_listener_SSL_certificate(self, lb_port, ssl_certificate_id):
+        return self.connection.set_lb_listener_SSL_certificate(self.name, lb_port, ssl_certificate_id)
+

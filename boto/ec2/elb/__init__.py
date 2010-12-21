@@ -278,3 +278,91 @@ class ELBConnection(AWSQueryConnection):
                   'HealthCheck.UnhealthyThreshold' : health_check.unhealthy_threshold,
                   'HealthCheck.HealthyThreshold' : health_check.healthy_threshold}
         return self.get_object('ConfigureHealthCheck', params, HealthCheck)
+
+    def set_lb_listener_SSL_certificate(self, lb_name, lb_port, ssl_certificate_id):
+        """
+        Sets the certificate that terminates the specified listener's SSL
+        connections. The specified certificate replaces any prior certificate
+        that was used on the same LoadBalancer and port.
+        """
+        params = {
+                    'LoadBalancerName'          :   lb_name,
+                    'LoadBalaancerPort'         :   lb_port,
+                    'SSLCertificateId'          :   ssl_certificate_id,
+                 }
+        return self.get_status('SetLoadBalancerListenerSSLCertificate', params)
+
+    def create_app_cookie_stickiness_policy(self, name, lb_name, policy_name):
+        """
+        Generates a stickiness policy with sticky session lifetimes that follow
+        that of an application-generated cookie. This policy can only be
+        associated with HTTP listeners.
+
+        This policy is similar to the policy created by
+        CreateLBCookieStickinessPolicy, except that the lifetime of the special
+        Elastic Load Balancing cookie follows the lifetime of the
+        application-generated cookie specified in the policy configuration. The
+        load balancer only inserts a new stickiness cookie when the application
+        response includes a new application cookie.
+
+        If the application cookie is explicitly removed or expires, the session
+        stops being sticky until a new application cookie is issued.
+        """
+        params = {
+                    'CookieName'        :   name,
+                    'LoadBalancerName'  :   lb_name,
+                    'PolicyName'        :   policy_name,
+                 }
+        return self.get_status('CreateAppCookieStickinessPolicy', params)
+
+    def create_lb_cookie_stickiness_policy(self, cookie_expiration_period, lb_name, policy_name):
+        """
+        Generates a stickiness policy with sticky session lifetimes controlled
+        by the lifetime of the browser (user-agent) or a specified expiration
+        period. This policy can only be associated only with HTTP listeners.
+
+        When a load balancer implements this policy, the load balancer uses a
+        special cookie to track the backend server instance for each request.
+        When the load balancer receives a request, it first checks to see if
+        this cookie is present in the request. If so, the load balancer sends
+        the request to the application server specified in the cookie. If not,
+        the load balancer sends the request to a server that is chosen based on
+        the existing load balancing algorithm.
+
+        A cookie is inserted into the response for binding subsequent requests
+        from the same user to that server. The validity of the cookie is based
+        on the cookie expiration time, which is specified in the policy
+        configuration.
+        """
+        params = {
+                    'CookieExpirationPeriod'    :   cookie_expiration_period,
+                    'LoadBalancerName'          :   lb_name,
+                    'PolicyName'                :   policy_name,
+                 }
+        return self.get_status('CreateLBCookieStickinessPolicy', params)
+
+    def delete_lb_policy(self, lb_name, policy_name):
+        """
+        Deletes a policy from the LoadBalancer. The specified policy must not
+        be enabled for any listeners.
+        """
+        params = {
+                    'LoadBalancerName'          : lb_name,
+                    'PolicyName'                : policy_name,
+                 }
+        return self.get_status('DeleteLoadBalancerPolicy', params)
+
+    def set_lb_policies_of_listener(self, lb_name, lb_port, policies):
+        """
+        Associates, updates, or disables a policy with a listener on the load
+        balancer. Currently only zero (0) or one (1) policy can be associated
+        with a listener.
+        """
+        params = {
+                    'LoadBalancerName'          : lb_name,
+                    'LoadBalancerPort'          : lb_port,
+                 }
+        self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        return self.get_status('SetLoadBalancerPoliciesOfListener', params)
+
+
