@@ -96,7 +96,9 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         e = boto.jsonresponse.Element(list_marker='HostedZones',
                                       item_marker=('HostedZone',))
         h = boto.jsonresponse.XmlHandler(e, None)
@@ -116,7 +118,9 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         e = boto.jsonresponse.Element(list_marker='NameServers',
                                       item_marker=('NameServer',))
         h = boto.jsonresponse.XmlHandler(e, None)
@@ -173,7 +177,9 @@ class Route53Connection(AWSAuthConnection):
             h.parse(body)
             return e
         else:
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         
     def delete_hosted_zone(self, hosted_zone_id):
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
@@ -181,7 +187,9 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status not in (200, 204):
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
@@ -189,7 +197,8 @@ class Route53Connection(AWSAuthConnection):
 
     # Resource Record Sets
 
-    def get_all_rrsets(self, hosted_zone_id, type=None, name=None, maxitems=None):
+    def get_all_rrsets(self, hosted_zone_id, type=None,
+                       name=None, maxitems=None):
         """
         Retrieve the Resource Record Sets defined for this Hosted Zone.
         Returns the raw XML data returned by the Route53 call.
@@ -198,10 +207,23 @@ class Route53Connection(AWSAuthConnection):
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
         :type type: str
-        :param type: The type of resource record set to begin the record listing from
+        :param type: The type of resource record set to begin the record
+                     listing from.  Valid choices are:
+
+                     * A
+                     * AAAA
+                     * CNAME
+                     * MX
+                     * NS
+                     * PTR
+                     * SOA
+                     * SPF
+                     * SRV
+                     * TXT
 
         :type name: str
-        :param name: The first name in the lexicographic ordering of domain names to be retrieved
+        :param name: The first name in the lexicographic ordering of domain
+                     names to be retrieved
 
         :type maxitems: int
         :param maxitems: The maximum number of records
@@ -213,7 +235,9 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         return body
 
     def change_rrsets(self, hosted_zone_id, xml_body):
@@ -238,7 +262,9 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
@@ -262,7 +288,9 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status, response.reason, body)
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
         e = boto.jsonresponse.Element()
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
