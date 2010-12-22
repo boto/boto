@@ -46,6 +46,60 @@ class Alarm(object):
             setattr(self, name, value)
 
 
+class AdjustmentTypes(object):
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.adjustment_types = ListElement([])
+
+    def __repr__(self):
+        return 'AdjustmentTypes:%s' % self.adjustment_types
+
+    def startElement(self, name, attrs, connection):
+        if name == 'AdjustmentTypes':
+            return self.adjustment_types
+
+    def endElement(self, name, value, connection):
+        return
+
+
+class MetricCollectionTypes(object):
+    class BaseType(object):
+        arg = ''
+        def __init__(self, connection):
+            self.connection = connection
+            self.val = None
+        def __repr__(self):
+            return '%s:%s' % (self.arg, self.val)
+        def startElement(self, name, attrs, connection):
+            return
+        def endElement(self, name, value, connection):
+            if name == self.arg:
+                self.val = value
+    class Metric(BaseType):
+        arg = 'Metric'
+    class Granularity(BaseType):
+        arg = 'Granularity'
+
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.metrics = []
+        self.granularities = []
+
+    def __repr__(self):
+        return 'MetricCollectionTypes:<%s, %s>' % (self.metrics, self.granularities)
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Granularities':
+            self.granularities = ResultSet([('member', self.Granularity)])
+            return self.granularities
+        elif name == 'Metrics':
+            self.metrics = ResultSet([('member', self.Metric)])
+            return self.metrics
+
+    def endElement(self, name, value, connection):
+        return
+
+
 class ScalingPolicy(object):
     def __init__(self, connection=None, name=None):
         """
@@ -70,7 +124,7 @@ class ScalingPolicy(object):
 
     def startElement(self, name, attrs, connection):
         if name == 'Alarms':
-            self.alrams = ResultSet([('member', Alarm)])
+            self.alarms = ResultSet([('member', Alarm)])
             return self.alarms
 
     def endElement(self, name, value, connection):
@@ -86,4 +140,7 @@ class ScalingPolicy(object):
             self.cooldown = int(value)
         elif name == 'AdjustmentType':
             self.adjustment_type = int(value)
+
+    def delete(self, autoscale_group=None):
+        return self.connection.delete_policy(self.name, autoscale_group)
 

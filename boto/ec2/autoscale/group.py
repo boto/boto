@@ -25,6 +25,7 @@ from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.instance import Instance
+from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 
 
 class SuspendedProcess(object):
@@ -68,7 +69,7 @@ class AutoScalingGroup(object):
     def __init__(self, connection=None, name=None,
                  launch_config=None,
                  availability_zones=None,
-                 load_balancers=None, default_cooldown=0,
+                 load_balancers=None, default_cooldown=None,
                  desired_capacity=None,
                  min_size=None, max_size=None):
         """
@@ -109,10 +110,10 @@ class AutoScalingGroup(object):
         """
         self.name = name
         self.connection = connection
-        self.min_size = min_size
-        self.max_size = max_size
+        self.min_size = int(min_size) if min_size is not None else None
+        self.max_size = int(max_size) if max_size is not None else None
         self.created_time = None
-        self.default_cooldown = default_cooldown
+        self.default_cooldown = int(default_cooldown) if default_cooldown is not None else None
         self.launch_config = launch_config
         if self.launch_config:
             self.launch_config_name = self.launch_config.name
@@ -211,10 +212,10 @@ class AutoScalingGroup(object):
         self.update()
 
     def delete(self):
-        """ Delete this auto-scaling group. """
-        params = {'AutoScalingGroupName' : self.name}
-        return self.connection.get_object('DeleteAutoScalingGroup', params,
-                                          Request)
+        """ Delete this auto-scaling group if no instances attached or no
+        scaling activities in progress.
+        """
+        return self.connection.delete_auto_scaling_group(self.name)
 
     def get_activities(self, activity_ids=None, max_records=50):
         """

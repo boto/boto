@@ -160,7 +160,5 @@ class LaunchConfiguration(object):
 
     def delete(self):
         """ Delete this launch configuration. """
-        params = {'LaunchConfigurationName' : self.name}
-        return self.connection.get_object('DeleteLaunchConfiguration', params,
-                                          Request)
+        return self.connection.delete_launch_configuration(self.name)
 
