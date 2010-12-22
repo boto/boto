@@ -35,7 +35,7 @@ from boto.ec2.autoscale.activity import Activity
 
 
 class AutoScaleConnection(AWSQueryConnection):
-    APIVersion = boto.config.get('Boto', 'autoscale_version', '2009-05-15')
+    APIVersion = boto.config.get('Boto', 'autoscale_version', '2010-08-01')
     Endpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                'autoscaling.amazonaws.com')
     DefaultRegionName = 'us-east-1'
@@ -83,7 +83,9 @@ class AutoScaleConnection(AWSQueryConnection):
     def _update_group(self, op, as_group):
         params = {
                   'AutoScalingGroupName'    : as_group.name,
-                  'Cooldown'                : as_group.cooldown,
+                  'DefaultCooldown'         : as_group.cooldown,
+                  'HealthCheckGracePeriod'  : as_group.grace_period,
+                  'HealthCheckType'         : as_group.check_type,
                   'LaunchConfigurationName' : as_group.launch_config_name,
                   'MinSize'                 : as_group.min_size,
                   'MaxSize'                 : as_group.max_size,
