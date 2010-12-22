@@ -47,8 +47,8 @@ class Instance(object):
 class AutoScalingGroup(object):
     def __init__(self, connection=None, group_name=None,
                  availability_zone=None, launch_config=None,
-                 availability_zones=None,
-                 load_balancers=None, cooldown=0,
+                 availability_zones=None, check_type='EC2',
+                 load_balancers=None, cooldown=0, grace_period=0,
                  min_size=None, max_size=None):
         """
         Creates a new AutoScalingGroup with the specified name.
@@ -70,6 +70,9 @@ class AutoScalingGroup(object):
         :type availability_zone: list
         :param availability_zone: List of availability zones.
 
+        :type check_type: str
+        :param check_type: Health check type - EC2 (default) or ELB
+
         :type launch_config: str
         :param launch_config: Name of launch configuration name.
 
@@ -86,6 +89,11 @@ class AutoScalingGroup(object):
         :param cooldown: Amount of time after a Scaling Activity completes
                          before any further scaling activities can start.
 
+        :type grace_period: int
+        :param grace_period: Length of time in seconds after a new EC2
+                             instance comes into service that Auto Scaling
+                             starts checking its health
+
         :rtype: tuple
         :return: Updated healthcheck for the instances.
         """
@@ -95,6 +103,8 @@ class AutoScalingGroup(object):
         self.max_size = max_size
         self.created_time = None
         self.cooldown = cooldown
+        self.check_type = check_type
+        self.grace_period = grace_period
         self.launch_config = launch_config
         if self.launch_config:
             self.launch_config_name = self.launch_config.name
@@ -127,8 +137,12 @@ class AutoScalingGroup(object):
             self.min_size = value
         elif name == 'CreatedTime':
             self.created_time = value
-        elif name == 'Cooldown':
+        elif name == 'DefaultCooldown':
             self.cooldown = value
+        elif name == 'HealthCheckGracePeriod':
+            self.grace_period = value
+        elif name == 'HealthCheckType':
+            self.check_type = value
         elif name == 'LaunchConfigurationName':
             self.launch_config_name = value
         elif name == 'DesiredCapacity':
