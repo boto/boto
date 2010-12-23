@@ -24,6 +24,7 @@
 import boto
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
+import boto.plugin
 import os, re, sys
 import logging
 import logging.config
@@ -489,3 +490,5 @@ def storage_uri_for_key(key):
     prov_name = key.bucket.connection.provider.get_provider_name()
     uri_str = '%s://%s/%s' % (prov_name, key.bucket.name, key.name)
     return storage_uri(uri_str)
+
+boto.plugin.load_plugins(config)

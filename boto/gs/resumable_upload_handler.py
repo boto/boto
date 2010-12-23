@@ -306,10 +306,10 @@ class ResumableUploadHandler(object):
             put_headers['Content-Range'] = range_header
         # Set Content-Length to the total bytes we'll send with this PUT.
         put_headers['Content-Length'] = str(file_length - total_bytes_uploaded)
-        (path, put_headers) = AWSAuthConnection.build_request(
+        http_request = AWSAuthConnection.build_base_http_request(
             conn, 'PUT', path=self.tracker_uri_path,
             headers=put_headers, host=self.tracker_uri_host)
-        http_conn.putrequest('PUT', path)
+        http_conn.putrequest('PUT', http_request.path)
         for k in put_headers:
             http_conn.putheader(k, put_headers[k])
         http_conn.endheaders()
