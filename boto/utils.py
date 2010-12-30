@@ -564,3 +564,10 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=[], a
         except:
             boto.log.exception('notify failed')
 
+def get_utf8_value(value):
+    if not isinstance(value, str) and not isinstance(value, unicode):
+        value = str(value)
+    if isinstance(value, unicode):
+        return value.encode('utf-8')
+    else:
+        return value

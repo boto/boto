@@ -42,51 +42,27 @@ Handles basic connections to AWS
 """
 
 import base64
-import hmac
+import errno
 import httplib
-import socket, errno
+import os
+import Queue
 import re
+import socket
 import sys
 import time
 import urllib, urlparse
-import os
 import xml.sax
-import Queue
+
+import auth
+import auth_handler
 import boto
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
-from boto.resultset import ResultSet
-from boto.provider import Provider
 import boto.utils
+
 from boto import config, UserAgent, handler
+from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.provider import Provider
+from boto.resultset import ResultSet
 
-#
-# the following is necessary because of the incompatibilities
-# between Python 2.4, 2.5, and 2.6 as well as the fact that some
-# people running 2.4 have installed hashlib as a separate module
-# this fix was provided by boto user mccormix.
-# see: http://code.google.com/p/boto/issues/detail?id=172
-# for more details.
-#
-try:
-    from hashlib import sha1 as sha
-    from hashlib import sha256 as sha256
-
-    if sys.version[:3] == "2.4":
-        # we are using an hmac that expects a .new() method.
-        class Faker:
-            def __init__(self, which):
-                self.which = which
-                self.digest_size = self.which().digest_size
-
-            def new(self, *args, **kwargs):
-                return self.which(*args, **kwargs)
-
-        sha = Faker(sha)
-        sha256 = Faker(sha256)
-
-except ImportError:
-    import sha
-    sha256 = None
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -102,6 +78,55 @@ class ConnectionPool:
 
     def __repr__(self):
         return 'ConnectionPool:%s' % ','.join(self._hosts._dict.keys())
+
+class HTTPRequest(object):
+
+    def __init__(self, method, protocol, host, port, path, params,
+                 headers, body):
+        """Represents an HTTP request.
+
+        :type method: string
+        :param method: The HTTP method name, 'GET', 'POST', 'PUT' etc.
+
+        :type protocol: string
+        :param protocol: The http protocol used, 'http' or 'https'. 
+
+        :type host: string
+        :param host: Host to which the request is addressed. eg. abc.com
+
+        :type port: int
+        :param port: port on which the request is being sent. Zero means unset,
+                     in which case default port will be chosen.
+
+        :type path: string 
+        :param path: URL path that is bein accessed.
+
+        :type params: dict
+        :param params: HTTP url query parameters, with key as name of the param,
+                       and value as value of param.
+
+        :type headers: dict
+        :param headers: HTTP headers, with key as name of the header and value
+                        as value of header.
+
+        :type body: string
+        :param body: Body of the HTTP request. If not present, will be None or
+                     empty string ('').
+        """
+        self.method = method
+        self.protocol = protocol
+        self.host = host 
+        self.port = port
+        self.path = path
+        self.params = params
+        self.headers = headers
+        self.body = body
+
+    def __str__(self):
+        return (('method:(%s) protocol:(%s) host(%s) port(%s) path(%s) '
+                 'params(%s) headers(%s) body(%s)') % (self.method,
+                 self.protocol, self.host, self.port, self.path, self.params,
+                 self.headers, self.body))
 
 class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
@@ -142,7 +167,6 @@ class AWSAuthConnection(object):
         :type port: integer
         :param port: The port to use to connect
         """
-
         self.num_retries = 5
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
@@ -182,19 +206,12 @@ class AWSAuthConnection(object):
         if self.provider.host:
             self.host = self.provider.host
 
-        if self.secret_key is None:
-            raise BotoClientError('No credentials have been supplied')
-        # initialize an HMAC for signatures, make copies with each request
-        self.hmac = hmac.new(self.secret_key, digestmod=sha)
-        if sha256:
-            self.hmac_256 = hmac.new(self.secret_key, digestmod=sha256)
-        else:
-            self.hmac_256 = None
-
         # cache up to 20 connections per host, up to 20 hosts
         self._pool = ConnectionPool(20, 20)
         self._connection = (self.server_name(), self.is_secure)
         self._last_rs = None
+        self._auth_handler = auth.get_auth_handler(
+              host, config, self.provider, self._required_auth_capability()) 
 
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
@@ -458,55 +475,51 @@ class AWSAuthConnection(object):
         else:
             raise BotoClientError('Please report this exception as a Boto Issue!')
 
-    def build_request(self, method, path, headers=None, data='', host=None,
-                      auth_path=None):
-        """Builds a request that can be sent for multiple retries."""
+    def build_base_http_request(self, method, path, headers=None, data='',
+                                host=None):
         path = self.get_path(path)
         if headers == None:
             headers = {}
         else:
             headers = headers.copy()
-        headers['User-Agent'] = UserAgent
-        if not headers.has_key('Content-Length'):
-            headers['Content-Length'] = str(len(data))
+        host = host or self.host
+        return HTTPRequest(method, self.protocol, host, self.port, path, {},
+                           headers, data)
+
+    def fill_in_auth(self, http_request):
+        headers = http_request.headers
         if self.use_proxy:
             path = self.prefix_proxy_to_path(path, host)
             if self.proxy_user and self.proxy_pass and not self.is_secure:
                 # If is_secure, we don't have to set the proxy authentication
                 # header here, we did that in the CONNECT to the proxy.
                 headers.update(self.get_proxy_auth_header())
-        request_string = auth_path or path
         for key in headers:
             val = headers[key]
             if isinstance(val, unicode):
                 headers[key] = urllib.quote_plus(val.encode('utf-8'))
-        self.add_aws_auth_header(headers, method, request_string)
-        return (path, headers)
+
+        self._auth_handler.add_auth(http_request)
+
+        headers['User-Agent'] = UserAgent
+        if not headers.has_key('Content-Length'):
+            headers['Content-Length'] = str(len(http_request.body))
+        return http_request
+
+    def _send_http_request(self, http_request, sender=None,
+                           override_num_retries=None):
+        return self._mexe(http_request.method, http_request.path,
+                          http_request.body, http_request.headers,
+                          http_request.host, sender, override_num_retries)
 
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None):
         """Makes a request to the server, with stock multiple-retry logic."""
-        (path, headers) = self.build_request(method, path, headers, data, host,
-                                             auth_path)
-        return self._mexe(method, path, data, headers, host, sender,
-                          override_num_retries)
-
-    def add_aws_auth_header(self, headers, method, path):
-        path = self.get_path(path)
-        if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
-
-        c_string = boto.utils.canonical_string(method, path, headers,
-                                               None, self.provider)
-        boto.log.debug('Canonical: %s' % c_string)
-        hmac = self.hmac.copy()
-        hmac.update(c_string)
-        b64_hmac = base64.encodestring(hmac.digest()).strip()
-        auth_hdr = self.provider.auth_header
-        headers['Authorization'] = ("%s %s:%s" %
-                                    (auth_hdr,
-                                     self.aws_access_key_id, b64_hmac))
+        http_request = self.build_base_http_request(method, path, headers, data,
+                                                    host)
+        http_request = self.fill_in_auth(http_request)
+        return self._send_http_request(http_request, sender,
+                                       override_num_retries)
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,
@@ -514,6 +527,9 @@ class AWSAuthConnection(object):
 
         boto.log.debug('closing all HTTP connections')
         self.connection = None  # compat field
+
+    def _required_auth_capability(self):
+        return []
 
 class AWSQueryConnection(AWSAuthConnection):
 
@@ -529,98 +545,19 @@ class AWSQueryConnection(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                    debug,  https_connection_factory, path)
 
+    def _required_auth_capability(self):
+        return ['sign-v' + self.SignatureVersion]
+
     def get_utf8_value(self, value):
-        if not isinstance(value, str) and not isinstance(value, unicode):
-            value = str(value)
-        if isinstance(value, unicode):
-            return value.encode('utf-8')
-        else:
-            return value
-
-    def calc_signature_0(self, params):
-        boto.log.debug('using calc_signature_0')
-        hmac = self.hmac.copy()
-        s = params['Action'] + params['Timestamp']
-        hmac.update(s)
-        keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
-        pairs = []
-        for key in keys:
-            val = self.get_utf8_value(params[key])
-            pairs.append(key + '=' + urllib.quote(val))
-        qs = '&'.join(pairs)
-        return (qs, base64.b64encode(hmac.digest()))
-
-    def calc_signature_1(self, params):
-        boto.log.debug('using calc_signature_1')
-        hmac = self.hmac.copy()
-        keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
-        pairs = []
-        for key in keys:
-            hmac.update(key)
-            val = self.get_utf8_value(params[key])
-            hmac.update(val)
-            pairs.append(key + '=' + urllib.quote(val))
-        qs = '&'.join(pairs)
-        return (qs, base64.b64encode(hmac.digest()))
-
-    def calc_signature_2(self, params, verb, path):
-        boto.log.debug('using calc_signature_2')
-        string_to_sign = '%s\n%s\n%s\n' % (verb, self.server_name().lower(), path)
-        if self.hmac_256:
-            hmac = self.hmac_256.copy()
-            params['SignatureMethod'] = 'HmacSHA256'
-        else:
-            hmac = self.hmac.copy()
-            params['SignatureMethod'] = 'HmacSHA1'
-        keys = params.keys()
-        keys.sort()
-        pairs = []
-        for key in keys:
-            val = self.get_utf8_value(params[key])
-            pairs.append(urllib.quote(key, safe='') + '=' + urllib.quote(val, safe='-_~'))
-        qs = '&'.join(pairs)
-        boto.log.debug('query string: %s' % qs)
-        string_to_sign += qs
-        boto.log.debug('string_to_sign: %s' % string_to_sign)
-        hmac.update(string_to_sign)
-        b64 = base64.b64encode(hmac.digest())
-        boto.log.debug('len(b64)=%d' % len(b64))
-        boto.log.debug('base64 encoded digest: %s' % b64)
-        return (qs, b64)
-
-    def get_signature(self, params, verb, path):
-        if self.SignatureVersion == '0':
-            t = self.calc_signature_0(params)
-        elif self.SignatureVersion == '1':
-            t = self.calc_signature_1(params)
-        elif self.SignatureVersion == '2':
-            t = self.calc_signature_2(params, verb, path)
-        else:
-            raise BotoClientError('Unknown Signature Version: %s' % self.SignatureVersion)
-        return t
+        return boto.utils.get_utf8_value(value)
 
     def make_request(self, action, params=None, path='/', verb='GET'):
-        headers = {}
-        if params == None:
-            params = {}
-        params['Action'] = action
-        params['Version'] = self.APIVersion
-        params['AWSAccessKeyId'] = self.aws_access_key_id
-        params['SignatureVersion'] = self.SignatureVersion
-        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        qs, signature = self.get_signature(params, verb, self.get_path(path))
-        if verb == 'POST':
-            headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            request_body = qs + '&Signature=' + urllib.quote(signature)
-            qs = path
-        else:
-            request_body = ''
-            qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
-        return AWSAuthConnection.make_request(self, verb, qs,
-                                              data=request_body,
-                                              headers=headers)
+        http_request = HTTPRequest(verb, self.protocol, self.host, self.port,
+                                   self.get_path(path), params, {}, '')
+        http_request.params['Action'] = action
+        http_request.params['Version'] = self.APIVersion
+        http_request = self.fill_in_auth(http_request)
+        return self._send_http_request(self, http_request)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
