@@ -34,7 +34,7 @@ from boto.exception import FPSResponseError
 class FPSConnection(AWSQueryConnection):
 
     APIVersion = '2007-01-08'
-    SignatureVersion = '1'
+    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
