@@ -268,9 +268,9 @@ class S3Connection(AWSAuthConnection):
         expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
-        b64_hmac = self._auth_handler.sign_request(method, auth_path,
-                                                   headers, expires,
-                                                   self.provider)
+        c_string = boto.utils.canonical_string(method, auth_path, headers,
+                                               expires, self.provider)
+        b64_hmac = self._auth_handler.sign_string(c_string)
         encoded_canonical = urllib.quote_plus(b64_hmac)
         self.calling_format.build_path_base(bucket, key)
         if query_auth:

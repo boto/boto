@@ -1959,8 +1959,8 @@ class EC2Connection(AWSQueryConnection):
         params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
         local_hmac = self.hmac.copy()
         local_hmac.update(s3_upload_policy)
-        s3_upload_policy_signature = base64.b64encode(local_hmac.digest())
-        params['Storage.S3.UploadPolicySignature'] = s3_upload_policy_signature
+        signature = self._auth_handler.sign_string(s3_upload_policy)
+        params['Storage.S3.UploadPolicySignature'] = signature
         return self.get_object('BundleInstance', params, BundleInstanceTask) 
 
     def get_all_bundle_tasks(self, bundle_ids=None, filters=None):
