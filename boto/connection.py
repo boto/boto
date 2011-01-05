@@ -557,7 +557,7 @@ class AWSQueryConnection(AWSAuthConnection):
         http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
         http_request = self.fill_in_auth(http_request)
-        return self._send_http_request(self, http_request)
+        return self._send_http_request(http_request)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):

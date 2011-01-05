@@ -119,6 +119,14 @@ class HmacAuthHandler(AuthHandler, HmacKeys):
             return '/' + http_request.host[:i]
         return ''
 
+    def sign_request(self, method, auth_path, headers, expires, provider):
+        c_string = boto.utils.canonical_string(method, auth_path, headers,
+                                               expires, provider)
+        boto.log.debug('Canonical: %s' % c_string)
+        hmac = self._hmac.copy()
+        hmac.update(c_string)
+        return base64.encodestring(hmac.digest()).strip()
+
     def add_auth(self, http_request):
         headers = http_request.headers
         method = http_request.method
@@ -127,12 +135,8 @@ class HmacAuthHandler(AuthHandler, HmacKeys):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
-        c_string = boto.utils.canonical_string(method, auth_path, headers,
-                                               None, self._provider)
-        boto.log.debug('Canonical: %s' % c_string)
-        hmac = self._hmac.copy()
-        hmac.update(c_string)
-        b64_hmac = base64.encodestring(hmac.digest()).strip()
+        b64_hmac = self.sign_request(method, auth_path, headers,
+                                     None, self._provider)
         auth_hdr = self._provider.auth_header
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
