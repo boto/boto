@@ -100,7 +100,7 @@ class Key(object):
     def get_contents_as_string(self, headers=None, cb=None, num_cb=10,
                                torrent=False):
         """
-        Retrieve file data from thie Key, and return contents as a string.
+        Retrieve file data from the Key, and return contents as a string.
 
         :type headers: dict
         :param headers: ignored in this subclass.
