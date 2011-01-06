@@ -57,17 +57,9 @@ class Route53Connection(AWSAuthConnection):
                 aws_access_key_id, aws_secret_access_key,
                 True, port, proxy, proxy_port, debug=debug)
 
-    def add_aws_auth_header(self, headers, method, path):
-        if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+    def _required_auth_capability(self):
+        return ['hmac-v3']
 
-        b64_mac = self._auth_handler.sign_string(headers['Date'])
-        alg = self._auth_handler.algorithm()
-        s = "AWS3-HTTPS AWSAccessKeyId=%s," % self.aws_access_key_id
-        s += "Algorithm=%s,Signature=%s" % (alg, b64_hmac)
-        headers['X-Amzn-Authorization'] = s
-        
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []

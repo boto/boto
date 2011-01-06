@@ -32,13 +32,10 @@ class AuthHandler(Plugin):
 
     capability = []
 
-    def __init__(host, path, config, provider):
+    def __init__(self, host, config, provider):
         """Constructs the handlers.
         :type host: string
         :param host: The host to which the request is being sent.
-
-        :type path: string
-        :param path: The resource path that is being accessed.
 
         :type config: boto.pyami.Config 
         :param config: Boto configuration.

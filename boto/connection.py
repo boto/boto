@@ -529,7 +529,7 @@ class AWSAuthConnection(object):
         self.connection = None  # compat field
 
     def _required_auth_capability(self):
-        return []
+        return ['hmac-v1']
 
 class AWSQueryConnection(AWSAuthConnection):
 

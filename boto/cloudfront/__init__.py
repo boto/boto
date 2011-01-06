@@ -53,12 +53,8 @@ class CloudFrontConnection(AWSAuthConnection):
                 return response_headers[key]
         return None
 
-    def add_aws_auth_header(self, headers, method, path):
-        if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
-        b64_hmac = self._auth_handler.sign_string(headers['Date']).strip()
-        headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
+    def _required_auth_capability(self):
+        return ['hmac-v2']
 
     # Generics
     

@@ -100,22 +100,25 @@ class HmacKeys(object):
             return (access_key, secret_key)
         return None
 
-class HmacAuthHandler(AuthHandler, HmacKeys):
-    """Class S3 key based Auth handler.
+    def sign_string(self, string_to_sign):
+        boto.log.debug('Canonical: %s' % string_to_sign)
+        hmac = self._hmac.copy()
+        hmac.update(string_to_sign)
+        return base64.encodestring(hmac.digest()).strip()
 
-    Implements the AWS key based auth handling. The same works for gs too.
+class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """
-
+    Implements the HMAC request signing used by S3 and GS.
+    """
+    capability = ['hmac-v1']
+    
     S3_ENDPOINT = 's3.amazonaws.com'
     GS_ENDPOINT = 'commondatastorage.googleapis.com'
 
     def __init__(self, host, config, provider):
+        AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
-        if (host.endswith(self.S3_ENDPOINT) or
-            host.endswith(self.GS_ENDPOINT)):
-            return
-        raise boto.auth_handler.NotReadyToAuthenticate()
-
+        
     def _get_bucket(self, http_request):
         i = http_request.host.find('.' + self.S3_ENDPOINT)
         if i != -1:
@@ -124,12 +127,6 @@ class HmacAuthHandler(AuthHandler, HmacKeys):
         if i != -1:
             return '/' + http_request.host[:i]
         return ''
-
-    def sign_string(self, string_to_sign):
-        boto.log.debug('Canonical: %s' % string_to_sign)
-        hmac = self._hmac.copy()
-        hmac.update(string_to_sign)
-        return base64.encodestring(hmac.digest()).strip()
 
     def add_auth(self, http_request):
         headers = http_request.headers
@@ -147,14 +144,59 @@ class HmacAuthHandler(AuthHandler, HmacKeys):
                                     (auth_hdr,
                                      self._access_key, b64_hmac))
 
+class HmacAuthV2Handler(AuthHandler, HmacKeys):
+    """
+    Implements the simplified HMAC authorization used by CloudFront.
+    """
+    capability = ['hmac-v2']
+    
+    def __init__(self, host, config, provider):
+        AuthHandler.__init__(self, host, config, provider)
+        HmacKeys.__init__(self, host, config, provider)
+        
+    def add_auth(self, http_request):
+        headers = http_request.headers
+        if not headers.has_key('Date'):
+            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
+                                            time.gmtime())
+
+        b64_hmac = self.sign_string(headers['Date'])
+        auth_hdr = self._provider.auth_header
+        headers['Authorization'] = ("%s %s:%s" %
+                                    (auth_hdr,
+                                     self._access_key, b64_hmac))
+        
+class HmacAuthV3Handler(AuthHandler, HmacKeys):
+    """
+    Implements the new Version 3 HMAC authorization used by Route53.
+    """
+    capability = ['hmac-v3']
+    
+    def __init__(self, host, config, provider):
+        AuthHandler.__init__(self, host, config, provider)
+        HmacKeys.__init__(self, host, config, provider)
+        
+    def add_auth(self, http_request):
+        headers = http_request.headers
+        if not headers.has_key('Date'):
+            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
+                                            time.gmtime())
+
+        b64_hmac = self.sign_string(headers['Date'])
+        s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._access_key
+        s += "Algorithm=%s,Signature=%s" % (self.algorithm(), b64_hmac)
+        headers['X-Amzn-Authorization'] = s
+
 class QuerySignatureHelper(HmacKeys):
-    """Helper for Query signature based Auth handler.
+    """
+    Helper for Query signature based Auth handler.
 
     Concrete sub class need to implement _calc_sigature method.
     """
 
     def __init__(self, host, config, provider):
         HmacKeys.__init__(self, host, config, provider)
+        
         if not host.endswith('.amazonaws.com'):
             # QuerySignature only works for amazon services.
             raise boto.auth_handler.NotReadyToAuthenticate()
@@ -297,31 +339,19 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         boto.exception.NoAuthHandlerFound:
         boto.exception.TooManyAuthHandlerReadyToAuthenticate:
     """
-    ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
-    total_handlers = len(auth_handlers)
-    for handler in auth_handlers:
-        try:
-            ready_handlers.append(handler(host, config, provider))
-        except boto.auth_handler.NotReadyToAuthenticate:
-            pass
- 
-    if not ready_handlers:
-        checked_handlers = auth_handlers
-        names = [handler.__name__ for handler in checked_handlers]
-        raise boto.exception.NoAuthHandlerFound(
-              'No handler was ready to authenticate. %d handlers were checked.'
-              ' %s ' % (len(names), str(names)))
-
-    if len(ready_handlers) > 1:
+    if not auth_handlers:
+        msg = 'No handler was able to provide: %s' % requested_capability
+        raise boto.exception.NoAuthHandlerFound(msg)
+    if len(auth_handlers) > 1:
         # NOTE: Even though it would be nice to accept more than one handler
         # by using one of the many ready handlers, we are never sure that each
         # of them are referring to the same storage account. Since we cannot
         # easily guarantee that, it is always safe to fail, rather than operate
         # on the wrong account.
-        names = [handler.__class__.__name__ for handler in ready_handlers]
+        names = [handler.__class__.__name__ for handler in auth_handlers]
         raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
                '%d AuthHandlers ready to authenticate, '
                'only 1 expected: %s' % (len(names), str(names)))
 
-    return ready_handlers[0]
+    return auth_handlers[0](host, config, provider)
