@@ -21,7 +21,6 @@
 #
 
 import xml.sax
-import base64
 import time
 import boto
 from boto.connection import AWSAuthConnection
@@ -58,10 +57,7 @@ class CloudFrontConnection(AWSAuthConnection):
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
-
-        hmac = self.hmac.copy()
-        hmac.update(headers['Date'])
-        b64_hmac = base64.encodestring(hmac.digest()).strip()
+        b64_hmac = self._auth_handler.sign_string(headers['Date']).strip()
         headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
 
     # Generics

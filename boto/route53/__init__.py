@@ -22,7 +22,6 @@
 #
 
 import xml.sax
-import base64
 import time
 import uuid
 import urllib
@@ -63,15 +62,8 @@ class Route53Connection(AWSAuthConnection):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
-        if self.hmac_256:
-            hmac = self.hmac_256.copy()
-            alg = 'HmacSHA256'
-        else:
-            hmac = self.hmac.copy()
-            alg = 'HmacSHA1'
-
-        hmac.update(headers['Date'])
-        b64_hmac = base64.encodestring(hmac.digest()).strip()
+        b64_mac = self._auth_handler.sign_string(headers['Date'])
+        alg = self._auth_handler.algorithm()
         s = "AWS3-HTTPS AWSAccessKeyId=%s," % self.aws_access_key_id
         s += "Algorithm=%s,Signature=%s" % (alg, b64_hmac)
         headers['X-Amzn-Authorization'] = s

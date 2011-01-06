@@ -249,9 +249,7 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "AWSAccessKeyId", "value": self.aws_access_key_id})
 
         # Add signature for encoded policy document as the 'AWSAccessKeyId' field
-        hmac_copy = self.hmac.copy()
-        hmac_copy.update(policy_b64)
-        signature = base64.encodestring(hmac_copy.digest()).strip()
+        signature = self._auth_handler.sign_string(policy_b64)
         fields.append({"name": "signature", "value": signature})
         fields.append({"name": "key", "value": key})
 

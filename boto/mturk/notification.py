@@ -76,9 +76,7 @@ class NotificationMessage:
         Verifies the authenticity of a notification message.
         """
         verification_input = NotificationMessage.SERVICE_NAME + NotificationMessage.OPERATION_NAME + self.timestamp
-        h = hmac.new(key=secret_key, digestmod=sha)
-        h.update(verification_input)
-        signature_calc = base64.b64encode(h.digest())
+        signature_calc = self._auth_handler.sign_string(verification_input)
         return self.signature == signature_calc
 
 class Event:

@@ -26,13 +26,8 @@ Represents a connection to the EC2 service.
 
 import urllib
 import base64
-import hmac
 import warnings
 import boto
-try:
-    from hashlib import sha1 as sha
-except ImportError:
-    import sha
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
@@ -1957,8 +1952,6 @@ class EC2Connection(AWSQueryConnection):
                   'Storage.S3.Prefix' : s3_prefix,
                   'Storage.S3.UploadPolicy' : s3_upload_policy}
         params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
-        local_hmac = self.hmac.copy()
-        local_hmac.update(s3_upload_policy)
         signature = self._auth_handler.sign_string(s3_upload_policy)
         params['Storage.S3.UploadPolicySignature'] = signature
         return self.get_object('BundleInstance', params, BundleInstanceTask) 

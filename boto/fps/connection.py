@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import base64
 import urllib
 import xml.sax
 import uuid
@@ -132,9 +131,7 @@ class FPSConnection(AWSQueryConnection):
             canonical += "%s%s" % (k, str(params[k]))
 
         url = "/cobranded-ui/actions/start?%s" % ( url[1:])
-        hmac = self.hmac.copy()
-        hmac.update(canonical)
-        signature = urllib.quote_plus(base64.encodestring(hmac.digest()).strip())
+        signature = self._auth_handler.sign_string(canonical)
 
         # use the sandbox authorization endpoint if we're using the
         #  sandbox for API calls.

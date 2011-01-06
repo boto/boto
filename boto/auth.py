@@ -81,6 +81,12 @@ class HmacKeys(object):
         else:
             self._hmac_256 = None
 
+    def algorithm(self):
+        if self._hmac_256:
+            return 'HmacSHA256'
+        else:
+            return 'HmacSHA1'
+
     def _get_keys(self, config, provider):
         if (provider.name == 'aws' and
             config.has_option('Credentials', 'aws_secret_access_key')):
