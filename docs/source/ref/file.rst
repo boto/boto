@@ -14,7 +14,7 @@ boto.file.bucket
 boto.file.simpleresultset
 -------------------------
 
-.. automodule:: boto.file.bucketlistresultset
+.. automodule:: boto.file.simpleresultset
    :members:   
    :undoc-members:
 
