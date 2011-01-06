@@ -48,10 +48,7 @@ class Key(object):
         :param cb: ignored in this subclass.
 
         :type cb: int
-        :param num_cb ignored in this subclass.
-
-        :type torrent: bool
-        :param torrent: ignored in this subclass.
+        :param num_cb: ignored in this subclass.
         """
         key_file = open(self.full_path, 'rb')
         shutil.copyfileobj(key_file, fp)
