@@ -283,7 +283,7 @@ def fetch_file(uri, file=None, username=None, password=None):
 
 class ShellCommand(object):
 
-    def __init__(self, command, wait=True):
+    def __init__(self, command, wait=True, fail_fast=False):
         self.exit_code = 0
         self.command = command
         self.log_fp = StringIO.StringIO()
@@ -302,6 +302,10 @@ class ShellCommand(object):
                 self.log_fp.write(t[1])
             boto.log.info(self.log_fp.getvalue())
             self.exit_code = self.process.returncode
+
+	    if self.fail_fast and self.exit_code != 0:
+		    raise Exception("Command " + self.command + " failed with status " + self.exit_code)
+
             return self.exit_code
 
     def setReadOnly(self, value):
