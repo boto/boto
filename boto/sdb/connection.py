@@ -29,7 +29,7 @@ from boto.sdb.regioninfo import SDBRegionInfo
 from boto.exception import SDBResponseError
 
 class ItemThread(threading.Thread):
-    
+
     def __init__(self, name, domain_name, item_names):
         threading.Thread.__init__(self, name=name)
         print 'starting %s with %d items' % (name, len(item_names))
@@ -37,7 +37,7 @@ class ItemThread(threading.Thread):
         self.conn = SDBConnection()
         self.item_names = item_names
         self.items = []
-        
+
     def run(self):
         for item_name in self.item_names:
             item = self.conn.get_attributes(self.domain_name, item_name)
@@ -84,20 +84,20 @@ class SDBConnection(AWSQueryConnection):
             value = attributes[key]
             if isinstance(value, list):
                 for v in value:
-                    params['%s.%d.Name'%(label,i)] = key
+                    params['%s.%d.Name' % (label, i)] = key
                     if self.converter:
                         v = self.converter.encode(v)
-                    params['%s.%d.Value'%(label,i)] = v
+                    params['%s.%d.Value' % (label, i)] = v
                     if replace:
-                        params['%s.%d.Replace'%(label,i)] = 'true'
+                        params['%s.%d.Replace' % (label, i)] = 'true'
                     i += 1
             else:
-                params['%s.%d.Name'%(label,i)] = key
+                params['%s.%d.Name' % (label, i)] = key
                 if self.converter:
                     value = self.converter.encode(value)
-                params['%s.%d.Value'%(label,i)] = value
+                params['%s.%d.Value' % (label, i)] = value
                 if replace:
-                    params['%s.%d.Replace'%(label,i)] = 'true'
+                    params['%s.%d.Replace' % (label, i)] = 'true'
             i += 1
 
     def build_expected_value(self, params, expected_value):
@@ -108,7 +108,7 @@ class SDBConnection(AWSQueryConnection):
             params['Expected.1.Exists'] = 'false'
         else:
             params['Expected.1.Value'] = expected_value[1]
-            
+
     def build_batch_list(self, params, items, replace=False):
         item_names = items.keys()
         i = 0
@@ -124,18 +124,18 @@ class SDBConnection(AWSQueryConnection):
                         for v in value:
                             if self.converter:
                                 v = self.converter.encode(v)
-                            params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
-                            params['Item.%d.Attribute.%d.Value' % (i,j)] = v
+                            params['Item.%d.Attribute.%d.Name' % (i, j)] = attr_name
+                            params['Item.%d.Attribute.%d.Value' % (i, j)] = v
                             if replace:
-                                params['Item.%d.Attribute.%d.Replace' % (i,j)] = 'true'
+                                params['Item.%d.Attribute.%d.Replace' % (i, j)] = 'true'
                             j += 1
                     else:
-                        params['Item.%d.Attribute.%d.Name' % (i,j)] = attr_name
+                        params['Item.%d.Attribute.%d.Name' % (i, j)] = attr_name
                         if self.converter:
                             value = self.converter.encode(value)
-                        params['Item.%d.Attribute.%d.Value' % (i,j)] = value
+                        params['Item.%d.Attribute.%d.Value' % (i, j)] = value
                         if replace:
-                            params['Item.%d.Attribute.%d.Replace' % (i,j)] = 'true'
+                            params['Item.%d.Attribute.%d.Replace' % (i, j)] = 'true'
                         j += 1
             i += 1
 
@@ -143,7 +143,7 @@ class SDBConnection(AWSQueryConnection):
         i = 1
         attribute_names.sort()
         for name in attribute_names:
-            params['Attribute.%d.Name'%i] = name
+            params['Attribute.%d.Name' % i] = name
             i += 1
 
     def get_usage(self):
@@ -193,7 +193,7 @@ class SDBConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         return self.get_list('ListDomains', params, [('DomainName', Domain)])
-        
+
     def create_domain(self, domain_name):
         """
         Create a SimpleDB domain.
@@ -214,10 +214,12 @@ class SDBConnection(AWSQueryConnection):
             return (domain_or_name, domain_or_name.name)
         else:
             return (self.get_domain(domain_or_name), domain_or_name)
-        
+
     def delete_domain(self, domain_or_name):
         """
         Delete a SimpleDB domain.
+
+        .. caution:: This will delete the domain and all items within the domain.
 
         :type domain_or_name: string or :class:`boto.sdb.domain.Domain` object.
         :param domain_or_name: Either the name of a domain or a Domain object
@@ -225,12 +227,11 @@ class SDBConnection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         
-        B{Note:} This will delete the domain and all items within the domain.
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName':domain_name}
         return self.get_status('DeleteDomain', params)
-        
+
     def domain_metadata(self, domain_or_name):
         """
         Get the Metadata for a SimpleDB domain.
@@ -246,7 +247,7 @@ class SDBConnection(AWSQueryConnection):
         d = self.get_object('DomainMetadata', params, DomainMetaData)
         d.domain = domain
         return d
-        
+
     def put_attributes(self, domain_or_name, item_name, attributes,
                        replace=True, expected_value=None):
         """
@@ -264,22 +265,20 @@ class SDBConnection(AWSQueryConnection):
         
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-                               of a single attribute name and expected value.
-                               The list can be of the form:
-                               
-                               * ['name', 'value']
-                                
-                               In which case the call will first verify
-                               that the attribute "name" of this item has
-                               a value of "value".  If it does, the delete
-                               will proceed, otherwise a ConditionalCheckFailed
-                               error will be returned.
-                               The list can also be of the form:
-                               
-                               * ['name', True|False]
-                                
-                               which will simply check for the existence (True)
-                               or non-existencve (False) of the attribute.
+            of a single attribute name and expected value. The list can be 
+            of the form:
+            
+                * ['name', 'value']
+             
+            In which case the call will first verify that the attribute "name" 
+            of this item has a value of "value".  If it does, the delete
+            will proceed, otherwise a ConditionalCheckFailed error will be 
+            returned. The list can also be of the form:
+            
+                * ['name', True|False]
+            
+            which will simply check for the existence (True) or 
+            non-existence (False) of the attribute.
         
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
@@ -368,7 +367,7 @@ class SDBConnection(AWSQueryConnection):
             return item
         else:
             raise SDBResponseError(response.status, response.reason, body)
-        
+
     def delete_attributes(self, domain_or_name, item_name, attr_names=None,
                           expected_value=None):
         """
@@ -392,22 +391,20 @@ class SDBConnection(AWSQueryConnection):
                            
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-                               of a single attribute name and expected value.
-                               The list can be of the form:
-                               
-                               * ['name', 'value']
-                               
-                               In which case the call will first verify
-                               that the attribute "name" of this item has
-                               a value of "value".  If it does, the delete
-                               will proceed, otherwise a ConditionalCheckFailed
-                               error will be returned.
-                               The list can also be of the form:
-                               
-                               * ['name', True|False]
-                               
-                               which will simply check for the existence (True)
-                               or non-existencve (False) of the attribute.
+            of a single attribute name and expected value. The list can be 
+            of the form:
+
+                * ['name', 'value']
+
+            In which case the call will first verify that the attribute "name" 
+            of this item has a value of "value".  If it does, the delete
+            will proceed, otherwise a ConditionalCheckFailed error will be 
+            returned. The list can also be of the form:
+
+                * ['name', True|False]
+
+            which will simply check for the existence (True) or 
+            non-existence (False) of the attribute.
 
         :rtype: bool
         :return: True if successful
@@ -423,7 +420,7 @@ class SDBConnection(AWSQueryConnection):
         if expected_value:
             self.build_expected_value(params, expected_value)
         return self.get_status('DeleteAttributes', params)
-        
+
     def batch_delete_attributes(self, domain_or_name, items):
         """
         Delete multiple items in a domain.
@@ -433,15 +430,15 @@ class SDBConnection(AWSQueryConnection):
 
         :type items: dict or dict-like object
         :param items: A dictionary-like object.  The keys of the dictionary are
-                      the item names and the values are either:
-
-                      * dictionaries of attribute names/values, exactly the
-                        same as the attribute_names parameter of the scalar
-                        put_attributes call.  The attribute name/value pairs
-                        will only be deleted if they match the name/value
-                        pairs passed in.
-                      * None which means that all attributes associated
-                        with the item should be deleted.  
+            the item names and the values are either:
+            
+                * dictionaries of attribute names/values, exactly the
+                  same as the attribute_names parameter of the scalar
+                  put_attributes call.  The attribute name/value pairs
+                  will only be deleted if they match the name/value
+                  pairs passed in.
+                * None which means that all attributes associated
+                  with the item should be deleted.  
 
         :return: True if successful
         """
