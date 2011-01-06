@@ -283,17 +283,18 @@ def fetch_file(uri, file=None, username=None, password=None):
 
 class ShellCommand(object):
 
-    def __init__(self, command, wait=True):
+    def __init__(self, command, wait=True, cwd=None):
         self.exit_code = 0
         self.command = command
         self.log_fp = StringIO.StringIO()
         self.wait = wait
-        self.run()
+        self.run(cwd)
 
-    def run(self):
+    def run(self, cwd=None):
         boto.log.info('running:%s' % self.command)
         self.process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                        cwd=cwd)
         if(self.wait):
             while self.process.poll() == None:
                 time.sleep(1)
