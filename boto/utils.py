@@ -261,7 +261,7 @@ def fetch_file(uri, file=None, username=None, password=None):
     try:
         if uri.startswith('s3://'):
             bucket_name, key_name = uri[len('s3://'):].split('/', 1)
-            c = boto.connect_s3()
+            c = boto.connect_s3(aws_access_key_id=username, aws_secret_access_key=password)
             bucket = c.get_bucket(bucket_name)
             key = bucket.get_key(key_name)
             key.get_contents_to_file(file)
