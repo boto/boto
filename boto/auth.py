@@ -102,7 +102,10 @@ class HmacKeys(object):
 
     def sign_string(self, string_to_sign):
         boto.log.debug('Canonical: %s' % string_to_sign)
-        hmac = self._hmac.copy()
+        if self._hmac_256:
+            hmac = self._hmac_256.copy()
+        else:
+            hmac = self._hmac.copy()
         hmac.update(string_to_sign)
         return base64.encodestring(hmac.digest()).strip()
 
@@ -118,6 +121,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
+        self._hmac_256 = None
         
     def _get_bucket(self, http_request):
         i = http_request.host.find('.' + self.S3_ENDPOINT)
