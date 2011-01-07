@@ -168,7 +168,7 @@ class Queue:
         :return: True if successful, False otherwise.
         """
         return self.connection.remove_permission(self, label)
-    
+
     def read(self, visibility_timeout=None):
         """
         Read a single message from the queue.
@@ -280,7 +280,7 @@ class Queue:
         """
         a = self.get_attributes('ApproximateNumberOfMessages')
         return int(a['ApproximateNumberOfMessages'])
-    
+
     def count_slow(self, page_size=10, vtimeout=10):
         """
         Deprecated.  This is the old 'count' method that actually counts
@@ -297,8 +297,8 @@ class Queue:
                 n += 1
             l = self.get_messages(page_size, vtimeout)
         return n
-    
-    def dump_(self, file_name, page_size=10, vtimeout=10, sep='\n'):
+
+    def dump(self, file_name, page_size=10, vtimeout=10, sep='\n'):
         """Utility function to dump the messages in a queue to a file
         NOTE: Page size must be < 10 else SQS errors"""
         fp = open(file_name, 'wb')
@@ -332,7 +332,7 @@ class Queue:
             self.delete_message(m)
             m = self.read()
         return n
-    
+
     def save_to_filename(self, file_name, sep='\n'):
         """
         Read all messages from the queue and persist them to local file.
@@ -401,7 +401,7 @@ class Queue:
                 body = body + l
             l = fp.readline()
         return n
-    
+
     def load_from_filename(self, file_name, sep='\n'):
         """Utility function to load messages from a local filename to a queue"""
         fp = open(file_name, 'rb')
@@ -411,4 +411,4 @@ class Queue:
 
     # for backward compatibility
     load = load_from_filename
-    
+
