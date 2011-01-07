@@ -109,14 +109,15 @@ class AWSAuthConnection(object):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, path='/', provider='aws'):
         """
-        :type host: string
+        :type host: str
         :param host: The host to make the connection to
-
-        :type aws_access_key_id: string
-        :param aws_access_key_id: AWS Access Key ID (provided by Amazon)
-
-        :type aws_secret_access_key: string
-        :param aws_secret_access_key: Secret Access Key (provided by Amazon)
+       
+        :keyword str aws_access_key_id: Your AWS Access Key ID (provided by
+            Amazon). If none is specified, the value in your 
+            ``AWS_ACCESS_KEY_ID`` environmental variable is used.
+        :keyword str aws_secret_access_key: Your AWS Secret Access Key 
+            (provided by Amazon). If none is specified, the value in your 
+            ``AWS_SECRET_ACCESS_KEY`` environmental variable is used.
 
         :type is_secure: boolean
         :param is_secure: Whether the connection is over SSL
@@ -127,19 +128,18 @@ class AWSAuthConnection(object):
                                          The factory should have a similar
                                          interface to L{httplib.HTTPSConnection}.
 
-        :type proxy:
-        :param proxy:
+        :param str proxy: Address/hostname for a proxy server
 
         :type proxy_port: int
         :param proxy_port: The port to use when connecting over a proxy
 
-        :type proxy_user: string
+        :type proxy_user: str
         :param proxy_user: The username to connect with on the proxy
 
-        :type proxy_pass: string
+        :type proxy_pass: str
         :param proxy_pass: The password to use when connection over a proxy.
 
-        :type port: integer
+        :type port: int
         :param port: The port to use to connect
         """
 
