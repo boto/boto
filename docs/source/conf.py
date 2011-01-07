@@ -3,6 +3,7 @@
 import sys, os
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo']
+autoclass_content="both"
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
