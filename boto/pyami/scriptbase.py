@@ -28,7 +28,7 @@ class ScriptBase:
             self.run('umount %s' % path)
 
     def run(self, command, notify=True, exit_on_error=False, cwd=None):
-        self.last_command = ShellCommand(command, cwd)
+        self.last_command = ShellCommand(command, cwd=cwd)
         if self.last_command.status != 0:
             boto.log.error('Error running command: "%s". Output: "%s"' % (command, self.last_command.output))
             if notify:
