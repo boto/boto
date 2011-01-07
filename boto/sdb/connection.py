@@ -75,7 +75,7 @@ class SDBConnection(AWSQueryConnection):
     def set_item_cls(self, cls):
         self.item_cls = cls
 
-    def build_name_value_list(self, params, attributes, replace=False,
+    def _build_name_value_list(self, params, attributes, replace=False,
                               label='Attribute'):
         keys = attributes.keys()
         keys.sort()
@@ -100,7 +100,7 @@ class SDBConnection(AWSQueryConnection):
                     params['%s.%d.Replace' % (label, i)] = 'true'
             i += 1
 
-    def build_expected_value(self, params, expected_value):
+    def _build_expected_value(self, params, expected_value):
         params['Expected.1.Name'] = expected_value[0]
         if expected_value[1] is True:
             params['Expected.1.Exists'] = 'true'
@@ -109,7 +109,7 @@ class SDBConnection(AWSQueryConnection):
         else:
             params['Expected.1.Value'] = expected_value[1]
 
-    def build_batch_list(self, params, items, replace=False):
+    def _build_batch_list(self, params, items, replace=False):
         item_names = items.keys()
         i = 0
         for item_name in item_names:
@@ -139,7 +139,7 @@ class SDBConnection(AWSQueryConnection):
                         j += 1
             i += 1
 
-    def build_name_list(self, params, attribute_names):
+    def _build_name_list(self, params, attribute_names):
         i = 1
         attribute_names.sort()
         for name in attribute_names:
@@ -291,9 +291,9 @@ class SDBConnection(AWSQueryConnection):
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name,
                   'ItemName' : item_name}
-        self.build_name_value_list(params, attributes, replace)
+        self._build_name_value_list(params, attributes, replace)
         if expected_value:
-            self.build_expected_value(params, expected_value)
+            self._build_expected_value(params, expected_value)
         return self.get_status('PutAttributes', params)
 
     def batch_put_attributes(self, domain_or_name, items, replace=True):
@@ -320,7 +320,7 @@ class SDBConnection(AWSQueryConnection):
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name}
-        self.build_batch_list(params, items, replace)
+        self._build_batch_list(params, items, replace)
         return self.get_status('BatchPutAttributes', params, verb='POST')
 
     def get_attributes(self, domain_or_name, item_name, attribute_names=None,
@@ -414,11 +414,11 @@ class SDBConnection(AWSQueryConnection):
                   'ItemName' : item_name}
         if attr_names:
             if isinstance(attr_names, list):
-                self.build_name_list(params, attr_names)
+                self._build_name_list(params, attr_names)
             elif isinstance(attr_names, dict) or isinstance(attr_names, self.item_cls):
-                self.build_name_value_list(params, attr_names)
+                self._build_name_value_list(params, attr_names)
         if expected_value:
-            self.build_expected_value(params, expected_value)
+            self._build_expected_value(params, expected_value)
         return self.get_status('DeleteAttributes', params)
 
     def batch_delete_attributes(self, domain_or_name, items):
@@ -444,7 +444,7 @@ class SDBConnection(AWSQueryConnection):
         """
         domain, domain_name = self.get_domain_and_name(domain_or_name)
         params = {'DomainName' : domain_name}
-        self.build_batch_list(params, items, False)
+        self._build_batch_list(params, items, False)
         return self.get_status('BatchDeleteAttributes', params, verb='POST')
 
     def select(self, domain_or_name, query='', next_token=None,
