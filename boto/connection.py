@@ -146,7 +146,7 @@ class AWSAuthConnection(object):
         self.num_retries = 5
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
-          is_secure = config.getboolean('Boto', 'is_secure')
+            is_secure = config.getboolean('Boto', 'is_secure')
         self.is_secure = is_secure
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
@@ -177,7 +177,7 @@ class AWSAuthConnection(object):
         self.provider = Provider(provider,
                                  aws_access_key_id,
                                  aws_secret_access_key)
-        
+
         # allow config file to override default host
         if self.provider.host:
             self.host = self.provider.host
@@ -362,7 +362,7 @@ class AWSAuthConnection(object):
         resp.close()
 
         h = httplib.HTTPConnection(host)
-        
+
         # Wrap the socket in an SSL socket
         if hasattr(httplib, 'ssl'):
             sslSock = httplib.ssl.SSLSocket(sock)
@@ -378,7 +378,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = base64.encodestring(self.proxy_user+':'+self.proxy_pass)
+        auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     def _mexe(self, method, path, data, headers, host=None, sender=None,
@@ -419,7 +419,7 @@ class AWSAuthConnection(object):
                 if method == 'HEAD' and getattr(response, 'chunked', False):
                     response.chunked = 0
                 if response.status == 500 or response.status == 503:
-                    boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2**i))
+                    boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2 ** i))
                     body = response.read()
                 elif response.status == 408:
                     body = response.read()
@@ -446,7 +446,7 @@ class AWSAuthConnection(object):
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
                 connection = self.new_http_connection(host, self.is_secure)
-            time.sleep(2**i)
+            time.sleep(2 ** i)
             i += 1
         # If we made it here, it's because we have exhausted our retries and stil haven't
         # succeeded.  So, if we have a response object, use it to raise an exception.
@@ -527,7 +527,7 @@ class AWSQueryConnection(AWSAuthConnection):
                  https_connection_factory=None, path='/'):
         AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug,  https_connection_factory, path)
+                                   debug, https_connection_factory, path)
 
     def get_utf8_value(self, value):
         if not isinstance(value, str) and not isinstance(value, unicode):
@@ -543,7 +543,7 @@ class AWSQueryConnection(AWSAuthConnection):
         s = params['Action'] + params['Timestamp']
         hmac.update(s)
         keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
             val = self.get_utf8_value(params[key])
@@ -555,7 +555,7 @@ class AWSQueryConnection(AWSAuthConnection):
         boto.log.debug('using calc_signature_1')
         hmac = self.hmac.copy()
         keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
             hmac.update(key)
@@ -625,8 +625,8 @@ class AWSQueryConnection(AWSAuthConnection):
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
             items = [items]
-        for i in range(1, len(items)+1):
-            params['%s.%d' % (label, i)] = items[i-1]
+        for i in range(1, len(items) + 1):
+            params['%s.%d' % (label, i)] = items[i - 1]
 
     # generics
 
