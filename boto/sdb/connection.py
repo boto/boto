@@ -114,7 +114,15 @@ class SDBConnection(AWSQueryConnection):
         self.item_cls = Item
 
     def set_item_cls(self, cls):
-        # TODO: Is this supposed to be public? Should it even exist?
+        """
+        While the default item class is :py:class:`boto.sdb.item.Item`, this
+        default may be overridden. Use this method to change a connection's
+        item class.
+        
+        :param object cls: The new class to set as this connection's item
+            class. See the default item class for inspiration as to what your
+            replacement should/could look like.
+        """
         self.item_cls = cls
 
     def _build_name_value_list(self, params, attributes, replace=False,
