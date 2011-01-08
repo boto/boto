@@ -33,7 +33,6 @@ from boto.exception import FPSResponseError
 class FPSConnection(AWSQueryConnection):
 
     APIVersion = '2007-01-08'
-    SignatureVersion = '1'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -45,6 +44,9 @@ class FPSConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass, host, debug,
                                     https_connection_factory, path)
     
+    def _required_auth_capability(self):
+        return ['fps']
+
     def install_payment_instruction(self, instruction, token_type="Unrestricted", transaction_id=None):
         """
         InstallPaymentInstruction

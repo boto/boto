@@ -39,7 +39,6 @@ class MTurkRequestError(EC2ResponseError):
 class MTurkConnection(AWSQueryConnection):
     
     APIVersion = '2008-08-02'
-    SignatureVersion = '1'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
@@ -58,6 +57,9 @@ class MTurkConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass, host, debug,
                                     https_connection_factory)
     
+    def _required_auth_capability(self):
+        return ['mturk']
+
     def get_account_balance(self):
         """
         """

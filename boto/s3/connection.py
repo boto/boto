@@ -136,6 +136,9 @@ class S3Connection(AWSAuthConnection):
                 debug=debug, https_connection_factory=https_connection_factory,
                 path=path, provider=provider)
 
+    def _required_auth_capability(self):
+        return ['s3']
+
     def __iter__(self):
         for bucket in self.get_all_buckets():
             yield bucket

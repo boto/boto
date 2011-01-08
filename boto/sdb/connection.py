@@ -50,7 +50,6 @@ class SDBConnection(AWSQueryConnection):
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'sdb.amazonaws.com'
     APIVersion = '2009-04-15'
-    SignatureVersion = '2'
     ResponseError = SDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -71,6 +70,9 @@ class SDBConnection(AWSQueryConnection):
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item
+
+    def _required_auth_capability(self):
+        return ['sdb']
 
     def set_item_cls(self, cls):
         self.item_cls = cls

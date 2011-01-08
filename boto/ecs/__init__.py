@@ -41,6 +41,9 @@ class ECSConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory, path)
 
+    def _required_auth_capability(self):
+        return ['ecs']
+
     def make_request(self, action, params=None, path='/', verb='GET'):
         """Overriden because we don't do the "Action" setting here"""
         headers = {}

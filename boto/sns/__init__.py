@@ -35,7 +35,6 @@ class SNSConnection(AWSQueryConnection):
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'sns.us-east-1.amazonaws.com'
     APIVersion = '2010-03-31'
-    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -47,6 +46,9 @@ class SNSConnection(AWSQueryConnection):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug, https_connection_factory, path)
+
+    def _required_auth_capability(self):
+        return ['sns']
 
     def get_all_topics(self, next_token=None):
         """

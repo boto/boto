@@ -54,7 +54,7 @@ class CloudFrontConnection(AWSAuthConnection):
         return None
 
     def _required_auth_capability(self):
-        return ['hmac-v2']
+        return ['cloudfront']
 
     # Generics
     

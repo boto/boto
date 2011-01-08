@@ -58,7 +58,7 @@ class Route53Connection(AWSAuthConnection):
                 True, port, proxy, proxy_port, debug=debug)
 
     def _required_auth_capability(self):
-        return ['hmac-v3']
+        return ['route53']
 
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:

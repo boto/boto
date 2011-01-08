@@ -34,7 +34,6 @@ class ELBConnection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'elb_version', '2010-07-01')
     Endpoint = boto.config.get('Boto', 'elb_endpoint', 'elasticloadbalancing.amazonaws.com')
-    SignatureVersion = '1'
     #ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -49,6 +48,9 @@ class ELBConnection(AWSQueryConnection):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory, path)
+
+    def _required_auth_capability(self):
+        return ['ec2']
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):

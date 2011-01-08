@@ -40,7 +40,6 @@ class AutoScaleConnection(AWSQueryConnection):
                                'autoscaling.amazonaws.com')
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'autoscaling.amazonaws.com'
-    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -63,6 +62,9 @@ class AutoScaleConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path=path)
+
+    def _required_auth_capability(self):
+        return ['ec2']
 
     def build_list_params(self, params, items, label):
         """ items is a list of dictionaries or strings:

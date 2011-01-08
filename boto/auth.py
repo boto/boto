@@ -113,7 +113,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """
     Implements the HMAC request signing used by S3 and GS.
     """
-    capability = ['hmac-v1']
+    capability = ['s3']
     
     S3_ENDPOINT = 's3.amazonaws.com'
     GS_ENDPOINT = 'commondatastorage.googleapis.com'
@@ -152,11 +152,12 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
     """
     Implements the simplified HMAC authorization used by CloudFront.
     """
-    capability = ['hmac-v2']
+    capability = ['cloudfront']
     
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
+        self._hmac_256 = None
         
     def add_auth(self, http_request):
         headers = http_request.headers
@@ -174,7 +175,7 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """
     Implements the new Version 3 HMAC authorization used by Route53.
     """
-    capability = ['hmac-v3']
+    capability = ['route53']
     
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
@@ -269,10 +270,12 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         return (qs, base64.b64encode(hmac.digest()))
 
 class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
-    """Class SQS query signature based Auth handler."""
+    """
+    Provides Query Signature V1 Authentication.
+    """
 
     SignatureVersion = 1
-    capability = ['sign-v1']
+    capability = ['mturk']
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
@@ -289,10 +292,13 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
         return (qs, base64.b64encode(hmac.digest()))
 
 class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
-    """Class SQS query signature based Auth handler."""
+    """
+    Provides Query Signature V2 Authentication.
+    """
 
     SignatureVersion = 2
-    capability = ['sign-v2']
+    capability = ['ec2', 'ec2', 'emr', 'fps',
+                  'iam', 'rds', 'sns', 'sqs']
 
     def _calc_signature(self, params, verb, path, server_name):
         boto.log.debug('using _calc_signature_2')
@@ -322,15 +328,16 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
 
 
 def get_auth_handler(host, config, provider, requested_capability=None):
-    """Finds an AuthHandler that is ready to authenticate.
+    """
+    Finds an AuthHandler that is ready to authenticate.
 
     Lists through all the registered AuthHandlers to find one that is willing
-    to handle for the given config and provider.
+    to handle for the requested capabilities, config and provider.
 
     :type host: string
-    :param host:
+    :param host: The name of the host
 
-    :type config:
+    :type config: 
     :param config:
 
     :type provider:
@@ -343,19 +350,31 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         boto.exception.NoAuthHandlerFound:
         boto.exception.TooManyAuthHandlerReadyToAuthenticate:
     """
+    ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
-    if not auth_handlers:
-        msg = 'No handler was able to provide: %s' % requested_capability
-        raise boto.exception.NoAuthHandlerFound(msg)
-    if len(auth_handlers) > 1:
+    total_handlers = len(auth_handlers)
+    for handler in auth_handlers:
+        try:
+            ready_handlers.append(handler(host, config, provider))
+        except boto.auth_handler.NotReadyToAuthenticate:
+            pass
+ 
+    if not ready_handlers:
+        checked_handlers = auth_handlers
+        names = [handler.__name__ for handler in checked_handlers]
+        raise boto.exception.NoAuthHandlerFound(
+              'No handler was ready to authenticate. %d handlers were checked.'
+              ' %s ' % (len(names), str(names)))
+
+    if len(ready_handlers) > 1:
         # NOTE: Even though it would be nice to accept more than one handler
         # by using one of the many ready handlers, we are never sure that each
         # of them are referring to the same storage account. Since we cannot
         # easily guarantee that, it is always safe to fail, rather than operate
         # on the wrong account.
-        names = [handler.__class__.__name__ for handler in auth_handlers]
+        names = [handler.__class__.__name__ for handler in ready_handlers]
         raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
                '%d AuthHandlers ready to authenticate, '
                'only 1 expected: %s' % (len(names), str(names)))
 
-    return auth_handlers[0](host, config, provider)
+    return ready_handlers[0]
