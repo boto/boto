@@ -199,18 +199,6 @@ class QuerySignatureHelper(HmacKeys):
     Concrete sub class need to implement _calc_sigature method.
     """
 
-    def __init__(self, host, config, provider):
-        HmacKeys.__init__(self, host, config, provider)
-        
-        if not host.endswith('.amazonaws.com'):
-            # QuerySignature only works for amazon services.
-            raise boto.auth_handler.NotReadyToAuthenticate()
-        if host.endswith('s3.amazonaws.com'):
-            # QuerySignature does not work with s3. s3 uses Authorization
-            # header implemented using HmacAuthHandler. Everything else in
-            # AWS supports query string authentication mechanism.
-            raise boto.auth_handler.NotReadyToAuthenticate()
-
     def add_auth(self, http_request):
         server_name = self._server_name(http_request.host, http_request.port)
         headers = http_request.headers
@@ -297,7 +285,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
     """
 
     SignatureVersion = 2
-    capability = ['ec2', 'ec2', 'emr', 'fps',
+    capability = ['ec2', 'ec2', 'emr', 'fps', 'ecs',
                   'iam', 'rds', 'sns', 'sqs']
 
     def _calc_signature(self, params, verb, path, server_name):

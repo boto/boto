@@ -31,7 +31,6 @@ class ECSConnection(AWSQueryConnection):
     """ECommerse Connection"""
 
     APIVersion = '2010-09-01'
-    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -43,28 +42,6 @@ class ECSConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         return ['ecs']
-
-    def make_request(self, action, params=None, path='/', verb='GET'):
-        """Overriden because we don't do the "Action" setting here"""
-        headers = {}
-        if params == None:
-            params = {}
-        params['Version'] = self.APIVersion
-        params['AWSAccessKeyId'] = self.aws_access_key_id
-        params['SignatureVersion'] = self.SignatureVersion
-        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        qs, signature = self.get_signature(params, verb, self.get_path(path))
-        if verb == 'POST':
-            headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            request_body = qs + '&Signature=' + urllib.quote(signature)
-            qs = path
-        else:
-            request_body = ''
-            qs = path + '?' + qs + '&Signature=' + urllib.quote(signature)
-        return AWSAuthConnection.make_request(self, verb, qs,
-                                              data=request_body,
-                                              headers=headers)
-
 
     def get_response(self, action, params, page=0, itemSet=None):
         """

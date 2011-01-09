@@ -216,6 +216,9 @@ class AWSAuthConnection(object):
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
 
+    def _required_auth_capability(self):
+        return []
+
     def _cached_name(self, host, is_secure):
         if host is None:
             host = self.server_name()
@@ -528,13 +531,9 @@ class AWSAuthConnection(object):
         boto.log.debug('closing all HTTP connections')
         self.connection = None  # compat field
 
-    def _required_auth_capability(self):
-        return ['hmac-v1']
-
 class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''
-    SignatureVersion = '1'
     ResponseError = BotoServerError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -546,7 +545,7 @@ class AWSQueryConnection(AWSAuthConnection):
                                    debug,  https_connection_factory, path)
 
     def _required_auth_capability(self):
-        return ['sign-v' + self.SignatureVersion]
+        return []
 
     def get_utf8_value(self, value):
         return boto.utils.get_utf8_value(value)
