@@ -288,6 +288,7 @@ class ShellCommand(object):
         self.command = command
         self.log_fp = StringIO.StringIO()
         self.wait = wait
+        self.fail_fast = fail_fast
         self.run()
 
     def run(self):
