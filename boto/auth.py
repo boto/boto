@@ -113,7 +113,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """
     Implements the HMAC request signing used by S3 and GS.
     """
-    capability = ['s3']
+    capability = ['hmac-v1', 's3']
     
     S3_ENDPOINT = 's3.amazonaws.com'
     GS_ENDPOINT = 'commondatastorage.googleapis.com'
@@ -152,7 +152,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
     """
     Implements the simplified HMAC authorization used by CloudFront.
     """
-    capability = ['cloudfront']
+    capability = ['hmac-v2', 'cloudfront']
     
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
@@ -175,7 +175,7 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """
     Implements the new Version 3 HMAC authorization used by Route53.
     """
-    capability = ['route53']
+    capability = ['hmac-v3', 'route53']
     
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
@@ -263,7 +263,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     """
 
     SignatureVersion = 1
-    capability = ['mturk']
+    capability = ['sign-v1', 'mturk']
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
@@ -285,7 +285,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
     """
 
     SignatureVersion = 2
-    capability = ['ec2', 'ec2', 'emr', 'fps', 'ecs',
+    capability = ['sign-v2', 'ec2', 'ec2', 'emr', 'fps', 'ecs',
                   'sdb', 'iam', 'rds', 'sns', 'sqs']
 
     def _calc_signature(self, params, verb, path, server_name):
