@@ -286,7 +286,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
 
     SignatureVersion = 2
     capability = ['ec2', 'ec2', 'emr', 'fps', 'ecs',
-                  'iam', 'rds', 'sns', 'sqs']
+                  'sdb', 'iam', 'rds', 'sns', 'sqs']
 
     def _calc_signature(self, params, verb, path, server_name):
         boto.log.debug('using _calc_signature_2')
