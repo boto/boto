@@ -39,10 +39,10 @@ boto.gs.user
    :members:   
    :undoc-members:
 
-boto.gs.resumable_download_handler
-------------
+boto.gs.resumable_upload_handler
+--------------------------------
 
-.. automodule:: boto.gs.resumable_download_handler
+.. automodule:: boto.gs.resumable_upload_handler
    :members:   
    :undoc-members:
 

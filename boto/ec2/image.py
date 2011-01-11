@@ -57,6 +57,9 @@ class Image(TaggedEC2Object):
         self.block_device_mapping = None
         self.root_device_type = None
         self.root_device_name = None
+        self.virtualization_type = None
+        self.hypervisor = None
+        self.instance_lifecycle = None
 
     def __repr__(self):
         return 'Image:%s' % self.id
@@ -115,6 +118,12 @@ class Image(TaggedEC2Object):
             self.root_device_type = value
         elif name == 'rootDeviceName':
             self.root_device_name = value
+        elif name == 'virtualizationType':
+            self.virtualization_type = value
+        elif name == 'hypervisor':
+            self.hypervisor = value
+        elif name == 'instanceLifecycle':
+            self.instance_lifecycle = value
         else:
             setattr(self, name, value)
 

@@ -48,10 +48,7 @@ class Key(object):
         :param cb: ignored in this subclass.
 
         :type cb: int
-        :param num_cb ignored in this subclass.
-
-        :type torrent: bool
-        :param torrent: ignored in this subclass.
+        :param num_cb: ignored in this subclass.
         """
         key_file = open(self.full_path, 'rb')
         shutil.copyfileobj(key_file, fp)
@@ -100,7 +97,7 @@ class Key(object):
     def get_contents_as_string(self, headers=None, cb=None, num_cb=10,
                                torrent=False):
         """
-        Retrieve file data from thie Key, and return contents as a string.
+        Retrieve file data from the Key, and return contents as a string.
 
         :type headers: dict
         :param headers: ignored in this subclass.
