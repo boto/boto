@@ -323,7 +323,7 @@ class _EC2Error:
 
 class SDBResponseError(BotoServerError):
     """
-    Error in respones from SDB.
+    Error in responses from SDB.
     """
     pass
 

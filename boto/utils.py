@@ -261,7 +261,7 @@ def fetch_file(uri, file=None, username=None, password=None):
     try:
         if uri.startswith('s3://'):
             bucket_name, key_name = uri[len('s3://'):].split('/', 1)
-            c = boto.connect_s3()
+            c = boto.connect_s3(aws_access_key_id=username, aws_secret_access_key=password)
             bucket = c.get_bucket(bucket_name)
             key = bucket.get_key(key_name)
             key.get_contents_to_file(file)
@@ -283,11 +283,12 @@ def fetch_file(uri, file=None, username=None, password=None):
 
 class ShellCommand(object):
 
-    def __init__(self, command, wait=True):
+    def __init__(self, command, wait=True, fail_fast=False):
         self.exit_code = 0
         self.command = command
         self.log_fp = StringIO.StringIO()
         self.wait = wait
+        self.fail_fast = fail_fast
         self.run()
 
     def run(self):
@@ -302,6 +303,10 @@ class ShellCommand(object):
                 self.log_fp.write(t[1])
             boto.log.info(self.log_fp.getvalue())
             self.exit_code = self.process.returncode
+
+	    if self.fail_fast and self.exit_code != 0:
+		    raise Exception("Command " + self.command + " failed with status " + self.exit_code)
+
             return self.exit_code
 
     def setReadOnly(self, value):

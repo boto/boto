@@ -104,7 +104,7 @@ We also need to supply the Statistic that we want reported and
 the Units to use for the results.  The Statistic can be one of these
 values:
 
-['Minimum', 'Maximum', 'Sum', 'Average', 'Samples']
+['Minimum', 'Maximum', 'Sum', 'Average', 'SampleCount']
 
 And Units must be one of the following:
 
@@ -130,7 +130,7 @@ about that particular data point.
 >>> d = datapoints[0]
 >>> d
 {u'Average': 0.0,
- u'Samples': 1.0,
+ u'SampleCount': 1.0,
  u'Timestamp': u'2009-05-21T19:55:00Z',
  u'Unit': u'Percent'}
 

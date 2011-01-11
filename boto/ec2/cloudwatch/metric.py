@@ -35,7 +35,7 @@ class Dimensions(dict):
 
 class Metric(object):
 
-    Statistics = ['Minimum', 'Maximum', 'Sum', 'Average', 'Samples']
+    Statistics = ['Minimum', 'Maximum', 'Sum', 'Average', 'SampleCount']
     Units = ['Seconds', 'Percent', 'Bytes', 'Bits', 'Count',
              'Bytes/Second', 'Bits/Second', 'Count/Second']
 

@@ -511,6 +511,16 @@ class MTurkConnection(AWSQueryConnection):
 
         return self._process_request('UnblockWorker', params)
     
+    def notify_workers(self, worker_ids, subject, message_text):
+        """
+        Send a text message to workers.
+        """
+        params = {'WorkerId' : worker_ids,
+                  'Subject' : subject,
+                  'MessageText': message_text}
+
+        return self._process_request('NotifyWorkers', params)
+
     def _process_request(self, request_type, params, marker_elems=None):
         """
         Helper to process the xml response from AWS
