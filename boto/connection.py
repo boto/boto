@@ -81,8 +81,8 @@ class ConnectionPool:
 
 class HTTPRequest(object):
 
-    def __init__(self, method, protocol, host, port, path, params,
-                 headers, body):
+    def __init__(self, method, protocol, host, port, path, auth_path,
+                 params, headers, body):
         """Represents an HTTP request.
 
         :type method: string
@@ -101,6 +101,10 @@ class HTTPRequest(object):
         :type path: string 
         :param path: URL path that is bein accessed.
 
+        :type auth_path: string 
+        :param path: The part of the URL path used when creating the
+                     authentication string.
+
         :type params: dict
         :param params: HTTP url query parameters, with key as name of the param,
                        and value as value of param.
@@ -118,6 +122,7 @@ class HTTPRequest(object):
         self.host = host 
         self.port = port
         self.path = path
+        self.auth_path = auth_path
         self.params = params
         self.headers = headers
         self.body = body
@@ -478,16 +483,16 @@ class AWSAuthConnection(object):
         else:
             raise BotoClientError('Please report this exception as a Boto Issue!')
 
-    def build_base_http_request(self, method, path, headers=None, data='',
-                                host=None):
+    def build_base_http_request(self, method, path, auth_path,
+                                headers=None, data='', host=None):
         path = self.get_path(path)
         if headers == None:
             headers = {}
         else:
             headers = headers.copy()
         host = host or self.host
-        return HTTPRequest(method, self.protocol, host, self.port, path, {},
-                           headers, data)
+        return HTTPRequest(method, self.protocol, host, self.port, path, auth_path,
+                           {}, headers, data)
 
     def fill_in_auth(self, http_request):
         headers = http_request.headers
@@ -518,8 +523,8 @@ class AWSAuthConnection(object):
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None):
         """Makes a request to the server, with stock multiple-retry logic."""
-        http_request = self.build_base_http_request(method, path, headers, data,
-                                                    host)
+        http_request = self.build_base_http_request(method, path, auth_path,
+                                                    headers, data, host)
         http_request = self.fill_in_auth(http_request)
         return self._send_http_request(http_request, sender,
                                        override_num_retries)
@@ -552,7 +557,7 @@ class AWSQueryConnection(AWSAuthConnection):
 
     def make_request(self, action, params=None, path='/', verb='GET'):
         http_request = HTTPRequest(verb, self.protocol, self.host, self.port,
-                                   self.get_path(path), params, {}, '')
+                                   self.get_path(path), None, params, {}, '')
         http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
         http_request = self.fill_in_auth(http_request)

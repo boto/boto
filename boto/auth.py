@@ -1,4 +1,6 @@
 # Copyright 2010 Google Inc.
+# Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -99,27 +101,15 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
     
     capability = ['hmac-v1', 's3']
     
-    S3_ENDPOINT = 's3.amazonaws.com'
-    GS_ENDPOINT = 'commondatastorage.googleapis.com'
-
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def _get_bucket(self, http_request):
-        i = http_request.host.find('.' + self.S3_ENDPOINT)
-        if i != -1:
-            return '/' + http_request.host[:i]
-        i = http_request.host.find('.' + self.GS_ENDPOINT)
-        if i != -1:
-            return '/' + http_request.host[:i]
-        return ''
-
     def add_auth(self, http_request):
         headers = http_request.headers
         method = http_request.method
-        auth_path = '%s%s' % (self._get_bucket(http_request), http_request.path)
+        auth_path = http_request.auth_path
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
