@@ -165,7 +165,7 @@ class EBSInstaller(Installer):
 
     def update_fstab(self):
         f = open("/etc/fstab", "a")
-        f.write('%s\t%s\txfs\tdefaults 0 0\n' % (self.mount_point, self.device))
+        f.write('%s\t%s\txfs\tdefaults 0 0\n' % (self.device, self.mount_point))
         f.close()
 
     def install(self):
