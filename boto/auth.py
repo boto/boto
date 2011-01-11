@@ -70,14 +70,12 @@ class HmacKeys(object):
     """Key based Auth handler helper."""
 
     def __init__(self, host, config, provider):
-        storage_keys = self._get_keys(config, provider)
-        if not storage_keys:
+        if provider.access_key is None or provider.secret_key is None:
             raise boto.auth_handler.NotReadyToAuthenticate()
-        self._access_key, self._secret_key = storage_keys
         self._provider = provider
-        self._hmac = hmac.new(self._secret_key, digestmod=sha)
+        self._hmac = hmac.new(self._provider.secret_key, digestmod=sha)
         if sha256:
-            self._hmac_256 = hmac.new(self._secret_key, digestmod=sha256)
+            self._hmac_256 = hmac.new(self._provider.secret_key, digestmod=sha256)
         else:
             self._hmac_256 = None
 
@@ -86,19 +84,6 @@ class HmacKeys(object):
             return 'HmacSHA256'
         else:
             return 'HmacSHA1'
-
-    def _get_keys(self, config, provider):
-        if (provider.name == 'aws' and
-            config.has_option('Credentials', 'aws_secret_access_key')):
-            secret_key = config.get('Credentials', 'aws_secret_access_key')
-            access_key = config.get('Credentials', 'aws_access_key_id')
-            return (access_key, secret_key)
-        if (provider.name == 'google' and
-            config.has_option('Credentials', 'gs_secret_access_key')):
-            secret_key = config.get('Credentials', 'gs_secret_access_key')
-            access_key = config.get('Credentials', 'gs_access_key_id')
-            return (access_key, secret_key)
-        return None
 
     def sign_string(self, string_to_sign):
         boto.log.debug('Canonical: %s' % string_to_sign)
@@ -110,9 +95,8 @@ class HmacKeys(object):
         return base64.encodestring(hmac.digest()).strip()
 
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
-    """
-    Implements the HMAC request signing used by S3 and GS.
-    """
+    """    Implements the HMAC request signing used by S3 and GS."""
+    
     capability = ['hmac-v1', 's3']
     
     S3_ENDPOINT = 's3.amazonaws.com'
@@ -146,7 +130,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         auth_hdr = self._provider.auth_header
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
-                                     self._access_key, b64_hmac))
+                                     self._provider.access_key, b64_hmac))
 
 class HmacAuthV2Handler(AuthHandler, HmacKeys):
     """
@@ -169,12 +153,11 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         auth_hdr = self._provider.auth_header
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
-                                     self._access_key, b64_hmac))
+                                     self._provider.access_key, b64_hmac))
         
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
-    """
-    Implements the new Version 3 HMAC authorization used by Route53.
-    """
+    """Implements the new Version 3 HMAC authorization used by Route53."""
+    
     capability = ['hmac-v3', 'route53']
     
     def __init__(self, host, config, provider):
@@ -188,13 +171,12 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
                                             time.gmtime())
 
         b64_hmac = self.sign_string(headers['Date'])
-        s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._access_key
+        s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._provider.access_key
         s += "Algorithm=%s,Signature=%s" % (self.algorithm(), b64_hmac)
         headers['X-Amzn-Authorization'] = s
 
 class QuerySignatureHelper(HmacKeys):
-    """
-    Helper for Query signature based Auth handler.
+    """Helper for Query signature based Auth handler.
 
     Concrete sub class need to implement _calc_sigature method.
     """
@@ -203,7 +185,7 @@ class QuerySignatureHelper(HmacKeys):
         server_name = self._server_name(http_request.host, http_request.port)
         headers = http_request.headers
         params = http_request.params
-        params['AWSAccessKeyId'] = self._access_key
+        params['AWSAccessKeyId'] = self._provider.access_key
         params['SignatureVersion'] = self.SignatureVersion
         params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         qs, signature = self._calc_signature(
@@ -280,9 +262,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
         return (qs, base64.b64encode(hmac.digest()))
 
 class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
-    """
-    Provides Query Signature V2 Authentication.
-    """
+    """Provides Query Signature V2 Authentication."""
 
     SignatureVersion = 2
     capability = ['sign-v2', 'ec2', 'ec2', 'emr', 'fps', 'ecs',
@@ -316,8 +296,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
 
 
 def get_auth_handler(host, config, provider, requested_capability=None):
-    """
-    Finds an AuthHandler that is ready to authenticate.
+    """Finds an AuthHandler that is ready to authenticate.
 
     Lists through all the registered AuthHandlers to find one that is willing
     to handle for the requested capabilities, config and provider.
