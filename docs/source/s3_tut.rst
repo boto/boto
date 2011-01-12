@@ -67,10 +67,12 @@ The create_bucket method will create the requested bucket if it does not
 exist or will return the existing bucket if it does exist.
 
 Creating a Bucket In Another Location
-------------------------------------- The example above assumes that
-you want to create a bucket in the standard US region.  However, it is
-possible to create buckets in other locations.  To do so, first import
-the Location object from the boto.s3.connection module, like this:
+-------------------------------------
+
+The example above assumes that you want to create a bucket in the
+standard US region.  However, it is possible to create buckets in
+other locations.  To do so, first import the Location object from the
+boto.s3.connection module, like this:
 
 >>> from boto.s3.connection import Location
 >>> dir(Location)
