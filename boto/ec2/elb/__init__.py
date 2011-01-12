@@ -28,26 +28,73 @@ from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.elb.loadbalancer import LoadBalancer
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
+from boto.regioninfo import RegionInfo
 import boto
+
+RegionData = {
+    'us-east-1' : 'elasticloadbalancing.us-east-1.amazonaws.com',
+    'us-west-1' : 'elasticloadbalancing.us-west-1.amazonaws.com',
+    'eu-west-1' : 'elasticloadbalancing.eu-west-1.amazonaws.com',
+    'ap-southeast-1' : 'elasticloadbalancing.ap-southeast-1.amazonaws.com'}
+
+def regions():
+    """
+    Get all available regions for the SDB service.
+
+    :rtype: list
+    :return: A list of :class:`boto.RegionInfo` instances
+    """
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=ELBConnection)
+        regions.append(region)
+    return regions
+
+def connect_to_region(region_name):
+    """
+    Given a valid region name, return a 
+    :class:`boto.ec2.elb.ELBConnection`.
+    
+    :param str region_name: The name of the region to connect to.
+    
+    :rtype: :class:`boto.ec2.ELBConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+        name is given
+    """
+    for region in regions():
+        if region.name == region_name:
+            return region.connect()
+    return None
 
 class ELBConnection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'elb_version', '2010-07-01')
-    Endpoint = boto.config.get('Boto', 'elb_endpoint', 'elasticloadbalancing.amazonaws.com')
-    #ResponseError = EC2ResponseError
+    DefaultRegionName = boto.config.get('Boto', 'elb_region_name', 'us-east-1')
+    DefaultRegionEndpoint = boto.config.get('Boto', 'elb_region_endpoint',
+                                            'elasticloadbalancing.amazonaws.com')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, host=Endpoint, debug=0,
-                 https_connection_factory=None, path='/'):
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
-        B{Note:} The host argument is overridden by the host specified in the boto configuration file.
+        B{Note:} The region argument is overridden by the region specified in
+        the boto configuration file.
         """
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory, path)
+        if not region:
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint)
+        self.region = region
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['ec2']
