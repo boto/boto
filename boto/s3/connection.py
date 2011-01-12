@@ -111,11 +111,10 @@ class OrdinaryCallingFormat(_CallingFormat):
         return path_base + urllib.quote(key)
 
 class Location:
-    DEFAULT = ''
+    DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
-
-#boto.set_stream_logger('s3')
+    APSoutheast = 'ap-southeast-1'
 
 class S3Connection(AWSAuthConnection):
 
