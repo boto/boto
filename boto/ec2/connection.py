@@ -1072,7 +1072,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
         """
-        return self.get_object('AllocateAddress', None, Address)
+        return self.get_object('AllocateAddress', {}, Address)
 
     def associate_address(self, instance_id, public_ip):
         """
