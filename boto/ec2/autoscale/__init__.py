@@ -213,3 +213,32 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_object('TerminateInstanceInAutoScalingGroup', params,
                                Activity)
 
+    def set_instance_health(self, instance_id, health_status,
+                            should_respect_grace_period=True):
+        """
+        Explicitly set the health status of an instance.
+
+        :type instance_id: str
+        :param instance_id: The identifier of the EC2 instance.
+
+        :type health_status: str
+        :param health_status: The health status of the instance.
+                              "Healthy" means that the instance is
+                              healthy and should remain in service.
+                              "Unhealthy" means that the instance is
+                              unhealthy. Auto Scaling should terminate
+                              and replace it.
+
+        :type should_respect_grace_period: bool
+        :param should_respect_grace_period: If True, this call should
+                                            respect the grace period
+                                            associated with the group.
+        """
+        params = {'InstanceId' : instance_id,
+                  'HealthStatus' : health_status}
+        if should_respect_grace_period:
+            params['ShouldRespectGracePeriod'] = 'true'
+        else:
+            params['ShouldRespectGracePeriod'] = 'false'
+        return self.get_status('SetInstanceHealth', params)
+
