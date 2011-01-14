@@ -497,7 +497,8 @@ class AWSAuthConnection(object):
     def fill_in_auth(self, http_request):
         headers = http_request.headers
         if self.use_proxy:
-            path = self.prefix_proxy_to_path(path, host)
+            path = self.prefix_proxy_to_path(http_request.path,
+                                             http_request.host)
             if self.proxy_user and self.proxy_pass and not self.is_secure:
                 # If is_secure, we don't have to set the proxy authentication
                 # header here, we did that in the CONNECT to the proxy.
