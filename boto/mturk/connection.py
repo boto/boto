@@ -521,6 +521,139 @@ class MTurkConnection(AWSQueryConnection):
 
         return self._process_request('NotifyWorkers', params)
 
+    def create_qualification_type(self,
+                                  name,
+                                  description,
+                                  status,
+                                  keywords=None,
+                                  retry_delay=None,
+                                  test=None,
+                                  answer_key=None,
+                                  answer_key_xml=None,
+                                  test_duration=None,
+                                  auto_granted=False,
+                                  auto_granted_value=1):
+        """
+        Create a new Qualification Type.
+
+        name: This will be visible to workers and must be unique for a
+           given requester.
+
+        description: description shown to workers.  Max 2000 characters.
+
+        status: 'Active' or 'Inactive'
+
+        keywords: list of keyword strings or comma separated string.
+           Max length of 1000 characters when concatenated with commas.
+
+        retry_delay: number of seconds after requesting a
+           qualification the worker must wait before they can ask again.
+           If not specified, workers can only request this qualification
+           once.
+
+        test: a QuestionForm
+
+        answer_key: an XML string of your answer key, for automatically
+           scored qualification tests.
+           (Consider implementing an AnswerKey class for this to support.)
+
+        test_duration: the number of seconds a worker has to complete the test.
+
+        auto_granted: if True, requests for the Qualification are granted immediately.
+          Can't coexist with a test.
+
+        auto_granted_value: auto_granted qualifications are given this value.
+
+        """
+
+        params = {'Name' : name,
+                  'Description' : description,
+                  'QualificationTypeStatus' : status,
+                  }
+        if retry_delay is not None:
+            params['RetryDelay'] = retry_delay
+
+        if test is not None:
+            assert(isinstance(test, QuestionForm))
+            assert(test_duration is not None)
+            params['Test'] = test.get_as_xml()
+
+        if test_duration is not None:
+            params['TestDuration'] = test_duration
+
+        if answer_key is not None:
+            if isinstance(answer_key, basestring):
+                params['AnswerKey'] = answer_key # xml
+            else:
+                raise TypeError
+                # Eventually someone will write an AnswerKey class.
+
+        if auto_granted:
+            assert(test is False)
+            params['AutoGranted'] = True
+            params['AutoGrantedValue'] = auto_granted_value
+
+        if keywords:
+            params['Keywords'] = self.get_keywords_as_string(keywords)
+
+        return self._process_request('CreateQualificationType', params)
+
+    def get_qualification_type(self, qualification_type_id):
+        params = {'QualificationTypeId' : qualification_type_id }
+        return self._process_request('GetQualificationType', params)
+
+    def update_qualification_type(self, qualification_type_id,
+                                  description=None,
+                                  status=None,
+                                  retry_delay=None,
+                                  test=None,
+                                  answer_key=None,
+                                  test_duration=None,
+                                  auto_granted=None,
+                                  auto_granted_value=None):
+
+        params = {'QualificationTypeId' : qualification_type_id }
+
+        if description is not None:
+            params['Description'] = description
+
+        if status is not None:
+            params['QualificationTypeStatus'] = status
+
+        if retry_delay is not None:
+            params['RetryDelay'] = retry_delay
+
+        if test is not None:
+            assert(isinstance(test, QuestionForm))
+            params['Test'] = test.get_as_xml()
+
+        if test_duration is not None:
+            params['TestDuration'] = test_duration
+
+        if answer_key is not None:
+            if isinstance(answer_key, basestring):
+                params['AnswerKey'] = answer_key # xml
+            else:
+                raise TypeError
+                # Eventually someone will write an AnswerKey class.
+
+        if auto_granted is not None:
+            params['AutoGranted'] = auto_granted
+
+        if auto_granted_value is not None:
+            params['AutoGrantedValue'] = auto_granted_value
+
+        return self._process_request('UpdateQualificationType', params)
+
+
+    def assign_qualification(self, qualification_type_id, worker_id,
+                             value=1, send_notification=True):
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'WorkerId' : worker_id,
+                  'IntegerValue' : value,
+                  'SendNotification' : send_notification, }
+        return self._process_request('AssignQualification', params)
+
     def _process_request(self, request_type, params, marker_elems=None):
         """
         Helper to process the xml response from AWS
