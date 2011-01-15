@@ -148,7 +148,7 @@ class IAMConnection(AWSQueryConnection):
 
     def update_group(self, group_name, new_group_name=None, new_path=None):
         """
-        Update a group by adding or removing a user to/from it.
+        Updates name and/or path of the specified group.
 
         :type group_name: string
         :param group_name: The name of the new group
