@@ -132,11 +132,14 @@ class ELBConnection(AWSQueryConnection):
         :param zones: The names of the availability zone(s) to add.
 
         :type listeners: List of tuples
-        :param listeners: Each tuple contains three values.
-                          (LoadBalancerPortNumber, InstancePortNumber, Protocol)
+        :param listeners: Each tuple contains three or four values,
+                          (LoadBalancerPortNumber, InstancePortNumber, Protocol,
+                          [SSLCertificateId])
                           where LoadBalancerPortNumber and InstancePortNumber are
-                          integer values between 1 and 65535 and Protocol is a
-                          string containing either 'TCP' or 'HTTP'.
+                          integer values between 1 and 65535, Protocol is a
+                          string containing either 'TCP', 'HTTP' or 'HTTPS';
+                          SSLCertificateID is the ARN of a AWS AIM certificate,
+                          and must be specified when doing HTTPS.
 
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
@@ -146,6 +149,8 @@ class ELBConnection(AWSQueryConnection):
             params['Listeners.member.%d.LoadBalancerPort' % (i+1)] = listeners[i][0]
             params['Listeners.member.%d.InstancePort' % (i+1)] = listeners[i][1]
             params['Listeners.member.%d.Protocol' % (i+1)] = listeners[i][2]
+            if listeners[i][2]=='HTTPS':
+                params['Listeners.member.%d.SSLCertificateId' % (i+1)] = listeners[i][3]
         self.build_list_params(params, zones, 'AvailabilityZones.member.%d')
         load_balancer = self.get_object('CreateLoadBalancer', params, LoadBalancer)
         load_balancer.name = name
@@ -161,11 +166,14 @@ class ELBConnection(AWSQueryConnection):
         :param name: The name of the load balancer to create the listeners for
 
         :type listeners: List of tuples
-        :param listeners: Each tuple contains three values.
-                          (LoadBalancerPortNumber, InstancePortNumber, Protocol)
+        :param listeners: Each tuple contains three values,
+                          (LoadBalancerPortNumber, InstancePortNumber, Protocol,
+                          [SSLCertificateId])
                           where LoadBalancerPortNumber and InstancePortNumber are
-                          integer values between 1 and 65535 and Protocol is a
-                          string containing either 'TCP' or 'HTTP'.
+                          integer values between 1 and 65535, Protocol is a
+                          string containing either 'TCP', 'HTTP' or 'HTTPS';
+                          SSLCertificateID is the ARN of a AWS AIM certificate,
+                          and must be specified when doing HTTPS.
 
         :return: The status of the request
         """
@@ -174,6 +182,8 @@ class ELBConnection(AWSQueryConnection):
             params['Listeners.member.%d.LoadBalancerPort' % (i+1)] = listeners[i][0]
             params['Listeners.member.%d.InstancePort' % (i+1)] = listeners[i][1]
             params['Listeners.member.%d.Protocol' % (i+1)] = listeners[i][2]
+            if listeners[i][2]=='HTTPS':
+                params['Listeners.member.%d.SSLCertificateId' % (i+1)] = listeners[i][3]
         return self.get_status('CreateLoadBalancerListeners', params)
 
 
