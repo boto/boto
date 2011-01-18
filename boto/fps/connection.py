@@ -113,7 +113,7 @@ class FPSConnection(AWSQueryConnection):
         else:
             raise FPSResponseError(response.status, response.reason, body)
 
-    def make_url(self, returnURL, paymentReason, pipelineName, **params):
+    def make_url(self, returnURL, paymentReason, pipelineName, transactionAmount, **params):
         """
         Generate the URL with the signature required for a transaction
         """
@@ -131,6 +131,7 @@ class FPSConnection(AWSQueryConnection):
         params['pipelineName'] = pipelineName
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
+        params["transactionAmount"] = transactionAmount
 
         if(not params.has_key('callerReference')):
             params['callerReference'] = str(uuid.uuid4())
