@@ -20,6 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import base64
+import hmac
+import hashlib
 import urllib
 import xml.sax
 import uuid
@@ -114,34 +117,44 @@ class FPSConnection(AWSQueryConnection):
         """
         Generate the URL with the signature required for a transaction
         """
-        params['callerKey'] = str(self.aws_access_key_id)
-        params['returnURL'] = str(returnURL)
-        params['paymentReason'] = str(paymentReason)
-        params['pipelineName'] = pipelineName
-
-        if(not params.has_key('callerReference')):
-            params['callerReference'] = str(uuid.uuid4())
-
-        deco = [(key.lower(),i,key) for i,key in enumerate(params.keys())]
-        deco.sort()
-        keys = [key for _,_,key in deco]
-
-        url = ''
-        canonical = ''
-        for k in keys:
-            url += "&%s=%s" % (k, urllib.quote_plus(str(params[k])))
-            canonical += "%s%s" % (k, str(params[k]))
-
-        url = "/cobranded-ui/actions/start?%s" % ( url[1:])
-        signature = self._auth_handler.sign_string(canonical)
-
         # use the sandbox authorization endpoint if we're using the
         #  sandbox for API calls.
         endpoint_host = 'authorize.payments.amazon.com'
         if 'sandbox' in self.host:
             endpoint_host = 'authorize.payments-sandbox.amazon.com'
-        fmt = "https://%(endpoint_host)s%(url)s&awsSignature=%(signature)s"
-        return fmt % vars()
+        base = "/cobranded-ui/actions/start"
+
+
+        params['callerKey'] = str(self.aws_access_key_id)
+        params['returnURL'] = str(returnURL)
+        params['paymentReason'] = str(paymentReason)
+        params['pipelineName'] = pipelineName
+        params["signatureMethod"] = 'HmacSHA256'
+        params["signatureVersion"] = '2'
+
+        if(not params.has_key('callerReference')):
+            params['callerReference'] = str(uuid.uuid4())
+
+        parts = ''
+        for k in sorted(params.keys()):
+            parts += "&%s=%s" % (k, urllib.quote(params[k], '~'))
+
+        canonical = '\n'.join(['GET',
+                               str(endpoint_host).lower(),
+                               base,
+                               parts[1:]])
+
+        signature = self._auth_handler.sign_string(canonical)
+        params["signature"] = signature
+
+        urlsuffix = ''
+        for k in sorted(params.keys()):
+            urlsuffix += "&%s=%s" % (k, urllib.quote(params[k], '~'))
+        urlsuffix = urlsuffix[1:] # strip the first &
+        
+        fmt = "https://%(endpoint_host)s%(base)s?%(urlsuffix)s"
+        final = fmt % vars()
+        return final
 
     def pay(self, transactionAmount, senderTokenId,
             recipientTokenId=None, callerTokenId=None,
@@ -156,9 +169,9 @@ class FPSConnection(AWSQueryConnection):
         params = {}
         params['SenderTokenId'] = senderTokenId
         # this is for 2008-09-17 specification
-        #params['TransactionAmount.Value'] = str(transactionAmount)
-        #params['TransactionAmount.CurrencyCode'] = "USD"
-        params['TransactionAmount'] = str(transactionAmount)
+        params['TransactionAmount.Amount'] = str(transactionAmount)
+        params['TransactionAmount.CurrencyCode'] = "USD"
+        #params['TransactionAmount'] = str(transactionAmount)
         params['ChargeFeeTo'] = chargeFeeTo
         
         params['RecipientTokenId'] = (
