@@ -116,7 +116,7 @@ class EBSInstaller(Installer):
         if attach_request_result == True:
              boto.log.info('Attached volume %s to instance %s as device %s' % (self.volume_id, self.instance_id, self.de
              # now wait for the volume device to appear
-             while not os.path.exists(self.device):
+             while os.path.exists(self.device) == False:
                  boto.log.info('%s still does not exist, waiting 10 seconds' % self.device)
                  time.sleep(10)
          else:
