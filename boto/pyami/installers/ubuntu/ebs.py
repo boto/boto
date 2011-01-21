@@ -114,14 +114,15 @@ class EBSInstaller(Installer):
             time.sleep(5)
         attach_request_result = ec2.attach_volume(self.volume_id, self.instance_id, self.device)
         if attach_request_result == True:
-             boto.log.info('Attached volume %s to instance %s as device %s' % (self.volume_id, self.instance_id, self.de
+             boto.log.info('Attached volume %s to instance %s as device %s' % (self.volume_id, self.instance_id, self.device))
              # now wait for the volume device to appear
-             while os.path.exists(self.device) == False:
+             while not os.path.exists(self.device):
                  boto.log.info('%s still does not exist, waiting 10 seconds' % self.device)
                  time.sleep(10)
          else:
-             boto.log.error('The attempt to attach volume %s to instance %s as device %s failed with attach result = %s'
-             self.notify('Volume attach request failed', 'The attempt to attach volume %s to instance %s as device %s fa
+             boto.log.error('The attempt to attach volume %s to instance %s as device %s failed with attach result = %s' % (self.volume_id, self.instance_id, self.device, attach_request_result))
+             self.notify('Volume attach request failed', 'The attempt to attach volume %s to instance %s as device %s failed with attach result = %s' % (self.volume_id, self.instance_id, self.device, attach_request_result))
+
          # log what instance each volume is attached to for all instances:
          instance_map = {}
          reservations = ec2.get_all_instances()
@@ -131,11 +132,10 @@ class EBSInstaller(Installer):
          vols = ec2.get_all_volumes()
          for v in vols:
              if v.status != 'available':
-                 print 'Volume %s, "%s" (%d GB), \tcreated at %s from snapshot %s, was attched to instance %s (%s) at %s
+                 print 'Volume %s, %35s (%3d GB), \tcreated at %s from snapshot %s, was attched to instance %s (%s) at %s' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id, v.attach_data.instance_id, instance_map.get(v.attach_data.instance_id), v.attach_data.attach_time)
          for v in vols:
              if v.status == 'available':
-                 print 'Unattached volume %s, "%s" (%d GB), \twas created at %s from snapshot %s.' % (v.id, v.tags.get('
- 
+                 print 'Unattached volume %s, %35s (%3d GB), was created at %s from snapshot %s.' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id)
 
 
     def make_fs(self):
