@@ -72,9 +72,9 @@ class MTurkConnection(AWSQueryConnection):
                           keywords=None, approval_delay=None, qual_req=None):
         """
         Register a new HIT Type
-        \ttitle, description are strings
-        \treward is a Price object
-        \tduration can be a timedelta, or an object castable to an int
+        title, description are strings
+        reward is a Price object
+        duration can be a timedelta, or an object castable to an int
         """
         params = dict(
             Title=title,
@@ -596,11 +596,13 @@ class MTurkConnection(AWSQueryConnection):
         if keywords:
             params['Keywords'] = self.get_keywords_as_string(keywords)
 
-        return self._process_request('CreateQualificationType', params)
+        return self._process_request('CreateQualificationType', params,
+                                     [('QualificationType', QualificationType),])
 
     def get_qualification_type(self, qualification_type_id):
         params = {'QualificationTypeId' : qualification_type_id }
-        return self._process_request('GetQualificationType', params)
+        return self._process_request('GetQualificationType', params,
+                                     [('QualificationType', QualificationType),])
 
     def update_qualification_type(self, qualification_type_id,
                                   description=None,
@@ -643,8 +645,55 @@ class MTurkConnection(AWSQueryConnection):
         if auto_granted_value is not None:
             params['AutoGrantedValue'] = auto_granted_value
 
-        return self._process_request('UpdateQualificationType', params)
+        return self._process_request('UpdateQualificationType', params,
+                                     [('QualificationType', QualificationType),])
 
+    def dispose_qualification_type(self, qualification_type_id):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id}
+        return self._process_request('DisposeQualificationType', params)
+
+    def search_qualification_types(self, query=None, sort_by='Name',
+                                   sort_direction='Ascending', page_size=10,
+                                   page_number=1, must_be_requestable=True,
+                                   must_be_owned_by_caller=True):
+        """TODO: Document."""
+        params = {'Query' : query,
+                  'SortProperty' : sort_by,
+                  'SortDirection' : sort_direction,
+                  'PageSize' : page_size,
+                  'PageNumber' : page_number,
+                  'MustBeRequestable' : must_be_requestable,
+                  'MustBeOwnedByCaller' : must_be_owned_by_caller}
+        return self._process_request('SearchQualificationTypes', params,
+                                     [('QualificationType', QualificationType),])
+
+    def get_qualification_requests(self, qualification_type_id,
+                                   sort_by='Expiration',
+                                   sort_direction='Ascending', page_size=10,
+                                   page_number=1):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SortProperty' : sort_by,
+                  'SortDirection' : sort_direction,
+                  'PageSize' : page_size,
+                  'PageNumber' : page_number}
+        return self._process_request('GetQualificationRequests', params,
+                                     [('QualificationRequest', QualificationRequest),])
+
+    def grant_qualification(self, qualification_request_id, integer_value=1):
+        """TODO: Document."""
+        params = {'QualificationRequestId' : qualification_request_id,
+                  'IntegerValue' : integer_value}
+        return self._process_request('GrantQualification', params)
+
+    def revoke_qualification(self, subject_id, qualification_type_id,
+                             reason=None):
+        """TODO: Document."""
+        params = {'SubjectId' : subject_id,
+                  'QualificationTypeId' : qualification_type_id,
+                  'Reason' : reason}
+        return self._process_request('RevokeQualification', params)
 
     def assign_qualification(self, qualification_type_id, worker_id,
                              value=1, send_notification=True):
@@ -749,6 +798,31 @@ class HIT(BaseAutoResultElement):
 
     # are we there yet?
     expired = property(_has_expired)
+
+class QualificationType(BaseAutoResultElement):
+    """
+    Class to extract an QualificationType structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide, 
+    e.g. QualificationTypeId, CreationTime, Name, etc
+    """
+    
+    pass
+
+class QualificationRequest(BaseAutoResultElement):
+    """
+    Class to extract an QualificationRequest structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide, 
+    e.g. QualificationRequestId, QualificationTypeId, SubjectId, etc
+
+    TODO: Ensure that Test and Answer attribute are treated properly if the
+          qualification requires a test. These attributes are XML-encoded.
+    """
+    
+    pass
 
 class Assignment(BaseAutoResultElement):
     """
