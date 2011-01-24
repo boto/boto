@@ -62,6 +62,15 @@ except ImportError:
     import md5
     _hashfn = md5.md5
 
+# List of Query String Arguments of Interest
+qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
+                   'requestPayment', 'torrent', 'versioning', 'versionId',
+                   'versions', 'uploads', 'uploadId',
+                   'response-content-type', 'response-content-language',
+                   'response-expires', 'reponse-cache-control',
+                   'response-content-disposition',
+                   'response-content-encoding']
+
 # generates the aws canonical string for the given parameters
 def canonical_string(method, path, headers, expires=None,
                      provider=None):
@@ -101,13 +110,10 @@ def canonical_string(method, path, headers, expires=None,
             buf += "%s\n" % val
 
     # don't include anything after the first ? in the resource...
+    # unless it is one of the QSA of interest, defined above
     t =  path.split('?')
     buf += t[0]
 
-    # unless it is one of the Query String Arguments of Interest
-    qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
-                       'requestPayment', 'torrent', 'versioning', 'versionId',
-                       'versions', 'uploads', 'uploadId']
     if len(t) > 1:
         qsa = t[1].split('&')
         qsa = [ a.split('=') for a in qsa]

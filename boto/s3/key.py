@@ -120,7 +120,7 @@ class Key(object):
             self.delete_marker = False
 
     def open_read(self, headers=None, query_args=None,
-                  override_num_retries=None):
+                  override_num_retries=None, response_headers=None):
         """
         Open this key for reading
         
@@ -133,6 +133,12 @@ class Key(object):
         :type override_num_retries: int
         :param override_num_retries: If not None will override configured
                                      num_retries parameter for underlying GET.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         if self.resp == None:
             self.mode = 'r'
@@ -723,7 +729,8 @@ class Key(object):
         return r
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
-                 torrent=False, version_id=None, override_num_retries=None):
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None):
         """
         Retrieves a file from an S3 Key
         
@@ -752,6 +759,12 @@ class Key(object):
         :type override_num_retries: int
         :param override_num_retries: If not None will override configured
                                      num_retries parameter for underlying GET.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         if cb:
             if num_cb > 2:
@@ -766,16 +779,20 @@ class Key(object):
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
         
-        query_args = ''
+        query_args = []
         if torrent:
-            query_args = 'torrent'
+            query_args.append('torrent')
         # If a version_id is passed in, use that.  If not, check to see
         # if the Key object has an explicit version_id and, if so, use that.
         # Otherwise, don't pass a version_id query param.
         if version_id is None:
             version_id = self.version_id
         if version_id:
-            query_args = 'versionId=%s' % version_id
+            query_args.append('versionId=%s' % version_id)
+        if response_headers:
+            for key in response_headers:
+                query_args.append('%s=%s' % (key, response_headers[key]))
+        query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
         for bytes in self:
@@ -816,7 +833,8 @@ class Key(object):
                              cb=None, num_cb=10,
                              torrent=False,
                              version_id=None,
-                             res_download_handler=None):
+                             res_download_handler=None,
+                             response_headers=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Write the contents of the object to the file pointed
@@ -848,21 +866,29 @@ class Key(object):
         :param res_download_handler: If provided, this handler will perform the
             download.
 
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         if self.bucket != None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
-                                              version_id=version_id)
+                                              version_id=version_id,
+                                              response_headers=response_headers)
             else:
                 self.get_file(fp, headers, cb, num_cb, torrent=torrent,
-                              version_id=version_id)
+                              version_id=version_id,
+                              response_headers=response_headers)
 
     def get_contents_to_filename(self, filename, headers=None,
                                  cb=None, num_cb=10,
                                  torrent=False,
                                  version_id=None,
-                                 res_download_handler=None):
+                                 res_download_handler=None,
+                                 response_headers=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Store contents of the object to a file named by 'filename'.
@@ -895,11 +921,17 @@ class Key(object):
         :param res_download_handler: If provided, this handler will perform the
             download.
 
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         fp = open(filename, 'wb')
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
                                   version_id=version_id,
-                                  res_download_handler=res_download_handler)
+                                  res_download_handler=res_download_handler,
+                                  response_headers=response_headers)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
@@ -912,7 +944,8 @@ class Key(object):
     def get_contents_as_string(self, headers=None,
                                cb=None, num_cb=10,
                                torrent=False,
-                               version_id=None):
+                               version_id=None,
+                               response_headers=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -943,12 +976,19 @@ class Key(object):
         :type torrent: bool
         :param torrent: If True, returns the contents of a torrent file as a string.
         
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
+                                 
         :rtype: string
         :returns: The contents of the file as a string
         """
         fp = StringIO.StringIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id)
+                                  version_id=version_id,
+                                  response_headers=response_headers)
         return fp.getvalue()
 
     def add_email_grant(self, permission, email_address, headers=None):
