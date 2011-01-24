@@ -112,17 +112,12 @@ class EBSInstaller(Installer):
         while volume.update() != 'available':
             boto.log.info('Volume %s not yet available. Current status = %s.' % (volume.id, volume.status))
             time.sleep(5)
-        attach_request_result = ec2.attach_volume(self.volume_id, self.instance_id, self.device)
-        if attach_request_result == True:
-            boto.log.info('Attached volume %s to instance %s as device %s' % (self.volume_id, self.instance_id, self.device))
-            # now wait for the volume device to appear
-            while not os.path.exists(self.device):
-                boto.log.info('%s still does not exist, waiting 10 seconds' % self.device)
-                time.sleep(10)
-        else:
-            boto.log.error('The attempt to attach volume %s to instance %s as device %s failed with attach result = %s' % (self.volume_id, self.instance_id, self.device, attach_request_result))
-            self.notify('Volume attach request failed', 'The attempt to attach volume %s to instance %s as device %s failed with attach result = %s' % (self.volume_id, self.instance_id, self.device, attach_request_result))
-
+        ec2.attach_volume(self.volume_id, self.instance_id, self.device)
+        boto.log.info('Attached volume %s to instance %s as device %s' % (self.volume_id, self.instance_id, self.device))
+        # now wait for the volume device to appear
+        while not os.path.exists(self.device):
+            boto.log.info('%s still does not exist, waiting 2 seconds' % self.device)
+            time.sleep(2)
         # log what instance each volume is attached to for all instances:
         instance_map = {}
         reservations = ec2.get_all_instances()
