@@ -460,11 +460,13 @@ class SDBManager(object):
 
 
     def _build_filter(self, property, name, op, val):
+        if name != "itemName()":
+            name = '`%s`' % name
         if val == None:
             if op in ('is','='):
-                return "`%(name)s` is null" % {"name": name}
+                return "%(name)s is null" % {"name": name}
             elif op in ('is not', '!='):
-                return "`%s` is not null" % name
+                return "%s is not null" % name
             else:
                 val = ""
         if property.__class__ == ListProperty:
@@ -474,7 +476,7 @@ class SDBManager(object):
                 op = "not like"
             if not(op == "like" and val.startswith("%")):
                 val = "%%:%s" % val
-        return "`%s` %s '%s'" % (name, op, val.replace("'", "''"))
+        return "%s %s '%s'" % (name, op, val.replace("'", "''"))
 
     def _build_filter_part(self, cls, filters, order_by=None, select=None):
         """
