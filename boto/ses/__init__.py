@@ -24,7 +24,9 @@ from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
 import boto
 import boto.jsonresponse
+
 import urllib
+import base64
 
 
 class SESConnection(AWSAuthConnection):
@@ -100,6 +102,50 @@ class SESConnection(AWSAuthConnection):
             self.build_list_params(params, bcc_addresses,
                                    'Destination.BccAddresses.member')
 
+
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        response = self.make_request('POST', '/', headers=headers,
+                                     data=urllib.urlencode(params))
+        body = response.read()
+        if response.status == 200:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+
+
+    def send_raw_email(self, source, raw_message, destinations=None):
+        """
+        :type source: string
+        :param source: The sender's email address.
+
+        :type raw_message: string
+        :param raw_message: The raw text of the message. The client is
+          responsible for ensuring the following:
+
+          - Message must contain a header and a body, separated by a blank line.
+          - All required header fields must be present.
+          - Each part of a multipart MIME message must be formatted properly.
+          - MIME content types must be among those supported by Amazon SES.
+            Refer to the Amazon SES Developer Guide for more details.
+          - Content must be base64-encoded, if MIME requires it.
+
+        :type destinations: list of strings or string
+        :param destinations: A list of destinations for the message.
+
+        """
+        params = {
+            'Action': 'SendRawEmail',
+            'Source': source,
+            'RawMessage.Data': base64.b64encode(raw_message),
+        }
+
+        self.build_list_params(params, destinations,
+                               'Destinations.member')
 
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         response = self.make_request('POST', '/', headers=headers,
