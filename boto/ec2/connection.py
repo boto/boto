@@ -1313,7 +1313,12 @@ class EC2Connection(AWSQueryConnection):
         params = {'VolumeId' : volume_id}
         if description:
             params['Description'] = description[0:255]
-        return self.get_object('CreateSnapshot', params, Snapshot)
+        snapshot = self.get_object('CreateSnapshot', params, Snapshot)
+        ec2 = boto.connect_ec2()
+        volume = ec2.get_all_volumes([volume_id])[0]
+        volume_name = volume.tags.get('Name')
+        snapshot.add_tag('Name', volume_name)
+        return snapshot
 
     def delete_snapshot(self, snapshot_id):
         params = {'SnapshotId': snapshot_id}
