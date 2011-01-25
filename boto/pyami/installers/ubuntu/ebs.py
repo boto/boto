@@ -122,7 +122,7 @@ class EBSInstaller(Installer):
                 if e.error_code != 'IncorrectState':
                     # if there's an EC2ResonseError with the code set to IncorrectState, delay a bit for ec2 
                     # to realize the instance is running, then try again. Otherwise, raise the error:
-                    boto.log.info 'Attempt to attach the EBS volume %s to this instance (%s) returned %s. Trying again in a bit.' % (self.volume_id, self.instance_id, e.errors))
+                    boto.log.info('Attempt to attach the EBS volume %s to this instance (%s) returned %s. Trying again in a bit.' % (self.volume_id, self.instance_id, e.errors))
                     time.sleep(2)
                 else:
                     raise e
@@ -140,10 +140,10 @@ class EBSInstaller(Installer):
         vols = ec2.get_all_volumes()
         for v in vols:
             if v.status != 'available':
-                print 'Volume %s, %35s (%3d GB), \tcreated at %s from snapshot %s, was attched to instance %s (%s) at %s' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id, v.attach_data.instance_id, instance_map.get(v.attach_data.instance_id), v.attach_data.attach_time)
+                boto.log.info('Volume %s, %35s (%3d GB), \tcreated at %s from snapshot %s, was attched to instance %s (%s) at %s' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id, v.attach_data.instance_id, instance_map.get(v.attach_data.instance_id), v.attach_data.attach_time))
         for v in vols:
             if v.status == 'available':
-                print 'Unattached volume %s, %35s (%3d GB), was created at %s from snapshot %s.' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id)
+                boto.log.info('Unattached volume %s, %35s (%3d GB), was created at %s from snapshot %s.' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id))
 
 
     def make_fs(self):
