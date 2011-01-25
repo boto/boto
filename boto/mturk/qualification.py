@@ -44,7 +44,7 @@ class Requirement(object):
     Representation of a single requirement
     """
 
-    def __init__(self, qualification_type_id, comparator, integer_value, required_to_preview=False):
+    def __init__(self, qualification_type_id, comparator, integer_value=None, required_to_preview=False):
         self.qualification_type_id = qualification_type_id
         self.comparator = comparator
         self.integer_value = integer_value
@@ -54,8 +54,9 @@ class Requirement(object):
         params =  {
             "QualificationTypeId": self.qualification_type_id,
             "Comparator": self.comparator,
-            "IntegerValue": self.integer_value,
         }
+        if self.comparator != 'Exists' and self.integer_value:
+            params['IntegerValue'] = self.integer_value
         if self.required_to_preview:
             params['RequiredToPreview'] = "true"
         return params
