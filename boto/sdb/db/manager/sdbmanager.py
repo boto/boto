@@ -460,6 +460,8 @@ class SDBManager(object):
 
 
     def _build_filter(self, property, name, op, val):
+        if name == "__id__":
+            name = 'itemName()'
         if name != "itemName()":
             name = '`%s`' % name
         if val == None:
