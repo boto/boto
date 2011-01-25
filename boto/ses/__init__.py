@@ -71,13 +71,25 @@ class SESConnection(AWSAuthConnection):
         :type bcc_addresses: list of strings or string
         :param bcc_addresses: The BCC: field(s) of the message.
 
+        :type format: string
+        :param format: The format of the message's body, must be either "text"
+                       or "html".
+
         """
         params = {
             'Action': 'SendEmail',
             'Source': source,
             'Message.Subject.Data': subject,
-            'Message.Body.Text.Data': body,
         }
+
+        format = format.lower().strip()
+        if format == 'html':
+            params['Message.Body.Html.Data'] = body
+        elif format == 'text':
+            params['Message.Body.Text.Data'] = body
+        else:
+            raise ValueError("'format' argument must be 'text' or 'html'")
+
         self.build_list_params(params, to_addresses,
                                'Destination.ToAddresses.member')
         if cc_addresses:
