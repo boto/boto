@@ -51,9 +51,35 @@ class SESConnection(AWSAuthConnection):
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
 
+
+    def make_request(self, action, params=None):
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        params = params or {}
+        params['Action'] = action
+        response = super(SESConnection, self).make_request(
+            'POST',
+            '/',
+            headers=headers,
+            data=urllib.urlencode(params)
+        )
+        body = response.read()
+        if response.status == 200:
+            list_markers = ('VerifiedEmailAddresses', 'SendDataPoints')
+            e = boto.jsonresponse.Element(list_marker=list_markers)
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+
+
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text'):
-        """
+        """Composes an email message based on input data, and then immediately
+        queues the message for sending.
+
         :type source: string
         :param source: The sender's email address.
 
@@ -79,7 +105,6 @@ class SESConnection(AWSAuthConnection):
 
         """
         params = {
-            'Action': 'SendEmail',
             'Source': source,
             'Message.Subject.Data': subject,
         }
@@ -102,24 +127,15 @@ class SESConnection(AWSAuthConnection):
             self.build_list_params(params, bcc_addresses,
                                    'Destination.BccAddresses.member')
 
-
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        response = self.make_request('POST', '/', headers=headers,
-                                     data=urllib.urlencode(params))
-        body = response.read()
-        if response.status == 200:
-            e = boto.jsonresponse.Element()
-            h = boto.jsonresponse.XmlHandler(e, None)
-            h.parse(body)
-            return e
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
-
+        return self.make_request('SendEmail', params)
 
     def send_raw_email(self, source, raw_message, destinations=None):
-        """
+        """Sends an email message, with header and content specified by the
+        client. The SendRawEmail action is useful for sending multipart MIME
+        emails, with attachments or inline content. The raw text of the message
+        must comply with Internet email standards; otherwise, the message
+        cannot be sent.
+
         :type source: string
         :param source: The sender's email address.
 
@@ -139,7 +155,6 @@ class SESConnection(AWSAuthConnection):
 
         """
         params = {
-            'Action': 'SendRawEmail',
             'Source': source,
             'RawMessage.Data': base64.b64encode(raw_message),
         }
@@ -147,17 +162,50 @@ class SESConnection(AWSAuthConnection):
         self.build_list_params(params, destinations,
                                'Destinations.member')
 
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        response = self.make_request('POST', '/', headers=headers,
-                                     data=urllib.urlencode(params))
-        body = response.read()
-        if response.status == 200:
-            e = boto.jsonresponse.Element()
-            h = boto.jsonresponse.XmlHandler(e, None)
-            h.parse(body)
-            return e
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.make_request('SendRawEmail', params)
+
+    def list_verified_email_addresses(self):
+        """Returns a list containing all of the email addresses that have been
+        verified.
+        """
+        return self.make_request('ListVerifiedEmailAddresses')
+
+    def get_send_quota(self):
+        """Returns the user's current activity limits.
+        """
+        return self.make_request('GetSendQuota')
+
+    def get_send_statistics(self):
+        """Returns the user's sending statistics. The result is a list of data
+        points, representing the last two weeks of sending activity.
+
+        Each data point in the list contains statistics for a 15-minute
+        interval.
+        """
+        return self.make_request('GetSendStatistics')
+
+    def delete_verified_email_address(self, email_address):
+        """Deletes the specified email address from the list of verified
+        addresses.
+
+        :type email_adddress: string
+        :param email_address: The email address to be removed from the list of
+                              verified addreses.
+
+        """
+        return self.make_request('DeleteVerifiedEmailAddress', {
+            'EmailAddress': email_address,
+        })
+
+    def verify_email_address(self, email_address):
+        """Verifies an email address. This action causes a confirmation email
+        message to be sent to the specified address.
+
+        :type email_adddress: string
+        :param email_address: The email address to be verified.
+
+        """
+        return self.make_request('VerifyEmailAddress', {
+            'EmailAddress': email_address,
+        })
 
