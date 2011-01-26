@@ -207,6 +207,26 @@ class BucketStorageUri(StorageUri):
         self.check_response(acl, 'acl', self.uri)
         return acl
 
+    def add_group_email_grant(self, permission, email_address, recursive=False,
+                              validate=True, headers=None):
+        if self.scheme != 'gs':
+              raise ValueError('add_group_email_grant() not supported for %s '
+                               'URIs.' % self.scheme)
+        if self.object_name:
+            if recursive:
+              raise ValueError('add_group_email_grant() on key-ful URI cannot '
+                               'specify recursive=True')
+            key = self.get_key(validate, headers)
+            self.check_response(key, 'key', self.uri)
+            key.add_group_email_grant(permission, email_address, headers)
+        elif self.bucket_name:
+            bucket = self.get_bucket(validate, headers)
+            bucket.add_group_email_grant(permission, email_address, recursive,
+                                         headers)
+        else:
+            raise InvalidUriError('add_group_email_grant() on bucket-less URI %s' %
+                                  self.uri)
+
     def add_email_grant(self, permission, email_address, recursive=False,
                         validate=True, headers=None):
         if not self.bucket_name:

@@ -65,7 +65,7 @@ class Key(S3Key):
         acl.add_user_grant(permission, user_id)
         self.set_acl(acl)
 
-    def add_group_email_grant(self, permission, email_address):
+    def add_group_email_grant(self, permission, email_address, headers=None):
         """
         Convenience method that provides a quick way to add an email group
         grant to a key. This method retrieves the current ACL, creates a new
@@ -82,9 +82,9 @@ class Key(S3Key):
         :param email_address: The email address associated with the Google
             Group to which you are granting the permission.
         """
-        acl = self.get_acl()
+        acl = self.get_acl(headers=headers)
         acl.add_group_email_grant(permission, email_address)
-        self.set_acl(acl)
+        self.set_acl(acl, headers=headers)
 
     def add_group_grant(self, permission, group_id):
         """
