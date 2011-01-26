@@ -185,8 +185,8 @@ class EBSInstaller(Installer):
                     if t[0] != self.device:
                         self.run('umount %s' % self.mount_point)
                         self.run('mount %s /tmp' % t[0])
-                        self.run('chmod 777 /tmp')
                         break
+        self.run('chmod 777 /tmp')
         # Mount up our new EBS volume onto mount_point
         self.run("mount %s %s" % (self.device, self.mount_point))
         self.run('xfs_growfs %s' % self.mount_point)
