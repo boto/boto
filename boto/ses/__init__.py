@@ -1,4 +1,4 @@
-# Copyright (c) 2011 Daniel Rhodes
+# Copyright (c) 2011 Daniel Rhodes <rhodes.daniel@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,12 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.connection import AWSAuthConnection
-from boto.sdb.regioninfo import SDBRegionInfo
 import boto
 import boto.jsonresponse
+from boto.connection import AWSAuthConnection
+import exception
 import uuid
 import urllib
+import base64
 
 try:
     import json
@@ -36,17 +37,6 @@ class SESConnection(AWSAuthConnection):
     DefaultHost = 'email.us-east-1.amazonaws.com'
     Version = '2010-12-01'
     XMLNameSpace = 'https://ses.amazonaws.com/doc/2010-03-31/'
-    
-    """ Actions and corresponding methods """
-    ACTIONS = {
-        'GetSendStatistics': 'GET',
-        'GetSendQuota': 'GET',
-        'ListVerifiedEmailAddresses': 'GET',
-        'VerifyEmailAddress': 'POST',
-        'DeleteVerifiedEmailAddress': 'POST',
-        'SendEmail': 'POST',
-        'SendRawEmail': 'POST'
-    }
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
@@ -71,7 +61,9 @@ class SESConnection(AWSAuthConnection):
         if response.status > 200:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise exception.SESResponseError(response.status,
+                                           response.reason,
+                                           body)
         list_markers = ('VerifiedEmailAddresses', 'SendDataPoints')
         e = boto.jsonresponse.Element(list_marker=list_markers)
         h = boto.jsonresponse.XmlHandler(e, None)
@@ -95,8 +87,8 @@ class SESConnection(AWSAuthConnection):
         if prefix is not None:
             template = 'Destination.%s.member.%%s' % str(prefix)
         else:
-            template = 'Destination.member.%s'
-        if type(destination) == list():
+            template = 'Destinations.member.%s'
+        if type(destination) == str:
             destinations[template % 1] = destination
         else:
             for i, email_addr in enumerate(destination):
@@ -119,18 +111,15 @@ class SESConnection(AWSAuthConnection):
         :param return: Formatted response
         """
         params = params or {}
-        if action not in self.ACTIONS:
-            raise Exception, 'Action was not in list of accepted actions.'
-        else:
-            params['Action'] = action
-            method = self.ACTIONS[action]
+        params['Action'] = action
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        path = '/%s' % self.Version
         pairs = []
         for key, val in params.iteritems():
             if val is None: continue
             pairs.append(key + '=' + urllib.quote(str(val)))
-        path = '/%s' % self.Version + '?' + '&'.join(pairs)
-        response = AWSAuthConnection.make_request(self, method, path, headers, '')
+        data = '&' . join(pairs)
+        response = AWSAuthConnection.make_request(self, 'POST', path, headers, data)
         return self._process_response(response)
         
     def get_send_statistics(self):
@@ -170,7 +159,9 @@ class SESConnection(AWSAuthConnection):
         :type return: type returned from _process_response
         :param return: Formatted response
         """
-        return self._make_request(action='VerifyEmailAddress')
+        return self._make_request(action='VerifyEmailAddress', params={
+            'EmailAddress': email
+        })
         
     def delete_verified_email(self, email):
         """ 
@@ -183,8 +174,8 @@ class SESConnection(AWSAuthConnection):
         :param return: Formatted response
         """
         return self._make_request(action='DeleteVerifiedEmailAddress', params={
-            'EmailAddress': email}
-        )
+            'EmailAddress': email
+        })
         
     def send_email(self, source, subject, message, to, cc=None, bcc=None):
         """
@@ -212,22 +203,19 @@ class SESConnection(AWSAuthConnection):
                   'Message.Body.Text.Data': message,
                   'Message.Subject.Data': subject
         }
-        params.extend(self._format_destinations(destination=to, message='ToAddresses'))
+        params.update(self._format_destinations(destination=to, prefix='ToAddresses'))
         if cc is not None:
-            params.extend(self._format_destinations(destination=cc, message='CcAddresses'))
+            params.update(self._format_destinations(destination=cc, prefix='CcAddresses'))
         if bcc is not None:
-            params.extend(self._format_destinations(destination=bcc, message='BccAddresses'))
+            params.update(self._format_destinations(destination=bcc, prefix='BccAddresses'))
         return self._make_request(action='SendEmail', params=params)
         
-    def send_raw_email(self, source, destination, message):
+    def send_raw_email(self, source, message):
         """
         Send a preformatted message
         
         :type source: string
         :param source: A verified email from this account
-        
-        :type destination: string or list
-        :param destination: The destination(s) for the message
         
         :type message: Email
         :param message: A message in Python's native email type
@@ -237,9 +225,6 @@ class SESConnection(AWSAuthConnection):
         """
         params = {
                   'Source': source, 
-                  'RawMessage': message.as_string()
+                  'RawMessage.Data': base64.b64encode(message.as_string())
         }
-        params.extend(
-            self._format_destinations(destination=destination)
-        )
-        response = self._make_request(action='SendRawEmail', params=params)
+        return self._make_request(action='SendRawEmail', params=params)

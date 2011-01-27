@@ -186,6 +186,7 @@ boto/services/servicedef.py
 boto/services/sonofmmm.py
 boto/services/submit.py
 boto/ses/__init__.py
+boto/ses/exception.py
 boto/sns/__init__.py
 boto/sqs/__init__.py
 boto/sqs/attributes.py
