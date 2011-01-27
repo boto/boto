@@ -213,6 +213,7 @@ class Route53Connection(AWSAuthConnection):
         :param maxitems: The maximum number of records
 
         """
+        from boto.route53.record import Record
         params = {'type': type, 'name': name, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri, params=params)
@@ -222,7 +223,10 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        return body
+        rs = ResultSet([('ResourceRecordSet', Record)])
+        h = handler.XmlHandler(rs, self)
+        xml.sax.parseString(body, h)
+        return rs
 
     def change_rrsets(self, hosted_zone_id, xml_body):
         """

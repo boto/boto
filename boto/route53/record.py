@@ -111,3 +111,15 @@ class Record(object):
         }
         return self.XMLBody % params
 
+    def endElement(self, name, value, connection):
+        if name == 'Name':
+            self.name = value
+        elif name == 'Type':
+            self.type = value
+        elif name == 'TTL':
+            self.ttl = value
+        elif name == 'Value':
+            self.resource_records.append(value)
+
+    def startElement(self, name, attrs, connection):
+        return None
