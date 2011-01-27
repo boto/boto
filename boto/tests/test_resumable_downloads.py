@@ -60,7 +60,7 @@ class ResumableDownloadTests(unittest.TestCase):
     def resilient_close(key):
         try:
             key.close()
-        except StorageResponseError, e:
+        except StorageResponseError as e:
             pass
 
     @classmethod
@@ -168,8 +168,8 @@ class ResumableDownloadTests(unittest.TestCase):
                 cls.src_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
-                print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.src_bucket_uri.uri)
+                print( 'Test bucket (%s) not yet deleted, still trying' % (
+                    cls.src_bucket_uri.uri) )
                 time.sleep(2)
         shutil.rmtree(cls.tmp_dir)
         cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
@@ -208,7 +208,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             # We'll get a ResumableDownloadException at this point because
             # of CallbackTestHarnass (above). Check that the tracker file was
             # created correctly.
@@ -249,7 +249,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected OSError')
-        except OSError, e:
+        except OSError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -302,7 +302,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
@@ -369,7 +369,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
@@ -379,7 +379,7 @@ class ResumableDownloadTests(unittest.TestCase):
             self.small_src_key.get_contents_to_file(
                 self.dst_fp, res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('md5 signature doesn\'t match etag'), -1)
@@ -402,7 +402,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
@@ -418,7 +418,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('md5 signature doesn\'t match etag'), -1)
@@ -479,7 +479,7 @@ class ResumableDownloadTests(unittest.TestCase):
             os.chmod(self.tmp_dir, 0)
             res_download_handler = ResumableDownloadHandler(
                 tracker_file_name=self.tracker_file_name)
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Couldn\'t write URI tracker file'), -1)
@@ -511,11 +511,11 @@ if __name__ == '__main__':
     # don't assume the user has Python 2.7 (which supports classmethods
     # that do it, with camelCase versions of these names).
     try:
-        print 'Setting up %s...' % test_class.get_suite_description()
+        print( 'Setting up %s...' % test_class.get_suite_description() )
         test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
+        print( 'Running %s...' % test_class.get_suite_description() )
         unittest.TextTestRunner(verbosity=2).run(suite)
     finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
+        print( 'Cleaning up after %s...' % test_class.get_suite_description() )
         test_class.tear_down_class()
-        print ''
+        print( '' )

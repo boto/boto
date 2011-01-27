@@ -105,7 +105,7 @@ class PGConverter:
         try:
             return self.manager.get_object_from_id(value)
         except:
-            raise ValueError, 'Unable to convert %s to Object' % value
+            raise ValueError( 'Unable to convert %s to Object' % value )
 
 class PGManager(object):
 
@@ -218,11 +218,11 @@ class PGManager(object):
         return qs, values
 
     def _get_sql(self, mapping=None):
-        print '_get_sql'
+        print( '_get_sql' )
         sql = None
         if self.sql_dir:
             path = os.path.join(self.sql_dir, self.cls.__name__ + '.sql')
-            print path
+            print( path )
             if os.path.isfile(path):
                 fp = open(path)
                 sql = fp.read()
@@ -232,26 +232,26 @@ class PGManager(object):
         return sql
 
     def start_transaction(self):
-        print 'start_transaction'
+        print( 'start_transaction' )
         self.in_transaction = True
 
     def end_transaction(self):
-        print 'end_transaction'
+        print( 'end_transaction' )
         self.in_transaction = False
         self.commit()
 
     def commit(self):
         if not self.in_transaction:
-            print '!!commit on %s' % self.db_table
+            print( '!!commit on %s' % self.db_table )
             try:
                 self.connection.commit()
                 
-            except psycopg2.ProgrammingError, err:
+            except psycopg2.ProgrammingError as err:
                 self.connection.rollback()
                 raise err
 
     def rollback(self):
-        print '!!rollback on %s' % self.db_table
+        print( '!!rollback on %s' % self.db_table )
         self.connection.rollback()
 
     def delete_table(self):
@@ -290,15 +290,15 @@ class PGManager(object):
         if not found:
             raise SDBPersistenceError('%s is not a valid field' % name)
         qs += ';'
-        print qs
+        print( qs )
         self.cursor.execute(qs, values)
         if self.cursor.rowcount == 1:
             row = self.cursor.fetchone()
             return self._object_from_row(row, self.cursor.description)
         elif self.cursor.rowcount == 0:
-            raise KeyError, 'Object not found'
+            raise KeyError( 'Object not found' )
         else:
-            raise LookupError, 'Multiple Objects Found'
+            raise LookupError( 'Multiple Objects Found' )
 
     def query(self, cls, filters, limit=None, order_by=None):
         parts = []
@@ -318,14 +318,14 @@ class PGManager(object):
                     raise SDBPersistenceError('%s is not a valid field' % name)
             qs += ','.join(parts)
         qs += ';'
-        print qs
+        print( qs )
         cursor = self.connection.cursor()
         cursor.execute(qs)
         return self._object_lister(cursor)
 
     def get_property(self, prop, obj, name):
         qs = """SELECT "%s" FROM "%s" WHERE id='%s';""" % (name, self.db_table, obj.id)
-        print qs
+        print( qs )
         self.cursor.execute(qs, None)
         if self.cursor.rowcount == 1:
             rs = self.cursor.fetchone()
@@ -333,7 +333,7 @@ class PGManager(object):
                 if prop.name == name:
                     v = self.decode_value(prop, rs[0])
                     return v
-        raise AttributeError, '%s not found' % name
+        raise AttributeError( '%s not found' % name )
 
     def set_property(self, prop, obj, name, value):
         pass
@@ -342,7 +342,7 @@ class PGManager(object):
         qs += "%s='%s'" % (name, self.encode_value(prop, value))
         qs += " WHERE id='%s'" % obj.id
         qs += ';'
-        print qs
+        print( qs )
         self.cursor.execute(qs)
         self.commit()
 
@@ -369,12 +369,12 @@ class PGManager(object):
             qs, values = self._build_insert_qs(obj, calculated)
         else:
             qs, values = self._build_update_qs(obj, calculated)
-        print qs
+        print( qs )
         self.cursor.execute(qs, values)
         if calculated:
             calc_values = self.cursor.fetchone()
-            print calculated
-            print calc_values
+            print( calculated )
+            print( calc_values )
             for i in range(0, len(calculated)):
                 prop = calculated[i]
                 prop._set_direct(obj, calc_values[i])
@@ -382,7 +382,7 @@ class PGManager(object):
 
     def delete_object(self, obj):
         qs = """DELETE FROM "%s" WHERE id='%s';""" % (self.db_table, obj.id)
-        print qs
+        print( qs )
         self.cursor.execute(qs)
         self.commit()
 

@@ -70,9 +70,9 @@ class StringChecker(ValueChecker):
     def check(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
             if len(value) > self.maxlength:
-                raise ValueError, 'Length of value greater than maxlength'
+                raise ValueError( 'Length of value greater than maxlength' )
         else:
-            raise TypeError, 'Expecting String, got %s' % type(value)
+            raise TypeError( 'Expecting String, got %s' % type(value) )
 
     def from_string(self, str_value, obj):
         return str_value
@@ -85,9 +85,9 @@ class PasswordChecker(StringChecker):
     def check(self, value):
         if isinstance(value, str) or isinstance(value, unicode) or isinstance(value, Password):
             if len(value) > self.maxlength:
-                raise ValueError, 'Length of value greater than maxlength'
+                raise ValueError( 'Length of value greater than maxlength' )
         else:
-            raise TypeError, 'Expecting String, got %s' % type(value)
+            raise TypeError( 'Expecting String, got %s' % type(value) )
 
 class IntegerChecker(ValueChecker):
 
@@ -98,14 +98,14 @@ class IntegerChecker(ValueChecker):
     def __init__(self, **params):
         self.size = params.get('size', 'medium')
         if self.size not in self.__sizes__.keys():
-            raise ValueError, 'size must be one of %s' % self.__sizes__.keys()
+            raise ValueError( 'size must be one of %s' % self.__sizes__.keys() )
         self.signed = params.get('signed', True)
         self.default = params.get('default', 0)
         self.format_string = '%%0%dd' % self.__sizes__[self.size][-1]
 
     def check(self, value):
         if not isinstance(value, int) and not isinstance(value, long):
-            raise TypeError, 'Expecting int or long, got %s' % type(value)
+            raise TypeError( 'Expecting int or long, got %s' % type(value) )
         if self.signed:
             min = self.__sizes__[self.size][2]
             max = self.__sizes__[self.size][1]
@@ -113,9 +113,9 @@ class IntegerChecker(ValueChecker):
             min = 0
             max = self.__sizes__[self.size][0]
         if value > max:
-            raise ValueError, 'Maximum value is %d' % max
+            raise ValueError( 'Maximum value is %d' % max )
         if value < min:
-            raise ValueError, 'Minimum value is %d' % min
+            raise ValueError( 'Minimum value is %d' % min )
 
     def from_string(self, str_value, obj):
         val = int(str_value)
@@ -139,7 +139,7 @@ class BooleanChecker(ValueChecker):
 
     def check(self, value):
         if not isinstance(value, bool):
-            raise TypeError, 'Expecting bool, got %s' % type(value)
+            raise TypeError( 'Expecting bool, got %s' % type(value) )
 
     def from_string(self, str_value, obj):
         if str_value.lower() == 'true':
@@ -168,13 +168,13 @@ class DateTimeChecker(ValueChecker):
 
     def check(self, value):
         if not isinstance(value, datetime):
-            raise TypeError, 'Expecting datetime, got %s' % type(value)
+            raise TypeError( 'Expecting datetime, got %s' % type(value) )
 
     def from_string(self, str_value, obj):
         try:
             return datetime.strptime(str_value, ISO8601)
         except:
-            raise ValueError, 'Unable to convert %s to DateTime' % str_value
+            raise ValueError( 'Unable to convert %s to DateTime' % str_value )
 
     def to_string(self, value):
         self.check(value)
@@ -204,9 +204,9 @@ class ObjectChecker(ValueChecker):
                 cls_lineage = self.ref_class.get_lineage()
                 if obj_lineage.startswith(cls_lineage):
                     return
-                raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
+                raise TypeError( '%s not instance of %s' % (obj_lineage, cls_lineage) )
             except:
-                raise ValueError, '%s is not an SDBObject' % value
+                raise ValueError( '%s is not an SDBObject' % value )
 
     def from_string(self, str_value, obj):
         if not str_value:
@@ -214,7 +214,7 @@ class ObjectChecker(ValueChecker):
         try:
             return revive_object_from_id(str_value, obj._manager)
         except:
-            raise ValueError, 'Unable to convert %s to Object' % str_value
+            raise ValueError( 'Unable to convert %s to Object' % str_value )
 
     def to_string(self, value):
         self.check(value)
@@ -239,7 +239,7 @@ class S3KeyChecker(ValueChecker):
             except:
                 raise ValueError
         elif not isinstance(value, Key):
-            raise TypeError, 'Expecting Key, got %s' % type(value)
+            raise TypeError( 'Expecting Key, got %s' % type(value) )
 
     def from_string(self, str_value, obj):
         if not str_value:
@@ -256,7 +256,7 @@ class S3KeyChecker(ValueChecker):
                     key = bucket.new_key(key_name)
                 return key
         except:
-            raise ValueError, 'Unable to convert %s to S3Key' % str_value
+            raise ValueError( 'Unable to convert %s to S3Key' % str_value )
 
     def to_string(self, value):
         self.check(value)
@@ -278,7 +278,7 @@ class S3BucketChecker(ValueChecker):
         if isinstance(value, str) or isinstance(value, unicode):
             return
         elif not isinstance(value, Bucket):
-            raise TypeError, 'Expecting Bucket, got %s' % type(value)
+            raise TypeError( 'Expecting Bucket, got %s' % type(value) )
 
     def from_string(self, str_value, obj):
         if not str_value:
@@ -291,7 +291,7 @@ class S3BucketChecker(ValueChecker):
                 bucket = s3.get_bucket(str_value)
                 return bucket
         except:
-            raise ValueError, 'Unable to convert %s to S3Bucket' % str_value
+            raise ValueError( 'Unable to convert %s to S3Bucket' % str_value )
 
     def to_string(self, value):
         self.check(value)

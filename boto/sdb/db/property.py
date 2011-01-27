@@ -78,16 +78,16 @@ class Property(object):
         if value == self.default_value():
             return
         if not isinstance(value, self.data_type):
-            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+            raise TypeError( 'Validation Error, expecting %s, got %s' % (self.data_type, type(value)) )
                                       
     def default_value(self):
         return self.default
 
     def validate(self, value):
         if self.required and value==None:
-            raise ValueError, '%s is a required property' % self.name
+            raise ValueError( '%s is a required property' % self.name )
         if self.choices and value and not value in self.choices:
-            raise ValueError, '%s not a valid choice for %s.%s' % (value, self.model_class.__name__, self.name)
+            raise ValueError( '%s not a valid choice for %s.%s' % (value, self.model_class.__name__, self.name) )
         if self.validator:
             self.validator(value)
         else:
@@ -113,9 +113,9 @@ def validate_string(value):
         return
     elif isinstance(value, str) or isinstance(value, unicode):
         if len(value) > 1024:
-            raise ValueError, 'Length of value greater than maxlength'
+            raise ValueError( 'Length of value greater than maxlength' )
     else:
-        raise TypeError, 'Expecting String, got %s' % type(value)
+        raise TypeError( 'Expecting String, got %s' % type(value) )
 
 class StringProperty(Property):
 
@@ -136,9 +136,9 @@ class TextProperty(Property):
 
     def validate(self, value):
         if not isinstance(value, str) and not isinstance(value, unicode):
-            raise TypeError, 'Expecting Text, got %s' % type(value)
+            raise TypeError( 'Expecting Text, got %s' % type(value) )
         if self.max_length and len(value) > self.max_length:
-            raise ValueError, 'Length of value greater than maxlength %s' % self.max_length
+            raise ValueError( 'Length of value greater than maxlength %s' % self.max_length )
 
 class PasswordProperty(StringProperty):
     """
@@ -177,9 +177,9 @@ class PasswordProperty(StringProperty):
         value = Property.validate(self, value)
         if isinstance(value, Password):
             if len(value) > 1024:
-                raise ValueError, 'Length of value greater than maxlength'
+                raise ValueError( 'Length of value greater than maxlength' )
         else:
-            raise TypeError, 'Expecting Password, got %s' % type(value)
+            raise TypeError( 'Expecting Password, got %s' % type(value) )
 
 class BlobProperty(Property):
     data_type = Blob
@@ -215,7 +215,7 @@ class S3KeyProperty(Property):
         match = re.match(self.validate_regex, value)
         if match:
             return
-        raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+        raise TypeError( 'Validation Error, expecting %s, got %s' % (self.data_type, type(value)) )
 
     def __get__(self, obj, objtype):
         value = Property.__get__(self, obj, objtype)
@@ -256,9 +256,9 @@ class IntegerProperty(Property):
         value = int(value)
         value = Property.validate(self, value)
         if value > self.max:
-            raise ValueError, 'Maximum value is %d' % self.max
+            raise ValueError( 'Maximum value is %d' % self.max )
         if value < self.min:
-            raise ValueError, 'Minimum value is %d' % self.min
+            raise ValueError( 'Minimum value is %d' % self.min )
         return value
     
     def empty(self, value):
@@ -286,9 +286,9 @@ class LongProperty(Property):
         min = -9223372036854775808
         max = 9223372036854775807
         if value > max:
-            raise ValueError, 'Maximum value is %d' % max
+            raise ValueError( 'Maximum value is %d' % max )
         if value < min:
-            raise ValueError, 'Minimum value is %d' % min
+            raise ValueError( 'Minimum value is %d' % min )
         return value
         
     def empty(self, value):
@@ -343,7 +343,7 @@ class DateTimeProperty(Property):
         if value == None:
             return
         if not isinstance(value, self.data_type):
-            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+            raise TypeError( 'Validation Error, expecting %s, got %s' % (self.data_type, type(value)) )
 
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
@@ -373,7 +373,7 @@ class DateProperty(Property):
         if value == None:
             return
         if not isinstance(value, self.data_type):
-            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+            raise TypeError( 'Validation Error, expecting %s, got %s' % (self.data_type, type(value)) )
 
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
@@ -411,7 +411,7 @@ class ReferenceProperty(Property):
         """Don't allow this object to be associated to itself
         This causes bad things to happen"""
         if value != None and (obj.id == value or (hasattr(value, "id") and obj.id == value.id)):
-            raise ValueError, "Can not associate an object with itself!"
+            raise ValueError( "Can not associate an object with itself!" )
         return super(ReferenceProperty, self).__set__(obj,value)
 
     def __property_config__(self, model_class, property_name):
@@ -419,7 +419,7 @@ class ReferenceProperty(Property):
         if self.collection_name is None:
             self.collection_name = '%s_%s_set' % (model_class.__name__.lower(), self.name)
         if hasattr(self.reference_class, self.collection_name):
-            raise ValueError, 'duplicate property: %s' % self.collection_name
+            raise ValueError( 'duplicate property: %s' % self.collection_name )
         setattr(self.reference_class, self.collection_name,
                 _ReverseReferenceProperty(model_class, property_name, self.collection_name))
 
@@ -435,13 +435,13 @@ class ReferenceProperty(Property):
             cls_lineage = self.reference_class.get_lineage()
             if obj_lineage.startswith(cls_lineage):
                 return
-            raise TypeError, '%s not instance of %s' % (obj_lineage, cls_lineage)
+            raise TypeError( '%s not instance of %s' % (obj_lineage, cls_lineage) )
         except:
-            raise ValueError, '%s is not a Model' % value
+            raise ValueError( '%s is not a Model' % value )
             
     def validate(self, value):
         if self.required and value==None:
-            raise ValueError, '%s is a required property' % self.name
+            raise ValueError( '%s is a required property' % self.name )
         if value == self.default_value():
             return
         if not isinstance(value, str) and not isinstance(value, unicode):
@@ -474,7 +474,7 @@ class _ReverseReferenceProperty(Property):
 
     def __set__(self, model_instance, value):
         """Not possible to set a new collection."""
-        raise ValueError, 'Virtual property is read-only'
+        raise ValueError( 'Virtual property is read-only' )
 
         
 class CalculatedProperty(Property):
@@ -539,7 +539,7 @@ class ListProperty(Property):
         for item in value:
             if not isinstance(item, item_type):
                 if item_type == (int, long):
-                    raise ValueError, 'Items in the %s list must all be integers.' % self.name
+                    raise ValueError( 'Items in the %s list must all be integers.' % self.name )
                 else:
                     raise ValueError('Items in the %s list must all be %s instances' %
                                      (self.name, self.item_type.__name__))
@@ -580,7 +580,7 @@ class MapProperty(Property):
     def validate(self, value):
         if value is not None:
             if not isinstance(value, dict):
-                raise ValueError, 'Value must of type dict'
+                raise ValueError( 'Value must of type dict' )
 
         if self.item_type in (int, long):
             item_type = (int, long)
@@ -592,7 +592,7 @@ class MapProperty(Property):
         for key in value:
             if not isinstance(value[key], item_type):
                 if item_type == (int, long):
-                    raise ValueError, 'Values in the %s Map must all be integers.' % self.name
+                    raise ValueError( 'Values in the %s Map must all be integers.' % self.name )
                 else:
                     raise ValueError('Values in the %s Map must all be %s instances' %
                                      (self.name, self.item_type.__name__))

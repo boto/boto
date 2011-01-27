@@ -30,13 +30,13 @@ from boto import handler
 from boto.resultset import ResultSet
 
 
-class BotoClientError(StandardError):
+class BotoClientError(Exception):
     """
     General Boto Client error (error accessing AWS)
     """
 
     def __init__(self, reason):
-        StandardError.__init__(self)
+        Exception.__init__(self)
         self.reason = reason
 
     def __repr__(self):
@@ -45,7 +45,7 @@ class BotoClientError(StandardError):
     def __str__(self):
         return 'BotoClientError: %s' % self.reason
 
-class SDBPersistenceError(StandardError):
+class SDBPersistenceError(Exception):
 
     pass
 
@@ -67,10 +67,10 @@ class GSPermissionsError(StoragePermissionsError):
     """
     pass
 
-class BotoServerError(StandardError):
+class BotoServerError(Exception):
 
     def __init__(self, status, reason, body=None):
-        StandardError.__init__(self)
+        Exception.__init__(self)
         self.status = status
         self.reason = reason
         self.body = body or ''
@@ -85,11 +85,11 @@ class BotoServerError(StandardError):
             try:
                 h = handler.XmlHandler(self, self)
                 xml.sax.parseString(self.body, h)
-            except xml.sax.SAXParseException, pe:
+            except xml.sax.SAXParseException as pe:
                 # Go ahead and clean up anything that may have
                 # managed to get into the error data so we
                 # don't get partial garbage.
-                print "Warning: failed to parse error message from AWS: %s" % pe
+                print( "Warning: failed to parse error message from AWS: %s" % pe )
                 self._cleanupParsedProperties()
 
     def __getattr__(self, name):

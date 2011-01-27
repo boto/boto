@@ -23,9 +23,14 @@
 Represents an SQS Queue
 """
 
-import urlparse
 from boto.sqs.message import Message
 
+try:
+    # Python 3.x
+    import urllib.parse as urlparse
+except:
+    # Python 2.x
+    import urlparse
 
 class Queue:
 
@@ -395,7 +400,7 @@ class Queue:
                 m = Message(self, body)
                 self.write(m)
                 n += 1
-                print 'writing message %d' % n
+                print( 'writing message %d' % n )
                 body = ''
             else:
                 body = body + l

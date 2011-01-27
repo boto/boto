@@ -21,8 +21,6 @@
 
 import mimetypes
 import os
-import rfc822
-import StringIO
 import base64
 import boto.utils
 from boto.exception import BotoClientError
@@ -33,7 +31,14 @@ try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
-
+try:
+    # Python 3.x
+    from io import StringIO
+    import email.utils as rfc822
+except:
+    # Python 2.x
+    import rfc822
+    import StringIO
 
 class Key(object):
 

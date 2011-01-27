@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import user
-import key
+import boto.s3.user
+import boto.s3.key
 from boto import handler
 import xml.sax
 

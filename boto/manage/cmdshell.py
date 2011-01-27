@@ -49,23 +49,24 @@ class SSHClient(object):
             try:
                 self._ssh_client.connect(self.server.hostname, username=self.uname, pkey=self._pkey)
                 return
-            except socket.error, (value,message):
+            except socket.error as e:
+                value = e[0]    # TODO: ensure that we got the tuple version, and not the string version
                 if value == 61:
-                    print 'SSH Connection refused, will retry in 5 seconds'
+                    print( 'SSH Connection refused, will retry in 5 seconds' )
                     time.sleep(5)
                     retry += 1
                 else:
                     raise
             except paramiko.BadHostKeyException:
-                print "%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname
-                print 'Edit that file to remove the entry and then hit return to try again'
+                print( "%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname )
+                print( 'Edit that file to remove the entry and then hit return to try again' )
                 raw_input('Hit Enter when ready')
                 retry += 1
             except EOFError:
-                print 'Unexpected Error from SSH Connection, retry in 5 seconds'
+                print( 'Unexpected Error from SSH Connection, retry in 5 seconds' )
                 time.sleep(5)
                 retry += 1
-        print 'Could not establish SSH connection'
+        print( 'Could not establish SSH connection' )
 
     def get_file(self, src, dst):
         sftp_client = self._ssh_client.open_sftp()
@@ -142,7 +143,7 @@ class LocalClient(object):
         return os.path.exists(path)
 
     def shell(self):
-        raise NotImplementedError, 'shell not supported with LocalClient'
+        raise NotImplementedError( 'shell not supported with LocalClient' )
 
     def run(self):
         boto.log.info('running:%s' % self.command)

@@ -130,7 +130,7 @@ class ResumableDownloadHandler(object):
             else:
                 print('Couldn\'t read etag in tracker file (%s). Restarting '
                       'download from scratch.' % self.tracker_file_name)
-        except IOError, e:
+        except IOError as e:
             # Ignore non-existent file (happens first time a download
             # is attempted on an object), but warn user for other errors.
             if e.errno != errno.ENOENT:
@@ -151,7 +151,7 @@ class ResumableDownloadHandler(object):
         try:
             f = open(self.tracker_file_name, 'w')
             f.write('%s\n' % self.etag_value_for_current_download)
-        except IOError, e:
+        except IOError as e:
             raise ResumableDownloadException(
                 'Couldn\'t write tracker file (%s): %s.\nThis can happen'
                 'if you\'re using an incorrectly configured download tool\n'
@@ -189,17 +189,17 @@ class ResumableDownloadHandler(object):
                    key.size), ResumableTransferDisposition.ABORT)
             elif cur_file_size == key.size:
                 if key.bucket.connection.debug >= 1:
-                    print 'Download complete.'
+                    print( 'Download complete.' )
                 return
             if key.bucket.connection.debug >= 1:
-                print 'Resuming download.'
+                print( 'Resuming download.' )
             headers = headers.copy()
             headers['Range'] = 'bytes=%d-%d' % (cur_file_size, key.size - 1)
             cb = ByteTranslatingCallbackHandler(cb, cur_file_size).call
             self.download_start_point = cur_file_size
         else:
             if key.bucket.connection.debug >= 1:
-                print 'Starting new resumable download.'
+                print( 'Starting new resumable download.' )
             self._save_tracker_info(key)
             self.download_start_point = 0
             # Truncate the file, in case a new resumable download is being
@@ -222,7 +222,7 @@ class ResumableDownloadHandler(object):
         """
         fp = open(file_name, 'r')
         if key.bucket.connection.debug >= 1:
-            print 'Checking md5 against etag.'
+            print( 'Checking md5 against etag.' )
         hex_md5 = key.compute_md5(fp)[0]
         if hex_md5 != key.etag.strip('"\''):
             file_name = fp.name
@@ -289,12 +289,12 @@ class ResumableDownloadHandler(object):
                 self._remove_tracker_file()
                 self._check_final_md5(key, fp.name)
                 if debug >= 1:
-                    print 'Resumable download complete.'
+                    print( 'Resumable download complete.' )
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
-            except ResumableDownloadException, e:
+            except ResumableDownloadException as e:
                 if e.disposition == ResumableTransferDisposition.ABORT:
                     if debug >= 1:
                         print('Caught non-retryable ResumableDownloadException '

@@ -84,5 +84,5 @@ def get_manager(cls):
         return XMLManager(cls, db_name, db_user, db_passwd,
                           db_host, db_port, db_table, sql_dir, enable_ssl)
     else:
-        raise ValueError, 'Unknown db_type: %s' % db_type
+        raise ValueError( 'Unknown db_type: %s' % db_type )
 

@@ -35,7 +35,7 @@ from boto.gs.connection import GSConnection
 class GSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        print '--- running GSConnection tests ---'
+        print( '--- running GSConnection tests ---' )
         c = GSConnection()
         # create a new, empty bucket
         bucket_name = 'test-%d' % int(time.time())
@@ -100,10 +100,9 @@ class GSConnectionTest (unittest.TestCase):
         mdkey2 = 'meta2'
         mdval2 = 'This is the second metadata value'
         k.set_metadata(mdkey2, mdval2)
-        # try a unicode metadata value
-        
-        mdval3 = u'föö'
         mdkey3 = 'meta3'
+        #mdval3 = u'föö' # try a unicode metadata value (Python 2.x version)
+        mdval3 = 'föö' # try a unicode metadata value (Python 3.x version [everything is unicode])
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
         
@@ -155,4 +154,4 @@ class GSConnectionTest (unittest.TestCase):
         # now delete bucket
         time.sleep(5)
         c.delete_bucket(bucket)
-        print '--- tests completed ---'
+        print( '--- tests completed ---' )

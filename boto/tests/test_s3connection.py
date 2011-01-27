@@ -28,14 +28,20 @@ Some unit tests for the S3Connection
 import unittest
 import time
 import os
-import urllib
 from boto.s3.connection import S3Connection
 from boto.exception import S3PermissionsError
+
+try:
+    # Python 3.x version
+    from urllib.request import urlopen
+except:
+    # Python 2.x version
+    from urllib import urlopen
 
 class S3ConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        print '--- running S3Connection tests ---'
+        print( '--- running S3Connection tests ---' )
         c = S3Connection()
         # create a new, empty bucket
         bucket_name = 'test-%d' % int(time.time())
@@ -63,10 +69,10 @@ class S3ConnectionTest (unittest.TestCase):
         fp.close()
         # test generated URLs
         url = k.generate_url(3600)
-        file = urllib.urlopen(url)
+        file = urlopen(url)
         assert s1 == file.read(), 'invalid URL %s' % url
         url = k.generate_url(3600, force_http=True)
-        file = urllib.urlopen(url)
+        file = urlopen(url)
         assert s1 == file.read(), 'invalid URL %s' % url
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
@@ -113,9 +119,9 @@ class S3ConnectionTest (unittest.TestCase):
         mdkey2 = 'meta2'
         mdval2 = 'This is the second metadata value'
         k.set_metadata(mdkey2, mdval2)
-        # try a unicode metadata value
-        mdval3 = u'föö'
         mdkey3 = 'meta3'
+        #mdval3 = u'föö' # try a unicode metadata value (Python 2.x version)
+        mdval3 = 'föö' # try a unicode metadata value (Python 3.x version [everything is unicode])
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
         k = bucket.lookup('has_metadata')
@@ -184,4 +190,4 @@ class S3ConnectionTest (unittest.TestCase):
         # now delete bucket
         time.sleep(5)
         c.delete_bucket(bucket)
-        print '--- tests completed ---'
+        print( '--- tests completed ---' )

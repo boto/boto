@@ -240,30 +240,29 @@ class Domain:
         if not f:
             from tempfile import TemporaryFile
             f = TemporaryFile()
-        print >> f, '<?xml version="1.0" encoding="UTF-8"?>'
-        print >> f, '<Domain id="%s">' % self.name
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<Domain id="%s">\n' % self.name)
         for item in self:
-            print >> f, '\t<Item id="%s">' % item.name
+            f.write('\t<Item id="%s">\n' % item.name)
             for k in item:
-                print >> f, '\t\t<attribute id="%s">' % k
+                f.write('\t\t<attribute id="%s">\n' % k)
                 values = item[k]
                 if not isinstance(values, list):
                     values = [values]
                 for value in values:
-                    print >> f, '\t\t\t<value><![CDATA[',
+                    f.write('\t\t\t<value><![CDATA[')
                     if isinstance(value, unicode):
                         value = value.encode('utf-8', 'replace')
                     else:
                         value = unicode(value, errors='replace').encode('utf-8', 'replace')
                     f.write(value)
-                    print >> f, ']]></value>'
-                print >> f, '\t\t</attribute>'
-            print >> f, '\t</Item>'
-        print >> f, '</Domain>'
+                    f.write(']]></value>\n')
+                f.write('\t\t</attribute>\n')
+            f.write('\t</Item>\n')
+        f.write('</Domain>\n')
         f.flush()
         f.seek(0)
         return f
-
 
     def from_xml(self, doc):
         """Load this domain based on an XML document"""
@@ -370,8 +369,8 @@ class UploaderThread(Thread):
         try:
             self.db.batch_put_attributes(self.items)
         except:
-            print "Exception using batch put, trying regular put instead"
+            print( "Exception using batch put, trying regular put instead" )
             for item_name in self.items:
                 self.db.put_attributes(item_name, self.items[item_name])
-        print ".",
+        print( "." ) # there was a 'softspace' here
         sys.stdout.flush()

@@ -35,10 +35,17 @@ import boto.utils
 import hmac
 import sys
 import time
-import urllib
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
+
+try:
+    # Python 3.x
+    from urllib.parse import quote
+except:
+    # Python 2.x
+    from urllib import quote
+
 #
 # the following is necessary because of the incompatibilities
 # between Python 2.4, 2.5, and 2.6 as well as the fact that some
@@ -75,9 +82,9 @@ class HmacKeys(object):
         if provider.access_key is None or provider.secret_key is None:
             raise boto.auth_handler.NotReadyToAuthenticate()
         self._provider = provider
-        self._hmac = hmac.new(self._provider.secret_key, digestmod=sha)
+        self._hmac = hmac.new(self._provider.secret_key.encode('utf-8'), digestmod=sha)
         if sha256:
-            self._hmac_256 = hmac.new(self._provider.secret_key, digestmod=sha256)
+            self._hmac_256 = hmac.new(self._provider.secret_key.encode('utf-8'), digestmod=sha256)
         else:
             self._hmac_256 = None
 
@@ -93,8 +100,8 @@ class HmacKeys(object):
             hmac = self._hmac_256.copy()
         else:
             hmac = self._hmac.copy()
-        hmac.update(string_to_sign)
-        return base64.encodestring(hmac.digest()).strip()
+        hmac.update(string_to_sign.encode('utf-8'))
+        return base64.encodestring(hmac.digest()).strip().decode('utf-8')
 
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """    Implements the HMAC request signing used by S3 and GS."""
@@ -110,7 +117,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         headers = http_request.headers
         method = http_request.method
         auth_path = http_request.auth_path
-        if not headers.has_key('Date'):
+        if 'Date' not in headers:
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
@@ -120,7 +127,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         auth_hdr = self._provider.auth_header
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
-                                     self._provider.access_key, b64_hmac))
+                                     self._provider.access_key, str(b64_hmac)))
 
 class HmacAuthV2Handler(AuthHandler, HmacKeys):
     """
@@ -135,7 +142,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         
     def add_auth(self, http_request):
         headers = http_request.headers
-        if not headers.has_key('Date'):
+        if 'Date' not in headers:
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
@@ -144,7 +151,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
                                      self._provider.access_key, b64_hmac))
-        
+
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """Implements the new Version 3 HMAC authorization used by Route53."""
     
@@ -156,7 +163,7 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
         
     def add_auth(self, http_request):
         headers = http_request.headers
-        if not headers.has_key('Date'):
+        if 'Date' not in headers:
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
                                             time.gmtime())
 
@@ -184,10 +191,10 @@ class QuerySignatureHelper(HmacKeys):
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            http_request.body = qs + '&Signature=' + urllib.quote(signature)
+            http_request.body = qs + '&Signature=' + quote(signature)
         else:
             http_request.body = ''
-            http_request.path = (http_request.path + '?' + qs + '&Signature=' + urllib.quote(signature))
+            http_request.path = (http_request.path + '?' + qs + '&Signature=' + quote(signature))
         # Now that query params are part of the path, clear the 'params' field
         # in request.
         http_request.params = {}
@@ -203,7 +210,7 @@ class QuerySignatureHelper(HmacKeys):
             # did the same when calculating the V2 signature.  In 2.6
             # (and higher!)
             # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] in ('2.6', '2.7') and port == 443:
+            if sys.version[:3] in ('2.6', '2.7', '3.0', '3.1') and port == 443:
                 signature_host = host
             else:
                 signature_host = '%s:%d' % (host, port)
@@ -225,7 +232,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             val = bot.utils.get_utf8_value(params[key])
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -247,7 +254,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
             hmac.update(key)
             val = boto.utils.get_utf8_value(params[key])
             hmac.update(val)
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -267,18 +274,18 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         else:
             hmac = self._hmac.copy()
             params['SignatureMethod'] = 'HmacSHA1'
-        keys = params.keys()
+        keys = list(params.keys())
         keys.sort()
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(urllib.quote(key, safe='') + '=' +
-                         urllib.quote(val, safe='-_~'))
+            pairs.append(quote(key, safe='') + '=' +
+                         quote(val, safe='-_~'))
         qs = '&'.join(pairs)
         boto.log.debug('query string: %s' % qs)
         string_to_sign += qs
         boto.log.debug('string_to_sign: %s' % string_to_sign)
-        hmac.update(string_to_sign)
+        hmac.update(string_to_sign.encode('utf-8'))
         b64 = base64.b64encode(hmac.digest())
         boto.log.debug('len(b64)=%d' % len(b64))
         boto.log.debug('base64 encoded digest: %s' % b64)

@@ -39,7 +39,7 @@ class EC2ConnectionTest (unittest.TestCase):
         # this is my user_id, if you want to run these tests you should
         # replace this with yours or they won't work
         user_id = '963068290131'
-        print '--- running EC2Connection tests ---'
+        print( '--- running EC2Connection tests ---' )
         c = EC2Connection()
         # get list of private AMI's
         rs = c.get_all_images(owners=[user_id])
@@ -50,13 +50,13 @@ class EC2ConnectionTest (unittest.TestCase):
         status = image.set_launch_permissions(group_names=['all'])
         assert status
         d = image.get_launch_permissions()
-        assert d.has_key('groups')
+        assert 'groups' in d
         assert len(d['groups']) > 0
         # now remove that permission
         status = image.remove_launch_permissions(group_names=['all'])
         assert status
         d = image.get_launch_permissions()
-        assert not d.has_key('groups')
+        assert 'groups' not in d
         
         # create 2 new security groups
         group1_name = 'test-%d' % int(time.time())
@@ -111,7 +111,7 @@ class EC2ConnectionTest (unittest.TestCase):
         reservation = image.run(security_groups=[group.name])
         instance = reservation.instances[0]
         while instance.state != 'running':
-            print '\tinstance is %s' % instance.state
+            print( '\tinstance is %s' % instance.state )
             time.sleep(30)
             instance.update()
         # instance in now running, try to telnet to port 80
@@ -168,4 +168,4 @@ class EC2ConnectionTest (unittest.TestCase):
         assert len(l[0].product_codes) == 1
         assert l[0].product_codes[0] == demo_paid_ami_product_code
         
-        print '--- tests completed ---'
+        print( '--- tests completed ---' )

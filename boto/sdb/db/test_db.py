@@ -70,11 +70,11 @@ def test_basic():
     t.size = -42
     t.foo = True
     t.date = datetime.now()
-    print 'saving object'
+    print( 'saving object' )
     t.put()
     _objects['test_basic_t'] = t
     time.sleep(5)
-    print 'now try retrieving it'
+    print( 'now try retrieving it' )
     tt = TestBasic.get_by_id(t.id)
     _objects['test_basic_tt'] = tt
     assert tt.id == t.id
@@ -92,11 +92,11 @@ def test_float():
     t = TestFloat()
     t.name = 'float object'
     t.value = 98.6
-    print 'saving object'
+    print( 'saving object' )
     t.save()
     _objects['test_float_t'] = t
     time.sleep(5)
-    print 'now try retrieving it'
+    print( 'now try retrieving it' )
     tt = TestFloat.get_by_id(t.id)
     _objects['test_float_tt'] = tt
     assert tt.id == t.id
@@ -123,7 +123,7 @@ def test_reference(t=None):
     _objects['test_reference_tt'] = tt
     assert tt.ref.id == t.id
     for o in t.refs:
-        print o
+        print( o )
 
 def test_subclass():
     global _objects
@@ -202,23 +202,23 @@ def test_datetime():
     assert tt.create_date.timetuple() == t.create_date.timetuple()
 
 def test():
-    print 'test_basic'
+    print( 'test_basic' )
     t1 = test_basic()
-    print 'test_required'
+    print( 'test_required' )
     test_required()
-    print 'test_reference'
+    print( 'test_reference' )
     test_reference(t1)
-    print 'test_subclass'
+    print( 'test_subclass' )
     test_subclass()
-    print 'test_password'
+    print( 'test_password' )
     test_password()
-    print 'test_list'
+    print( 'test_list' )
     test_list()
-    print 'test_list_reference'
+    print( 'test_list_reference' )
     test_list_reference()
-    print "test_datetime"
+    print( "test_datetime" )
     test_datetime()
-    print 'test_unique'
+    print( 'test_unique' )
     test_unique()
 
 if __name__ == "__main__":

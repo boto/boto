@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-import urllib, base64
+import base64
 import time
 import boto.utils
 from boto.connection import AWSAuthConnection
@@ -33,6 +33,14 @@ from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError
 
+try:
+    # Python 3.x
+    import urllib.parse as urllib
+    #from urllib.parse import quote
+except:    
+    # Python 2.x
+    import urllib
+    
 def check_lowercase_bucketname(n):
     """
     Bucket names must not contain uppercase characters. We check for

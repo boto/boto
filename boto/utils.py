@@ -38,22 +38,35 @@
 Some handy utility functions used by several classes.
 """
 
-import urllib
-import urllib2
 import imp
 import subprocess
-import StringIO
 import time
 import logging.handlers
 import boto
 import tempfile
 import smtplib
 import datetime
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
-from email import Encoders
+
+try:
+    # Python 3.x
+    from urllib.error import HTTPError
+    from urllib.request import urlopen
+    from io import StringIO
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase
+    from email.mime.text import MIMEText
+    from email.utils import formatdate
+    import email.encoders as Encoders
+    unicode = str
+except:
+    # Python 2.x
+    from urllib2 import HTTPError, urlopen
+    import StringIO
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEBase import MIMEBase
+    from email.MIMEText import MIMEText
+    from email.Utils import formatdate
+    from email import Encoders
 
 try:
     import hashlib
@@ -84,13 +97,13 @@ def canonical_string(method, path, headers, expires=None,
             interesting_headers[lk] = headers[key].strip()
 
     # these keys get empty strings if they don't exist
-    if not interesting_headers.has_key('content-type'):
+    if 'content-type' not in interesting_headers:
         interesting_headers['content-type'] = ''
-    if not interesting_headers.has_key('content-md5'):
+    if 'content-md5' not in interesting_headers:
         interesting_headers['content-md5'] = ''
 
     # just in case someone used this.  it's not necessary in this lib.
-    if interesting_headers.has_key(provider.date_header):
+    if provider.date_header in interesting_headers:
         interesting_headers['date'] = ''
 
     # if you're using expires for query string auth, then it trumps date
@@ -98,7 +111,7 @@ def canonical_string(method, path, headers, expires=None,
     if expires:
         interesting_headers['date'] = str(expires)
 
-    sorted_header_keys = interesting_headers.keys()
+    sorted_header_keys = list(interesting_headers.keys())
     sorted_header_keys.sort()
 
     buf = "%s\n" % method
@@ -157,9 +170,9 @@ def retry_url(url, retry_on_404=True):
     for i in range(0, 10):
         try:
             req = urllib2.Request(url)
-            resp = urllib2.urlopen(req)
+            resp = urlopen(req)
             return resp.read()
-        except urllib2.HTTPError, e:
+        except HTTPError as e:
             # in 2.6 you use getcode(), in 2.5 and earlier you use code
             if hasattr(e, 'getcode'):
                 code = e.getcode()
@@ -251,7 +264,7 @@ def update_dme(username, password, dme_id, ip_address):
     """
     dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
-    s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
+    s = urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
 
 def fetch_file(uri, file=None, username=None, password=None):
@@ -278,7 +291,7 @@ def fetch_file(uri, file=None, username=None, password=None):
                 authhandler = urllib2.HTTPBasicAuthHandler(passman)
                 opener = urllib2.build_opener(authhandler)
                 urllib2.install_opener(opener)
-            s = urllib2.urlopen(uri)
+            s = urlopen(uri)
             file.write(s.read())
         file.seek(0)
     except:
@@ -310,8 +323,8 @@ class ShellCommand(object):
             boto.log.info(self.log_fp.getvalue())
             self.exit_code = self.process.returncode
 
-	    if self.fail_fast and self.exit_code != 0:
-		    raise Exception("Command " + self.command + " failed with status " + self.exit_code)
+        if self.fail_fast and self.exit_code != 0:
+            raise Exception("Command " + self.command + " failed with status " + self.exit_code)
 
             return self.exit_code
 
@@ -407,7 +420,7 @@ class LRUCache(dict):
     used:
     
     >>> for key in cache:
-    ...     print key
+    ...     print( key )
     D
     A
     C

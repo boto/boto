@@ -37,7 +37,7 @@ from boto.exception import S3PermissionsError
 AMAZON_USER_TOKEN = '{UserToken}...your token here...'
 DEVPAY_HEADERS = { 'x-amz-security-token': AMAZON_USER_TOKEN }
 
-print '--- running S3Connection tests (DevPay) ---'
+print( '--- running S3Connection tests (DevPay) ---' )
 c = S3Connection()
 # create a new, empty bucket
 bucket_name = 'test-%d' % int(time.time())
@@ -174,4 +174,4 @@ for k in all:
 
 c.delete_bucket(bucket, headers=DEVPAY_HEADERS)
 
-print '--- tests completed ---'
+print( '--- tests completed ---' )

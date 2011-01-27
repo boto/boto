@@ -134,11 +134,11 @@ class Parameter(object):
 
     def _set_string_value(self, value):
         if not isinstance(value, str) or isinstance(value, unicode):
-            raise ValueError, 'value must be of type str'
+            raise ValueError( 'value must be of type str' )
         if self.allowed_values:
             choices = self.allowed_values.split(',')
             if value not in choices:
-                raise ValueError, 'value must be in %s' % self.allowed_values
+                raise ValueError( 'value must be in %s' % self.allowed_values )
         self._value = value
 
     def _set_integer_value(self, value):
@@ -148,10 +148,10 @@ class Parameter(object):
             if self.allowed_values:
                 min, max = self.allowed_values.split('-')
                 if value < int(min) or value > int(max):
-                    raise ValueError, 'range is %s' % self.allowed_values
+                    raise ValueError( 'range is %s' % self.allowed_values )
             self._value = value
         else:
-            raise ValueError, 'value must be integer'
+            raise ValueError( 'value must be integer' )
 
     def _set_boolean_value(self, value):
         if isinstance(value, bool):
@@ -162,7 +162,7 @@ class Parameter(object):
             else:
                 self._value = False
         else:
-            raise ValueError, 'value must be boolean'
+            raise ValueError( 'value must be boolean' )
         
     def set_value(self, value):
         if self.type == 'string':
@@ -172,7 +172,7 @@ class Parameter(object):
         elif self.type == 'boolean':
             self._set_boolean_value(value)
         else:
-            raise TypeError, 'unknown type (%s)' % self.type
+            raise TypeError( 'unknown type (%s)' % self.type )
 
     def get_value(self):
         if self._value == None:
@@ -188,7 +188,7 @@ class Parameter(object):
                 self._set_boolean_value(self._value)
             return self._value
         else:
-            raise TypeError, 'unknown type (%s)' % self.type
+            raise TypeError( 'unknown type (%s)' % self.type )
 
     value = property(get_value, set_value, 'The value of the parameter')
 

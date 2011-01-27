@@ -36,9 +36,9 @@ from boto.tests.test_ec2connection import EC2ConnectionTest
 from boto.tests.test_sdbconnection import SDBConnectionTest
 
 def usage():
-    print 'test.py  [-t testsuite] [-v verbosity]'
-    print '    -t   run specific testsuite (s3|s3ver|s3nover|gs|sqs|ec2|sdb|all)'
-    print '    -v   verbosity (0|1|2)'
+    print( 'test.py  [-t testsuite] [-v verbosity]' )
+    print( '    -t   run specific testsuite (s3|s3ver|s3nover|gs|sqs|ec2|sdb|all)' )
+    print( '    -v   verbosity (0|1|2)' )
   
 def main():
     try:

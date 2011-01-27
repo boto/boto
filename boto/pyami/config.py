@@ -19,9 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import StringIO, os, re
-import ConfigParser
+import os, re
 import boto
+
+try:
+    # Python 2.x
+    import StringIO
+    import ConfigParser
+except:
+    # Python 3.x
+    import io as StringIO
+    import configparser as ConfigParser
 
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
@@ -156,7 +164,7 @@ class Config(ConfigParser.SafeConfigParser):
     def dump(self):
         s = StringIO.StringIO()
         self.write(s)
-        print s.getvalue()
+        print( s.getvalue() )
 
     def dump_safe(self, fp=None):
         if not fp:

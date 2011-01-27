@@ -49,7 +49,7 @@ class Bundler(object):
         self.ssh_client = SSHClient(server, uname=uname)
 
     def copy_x509(self, key_file, cert_file):
-        print '\tcopying cert and pk over to /mnt directory on server'
+        print( '\tcopying cert and pk over to /mnt directory on server' )
         self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
         self.remote_key_file = '/mnt/%s' % name
@@ -57,7 +57,7 @@ class Bundler(object):
         path, name = os.path.split(cert_file)
         self.remote_cert_file = '/mnt/%s' % name
         self.ssh_client.put_file(cert_file, self.remote_cert_file)
-        print '...complete!'
+        print( '...complete!' )
 
     def bundle_image(self, prefix, size, ssh_key):
         command = ""
@@ -115,13 +115,13 @@ class Bundler(object):
         fp.write('sudo mv /mnt/boto.cfg %s; ' % BotoConfigPath)
         fp.write('mv /mnt/authorized_keys ~/.ssh/authorized_keys')
         command = fp.getvalue()
-        print 'running the following command on the remote server:'
-        print command
+        print( 'running the following command on the remote server:' )
+        print( command )
         t = self.ssh_client.run(command)
-        print '\t%s' % t[0]
-        print '\t%s' % t[1]
-        print '...complete!'
-        print 'registering image...'
+        print( '\t%s' % t[0] )
+        print( '\t%s' % t[1] )
+        print( '...complete!' )
+        print( 'registering image...' )
         self.image_id = self.server.ec2.register_image(name=prefix, image_location='%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
@@ -325,14 +325,14 @@ class Server(Model):
         instances = reservation.instances
         if elastic_ip != None and instances.__len__() > 0:
             instance = instances[0]
-            print 'Waiting for instance to start so we can set its elastic IP address...'
+            print( 'Waiting for instance to start so we can set its elastic IP address...' )
             # Sometimes we get a message from ec2 that says that the instance does not exist.
             # Hopefully the following delay will giv eec2 enough time to get to a stable state:
             time.sleep(5) 
             while instance.update() != 'running':
                 time.sleep(1)
             instance.use_ip(elastic_ip)
-            print 'set the elastic IP of the first instance to %s' % elastic_ip
+            print( 'set the elastic IP of the first instance to %s' % elastic_ip )
         for instance in instances:
             s = cls()
             s.ec2 = ec2
@@ -489,19 +489,19 @@ class Server(Model):
 
     def delete(self):
         if self.production:
-            raise ValueError, "Can't delete a production server"
+            raise ValueError( "Can't delete a production server" )
         #self.stop()
         Model.delete(self)
 
     def stop(self):
         if self.production:
-            raise ValueError, "Can't delete a production server"
+            raise ValueError( "Can't delete a production server" )
         if self._instance:
             self._instance.stop()
 
     def terminate(self):
         if self.production:
-            raise ValueError, "Can't delete a production server"
+            raise ValueError( "Can't delete a production server" )
         if self._instance:
             self._instance.terminate()
 

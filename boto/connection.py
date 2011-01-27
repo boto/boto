@@ -43,26 +43,31 @@ Handles basic connections to AWS
 
 import base64
 import errno
-import httplib
 import os
-import Queue
 import re
 import socket
 import sys
 import time
-import urllib, urlparse
 import xml.sax
 
-import auth
-import auth_handler
 import boto
 import boto.utils
 
-from boto import config, UserAgent, handler
+from boto import auth, auth_handler, config, UserAgent, handler
 from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
+try:
+    # Python 3.x
+    import queue as Queue
+    import http.client as httplib
+    import urllib.parse as urllib
+except:    
+    # Python 2.x
+    import Queue
+    import httplib
+    import urllib
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -292,7 +297,7 @@ class AWSAuthConnection(object):
         self.proxy_port = proxy_port
         self.proxy_user = proxy_user
         self.proxy_pass = proxy_pass
-        if os.environ.has_key('http_proxy') and not self.proxy:
+        if 'http_proxy' in os.environ and not self.proxy:
             pattern = re.compile(
                 '(?:http://)?' \
                 '(?:(?P<user>\w+):(?P<pass>.*)@)?' \
@@ -316,8 +321,8 @@ class AWSAuthConnection(object):
                 self.proxy_pass = config.get_value('Boto', 'proxy_pass', None)
 
         if not self.proxy_port and self.proxy:
-            print "http_proxy environment variable does not specify " \
-                "a port, using default"
+            print( "http_proxy environment variable does not specify " \
+                "a port, using default" )
             self.proxy_port = self.port
         self.use_proxy = (self.proxy != None)
 
@@ -432,7 +437,7 @@ class AWSAuthConnection(object):
         connection = self.get_http_connection(host, self.is_secure)
         while i <= num_retries:
             try:
-                if callable(sender):
+                if hasattr(sender, '__call__'):
                     response = sender(connection, method, path, data, headers)
                 else:
                     connection.request(method, path, data, headers)
@@ -448,11 +453,11 @@ class AWSAuthConnection(object):
                     body = response.read()
                 elif response.status == 408:
                     body = response.read()
-                    print '-------------------------'
-                    print '         4 0 8           '
-                    print 'path=%s' % path
-                    print body
-                    print '-------------------------'
+                    print( '-------------------------' )
+                    print( '         4 0 8           ' )
+                    print( 'path=%s' % path )
+                    print( body )
+                    print( '-------------------------' )
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
                     self.put_http_connection(host, self.is_secure, connection)
@@ -467,7 +472,7 @@ class AWSAuthConnection(object):
                     continue
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')
-            except self.http_exceptions, e:
+            except self.http_exceptions as e:
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
                 connection = self.new_http_connection(host, self.is_secure)
@@ -509,12 +514,12 @@ class AWSAuthConnection(object):
         for key in headers:
             val = headers[key]
             if isinstance(val, unicode):
-                headers[key] = urllib.quote_plus(val.encode('utf-8'))
+                headers[key] = quote_plus(val.encode('utf-8'))
 
         self._auth_handler.add_auth(http_request)
 
         headers['User-Agent'] = UserAgent
-        if not headers.has_key('Content-Length'):
+        if 'Content-Length' not in headers:
             headers['Content-Length'] = str(len(http_request.body))
         return http_request
 

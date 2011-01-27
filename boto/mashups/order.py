@@ -171,16 +171,16 @@ class Order(IObject):
         self.items.append(item)
 
     def display(self):
-        print 'This Order consists of the following items'
-        print 
-        print 'QTY\tNAME\tTYPE\nAMI\t\tGroups\t\t\tKeyPair'
+        print( 'This Order consists of the following items' )
+        print( )
+        print( 'QTY\tNAME\tTYPE\nAMI\t\tGroups\t\t\tKeyPair' )
         for item in self.items:
-            print '%s\t%s\t%s\t%s\t%s\t%s' % (item.quantity, item.name, item.instance_type,
-                                              item.ami.id, item.groups, item.key.name)
+            print( '%s\t%s\t%s\t%s\t%s\t%s' % (item.quantity, item.name, item.instance_type,
+                                              item.ami.id, item.groups, item.key.name) )
 
     def place(self, block=True):
         if get_domain() == None:
-            print 'SDB Persistence Domain not set'
+            print( 'SDB Persistence Domain not set' )
             domain_name = self.get_string('Specify SDB Domain')
             set_domain(domain_name)
         s = ServerSet()
@@ -192,7 +192,7 @@ class Order(IObject):
             if block:
                 states = [i.state for i in r.instances]
                 if states.count('running') != len(states):
-                    print states
+                    print( states )
                     time.sleep(15)
                     states = [i.update() for i in r.instances]
             for i in r.instances:

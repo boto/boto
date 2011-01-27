@@ -64,9 +64,15 @@ in the format in which it would be stored in SQS.
 """
 
 import base64
-import StringIO
 from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
+
+try:
+    # Python 3.x
+    import io as StringIO
+except:
+    # Python 2.x
+    import StringIO
 
 class RawMessage:
     """

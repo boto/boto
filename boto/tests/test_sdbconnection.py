@@ -35,7 +35,7 @@ from boto.exception import SDBResponseError
 class SDBConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        print '--- running SDBConnection tests ---'
+        print( '--- running SDBConnection tests ---' )
         c = SDBConnection()
         rs = c.get_all_domains()
         num_domains = len(rs)
@@ -116,5 +116,5 @@ class SDBConnectionTest (unittest.TestCase):
         stat = c.delete_domain(domain)
         assert stat
 
-        print '--- tests completed ---'
+        print( '--- tests completed ---' )
 

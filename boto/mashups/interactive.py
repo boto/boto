@@ -51,7 +51,7 @@ def posix_shell(chan):
                 try:
                     x = chan.recv(1024)
                     if len(x) == 0:
-                        print '\r\n*** EOF\r\n',
+                        print( '\r\n*** EOF\r\n' ) # handle the old trailing ','
                         break
                     sys.stdout.write(x)
                     sys.stdout.flush()

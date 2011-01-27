@@ -107,14 +107,14 @@ def test6():
     return s
 
 def test(domain_name):
-    print 'Initialize the Persistance system'
+    print( 'Initialize the Persistance system' )
     Manager.DefaultDomainName = domain_name
-    print 'Call test1'
+    print( 'Call test1' )
     s1 = test1()
     # now create a new instance and read the saved data from SDB
-    print 'Now sleep to wait for things to converge'
+    print( 'Now sleep to wait for things to converge' )
     time.sleep(5)
-    print 'Now lookup the object and compare the fields'
+    print( 'Now lookup the object and compare the fields' )
     s2 = TestScalar(s1.id)
     assert s1.name == s2.name
     assert s1.description == s2.description
@@ -122,13 +122,13 @@ def test(domain_name):
     assert s1.offset == s2.offset
     assert s1.foo == s2.foo
     #assert s1.date == s2.date
-    print 'Call test2'
+    print( 'Call test2' )
     s2 = test2(s1.name)
-    print 'Call test3'
+    print( 'Call test3' )
     s3 = test3()
-    print 'Call test4'
+    print( 'Call test4' )
     s4 = test4(s1, s3)
-    print 'Call test5'
+    print( 'Call test5' )
     s6 = test6()
     s5 = test5(s6)
     domain = s5._manager.domain
