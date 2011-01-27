@@ -17,6 +17,7 @@ HEADERS = {
     'Image': {'get': attrgetter('image_id'), 'length':15},
     'Type': {'get': attrgetter('instance_type'), 'length':15},
     'IP': {'get': attrgetter('ip_address'), 'length':16},
+    'PrivateIP': {'get': attrgetter('private_ip_address'), 'length':16},
     'Key': {'get': attrgetter('key_name'), 'length':25},
     'T:': {'length': 30},
 }
