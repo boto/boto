@@ -314,7 +314,7 @@ def connect_ses(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     :rtype: :class:`boto.ses.SESConnection`
     :return: A connection to Amazon's SES
     """
-    from boto.ses import SESConnection
+    from boto.ses.connection import SESConnection
     return SESConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def connect_route53(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):

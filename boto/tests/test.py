@@ -34,6 +34,7 @@ from boto.tests.test_s3versioning import S3VersionTest
 from boto.tests.test_gsconnection import GSConnectionTest
 from boto.tests.test_ec2connection import EC2ConnectionTest
 from boto.tests.test_sdbconnection import SDBConnectionTest
+from boto.tests.test_sesconnection import SESConnectionTest
 
 def usage():
     print 'test.py  [-t testsuite] [-v verbosity]'
@@ -66,6 +67,7 @@ def main():
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
         suite.addTest(unittest.makeSuite(EC2ConnectionTest))
         suite.addTest(unittest.makeSuite(SDBConnectionTest))
+        suite.addTest(unittest.makeSuite(SESConnectionTest))
     elif testsuite == 's3':
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
         suite.addTest(unittest.makeSuite(S3VersionTest))
@@ -81,6 +83,8 @@ def main():
         suite.addTest(unittest.makeSuite(EC2ConnectionTest))
     elif testsuite == 'sdb':
         suite.addTest(unittest.makeSuite(SDBConnectionTest))
+    elif testsuite == 'ses':
+        suite.addTest(unittest.makeSuite(SESConnectionTest))
     else:
         usage()
         sys.exit()
