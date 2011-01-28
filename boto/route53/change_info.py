@@ -1,5 +1,6 @@
 # Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -15,13 +16,45 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
 
-from boto.exception import BotoServerError
+"""
+Represents Route 53 change status for an operation.
+"""
 
-class DNSServerError(BotoServerError):
+class ChangeInfo(object):
 
-    pass
+    def __init__(self, connection=None):
+        self.connection = connection
+
+    def __repr__(self):
+        return 'ChangeInfo:%s' % self.id
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'Id':
+            self.id = value.replace("/change/", "")
+        elif name == 'Status':
+            self.status = value
+        elif name == 'SubmittedAt':
+            self.submitted_at = value
+
+    def update(self):
+        """
+        Update the change info's state information by making a call
+        to fetch the current attributes from the service.
+
+        :rtype: string
+        :returns: The current status of the change.
+        """
+        self._update(self.connection.get_change(self.id))
+        return self.status
+
+    def _update(self, updated):
+        self.__dict__.update(updated.__dict__)

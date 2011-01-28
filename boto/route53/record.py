@@ -15,99 +15,83 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-RECORD_TYPES = ['A', 'AAAA', 'TXT', 'CNAME', 'MX', 'PTR', 'SRV', 'SPF']
-
-class ResourceRecordSets(object):
-
-    ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2010-10-01/">
-            <ChangeBatch>
-                <Comment>%(comment)s</Comment>
-                <Changes>%(changes)s</Changes>
-            </ChangeBatch>
-        </ChangeResourceRecordSetsRequest>"""
-
-    ChangeXML = """<Change>
-        <Action>%(action)s</Action>
-        %(record)s
-    </Change>"""
-
-
-    def __init__(self, connection=None, hosted_zone_id=None, comment=None):
-        self.connection = connection
-        self.hosted_zone_id = hosted_zone_id
-        self.comment = comment
-        self.records = []
-        self.changes = []
-
-    def __repr__(self):
-        return '<ResourceRecordSets: %s>' % self.hosted_zone_id
-
-    def add_change(self, action, name, type, ttl=600):
-        """Add a change request"""
-        change = Record(name, type, ttl)
-        self.changes.append([action, change])
-        return change
-
-    def to_xml(self):
-        """Convert this ResourceRecordSet into XML
-        to be saved via the ChangeResourceRecordSetsRequest"""
-        changesXML = ""
-        for change in self.changes:
-            changeParams = {"action": change[0], "record": change[1].to_xml()}
-            changesXML += self.ChangeXML % changeParams
-        params = {"comment": self.comment, "changes": changesXML}
-        return self.ChangeResourceRecordSetsBody % params
-
-    def commit(self):
-        """Commit this change"""
-        if not self.connection:
-            import boto
-            self.connection = boto.connect_route53()
-        return self.connection.change_rrsets(self.hosted_zone_id, self.to_xml())
+"""
+An individual record set.
+"""
 
 class Record(object):
-    """An individual ResourceRecordSet"""
-
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
         <TTL>%(ttl)s</TTL>
-        <ResourceRecords>%(records)s</ResourceRecords>
+        <ResourceRecords>
+            <ResourceRecord>
+                <Value>%(value)s</Value>
+            </ResourceRecord>
+        </ResourceRecords>
     </ResourceRecordSet>"""
 
-    ResourceRecordBody = """<ResourceRecord>
-        <Value>%s</Value>
-    </ResourceRecord>"""
+    def __init__(self, connection=None, name=None, type=None, ttl=600, value=''):
+        """
+        Init method to create a new Record for Route 53.
 
+        :type connection: :class:`boto.route53.Route53Connection`
+        :param connection: Optional connection object. If this isn't given and
+                           you attempt to delete or modify the record, then
+                           a connection will attempt to be obtained.
 
-    def __init__(self, name=None, type=None, ttl=600, resource_records=None):
+        :type name: string
+        :param name: The name you wish to perform the action on.
+
+        :type type: string
+        :param type: The type of record.
+
+        :type ttl: int
+        :param ttl: Optional TTL for the record.
+
+        :type value: string
+        :param value: Optional value for the record.
+        """
+        self.connection = connection
         self.name = name
         self.type = type
         self.ttl = ttl
-        if resource_records == None:
-            resource_records = []
-        self.resource_records = resource_records
-    
-    def add_value(self, value):
-        """Add a resource record value"""
-        self.resource_records.append(value)
+        self.value = value
+
+    def __repr__(self):
+        return "%s %s %s" % (self.name, self.type, self.value)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'Name':
+            self.name = value
+        elif name == 'Type':
+            self.type = value
+        elif name == 'TTL':
+            self.ttl = value
+        elif name == 'Value':
+            self.value = value
+        else:
+            setattr(self, name, value)
 
     def to_xml(self):
-        """Spit this resource record set out as XML"""
-        records = ""
-        for r in self.resource_records:
-            records += self.ResourceRecordBody % r
+        """
+        Returns the XML representation for this record.
+
+        :rtype: string
+        :returns: The XML representation for this record.
+        """
         params = {
             "name": self.name,
             "type": self.type,
             "ttl": self.ttl,
-            "records": records
+            "value": self.value
         }
         return self.XMLBody % params
-
