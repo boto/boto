@@ -9,19 +9,33 @@ boto.route53
 ------------
 
 .. automodule:: boto.route53
-   :members:   
+   :members:
+   :undoc-members:
+
+boto.route53.change_batch
+----------------------------
+
+.. automodule:: boto.route53.hostedzone
+   :members:
+   :undoc-members:
+
+boto.route53.change_info
+----------------------------
+
+.. automodule:: boto.route53.hostedzone
+   :members:
    :undoc-members:
 
 boto.route53.hostedzone
 ----------------------------
 
 .. automodule:: boto.route53.hostedzone
-   :members:   
+   :members:
    :undoc-members:
 
-boto.route53.exception
--------------------------
+boto.route53.record
+----------------------------
 
-.. automodule:: boto.route53.exception
-   :members:   
+.. automodule:: boto.route53.hostedzone
+   :members:
    :undoc-members:
