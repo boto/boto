@@ -24,7 +24,6 @@
 Represents a connection to the EC2 service.
 """
 
-import urllib
 import base64
 import warnings
 import boto
@@ -1653,7 +1652,7 @@ class EC2Connection(AWSQueryConnection):
         if to_port:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            params['IpPermissions.1.IpRanges.1.CidrIp'] = urllib.quote(cidr_ip)
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('AuthorizeSecurityGroupIngress', params)
 
     def _revoke_deprecated(self, group_name, src_security_group_name=None,
@@ -1747,7 +1746,7 @@ class EC2Connection(AWSQueryConnection):
         if to_port:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            params['IpPermissions.1.IpRanges.1.CidrIp'] = urllib.quote(cidr_ip)
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress', params)
 
     #
