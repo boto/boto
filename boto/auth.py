@@ -177,7 +177,7 @@ class QuerySignatureHelper(HmacKeys):
         params = http_request.params
         params['AWSAccessKeyId'] = self._provider.access_key
         params['SignatureVersion'] = self.SignatureVersion
-        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        params['Timestamp'] = boto.utils.get_ts()
         qs, signature = self._calc_signature(
             http_request.params, http_request.method,
             http_request.path, server_name)
