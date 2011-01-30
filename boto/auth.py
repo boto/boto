@@ -195,6 +195,8 @@ class QuerySignatureHelper(HmacKeys):
     def _server_name(self, host, port):
         if port == 80:
             signature_host = host
+        elif ':' in host:
+            signature_host = host
         else:
             # This unfortunate little hack can be attributed to
             # a difference in the 2.6 version of httplib.  In old
