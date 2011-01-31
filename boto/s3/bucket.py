@@ -536,7 +536,14 @@ class Bucket(object):
         :returns: An instance of the newly created key object
         """
         if preserve_acl:
-            acl = self.get_xml_acl(src_key_name)
+            if self.name == src_bucket_name:
+                src_bucket = self
+            else:
+                src_bucket = self.connection.get_bucket(src_bucket_name)
+            acl = src_bucket.get_xml_acl(src_key_name)
+        elif preserve_acl:
+            src_bucket = self.connection.get_bucket(src_bucket_name)
+            acl = src_bucket.get_xml_acl(src_key_name)
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
