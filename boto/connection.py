@@ -506,14 +506,14 @@ class AWSAuthConnection(object):
         return HTTPRequest(method, self.protocol, host, self.port,
                            path, auth_path, params, headers, data)
 
-    def fill_in_auth(self, http_request):
+    def fill_in_auth(self, http_request, **kwargs):
         headers = http_request.headers
         for key in headers:
             val = headers[key]
             if isinstance(val, unicode):
                 headers[key] = urllib.quote_plus(val.encode('utf-8'))
 
-        self._auth_handler.add_auth(http_request)
+        self._auth_handler.add_auth(http_request, **kwargs)
 
         headers['User-Agent'] = UserAgent
         if not headers.has_key('Content-Length'):

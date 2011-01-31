@@ -106,7 +106,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         method = http_request.method
         auth_path = http_request.auth_path
@@ -133,7 +133,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
@@ -154,7 +154,7 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
@@ -171,7 +171,7 @@ class QuerySignatureHelper(HmacKeys):
     Concrete sub class need to implement _calc_sigature method.
     """
 
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         params = http_request.params
         params['AWSAccessKeyId'] = self._provider.access_key
