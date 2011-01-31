@@ -85,7 +85,8 @@ class Event:
         self.event_time_str = d['EventTime']
         self.hit_type = d['HITTypeId']
         self.hit_id = d['HITId']
-        self.assignment_id = d['AssignmentId']
+        if 'AssignmentId' in d:   # Not present in all event types
+            self.assignment_id = d['AssignmentId']
 
         #TODO: build self.event_time datetime from string self.event_time_str
 
