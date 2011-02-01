@@ -28,6 +28,8 @@ import urllib
 import base64
 import hmac
 import warnings
+from datetime import datetime
+from datetime import timedelta
 import boto
 try:
     from hashlib import sha1 as sha
@@ -1314,15 +1316,135 @@ class EC2Connection(AWSQueryConnection):
         if description:
             params['Description'] = description[0:255]
         snapshot = self.get_object('CreateSnapshot', params, Snapshot)
-        ec2 = boto.connect_ec2()
-        volume = ec2.get_all_volumes([volume_id])[0]
+        volume = this.get_all_volumes([volume_id])[0]
         volume_name = volume.tags.get('Name')
-        snapshot.add_tag('Name', volume_name)
+        if volume_name:
+            snapshot.add_tag('Name', volume_name)
         return snapshot
 
     def delete_snapshot(self, snapshot_id):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params)
+
+    def trim_snapshots(self, hourly_backups = 8, daily_backups = 7, weekly_backups = 4):
+        """
+        Trim excess snapshots, based on when they were taken. More current snapshots are 
+        retained, with the number retained decreasing as you move back in time.
+
+        If ebs volumes have a 'Name' tag with a value, their snapshots will be assigned the same 
+        tag when they are created. The values of the 'Name' tags for snapshots are used by this
+        function to group snapshots taken from the same volume (or from a series of like-named
+        volumes over time) for trimming.
+
+        For every group of like-named snapshots, this function retains the newest and oldest 
+        snapshots, as well as, by default,  the first snapshots taken in each of the last eight 
+        hours, the first snapshots taken in each of the last seven days, the first snapshots 
+        taken in the last 4 weeks (counting Midnight Sunday morning as the start of the week), 
+        and the first snapshot from the first Sunday of each month forever.
+
+        :type hourly_backups: int
+        :param hourly_backups: How many recent hourly backups should be saved.
+
+        :type daily_backups: int
+        :param daily_backups: How many recent daily backups should be saved.
+
+        :type weekly_backups: int
+        :param weekly_backups: How many recent weekly backups should be saved.
+        """
+
+        # This function first builds up an ordered list of target times that snapshots should be saved for 
+        # (last 8 hours, last 7 days, etc.). Then a map of snapshots is constructed, with the keys being
+        # the snapshot / volume names and the values being arrays of chornologically sorted snapshots.
+        # Finally, for each array in the map, we go through the snapshot array and the target time array
+        # in an interleaved fashion, deleting snapshots whose start_times don't immediately follow a
+        # target time (we delete a snapshot if there's another snapshot that was made closer to the
+        # preceding target time).
+
+        now = datetime.utcnow() # work with UTC time, which is what the snapshot start time is reported in
+        last_hour = datetime(now.year, now.month, now.day, now.hour)
+        last_midnight = datetime(now.year, now.month, now.day)
+        last_sunday = datetime(now.year, now.month, now.day) - timedelta(days = (now.weekday() + 1) % 7)
+        start_of_month = datetime(now.year, now.month, 1)
+
+        target_backup_times = []
+
+        oldest_snapshot_date = datetime(2007, 1, 1) # there are no snapshots older than 1/1/2007
+
+        for hour in range(0, hourly_backups):
+            target_backup_times.append(last_hour - timedelta(hours = hour))
+
+        for day in range(0, daily_backups):
+            target_backup_times.append(last_midnight - timedelta(days = day))
+
+        for week in range(0, weekly_backups):
+            target_backup_times.append(last_sunday - timedelta(weeks = week))
+
+        one_day = timedelta(days = 1)
+        while start_of_month > oldest_snapshot_date:
+            # append the start of the month to the list of snapshot dates to save:
+            target_backup_times.append(start_of_month)
+            # there's no timedelta setting for one month, so instead:
+            # decrement the day by one, so we go to the final day of the previous month...
+            start_of_month -= one_day
+            # ... and then go to the first day of that previous month:
+            start_of_month = datetime(start_of_month.year, start_of_month.month, 1)
+
+        temp = []
+
+        for t in target_backup_times:
+            if temp.__contains__(t) == False:
+                temp.append(t)
+
+        target_backup_times = temp
+        target_backup_times.reverse() # make the oldest date first
+
+        # get all the snapshots, sort them by date and time, and organize them into one array for each volume:
+        all_snapshots = self.get_all_snapshots(owner = 'self')
+        all_snapshots.sort(cmp = lambda x, y: cmp(x.start_time, y.start_time)) # oldest first
+        snaps_for_each_volume = {}
+        for snap in all_snapshots:
+            # the snapshot name and the volume name are the same. The snapshot name is set from the volume
+            # name at the time the snapshot is taken
+            volume_name = snap.tags.get('Name')
+            if volume_name:
+                # only examine snapshots that have a volume name
+                snaps_for_volume = snaps_for_each_volume.get(volume_name)
+                if not snaps_for_volume:
+                    snaps_for_volume = []
+                    snaps_for_each_volume[volume_name] = snaps_for_volume
+                snaps_for_volume.append(snap)
+
+        # Do a running comparison of snapshot dates to desired time periods, keeping the oldest snapshot in each
+        # time period and deleting the rest:
+        for volume_name in snaps_for_each_volume:
+            snaps = snaps_for_each_volume[volume_name]
+            snaps = snaps[:-1] # never delete the newest snapshot, so remove it from consideration
+            time_period_number = 0
+            snap_found_for_this_time_period = False
+            for snap in snaps:
+                check_this_snap = True
+                while check_this_snap and time_period_number < target_backup_times.__len__():
+                    snap_date = datetime.strptime(snap.start_time, '%Y-%m-%dT%H:%M:%S.000Z')
+                    if snap_date < target_backup_times[time_period_number]:
+                        # the snap date is before the cutoff date. Figure out if it's the first snap in this
+                        # date range and act accordingly (since both date the date ranges and the snapshots
+                        # are sorted chronologically, we know this snapshot isn't in an earlier date range):
+                        if snap_found_for_this_time_period == True:
+                            if not snap.tags.get('preserve_snapshot'):
+                                # as long as the snapshot wasn't marked with the 'preserve_snapshot' tag, delete it:
+                                this.delete_snapshot(snap)
+                                boto.log.info('Trimmed snapshot %s (%s)' % (snap.tags['Name'], snap.start_time))
+                            # go on and look at the next snapshot, leaving the time period alone
+                        else:
+                            # this was the first snapshot found for this time period. Leave it alone and look at the 
+                            # next snapshot:
+                            snap_found_for_this_time_period = True
+                        check_this_snap = False
+                    else:
+                        # the snap is after the cutoff date. Check it against the next cutoff date
+                        time_period_number += 1
+                        snap_found_for_this_time_period = False
+
 
     def get_snapshot_attribute(self, snapshot_id,
                                attribute='createVolumePermission'):
