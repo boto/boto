@@ -104,7 +104,7 @@ We also need to supply the Statistic that we want reported and
 the Units to use for the results.  The Statistic can be one of these
 values:
 
-['Minimum', 'Maximum', 'Sum', 'Average', 'Samples']
+['Minimum', 'Maximum', 'Sum', 'Average', 'SampleCount']
 
 And Units must be one of the following:
 
@@ -130,7 +130,7 @@ about that particular data point.
 >>> d = datapoints[0]
 >>> d
 {u'Average': 0.0,
- u'Samples': 1.0,
+ u'SampleCount': 1.0,
  u'Timestamp': u'2009-05-21T19:55:00Z',
  u'Unit': u'Percent'}
 
@@ -150,7 +150,6 @@ class CloudWatchConnection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'cloudwatch_version', '2010-08-01')
     Endpoint = boto.config.get('Boto', 'cloudwatch_endpoint', 'monitoring.amazonaws.com')
-    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -159,11 +158,18 @@ class CloudWatchConnection(AWSQueryConnection):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
-        B{Note:} The host argument is overridden by the host specified in the boto configuration file.
+        B{Note:} The host argument is overridden by the host specified in the
+        boto configuration file.
         """
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key, is_secure,
+                                    port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    host, debug, https_connection_factory,
+                                    path)
+
+    def _required_auth_capability(self):
+        return ['ec2']
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):

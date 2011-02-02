@@ -24,17 +24,11 @@
 Represents a connection to the EC2 service.
 """
 
-import urllib
 import base64
-import hmac
 import warnings
 from datetime import datetime
 from datetime import timedelta
 import boto
-try:
-    from hashlib import sha1 as sha
-except ImportError:
-    import sha
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute
@@ -65,7 +59,6 @@ class EC2Connection(AWSQueryConnection):
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
-    SignatureVersion = '2'
     ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -88,6 +81,9 @@ class EC2Connection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path)
+
+    def _required_auth_capability(self):
+        return ['ec2']
 
     def get_params(self):
         """
@@ -723,7 +719,7 @@ class EC2Connection(AWSQueryConnection):
         params = {'InstanceId' : instance_id,
                   'Attribute' : attribute,
                   'Value' : value}
-        return self.get_status('ModifyInstanceAttribute', params)
+        return self.get_status('ModifyInstanceAttribute', params, verb='POST')
 
     def reset_instance_attribute(self, instance_id, attribute):
         """
@@ -1077,7 +1073,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
         """
-        return self.get_object('AllocateAddress', None, Address)
+        return self.get_object('AllocateAddress', {}, Address)
 
     def associate_address(self, instance_id, public_ip):
         """
@@ -1783,7 +1779,7 @@ class EC2Connection(AWSQueryConnection):
         if to_port:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            params['IpPermissions.1.IpRanges.1.CidrIp'] = urllib.quote(cidr_ip)
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('AuthorizeSecurityGroupIngress', params)
 
     def _revoke_deprecated(self, group_name, src_security_group_name=None,
@@ -1877,7 +1873,7 @@ class EC2Connection(AWSQueryConnection):
         if to_port:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            params['IpPermissions.1.IpRanges.1.CidrIp'] = urllib.quote(cidr_ip)
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress', params)
 
     #
@@ -2083,11 +2079,10 @@ class EC2Connection(AWSQueryConnection):
                   'Storage.S3.Bucket' : s3_bucket,
                   'Storage.S3.Prefix' : s3_prefix,
                   'Storage.S3.UploadPolicy' : s3_upload_policy}
+        s3auth = boto.auth.get_auth_handler(None, boto.config, self.provider, ['s3'])
         params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
-        local_hmac = self.hmac.copy()
-        local_hmac.update(s3_upload_policy)
-        s3_upload_policy_signature = base64.b64encode(local_hmac.digest())
-        params['Storage.S3.UploadPolicySignature'] = s3_upload_policy_signature
+        signature = s3auth.sign_string(s3_upload_policy)
+        params['Storage.S3.UploadPolicySignature'] = signature
         return self.get_object('BundleInstance', params, BundleInstanceTask) 
 
     def get_all_bundle_tasks(self, bundle_ids=None, filters=None):

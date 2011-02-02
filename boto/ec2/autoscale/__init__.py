@@ -40,7 +40,6 @@ class AutoScaleConnection(AWSQueryConnection):
                                'autoscaling.amazonaws.com')
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'autoscaling.amazonaws.com'
-    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -63,6 +62,9 @@ class AutoScaleConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path=path)
+
+    def _required_auth_capability(self):
+        return ['ec2']
 
     def build_list_params(self, params, items, label):
         """ items is a list of dictionaries or strings:
@@ -210,4 +212,33 @@ class AutoScaleConnection(AWSQueryConnection):
                   }
         return self.get_object('TerminateInstanceInAutoScalingGroup', params,
                                Activity)
+
+    def set_instance_health(self, instance_id, health_status,
+                            should_respect_grace_period=True):
+        """
+        Explicitly set the health status of an instance.
+
+        :type instance_id: str
+        :param instance_id: The identifier of the EC2 instance.
+
+        :type health_status: str
+        :param health_status: The health status of the instance.
+                              "Healthy" means that the instance is
+                              healthy and should remain in service.
+                              "Unhealthy" means that the instance is
+                              unhealthy. Auto Scaling should terminate
+                              and replace it.
+
+        :type should_respect_grace_period: bool
+        :param should_respect_grace_period: If True, this call should
+                                            respect the grace period
+                                            associated with the group.
+        """
+        params = {'InstanceId' : instance_id,
+                  'HealthStatus' : health_status}
+        if should_respect_grace_period:
+            params['ShouldRespectGracePeriod'] = 'true'
+        else:
+            params['ShouldRespectGracePeriod'] = 'false'
+        return self.get_status('SetInstanceHealth', params)
 

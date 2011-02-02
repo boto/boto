@@ -60,7 +60,6 @@ class RDSConnection(AWSQueryConnection):
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'rds.amazonaws.com'
     APIVersion = '2009-10-16'
-    SignatureVersion = '2'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -74,6 +73,9 @@ class RDSConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port, proxy_user,
                                     proxy_pass, self.region.endpoint, debug,
                                     https_connection_factory, path)
+
+    def _required_auth_capability(self):
+        return ['rds']
 
     # DB Instance methods
 

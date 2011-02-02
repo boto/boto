@@ -34,7 +34,6 @@ class SQSConnection(AWSQueryConnection):
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'queue.amazonaws.com'
     APIVersion = '2009-02-01'
-    SignatureVersion = '2'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
     
@@ -48,6 +47,9 @@ class SQSConnection(AWSQueryConnection):
         AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug, https_connection_factory, path)
+
+    def _required_auth_capability(self):
+        return ['sqs']
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """
