@@ -45,14 +45,34 @@ class SESConnection(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['ses']
 
-    def build_list_params(self, params, items, label):
+    def _build_list_params(self, params, items, label):
+        """Add an AWS API-compatible parameter list to a dictionary.
+
+        :type params: dict
+        :param params: The parameter dictionary
+
+        :type items: list
+        :param items: Items to be included in the list
+
+        :type label: string
+        :param label: The parameter list's name
+        """
         if isinstance(items, str):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
 
 
-    def make_request(self, action, params=None):
+    def _make_request(self, action, params=None):
+        """Make a call to the SES API.
+
+        :type action: string
+        :param action: The API method to use (e.g. SendRawEmail)
+
+        :type params: dict
+        :param params: Parameters that will be sent as POST data with the API
+                       call.
+        """
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         params = params or {}
         params['Action'] = action
@@ -117,17 +137,17 @@ class SESConnection(AWSAuthConnection):
         else:
             raise ValueError("'format' argument must be 'text' or 'html'")
 
-        self.build_list_params(params, to_addresses,
+        self._build_list_params(params, to_addresses,
                                'Destination.ToAddresses.member')
         if cc_addresses:
-            self.build_list_params(params, cc_addresses,
+            self._build_list_params(params, cc_addresses,
                                    'Destination.CcAddresses.member')
 
         if bcc_addresses:
-            self.build_list_params(params, bcc_addresses,
+            self._build_list_params(params, bcc_addresses,
                                    'Destination.BccAddresses.member')
 
-        return self.make_request('SendEmail', params)
+        return self._make_request('SendEmail', params)
 
     def send_raw_email(self, source, raw_message, destinations=None):
         """Sends an email message, with header and content specified by the
@@ -159,30 +179,41 @@ class SESConnection(AWSAuthConnection):
             'RawMessage.Data': base64.b64encode(raw_message),
         }
 
-        self.build_list_params(params, destinations,
+        self._build_list_params(params, destinations,
                                'Destinations.member')
 
-        return self.make_request('SendRawEmail', params)
+        return self._make_request('SendRawEmail', params)
 
     def list_verified_email_addresses(self):
-        """Returns a list containing all of the email addresses that have been
-        verified.
+        """Fetch a list of the email addresses that have been verified.
+
+        :rtype: dict
+        :returns: A ListVerifiedEmailAddressesResponse structure. Note that
+                  keys must be unicode strings.
         """
-        return self.make_request('ListVerifiedEmailAddresses')
+        return self._make_request('ListVerifiedEmailAddresses')
 
     def get_send_quota(self):
-        """Returns the user's current activity limits.
+        """Fetches the user's current activity limits.
+
+        :rtype: dict
+        :returns: A GetSendQuotaResponse structure. Note that keys must be
+                  unicode strings.
         """
-        return self.make_request('GetSendQuota')
+        return self._make_request('GetSendQuota')
 
     def get_send_statistics(self):
-        """Returns the user's sending statistics. The result is a list of data
+        """Fetches the user's sending statistics. The result is a list of data
         points, representing the last two weeks of sending activity.
 
         Each data point in the list contains statistics for a 15-minute
         interval.
+
+        :rtype: dict
+        :returns: A GetSendStatisticsResponse structure. Note that keys must be
+                  unicode strings.
         """
-        return self.make_request('GetSendStatistics')
+        return self._make_request('GetSendStatistics')
 
     def delete_verified_email_address(self, email_address):
         """Deletes the specified email address from the list of verified
@@ -192,8 +223,11 @@ class SESConnection(AWSAuthConnection):
         :param email_address: The email address to be removed from the list of
                               verified addreses.
 
+        :rtype: dict
+        :returns: A DeleteVerifiedEmailAddressResponse structure. Note that
+                  keys must be unicode strings.
         """
-        return self.make_request('DeleteVerifiedEmailAddress', {
+        return self._make_request('DeleteVerifiedEmailAddress', {
             'EmailAddress': email_address,
         })
 
@@ -204,8 +238,11 @@ class SESConnection(AWSAuthConnection):
         :type email_adddress: string
         :param email_address: The email address to be verified.
 
+        :rtype: dict
+        :returns: A VerifyEmailAddressResponse structure. Note that keys must
+                  be unicode strings.
         """
-        return self.make_request('VerifyEmailAddress', {
+        return self._make_request('VerifyEmailAddress', {
             'EmailAddress': email_address,
         })
 
