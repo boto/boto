@@ -131,20 +131,6 @@ class EBSInstaller(Installer):
         while not os.path.exists(self.device):
             boto.log.info('%s still does not exist, waiting 2 seconds' % self.device)
             time.sleep(2)
-        # log what instance each volume is attached to for all instances:
-        instance_map = {}
-        reservations = ec2.get_all_instances()
-        for res in reservations:
-            instance = res.instances[0]
-            instance_map[instance.id] = instance.tags.get('Name')
-        vols = ec2.get_all_volumes()
-        for v in vols:
-            if v.status != 'available':
-                boto.log.info('Volume %s, %35s (%3d GB), \tcreated at %s from snapshot %s, was attched to instance %s (%s) at %s' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id, v.attach_data.instance_id, instance_map.get(v.attach_data.instance_id), v.attach_data.attach_time))
-        for v in vols:
-            if v.status == 'available':
-                boto.log.info('Unattached volume %s, %35s (%3d GB), was created at %s from snapshot %s.' % (v.id, '"%s"' % v.tags.get('Name'), v.size, v.create_time, v.snapshot_id))
-
 
     def make_fs(self):
         boto.log.info('make_fs...')
