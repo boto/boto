@@ -22,7 +22,8 @@
 
 RECORD_TYPES = ['A', 'AAAA', 'TXT', 'CNAME', 'MX', 'PTR', 'SRV', 'SPF']
 
-class ResourceRecordSets(object):
+from boto.resultset import ResultSet
+class ResourceRecordSets(ResultSet):
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
     <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2010-10-01/">
@@ -42,8 +43,10 @@ class ResourceRecordSets(object):
         self.connection = connection
         self.hosted_zone_id = hosted_zone_id
         self.comment = comment
-        self.records = []
         self.changes = []
+        self.next_record_name = None
+        self.next_record_type = None
+        ResultSet.__init__(self, [('ResourceRecordSet', Record)])
 
     def __repr__(self):
         return '<ResourceRecordSets: %s>' % self.hosted_zone_id
@@ -70,6 +73,30 @@ class ResourceRecordSets(object):
             import boto
             self.connection = boto.connect_route53()
         return self.connection.change_rrsets(self.hosted_zone_id, self.to_xml())
+
+    def endElement(self, name, value, connection):
+        """Overwritten to also add the NextRecordName and 
+        NextRecordType to the base object"""
+        if name == 'NextRecordName':
+            self.next_record_name = value
+        elif name == 'NextRecordType':
+            self.next_record_type = value
+        else:
+            return ResultSet.endElement(self, name, value, connection)
+
+    def __iter__(self):
+        """Override the next function to support paging"""
+        results = ResultSet.__iter__(self)
+        while results:
+            for obj in results:
+                yield obj
+            if self.is_truncated:
+                self.is_truncated = False
+                results = self.connection.get_all_rrsets(self.hosted_zone_id, name=self.next_record_name, type=self.next_record_type)
+            else:
+                results = None
+
+
 
 class Record(object):
     """An individual ResourceRecordSet"""

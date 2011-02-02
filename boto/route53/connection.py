@@ -213,7 +213,7 @@ class Route53Connection(AWSAuthConnection):
         :param maxitems: The maximum number of records
 
         """
-        from boto.route53.record import Record
+        from boto.route53.record import ResourceRecordSets
         params = {'type': type, 'name': name, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri, params=params)
@@ -223,7 +223,7 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        rs = ResultSet([('ResourceRecordSet', Record)])
+        rs = ResourceRecordSets(connection=self, hosted_zone_id=hosted_zone_id)
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
