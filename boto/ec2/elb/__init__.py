@@ -346,7 +346,7 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {
                     'LoadBalancerName'          :   lb_name,
-                    'LoadBalaancerPort'         :   lb_port,
+                    'LoadBalancerPort'          :   lb_port,
                     'SSLCertificateId'          :   ssl_certificate_id,
                  }
         return self.get_status('SetLoadBalancerListenerSSLCertificate', params)
