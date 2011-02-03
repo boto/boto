@@ -160,7 +160,7 @@ class DistributionConfig:
             if value.lower() == 'true':
                 self.enabled = True
             else:
-                self.enabledFalse
+                self.enabled = False
         elif name == 'CallerReference':
             self.caller_reference = value
         elif name == 'DefaultRootObject':
