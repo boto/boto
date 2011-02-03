@@ -1312,7 +1312,7 @@ class EC2Connection(AWSQueryConnection):
         if description:
             params['Description'] = description[0:255]
         snapshot = self.get_object('CreateSnapshot', params, Snapshot)
-        volume = this.get_all_volumes([volume_id])[0]
+        volume = self.get_all_volumes([volume_id])[0]
         volume_name = volume.tags.get('Name')
         if volume_name:
             snapshot.add_tag('Name', volume_name)
@@ -1428,7 +1428,7 @@ class EC2Connection(AWSQueryConnection):
                         if snap_found_for_this_time_period == True:
                             if not snap.tags.get('preserve_snapshot'):
                                 # as long as the snapshot wasn't marked with the 'preserve_snapshot' tag, delete it:
-                                this.delete_snapshot(snap)
+                                self.delete_snapshot(snap.id)
                                 boto.log.info('Trimmed snapshot %s (%s)' % (snap.tags['Name'], snap.start_time))
                             # go on and look at the next snapshot, leaving the time period alone
                         else:
