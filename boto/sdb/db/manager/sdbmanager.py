@@ -340,7 +340,7 @@ class SDBManager(object):
         self.converter = SDBConverter(self)
         self._sdb = None
         self._domain = None
-        if consistent == None and hasattr(cls, "__consistent"):
+        if consistent == None and hasattr(cls, "__consistent__"):
             consistent = cls.__consistent__
         self.consistent = consistent
 

@@ -27,8 +27,8 @@ class ScriptBase:
         if os.path.ismount(path):
             self.run('umount %s' % path)
 
-    def run(self, command, notify=True, exit_on_error=False):
-        self.last_command = ShellCommand(command)
+    def run(self, command, notify=True, exit_on_error=False, cwd=None):
+        self.last_command = ShellCommand(command, cwd=cwd)
         if self.last_command.status != 0:
             boto.log.error('Error running command: "%s". Output: "%s"' % (command, self.last_command.output))
             if notify:
