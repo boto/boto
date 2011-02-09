@@ -287,7 +287,7 @@ class VPCConnection(EC2Connection):
             i = 1
             for filter in filters:
                 params[('Filter.%d.Key' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
+                params[('Filter.%d.Value.1' % i)] = filter[1]
                 i += 1
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
 

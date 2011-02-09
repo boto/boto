@@ -85,6 +85,6 @@ def load_plugins(config):
     if not config.has_option('Plugin', 'plugin_directory'):
         return
     directory = config.get('Plugin', 'plugin_directory')
-    for file in glob.glob(directory + '/*.py'):
+    for file in glob.glob(os.path.join(directory, '*.py')):
         _import_module(file)
 

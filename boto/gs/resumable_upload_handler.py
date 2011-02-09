@@ -188,6 +188,7 @@ class ResumableUploadHandler(object):
         put_headers['Content-Length'] = '0'
         resp = AWSAuthConnection.make_request(conn, 'PUT',
                                               path=self.tracker_uri_path,
+                                              auth_path=self.tracker_uri_path,
                                               headers=put_headers,
                                               host=self.tracker_uri_host)
         if resp.status == 200:
@@ -307,7 +308,7 @@ class ResumableUploadHandler(object):
         # Set Content-Length to the total bytes we'll send with this PUT.
         put_headers['Content-Length'] = str(file_length - total_bytes_uploaded)
         http_request = AWSAuthConnection.build_base_http_request(
-            conn, 'PUT', path=self.tracker_uri_path,
+            conn, 'PUT', path=self.tracker_uri_path, auth_path=None,
             headers=put_headers, host=self.tracker_uri_host)
         http_conn.putrequest('PUT', http_request.path)
         for k in put_headers:

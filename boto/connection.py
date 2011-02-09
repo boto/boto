@@ -342,7 +342,7 @@ class AWSAuthConnection(object):
             else:
                 connection = httplib.HTTPSConnection(host)
         else:
-            boto.log.debug('establishing HTTPS connection')
+            boto.log.debug('establishing HTTP connection')
             connection = httplib.HTTPConnection(host)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
@@ -484,30 +484,36 @@ class AWSAuthConnection(object):
             raise BotoClientError('Please report this exception as a Boto Issue!')
 
     def build_base_http_request(self, method, path, auth_path,
-                                headers=None, data='', host=None):
+                                params=None, headers=None, data='', host=None):
         path = self.get_path(path)
+        if auth_path is not None:
+            auth_path = self.get_path(auth_path)
+        if params == None:
+            params = {}
+        else:
+            params = params.copy()
         if headers == None:
             headers = {}
         else:
             headers = headers.copy()
         host = host or self.host
-        return HTTPRequest(method, self.protocol, host, self.port, path, auth_path,
-                           {}, headers, data)
-
-    def fill_in_auth(self, http_request):
-        headers = http_request.headers
         if self.use_proxy:
             path = self.prefix_proxy_to_path(path, host)
             if self.proxy_user and self.proxy_pass and not self.is_secure:
                 # If is_secure, we don't have to set the proxy authentication
                 # header here, we did that in the CONNECT to the proxy.
                 headers.update(self.get_proxy_auth_header())
+        return HTTPRequest(method, self.protocol, host, self.port,
+                           path, auth_path, params, headers, data)
+
+    def fill_in_auth(self, http_request, **kwargs):
+        headers = http_request.headers
         for key in headers:
             val = headers[key]
             if isinstance(val, unicode):
                 headers[key] = urllib.quote_plus(val.encode('utf-8'))
 
-        self._auth_handler.add_auth(http_request)
+        self._auth_handler.add_auth(http_request, **kwargs)
 
         headers['User-Agent'] = UserAgent
         if not headers.has_key('Content-Length'):
@@ -524,7 +530,7 @@ class AWSAuthConnection(object):
                      auth_path=None, sender=None, override_num_retries=None):
         """Makes a request to the server, with stock multiple-retry logic."""
         http_request = self.build_base_http_request(method, path, auth_path,
-                                                    headers, data, host)
+                                                    {}, headers, data, host)
         http_request = self.fill_in_auth(http_request)
         return self._send_http_request(http_request, sender,
                                        override_num_retries)
@@ -556,8 +562,9 @@ class AWSQueryConnection(AWSAuthConnection):
         return boto.utils.get_utf8_value(value)
 
     def make_request(self, action, params=None, path='/', verb='GET'):
-        http_request = HTTPRequest(verb, self.protocol, self.host, self.port,
-                                   self.get_path(path), None, params, {}, '')
+        http_request = self.build_base_http_request(verb, path, None,
+                                                    params, {}, '',
+                                                    self.server_name())
         http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
         http_request = self.fill_in_auth(http_request)

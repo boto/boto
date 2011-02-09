@@ -106,7 +106,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         method = http_request.method
         auth_path = http_request.auth_path
@@ -133,7 +133,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
@@ -148,13 +148,13 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """Implements the new Version 3 HMAC authorization used by Route53."""
     
-    capability = ['hmac-v3', 'route53']
+    capability = ['hmac-v3', 'route53', 'ses']
     
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
             headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
@@ -171,16 +171,15 @@ class QuerySignatureHelper(HmacKeys):
     Concrete sub class need to implement _calc_sigature method.
     """
 
-    def add_auth(self, http_request):
-        server_name = self._server_name(http_request.host, http_request.port)
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         params = http_request.params
         params['AWSAccessKeyId'] = self._provider.access_key
         params['SignatureVersion'] = self.SignatureVersion
-        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        params['Timestamp'] = boto.utils.get_ts()
         qs, signature = self._calc_signature(
             http_request.params, http_request.method,
-            http_request.path, server_name)
+            http_request.path, http_request.host)
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -191,23 +190,6 @@ class QuerySignatureHelper(HmacKeys):
         # Now that query params are part of the path, clear the 'params' field
         # in request.
         http_request.params = {}
-
-    def _server_name(self, host, port):
-        if port == 80:
-            signature_host = host
-        else:
-            # This unfortunate little hack can be attributed to
-            # a difference in the 2.6 version of httplib.  In old
-            # versions, it would append ":443" to the hostname sent
-            # in the Host header and so we needed to make sure we
-            # did the same when calculating the V2 signature.  In 2.6
-            # (and higher!)
-            # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] in ('2.6', '2.7') and port == 443:
-                signature_host = host
-            else:
-                signature_host = '%s:%d' % (host, port)
-        return signature_host
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
     """Class SQS query signature based Auth handler."""

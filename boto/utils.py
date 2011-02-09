@@ -62,6 +62,15 @@ except ImportError:
     import md5
     _hashfn = md5.md5
 
+# List of Query String Arguments of Interest
+qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
+                   'requestPayment', 'torrent', 'versioning', 'versionId',
+                   'versions', 'uploads', 'uploadId',
+                   'response-content-type', 'response-content-language',
+                   'response-expires', 'reponse-cache-control',
+                   'response-content-disposition',
+                   'response-content-encoding']
+
 # generates the aws canonical string for the given parameters
 def canonical_string(method, path, headers, expires=None,
                      provider=None):
@@ -101,13 +110,10 @@ def canonical_string(method, path, headers, expires=None,
             buf += "%s\n" % val
 
     # don't include anything after the first ? in the resource...
+    # unless it is one of the QSA of interest, defined above
     t =  path.split('?')
     buf += t[0]
 
-    # unless it is one of the Query String Arguments of Interest
-    qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
-                       'requestPayment', 'torrent', 'versioning', 'versionId',
-                       'versions', 'uploads', 'uploadId']
     if len(t) > 1:
         qsa = t[1].split('&')
         qsa = [ a.split('=') for a in qsa]
@@ -283,18 +289,19 @@ def fetch_file(uri, file=None, username=None, password=None):
 
 class ShellCommand(object):
 
-    def __init__(self, command, wait=True, fail_fast=False):
+    def __init__(self, command, wait=True, fail_fast=False, cwd = None):
         self.exit_code = 0
         self.command = command
         self.log_fp = StringIO.StringIO()
         self.wait = wait
         self.fail_fast = fail_fast
-        self.run()
+        self.run(cwd = cwd)
 
-    def run(self):
+    def run(self, cwd=None):
         boto.log.info('running:%s' % self.command)
         self.process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                        cwd=cwd)
         if(self.wait):
             while self.process.poll() == None:
                 time.sleep(1)
@@ -304,8 +311,8 @@ class ShellCommand(object):
             boto.log.info(self.log_fp.getvalue())
             self.exit_code = self.process.returncode
 
-	    if self.fail_fast and self.exit_code != 0:
-		    raise Exception("Command " + self.command + " failed with status " + self.exit_code)
+            if self.fail_fast and self.exit_code != 0:
+                raise Exception("Command " + self.command + " failed with status " + self.exit_code)
 
             return self.exit_code
 

@@ -1,5 +1,5 @@
-# Copyright (c) 2010-2011 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
+# Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011 Harry Marr http://hmarr.com/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,8 +20,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-# this is here for backward compatibility
-# originally, the IAMConnection class was defined here
-from connection import IAMConnection
-    
-    
+from connection import SESConnection
+

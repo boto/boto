@@ -171,6 +171,11 @@ class S3ConnectionTest (unittest.TestCase):
         k = bucket.new_key('reduced_redundancy')
         k.set_contents_from_string('This key has reduced redundancy',
                                    reduced_redundancy=True)
+
+        # now try to inject a response header
+        data = k.get_contents_as_string(response_headers={'response-content-type' : 'foo/bar'})
+        assert k.content_type == 'foo/bar'
+        
         # now delete all keys in bucket
         for k in bucket:
             if k.name == 'reduced_redundancy':

@@ -646,19 +646,21 @@ class Bucket(object):
             for key in self:
                 key.add_email_grant(permission, email_address, headers=headers)
 
-    def add_user_grant(self, permission, user_id, recursive=False, headers=None):
+    def add_user_grant(self, permission, user_id,
+                       recursive=False, headers=None):
         """
-        Convenience method that provides a quick way to add a canonical user grant to a bucket.
-        This method retrieves the current ACL, creates a new grant based on the parameters
-        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
+        Convenience method that provides a quick way to add a canonical
+        user grant to a bucket.  This method retrieves the current ACL,
+        creates a new grant based on the parameters passed in, adds that
+        grant to the ACL and then PUT's the new ACL back to S3.
         
         :type permission: string
         :param permission: The permission being granted. Should be one of:
                            (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
         
         :type user_id: string
-        :param user_id:     The canonical user id associated with the AWS account your are granting
-                            the permission to.
+        :param user_id:     The canonical user id associated with the AWS
+                            account your are granting the permission to.
                             
         :type recursive: boolean
         :param recursive: A boolean value to controls whether the command
@@ -688,8 +690,9 @@ class Bucket(object):
         Returns the LocationConstraint for the bucket.
 
         :rtype: str
-        :return: The LocationConstraint for the bucket or the empty string if
-                 no constraint was specified when bucket was created.
+        :return: The LocationConstraint for the bucket or the empty
+                 string if no constraint was specified when bucket
+                 was created.
         """
         response = self.connection.make_request('GET', self.name,
                                                 query_args='location')
@@ -856,8 +859,10 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def set_policy(self, policy, headers=None):
-        response = self.connection.make_request('PUT', self.name, data=policy,
-                query_args='policy', headers=headers)
+        response = self.connection.make_request('PUT', self.name,
+                                                data=policy,
+                                                query_args='policy',
+                                                headers=headers)
         body = response.read()
         if response.status >= 200 and response.status <= 204:
             return True
