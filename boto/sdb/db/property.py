@@ -378,7 +378,10 @@ class DateProperty(Property):
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
             setattr(model_instance, self.name, self.now())
-        return Property.get_value_for_datastore(self, model_instance)
+        val = Property.get_value_for_datastore(self, model_instance)
+        if isinstance(val, datetime.datetime):
+            val = val.date()
+        return val
 
     def now(self):
         return datetime.date.today()
