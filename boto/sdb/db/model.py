@@ -148,9 +148,12 @@ class Model(object):
 
     def __init__(self, id=None, **kw):
         self._loaded = False
-        # first initialize all properties to their default values
+        # first try to initialize all properties to their default values
         for prop in self.properties(hidden=False):
-            setattr(self, prop.name, prop.default_value())
+            try:
+                setattr(self, prop.name, prop.default_value())
+            except ValueError:
+                pass
         if kw.has_key('manager'):
             self._manager = kw['manager']
         self.id = id
