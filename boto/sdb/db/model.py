@@ -96,10 +96,6 @@ class Model(object):
         return q
 
     @classmethod
-    def lookup(cls, name, value):
-        return cls._manager.lookup(cls, name, value)
-
-    @classmethod
     def all(cls, limit=None, next_token=None):
         return cls.find(limit=limit, next_token=next_token)
 
