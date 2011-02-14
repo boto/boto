@@ -476,7 +476,7 @@ class SDBManager(object):
                 op = "like"
             elif op in ("!=", "not"):
                 op = "not like"
-            if not(op == "like" and val.startswith("%")):
+            if not(op in ["like", "not like"] and val.startswith("%")):
                 val = "%%:%s" % val
         return "%s %s '%s'" % (name, op, val.replace("'", "''"))
 
