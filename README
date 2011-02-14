@@ -1,8 +1,8 @@
-boto 2.0b3
-05-Oct-2010
+boto 2.0b4
+13-Feb-2011
 
-Copyright (c) 2006-2010 Mitch Garnaat <mitch@garnaat.org>
-Copyright (c) 2010, Eucalyptus Systems, Inc.
+Copyright (c) 2006-2011 Mitch Garnaat <mitch@garnaat.org>
+Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 All rights reserved.
 
 http://code.google.com/p/boto
@@ -26,6 +26,7 @@ At the moment, boto supports:
  * Google Storage
  * Identity and Access Management (IAM)
  * Route53 DNS Service (route53)
+ * Simple Email Service (SES)
 
 The intent is to support additional services in the future.
 
