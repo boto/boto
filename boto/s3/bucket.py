@@ -69,6 +69,12 @@ class Bucket(object):
          <MfaDelete>%s</MfaDelete>
        </VersioningConfiguration>"""
 
+    WebsiteBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+        <IndexDocument><Suffix>%s</Suffix></IndexDocument>
+        <ErrorDocument><Key>%s</Key></ErrorDocument>
+      </WebsiteConfiguration>"""
+
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
 
@@ -919,3 +925,69 @@ class Bucket(object):
         
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
+
+    def configure_website(self, suffix, error_key='', headers=None):
+        """
+        Configure this bucket to act as a website
+
+        :type suffix: str
+        :param suffix: Suffix that is appended to a request that is for a
+                       "directory" on the website endpoint (e.g. if the suffix
+                       is index.html and you make a request to
+                       samplebucket/images/ the data that is returned will
+                       be for the object with the key name images/index.html).
+                       The suffix must not be empty and must not include a
+                       slash character.
+
+        :type error_key: str
+        :param error_key: The object key name to use when a 4XX class
+                          error occurs.
+
+        """
+        body = self.WebsiteBody % (suffix, error_key)
+        response = self.connection.make_request('PUT', self.name, data=body,
+                                                query_args='website',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
+    def get_website_configuration(self, headers=None):
+        """
+        Returns the current status of website configuration on the bucket.
+
+        :rtype: dict
+        :returns: A dictionary containing a key named 'Versioning'
+                  that can have a value of either Enabled, Disabled,
+                  or Suspended. Also, if MFADelete has ever been enabled
+                  on the bucket, the dictionary will contain a key
+                  named 'MFADelete' which will have a value of either
+                  Enabled or Suspended.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            return body
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def delete_website_configuration(self, headers=None):
+        """
+        Removes all website configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
