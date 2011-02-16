@@ -53,7 +53,7 @@ class S3Origin(object):
         
         """
         self.dns_name = dns_name
-        self.origin_access_identiy = origin_access_identity
+        self.origin_access_identity = origin_access_identity
 
     def __repr__(self):
         return '<S3Origin: %s>' % self.dns_name
