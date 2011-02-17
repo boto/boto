@@ -584,7 +584,10 @@ class AWSQueryConnection(AWSAuthConnection):
         response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
+        if not body:
+            boto.log.error('Null body %s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        elif response.status == 200:
             rs = ResultSet(markers)
             h = handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
@@ -600,7 +603,10 @@ class AWSQueryConnection(AWSAuthConnection):
         response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
+        if not body:
+            boto.log.error('Null body %s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        elif response.status == 200:
             obj = cls(parent)
             h = handler.XmlHandler(obj, parent)
             xml.sax.parseString(body, h)
@@ -616,7 +622,10 @@ class AWSQueryConnection(AWSAuthConnection):
         response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
+        if not body:
+            boto.log.error('Null body %s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        elif response.status == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
