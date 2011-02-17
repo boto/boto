@@ -565,7 +565,8 @@ class AWSQueryConnection(AWSAuthConnection):
         http_request = self.build_base_http_request(verb, path, None,
                                                     params, {}, '',
                                                     self.server_name())
-        http_request.params['Action'] = action
+        if action:
+            http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
         http_request = self.fill_in_auth(http_request)
         return self._send_http_request(http_request)
