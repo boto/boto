@@ -73,8 +73,10 @@ class Bucket(object):
     WebsiteBody = """<?xml version="1.0" encoding="UTF-8"?>
       <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
         <IndexDocument><Suffix>%s</Suffix></IndexDocument>
-        <ErrorDocument><Key>%s</Key></ErrorDocument>
+        %s
       </WebsiteConfiguration>"""
+
+    WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
 
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
@@ -873,7 +875,11 @@ class Bucket(object):
                           error occurs.  This is optional.
 
         """
-        body = self.WebsiteBody % (suffix, error_key)
+        if error_key:
+            error_frag = self.WebsiteErrorFragment % error_key
+        else:
+            error_frag = ''
+        body = self.WebsiteBody % (suffix, error_frag)
         response = self.connection.make_request('PUT', self.name, data=body,
                                                 query_args='website',
                                                 headers=headers)
@@ -889,12 +895,15 @@ class Bucket(object):
         Returns the current status of website configuration on the bucket.
 
         :rtype: dict
-        :returns: A dictionary containing a key named 'Versioning'
-                  that can have a value of either Enabled, Disabled,
-                  or Suspended. Also, if MFADelete has ever been enabled
-                  on the bucket, the dictionary will contain a key
-                  named 'MFADelete' which will have a value of either
-                  Enabled or Suspended.
+        :returns: A dictionary containing a Python representation
+                  of the XML response from S3.  The overall structure is:
+
+                   * WebsiteConfiguration
+                     * IndexDocument
+                       * Suffix : suffix that is appended to request that
+                         is for a "directory" on the website endpoint
+                     * ErrorDocument
+                       * Key : name of object to serve when an error occurs
         """
         response = self.connection.make_request('GET', self.name,
                 query_args='website', headers=headers)
