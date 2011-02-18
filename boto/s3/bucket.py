@@ -35,6 +35,7 @@ from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
+import boto.jsonresponse
 import boto.utils
 import xml.sax
 import urllib
@@ -68,6 +69,14 @@ class Bucket(object):
          <Status>%s</Status>
          <MfaDelete>%s</MfaDelete>
        </VersioningConfiguration>"""
+
+    WebsiteBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+        <IndexDocument><Suffix>%s</Suffix></IndexDocument>
+        %s
+      </WebsiteConfiguration>"""
+
+    WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
 
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
@@ -848,6 +857,81 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def configure_website(self, suffix, error_key='', headers=None):
+        """
+        Configure this bucket to act as a website
+
+        :type suffix: str
+        :param suffix: Suffix that is appended to a request that is for a
+                       "directory" on the website endpoint (e.g. if the suffix
+                       is index.html and you make a request to
+                       samplebucket/images/ the data that is returned will
+                       be for the object with the key name images/index.html).
+                       The suffix must not be empty and must not include a
+                       slash character.
+
+        :type error_key: str
+        :param error_key: The object key name to use when a 4XX class
+                          error occurs.  This is optional.
+
+        """
+        if error_key:
+            error_frag = self.WebsiteErrorFragment % error_key
+        else:
+            error_frag = ''
+        body = self.WebsiteBody % (suffix, error_frag)
+        response = self.connection.make_request('PUT', self.name, data=body,
+                                                query_args='website',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
+    def get_website_configuration(self, headers=None):
+        """
+        Returns the current status of website configuration on the bucket.
+
+        :rtype: dict
+        :returns: A dictionary containing a Python representation
+                  of the XML response from S3.  The overall structure is:
+
+                   * WebsiteConfiguration
+                     * IndexDocument
+                       * Suffix : suffix that is appended to request that
+                         is for a "directory" on the website endpoint
+                     * ErrorDocument
+                       * Key : name of object to serve when an error occurs
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def delete_website_configuration(self, headers=None):
+        """
+        Removes all website configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
     def get_policy(self, headers=None):
         response = self.connection.make_request('GET', self.name,
                 query_args='policy', headers=headers)
@@ -919,3 +1003,4 @@ class Bucket(object):
         
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
+
