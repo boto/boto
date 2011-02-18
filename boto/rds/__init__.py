@@ -33,7 +33,7 @@ from boto.rds.regioninfo import RDSRegionInfo
 def regions():
     """
     Get all available regions for the RDS service.
-        
+
     :rtype: list
     :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
     """
@@ -135,9 +135,9 @@ class RDSConnection(AWSQueryConnection):
 
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the DBInstance.
-                               
+
                                Valid values are:
-                               
+
                                * db.m1.small
                                * db.m1.large
                                * db.m1.xlarge
@@ -207,7 +207,7 @@ class RDSConnection(AWSQueryConnection):
                                            automatically to the Read Replica
                                            during the maintenance window.
                                            Default is True.
-                                           
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -270,9 +270,9 @@ class RDSConnection(AWSQueryConnection):
         :param instance_class: The compute and memory capacity of the
                                DBInstance.  Default is to inherit from
                                the source DB Instance.
-                               
+
                                Valid values are:
-                               
+
                                * db.m1.small
                                * db.m1.large
                                * db.m1.xlarge
@@ -296,7 +296,7 @@ class RDSConnection(AWSQueryConnection):
                                            during the maintenance window.
                                            Default is to inherit this value
                                            from the source DB Instance.
-                                           
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -356,7 +356,7 @@ class RDSConnection(AWSQueryConnection):
                                apply_immediately is True.
 
                                Valid values are:
-                               
+
                                * db.m1.small
                                * db.m1.large
                                * db.m1.xlarge
@@ -716,15 +716,15 @@ class RDSConnection(AWSQueryConnection):
                            the rule from.
 
         :type ec2_security_group_name: string
-        :param ec2_security_group_name: The name of the EC2 security group you are
-                                        granting access to.
+        :param ec2_security_group_name: The name of the EC2 security group from which
+                                        you are removing access.
 
         :type ec2_security_group_owner_id: string
         :param ec2_security_group_owner_id: The ID of the owner of the EC2 security
-                                            group you are granting access to.
+                                            from which you are removing access.
 
         :type cidr_ip: string
-        :param cidr_ip: The CIDR block you are providing access to.
+        :param cidr_ip: The CIDR block from which you are removing access.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :rtype: bool
@@ -742,7 +742,7 @@ class RDSConnection(AWSQueryConnection):
     # For backwards compatibility.  This method was improperly named
     # in previous versions.  I have renamed it to match the others.
     revoke_security_group = revoke_dbsecurity_group
-    
+
     # DBSnapshot methods
 
     def get_all_dbsnapshots(self, snapshot_id=None, instance_id=None,
