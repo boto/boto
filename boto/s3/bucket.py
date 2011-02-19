@@ -40,6 +40,19 @@ import boto.utils
 import xml.sax
 import urllib
 import re
+from collections import defaultdict
+
+# as per http://docs.amazonwebservices.com/AmazonS3/latest/dev/index.html?WebsiteHosting.html (02/19/2011)
+class S3WebsiteEndpointTranslate:
+    trans_region = defaultdict(lambda :'s3-website-us-east-1')
+
+    trans_region['EU'] = 's3-website-eu-west-1'
+    trans_region['us-west-1'] = 's3-website-us-west-1'
+    trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
+
+    @classmethod
+    def translate_region(self, reg):
+        return self.trans_region[reg]
 
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
@@ -931,6 +944,9 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+
+    def get_website_endpoint(self):
+        return "%s.%s.%s" % (self.name, S3WebsiteEndpointTranslate.translate_region(self.get_location()), self.connection.host)
 
     def get_policy(self, headers=None):
         response = self.connection.make_request('GET', self.name,
