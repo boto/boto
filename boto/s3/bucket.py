@@ -946,7 +946,7 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def get_website_endpoint(self):
-        return "%s.%s.%s" % (self.name, S3WebsiteEndpointTranslate.translate_region(self.get_location()), self.connection.host)
+        return "%s.%s.%s" % (self.name, S3WebsiteEndpointTranslate.translate_region(self.get_location()), "amazonaws.com")
 
     def get_policy(self, headers=None):
         response = self.connection.make_request('GET', self.name,
