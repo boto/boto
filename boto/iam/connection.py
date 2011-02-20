@@ -954,7 +954,7 @@ class IAMConnection(AWSQueryConnection):
         Creates a new alias for the AWS account.
 
         For more information on account id aliases, please see
-        http://docs.amazonwebservices.com/IAM/latest/UserGuide/index.html?AccountAlias.html
+        http://goo.gl/ToB7G
 
         :type alias: string
         :param alias: The alias to attach to the account. 
@@ -967,8 +967,7 @@ class IAMConnection(AWSQueryConnection):
         Deletes an alias for the AWS account.
 
         For more information on account id aliases, please see
-        http://docs.amazonwebservices.com/IAM/latest/UserGuide/index.html?AccountAlias.html
-
+        http://goo.gl/ToB7G
 
         :type alias: string
         :param alias: The alias to remove from the account.
@@ -984,10 +983,12 @@ class IAMConnection(AWSQueryConnection):
         but it seems you can only have one account alias currently.
         
         For more information on account id aliases, please see
-        http://docs.amazonwebservices.com/IAM/latest/UserGuide/index.html?AccountAlias.html
+        http://goo.gl/ToB7G
         """
         r = self.get_response('ListAccountAliases', {})
-        aliases = r.get('ListAccountAliasesResponse').get('ListAccountAliasesResult').get('AccountAliases')
+        response = r.get('ListAccountAliasesResponse')
+        result = response.get('ListAccountAliasesResult')
+        aliases = result.get('AccountAliases')
         return aliases.get('member', None)
 
     def get_signin_url(self, service='ec2'):
