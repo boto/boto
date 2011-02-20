@@ -42,7 +42,7 @@ import urllib
 import re
 from collections import defaultdict
 
-# as per http://docs.amazonwebservices.com/AmazonS3/latest/dev/index.html?WebsiteHosting.html (02/19/2011)
+# as per http://goo.gl/BDuud (02/19/2011)
 class S3WebsiteEndpointTranslate:
     trans_region = defaultdict(lambda :'s3-website-us-east-1')
 
@@ -946,7 +946,15 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def get_website_endpoint(self):
-        return "%s.%s.%s" % (self.name, S3WebsiteEndpointTranslate.translate_region(self.get_location()), "amazonaws.com")
+        """
+        Returns the fully qualified hostname to use is you want to access this
+        bucket as a website.  This doesn't validate whether the bucket has
+        been correctly configured as a website or not.
+        """
+        l = [self.name]
+        l.append(S3WebsiteEndpointTranslate.translate_region(self.get_location()))
+        l.append('.'.join(self.connection.host.split('.')[-2:]))
+        return '.'.join(l)
 
     def get_policy(self, headers=None):
         response = self.connection.make_request('GET', self.name,
