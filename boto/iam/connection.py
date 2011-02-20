@@ -949,4 +949,57 @@ class IAMConnection(AWSQueryConnection):
                   'Password' : password}
         return self.get_response('UpdateLoginProfile', params)
     
+    def create_account_alias(self, alias):
+        """
+        Creates a new alias for the AWS account.
+
+        For more information on account id aliases, please see
+        http://docs.amazonwebservices.com/IAM/latest/UserGuide/index.html?AccountAlias.html
+
+        :type alias: string
+        :param alias: The alias to attach to the account. 
+        """
+        params = {'AccountAlias': alias}
+        return self.get_response('CreateAccountAlias', params)
     
+    def delete_account_alias(self, alias):
+        """
+        Deletes an alias for the AWS account.
+
+        For more information on account id aliases, please see
+        http://docs.amazonwebservices.com/IAM/latest/UserGuide/index.html?AccountAlias.html
+
+
+        :type alias: string
+        :param alias: The alias to remove from the account.
+        """
+        params = {'AccountAlias': alias}
+        return self.get_response('DeleteAccountAlias', params)
+    
+    def get_account_alias(self):
+        """
+        Get the alias for the current account.
+
+        This is referred to in the docs as list_account_aliases,
+        but it seems you can only have one account alias currently.
+        
+        For more information on account id aliases, please see
+        http://docs.amazonwebservices.com/IAM/latest/UserGuide/index.html?AccountAlias.html
+        """
+        r = self.get_response('ListAccountAliases', {})
+        aliases = r.get('ListAccountAliasesResponse').get('ListAccountAliasesResult').get('AccountAliases')
+        return aliases.get('member', None)
+
+    def get_signin_url(self, service='ec2'):
+        """
+        Get the URL where IAM users can use their login profile to sign in
+        to this account's console.
+
+        :type service: string
+        :param service: Default service to go to in the console.
+        """
+        alias = self.get_account_alias()
+        if not alias:
+            raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
+
+        return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
