@@ -21,7 +21,6 @@
 #
 
 import xml.sax
-import base64
 import time
 import boto
 from boto.connection import AWSAuthConnection
@@ -54,15 +53,8 @@ class CloudFrontConnection(AWSAuthConnection):
                 return response_headers[key]
         return None
 
-    def add_aws_auth_header(self, headers, method, path):
-        if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
-
-        hmac = self.hmac.copy()
-        hmac.update(headers['Date'])
-        b64_hmac = base64.encodestring(hmac.digest()).strip()
-        headers['Authorization'] = "AWS %s:%s" % (self.aws_access_key_id, b64_hmac)
+    def _required_auth_capability(self):
+        return ['cloudfront']
 
     # Generics
     
@@ -231,17 +223,21 @@ class CloudFrontConnection(AWSAuthConnection):
 
     # Object Invalidation
     
-    def create_invalidation_request(self, distribution_id, paths, caller_reference=None):
+    def create_invalidation_request(self, distribution_id, paths,
+                                    caller_reference=None):
         """Creates a new invalidation request
-            :see: http://docs.amazonwebservices.com/AmazonCloudFront/2010-08-01/APIReference/index.html?CreateInvalidation.html
+            :see: http://goo.gl/8vECq
         """
         # We allow you to pass in either an array or
         # an InvalidationBatch object
         if not isinstance(paths, InvalidationBatch):
             paths = InvalidationBatch(paths)
         paths.connection = self
-        response = self.make_request('POST', '/%s/distribution/%s/invalidation' % (self.Version, distribution_id),
-                                     {'Content-Type' : 'text/xml'}, data=paths.to_xml())
+        uri = '/%s/distribution/%s/invalidation' % (self.Version,
+                                                    distribution_id)
+        response = self.make_request('POST', uri,
+                                     {'Content-Type' : 'text/xml'},
+                                     data=paths.to_xml())
         body = response.read()
         if response.status == 201:
             h = handler.XmlHandler(paths, self)

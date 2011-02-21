@@ -111,11 +111,10 @@ class OrdinaryCallingFormat(_CallingFormat):
         return path_base + urllib.quote(key)
 
 class Location:
-    DEFAULT = ''
+    DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
-
-#boto.set_stream_logger('s3')
+    APSoutheast = 'ap-southeast-1'
 
 class S3Connection(AWSAuthConnection):
 
@@ -135,6 +134,9 @@ class S3Connection(AWSAuthConnection):
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
                 path=path, provider=provider)
+
+    def _required_auth_capability(self):
+        return ['s3']
 
     def __iter__(self):
         for bucket in self.get_all_buckets():
@@ -249,14 +251,12 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "AWSAccessKeyId", "value": self.aws_access_key_id})
 
         # Add signature for encoded policy document as the 'AWSAccessKeyId' field
-        hmac_copy = self.hmac.copy()
-        hmac_copy.update(policy_b64)
-        signature = base64.encodestring(hmac_copy.digest()).strip()
+        signature = self._auth_handler.sign_string(policy_b64)
         fields.append({"name": "signature", "value": signature})
         fields.append({"name": "key", "value": key})
 
         # HTTPS protocol will be used if the secure HTTP option is enabled.
-        url = '%s://%s.%s/' % (http_method, bucket_name, self.host)
+        url = '%s://%s/' % (http_method, self.calling_format.build_host(self.server_name(), bucket_name))
 
         return {"action": url, "fields": fields}
 
@@ -268,12 +268,9 @@ class S3Connection(AWSAuthConnection):
         expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
-        canonical_str = boto.utils.canonical_string(method, auth_path,
-                                                    headers, expires,
-                                                    self.provider)
-        hmac_copy = self.hmac.copy()
-        hmac_copy.update(canonical_str)
-        b64_hmac = base64.encodestring(hmac_copy.digest()).strip()
+        c_string = boto.utils.canonical_string(method, auth_path, headers,
+                                               expires, self.provider)
+        b64_hmac = self._auth_handler.sign_string(c_string)
         encoded_canonical = urllib.quote_plus(b64_hmac)
         self.calling_format.build_path_base(bucket, key)
         if query_auth:

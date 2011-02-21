@@ -22,13 +22,12 @@
 
 from regioninfo import SDBRegionInfo
 
-
 def regions():
     """
     Get all available regions for the SDB service.
-        
+
     :rtype: list
-    :return: A list of :class:`boto.sdb.regioninfo.RegionInfo`
+    :return: A list of :class:`boto.sdb.regioninfo.RegionInfo` instances
     """
     return [SDBRegionInfo(name='us-east-1',
                           endpoint='sdb.amazonaws.com'),
@@ -41,6 +40,16 @@ def regions():
             ]
 
 def connect_to_region(region_name):
+    """
+    Given a valid region name, return a 
+    :class:`boto.sdb.connection.SDBConnection`.
+    
+    :param str region_name: The name of the region to connect to.
+    
+    :rtype: :class:`boto.sdb.connection.SDBConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+        name is given
+    """
     for region in regions():
         if region.name == region_name:
             return region.connect()

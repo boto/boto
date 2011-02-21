@@ -74,7 +74,7 @@ class Bucket(S3Bucket):
                               account your are granting the permission to.
         
         :type recursive: boolean
-        :param recursive: A boolean value to controls whether the command
+        :param recursive: A boolean value to controls whether the call
                           will apply the grant to all keys within the bucket
                           or not.  The default value is False.  By passing a
                           True value, the call will iterate through all keys
@@ -109,7 +109,7 @@ class Bucket(S3Bucket):
                             the permission to.
                             
         :type recursive: bool
-        :param recursive: A boolean value to controls whether the command
+        :param recursive: A boolean value to controls whether the call
                           will apply the grant to all keys within the bucket
                           or not.  The default value is False.  By passing a
                           True value, the call will iterate through all keys
@@ -126,6 +126,44 @@ class Bucket(S3Bucket):
         if recursive:
             for key in self:
                 key.add_user_grant(permission, user_id, headers=headers)
+
+    def add_group_email_grant(self, permission, email_address, recursive=False,
+                              headers=None):
+        """
+        Convenience method that provides a quick way to add an email group
+        grant to a bucket. This method retrieves the current ACL, creates a new
+        grant based on the parameters passed in, adds that grant to the ACL and
+        then PUT's the new ACL back to GS.
+
+        :type permission: string
+        :param permission: The permission being granted. Should be one of:
+            READ|WRITE|FULL_CONTROL
+            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+            for more details on permissions.
+
+        :type email_address: string
+        :param email_address: The email address associated with the Google
+            Group to which you are granting the permission.
+
+        :type recursive: bool
+        :param recursive: A boolean value to controls whether the call
+                          will apply the grant to all keys within the bucket
+                          or not.  The default value is False.  By passing a
+                          True value, the call will iterate through all keys
+                          in the bucket and apply the same grant to each key.
+                          CAUTION: If you have a lot of keys, this could take
+                          a long time!
+        """
+        if permission not in GSPermissions:
+            raise self.connection.provider.storage_permissions_error(
+                'Unknown Permission: %s' % permission)
+        acl = self.get_acl(headers=headers)
+        acl.add_group_email_grant(permission, email_address)
+        self.set_acl(acl, headers=headers)
+        if recursive:
+            for key in self:
+                key.add_group_email_grant(permission, email_address,
+                                          headers=headers)
 
     # Method with same input signature as boto.s3.bucket.Bucket.list_grants()
     # (but returning different object type), to allow polymorphic treatment

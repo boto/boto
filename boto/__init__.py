@@ -1,5 +1,5 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,12 +24,13 @@
 import boto
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
+import boto.plugin
 import os, re, sys
 import logging
 import logging.config
 from boto.exception import InvalidUriError
 
-__version__ = '2.0b3'
+__version__ = '2.0b4'
 Version = __version__ # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
@@ -368,6 +369,20 @@ def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
                         calling_format=OrdinaryCallingFormat(),
                         is_secure=is_secure, **kwargs)
 
+def connect_ses(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ses.SESConnection`
+    :return: A connection to Amazon's SES
+    """
+    from boto.ses import SESConnection
+    return SESConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
 def check_extensions(module_name, module_path):
     """
     This function checks for extensions to boto modules.  It should be called in the
@@ -391,7 +406,7 @@ def _get_aws_conn(service):
     global _aws_cache
     conn = _aws_cache.get(service)
     if not conn:
-        meth = getattr(sys.modules[__name__], 'connect_'+service)
+        meth = getattr(sys.modules[__name__], 'connect_' + service)
         conn = meth()
         _aws_cache[service] = conn
     return conn
@@ -399,15 +414,16 @@ def _get_aws_conn(service):
 def lookup(service, name):
     global _aws_cache
     conn = _get_aws_conn(service)
-    obj = _aws_cache.get('.'.join((service,name)), None)
+    obj = _aws_cache.get('.'.join((service, name)), None)
     if not obj:
         obj = conn.lookup(name)
-        _aws_cache['.'.join((service,name))] = obj
+        _aws_cache['.'.join((service, name))] = obj
     return obj
 
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri):
-    """Instantiate a StorageUri from a URI string.
+    """
+    Instantiate a StorageUri from a URI string.
 
     :type uri_str: string
     :param uri_str: URI naming bucket + optional object.
@@ -427,12 +443,14 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     :rtype: :class:`boto.StorageUri` subclass
     :return: StorageUri subclass for given URI.
 
-    uri_str must be one of the following formats:
-        gs://bucket/name
-        s3://bucket/name
-        gs://bucket
-        s3://bucket
-        filename
+    ``uri_str`` must be one of the following formats:
+
+    * gs://bucket/name
+    * s3://bucket/name
+    * gs://bucket
+    * s3://bucket
+    * filename
+
     The last example uses the default scheme ('file', unless overridden)
     """
 
@@ -489,3 +507,5 @@ def storage_uri_for_key(key):
     prov_name = key.bucket.connection.provider.get_provider_name()
     uri_str = '%s://%s/%s' % (prov_name, key.bucket.name, key.name)
     return storage_uri(uri_str)
+
+boto.plugin.load_plugins(config)

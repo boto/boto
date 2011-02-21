@@ -53,7 +53,7 @@ def invalidate(cf, origin_or_id, *paths):
 		sys.exit(1)
 	dist = None
 	for d in cf.get_all_distributions():
-		if d.id == origin_or_id or d.origin == origin_or_id:
+		if d.id == origin_or_id or d.origin.dns_name == origin_or_id:
 			dist = d
 			break
 	if not dist:

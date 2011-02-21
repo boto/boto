@@ -104,6 +104,8 @@ class ItemSet(ResponseGroup):
         self.action = action
         self.params = params
         self.curItem = None
+        self.total_results = 0
+        self.total_pages = 0
 
     def startElement(self, name, attrs, connection):
         if name == "Item":

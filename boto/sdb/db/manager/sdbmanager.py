@@ -340,7 +340,7 @@ class SDBManager(object):
         self.converter = SDBConverter(self)
         self._sdb = None
         self._domain = None
-        if consistent == None and hasattr(cls, "__consistent"):
+        if consistent == None and hasattr(cls, "__consistent__"):
             consistent = cls.__consistent__
         self.consistent = consistent
 
@@ -460,11 +460,15 @@ class SDBManager(object):
 
 
     def _build_filter(self, property, name, op, val):
+        if name == "__id__":
+            name = 'itemName()'
+        if name != "itemName()":
+            name = '`%s`' % name
         if val == None:
             if op in ('is','='):
-                return "`%(name)s` is null" % {"name": name}
+                return "%(name)s is null" % {"name": name}
             elif op in ('is not', '!='):
-                return "`%s` is not null" % name
+                return "%s is not null" % name
             else:
                 val = ""
         if property.__class__ == ListProperty:
@@ -472,9 +476,9 @@ class SDBManager(object):
                 op = "like"
             elif op in ("!=", "not"):
                 op = "not like"
-            if not(op == "like" and val.startswith("%")):
+            if not(op in ["like", "not like"] and val.startswith("%")):
                 val = "%%:%s" % val
-        return "`%s` %s '%s'" % (name, op, val.replace("'", "''"))
+        return "%s %s '%s'" % (name, op, val.replace("'", "''"))
 
     def _build_filter_part(self, cls, filters, order_by=None, select=None):
         """

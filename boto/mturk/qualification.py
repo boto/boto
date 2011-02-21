@@ -44,7 +44,7 @@ class Requirement(object):
     Representation of a single requirement
     """
 
-    def __init__(self, qualification_type_id, comparator, integer_value, required_to_preview=False):
+    def __init__(self, qualification_type_id, comparator, integer_value=None, required_to_preview=False):
         self.qualification_type_id = qualification_type_id
         self.comparator = comparator
         self.integer_value = integer_value
@@ -54,8 +54,9 @@ class Requirement(object):
         params =  {
             "QualificationTypeId": self.qualification_type_id,
             "Comparator": self.comparator,
-            "IntegerValue": self.integer_value,
         }
+        if self.comparator != 'Exists' and self.integer_value is not None:
+            params['IntegerValue'] = self.integer_value
         if self.required_to_preview:
             params['RequiredToPreview'] = "true"
         return params
@@ -100,6 +101,14 @@ class PercentAssignmentsRejectedRequirement(Requirement):
     def __init__(self, comparator, integer_value, required_to_preview=False):
         Requirement.__init__(self, qualification_type_id="000000000000000000S0", comparator=comparator, integer_value=integer_value, required_to_preview=required_to_preview)
 
+class NumberHitsApprovedRequirement(Requirement):
+    """
+    Specifies the total number of HITs submitted by a Worker that have been approved. The value is an integer greater than or equal to 0.
+    """
+    
+    def __init__(self, comparator, integer_value, required_to_preview=False):
+        Requirement.__init__(self, qualification_type_id="00000000000000000040", comparator=comparator, integer_value=integer_value, required_to_preview=required_to_preview)
+
 class LocaleRequirement(Requirement):
     """
     A Qualification requirement based on the Worker's location. The Worker's location is specified by the Worker to Mechanical Turk when the Worker creates his account.
@@ -118,3 +127,11 @@ class LocaleRequirement(Requirement):
         if self.required_to_preview:
             params['RequiredToPreview'] = "true"
         return params
+
+class AdultRequirement(Requirement):
+    """
+    Requires workers to acknowledge that they are over 18 and that they agree to work on potentially offensive content. The value type is boolean, 1 (required), 0 (not required, the default).
+    """
+    
+    def __init__(self, comparator, integer_value, required_to_preview=False):
+        Requirement.__init__(self, qualification_type_id="00000000000000000060", comparator=comparator, integer_value=integer_value, required_to_preview=required_to_preview)

@@ -73,6 +73,14 @@ class Bootstrap(ScriptBase):
                 version = '-rHEAD'
             location = boto.config.get('Boto', 'boto_location', '/usr/local/boto')
             self.run('svn update %s %s' % (version, location))
+        elif update.startswith('git'):
+            location = boto.config.get('Boto', 'boto_location', '/usr/share/python-support/python-boto/boto')
+            self.run('git pull', cwd=location)
+            if update.find(':') >= 0:
+                method, version = update.split(':')
+            else:
+                version = 'master'
+            self.run('git checkout %s' % version, cwd=location)
         else:
             # first remove the symlink needed when running from subversion
             self.run('rm /usr/local/lib/python2.5/site-packages/boto')

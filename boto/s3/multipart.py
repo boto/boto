@@ -226,6 +226,8 @@ class MultiPartUpload(object):
         The other parameters are exactly as defined for the
         :class:`boto.s3.key.Key` set_contents_from_file method.
         """
+        if part_num < 1:
+            raise ValueError('Part numbers must be greater than zero')
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
         key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,

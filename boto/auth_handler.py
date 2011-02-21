@@ -1,5 +1,4 @@
-# Copyright (c) 2010-2011 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
+# Copyright 2010 Google Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,8 +19,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-# this is here for backward compatibility
-# originally, the IAMConnection class was defined here
-from connection import IAMConnection
-    
-    
+"""
+Defines an interface which all Auth handlers need to implement.
+"""
+
+from plugin import Plugin
+
+class NotReadyToAuthenticate(Exception):
+  pass
+
+class AuthHandler(Plugin):
+
+    capability = []
+
+    def __init__(self, host, config, provider):
+        """Constructs the handlers.
+        :type host: string
+        :param host: The host to which the request is being sent.
+
+        :type config: boto.pyami.Config 
+        :param config: Boto configuration.
+
+        :type provider: boto.provider.Provider  
+        :param provider: Provider details.
+
+        Raises:
+            NotReadyToAuthenticate: if this handler is not willing to
+                authenticate for the given provider and config.
+        """
+        pass
+
+    def add_auth(self, http_request):
+        """Invoked to add authentication details to request.
+
+        :type http_request: boto.connection.HTTPRequest
+        :param http_request: HTTP request that needs to be authenticated.
+        """
+        pass

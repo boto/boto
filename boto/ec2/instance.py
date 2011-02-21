@@ -293,7 +293,7 @@ class Instance(TaggedEC2Object):
         :return: An InstanceAttribute object representing the value of the
                  attribute requested
         """
-        return self.connection.describe_attribute(self.id, attribute)
+        return self.connection.get_instance_attribute(self.id, attribute)
 
     def modify_attribute(self, attribute, value):
         """

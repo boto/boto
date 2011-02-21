@@ -62,6 +62,15 @@ except ImportError:
     import md5
     _hashfn = md5.md5
 
+# List of Query String Arguments of Interest
+qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
+                   'requestPayment', 'torrent', 'versioning', 'versionId',
+                   'versions', 'website', 'uploads', 'uploadId',
+                   'response-content-type', 'response-content-language',
+                   'response-expires', 'reponse-cache-control',
+                   'response-content-disposition',
+                   'response-content-encoding']
+
 # generates the aws canonical string for the given parameters
 def canonical_string(method, path, headers, expires=None,
                      provider=None):
@@ -101,13 +110,10 @@ def canonical_string(method, path, headers, expires=None,
             buf += "%s\n" % val
 
     # don't include anything after the first ? in the resource...
+    # unless it is one of the QSA of interest, defined above
     t =  path.split('?')
     buf += t[0]
 
-    # unless it is one of the Query String Arguments of Interest
-    qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
-                       'requestPayment', 'torrent', 'versioning', 'versionId',
-                       'versions', 'uploads', 'uploadId']
     if len(t) > 1:
         qsa = t[1].split('&')
         qsa = [ a.split('=') for a in qsa]
@@ -261,7 +267,7 @@ def fetch_file(uri, file=None, username=None, password=None):
     try:
         if uri.startswith('s3://'):
             bucket_name, key_name = uri[len('s3://'):].split('/', 1)
-            c = boto.connect_s3()
+            c = boto.connect_s3(aws_access_key_id=username, aws_secret_access_key=password)
             bucket = c.get_bucket(bucket_name)
             key = bucket.get_key(key_name)
             key.get_contents_to_file(file)
@@ -283,17 +289,19 @@ def fetch_file(uri, file=None, username=None, password=None):
 
 class ShellCommand(object):
 
-    def __init__(self, command, wait=True):
+    def __init__(self, command, wait=True, fail_fast=False, cwd = None):
         self.exit_code = 0
         self.command = command
         self.log_fp = StringIO.StringIO()
         self.wait = wait
-        self.run()
+        self.fail_fast = fail_fast
+        self.run(cwd = cwd)
 
-    def run(self):
+    def run(self, cwd=None):
         boto.log.info('running:%s' % self.command)
         self.process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                        cwd=cwd)
         if(self.wait):
             while self.process.poll() == None:
                 time.sleep(1)
@@ -302,6 +310,10 @@ class ShellCommand(object):
                 self.log_fp.write(t[1])
             boto.log.info(self.log_fp.getvalue())
             self.exit_code = self.process.returncode
+
+            if self.fail_fast and self.exit_code != 0:
+                raise Exception("Command " + self.command + " failed with status " + self.exit_code)
+
             return self.exit_code
 
     def setReadOnly(self, value):
@@ -564,3 +576,32 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=[], a
         except:
             boto.log.exception('notify failed')
 
+def get_utf8_value(value):
+    if not isinstance(value, str) and not isinstance(value, unicode):
+        value = str(value)
+    if isinstance(value, unicode):
+        return value.encode('utf-8')
+    else:
+        return value
+
+def mklist(value):
+    if not isinstance(value, list):
+        if isinstance(value, tuple):
+            value = list(value)
+        else:
+            value = [value]
+    return value
+
+def pythonize_name(name, sep='_'):
+    s = ''
+    if name[0].isupper:
+        s = name[0].lower()
+    for c in name[1:]:
+        if c.isupper():
+            s += sep + c.lower()
+        else:
+            s += c
+    return s
+
+def awsify_name(name):
+    return name[0:1].upper()+name[1:]

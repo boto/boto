@@ -25,7 +25,7 @@ Represents an SDB Domain
 from boto.sdb.queryresultset import SelectResultSet
 
 class Domain:
-    
+
     def __init__(self, connection=None, name=None):
         self.connection = connection
         self.name = name
@@ -50,7 +50,7 @@ class Domain:
         if not self._metadata:
             self._metadata = self.connection.domain_metadata(self)
         return self._metadata
-    
+
     def put_attributes(self, item_name, attributes,
                        replace=True, expected_value=None):
         """
@@ -64,18 +64,20 @@ class Domain:
 
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-                               of a single attribute name and expected value.
-                               The list can be of the form:
-                                * ['name', 'value']
-                               In which case the call will first verify
-                               that the attribute "name" of this item has
-                               a value of "value".  If it does, the delete
-                               will proceed, otherwise a ConditionalCheckFailed
-                               error will be returned.
-                               The list can also be of the form:
-                                * ['name', True|False]
-                               which will simply check for the existence (True)
-                               or non-existencve (False) of the attribute.
+            of a single attribute name and expected value. The list can be 
+            of the form:
+
+             * ['name', 'value']
+
+            In which case the call will first verify that the attribute 
+            "name" of this item has a value of "value".  If it does, the delete
+            will proceed, otherwise a ConditionalCheckFailed error will be 
+            returned. The list can also be of the form:
+            
+             * ['name', True|False]
+            
+            which will simply check for the existence (True) or non-existence 
+            (False) of the attribute.
 
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
@@ -145,18 +147,20 @@ class Domain:
                            
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-                               of a single attribute name and expected value.
-                               The list can be of the form:
-                                * ['name', 'value']
-                               In which case the call will first verify
-                               that the attribute "name" of this item has
-                               a value of "value".  If it does, the delete
-                               will proceed, otherwise a ConditionalCheckFailed
-                               error will be returned.
-                               The list can also be of the form:
-                                * ['name', True|False]
-                               which will simply check for the existence (True)
-                               or non-existencve (False) of the attribute.
+            of a single attribute name and expected value. The list can be of 
+            the form:
+
+             * ['name', 'value']
+
+            In which case the call will first verify that the attribute "name"
+            of this item has a value of "value".  If it does, the delete
+            will proceed, otherwise a ConditionalCheckFailed error will be 
+            returned. The list can also be of the form:
+
+             * ['name', True|False]
+
+            which will simply check for the existence (True) or 
+            non-existence (False) of the attribute.
 
         :rtype: bool
         :return: True if successful
@@ -170,21 +174,21 @@ class Domain:
         
         :type items: dict or dict-like object
         :param items: A dictionary-like object.  The keys of the dictionary are
-                      the item names and the values are either:
+            the item names and the values are either:
 
-                      * dictionaries of attribute names/values, exactly the
-                        same as the attribute_names parameter of the scalar
-                        put_attributes call.  The attribute name/value pairs
-                        will only be deleted if they match the name/value
-                        pairs passed in.
-                      * None which means that all attributes associated
-                        with the item should be deleted.  
+                * dictionaries of attribute names/values, exactly the
+                  same as the attribute_names parameter of the scalar
+                  put_attributes call.  The attribute name/value pairs
+                  will only be deleted if they match the name/value
+                  pairs passed in.
+                * None which means that all attributes associated
+                  with the item should be deleted.  
 
         :rtype: bool
         :return: True if successful
         """
         return self.connection.batch_delete_attributes(self, items)
-    
+
     def select(self, query='', next_token=None, consistent_read=False, max_items=None):
         """
         Returns a set of Attributes for item names within domain_name that match the query.
@@ -199,11 +203,20 @@ class Domain:
                  function that will iterate across all search results, not just the
                  first page.
         """
-        return SelectResultSet(self, query, max_items = max_items, next_token=next_token,
+        return SelectResultSet(self, query, max_items=max_items, next_token=next_token,
                                consistent_read=consistent_read)
-    
-    def get_item(self, item_name):
-        item = self.get_attributes(item_name)
+
+    def get_item(self, item_name, consistent_read=False):
+        """
+        Retrieves an item from the domain, along with all of its attributes.
+        
+        :param string item_name: The name of the item to retrieve.
+        :rtype: :class:`boto.sdb.item.Item` or ``None``
+        :keyword bool consistent_read: When set to true, ensures that the most 
+                                       recent data is returned.
+        :return: The requested item, or ``None`` if there was no match found 
+        """
+        item = self.get_attributes(item_name, consistent_read=consistent_read)
         if item:
             item.domain = self
             return item
@@ -227,26 +240,26 @@ class Domain:
         if not f:
             from tempfile import TemporaryFile
             f = TemporaryFile()
-        print >>f,  '<?xml version="1.0" encoding="UTF-8"?>'
-        print >>f,  '<Domain id="%s">' % self.name
+        print >> f, '<?xml version="1.0" encoding="UTF-8"?>'
+        print >> f, '<Domain id="%s">' % self.name
         for item in self:
-            print >>f, '\t<Item id="%s">' % item.name
+            print >> f, '\t<Item id="%s">' % item.name
             for k in item:
-                print >>f, '\t\t<attribute id="%s">' % k
+                print >> f, '\t\t<attribute id="%s">' % k
                 values = item[k]
                 if not isinstance(values, list):
                     values = [values]
                 for value in values:
-                    print >>f, '\t\t\t<value><![CDATA[',
+                    print >> f, '\t\t\t<value><![CDATA[',
                     if isinstance(value, unicode):
                         value = value.encode('utf-8', 'replace')
                     else:
                         value = unicode(value, errors='replace').encode('utf-8', 'replace')
                     f.write(value)
-                    print >>f, ']]></value>'
-                print >>f, '\t\t</attribute>'
-            print >>f, '\t</Item>'
-        print >>f, '</Domain>'
+                    print >> f, ']]></value>'
+                print >> f, '\t\t</attribute>'
+            print >> f, '\t</Item>'
+        print >> f, '</Domain>'
         f.flush()
         f.seek(0)
         return f
@@ -267,7 +280,7 @@ class Domain:
 
 
 class DomainMetaData:
-    
+
     def __init__(self, domain=None):
         self.domain = domain
         self.item_count = None
@@ -304,7 +317,7 @@ class DomainDumpParser(ContentHandler):
     """
     SAX parser for a domain that has been dumped
     """
-    
+
     def __init__(self, domain):
         self.uploader = UploaderThread(domain)
         self.item_id = None
@@ -347,7 +360,7 @@ class DomainDumpParser(ContentHandler):
 from threading import Thread
 class UploaderThread(Thread):
     """Uploader Thread"""
-    
+
     def __init__(self, domain):
         self.db = domain
         self.items = {}
