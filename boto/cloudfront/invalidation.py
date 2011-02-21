@@ -89,7 +89,7 @@ class InvalidationBatch(object):
         elif name == "Status":
             self.status = value
         elif name == "Id":
-            self.id = id
+            self.id = value
         elif name == "CreateTime":
             self.create_time = value
         elif name == "CallerReference":

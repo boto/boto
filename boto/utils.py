@@ -65,7 +65,7 @@ except ImportError:
 # List of Query String Arguments of Interest
 qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
                    'requestPayment', 'torrent', 'versioning', 'versionId',
-                   'versions', 'uploads', 'uploadId',
+                   'versions', 'website', 'uploads', 'uploadId',
                    'response-content-type', 'response-content-language',
                    'response-expires', 'reponse-cache-control',
                    'response-content-disposition',
@@ -583,3 +583,25 @@ def get_utf8_value(value):
         return value.encode('utf-8')
     else:
         return value
+
+def mklist(value):
+    if not isinstance(value, list):
+        if isinstance(value, tuple):
+            value = list(value)
+        else:
+            value = [value]
+    return value
+
+def pythonize_name(name, sep='_'):
+    s = ''
+    if name[0].isupper:
+        s = name[0].lower()
+    for c in name[1:]:
+        if c.isupper():
+            s += sep + c.lower()
+        else:
+            s += c
+    return s
+
+def awsify_name(name):
+    return name[0:1].upper()+name[1:]
