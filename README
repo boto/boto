@@ -47,6 +47,9 @@ Documentation for boto can be found at:
 
 http://boto.cloudhackers.com/
 
+Join our `IRC channel`_ (#boto on FreeNode).
+    IRC channel: http://webchat.freenode.net/?channels=boto
+ 
 Your credentials can be passed into the methods that create 
 connections.  Alternatively, boto will check for the existance of the
 following environment variables to ascertain your credentials:
