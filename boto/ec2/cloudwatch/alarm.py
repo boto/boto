@@ -115,7 +115,7 @@ class MetricAlarm(object):
             self.evaluation_periods = int(value)
         elif name == 'MetricName':
             self.metric = value
-        elif name == 'NameSpace':
+        elif name == 'Namespace':
             self.namespace = value
         elif name == 'Period':
             self.period = int(value)
