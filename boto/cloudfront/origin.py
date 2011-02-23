@@ -53,7 +53,7 @@ class S3Origin(object):
         
         """
         self.dns_name = dns_name
-        self.origin_access_identiy = origin_access_identity
+        self.origin_access_identity = origin_access_identity
 
     def __repr__(self):
         return '<S3Origin: %s>' % self.dns_name
@@ -72,8 +72,9 @@ class S3Origin(object):
     def to_xml(self):
         s = '  <S3Origin>\n'
         s += '    <DNSName>%s</DNSName>\n' % self.dns_name
-        val = get_oai_value(self.origin_access_identity)
-        s += '    <OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
+        if self.origin_access_identity:
+            val = get_oai_value(self.origin_access_identity)
+            s += '    <OriginAccessIdentity>%s</OriginAccessIdentity>\n' % val
         s += '  </S3Origin>\n'
         return s
     

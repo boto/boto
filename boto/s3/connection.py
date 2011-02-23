@@ -256,7 +256,7 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "key", "value": key})
 
         # HTTPS protocol will be used if the secure HTTP option is enabled.
-        url = '%s://%s.%s/' % (http_method, bucket_name, self.host)
+        url = '%s://%s/' % (http_method, self.calling_format.build_host(self.server_name(), bucket_name))
 
         return {"action": url, "fields": fields}
 

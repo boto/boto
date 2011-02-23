@@ -344,12 +344,6 @@ class Distribution:
             new_config.cnames = cnames
         if comment != None:
             new_config.comment = comment
-        if origin != None:
-            new_config.origin = get_oai_value(origin_access_identity)
-        if trusted_signers:
-            new_config.trusted_signers = trusted_signers
-        if default_root_object:
-            new_config.default_root_object = default_root_object
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
         self._object_class = Object

@@ -1880,9 +1880,12 @@ class EC2Connection(AWSQueryConnection):
     # Regions
     #
 
-    def get_all_regions(self, filters=None):
+    def get_all_regions(self, region_names=None, filters=None):
         """
         Get all available regions for the EC2 service.
+
+        :type region_names: list of str
+        :param region_names: Names of regions to limit output
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -1898,6 +1901,8 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
         """
         params = {}
+        if region_names:
+            self.build_list_params(params, region_names, 'RegionName')
         if filters:
             self.build_filter_params(params, filters)
         regions =  self.get_list('DescribeRegions', params, [('item', RegionInfo)], verb='POST')
