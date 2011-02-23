@@ -32,11 +32,14 @@ import subprocess
 
 class SSHClient(object):
 
-    def __init__(self, server, host_key_file='~/.ssh/known_hosts', uname='root'):
+    def __init__(self, server,
+                 host_key_file='~/.ssh/known_hosts',
+                 uname='root', ssh_pwd=None):
         self.server = server
         self.host_key_file = host_key_file
         self.uname = uname
-        self._pkey = paramiko.RSAKey.from_private_key_file(server.ssh_key_file)
+        self._pkey = paramiko.RSAKey.from_private_key_file(server.ssh_key_file,
+                                                           password=ssh_pwd)
         self._ssh_client = paramiko.SSHClient()
         self._ssh_client.load_system_host_keys()
         self._ssh_client.load_host_keys(os.path.expanduser(host_key_file))
@@ -47,10 +50,12 @@ class SSHClient(object):
         retry = 0
         while retry < 5:
             try:
-                self._ssh_client.connect(self.server.hostname, username=self.uname, pkey=self._pkey)
+                self._ssh_client.connect(self.server.hostname,
+                                         username=self.uname,
+                                         pkey=self._pkey)
                 return
             except socket.error, (value,message):
-                if value == 61:
+                if value == 61 or value == 111:
                     print 'SSH Connection refused, will retry in 5 seconds'
                     time.sleep(5)
                     retry += 1
