@@ -72,7 +72,8 @@ def connect_to_region(region_name, **kw_params):
 
 
 class AutoScaleConnection(AWSQueryConnection):
-    APIVersion = boto.config.get('Boto', 'autoscale_version', '2009-05-15')
+    APIVersion = boto.config.get('Boto', 'autoscale_version', '2010-08-01')
+#    APIVersion = boto.config.get('Boto', 'autoscale_version', '2009-05-15')
     Endpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                'autoscaling.amazonaws.com')
     DefaultRegionName = 'us-east-1'
