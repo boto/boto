@@ -24,24 +24,7 @@ from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.request import Request
-
-
-class Instance(object):
-    def __init__(self, connection=None):
-        self.connection = connection
-        self.instance_id = ''
-
-    def __repr__(self):
-        return 'Instance:%s' % self.instance_id
-
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'InstanceId':
-            self.instance_id = value
-        else:
-            setattr(self, name, value)
+from boto.ec2.autoscale.instance import Instance
 
 
 class AutoScalingGroup(object):
@@ -122,8 +105,6 @@ class AutoScalingGroup(object):
         return 'AutoScalingGroup:%s' % self.name
 
     def startElement(self, name, attrs, connection):
-        print '-' *50
-        print 'Start %s' % name
         if name == 'Instances':
             self.instances = ResultSet([('member', Instance)])
             return self.instances
@@ -138,7 +119,6 @@ class AutoScalingGroup(object):
             return
 
     def endElement(self, name, value, connection):
-        print 'End %s %s' % (name,value)
         if name == 'MinSize':
             self.min_size = value
         elif name == 'CreatedTime':
@@ -220,7 +200,7 @@ class AutoScalingGroupMetric(object):
     def __init__(self, connection=None):
 
         self.connection = connection
-        self.metric = None
+        self.name = None
         self.granularity = None
 
     def __repr__(self):
@@ -231,7 +211,7 @@ class AutoScalingGroupMetric(object):
 
     def endElement(self, name, value, connection):
         if name == 'Metric':
-            self.metric = value
+            self.name = value
         elif name == 'Granularity':
             self.granularity = value
         else:

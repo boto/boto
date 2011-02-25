@@ -25,6 +25,8 @@ class Instance(object):
         self.connection = connection
         self.instance_id = ''
         self.lifecycle_state = None
+        self.health_status = None
+        self.launch_config= None
         self.availability_zone = ''
 
     def __repr__(self):
@@ -40,6 +42,10 @@ class Instance(object):
             self.lifecycle_state = value
         elif name == 'AvailabilityZone':
             self.availability_zone = value
+        elif name == 'HealthStatus':
+            self.health_status = value
+        elif name == 'LaunchConfigurationName':
+            self.launch_config = value
         else:
             setattr(self, name, value)
 
