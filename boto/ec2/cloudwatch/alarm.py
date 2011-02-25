@@ -21,6 +21,8 @@
 #
 
 from datetime import datetime
+from boto.resultset import ResultSet
+from boto.ec2.cloudwatch.listelement import ListElement
 import json
 
 
@@ -81,7 +83,6 @@ class MetricAlarm(object):
         self.period = int(period) if period is not None else None
         self.evaluation_periods = int(evaluation_periods) if evaluation_periods is not None else None
         self.actions_enabled = None
-        self.alarm_actions = []
         self.alarm_arn = None
         self.last_updated = None
         self.description = ''
@@ -91,12 +92,17 @@ class MetricAlarm(object):
         self.state_reason = None
         self.state_value = None
         self.unit = None
+        alarm_action = []
+        self.alarm_actions = ListElement(alarm_action)
 
     def __repr__(self):
         return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric, self.statistic, self.comparison, self.threshold)
 
     def startElement(self, name, attrs, connection):
-        return
+        if name == 'AlarmActions':
+            return self.alarm_actions
+        else:
+            pass
 
     def endElement(self, name, value, connection):
         if name == 'ActionsEnabled':
@@ -122,7 +128,7 @@ class MetricAlarm(object):
         elif name == 'StateReason':
             self.state_reason = value
         elif name == 'StateValue':
-            self.state_value = None
+            self.state_value = value
         elif name == 'Statistic':
             self.statistic = value
         elif name == 'Threshold':
@@ -159,6 +165,7 @@ class MetricAlarm(object):
         return self.connection.describe_alarm_history(self.name, start_date, end_date,
                                                       max_records, history_item_type, next_token)
 
+
 class AlarmHistoryItem(object):
     def __init__(self, connection=None):
         self.connection = connection
@@ -180,4 +187,3 @@ class AlarmHistoryItem(object):
             self.summary = value
         elif name == 'Timestamp':
             self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-

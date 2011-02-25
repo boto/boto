@@ -20,11 +20,11 @@
 # IN THE SOFTWARE.
 
 import weakref
-
 from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.request import Request
+
 
 class Instance(object):
     def __init__(self, connection=None):
