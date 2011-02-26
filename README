@@ -1,11 +1,8 @@
+# boto
 boto 2.0b4
 13-Feb-2011
 
-Copyright (c) 2006-2011 Mitch Garnaat <mitch@garnaat.org>
-Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
-All rights reserved.
-
-http://code.google.com/p/boto
+## Introduction
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
@@ -28,28 +25,32 @@ At the moment, boto supports:
  * Route53 DNS Service (route53)
  * Simple Email Service (SES)
 
-The intent is to support additional services in the future.
+The goal of boto is to support the full breadth and depth of Amazon
+Web Services.  In addition, boto provides support for other public
+services such as Google Storage in addition to private cloud systems
+like Eucalyptus, OpenStack and Open Nebula.
 
-The goal of boto is to provide a very simple, easy to use, lightweight
-wrapper around the Amazon services.  Not all features supported by the
-Amazon Web Services will be supported in boto.  Basically, those
-features I need to do what I want to do are supported first.  Other
-features and requests are welcome and will be accomodated to the best
-of my ability.  Patches and contributions are welcome!
+Boto is developed mainly using Python 2.6.6 and Python 2.71 on Mac OSX
+and Ubuntu Maverick.  It is known to work on other Linux distributions
+and on Windows.  Boto requires no additional libraries or packages
+other than those that are distributed with Python.  Efforts are made
+to keep boto compatible with Python 2.5.x but no guarantees are made.
 
-Boto was written using Python 2.6.5 on Mac OSX.  It has also been tested
-on Linux Ubuntu using Python 2.6.5.  Boto requires no additional
-libraries or packages other than those that are distributed with Python 2.6.5.
-Efforts are made to keep boto compatible with Python 2.4.x but no
-guarantees are made.
+## Finding Out More About Boto
 
-Documentation for boto can be found at:
+The main source code repository for boto can be found on [github.com](http://github.com/boto/boto)
 
-http://boto.cloudhackers.com/
+[Online documentation](http://boto.cloudhackers.com/) is also
+available.  The online documentation includes full API documentation
+as well as Getting Started Guides for many of the boto modules.
+
+Boto releases can be found on the [Google Project page](http://code.google.com/p/boto/downloads/list) or on the [Python Cheese Shop](http://pypi.python.org/).
 
 Join our `IRC channel`_ (#boto on FreeNode).
     IRC channel: http://webchat.freenode.net/?channels=boto
- 
+
+## Getting Started with Boto
+
 Your credentials can be passed into the methods that create 
 connections.  Alternatively, boto will check for the existance of the
 following environment variables to ascertain your credentials:
@@ -58,8 +59,8 @@ AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Credentials and other boto-related settings can also be stored in a boto config
-file.  See:
+file.  See [this](http://code.google.com/p/boto/wiki/BotoConfig) for details.
 
-http://code.google.com/p/boto/wiki/BotoConfig
-
-for details.
+Copyright (c) 2006-2011 Mitch Garnaat <mitch@garnaat.org>
+Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
+All rights reserved.
