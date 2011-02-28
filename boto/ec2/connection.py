@@ -2026,8 +2026,23 @@ class EC2Connection(AWSQueryConnection):
     # Monitoring
     #
 
+    def monitor_instances(self, instance_ids):
+        """
+        Enable CloudWatch monitoring for the supplied instances.
+
+        :type instance_id: list of strings
+        :param instance_id: The instance ids
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
+        """
+        self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('MonitorInstances', params,
+                             [('item', InstanceInfo)], verb='POST')
+
     def monitor_instance(self, instance_id):
         """
+        Deprecated Version, maintained for backward compatibility.
         Enable CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
@@ -2036,12 +2051,25 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
-        params = {'InstanceId' : instance_id}
-        return self.get_list('MonitorInstances', params,
+        return self.monitor_instances([instance_id])
+
+    def unmonitor_instance(self, instance_ids):
+        """
+        Disable CloudWatch monitoring for the supplied instance.
+
+        :type instance_id: list of string
+        :param instance_id: The instance id
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
+        """
+        self.build_list_params(params, instance_ids, 'InstanceId')
+        return self.get_list('UnmonitorInstances', params,
                              [('item', InstanceInfo)], verb='POST')
 
     def unmonitor_instance(self, instance_id):
         """
+        Deprecated Version, maintained for backward compatibility.
         Disable CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
@@ -2050,9 +2078,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
-        params = {'InstanceId' : instance_id}
-        return self.get_list('UnmonitorInstances', params,
-                             [('item', InstanceInfo)], verb='POST')
+        return self.unmonitor_instances([instance_id])
 
     # 
     # Bundle Windows Instances
@@ -2084,11 +2110,13 @@ class EC2Connection(AWSQueryConnection):
                   'Storage.S3.Bucket' : s3_bucket,
                   'Storage.S3.Prefix' : s3_prefix,
                   'Storage.S3.UploadPolicy' : s3_upload_policy}
-        s3auth = boto.auth.get_auth_handler(None, boto.config, self.provider, ['s3'])
+        s3auth = boto.auth.get_auth_handler(None, boto.config,
+                                            self.provider, ['s3'])
         params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
         signature = s3auth.sign_string(s3_upload_policy)
         params['Storage.S3.UploadPolicySignature'] = signature
-        return self.get_object('BundleInstance', params, BundleInstanceTask, verb='POST') 
+        return self.get_object('BundleInstance', params,
+                               BundleInstanceTask, verb='POST') 
 
     def get_all_bundle_tasks(self, bundle_ids=None, filters=None):
         """
@@ -2128,7 +2156,8 @@ class EC2Connection(AWSQueryConnection):
         """                        
 
         params = {'BundleId' : bundle_id}
-        return self.get_object('CancelBundleTask', params, BundleInstanceTask, verb='POST')
+        return self.get_object('CancelBundleTask', params,
+                               BundleInstanceTask, verb='POST')
 
     def get_password_data(self, instance_id):
         """
