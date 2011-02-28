@@ -122,8 +122,6 @@ class AutoScalingGroup(object):
         return 'AutoScalingGroup:%s' % self.name
 
     def startElement(self, name, attrs, connection):
-        print '-' *50
-        print 'Start %s' % name
         if name == 'Instances':
             self.instances = ResultSet([('member', Instance)])
             return self.instances
@@ -138,7 +136,6 @@ class AutoScalingGroup(object):
             return
 
     def endElement(self, name, value, connection):
-        print 'End %s %s' % (name,value)
         if name == 'MinSize':
             self.min_size = value
         elif name == 'CreatedTime':
