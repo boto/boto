@@ -170,7 +170,7 @@ class AutoScaleConnection(AWSQueryConnection):
         self.build_list_params(params, launch_config.security_groups,
                                'SecurityGroups')
         return self.get_object('CreateLaunchConfiguration', params,
-                                  Request)
+                                  Request, verb='POST')
 
     def create_trigger(self, trigger):
         """

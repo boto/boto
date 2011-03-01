@@ -200,7 +200,7 @@ class AutoScalingGroupMetric(object):
     def __init__(self, connection=None):
 
         self.connection = connection
-        self.name = None
+        self.metric = None
         self.granularity = None
 
     def __repr__(self):
@@ -211,7 +211,7 @@ class AutoScalingGroupMetric(object):
 
     def endElement(self, name, value, connection):
         if name == 'Metric':
-            self.name = value
+            self.metric = value
         elif name == 'Granularity':
             self.granularity = value
         else:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2009, Eucalyptus Systems, Inc.
 # All rights reserved.
