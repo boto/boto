@@ -24,6 +24,7 @@ This module provides an interface to the Elastic Compute Cloud (EC2)
 Auto Scaling service.
 """
 
+import base64
 import boto
 from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
@@ -159,7 +160,7 @@ class AutoScaleConnection(AWSQueryConnection):
                   'InstanceType'            : launch_config.instance_type,
                  }
         if launch_config.user_data:
-            params['UserData'] = launch_config.user_data
+            params['UserData'] = base64.b64encode(launch_config.user_data)
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
