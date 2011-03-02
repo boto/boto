@@ -96,7 +96,8 @@ class SESConnection(AWSAuthConnection):
 
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
-                   bcc_addresses=None, format='text'):
+                   bcc_addresses=None, format='text', reply_addresses=None,
+                   return_path=None):
         """Composes an email message based on input data, and then immediately
         queues the message for sending.
 
@@ -129,6 +130,9 @@ class SESConnection(AWSAuthConnection):
             'Message.Subject.Data': subject,
         }
 
+        if return_path:
+            params['ReturnPath'] = return_path
+
         format = format.lower().strip()
         if format == 'html':
             params['Message.Body.Html.Data'] = body
@@ -146,6 +150,10 @@ class SESConnection(AWSAuthConnection):
         if bcc_addresses:
             self._build_list_params(params, bcc_addresses,
                                    'Destination.BccAddresses.member')
+
+        if reply_addresses:
+            self._build_list_params(params, reply_addresses,
+                                   'ReplyToAddresses.member')
 
         return self._make_request('SendEmail', params)
 
