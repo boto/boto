@@ -124,6 +124,20 @@ class SESConnection(AWSAuthConnection):
         :param format: The format of the message's body, must be either "text"
                        or "html".
 
+        :type reply_addresses: list of strings or string
+        :param reply_addresses: The reply-to email address(es) for the 
+                                message. If the recipient replies to the 
+                                message, each reply-to address will 
+                                receive the reply.
+
+        :type return_path: string
+        :param return_path: The email address to which bounce notifications are 
+                            to be forwarded. If the message cannot be delivered 
+                            to the recipient, then an error message will be 
+                            returned from the recipient's ISP; this message will
+                            then be forwarded to the email address specified by 
+                            the ReturnPath parameter.
+
         """
         params = {
             'Source': source,
