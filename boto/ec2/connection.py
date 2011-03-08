@@ -2036,6 +2036,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
+        params = {}
         self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('MonitorInstances', params,
                              [('item', InstanceInfo)], verb='POST')
@@ -2063,6 +2064,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
+        params = {}
         self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('UnmonitorInstances', params,
                              [('item', InstanceInfo)], verb='POST')
