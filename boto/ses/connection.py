@@ -97,7 +97,7 @@ class SESConnection(AWSAuthConnection):
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text', reply_addresses=None,
-                   return_path=None):
+                   return_path=None,text_body=None,html_body=None):
         """Composes an email message based on input data, and then immediately
         queues the message for sending.
 
@@ -138,7 +138,23 @@ class SESConnection(AWSAuthConnection):
                             then be forwarded to the email address specified by 
                             the ReturnPath parameter.
 
+        :type text_body: string
+        :param text_body: The text body to send with this email.
+
+        :type html_body: string
+        :param html_body: The html body to send with this email.
+
         """
+        if body is not None:
+            if format == "text":
+                if text_body is not None:
+                    raise Warning("You've passed in both a body and a text_body; please choose one or the other.")
+                text_body = body
+            else:
+                if html_body is not None:
+                    raise Warning("You've passed in both a body and an html_body; please choose one or the other.")
+                html_body = body
+
         params = {
             'Source': source,
             'Message.Subject.Data': subject,
@@ -148,10 +164,10 @@ class SESConnection(AWSAuthConnection):
             params['ReturnPath'] = return_path
 
         format = format.lower().strip()
-        if format == 'html':
-            params['Message.Body.Html.Data'] = body
-        elif format == 'text':
-            params['Message.Body.Text.Data'] = body
+        if html_body is not None:
+            params['Message.Body.Html.Data'] = html_body
+        if text_body is not None:
+            params['Message.Body.Text.Data'] = text_body 
         else:
             raise ValueError("'format' argument must be 'text' or 'html'")
 
