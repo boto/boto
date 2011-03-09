@@ -978,8 +978,16 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def initiate_multipart_upload(self, key_name, headers=None):
+    def initiate_multipart_upload(self, key_name, headers=None, reduced_redundancy=False):
         query_args = 'uploads'
+        if headers is None:
+            headers = {}
+        if reduced_redundancy:
+            storage_class_header = self.connection.provider.storage_class_header
+            if storage_class_header:
+                headers[storage_class_header] = 'REDUCED_REDUNDANCY'
+            # TODO: what if the provider doesn't support reduced redundancy?
+            # (see boto.s3.key.Key.set_contents_from_file)
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)
