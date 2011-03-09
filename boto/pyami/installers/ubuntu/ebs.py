@@ -223,7 +223,7 @@ class EBSInstaller(Installer):
             # snapshot code, if the snapshots have been tagged with the name of the associated 
             # volume. Check for the presence of the new configuration flag, and use the appropriate
             # cleanup method / script:
-            use_tag_based_cleanup = boto.config.has_option('EBS', 'use_tag_based_snapshot_cleanup'):
+            use_tag_based_cleanup = boto.config.has_option('EBS', 'use_tag_based_snapshot_cleanup')
             self.create_backup_cleanup_script(TagBasedBackupCleanupScript);
             self.add_cron("ebs_backup_cleanup", "/usr/local/bin/ebs_backup_cleanup", minute=minute, hour=hour)
 
