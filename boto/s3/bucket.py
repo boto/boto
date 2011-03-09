@@ -1003,9 +1003,15 @@ class Bucket(object):
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers, data=xml_body)
+        contains_error = False
         body = response.read()
+        # Some errors will be reported in the body of the response
+        # even though the HTTP response code is 200.  This check
+        # does a quick and dirty peek in the body for an error element.
+        if body.find('<Error>') > 0:
+            contains_error = True
         boto.log.debug(body)
-        if response.status == 200:
+        if response.status == 200 and not contains_error:
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)
