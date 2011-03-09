@@ -1,5 +1,5 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,7 @@ import logging
 import logging.config
 from boto.exception import InvalidUriError
 
-__version__ = '2.0b3'
+__version__ = '2.0b4'
 Version = __version__ # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
@@ -382,6 +382,37 @@ def connect_ses(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     from boto.ses import SESConnection
     return SESConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+def connect_ia(ia_access_key_id=None, ia_secret_access_key=None,
+               is_secure=False, **kwargs):
+    """
+    Connect to the Internet Archive via their S3-like API.
+
+    :type ia_access_key_id: string
+    :param ia_access_key_id: Your IA Access Key ID.  This will also look in your
+                             boto config file for an entry in the Credentials
+                             section called "ia_access_key_id"
+
+    :type ia_secret_access_key: string
+    :param ia_secret_access_key: Your IA Secret Access Key.  This will also look in your
+                                 boto config file for an entry in the Credentials
+                                 section called "ia_secret_access_key"
+
+    :rtype: :class:`boto.s3.connection.S3Connection`
+    :return: A connection to the Internet Archive
+    """
+    from boto.s3.connection import S3Connection
+    from boto.s3.connection import OrdinaryCallingFormat
+
+    access_key = config.get('Credentials', 'ia_access_key_id',
+                            ia_access_key_id)
+    secret_key = config.get('Credentials', 'ia_secret_access_key',
+                            ia_secret_access_key)
+
+    return S3Connection(access_key, secret_key,
+                        host='s3.us.archive.org',
+                        calling_format=OrdinaryCallingFormat(),
+                        is_secure=is_secure, **kwargs)
 
 def check_extensions(module_name, module_path):
     """

@@ -55,7 +55,7 @@ class Requirement(object):
             "QualificationTypeId": self.qualification_type_id,
             "Comparator": self.comparator,
         }
-        if self.comparator != 'Exists' and self.integer_value:
+        if self.comparator != 'Exists' and self.integer_value is not None:
             params['IntegerValue'] = self.integer_value
         if self.required_to_preview:
             params['RequiredToPreview'] = "true"

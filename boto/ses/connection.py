@@ -96,7 +96,8 @@ class SESConnection(AWSAuthConnection):
 
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
-                   bcc_addresses=None, format='text'):
+                   bcc_addresses=None, format='text', reply_addresses=None,
+                   return_path=None):
         """Composes an email message based on input data, and then immediately
         queues the message for sending.
 
@@ -123,11 +124,28 @@ class SESConnection(AWSAuthConnection):
         :param format: The format of the message's body, must be either "text"
                        or "html".
 
+        :type reply_addresses: list of strings or string
+        :param reply_addresses: The reply-to email address(es) for the 
+                                message. If the recipient replies to the 
+                                message, each reply-to address will 
+                                receive the reply.
+
+        :type return_path: string
+        :param return_path: The email address to which bounce notifications are 
+                            to be forwarded. If the message cannot be delivered 
+                            to the recipient, then an error message will be 
+                            returned from the recipient's ISP; this message will
+                            then be forwarded to the email address specified by 
+                            the ReturnPath parameter.
+
         """
         params = {
             'Source': source,
             'Message.Subject.Data': subject,
         }
+
+        if return_path:
+            params['ReturnPath'] = return_path
 
         format = format.lower().strip()
         if format == 'html':
@@ -146,6 +164,10 @@ class SESConnection(AWSAuthConnection):
         if bcc_addresses:
             self._build_list_params(params, bcc_addresses,
                                    'Destination.BccAddresses.member')
+
+        if reply_addresses:
+            self._build_list_params(params, reply_addresses,
+                                   'ReplyToAddresses.member')
 
         return self._make_request('SendEmail', params)
 

@@ -24,6 +24,7 @@ This module provides an interface to the Elastic Compute Cloud (EC2)
 Auto Scaling service.
 """
 
+import base64
 import boto
 from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
@@ -33,9 +34,46 @@ from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.activity import Activity
 
+RegionData = {
+    'us-east-1' : 'autoscaling.us-east-1.amazonaws.com',
+    'us-west-1' : 'autoscaling.us-west-1.amazonaws.com',
+    'eu-west-1' : 'autoscaling.eu-west-1.amazonaws.com',
+    'ap-southeast-1' : 'autoscaling.ap-southeast-1.amazonaws.com'}
+
+def regions():
+    """
+    Get all available regions for the Auto Scaling service.
+
+    :rtype: list
+    :return: A list of :class:`boto.RegionInfo` instances
+    """
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=AutoScaleConnection)
+        regions.append(region)
+    return regions
+
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a
+    :class:`boto.ec2.autoscale.AutoScaleConnection`.
+
+    :param str region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.ec2.AutoScaleConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+        name is given
+    """
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None
+
 
 class AutoScaleConnection(AWSQueryConnection):
-    APIVersion = boto.config.get('Boto', 'autoscale_version', '2009-05-15')
+    APIVersion = boto.config.get('Boto', 'autoscale_version', '2010-08-01')
     Endpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                'autoscaling.amazonaws.com')
     DefaultRegionName = 'us-east-1'
@@ -122,7 +160,7 @@ class AutoScaleConnection(AWSQueryConnection):
                   'InstanceType'            : launch_config.instance_type,
                  }
         if launch_config.user_data:
-            params['UserData'] = launch_config.user_data
+            params['UserData'] = base64.b64encode(launch_config.user_data)
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
@@ -133,7 +171,7 @@ class AutoScaleConnection(AWSQueryConnection):
         self.build_list_params(params, launch_config.security_groups,
                                'SecurityGroups')
         return self.get_object('CreateLaunchConfiguration', params,
-                                  Request)
+                                  Request, verb='POST')
 
     def create_trigger(self, trigger):
         """

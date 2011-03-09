@@ -20,11 +20,11 @@
 # IN THE SOFTWARE.
 
 import weakref
-
 from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.request import Request
+
 
 class Instance(object):
     def __init__(self, connection=None):
@@ -49,7 +49,10 @@ class AutoScalingGroup(object):
                  availability_zone=None, launch_config=None,
                  availability_zones=None,
                  load_balancers=None, cooldown=0,
-                 min_size=None, max_size=None):
+                 min_size=None, max_size=None,
+                 group_arn=None, health_check_type=None,
+                 health_check_period=None, suspended=None,
+                 placement_group=None, vpc_zone=None):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -106,6 +109,13 @@ class AutoScalingGroup(object):
         zones = availability_zones or []
         self.availability_zone = availability_zone
         self.availability_zones = ListElement(zones)
+        self.group_arn = group_arn
+        self.health_check_type = health_check_type
+        self.health_check_period = health_check_period
+        self.suspended = suspended
+        self.placement_group = placement_group
+        self.vpc_zone = vpc_zone
+        self.metrics = None
         self.instances = None
 
     def __repr__(self):
@@ -119,6 +129,9 @@ class AutoScalingGroup(object):
             return self.load_balancers
         elif name == 'AvailabilityZones':
             return self.availability_zones
+        elif name == 'EnabledMetrics':
+            self.metrics = ResultSet([('member', AutoScalingGroupMetric)])
+            return self.metrics
         else:
             return
 
@@ -127,7 +140,7 @@ class AutoScalingGroup(object):
             self.min_size = value
         elif name == 'CreatedTime':
             self.created_time = value
-        elif name == 'Cooldown':
+        elif name == 'DefaultCooldown':
             self.cooldown = value
         elif name == 'LaunchConfigurationName':
             self.launch_config_name = value
@@ -137,6 +150,18 @@ class AutoScalingGroup(object):
             self.max_size = value
         elif name == 'AutoScalingGroupName':
             self.name = value
+        elif name == 'AutoScalingGroupARN':
+            self.group_arn = value
+        elif name == 'HealthCheckType':
+            self.health_check_type = value
+        elif name == 'HealthCheckGracePeriod':
+            self.health_check_period = value
+        elif name == 'SuspendedProcesses':
+            self.suspended = value
+        elif name == 'PlacementGroup':
+            self.placement_group = value
+        elif name == 'VPCZoneIdentifier':
+            self.vpc_zone = value
         else:
             setattr(self, name, value)
 
@@ -187,3 +212,24 @@ class AutoScalingGroup(object):
         """
         return self.connection.get_all_activities(self, activity_ids, max_records)
 
+
+class AutoScalingGroupMetric(object):
+    def __init__(self, connection=None):
+
+        self.connection = connection
+        self.metric = None
+        self.granularity = None
+
+    def __repr__(self):
+        return 'AutoScalingGroupMetric:%s' % self.metric
+
+    def startElement(self, name, attrs, connection):
+        return
+
+    def endElement(self, name, value, connection):
+        if name == 'Metric':
+            self.metric = value
+        elif name == 'Granularity':
+            self.granularity = value
+        else:
+            setattr(self, name, value)

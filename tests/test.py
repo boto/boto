@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -28,12 +28,12 @@ import sys
 import unittest
 import getopt
 
-from boto.tests.test_sqsconnection import SQSConnectionTest
-from boto.tests.test_s3connection import S3ConnectionTest
-from boto.tests.test_s3versioning import S3VersionTest
-from boto.tests.test_gsconnection import GSConnectionTest
-from boto.tests.test_ec2connection import EC2ConnectionTest
-from boto.tests.test_sdbconnection import SDBConnectionTest
+from sqs.test_connection import SQSConnectionTest
+from s3.test_connection import S3ConnectionTest
+from s3.test_versioning import S3VersionTest
+from s3.test_gsconnection import GSConnectionTest
+from ec2.test_connection import EC2ConnectionTest
+from sdb.test_connection import SDBConnectionTest
 
 def usage():
     print 'test.py  [-t testsuite] [-v verbosity]'

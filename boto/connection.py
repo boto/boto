@@ -565,7 +565,8 @@ class AWSQueryConnection(AWSAuthConnection):
         http_request = self.build_base_http_request(verb, path, None,
                                                     params, {}, '',
                                                     self.server_name())
-        http_request.params['Action'] = action
+        if action:
+            http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
         http_request = self.fill_in_auth(http_request)
         return self._send_http_request(http_request)
@@ -584,7 +585,10 @@ class AWSQueryConnection(AWSAuthConnection):
         response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
+        if not body:
+            boto.log.error('Null body %s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        elif response.status == 200:
             rs = ResultSet(markers)
             h = handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
@@ -600,7 +604,10 @@ class AWSQueryConnection(AWSAuthConnection):
         response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
+        if not body:
+            boto.log.error('Null body %s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        elif response.status == 200:
             obj = cls(parent)
             h = handler.XmlHandler(obj, parent)
             xml.sax.parseString(body, h)
@@ -616,7 +623,10 @@ class AWSQueryConnection(AWSAuthConnection):
         response = self.make_request(action, params, path, verb)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
+        if not body:
+            boto.log.error('Null body %s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        elif response.status == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)

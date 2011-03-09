@@ -144,29 +144,76 @@ from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
 from boto.ec2.cloudwatch.alarm import MetricAlarm, AlarmHistoryItem
 from boto.ec2.cloudwatch.datapoint import Datapoint
+from boto.regioninfo import RegionInfo
 import boto
+
+RegionData = {
+    'us-east-1' : 'monitoring.us-east-1.amazonaws.com',
+    'us-west-1' : 'monitoring.us-west-1.amazonaws.com',
+    'eu-west-1' : 'monitoring.eu-west-1.amazonaws.com',
+    'ap-southeast-1' : 'monitoring.ap-southeast-1.amazonaws.com'}
+
+def regions():
+    """
+    Get all available regions for the CloudWatch service.
+
+    :rtype: list
+    :return: A list of :class:`boto.RegionInfo` instances
+    """
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=CloudWatchConnection)
+        regions.append(region)
+    return regions
+
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a
+    :class:`boto.ec2.cloudwatch.CloudWatchConnection`.
+
+    :param str region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.ec2.CloudWatchConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+        name is given
+    """
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None
+
 
 class CloudWatchConnection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'cloudwatch_version', '2010-08-01')
-    Endpoint = boto.config.get('Boto', 'cloudwatch_endpoint', 'monitoring.amazonaws.com')
+    DefaultRegionName = boto.config.get('Boto', 'cloudwatch_region_name', 'us-east-1')
+    DefaultRegionEndpoint = boto.config.get('Boto', 'cloudwatch_region_endpoint',
+                                            'monitoring.amazonaws.com')
+
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, host=Endpoint, debug=0,
-                 https_connection_factory=None, path='/'):
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None, path='/'):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
         B{Note:} The host argument is overridden by the host specified in the
         boto configuration file.
         """
+        if not region:
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint)
+        self.region = region
+
         AWSQueryConnection.__init__(self, aws_access_key_id,
-                                    aws_secret_access_key, is_secure,
-                                    port, proxy, proxy_port,
+                                    aws_secret_access_key, 
+                                    is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory,
-                                    path)
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['ec2']

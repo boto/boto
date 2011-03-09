@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
 # All rights reserved.
 #
@@ -126,15 +125,6 @@ class GSConnectionTest (unittest.TestCase):
         rs = bucket.get_all_keys()
         num_keys = len(rs)
         assert num_iter == num_keys
-        # try a key with a funny character
-        k = bucket.new_key()
-        k.name = 'testnewline\n'
-        k.set_contents_from_string('This is a test')
-        rs = bucket.get_all_keys()
-        assert len(rs) == num_keys + 1
-        bucket.delete_key(k)
-        rs = bucket.get_all_keys()
-        assert len(rs) == num_keys
         # try some acl stuff
         bucket.set_acl('public-read')
         acl = bucket.get_acl()

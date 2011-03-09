@@ -27,11 +27,13 @@ from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
-from datetime import datetime, date
+from datetime import datetime, date, time
 from boto.exception import SDBPersistenceError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
+class TimeDecodeError(Exception):
+    pass
 
 class SDBConverter:
     """
@@ -55,6 +57,7 @@ class SDBConverter:
                           Key : (self.encode_reference, self.decode_reference),
                           datetime : (self.encode_datetime, self.decode_datetime),
                           date : (self.encode_date, self.decode_date),
+                          time : (self.encode_time, self.decode_time),
                           Blob: (self.encode_blob, self.decode_blob),
                       }
 
@@ -270,6 +273,25 @@ class SDBConverter:
         except:
             return None
 
+    encode_time = encode_date
+
+    def decode_time(self, value):
+        """ converts strings in the form of HH:MM:SS.mmmmmm
+            (created by datetime.time.isoformat()) to
+            datetime.time objects.
+
+            Timzone-aware strings ("HH:MM:SS.mmmmmm+HH:MM") won't
+            be handled right now and will raise TimeDecodeError.
+        """
+        if '-' in value or '+' in value:
+            # TODO: Handle tzinfo
+            raise TimeDecodeError("Can't handle timezone aware objects: %r" % value)
+        tmp = value.split('.')
+        arg = map(int, tmp[0].split(':'))
+        if len(tmp) == 2:
+            arg.append(int(tmp[1]))
+        return time(*arg)
+
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
             return None
@@ -476,7 +498,7 @@ class SDBManager(object):
                 op = "like"
             elif op in ("!=", "not"):
                 op = "not like"
-            if not(op == "like" and val.startswith("%")):
+            if not(op in ["like", "not like"] and val.startswith("%")):
                 val = "%%:%s" % val
         return "%s %s '%s'" % (name, op, val.replace("'", "''"))
 
