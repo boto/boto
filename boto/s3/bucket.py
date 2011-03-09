@@ -979,6 +979,27 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def initiate_multipart_upload(self, key_name, headers=None, reduced_redundancy=False):
+        """
+        Start a multipart upload operation.
+
+        :type key_name: string
+        :param key_name: The name of the key that will ultimately result from
+                         this multipart upload operation.  This will be exactly
+                         as the key appears in the bucket after the upload
+                         process has been completed.
+
+        :type headers: dict
+        :param headers: Additional HTTP headers to send and store with the
+                        resulting key in S3.
+
+        :type reduced_redundancy: boolean
+        :param reduced_redundancy: In multipart uploads, the storage class is
+                                   specified when initiating the upload,
+                                   not when uploading individual parts.  So
+                                   if you want the resulting key to use the
+                                   reduced redundancy storage class set this
+                                   flag when you initiate the upload.
+        """
         query_args = 'uploads'
         if headers is None:
             headers = {}
@@ -1004,6 +1025,9 @@ class Bucket(object):
         
     def complete_multipart_upload(self, key_name, upload_id,
                                   xml_body, headers=None):
+        """
+        Complete a multipart upload operation.
+        """
         query_args = 'uploadId=%s' % upload_id
         if headers is None:
             headers = {}
