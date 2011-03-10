@@ -2057,7 +2057,7 @@ class EC2Connection(AWSQueryConnection):
         """
         return self.monitor_instances([instance_id])
 
-    def unmonitor_instance(self, instance_ids):
+    def unmonitor_instances(self, instance_ids):
         """
         Disable CloudWatch monitoring for the supplied instance.
 
