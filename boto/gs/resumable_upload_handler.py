@@ -41,7 +41,8 @@ for details.
 
 Resumable uploads will retry failed uploads, resuming at the byte
 count completed by the last upload attempt. If too many retries happen with
-no progress (per configurable num_retries param), the upload will be aborted.
+no progress (per configurable num_retries param), the upload will be
+aborted in the current process.
 
 The caller can optionally specify a tracker_file_name param in the
 ResumableUploadHandler constructor. If you do this, that file will
@@ -330,10 +331,13 @@ class ResumableUploadHandler(object):
         if cb:
             cb(total_bytes_uploaded, file_length)
         if total_bytes_uploaded != file_length:
-            raise ResumableUploadException('File changed during upload: EOF at '
-                                           '%d bytes of %d byte file.' %
-                                           (total_bytes_uploaded, file_length),
-                                           ResumableTransferDisposition.ABORT)
+            # Abort (and delete the tracker file) so if the user retries
+            # they'll start a new resumable uplaod rather than potentially
+            # attempting to pick back up later where we left off.
+            raise ResumableUploadException(
+                'File changed during upload: EOF at %d bytes of %d byte file.' %
+                (total_bytes_uploaded, file_length),
+                ResumableTransferDisposition.ABORT)
         resp = http_conn.getresponse()
         body = resp.read()
         # Restore http connection debug level.
@@ -342,15 +346,23 @@ class ResumableUploadHandler(object):
         additional_note = ''
         if resp.status == 200:
             return resp.getheader('etag')  # Success
-        # Retry status 503 errors after a delay.
-        elif resp.status == 503:
+        elif resp.status == 408:
+          # Request Timeout. Try again later within the current process.
             disposition = ResumableTransferDisposition.WAIT_BEFORE_RETRY
-        elif resp.status == 500:
+        elif resp.status/100 == 4:
+            # Abort for any other 4xx errors.
             disposition = ResumableTransferDisposition.ABORT
-            additional_note = ('This can happen if you attempt to upload a '
-                               'different size file on a already partially '
-                               'uploaded resumable upload')
+            # Add some more informative note for particular 4xx error codes.
+            if resp.status == 400:
+                additional_note = ('This can happen for various reasons; one '
+                                   'common case is if you attempt to upload a '
+                                   'different size file on a already partially '
+                                   'uploaded resumable upload')
+        # Retry status 500 and 503 errors after a delay.
+        elif resp.status == 500 or resp.status == 503:
+            disposition = ResumableTransferDisposition.WAIT_BEFORE_RETRY
         else:
+            # Catch all for any other error codes.
             disposition = ResumableTransferDisposition.ABORT
         raise ResumableUploadException('Got response code %d while attempting '
                                        'upload (%s)%s' %
@@ -374,6 +386,7 @@ class ResumableUploadHandler(object):
                 (server_start, server_end) = (
                     self._query_server_state(conn, file_length))
                 self.server_has_bytes = server_start
+                key=key
                 if conn.debug >= 1:
                     print 'Resuming transfer.'
             except ResumableUploadException, e:
@@ -495,10 +508,20 @@ class ResumableUploadHandler(object):
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
             except ResumableUploadException, e:
-                if e.disposition == ResumableTransferDisposition.ABORT:
+                if (e.disposition ==
+                    ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
                         print('Caught non-retryable ResumableUploadException '
-                              '(%s)' % e.message)
+                              '(%s); aborting but retaining tracker file' %
+                              e.message)
+                    raise
+                elif (e.disposition ==
+                    ResumableTransferDisposition.ABORT):
+                    if debug >= 1:
+                        print('Caught non-retryable ResumableUploadException '
+                              '(%s); aborting and removing tracker file' %
+                              e.message)
+                    self._remove_tracker_file()
                     raise
                 else:
                     if debug >= 1:
@@ -516,7 +539,7 @@ class ResumableUploadHandler(object):
                 raise ResumableUploadException(
                     'Too many resumable upload attempts failed without '
                     'progress. You might try this upload again later',
-                    ResumableTransferDisposition.ABORT)
+                    ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
             sleep_time_secs = 2**progress_less_iterations
             if debug >= 1:
