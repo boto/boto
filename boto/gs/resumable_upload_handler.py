@@ -261,11 +261,22 @@ class ResumableUploadHandler(object):
             'POST', key.bucket.name, key.name, post_headers)
         # Get tracker URI from response 'Location' header.
         body = resp.read()
-        # Check for '201 Created' response code.
-        if resp.status != 201:
+
+        # Check for various status conditions.
+        if resp.status == 500 or resp.status == 503:
+            # Retry status 500 and 503 errors after a delay.
             raise ResumableUploadException(
-                'Got status %d from attempt to start resumable upload' %
-                resp.status, ResumableTransferDisposition.WAIT_BEFORE_RETRY)
+                'Got status %d from attempt to start resumable upload. '
+                'Will wait/retry' % resp.status,
+                ResumableTransferDisposition.WAIT_BEFORE_RETRY)
+        elif resp.status != 200 and resp.status != 201:
+            raise ResumableUploadException(
+                'Got status %d from attempt to start resumable upload. '
+                'Aborting' % resp.status,
+                ResumableTransferDisposition.ABORT)
+
+        # Else we got 200 or 201 response code, indicating the resumable
+        # upload was created.
         tracker_uri = resp.getheader('Location')
         if not tracker_uri:
             raise ResumableUploadException(
