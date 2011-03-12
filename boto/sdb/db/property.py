@@ -386,6 +386,22 @@ class DateProperty(Property):
     def now(self):
         return datetime.date.today()
 
+
+class TimeProperty(Property):
+    data_type = datetime.time
+    type_name = 'Time'
+
+    def __init__(self, verbose_name=None, name=None,
+                 default=None, required=False, validator=None, choices=None, unique=False):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+
+    def validate(self, value):
+        if value is None:
+            return
+        if not isinstance(value, self.data_type):
+            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+
+
 class ReferenceProperty(Property):
 
     data_type = Key

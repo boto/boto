@@ -1428,8 +1428,11 @@ class EC2Connection(AWSQueryConnection):
                         if snap_found_for_this_time_period == True:
                             if not snap.tags.get('preserve_snapshot'):
                                 # as long as the snapshot wasn't marked with the 'preserve_snapshot' tag, delete it:
-                                self.delete_snapshot(snap.id)
-                                boto.log.info('Trimmed snapshot %s (%s)' % (snap.tags['Name'], snap.start_time))
+                                try:
+                                    self.delete_snapshot(snap.id)
+                                    boto.log.info('Trimmed snapshot %s (%s)' % (snap.tags['Name'], snap.start_time))
+                                except EC2ResponseError:
+                                    boto.log.error('Attempt to trim snapshot %s (%s) failed. Possible result of a race condition with trimming on another server?' % (snap.tags['Name'], snap.start_time))
                             # go on and look at the next snapshot, leaving the time period alone
                         else:
                             # this was the first snapshot found for this time period. Leave it alone and look at the 
@@ -2036,6 +2039,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
+        params = {}
         self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('MonitorInstances', params,
                              [('item', InstanceInfo)], verb='POST')
@@ -2053,7 +2057,7 @@ class EC2Connection(AWSQueryConnection):
         """
         return self.monitor_instances([instance_id])
 
-    def unmonitor_instance(self, instance_ids):
+    def unmonitor_instances(self, instance_ids):
         """
         Disable CloudWatch monitoring for the supplied instance.
 
@@ -2063,6 +2067,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
         """
+        params = {}
         self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('UnmonitorInstances', params,
                              [('item', InstanceInfo)], verb='POST')

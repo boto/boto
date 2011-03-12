@@ -978,8 +978,37 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def initiate_multipart_upload(self, key_name, headers=None):
+    def initiate_multipart_upload(self, key_name, headers=None, reduced_redundancy=False):
+        """
+        Start a multipart upload operation.
+
+        :type key_name: string
+        :param key_name: The name of the key that will ultimately result from
+                         this multipart upload operation.  This will be exactly
+                         as the key appears in the bucket after the upload
+                         process has been completed.
+
+        :type headers: dict
+        :param headers: Additional HTTP headers to send and store with the
+                        resulting key in S3.
+
+        :type reduced_redundancy: boolean
+        :param reduced_redundancy: In multipart uploads, the storage class is
+                                   specified when initiating the upload,
+                                   not when uploading individual parts.  So
+                                   if you want the resulting key to use the
+                                   reduced redundancy storage class set this
+                                   flag when you initiate the upload.
+        """
         query_args = 'uploads'
+        if headers is None:
+            headers = {}
+        if reduced_redundancy:
+            storage_class_header = self.connection.provider.storage_class_header
+            if storage_class_header:
+                headers[storage_class_header] = 'REDUCED_REDUNDANCY'
+            # TODO: what if the provider doesn't support reduced redundancy?
+            # (see boto.s3.key.Key.set_contents_from_file)
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)
@@ -996,6 +1025,9 @@ class Bucket(object):
         
     def complete_multipart_upload(self, key_name, upload_id,
                                   xml_body, headers=None):
+        """
+        Complete a multipart upload operation.
+        """
         query_args = 'uploadId=%s' % upload_id
         if headers is None:
             headers = {}
@@ -1003,9 +1035,15 @@ class Bucket(object):
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers, data=xml_body)
+        contains_error = False
         body = response.read()
+        # Some errors will be reported in the body of the response
+        # even though the HTTP response code is 200.  This check
+        # does a quick and dirty peek in the body for an error element.
+        if body.find('<Error>') > 0:
+            contains_error = True
         boto.log.debug(body)
-        if response.status == 200:
+        if response.status == 200 and not contains_error:
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)

@@ -24,6 +24,7 @@ import boto
 from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config, BotoConfigPath
 from boto.pyami.scriptbase import ScriptBase
+import time
 
 class Bootstrap(ScriptBase):
     """
@@ -75,7 +76,15 @@ class Bootstrap(ScriptBase):
             self.run('svn update %s %s' % (version, location))
         elif update.startswith('git'):
             location = boto.config.get('Boto', 'boto_location', '/usr/share/python-support/python-boto/boto')
-            self.run('git pull', cwd=location)
+            num_remaining_attempts = 10
+            while num_remaining_attempts > 0:
+                num_remaining_attempts -= 1
+                try:
+                    self.run('git pull', cwd=location)
+                    num_remaining_attempts = 0
+                except Exception, e:
+                    boto.log.info('git pull attempt failed with the following exception. Trying again in a bit. %s', e)
+                    time.sleep(2)
             if update.find(':') >= 0:
                 method, version = update.split(':')
             else:
