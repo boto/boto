@@ -533,7 +533,7 @@ class Bucket(object):
         if src_version_id:
             src += '?version_id=%s' % src_version_id
         provider = self.connection.provider
-        headers = {provider.copy_source_header : src}
+        headers = {provider.copy_source_header : str(src)}
         if storage_class != 'STANDARD':
             headers[provider.storage_class_header] = storage_class
         if metadata:
