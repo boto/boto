@@ -51,6 +51,12 @@ class Converter(object):
         raise ValueError
         
     @classmethod
+    def convert_dir(cls, param, value):
+        if os.path.isdir(value):
+            return value
+        raise ValueError
+        
+    @classmethod
     def convert(cls, param, value):
         try:
             if hasattr(cls, 'convert_'+param.ptype):
@@ -84,11 +90,18 @@ class Param(object):
         return ln
 
     @property
-    def getopt_long_name(self):
+    def synopsis_long_name(self):
         ln = None
         if self.long_name:
             ln = '--%s' % self.long_name
-            if self.type != 'boolean':
+        return ln
+
+    @property
+    def getopt_long_name(self):
+        ln = None
+        if self.long_name:
+            ln = '%s' % self.long_name
+            if self.ptype != 'boolean':
                 ln += '='
         return ln
 
@@ -100,11 +113,18 @@ class Param(object):
         return sn
 
     @property
-    def getopt_short_name(self):
+    def synopsis_short_name(self):
         sn = None
         if self.short_name:
             sn = '-%s' % self.short_name
-            if self.type != 'boolean':
+        return sn
+
+    @property
+    def getopt_short_name(self):
+        sn = None
+        if self.short_name:
+            sn = '%s' % self.short_name
+            if self.ptype != 'boolean':
                 sn += ':'
         return sn
 
