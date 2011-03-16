@@ -201,8 +201,9 @@ class SESConnection(AWSAuthConnection):
             'RawMessage.Data': base64.b64encode(raw_message),
         }
 
-        self._build_list_params(params, destinations,
-                               'Destinations.member')
+        if destinations:
+            self._build_list_params(params, destinations,
+                                   'Destinations.member')
 
         return self._make_request('SendRawEmail', params)
 
