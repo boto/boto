@@ -218,23 +218,25 @@ class AWSQueryRequest(object):
                                      self.body)
 
     def add_standard_options(self):
+        group = optparse.OptionGroup(self.parser, 'Standard Options')
         # add standard options that all commands get
-        self.parser.add_option('-D', '--debug', action='store_true',
-                               help='Turn on all debugging output')
-        self.parser.add_option('-U', '--url', action='store',
-                               help='Override service URL with value provided')
-        self.parser.add_option('--region', action='store',
-                               help='Name of the region to connect to')
-        self.parser.add_option('-I', '--access-key-id', action='store',
-                               help='Override access key value')
-        self.parser.add_option('-S', '--secret-key', action='store',
-                               help='Override secret key value')
+        group.add_option('-D', '--debug', action='store_true',
+                         help='Turn on all debugging output')
+        group.add_option('-U', '--url', action='store',
+                         help='Override service URL with value provided')
+        group.add_option('--region', action='store',
+                         help='Name of the region to connect to')
+        group.add_option('-I', '--access-key-id', action='store',
+                         help='Override access key value')
+        group.add_option('-S', '--secret-key', action='store',
+                         help='Override secret key value')
         if self.Filters:
-            self.parser.add_option('--help-filters', action='store_true',
+            self.group.add_option('--help-filters', action='store_true',
                                    help='Display list of available filters')
-            self.parser.add_option('--filter', action='append',
+            self.group.add_option('--filter', action='append',
                                    metavar=' name=value',
                                    help='A filter for limiting the results')
+        self.parser.add_option_group(group)
 
     def process_standard_options(self, options, args, d):
         if hasattr(options, 'help_filters') and options.help_filters:
