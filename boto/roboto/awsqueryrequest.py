@@ -217,16 +217,45 @@ class AWSQueryRequest(object):
                                      self.http_response.reason,
                                      self.body)
 
-    def build_cli_parser(self):
-        self.parser = optparse.OptionParser()
+    def add_standard_options(self):
+        # add standard options that all commands get
         self.parser.add_option('-D', '--debug', action='store_true',
                                help='Turn on all debugging output')
+        self.parser.add_option('-U', '--url', action='store',
+                               help='Override service URL with value provided')
+        self.parser.add_option('--region', action='store',
+                               help='Name of the region to connect to')
+        self.parser.add_option('-I', '--access-key-id', action='store',
+                               help='Override access key value')
+        self.parser.add_option('-S', '--secret-key', action='store',
+                               help='Override secret key value')
         if self.Filters:
             self.parser.add_option('--help-filters', action='store_true',
                                    help='Display list of available filters')
             self.parser.add_option('--filter', action='append',
                                    metavar=' name=value',
                                    help='A filter for limiting the results')
+
+    def process_standard_options(self, options, args, d):
+        if hasattr(options, 'help_filters') and options.help_filters:
+            print 'Available filters:'
+            for filter in self.Filters:
+                print '%s\t%s' % (filter['name'], filter['doc'])
+            sys.exit(0)
+        if options.debug:
+            self.args['debug'] = 2
+        if options.url:
+            self.args['url'] = options.url
+        if options.region:
+            self.args['region'] = options.region
+        if options.access_key_id:
+            self.args['aws_access_key_id'] = options.access_key_id
+        if options.secret_key:
+            self.args['aws_secret_access_key'] = options.secret_key
+
+    def build_cli_parser(self):
+        self.parser = optparse.OptionParser()
+        self.add_standard_options()
         for param in self.Params:
             if param.long_name:
                 ptype = None
@@ -252,12 +281,8 @@ class AWSQueryRequest(object):
         if not self.parser:
             self.build_cli_parser()
         options, args = self.parser.parse_args(cli_args)
-        if hasattr(options, 'help_filters') and options.help_filters:
-            print 'Available filters:'
-            for filter in self.Filters:
-                print '%s\t%s' % (filter['name'], filter['doc'])
-            sys.exit(0)
         d = {}
+        self.process_standard_options(options, args, d)
         for param in self.Params:
             if param.long_name:
                 p_name = param.long_name.replace('-', '_')
@@ -278,8 +303,6 @@ class AWSQueryRequest(object):
                 d[name] = value
             self.process_filters(d)
         try:
-            if options.debug:
-                 self.args['debug'] = 2
             response = self.send()
             self.cli_output_formatter(response)
         except self.get_connection().ResponseError as err:
