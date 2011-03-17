@@ -240,7 +240,7 @@ class AWSQueryRequest(object):
         if hasattr(options, 'help_filters') and options.help_filters:
             print 'Available filters:'
             for filter in self.Filters:
-                print '%s\t%s' % (filter['name'], filter['doc'])
+                print '%s\t%s' % (filter.name, filter.doc)
             sys.exit(0)
         if options.debug:
             self.args['debug'] = 2
