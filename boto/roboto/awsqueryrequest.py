@@ -101,10 +101,11 @@ class AWSQueryRequest(object):
 
     ServiceClass = None
 
-    name = 'AWSQueryRequest'
-    params = []
-    filters = []
-    response = {}
+    Name = 'AWSQueryRequest'
+    Description = ''
+    Params = []
+    Filters = []
+    Response = {}
 
     CLITypeMap = {'string' : 'string',
                   'integer' : 'int',
@@ -125,7 +126,7 @@ class AWSQueryRequest(object):
         self.process_args()
 
     def __repr__(self):
-        return self.name
+        return self.Name
 
     def get_connection(self, **args):
         if self.connection is None:
@@ -149,16 +150,16 @@ class AWSQueryRequest(object):
     @property
     def request_id(self):
         retval = None
-        if self.response is not None:
+        if self.Response is not None:
             retval = getattr(self.aws_response, 'requestId')
         return retval
 
     def process_filters(self, args):
-        filter_names = [f['name'] for f in self.filters]
+        filter_names = [f['name'] for f in self.Filters]
         unknown_filters = [f for f in args if f not in filter_names]
         if unknown_filters:
             raise ValueError, 'Unknown filters: %s' % unknown_filters
-        for i, filter in enumerate(self.filters):
+        for i, filter in enumerate(self.Filters):
             if filter['name'] in args:
                 self.request_params['Filter.%d.Name' % (i+1)] = filter['name']
                 for j, value in enumerate(boto.utils.mklist(args[filter['name']])):
@@ -166,8 +167,8 @@ class AWSQueryRequest(object):
                                    'Filter.%d.Value.%d' % (i+1,j+1))
 
     def process_args(self):
-        required = [p.name for p in self.params if not p.optional]
-        for param in self.params:
+        required = [p.name for p in self.Params if not p.optional]
+        for param in self.Params:
             if param.long_name:
                 python_name = param.long_name.replace('-', '_')
             else:
@@ -183,7 +184,7 @@ class AWSQueryRequest(object):
         if required:
             raise ValueError, 'Required parameters missing: %s' % required
         boto.log.debug('request_params: %s' % self.request_params)
-        self.process_markers(self.response)
+        self.process_markers(self.Response)
 
     def process_markers(self, fmt, prev_name=None):
         if fmt['type'] == 'object':
@@ -197,7 +198,7 @@ class AWSQueryRequest(object):
         if 'debug' in self.args and self.args['debug'] >= 2:
             boto.set_stream_logger(self.name)
         conn = self.get_connection(**self.args)
-        self.http_response = conn.make_request(self.name,
+        self.http_response = conn.make_request(self.Name,
                                                self.request_params,
                                                conn.path, verb)
         self.body = self.http_response.read()
@@ -220,13 +221,13 @@ class AWSQueryRequest(object):
         self.parser = optparse.OptionParser()
         self.parser.add_option('-D', '--debug', action='store_true',
                                help='Turn on all debugging output')
-        if self.filters:
+        if self.Filters:
             self.parser.add_option('--help-filters', action='store_true',
                                    help='Display list of available filters')
             self.parser.add_option('--filter', action='append',
                                    metavar=' name=value',
                                    help='A filter for limiting the results')
-        for param in self.params:
+        for param in self.Params:
             if param.long_name:
                 ptype = None
                 if param.ptype in self.CLITypeMap:
@@ -253,11 +254,11 @@ class AWSQueryRequest(object):
         options, args = self.parser.parse_args(cli_args)
         if hasattr(options, 'help_filters') and options.help_filters:
             print 'Available filters:'
-            for filter in self.filters:
+            for filter in self.Filters:
                 print '%s\t%s' % (filter['name'], filter['doc'])
             sys.exit(0)
         d = {}
-        for param in self.params:
+        for param in self.Params:
             if param.long_name:
                 p_name = param.long_name.replace('-', '_')
                 d[p_name] = getattr(options, p_name)
@@ -334,8 +335,8 @@ class AWSQueryRequest(object):
     def cli_output_formatter(self, aws_response):
         if self.cli_output_format:
             self._cli_fmt(self.cli_output_format, self.aws_response)
-        elif self.response:
-            self._generic_cli_formatter(self.response, aws_response)
+        elif self.Response:
+            self._generic_cli_formatter(self.Response, aws_response)
         else:
             print 'No formatter found: dumping raw data'
             print aws_response
