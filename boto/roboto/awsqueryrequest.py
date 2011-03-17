@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import sys
 import boto
 import optparse
 
@@ -123,7 +124,6 @@ class AWSQueryRequest(object):
         self.list_markers = []
         self.item_markers = []
         self.request_params = {}
-        self.process_args()
 
     def __repr__(self):
         return self.Name
@@ -196,7 +196,7 @@ class AWSQueryRequest(object):
         
     def send(self, verb='GET'):
         if 'debug' in self.args and self.args['debug'] >= 2:
-            boto.set_stream_logger(self.name)
+            boto.set_stream_logger(self.Name)
         conn = self.get_connection(**self.args)
         self.http_response = conn.make_request(self.Name,
                                                self.request_params,
