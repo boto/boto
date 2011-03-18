@@ -175,7 +175,15 @@ class Bucket(object):
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
             k.last_modified = response.getheader('last-modified')
-            k.size = int(response.getheader('content-length'))
+            # the following machinations are a workaround to the fact that
+            # apache/fastcgi omits the content-length header on HEAD
+            # requests when the content-length is zero.
+            # See http://goo.gl/0Tdax for more details.
+            clen = response.getheader('content-length')
+            if clen:
+                k.size = int(response.getheader('content-length'))
+            else:
+                k.size = 0
             k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
