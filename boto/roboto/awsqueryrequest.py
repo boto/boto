@@ -306,34 +306,9 @@ class AWSQueryRequest(object):
             self.process_filters(d)
         try:
             response = self.send()
-            self.cli_output_formatter(response)
+            self.cli_formatter(response)
         except self.get_connection().ResponseError as err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
-
-    def _cli_fmt(self, fmt, data, line=None):
-        if 'items' not in fmt:
-            for key in fmt:
-                self._cli_fmt(fmt[key], data[key], line)
-        else:
-            if isinstance(data, list):
-                for data_item in data:
-                    if 'label' in fmt:
-                        if line:
-                            line.print_it()
-                        line = Line(fmt, data, fmt['label'])
-                    for fmt_item in fmt['items']:
-                        if isinstance(fmt_item, dict):
-                            self._cli_fmt(fmt_item, data_item[fmt_item['name']], line)
-                        else:
-                            try:
-                                val = data_item[fmt_item]
-                                if not val:
-                                    val = ''
-                                line.append(val)
-                            except KeyError:
-                                boto.log.debug("%s not found in %s" % (fmt_item, data_item))
-                    line.print_it()
-                    line = None
 
     def _generic_cli_formatter(self, fmt, data, label=''):
         if fmt['type'] == 'object':
@@ -357,12 +332,17 @@ class AWSQueryRequest(object):
                     line.append(item)
                 line.print_it()
 
-    def cli_output_formatter(self, aws_response):
-        if self.cli_output_format:
-            self._cli_fmt(self.cli_output_format, self.aws_response)
-        elif self.Response:
-            self._generic_cli_formatter(self.Response, aws_response)
-        else:
-            print 'No formatter found: dumping raw data'
-            print aws_response
+    def cli_formatter(self, data):
+        """
+        This method is responsible for formatting the output for the
+        command line interface.  The default behavior is to call the
+        generic CLI formatter which attempts to print something
+        reasonable.  If you want specific formatting, you should
+        override this method and do your own thing.
+
+        :type data: dict
+        :param data: The data returned by AWS.
+        """
+        self._generic_cli_formatter(self.Response, data)
+
 
