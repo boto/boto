@@ -45,6 +45,8 @@ class Encoder:
 
     @classmethod
     def encode(cls, p, rp, v, label=None):
+        if p.name.startswith('_'):
+            return
         try:
             mthd = getattr(cls, 'encode_'+p.ptype)
             mthd(p, rp, v, label)
@@ -113,12 +115,13 @@ class AWSQueryRequest(object):
                   'int' : 'int',
                   'enum' : 'choice',
                   'datetime' : 'string',
-                  'dateTime' : 'string',
-                  'boolean' : 'string'}
+                  'dateTime' : 'string'}
 
     def __init__(self, **args):
         self.args = args
         self.parser = None
+        self.cli_options = None
+        self.cli_args = None
         self.cli_output_format = None
         self.connection = None
         self.list_markers = []
@@ -264,11 +267,14 @@ class AWSQueryRequest(object):
                 if param.ptype in self.CLITypeMap:
                     ptype = self.CLITypeMap[param.ptype]
                     action = 'store'
+                elif param.ptype == 'boolean':
+                    action = 'store_true'
+                    ptype = None
                 elif param.ptype == 'array':
                     if len(param.items) == 1:
                         ptype = param.items[0]['type']
                         action = 'append'
-                if ptype:
+                if ptype or action == 'store_true':
                     if param.short_name:
                         self.parser.add_option(param.optparse_short_name,
                                                param.optparse_long_name,
@@ -282,13 +288,13 @@ class AWSQueryRequest(object):
     def do_cli(self, cli_args=None):
         if not self.parser:
             self.build_cli_parser()
-        options, args = self.parser.parse_args(cli_args)
+        self.cli_options, self.cli_args = self.parser.parse_args(cli_args)
         d = {}
-        self.process_standard_options(options, args, d)
+        self.process_standard_options(self.cli_options, self.cli_args, d)
         for param in self.Params:
             if param.long_name:
                 p_name = param.long_name.replace('-', '_')
-                d[p_name] = getattr(options, p_name)
+                d[p_name] = getattr(self.cli_options, p_name)
             else:
                 p_name = boto.utils.pythonize_name(param.name)
                 d[p_name] = args
@@ -298,9 +304,9 @@ class AWSQueryRequest(object):
         except ValueError as ve:
             print ve.message
             sys.exit(1)
-        if hasattr(options, 'filter') and options.filter:
+        if hasattr(self.cli_options, 'filter') and self.cli_options.filter:
             d = {}
-            for filter in options.filter:
+            for filter in self.cli_options.filter:
                 name, value = filter.split('=')
                 d[name] = value
             self.process_filters(d)
