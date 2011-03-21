@@ -104,7 +104,6 @@ class AWSQueryRequest(object):
 
     ServiceClass = None
 
-    Name = 'AWSQueryRequest'
     Description = ''
     Params = []
     Filters = []
@@ -116,6 +115,10 @@ class AWSQueryRequest(object):
                   'enum' : 'choice',
                   'datetime' : 'string',
                   'dateTime' : 'string'}
+
+    @classmethod
+    def name(cls):
+        return cls.__name__
 
     def __init__(self, **args):
         self.args = args
@@ -129,7 +132,7 @@ class AWSQueryRequest(object):
         self.request_params = {}
 
     def __repr__(self):
-        return self.Name
+        return self.name()
 
     def get_connection(self, **args):
         if self.connection is None:
@@ -199,9 +202,9 @@ class AWSQueryRequest(object):
         
     def send(self, verb='GET'):
         if 'debug' in self.args and self.args['debug'] >= 2:
-            boto.set_stream_logger(self.Name)
+            boto.set_stream_logger(self.name())
         conn = self.get_connection(**self.args)
-        self.http_response = conn.make_request(self.Name,
+        self.http_response = conn.make_request(self.name(),
                                                self.request_params,
                                                conn.path, verb)
         self.body = self.http_response.read()
