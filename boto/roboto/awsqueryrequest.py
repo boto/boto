@@ -42,6 +42,14 @@ class Line(object):
             print self.line
             self.printed = True
 
+class RequiredParamError(Exception):
+
+    def __init__(self, required):
+        self.required = required
+
+    def __str__(self):
+        return 'Required parameters are missing: %s' % self.required
+        
 class Encoder:
 
     @classmethod
@@ -192,7 +200,7 @@ class AWSQueryRequest(object):
                                    self.args[python_name])
                 del self.args[python_name]
         if required:
-            raise ValueError, 'Required parameters missing: %s' % required
+            raise RequiredParamError(required)
         boto.log.debug('request_params: %s' % self.request_params)
         self.process_markers(self.Response)
 
@@ -319,8 +327,8 @@ class AWSQueryRequest(object):
         self.args.update(d)
         try:
             self.process_args()
-        except ValueError as ve:
-            print ve.message
+        except RequiredParamError as e:
+            print e
             sys.exit(1)
         if hasattr(self.cli_options, 'filter') and self.cli_options.filter:
             d = {}
