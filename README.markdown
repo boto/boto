@@ -61,6 +61,6 @@ AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 Credentials and other boto-related settings can also be stored in a boto config
 file.  See [this](http://code.google.com/p/boto/wiki/BotoConfig) for details.
 
-Copyright (c) 2006-2011 Mitch Garnaat <mitch@garnaat.org>
+Copyright (c) 2006-2011 Mitch Garnaat <mitch@garnaat.com>
 Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 All rights reserved.
