@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 
 import sys
+import os
 import boto
 import optparse
 
@@ -60,6 +61,8 @@ class Encoder:
         else:
             label = boto.utils.awsify_name(p.name)
         rp[label] = v
+
+    encode_file = encode_string
 
     @classmethod
     def encode_integer(cls, p, rp, v, l):
@@ -114,7 +117,8 @@ class AWSQueryRequest(object):
                   'int' : 'int',
                   'enum' : 'choice',
                   'datetime' : 'string',
-                  'dateTime' : 'string'}
+                  'dateTime' : 'string',
+                  'file' : 'string'}
 
     @classmethod
     def name(cls):
@@ -156,7 +160,7 @@ class AWSQueryRequest(object):
     @property
     def request_id(self):
         retval = None
-        if self.Response is not None:
+        if self.aws_response is not None:
             retval = getattr(self.aws_response, 'requestId')
         return retval
 
@@ -193,7 +197,7 @@ class AWSQueryRequest(object):
         self.process_markers(self.Response)
 
     def process_markers(self, fmt, prev_name=None):
-        if fmt['type'] == 'object':
+        if fmt and fmt['type'] == 'object':
             for prop in fmt['properties']:
                 self.process_markers(prop, fmt['name'])
         elif fmt['type'] == 'array':
@@ -297,10 +301,21 @@ class AWSQueryRequest(object):
         for param in self.Params:
             if param.long_name:
                 p_name = param.long_name.replace('-', '_')
-                d[p_name] = getattr(self.cli_options, p_name)
+                value = getattr(self.cli_options, p_name)
             else:
                 p_name = boto.utils.pythonize_name(param.name)
-                d[p_name] = args
+                value = args
+            if param.ptype == 'file' and value:
+                path = os.path.expanduser(value)
+                path = os.path.expandvars(path)
+                if os.path.isfile(path):
+                    fp = open(path)
+                    value = fp.read()
+                    print value
+                    fp.close()
+                else:
+                    self.parser.error('Unable to read file: %s' % path)
+                d[p_name] = value
         self.args.update(d)
         try:
             self.process_args()
