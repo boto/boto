@@ -29,6 +29,7 @@ from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.exception import FPSResponseError
+from boto.fps.response import FPSResponse
 
 class FPSConnection(AWSQueryConnection):
 
@@ -195,12 +196,13 @@ class FPSConnection(AWSQueryConnection):
         params['CallerReference'] = callerReference
         
         if reserve:
-            response = self.make_request("Reserve", params)
+            action = "Reserve"
         else:
-            response = self.make_request("Pay", params)
+            action = "Pay"
+        response = self.make_request(action, params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("%sResponse" %action, FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -217,7 +219,7 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request("GetTransactionStatus", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("GetTransactionStatusResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -236,7 +238,7 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request("Cancel", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("CancelResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -256,7 +258,7 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request("Settle", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("SettleResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -279,7 +281,7 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request("Refund", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("RefundResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -344,9 +346,10 @@ class FPSConnection(AWSQueryConnection):
             )
         response = self.make_request("VerifySignature", params)
         body = response.read()
+        print body
         if(response.status != 200):
             raise FPSResponseError(response.status, response.reason, body)
-        rs = ResultSet()
-        h = handler.XmlHandler(rs, self)
+        rs = ResultSet([("VerifySignatureResponse", FPSResponse)])
+        h = handler.XmlHandler(rs, self),
         xml.sax.parseString(body, h)
         return rs
