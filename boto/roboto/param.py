@@ -80,7 +80,7 @@ class Param(object):
         self.doc = doc
         self.metavar = metavar
         self.cardinality = cardinality
-        self.default = None
+        self.default = default
 
     @property
     def optparse_long_name(self):
