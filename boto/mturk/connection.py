@@ -579,7 +579,7 @@ class MTurkConnection(AWSQueryConnection):
             params['Test'] = test.get_as_xml()
 
         if test_duration is not None:
-            params['TestDuration'] = test_duration
+            params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
             if isinstance(answer_key, basestring):
