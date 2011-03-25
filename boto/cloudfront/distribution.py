@@ -286,6 +286,7 @@ class Distribution:
         self.id = id
         self.last_modified_time = last_modified_time
         self.status = status
+        self.in_progress_invalidation_batches = 0
         self.active_signers = None
         self.etag = None
         self._bucket = None
@@ -308,6 +309,8 @@ class Distribution:
             self.last_modified_time = value
         elif name == 'Status':
             self.status = value
+        elif name == 'InProgressInvalidationBatches':
+            self.in_progress_invalidation_batches = int(value)
         elif name == 'DomainName':
             self.domain_name = value
         else:

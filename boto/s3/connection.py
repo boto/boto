@@ -275,11 +275,11 @@ class S3Connection(AWSAuthConnection):
         self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
-                                             self.aws_access_key_id)
-            sec_hdr = self.provider.security_token_header
-            if sec_hdr in headers:
-                query_part += ('&%s=%s' % (sec_hdr,
-                                           urllib.quote(headers[sec_hdr])));
+                                                   self.aws_access_key_id)
+            hdrs = [ '%s=%s'%(name, urllib.quote(val)) for name,val in headers.items() ]
+            q_str = '&'.join(hdrs)
+            if q_str:
+                query_part += '&' + q_str
         else:
             query_part = ''
         if force_http:

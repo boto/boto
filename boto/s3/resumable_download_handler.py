@@ -295,10 +295,19 @@ class ResumableDownloadHandler(object):
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
             except ResumableDownloadException, e:
-                if e.disposition == ResumableTransferDisposition.ABORT:
+                if (e.disposition ==
+                    ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
                         print('Caught non-retryable ResumableDownloadException '
                               '(%s)' % e.message)
+                    raise
+                elif (e.disposition ==
+                    ResumableTransferDisposition.ABORT):
+                    if debug >= 1:
+                        print('Caught non-retryable ResumableDownloadException '
+                              '(%s); aborting and removing tracker file' %
+                              e.message)
+                    self._remove_tracker_file()
                     raise
                 else:
                     if debug >= 1:
@@ -316,7 +325,7 @@ class ResumableDownloadHandler(object):
                 raise ResumableDownloadException(
                     'Too many resumable download attempts failed without '
                     'progress. You might try this download again later',
-                    ResumableTransferDisposition.ABORT)
+                    ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
             # Close the key, in case a previous download died partway
             # through and left data in the underlying key HTTP buffer.

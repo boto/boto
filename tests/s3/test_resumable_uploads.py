@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 
 """
-Tests of resumable uploads.
+Tests of Google Storage resumable uploads.
 """
 
 import errno
@@ -44,7 +44,7 @@ from boto.gs.resumable_upload_handler import ResumableUploadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
-from boto.tests.cb_test_harnass import CallbackTestHarnass
+from tests.s3.cb_test_harnass import CallbackTestHarnass
 
 
 class ResumableUploadTests(unittest.TestCase):
@@ -210,7 +210,8 @@ class ResumableUploadTests(unittest.TestCase):
             # We'll get a ResumableUploadException at this point because
             # of CallbackTestHarnass (above). Check that the tracker file was
             # created correctly.
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+            self.assertEqual(e.disposition,
+                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
             self.assertTrue(os.path.exists(self.tracker_file_name))
             f = open(self.tracker_file_name)
             uri_from_file = f.readline().strip()
@@ -298,7 +299,8 @@ class ResumableUploadTests(unittest.TestCase):
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+            self.assertEqual(e.disposition,
+                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
         # Try it one more time; this time should succeed.
@@ -388,7 +390,9 @@ class ResumableUploadTests(unittest.TestCase):
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+            # First abort (from harnass-forced failure) should be
+            # ABORT_CUR_PROCESS.
+            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
         # Try it again, this time with different size source file.
@@ -401,6 +405,8 @@ class ResumableUploadTests(unittest.TestCase):
                 self.largest_src_file, res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
+            # This abort should be a hard abort (file size changing during
+            # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('attempt to upload a different size file'), -1)
