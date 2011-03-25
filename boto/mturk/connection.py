@@ -515,9 +515,9 @@ class MTurkConnection(AWSQueryConnection):
         """
         Send a text message to workers.
         """
-        params = {'WorkerId' : worker_ids,
-                  'Subject' : subject,
+        params = {'Subject' : subject,
                   'MessageText': message_text}
+        self.build_list_params(params, worker_ids, 'WorkerId')
 
         return self._process_request('NotifyWorkers', params)
 
