@@ -135,7 +135,7 @@ class StreamingStep(Step):
         self.step_args = step_args
 
     def jar(self):
-        return '/home/hadoop/contrib/streaming/hadoop-0.18-streaming.jar'
+        return '/home/hadoop/contrib/streaming/hadoop-streaming.jar'
 
     def main_class(self):
         return None
