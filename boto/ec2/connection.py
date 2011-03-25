@@ -1392,7 +1392,8 @@ class EC2Connection(AWSQueryConnection):
                 temp.append(t)
 
         target_backup_times = temp
-        target_backup_times.reverse() # make the oldest date first
+        target_backup_times.sort() # make the oldeest dates first, and make sure the month start and last four week's
+                                   # start are in the proper order
 
         # get all the snapshots, sort them by date and time, and organize them into one array for each volume:
         all_snapshots = self.get_all_snapshots(owner = 'self')
