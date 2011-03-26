@@ -29,7 +29,7 @@ import boto
 from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.autoscale.request import Request
-from boto.ec2.autoscale.trigger import Trigger
+#from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.activity import Activity
@@ -172,31 +172,31 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_object('CreateLaunchConfiguration', params,
                                   Request, verb='POST')
 
-    def create_trigger(self, trigger):
-        """
-
-        """
-        params = {'TriggerName'                 : trigger.name,
-                  'AutoScalingGroupName'        : trigger.autoscale_group.name,
-                  'MeasureName'                 : trigger.measure_name,
-                  'Statistic'                   : trigger.statistic,
-                  'Period'                      : trigger.period,
-                  'Unit'                        : trigger.unit,
-                  'LowerThreshold'              : trigger.lower_threshold,
-                  'LowerBreachScaleIncrement'   : trigger.lower_breach_scale_increment,
-                  'UpperThreshold'              : trigger.upper_threshold,
-                  'UpperBreachScaleIncrement'   : trigger.upper_breach_scale_increment,
-                  'BreachDuration'              : trigger.breach_duration}
-        # dimensions should be a list of tuples
-        dimensions = []
-        for dim in trigger.dimensions:
-            name, value = dim
-            dimensions.append(dict(Name=name, Value=value))
-        self.build_list_params(params, dimensions, 'Dimensions')
-
-        req = self.get_object('CreateOrUpdateScalingTrigger', params,
-                               Request)
-        return req
+    #def create_trigger(self, trigger):
+    #    """
+    #
+    #    """
+    #    params = {'TriggerName'                 : trigger.name,
+    #              'AutoScalingGroupName'        : trigger.autoscale_group.name,
+    #              'MeasureName'                 : trigger.measure_name,
+    #              'Statistic'                   : trigger.statistic,
+    #              'Period'                      : trigger.period,
+    #              'Unit'                        : trigger.unit,
+    #              'LowerThreshold'              : trigger.lower_threshold,
+    #              'LowerBreachScaleIncrement'   : trigger.lower_breach_scale_increment,
+    #              'UpperThreshold'              : trigger.upper_threshold,
+    #              'UpperBreachScaleIncrement'   : trigger.upper_breach_scale_increment,
+    #              'BreachDuration'              : trigger.breach_duration}
+    #    # dimensions should be a list of tuples
+    #    dimensions = []
+    #    for dim in trigger.dimensions:
+    #        name, value = dim
+    #        dimensions.append(dict(Name=name, Value=value))
+    #    self.build_list_params(params, dimensions, 'Dimensions')
+    #
+    #    req = self.get_object('CreateOrUpdateScalingTrigger', params,
+    #                           Request)
+    #    return req
 
     def get_all_groups(self, names=None):
         """
@@ -237,10 +237,10 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_list('DescribeScalingActivities', params,
                              [('member', Activity)])
 
-    def get_all_triggers(self, autoscale_group):
-        params = {'AutoScalingGroupName' : autoscale_group}
-        return self.get_list('DescribeTriggers', params,
-                             [('member', Trigger)])
+    #def get_all_triggers(self, autoscale_group):
+    #    params = {'AutoScalingGroupName' : autoscale_group}
+    #    return self.get_list('DescribeTriggers', params,
+    #                         [('member', Trigger)])
 
     def terminate_instance(self, instance_id, decrement_capacity=True):
         params = {
