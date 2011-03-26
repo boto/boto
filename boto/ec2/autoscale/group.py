@@ -22,7 +22,7 @@
 import weakref
 from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
-from boto.ec2.autoscale.trigger import Trigger
+#from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.request import Request
 
 
@@ -188,17 +188,17 @@ class AutoScalingGroup(object):
         self.max_size = 0
         self.update()
 
-    def get_all_triggers(self):
-        """ Get all triggers for this auto scaling group. """
-        params = {'AutoScalingGroupName' : self.name}
-        triggers = self.connection.get_list('DescribeTriggers', params,
-                                            [('member', Trigger)])
-
-        # allow triggers to be able to access the autoscale group
-        for tr in triggers:
-            tr.autoscale_group = weakref.proxy(self)
-
-        return triggers
+    #def get_all_triggers(self):
+    #    """ Get all triggers for this auto scaling group. """
+    #    params = {'AutoScalingGroupName' : self.name}
+    #    triggers = self.connection.get_list('DescribeTriggers', params,
+    #                                        [('member', Trigger)])
+    #
+    #    # allow triggers to be able to access the autoscale group
+    #    for tr in triggers:
+    #        tr.autoscale_group = weakref.proxy(self)
+    #
+    #    return triggers
 
     def delete(self):
         """ Delete this auto-scaling group. """
