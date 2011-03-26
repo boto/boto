@@ -323,7 +323,7 @@ class AWSQueryRequest(object):
                     fp.close()
                 else:
                     self.parser.error('Unable to read file: %s' % path)
-                d[p_name] = value
+            d[p_name] = value
         self.args.update(d)
         try:
             self.process_args()
