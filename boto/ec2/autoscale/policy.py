@@ -117,8 +117,8 @@ class ScalingPolicy(object):
 
     def __repr__(self):
         return 'ScalingPolicy(%s group:%s adjustment:%s)' % (self.name,
-                                                            self.group_name,
-                                                            self.adjustment_type)
+                                                             self.as_name,
+                                                             self.adjustment_type)
 
     def startElement(self, name, attrs, connection):
         if name == 'Alarms':
@@ -133,11 +133,11 @@ class ScalingPolicy(object):
         elif name == 'PolicyARN':
             self.policy_arn = value
         elif name == 'ScalingAdjustment':
-            self.scaling_adjustment = value
+            self.scaling_adjustment = int(value)
         elif name == 'Cooldown':
             self.cooldown = int(value)
         elif name == 'AdjustmentType':
-            self.adjustment_type = int(value)
+            self.adjustment_type = value
 
-    def delete(self, autoscale_group=None):
-        return self.connection.delete_policy(self.name, autoscale_group)
+    def delete(self):
+        return self.connection.delete_policy(self.name, self.as_name)

@@ -168,7 +168,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param scaling_policy: ScalingPolicy object.
         """
         params = {'AdjustmentType'      : scaling_policy.adjustment_type,
-                  'AutoScalingGroupName': scaling_policy.as_group.name,
+                  'AutoScalingGroupName': scaling_policy.as_name,
                   'PolicyName'          : scaling_policy.name,
                   'ScalingAdjustment'   : scaling_policy.scaling_adjustment,}
     
