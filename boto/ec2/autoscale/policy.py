@@ -1,4 +1,5 @@
 # Copyright (c) 2009-2010 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2011 Jann Kleen
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,11 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
 from boto.ec2.elb.listelement import ListElement
-
 
 class Alarm(object):
     def __init__(self, connection=None):
@@ -101,21 +100,20 @@ class MetricCollectionTypes(object):
 
 
 class ScalingPolicy(object):
-    def __init__(self, connection=None, name=None):
+    def __init__(self, connection=None, **kwargs):
         """
         Scaling Policy
 
         :type name: str
         :param name: Name of scaling policy
+        XXX docs XXX
         """
+        self.name = kwargs.get('name', None)
+        self.adjustment_type = kwargs.get('adjustment_type', None)
+        self.as_name = kwargs.get('as_name', None)
+        self.scaling_adjustment = kwargs.get('scaling_adjustment', None)
+        self.cooldown = kwargs.get('cooldown', None)
         self.connection = connection
-        self.name = name
-        self.group_name = None
-        self.policy_arn = None
-        self.scaling_adjustment = None
-        self.cooldown = None
-        self.adjustment_type = None
-        self.alarms = None
 
     def __repr__(self):
         return 'ScalingPolicy(%s group:%s adjustment:%s)' % (self.name,
@@ -143,4 +141,3 @@ class ScalingPolicy(object):
 
     def delete(self, autoscale_group=None):
         return self.connection.delete_policy(self.name, autoscale_group)
-

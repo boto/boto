@@ -160,6 +160,55 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_object('CreateLaunchConfiguration', params,
                                   Request)
 
+    def put_scaling_policy(self, scaling_policy):
+        """
+        Creates a new Scaling Policy.
+        """
+        params = {'AdjustmentType'      : scaling_policy.adjustment_type,
+                  'AutoScalingGroupName': scaling_policy.as_group.name,
+                  'PolicyName'          : scaling_policy.name,
+                  'ScalingAdjustment'   : scaling_policy.scaling_adjustment,}
+    
+        if scaling_policy.cooldown is not None:
+            params['Cooldown'] = scaling_policy.cooldown
+            
+        return self.get_object('PutScalingPolicy', params, Request, verb='POST')
+    
+    def get_all_policies(self, **kwargs):
+        params = {}
+        as_name = kwargs.get('as_name', None)
+        names = kwargs.get('names', None)
+        if as_name is not None:
+            params['AutoScalingGroupName'] = as_name
+        if names:
+            self.build_list_params(params, names, 'PolicyNames')
+        return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
+      
+    #def create_trigger(self, trigger):
+    #    """
+    #
+    #    """
+    #    params = {'TriggerName'                 : trigger.name,
+    #              'AutoScalingGroupName'        : trigger.autoscale_group.name,
+    #              'MeasureName'                 : trigger.measure_name,
+    #              'Statistic'                   : trigger.statistic,
+    #              'Period'                      : trigger.period,
+    #              'Unit'                        : trigger.unit,
+    #              'LowerThreshold'              : trigger.lower_threshold,
+    #              'LowerBreachScaleIncrement'   : trigger.lower_breach_scale_increment,
+    #              'UpperThreshold'              : trigger.upper_threshold,
+    #              'UpperBreachScaleIncrement'   : trigger.upper_breach_scale_increment,
+    #              'BreachDuration'              : trigger.breach_duration}
+    #    # dimensions should be a list of tuples
+    #    dimensions = []
+    #    for dim in trigger.dimensions:
+    #        name, value = dim
+    #        dimensions.append(dict(Name=name, Value=value))
+    #    self.build_list_params(params, dimensions, 'Dimensions')
+    #
+    #    req = self.get_object('CreateOrUpdateScalingTrigger', params,
+    #                           Request)
+    #    return req
     def delete_launch_configuration(self, launch_config_name):
         """
         Deletes the specified LaunchConfiguration.
