@@ -184,31 +184,6 @@ class AutoScaleConnection(AWSQueryConnection):
             self.build_list_params(params, names, 'PolicyNames')
         return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
       
-    #def create_trigger(self, trigger):
-    #    """
-    #
-    #    """
-    #    params = {'TriggerName'                 : trigger.name,
-    #              'AutoScalingGroupName'        : trigger.autoscale_group.name,
-    #              'MeasureName'                 : trigger.measure_name,
-    #              'Statistic'                   : trigger.statistic,
-    #              'Period'                      : trigger.period,
-    #              'Unit'                        : trigger.unit,
-    #              'LowerThreshold'              : trigger.lower_threshold,
-    #              'LowerBreachScaleIncrement'   : trigger.lower_breach_scale_increment,
-    #              'UpperThreshold'              : trigger.upper_threshold,
-    #              'UpperBreachScaleIncrement'   : trigger.upper_breach_scale_increment,
-    #              'BreachDuration'              : trigger.breach_duration}
-    #    # dimensions should be a list of tuples
-    #    dimensions = []
-    #    for dim in trigger.dimensions:
-    #        name, value = dim
-    #        dimensions.append(dict(Name=name, Value=value))
-    #    self.build_list_params(params, dimensions, 'Dimensions')
-    #
-    #    req = self.get_object('CreateOrUpdateScalingTrigger', params,
-    #                           Request)
-    #    return req
     def delete_launch_configuration(self, launch_config_name):
         """
         Deletes the specified LaunchConfiguration.
