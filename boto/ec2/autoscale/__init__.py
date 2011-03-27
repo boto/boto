@@ -198,19 +198,47 @@ class AutoScaleConnection(AWSQueryConnection):
     #                           Request)
     #    return req
 
-    def get_all_groups(self, names=None):
+    def get_all_groups(self, **kwargs):
         """
+        Get all autoscaling groups.
+        
+        :type names: list
+        :param names: List of group names which should be searched for.
+        
+        :type max_records: int
+        :param max_records: Maximum amount of groups to return.
+        
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.group.AutoScalingGroup` instances.
         """
         params = {}
+        max_records = kwargs.get('max_records', None)
+        names = kwargs.get('names', None)
+        if max_records is not None:
+            params['MaxRecords'] = max_records
         if names:
             self.build_list_params(params, names, 'AutoScalingGroupNames')
         return self.get_list('DescribeAutoScalingGroups', params,
                              [('member', AutoScalingGroup)])
 
-    def get_all_launch_configurations(self, names=None):
+    def get_all_launch_configurations(self, **kwargs):
         """
+        Get launch configurations.
+
+        :type names: list
+        :param names: List of configuration names which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum amount of configurations to return.
+        
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.launchconfig.LaunchConfiguration` instances.
         """
         params = {}
+        max_records = kwargs.get('max_records', None)
+        names = kwargs.get('names', None)
+        if max_records is not None:
+            params['MaxRecords'] = max_records
         if names:
             self.build_list_params(params, names, 'LaunchConfigurationNames')
         return self.get_list('DescribeLaunchConfigurations', params,
