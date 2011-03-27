@@ -175,7 +175,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if scaling_policy.cooldown is not None:
             params['Cooldown'] = scaling_policy.cooldown
             
-        return self.get_object('PutScalingPolicy', params, Request, verb='POST')
+        return self.get_object('PutScalingPolicy', params)
     
     def get_all_policies(self, **kwargs):
         params = {}
@@ -432,18 +432,6 @@ class AutoScaleConnection(AWSQueryConnection):
         if honor_cooldown:
             params['HonorCooldown'] = honor_cooldown
         return self.get_status('ExecutePolicy', params)
-
-    def put_scaling_policy(self, policy_name, as_group, adjustment_type, scaling_adjustment, cooldown=None):
-        params = {
-                    'PolicyName'                :   policy_name,
-                    'AutoScalingGroupName'      :   as_group,
-                    'AdjustmentType'            :   adjustment_type,
-                    'ScalingAdjustment'         :   scaling_adjustment,
-                 }
-        if cooldown:
-            params['Cooldown'] = cooldown
-        # XXX
-        return self.get_object('PutScalingPolicy', params, {})
 
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):
