@@ -160,9 +160,12 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_object('CreateLaunchConfiguration', params,
                                   Request)
 
-    def put_scaling_policy(self, scaling_policy):
+    def create_scaling_policy(self, scaling_policy):
         """
         Creates a new Scaling Policy.
+        
+        :type scaling_policy: :class:`boto.ec2.autoscale.policy.ScalingPolicy`
+        :param scaling_policy: ScalingPolicy object.
         """
         params = {'AdjustmentType'      : scaling_policy.adjustment_type,
                   'AutoScalingGroupName': scaling_policy.as_group.name,
@@ -307,7 +310,7 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def delete_policy(self, policy_name, autoscale_group=None):
         params = {
-                    'PolicyName'        :       policy_name,
+                    'PolicyName': policy_name,
                  }
         if autoscale_group:
             params['AutoScalingGroupName'] = autoscale_group
