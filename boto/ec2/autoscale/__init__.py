@@ -124,8 +124,7 @@ class AutoScaleConnection(AWSQueryConnection):
         and no scaling activities in progress.
         """
         params = {'AutoScalingGroupName' : name}
-        return self.connection.get_object('DeleteAutoScalingGroup', params,
-                                          Request)
+        return self.get_object('DeleteAutoScalingGroup', params, Request)
 
     def create_launch_configuration(self, launch_config):
         """
