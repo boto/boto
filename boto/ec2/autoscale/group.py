@@ -209,6 +209,7 @@ class AutoScalingGroup(object):
         """
         self.min_size = 0
         self.max_size = 0
+        self.desired_capacity = 0
         self.update()
 
     def delete(self):
