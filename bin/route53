@@ -56,6 +56,19 @@ def del_record(conn, hosted_zone_id, name, type, value, ttl=600, comment=""):
     change.add_value(value)
     print changes.commit()
 
+def change_record(conn, hosted_zone_id, name, type, values, ttl=600, comment=""):
+    """Delete and then add a record to a zone"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=1)[0]
+    change1 = changes.add_change("DELETE", name, type, response.ttl)
+    for old_value in response.resource_records:
+        change1.add_value(old_value)
+    change2 = changes.add_change("CREATE", name, type, ttl)
+    for new_value in values.split(','):
+        change2.add_value(new_value)
+    print changes.commit()
+
 def help(conn, fnc=None):
     """Prints this help message"""
     import inspect
