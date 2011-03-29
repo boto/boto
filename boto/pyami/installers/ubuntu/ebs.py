@@ -60,7 +60,7 @@ class Backup(ScriptBase):
     def main(self):
         try:
             ec2 = boto.connect_ec2()
-            self.run("/usr/sbin/xfs_freeze -f ${mount_point}")
+            self.run("/usr/sbin/xfs_freeze -f ${mount_point}", exit_on_error = True)
             snapshot = ec2.create_snapshot('${volume_id}')
             boto.log.info("Snapshot created: %s " %  snapshot)
         except Exception, e:
