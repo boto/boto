@@ -349,6 +349,6 @@ class FPSConnection(AWSQueryConnection):
         if(response.status != 200):
             raise FPSResponseError(response.status, response.reason, body)
         rs = ResultSet([("VerifySignatureResponse", FPSResponse)])
-        h = handler.XmlHandler(rs, self),
+        h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
