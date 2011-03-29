@@ -49,6 +49,14 @@ class RequiredParamError(Exception):
 
     def __str__(self):
         return 'Required parameters are missing: %s' % self.required
+
+class EncoderError(Exception):
+
+    def __init__(self, error_msg):
+        self.error_msg = error_msg
+
+    def __str__(self):
+        return 'Error encoding value (%s)' % self.error_msg
         
 class Encoder:
 
@@ -60,7 +68,7 @@ class Encoder:
             mthd = getattr(cls, 'encode_'+p.ptype)
             mthd(p, rp, v, label)
         except AttributeError:
-            raise 'Unknown type: %s' % p.ptype
+            raise EncoderError('Unknown type: %s' % p.ptype)
         
     @classmethod
     def encode_string(cls, p, rp, v, l):
@@ -71,6 +79,7 @@ class Encoder:
         rp[label] = v
 
     encode_file = encode_string
+    encode_enum = encode_string
 
     @classmethod
     def encode_integer(cls, p, rp, v, l):
@@ -126,7 +135,8 @@ class AWSQueryRequest(object):
                   'enum' : 'choice',
                   'datetime' : 'string',
                   'dateTime' : 'string',
-                  'file' : 'string'}
+                  'file' : 'string',
+                  'boolean' : None}
 
     @classmethod
     def name(cls):
@@ -278,13 +288,12 @@ class AWSQueryRequest(object):
         self.add_standard_options()
         for param in self.Params:
             if param.long_name:
-                ptype = None
+                ptype = action = choices = None
                 if param.ptype in self.CLITypeMap:
                     ptype = self.CLITypeMap[param.ptype]
                     action = 'store'
-                elif param.ptype == 'boolean':
+                if param.ptype == 'boolean':
                     action = 'store_true'
-                    ptype = None
                 elif param.ptype == 'array':
                     if len(param.items) == 1:
                         ptype = param.items[0]['type']
@@ -294,10 +303,12 @@ class AWSQueryRequest(object):
                         self.parser.add_option(param.optparse_short_name,
                                                param.optparse_long_name,
                                                action=action, type=ptype,
+                                               choices=param.choices,
                                                help=param.doc)
                     elif param.long_name:
                         self.parser.add_option(param.optparse_long_name,
                                                action=action, type=ptype,
+                                               choices=param.choices,
                                                help=param.doc)
 
     def do_cli(self, cli_args=None):
