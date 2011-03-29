@@ -35,7 +35,7 @@ ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 class TimeDecodeError(Exception):
     pass
 
-class SDBConverter:
+class SDBConverter(object):
     """
     Responsible for converting base Python types to format compatible with underlying
     database.  For SimpleDB, that means everything needs to be converted to a string
@@ -59,6 +59,7 @@ class SDBConverter:
                           date : (self.encode_date, self.decode_date),
                           time : (self.encode_time, self.decode_time),
                           Blob: (self.encode_blob, self.decode_blob),
+                          str: (self.encode_string, self.decode_string),
                       }
 
     def encode(self, item_type, value):
@@ -344,6 +345,23 @@ class SDBConverter:
         else:
             return None
 
+    def encode_string(self, value):
+        """Encode string to make sure it's unicode/utf-8 compatible.
+        Thanks to Robert Mela for this code"""
+        if not isinstance(value, str): return value
+        try:
+            return unicode(value)
+        except: pass
+        arr = []
+        for ch in value:
+            arr.append(unichr(ord(ch)))
+        return u"".join(arr)
+
+    def decode_string(self, value):
+        """Decoding a string is really nothing, just
+        return the value as-is"""
+        return value
+
 class SDBManager(object):
     
     def __init__(self, cls, db_name, db_user, db_passwd,
@@ -584,7 +602,7 @@ class SDBManager(object):
     def query_gql(self, query_string, *args, **kwds):
         raise NotImplementedError, "GQL queries not supported in SimpleDB"
 
-    def save_object(self, obj):
+    def save_object(self, obj, expected_value=None):
         if not obj.id:
             obj.id = str(uuid.uuid4())
 
@@ -610,7 +628,7 @@ class SDBManager(object):
                         raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
                     pass
-        self.domain.put_attributes(obj.id, attrs, replace=True)
+        self.domain.put_attributes(obj.id, attrs, replace=True, expected_value=expected_value)
         if len(del_attrs) > 0:
             self.domain.delete_attributes(obj.id, del_attrs)
         return obj

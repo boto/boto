@@ -187,8 +187,8 @@ class Model(object):
             self._loaded = False
             self._manager.load_object(self)
 
-    def put(self):
-        self._manager.save_object(self)
+    def put(self, expected_value=None):
+        self._manager.save_object(self, expected_value)
 
     save = put
         
