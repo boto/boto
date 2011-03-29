@@ -35,9 +35,9 @@ def ls(conn):
 def get(conn, hosted_zone_id, type=None, name=None, maxitems=None):
     """Get all the records for a single zone"""
     response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=maxitems)
-    print '%-20s %-20s %-20s %s' % ("Name", "Type", "TTL", "Value(s)")
+    print '%-40s %-5s %-20s %s' % ("Name", "Type", "TTL", "Value(s)")
     for record in response:
-        print '%-20s %-20s %-20s %s' % (record.name, record.type, record.ttl, ",".join(record.resource_records))
+        print '%-40s %-5s %-20s %s' % (record.name, record.type, record.ttl, ",".join(record.resource_records))
 
 
 def add_record(conn, hosted_zone_id, name, type, value, ttl=600, comment=""):
@@ -78,7 +78,7 @@ def help(conn, fnc=None):
                 cmd = getattr(self, cname)
                 if inspect.isfunction(cmd):
                     doc = cmd.__doc__
-                    print "\t%s - %s" % (cname, doc)
+                    print "\t%-20s  %s" % (cname, doc)
     sys.exit(1)
 
 
