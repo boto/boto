@@ -55,7 +55,8 @@ class Element(dict):
 
     def __init__(self, connection=None, element_name=None,
                  stack=None, parent=None, list_marker=('Set',),
-                 item_marker=('member', 'item')):
+                 item_marker=('member', 'item'),
+                 pythonize_name=False):
         dict.__init__(self)
         self.connection = connection
         self.element_name = element_name
@@ -65,6 +66,7 @@ class Element(dict):
             self.stack = []
         else:
             self.stack = stack
+        self.pythonize_name = pythonize_name
         self.parent = parent
 
     def __getattr__(self, key):
@@ -79,19 +81,25 @@ class Element(dict):
                     pass
         raise AttributeError
 
+    def get_name(self, name):
+        if self.pythonize_name:
+            name = utils.pythonize_name(name)
+        return name
+
     def startElement(self, name, attrs, connection):
         self.stack.append(name)
         for lm in self.list_marker:
             if name.endswith(lm):
                 l = ListElement(self.connection, name, self.list_marker,
-                                self.item_marker)
-                self[name] = l
+                                self.item_marker, self.pythonize_name)
+                self[self.get_name(name)] = l
                 return l
         if len(self.stack) > 0:
             element_name = self.stack[-1]
             e = Element(self.connection, element_name, self.stack, self,
-                        self.list_marker, self.item_marker)
-            self[element_name] = e
+                        self.list_marker, self.item_marker,
+                        self.pythonize_name)
+            self[self.get_name(element_name)] = e
             return (element_name, e)
         else:
             return None
@@ -102,25 +110,32 @@ class Element(dict):
         value = value.strip()
         if value:
             if isinstance(self.parent, Element):
-                self.parent[name] = value
+                self.parent[self.get_name(name)] = value
             elif isinstance(self.parent, ListElement):
                 self.parent.append(value)
 
 class ListElement(list):
 
     def __init__(self, connection=None, element_name=None,
-                 list_marker=['Set'], item_marker=('member', 'item')):
+                 list_marker=['Set'], item_marker=('member', 'item'),
+                 pythonize_name=False):
         list.__init__(self)
         self.connection = connection
         self.element_name = element_name
         self.list_marker = list_marker
         self.item_marker = item_marker
+        self.pythonize_name = pythonize_name
+
+    def get_name(self, name):
+        if self.pythonize_name:
+            name = utils.pythonize_name(name)
+        return name
 
     def startElement(self, name, attrs, connection):
         for lm in self.list_marker:
             if name.endswith(lm):
                 l = ListElement(self.connection, name, self.item_marker)
-                setattr(self, name, l)
+                setattr(self, self.get_name(name), l)
                 return l
         if name in self.item_marker:
             e = Element(self.connection, name, parent=self)
@@ -140,4 +155,4 @@ class ListElement(list):
                 for e in empty:
                     self.remove(e)
         else:
-            setattr(self, name, value)
+            setattr(self, self.get_name(name), value)

@@ -54,7 +54,8 @@ class IAMConnection(AWSQueryConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
-            e = boto.jsonresponse.Element(list_marker=list_marker)
+            e = boto.jsonresponse.Element(list_marker=list_marker,
+                                          pythonize_name=True)
             h = boto.jsonresponse.XmlHandler(e, parent)
             h.parse(body)
             return e
