@@ -346,7 +346,6 @@ class FPSConnection(AWSQueryConnection):
             )
         response = self.make_request("VerifySignature", params)
         body = response.read()
-        print body
         if(response.status != 200):
             raise FPSResponseError(response.status, response.reason, body)
         rs = ResultSet([("VerifySignatureResponse", FPSResponse)])
