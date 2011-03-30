@@ -121,7 +121,7 @@ class Bootstrap(ScriptBase):
                         self.run('easy_install -Z %s' % package, exit_on_error=False)
 
     def run_upgrade(self):
-        if boto.cfg.get_value('Boto', 'run_apt_get_upgrade', False) != False:
+        if boto.config.get_value('Boto', 'run_apt_get_upgrade', False) != False:
             self.run('apt-get update')
             self.run('apt-get upgrade')
 
