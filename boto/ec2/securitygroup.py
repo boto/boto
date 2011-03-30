@@ -135,12 +135,13 @@ class SecurityGroup(TaggedEC2Object):
         :type to_port: int
         :param to_port: The ending port number you are enabling
 
-        :type to_port: string
-        :param to_port: The CIDR block you are providing access to.
+        :type cidr_ip: string
+        :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
                          :class:`boto.ec2.securitygroup.GroupOrCIDR`
+        :param src_group: The Security Group you are granting access to.
                          
         :rtype: bool
         :return: True if successful.
@@ -210,13 +211,14 @@ class SecurityGroup(TaggedEC2Object):
         source_groups = []
         for rule in self.rules:
             grant = rule.grants[0]
-            if grant.name:
-                if grant.name not in source_groups:
-                    source_groups.append(grant.name)
-                    sg.authorize(None, None, None, None, grant)
-            else:
-                sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
-                             grant.cidr_ip)
+            for grant in rule.grants:
+                if grant.name:
+                    if grant.name not in source_groups:
+                        source_groups.append(grant.name)
+                        sg.authorize(None, None, None, None, grant)
+                else:
+                    sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
+                                 grant.cidr_ip)
         return sg
 
     def instances(self):
