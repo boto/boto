@@ -97,7 +97,7 @@ class SESConnection(AWSAuthConnection):
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text', reply_addresses=None,
-                   return_path=None,text_body=None,html_body=None):
+                   return_path=None, text_body=None, html_body=None):
         """Composes an email message based on input data, and then immediately
         queues the message for sending.
 
@@ -167,7 +167,7 @@ class SESConnection(AWSAuthConnection):
         if html_body is not None:
             params['Message.Body.Html.Data'] = html_body
         if text_body is not None:
-            params['Message.Body.Text.Data'] = text_body 
+            params['Message.Body.Text.Data'] = text_body
         else:
             raise ValueError("'format' argument must be 'text' or 'html'")
 
