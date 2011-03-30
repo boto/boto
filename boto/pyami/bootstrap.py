@@ -120,10 +120,16 @@ class Bootstrap(ScriptBase):
                     if not package.endswith('.py'):
                         self.run('easy_install -Z %s' % package, exit_on_error=False)
 
+    def run_upgrade(self):
+        if boto.cfg.get_value('Boto', 'run_apt_get_upgrade', 'False'):
+            self.run('apt-get update')
+            self.run('apt-get upgrade')
+
     def main(self):
         self.create_working_dir()
         self.load_boto()
         self.load_packages()
+        self.run_upgrade()
         self.notify('Bootstrap Completed for %s' % boto.config.get_instance('instance-id'))
 
 if __name__ == "__main__":
