@@ -2,38 +2,55 @@
 import boto
 
 def sizeof_fmt(num):
-    for x in ['b ','KB','MB','GB','TB', 'XB']:
-        if num < 1024.0:
-            return "%3.1f %s" % (num, x)
-        num /= 1024.0
-    return "%3.1f %s" % (num, x)
+	for x in ['b ','KB','MB','GB','TB', 'XB']:
+		if num < 1024.0:
+			return "%3.1f %s" % (num, x)
+		num /= 1024.0
+	return "%3.1f %s" % (num, x)
 
-def list_bucket(b):
-    """List everything in a bucket"""
-    total = 0
-    for k in b:
-        mode = "-rwx---"
-        for g in k.get_acl().acl.grants:
-            if g.id == None:
-                if g.permission == "READ":
-                    mode = "-rwxr--"
-                elif g.permission == "FULL_CONTROL":
-                    mode = "-rwxrwx"
-        print "%s\t%010s\t%s" % (mode, sizeof_fmt(k.size), k.name)
-        total += k.size
-    print "="*60
-    print "TOTAL: \t%010s" % sizeof_fmt(total)
+def list_bucket(b, prefix=None):
+	"""List everything in a bucket"""
+	from boto.s3.prefix import Prefix
+	total = 0
+	query = b
+	if prefix:
+		if not prefix.endswith("/"):
+			prefix = prefix + "/"
+		query = b.list(prefix=prefix, delimiter="/")
+		print "%s" % prefix
+	num = 0
+	for k in query:
+		num += 1
+		mode = "-rwx---"
+		if isinstance(k, Prefix):
+			mode = "drwxr--"
+			size = 0
+		else:
+			size = k.size
+			for g in k.get_acl().acl.grants:
+				if g.id == None:
+					if g.permission == "READ":
+						mode = "-rwxr--"
+					elif g.permission == "FULL_CONTROL":
+						mode = "-rwxrwx"
+		print "%s\t%010s\t%s" % (mode, sizeof_fmt(size), k.name)
+		total += size
+	print "="*60
+	print "TOTAL: \t%010s \t%i Files" % (sizeof_fmt(total), num)
 
 def list_buckets(s3):
-    """List all the buckets"""
-    for b in s3.get_all_buckets():
-        print b.name
+	"""List all the buckets"""
+	for b in s3.get_all_buckets():
+		print b.name
 
 if __name__ == "__main__":
-    import sys
-    s3 = boto.connect_s3()
-    if len(sys.argv) < 2:
-        list_buckets(s3)
-    else:
-        for name in sys.argv[1:]:
-            list_bucket(s3.get_bucket(name))
+	import sys
+	s3 = boto.connect_s3()
+	if len(sys.argv) < 2:
+		list_buckets(s3)
+	else:
+		for name in sys.argv[1:]:
+			prefix = None
+			if "/" in name:
+				(name, prefix) = name.split("/",1)
+			list_bucket(s3.get_bucket(name), prefix)
