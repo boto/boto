@@ -134,11 +134,13 @@ class ListElement(list):
     def startElement(self, name, attrs, connection):
         for lm in self.list_marker:
             if name.endswith(lm):
-                l = ListElement(self.connection, name, self.item_marker)
+                l = ListElement(self.connection, name, self.item_marker,
+                                pythonize_name=self.pythonize_name)
                 setattr(self, self.get_name(name), l)
                 return l
         if name in self.item_marker:
-            e = Element(self.connection, name, parent=self)
+            e = Element(self.connection, name, parent=self,
+                        pythonize_name=self.pythonize_name)
             self.append(e)
             return e
         else:
