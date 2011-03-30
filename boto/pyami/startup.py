@@ -48,7 +48,13 @@ class Startup(ScriptBase):
                     boto.log.exception('Problem Running Script: %s. Startup process halting.' % script)
                     raise e
 
+    def run_upgrade(self):
+        if boto.config.get_value('Boto', 'run_apt_get_upgrade', False) != False:
+            self.run('apt-get update')
+            self.run('apt-get -y upgrade')
+
     def main(self):
+        self.run_upgrade()
         self.run_scripts()
         self.notify('Startup Completed for %s' % config.get('Instance', 'instance-id'))
 
