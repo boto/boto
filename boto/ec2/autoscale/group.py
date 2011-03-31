@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 import weakref
+
 from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
@@ -68,13 +69,9 @@ class AutoScalingGroup(object):
     def __init__(self, connection=None, name=None,
                  launch_config=None,
                  availability_zones=None,
-                 load_balancers=None, cooldown=0,
-                 min_size=None, max_size=None,
-                 group_arn=None, health_check_type=None,
-                 health_check_period=None, suspended=None,
-                 placement_group=None, vpc_zone=None,
-                 default_cooldown=None,
-                 desired_capacity=None):
+                 load_balancers=None, default_cooldown=None,
+                 desired_capacity=None,
+                 min_size=None, max_size=None):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -108,7 +105,7 @@ class AutoScalingGroup(object):
         :type desired_capacity: int
         :param desired_capacity: The desired capacity for the group.
 
-        :rtype: autoscale group
+        :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
         self.name = name
@@ -127,13 +124,6 @@ class AutoScalingGroup(object):
         self.load_balancers = ListElement(lbs)
         zones = availability_zones or []
         self.availability_zones = ListElement(zones)
-        self.group_arn = group_arn
-        self.health_check_type = health_check_type
-        self.health_check_period = health_check_period
-        self.suspended = suspended
-        self.placement_group = placement_group
-        self.vpc_zone = vpc_zone
-        self.metrics = None
         self.instances = None
         self.placement_group = None
         self.autoscaling_group_arn = None
@@ -219,6 +209,7 @@ class AutoScalingGroup(object):
         """
         self.min_size = 0
         self.max_size = 0
+        self.desired_capacity = 0
         self.update()
 
     def delete(self):

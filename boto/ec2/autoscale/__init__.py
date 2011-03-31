@@ -1,4 +1,5 @@
 # Copyright (c) 2009-2010 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2011 Jann Kleen
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -24,7 +25,6 @@ This module provides an interface to the Elastic Compute Cloud (EC2)
 Auto Scaling service.
 """
 
-import base64
 import boto
 from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
@@ -35,48 +35,11 @@ from boto.ec2.autoscale.activity import Activity
 from boto.ec2.autoscale.policy import AdjustmentTypes, MetricCollectionTypes, ScalingPolicy
 from boto.ec2.autoscale.instance import Instance
 
-RegionData = {
-    'us-east-1' : 'autoscaling.us-east-1.amazonaws.com',
-    'us-west-1' : 'autoscaling.us-west-1.amazonaws.com',
-    'eu-west-1' : 'autoscaling.eu-west-1.amazonaws.com',
-    'ap-southeast-1' : 'autoscaling.ap-southeast-1.amazonaws.com'}
-
-def regions():
-    """
-    Get all available regions for the Auto Scaling service.
-
-    :rtype: list
-    :return: A list of :class:`boto.RegionInfo` instances
-    """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=AutoScaleConnection)
-        regions.append(region)
-    return regions
-
-def connect_to_region(region_name, **kw_params):
-    """
-    Given a valid region name, return a
-    :class:`boto.ec2.autoscale.AutoScaleConnection`.
-
-    :param str region_name: The name of the region to connect to.
-
-    :rtype: :class:`boto.ec2.AutoScaleConnection` or ``None``
-    :return: A connection to the given region, or None if an invalid region
-        name is given
-    """
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
-
 
 class AutoScaleConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'autoscale_version', '2010-08-01')
     DefaultRegionEndpoint = boto.config.get('Boto', 'autoscale_endpoint',
-                               'autoscaling.amazonaws.com')
+                                            'autoscaling.amazonaws.com')
     DefaultRegionName =  boto.config.get('Boto', 'autoscale_region_name', 'us-east-1')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -162,15 +125,14 @@ class AutoScaleConnection(AWSQueryConnection):
         and no scaling activities in progress.
         """
         params = {'AutoScalingGroupName' : name}
-        return self.connection.get_object('DeleteAutoScalingGroup', params,
-                                          Request)
+        return self.get_object('DeleteAutoScalingGroup', params, Request)
 
     def create_launch_configuration(self, launch_config):
         """
         Creates a new Launch Configuration.
 
-        :type launch_config: boto.ec2.autoscale.launchconfig.LaunchConfiguration
-        :param launch_config: LaunchConfiguraiton object.
+        :type launch_config: :class:`boto.ec2.autoscale.launchconfig.LaunchConfiguration`
+        :param launch_config: LaunchConfiguration object.
 
         """
         params = {
@@ -181,7 +143,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.key_name:
             params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
-            params['UserData'] = base64.b64encode(launch_config.user_data)
+            params['UserData'] = launch_config.user_data
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
@@ -196,7 +158,52 @@ class AutoScaleConnection(AWSQueryConnection):
             # XXX:
             pass
         return self.get_object('CreateLaunchConfiguration', params,
-                                  Request, verb='POST')
+                                  Request)
+
+    def create_scaling_policy(self, scaling_policy):
+        """
+        Creates a new Scaling Policy.
+
+        :type scaling_policy: :class:`boto.ec2.autoscale.policy.ScalingPolicy`
+        :param scaling_policy: ScalingPolicy object.
+        """
+        params = {'AdjustmentType'      : scaling_policy.adjustment_type,
+                  'AutoScalingGroupName': scaling_policy.as_name,
+                  'PolicyName'          : scaling_policy.name,
+                  'ScalingAdjustment'   : scaling_policy.scaling_adjustment,}
+
+        if scaling_policy.cooldown is not None:
+            params['Cooldown'] = scaling_policy.cooldown
+
+        return self.get_object('PutScalingPolicy', params)
+
+    def get_all_policies(self, **kwargs):
+        """
+        Returns all Scaling Policies for a given list of names or a Auto Scaling group.
+
+        If no group name or list of policy names are provided, all available policies
+        are returned.
+
+        :type as_name: str
+        :param as_name: the name of the :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
+
+        :type names: list
+        :param names: List of policy names which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum amount of groups to return.
+        """
+        params = {}
+        as_name = kwargs.get('as_name', None)
+        names = kwargs.get('names', None)
+        max_records = kwargs.get('max_records', None)
+        if as_name is not None:
+            params['AutoScalingGroupName'] = as_name
+        if names:
+            self.build_list_params(params, names, 'PolicyNames')
+        if max_records:
+            params['MaxRecords'] = max_records
+        return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
 
     def delete_launch_configuration(self, launch_config_name):
         """
@@ -220,6 +227,15 @@ class AutoScaleConnection(AWSQueryConnection):
         This action supports pagination by returning a token if there are more
         pages to retrieve. To get the next page, call this action again with
         the returned token as the NextToken parameter.
+
+        :type names: list
+        :param names: List of group names which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum amount of groups to return.
+
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.group.AutoScalingGroup` instances.
         """
         params = {}
         if max_records:
@@ -231,19 +247,28 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_list('DescribeAutoScalingGroups', params,
                              [('member', AutoScalingGroup)])
 
-    def get_all_launch_configurations(self, names=None, max_records=None, next_token=None):
+    def get_all_launch_configurations(self, **kwargs):
         """
         Returns a full description of the launch configurations given the
         specified names.
 
         If no names are specified, then the full details of all launch
         configurations are returned.
+
+        :type names: list
+        :param names: List of configuration names which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum amount of configurations to return.
+
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.launchconfig.LaunchConfiguration` instances.
         """
         params = {}
-        if max_records:
+        max_records = kwargs.get('max_records', None)
+        names = kwargs.get('names', None)
+        if max_records is not None:
             params['MaxRecords'] = max_records
-        if next_token:
-            params['NextToken'] = next_token
         if names:
             self.build_list_params(params, names, 'LaunchConfigurationNames')
         return self.get_list('DescribeLaunchConfigurations', params,
@@ -253,11 +278,18 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Get all activities for the given autoscaling group.
 
-        :type autoscale_group: str or AutoScalingGroup object
+        This action supports pagination by returning a token if there are more
+        pages to retrieve. To get the next page, call this action again with
+        the returned token as the NextToken parameter
+
+        :type autoscale_group: str or :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
         :param autoscale_group: The auto scaling group to get activities on.
 
-        @max_records: int
+        :type max_records: int
         :param max_records: Maximum amount of activities to return.
+
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.activity.Activity` instances.
         """
         name = autoscale_group
         if isinstance(autoscale_group, AutoScalingGroup):
@@ -303,7 +335,7 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def delete_policy(self, policy_name, autoscale_group=None):
         params = {
-                    'PolicyName'        :       policy_name,
+                    'PolicyName': policy_name,
                  }
         if autoscale_group:
             params['AutoScalingGroupName'] = autoscale_group
@@ -314,13 +346,22 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def get_all_autoscaling_instances(self, instance_ids=None, max_records=None, next_token=None):
         """
-        Returns a description of each Auto Scaling instance in the InstanceIds
+        Returns a description of each Auto Scaling instance in the instance_ids
         list. If a list is not provided, the service returns the full details
         of all instances up to a maximum of fifty.
 
         This action supports pagination by returning a token if there are more
         pages to retrieve. To get the next page, call this action again with
         the returned token as the NextToken parameter.
+
+        :type instance_ids: list
+        :param instance_ids: List of Autoscaling Instance IDs which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum number of results to return.
+
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.activity.Activity` instances.
         """
         params = {}
         if instance_ids:
@@ -329,10 +370,11 @@ class AutoScaleConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if next_token:
             params['NextToken'] = next_token
-        return self.get_object('DescribeAutoscalingInstances', params, Instance)
+        return self.get_list('DescribeAutoScalingInstances', params, [('member', Instance)])
 
     def get_all_metric_collection_types(self):
-        """ Returns a list of metrics and a corresponding list of granularities
+        """
+        Returns a list of metrics and a corresponding list of granularities
         for each metric.
         """
         return self.get_object('DescribeMetricCollectionTypes', {}, MetricCollectionTypes)
@@ -424,18 +466,6 @@ class AutoScaleConnection(AWSQueryConnection):
         if honor_cooldown:
             params['HonorCooldown'] = honor_cooldown
         return self.get_status('ExecutePolicy', params)
-
-    def put_scaling_policy(self, policy_name, as_group, adjustment_type, scaling_adjustment, cooldown=None):
-        params = {
-                    'PolicyName'                :   policy_name,
-                    'AutoScalingGroupName'      :   as_group,
-                    'AdjustmentType'            :   adjustment_type,
-                    'ScalingAdjustment'         :   scaling_adjustment,
-                 }
-        if cooldown:
-            params['Cooldown'] = cooldown
-        # XXX
-        return self.get_object('PutScalingPolicy', params, {})
 
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):
