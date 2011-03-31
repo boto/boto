@@ -177,6 +177,21 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_object('PutScalingPolicy', params)
     
     def get_all_policies(self, **kwargs):
+        """
+        Returns all Scaling Policies for a given list of names or a Auto Scaling group.
+        
+        If no group name or list of policy names are provided, all available policies 
+        are returned.
+        
+        :type as_name: str
+        :param as_name: the name of the :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
+        
+        :type names: list
+        :param names: List of policy names which should be searched for.
+        
+        :type max_records: int
+        :param max_records: Maximum amount of groups to return.
+        """
         params = {}
         as_name = kwargs.get('as_name', None)
         names = kwargs.get('names', None)
@@ -262,11 +277,18 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Get all activities for the given autoscaling group.
 
+        This action supports pagination by returning a token if there are more
+        pages to retrieve. To get the next page, call this action again with
+        the returned token as the NextToken parameter
+
         :type autoscale_group: str or :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
         :param autoscale_group: The auto scaling group to get activities on.
 
         :type max_records: int
         :param max_records: Maximum amount of activities to return.
+        
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.activity.Activity` instances.
         """
         name = autoscale_group
         if isinstance(autoscale_group, AutoScalingGroup):
@@ -323,13 +345,22 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def get_all_autoscaling_instances(self, instance_ids=None, max_records=None, next_token=None):
         """
-        Returns a description of each Auto Scaling instance in the InstanceIds
+        Returns a description of each Auto Scaling instance in the instance_ids
         list. If a list is not provided, the service returns the full details
         of all instances up to a maximum of fifty.
 
         This action supports pagination by returning a token if there are more
         pages to retrieve. To get the next page, call this action again with
         the returned token as the NextToken parameter.
+        
+        :type instance_ids: list
+        :param instance_ids: List of Autoscaling Instance IDs which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum number of results to return.
+        
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.activity.Activity` instances.
         """
         params = {}
         if instance_ids:

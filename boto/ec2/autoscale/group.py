@@ -105,7 +105,7 @@ class AutoScalingGroup(object):
         :type desired_capacity: int
         :param desired_capacity: The desired capacity for the group.
 
-        :rtype: autoscale group
+        :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
         self.name = name
