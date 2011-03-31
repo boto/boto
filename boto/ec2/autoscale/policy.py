@@ -141,3 +141,4 @@ class ScalingPolicy(object):
 
     def delete(self):
         return self.connection.delete_policy(self.name, self.as_name)
+
