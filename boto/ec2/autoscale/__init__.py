@@ -30,7 +30,7 @@ from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
-from boto.ec2.autoscale.group import AutoScalingGroup
+from boto.ec2.autoscale.group import AutoScalingGroup, ProcessType
 from boto.ec2.autoscale.activity import Activity
 from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes, ScalingPolicy
 from boto.ec2.autoscale.instance import Instance
@@ -386,8 +386,82 @@ class AutoScaleConnection(AWSQueryConnection):
         return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
 
     def get_all_scaling_process_types(self):
-        # XXX
-        return self.get_object('DescribeScalingProcessTypes', {}, {})
+        """ Returns scaling process types for use in the ResumeProcesses and
+        SuspendProcesses actions.
+        """
+        return self.get_list('DescribeScalingProcessTypes', {}, [('member', ProcessType)])
+
+    def suspend_processes(self, as_group, scaling_processes=None):
+        """ Suspends Auto Scaling processes for an Auto Scaling group.
+
+        :type as_group: string
+        :param as_group: The auto scaling group to suspend processes on.
+
+        :type scaling_processes: list
+        :param scaling_processes: Processes you want to suspend. If omitted, all
+                                  processes will be suspended.
+        """
+        params = {
+                    'AutoScalingGroupName'      :   as_group
+                 }
+        if scaling_processes:
+            self.build_list_params(params, scaling_processes, 'ScalingProcesses')
+        return self.get_status('SuspendProcesses', params)
+
+    def resume_processes(self, as_group, scaling_processes=None):
+        """ Resumes Auto Scaling processes for an Auto Scaling group.
+
+        :type as_group: string
+        :param as_group: The auto scaling group to resume processes on.
+
+        :type scaling_processes: list
+        :param scaling_processes: Processes you want to resume. If omitted, all
+                                  processes will be resumed.
+        """
+        params = {
+                    'AutoScalingGroupName'      :   as_group
+                 }
+        if scaling_processes:
+            self.build_list_params(params, scaling_processes, 'ScalingProcesses')
+        return self.get_status('ResumeProcesses', params)
+
+    def create_scheduled_group_action(self, as_group, name, time, desired_capacity=None,
+                                      min_size=None, max_size=None):
+        """ Creates a scheduled scaling action for a Auto Scaling group. If you
+        leave a parameter unspecified, the corresponding value remains
+        unchanged in the affected Auto Scaling group.
+
+        :type as_group: string
+        :param as_group: The auto scaling group to get activities on.
+
+        :type name: string
+        :param name: Scheduled action name.
+
+        :type time: datetime.datetime
+        :param time: The time for this action to start.
+
+        :type desired_capacity: int
+        :param desired_capacity: The number of EC2 instances that should be running in
+                                this group.
+
+        :type min_size: int
+        :param min_size: The minimum size for the new auto scaling group.
+
+        :type max_size: int
+        :param max_size: The minimum size for the new auto scaling group.
+        """
+        params = {
+                    'AutoScalingGroupName'      :   as_group,
+                    'ScheduledActionName'       :   name,
+                    'Time'                      :   time.isoformat(),
+                 }
+        if desired_capacity:
+            params['DesiredCapacity'] = desired_capacity
+        if min_size:
+            params['MinSize'] = min_size
+        if max_size:
+            params['MaxSize'] = max_size
+        return self.get_status('PutScheduledUpdateGroupAction', params)
 
     def get_all_scheduled_actions(self, as_group=None, start_time=None, end_time=None, scheduled_actions=None,
                                   max_records=None, next_token=None):

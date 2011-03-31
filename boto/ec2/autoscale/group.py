@@ -28,6 +28,22 @@ from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 
 
+class ProcessType(object):
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.process_name = None
+
+    def __repr__(self):
+        return 'ProcessType(%s)' % self.process_name
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'ProcessName':
+            self.process_name = value
+
+
 class SuspendedProcess(object):
     def __init__(self, connection=None):
         self.connection = connection
@@ -224,6 +240,14 @@ class AutoScalingGroup(object):
         """
         return self.connection.get_all_activities(self, activity_ids, max_records)
 
+    def suspend_processes(self, scaling_processes=None):
+        """ Suspends Auto Scaling processes for an Auto Scaling group. """
+        return self.connection.suspend_processes(self.name, scaling_processes)
+
+    def resume_processes(self, scaling_processes=None):
+        """ Resumes Auto Scaling processes for an Auto Scaling group. """
+        return self.connection.resume_processes(self.name, scaling_processes)
+
 
 class AutoScalingGroupMetric(object):
     def __init__(self, connection=None):
@@ -245,3 +269,4 @@ class AutoScalingGroupMetric(object):
             self.granularity = value
         else:
             setattr(self, name, value)
+

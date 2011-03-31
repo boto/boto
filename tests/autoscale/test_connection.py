@@ -28,7 +28,7 @@ import unittest
 import time
 from boto.ec2.autoscale import AutoScaleConnection
 from boto.ec2.autoscale.activity import Activity
-from boto.ec2.autoscale.group import AutoScalingGroup
+from boto.ec2.autoscale.group import AutoScalingGroup, ProcessType
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes, ScalingPolicy
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
@@ -76,6 +76,11 @@ class AutoscaleConnectionTest(unittest.TestCase):
         instances = c.get_all_autoscaling_instances()
         for instance in instances:
             self.assertTrue(type(instance), Instance)
+
+        # get all scaling process types
+        ptypes = c.get_all_scaling_process_types()
+        for ptype in ptypes:
+            self.assertTrue(type(ptype), ProcessType)
 
         # get adjustment types
         adjustments = c.get_all_adjustment_types()
