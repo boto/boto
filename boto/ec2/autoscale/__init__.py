@@ -1,4 +1,5 @@
 # Copyright (c) 2009-2010 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2011 Jann Kleen
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
