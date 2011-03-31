@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2009-2010 Reza Lotun http://reza.lotun.name/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -29,10 +29,11 @@ import boto
 from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.autoscale.request import Request
-from boto.ec2.autoscale.trigger import Trigger
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.activity import Activity
+from boto.ec2.autoscale.policy import AdjustmentTypes, MetricCollectionTypes, ScalingPolicy
+from boto.ec2.autoscale.instance import Instance
 
 RegionData = {
     'us-east-1' : 'autoscaling.us-east-1.amazonaws.com',
@@ -122,20 +123,31 @@ class AutoScaleConnection(AWSQueryConnection):
     def _update_group(self, op, as_group):
         params = {
                   'AutoScalingGroupName'    : as_group.name,
-                  'Cooldown'                : as_group.cooldown,
                   'LaunchConfigurationName' : as_group.launch_config_name,
                   'MinSize'                 : as_group.min_size,
                   'MaxSize'                 : as_group.max_size,
                   }
+        # get availability zone information (required param)
+        zones = as_group.availability_zones
+        self.build_list_params(params, zones,
+                                'AvailabilityZones')
+        if as_group.desired_capacity:
+            params['DesiredCapacity'] = as_group.desired_capacity
+        if as_group.vpc_zone_identifier:
+            params['VPCZoneIdentifier'] = as_group.vpc_zone_identifier
+        if as_group.healthcheck_grace_period:
+            params['HealthCheckGracePeriod'] = as_group.healthcheck_grace_period
+        if as_group.healthcheck_type:
+            params['HealthCheckType'] = as_group.healthcheck_type
+        if as_group.default_cooldown:
+            params['DefaultCooldown'] = as_group.default_cooldown
+        if as_group.placement_group:
+            params['PlacementGroup'] = as_group.placement_group
         if op.startswith('Create'):
-            if as_group.availability_zones:
-                zones = as_group.availability_zones
-            else:
-                zones = [as_group.availability_zone]
-            self.build_list_params(params, as_group.load_balancers,
-                                   'LoadBalancerNames')
-            self.build_list_params(params, zones,
-                                    'AvailabilityZones')
+            # you can only associate load balancers with an autoscale group at creation time
+            if as_group.load_balancers:
+                self.build_list_params(params, as_group.load_balancers,
+                                       'LoadBalancerNames')
         return self.get_object(op, params, Request)
 
     def create_auto_scaling_group(self, as_group):
@@ -143,6 +155,15 @@ class AutoScaleConnection(AWSQueryConnection):
         Create auto scaling group.
         """
         return self._update_group('CreateAutoScalingGroup', as_group)
+
+    def delete_auto_scaling_group(self, name):
+        """
+        Deletes the specified auto scaling group if the group has no instances
+        and no scaling activities in progress.
+        """
+        params = {'AutoScalingGroupName' : name}
+        return self.connection.get_object('DeleteAutoScalingGroup', params,
+                                          Request)
 
     def create_launch_configuration(self, launch_config):
         """
@@ -154,10 +175,11 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         params = {
                   'ImageId'                 : launch_config.image_id,
-                  'KeyName'                 : launch_config.key_name,
                   'LaunchConfigurationName' : launch_config.name,
                   'InstanceType'            : launch_config.instance_type,
                  }
+        if launch_config.key_name:
+            params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
             params['UserData'] = base64.b64encode(launch_config.user_data)
         if launch_config.kernel_id:
@@ -167,58 +189,67 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.block_device_mappings:
             self.build_list_params(params, launch_config.block_device_mappings,
                                    'BlockDeviceMappings')
-        self.build_list_params(params, launch_config.security_groups,
-                               'SecurityGroups')
+        if launch_config.security_groups:
+            self.build_list_params(params, launch_config.security_groups,
+                                   'SecurityGroups')
+        if launch_config.instance_monitoring:
+            # XXX:
+            pass
         return self.get_object('CreateLaunchConfiguration', params,
                                   Request, verb='POST')
 
-    def create_trigger(self, trigger):
+    def delete_launch_configuration(self, launch_config_name):
         """
+        Deletes the specified LaunchConfiguration.
 
+        The specified launch configuration must not be attached to an Auto
+        Scaling group. Once this call completes, the launch configuration is no
+        longer available for use.
         """
-        params = {'TriggerName'                 : trigger.name,
-                  'AutoScalingGroupName'        : trigger.autoscale_group.name,
-                  'MeasureName'                 : trigger.measure_name,
-                  'Statistic'                   : trigger.statistic,
-                  'Period'                      : trigger.period,
-                  'Unit'                        : trigger.unit,
-                  'LowerThreshold'              : trigger.lower_threshold,
-                  'LowerBreachScaleIncrement'   : trigger.lower_breach_scale_increment,
-                  'UpperThreshold'              : trigger.upper_threshold,
-                  'UpperBreachScaleIncrement'   : trigger.upper_breach_scale_increment,
-                  'BreachDuration'              : trigger.breach_duration}
-        # dimensions should be a list of tuples
-        dimensions = []
-        for dim in trigger.dimensions:
-            name, value = dim
-            dimensions.append(dict(Name=name, Value=value))
-        self.build_list_params(params, dimensions, 'Dimensions')
+        params = {'LaunchConfigurationName' : launch_config_name}
+        return self.connection.get_object('DeleteLaunchConfiguration', params,
+                                          Request)
 
-        req = self.get_object('CreateOrUpdateScalingTrigger', params,
-                               Request)
-        return req
-
-    def get_all_groups(self, names=None):
+    def get_all_groups(self, names=None, max_records=None, next_token=None):
         """
+        Returns a full description of each Auto Scaling group in the given
+        list. This includes all Amazon EC2 instances that are members of the
+        group. If a list of names is not provided, the service returns the full
+        details of all Auto Scaling groups.
+
+        This action supports pagination by returning a token if there are more
+        pages to retrieve. To get the next page, call this action again with
+        the returned token as the NextToken parameter.
         """
         params = {}
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
         if names:
             self.build_list_params(params, names, 'AutoScalingGroupNames')
         return self.get_list('DescribeAutoScalingGroups', params,
                              [('member', AutoScalingGroup)])
 
-    def get_all_launch_configurations(self, names=None):
+    def get_all_launch_configurations(self, names=None, max_records=None, next_token=None):
         """
+        Returns a full description of the launch configurations given the
+        specified names.
+
+        If no names are specified, then the full details of all launch
+        configurations are returned.
         """
         params = {}
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
         if names:
             self.build_list_params(params, names, 'LaunchConfigurationNames')
         return self.get_list('DescribeLaunchConfigurations', params,
                              [('member', LaunchConfiguration)])
 
-    def get_all_activities(self, autoscale_group,
-                           activity_ids=None,
-                           max_records=100):
+    def get_all_activities(self, autoscale_group, activity_ids=None, max_records=None, next_token=None):
         """
         Get all activities for the given autoscaling group.
 
@@ -232,15 +263,35 @@ class AutoScaleConnection(AWSQueryConnection):
         if isinstance(autoscale_group, AutoScalingGroup):
             name = autoscale_group.name
         params = {'AutoScalingGroupName' : name}
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
         if activity_ids:
             self.build_list_params(params, activity_ids, 'ActivityIds')
-        return self.get_list('DescribeScalingActivities', params,
-                             [('member', Activity)])
+        return self.get_list('DescribeScalingActivities', params, [('member', Activity)])
 
-    def get_all_triggers(self, autoscale_group):
-        params = {'AutoScalingGroupName' : autoscale_group}
-        return self.get_list('DescribeTriggers', params,
-                             [('member', Trigger)])
+    def get_all_scheduled_actions(self, autoscale_group=None, scheduled_actions=None,
+                                  start_time=None, end_time=None, max_records=None, next_token=None):
+        """
+        Lists all the actions scheduled for your Auto Scaling group that haven't been executed.
+        """
+        params = {}
+        # XXX
+        if autoscale_group:
+            params['AutoScalingGroupName'] = autoscale_group
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+
+    def delete_scheduled_action(self, scheduled_action_name, autoscale_group=None):
+        params = {
+                    'ScheduledActionName'       :   scheduled_action_name,
+                 }
+        if autoscale_group:
+            params['AutoScalingGroupName'] = autoscale_group
+        return self.get_status('DeleteScheduledAction', params)
 
     def terminate_instance(self, instance_id, decrement_capacity=True):
         params = {
@@ -249,6 +300,142 @@ class AutoScaleConnection(AWSQueryConnection):
                   }
         return self.get_object('TerminateInstanceInAutoScalingGroup', params,
                                Activity)
+
+    def delete_policy(self, policy_name, autoscale_group=None):
+        params = {
+                    'PolicyName'        :       policy_name,
+                 }
+        if autoscale_group:
+            params['AutoScalingGroupName'] = autoscale_group
+        return self.get_status('DeletePolicy', params)
+
+    def get_all_adjustment_types(self):
+        return self.get_list('DescribeAdjustmentTypes', {}, [('member', AdjustmentTypes)])
+
+    def get_all_autoscaling_instances(self, instance_ids=None, max_records=None, next_token=None):
+        """
+        Returns a description of each Auto Scaling instance in the InstanceIds
+        list. If a list is not provided, the service returns the full details
+        of all instances up to a maximum of fifty.
+
+        This action supports pagination by returning a token if there are more
+        pages to retrieve. To get the next page, call this action again with
+        the returned token as the NextToken parameter.
+        """
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceIds')
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+        return self.get_object('DescribeAutoscalingInstances', params, Instance)
+
+    def get_all_metric_collection_types(self):
+        """ Returns a list of metrics and a corresponding list of granularities
+        for each metric.
+        """
+        return self.get_object('DescribeMetricCollectionTypes', {}, MetricCollectionTypes)
+
+    def get_all_policies(self, as_group=None, policy_names=None, max_records=None, next_token=None):
+        """
+        Returns descriptions of what each policy does. This action supports
+        pagination. If the response includes a token, there are more records
+        available. To get the additional records, repeat the request with the
+        response token as the NextToken parameter.
+        """
+        params = {}
+        if as_group:
+            params['AutoScalingGroupName'] = as_group
+        if policy_names:
+            self.build_list_params(params, policy_names, 'PolicyNames')
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+        return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
+
+    def get_all_scaling_process_types(self):
+        # XXX
+        return self.get_object('DescribeScalingProcessTypes', {}, {})
+
+    def get_all_scheduled_actions(self, as_group=None, start_time=None, end_time=None, scheduled_actions=None,
+                                  max_records=None, next_token=None):
+        params = {}
+        if as_group:
+            params['AutoScalingGroupName'] = as_group
+        if scheduled_actions:
+            self.build_list_params(params, scheduled_actions, 'ScheduledActionNames')
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+        #XXX
+        return self.get_object('DescribeScheduledActions', params, {})
+
+    def disable_metrics_collection(self, as_group, metrics=None):
+        """
+        Disables monitoring of group metrics for the Auto Scaling group
+        specified in AutoScalingGroupName. You can specify the list of affected
+        metrics with the Metrics parameter.
+        """
+        params = {
+                    'AutoScalingGroupName'      :   as_group,
+                 }
+        if metrics:
+            self.build_list_params(params, metrics, 'Metrics')
+        return self.get_status('DisableMetricsCollection', params)
+
+    def enable_metrics_collection(self, as_group, granularity, metrics=None):
+        """
+        Enables monitoring of group metrics for the Auto Scaling group
+        specified in AutoScalingGroupName. You can specify the list of enabled
+        metrics with the Metrics parameter.
+
+        Auto scaling metrics collection can be turned on only if the
+        InstanceMonitoring.Enabled flag, in the Auto Scaling group's launch
+        configuration, is set to true.
+
+        :type autoscale_group: string
+        :param autoscale_group: The auto scaling group to get activities on.
+
+        :type granularity: string
+        :param granularity: The granularity to associate with the metrics to
+                            collect. Currently, the only legal granularity is "1Minute".
+
+        :type metrics: string list
+        :param metrics: The list of metrics to collect. If no metrics are
+                        specified, all metrics are enabled.
+        """
+        params = {
+                    'AutoScalingGroupName'      :   as_group,
+                    'Granularity'               :   granularity,
+                 }
+        if metrics:
+            self.build_list_params(params, metrics, 'Metrics')
+        return self.get_status('EnableMetricsCollection', params)
+
+    def execute_policy(self, policy_name, as_group=None, honor_cooldown=None):
+        params = {
+                    'PolicyName'        :   policy_name,
+                 }
+        if as_group:
+            params['AutoScalingGroupName'] = as_group
+        if honor_cooldown:
+            params['HonorCooldown'] = honor_cooldown
+        return self.get_status('ExecutePolicy', params)
+
+    def put_scaling_policy(self, policy_name, as_group, adjustment_type, scaling_adjustment, cooldown=None):
+        params = {
+                    'PolicyName'                :   policy_name,
+                    'AutoScalingGroupName'      :   as_group,
+                    'AdjustmentType'            :   adjustment_type,
+                    'ScalingAdjustment'         :   scaling_adjustment,
+                 }
+        if cooldown:
+            params['Cooldown'] = cooldown
+        # XXX
+        return self.get_object('PutScalingPolicy', params, {})
 
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):
