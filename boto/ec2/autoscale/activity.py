@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from datetime import datetime
+
 
 class Activity(object):
     def __init__(self, connection=None):
@@ -48,9 +50,15 @@ class Activity(object):
         elif name == 'AutoScalingGroupName':
             self.group_name = value
         elif name == 'StartTime':
-            self.start_time = value
+            try:
+                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'EndTime':
-            self.end_time = value
+            try:
+                self.end_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.end_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'Progress':
             self.progress = value
         elif name == 'Cause':

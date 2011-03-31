@@ -187,3 +187,4 @@ class AlarmHistoryItem(object):
             self.summary = value
         elif name == 'Timestamp':
             self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+

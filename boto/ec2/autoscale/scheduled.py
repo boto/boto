@@ -20,6 +20,8 @@
 # IN THE SOFTWARE.
 
 
+from datetime import datetime
+
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
 from boto.ec2.elb.listelement import ListElement
@@ -49,7 +51,10 @@ class ScheduledUpdateGroupAction(object):
         elif name == 'ScheduledActionARN':
             self.action_arn = value
         elif name == 'Time':
-            self.time = value
+            try:
+                self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
 

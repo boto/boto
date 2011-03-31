@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 
+from datetime import datetime
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
 from boto.ec2.elb.listelement import ListElement
@@ -42,6 +43,22 @@ class Ebs(object):
             self.snapshot_id = value
         elif name == 'VolumeSize':
             self.volume_size = value
+
+
+class InstanceMonitoring(object):
+    def __init__(self, connection=None, enabled='false'):
+        self.connection = connection
+        self.enabled = enabled
+
+    def __repr__(self):
+        return 'InstanceMonitoring(%s)' % self.enabled
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'Enabled':
+            self.enabled = value
 
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
@@ -133,6 +150,9 @@ class LaunchConfiguration(object):
         elif name == 'BlockDeviceMappings':
             self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
             return self.block_device_mappings
+        elif name == 'InstanceMonitoring':
+            self.instance_monitoring = InstanceMonitoring(self)
+            return self.instance_monitoring
 
     def endElement(self, name, value, connection):
         if name == 'InstanceType':
@@ -144,7 +164,7 @@ class LaunchConfiguration(object):
         elif name == 'ImageId':
             self.image_id = value
         elif name == 'CreatedTime':
-            self.created_time = value
+            self.created_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == 'KernelId':
             self.kernel_id = value
         elif name == 'RamdiskId':
