@@ -27,11 +27,13 @@ BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
 if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [os.path.expanduser(os.environ['BOTO_CONFIG'])]
-elif 'HOME' in os.environ:
-    UserConfigPath = os.path.expanduser('~/.boto')
-    BotoConfigLocations.append(UserConfigPath)
 else:
     UserConfigPath = None
+    __home_dir = os.path.expanduser('~')
+    if __home_dir and __home_dir != '~':
+      UserConfigPath = os.path.join(__home_dir, '.boto')
+    BotoConfigLocations.append(UserConfigPath)
+
 
 class Config(ConfigParser.SafeConfigParser):
 
