@@ -180,10 +180,13 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {}
         as_name = kwargs.get('as_name', None)
         names = kwargs.get('names', None)
+        max_records = kwargs.get('max_records', None)
         if as_name is not None:
             params['AutoScalingGroupName'] = as_name
         if names:
             self.build_list_params(params, names, 'PolicyNames')
+        if max_records:
+            params['MaxRecords'] = max_records
         return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
       
     def delete_launch_configuration(self, launch_config_name):
