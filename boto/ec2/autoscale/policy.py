@@ -45,16 +45,16 @@ class Alarm(object):
             setattr(self, name, value)
 
 
-class AdjustmentTypes(object):
+class AdjustmentType(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.adjustment_types = ListElement([])
 
     def __repr__(self):
-        return 'AdjustmentTypes:%s' % self.adjustment_types
+        return 'AdjustmentType:%s' % self.adjustment_types
 
     def startElement(self, name, attrs, connection):
-        if name == 'AdjustmentTypes':
+        if name == 'AdjustmentType':
             return self.adjustment_types
 
     def endElement(self, name, value, connection):

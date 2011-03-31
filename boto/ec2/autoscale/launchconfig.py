@@ -132,7 +132,7 @@ class LaunchConfiguration(object):
             return self.security_groups
         elif name == 'BlockDeviceMappings':
             self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
-            return self.instances
+            return self.block_device_mappings
 
     def endElement(self, name, value, connection):
         if name == 'InstanceType':

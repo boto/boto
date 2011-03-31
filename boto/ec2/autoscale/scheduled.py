@@ -40,7 +40,7 @@ class ScheduledUpdateGroupAction(object):
     def endElement(self, name, value, connection):
         if name == 'DesiredCapacity':
             self.desired_capacity = value
-        elif name = 'ScheduledActionName':
+        elif name == 'ScheduledActionName':
             self.name = value
         elif name == 'MaxSize':
             self.max_size = int(value)
