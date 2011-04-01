@@ -75,7 +75,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         rp[label] = v
 
     encode_file = encode_string
@@ -86,7 +86,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         rp[label] = '%d' % v
         
     @classmethod
@@ -94,7 +94,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         if v:
             v = 'true'
         else:
@@ -106,7 +106,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         rp[label] = v
         
     @classmethod
@@ -115,7 +115,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         label = label + '.%d'
         for i, value in enumerate(v):
             rp[label%(i+1)] = value
