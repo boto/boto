@@ -86,7 +86,7 @@ class AutoScalingGroup(object):
                  availability_zones=None,
                  load_balancers=None, default_cooldown=None,
                  desired_capacity=None,
-                 min_size=None, max_size=None):
+                 min_size=None, max_size=None, **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -123,11 +123,12 @@ class AutoScalingGroup(object):
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
-        self.name = name
+        self.name = name or kwargs.get('group_name')   # backwards compatibility
         self.connection = connection
         self.min_size = int(min_size) if min_size is not None else None
         self.max_size = int(max_size) if max_size is not None else None
         self.created_time = None
+        default_cooldown = default_cooldown or kwargs.get('cooldown')  # backwards compatibility
         self.default_cooldown = int(default_cooldown) if default_cooldown is not None else None
         self.launch_config = launch_config
         if self.launch_config:
