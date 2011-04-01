@@ -62,6 +62,7 @@ class SuspendedProcess(object):
         elif name == 'SuspensionReason':
             self.reason = value
 
+
 class EnabledMetric(object):
     def __init__(self, connection=None, metric=None, granularity=None):
         self.connection = connection
