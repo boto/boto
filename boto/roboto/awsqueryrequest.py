@@ -182,19 +182,30 @@ class AWSQueryRequest(object):
             retval = getattr(self.aws_response, 'requestId')
         return retval
 
-    def process_filters(self, args):
+    def process_filters(self):
+        filters = self.args.get('filters', [])
         filter_names = [f['name'] for f in self.Filters]
-        unknown_filters = [f for f in args if f not in filter_names]
+        unknown_filters = [f for f in filters if f not in filter_names]
         if unknown_filters:
             raise ValueError, 'Unknown filters: %s' % unknown_filters
         for i, filter in enumerate(self.Filters):
-            if filter['name'] in args:
+            if filter['name'] in filters:
                 self.request_params['Filter.%d.Name' % (i+1)] = filter['name']
-                for j, value in enumerate(boto.utils.mklist(args[filter['name']])):
+                for j, value in enumerate(boto.utils.mklist(filters[filter['name']])):
                     Encoder.encode(filter, self.request_params, value,
                                    'Filter.%d.Value.%d' % (i+1,j+1))
 
     def process_args(self):
+        """
+        Responsible for walking through Params defined for the request and:
+
+        * Matching them with keyword parameters passed to the request
+          constructor or via the command line.
+        * Checking to see if all required parameters have been specified
+          and raising an exception, if not.
+        * Encoding each value into the set of request parameters that will
+          be sent in the request to the AWS service.
+        """
         required = [p.name for p in self.Params if not p.optional]
         for param in self.Params:
             if param.long_name:
@@ -206,8 +217,10 @@ class AWSQueryRequest(object):
                 if value is not None:
                     if param.name in required:
                         required.remove(param.name)
-                    Encoder.encode(param, self.request_params,
-                                   self.args[python_name])
+                    if param.encoder:
+                        param.encoder(param, self.request_params, value)
+                    else:
+                        Encoder.encode(param, self.request_params, value)
                 del self.args[python_name]
         if required:
             raise RequiredParamError(required)
@@ -218,13 +231,15 @@ class AWSQueryRequest(object):
         if fmt and fmt['type'] == 'object':
             for prop in fmt['properties']:
                 self.process_markers(prop, fmt['name'])
-        elif fmt['type'] == 'array':
+        elif fmt and fmt['type'] == 'array':
             self.list_markers.append(prev_name)
             self.item_markers.append(fmt['name'])
         
     def send(self, verb='GET'):
         if 'debug' in self.args and self.args['debug'] >= 2:
             boto.set_stream_logger(self.name())
+        self.process_args()
+        self.process_filters()
         conn = self.get_connection(**self.args)
         self.http_response = conn.make_request(self.name(),
                                                self.request_params,
@@ -325,30 +340,34 @@ class AWSQueryRequest(object):
                 p_name = boto.utils.pythonize_name(param.name)
                 value = args
             if param.ptype == 'file' and value:
-                path = os.path.expanduser(value)
-                path = os.path.expandvars(path)
-                if os.path.isfile(path):
-                    fp = open(path)
-                    value = fp.read()
-                    fp.close()
+                if value == '-':
+                    value = sys.stdin.read()
                 else:
-                    self.parser.error('Unable to read file: %s' % path)
+                    path = os.path.expanduser(value)
+                    path = os.path.expandvars(path)
+                    if os.path.isfile(path):
+                        fp = open(path)
+                        value = fp.read()
+                        fp.close()
+                    else:
+                        self.parser.error('Unable to read file: %s' % path)
             d[p_name] = value
         self.args.update(d)
-        try:
-            self.process_args()
-        except RequiredParamError as e:
-            print e
-            sys.exit(1)
         if hasattr(self.cli_options, 'filter') and self.cli_options.filter:
             d = {}
             for filter in self.cli_options.filter:
                 name, value = filter.split('=')
                 d[name] = value
-            self.process_filters(d)
+            if 'filters' in self.args:
+                self.args['filters'].update(d)
+            else:
+                self.args['filters'] = d
         try:
             response = self.send()
             self.cli_formatter(response)
+        except RequiredParamError as e:
+            print e
+            sys.exit(1)
         except self.get_connection().ResponseError as err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
 

@@ -14,13 +14,14 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
     Path = '/'
     Port = 443
     Provider = 'aws'
+    EnvURL = 'AWS_URL'
 
     Regions = []
 
     def __init__(self, **args):
         self.args = args
         self.check_for_credential_file()
-        self.check_for_euare_url()
+        self.check_for_env_url()
         if 'host' not in self.args:
             region_name = self.args.get('region_name', self.Regions[0]['name'])
             for region in self.Regions:
@@ -62,11 +63,11 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
             else:
                 print 'Warning: unable to read AWS_CREDENTIAL_FILE'
 
-    def check_for_euare_url(self):
+    def check_for_env_url(self):
         """
         First checks to see if a url argument was explicitly passed
         in.  If so, that will be used.  If not, it checks for the
-        existence of the EUARE_URL environment variable.
+        existence of the environment variable specified in ENV_URL.
         If this is set, it should contain a fully qualified URL to the
         service you want to use.
         Note that any values passed explicitly to the class constructor
@@ -76,8 +77,8 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         if url:
             del self.args['url']
         # TODO: move EUARE_URL to class variable
-        if not url and 'EUARE_URL' in os.environ:
-            url = os.environ['EUARE_URL']
+        if not url and self.EnvURL in os.environ:
+            url = os.environ[self.EnvURL]
         if url:
             rslt = urlparse.urlparse(url)
             if 'is_secure' not in self.args:
