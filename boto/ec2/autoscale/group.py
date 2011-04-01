@@ -151,6 +151,7 @@ class AutoScalingGroup(object):
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
         return self.default_cooldown
+        
     def _set_cooldown(self, val):
         self.default_cooldown = val
     cooldown = property(_get_cooldown, _set_cooldown)
