@@ -160,7 +160,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.instance_monitoring:
             params['InstanceMonitoring'] = 'true'
         return self.get_object('CreateLaunchConfiguration', params,
-                                  Request)
+                                  Request, verb='POST')
 
     def create_scaling_policy(self, scaling_policy):
         """
