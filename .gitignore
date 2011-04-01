@@ -2,3 +2,5 @@
 .*.swp
 *.log
 boto.egg-info
+build/
+dist/

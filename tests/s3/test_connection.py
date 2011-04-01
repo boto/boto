@@ -1,8 +1,5 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2010, Eucalyptus Systems, Inc.
-# All rights reserved.
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -24,24 +21,38 @@
 # IN THE SOFTWARE.
 
 """
-Some unit tests for the GSConnection
+Some unit tests for the S3Connection
 """
 
 import unittest
 import time
 import os
-from boto.gs.connection import GSConnection
+from boto.s3.connection import S3Connection
+from boto.exception import S3PermissionsError
 
-class GSConnectionTest (unittest.TestCase):
+try:
+    # Python 3.x version
+    from urllib.request import urlopen
+except:
+    # Python 2.x version
+    from urllib import urlopen
+
+class S3ConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        print( '--- running GSConnection tests ---' )
-        c = GSConnection()
+        print( '--- running S3Connection tests ---' )
+        c = S3Connection()
         # create a new, empty bucket
         bucket_name = 'test-%d' % int(time.time())
         bucket = c.create_bucket(bucket_name)
         # now try a get_bucket call and see if it's really there
         bucket = c.get_bucket(bucket_name)
+        # test logging
+        logging_bucket = c.create_bucket(bucket_name + '-log')
+        logging_bucket.set_as_logging_target()
+        bucket.enable_logging(target_bucket=logging_bucket, target_prefix=bucket.name)
+        bucket.disable_logging()
+        c.delete_bucket(logging_bucket)
         k = bucket.new_key()
         k.name = 'foobar'
         s1 = 'This is a test of file upload and download'
@@ -55,6 +66,16 @@ class GSConnectionTest (unittest.TestCase):
         # check to make sure content read from s3 is identical to original
         assert s1 == fp.read(), 'corrupted file'
         fp.close()
+        # test generated URLs
+        url = k.generate_url(3600)
+        file = urlopen(url)
+        assert s1 == file.read(), 'invalid URL %s' % url
+        url = k.generate_url(3600, force_http=True)
+        file = urlopen(url)
+        assert s1 == file.read(), 'invalid URL %s' % url
+        url = k.generate_url(3600, force_http=True, headers={'x-amz-x-token' : 'XYZ'})
+        file = urllib.urlopen(url)
+        assert s1 == file.read(), 'invalid URL %s' % url
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type
@@ -105,7 +126,6 @@ class GSConnectionTest (unittest.TestCase):
         mdval3 = 'föö' # try a unicode metadata value (Python 3.x version [everything is unicode])
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
-        
         k = bucket.lookup('has_metadata')
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
@@ -136,20 +156,38 @@ class GSConnectionTest (unittest.TestCase):
         assert len(rs) == num_keys
         # try some acl stuff
         bucket.set_acl('public-read')
-        acl = bucket.get_acl()
-        assert len(acl.entries.entry_list) == 2
+        policy = bucket.get_acl()
+        assert len(policy.acl.grants) == 2
         bucket.set_acl('private')
-        acl = bucket.get_acl()
-        assert len(acl.entries.entry_list) == 1
+        policy = bucket.get_acl()
+        assert len(policy.acl.grants) == 1
         k = bucket.lookup('foo/bar')
         k.set_acl('public-read')
-        acl = k.get_acl()
-        assert len(acl.entries.entry_list) == 2
+        policy = k.get_acl()
+        assert len(policy.acl.grants) == 2
         k.set_acl('private')
-        acl = k.get_acl()
-        assert len(acl.entries.entry_list) == 1
+        policy = k.get_acl()
+        assert len(policy.acl.grants) == 1
+        # try the convenience methods for grants
+        bucket.add_user_grant('FULL_CONTROL',
+                              'c1e724fbfa0979a4448393c59a8c055011f739b6d102fb37a65f26414653cd67')
+        try:
+            bucket.add_email_grant('foobar', 'foo@bar.com')
+        except S3PermissionsError:
+            pass
+        # now try to create an RRS key
+        k = bucket.new_key('reduced_redundancy')
+        k.set_contents_from_string('This key has reduced redundancy',
+                                   reduced_redundancy=True)
+
+        # now try to inject a response header
+        data = k.get_contents_as_string(response_headers={'response-content-type' : 'foo/bar'})
+        assert k.content_type == 'foo/bar'
+        
         # now delete all keys in bucket
         for k in bucket:
+            if k.name == 'reduced_redundancy':
+                assert k.storage_class == 'REDUCED_REDUNDANCY'
             bucket.delete_key(k)
         # now delete bucket
         time.sleep(5)

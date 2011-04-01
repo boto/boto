@@ -45,7 +45,7 @@ from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
-from boto.tests.cb_test_harnass import CallbackTestHarnass
+from tests.s3.cb_test_harnass import CallbackTestHarnass
 
 
 class ResumableDownloadTests(unittest.TestCase):
@@ -212,7 +212,8 @@ class ResumableDownloadTests(unittest.TestCase):
             # We'll get a ResumableDownloadException at this point because
             # of CallbackTestHarnass (above). Check that the tracker file was
             # created correctly.
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+            self.assertEqual(e.disposition,
+                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
             self.assertTrue(os.path.exists(self.tracker_file_name))
             f = open(self.tracker_file_name)
             etag_line = f.readline()
@@ -302,8 +303,14 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
+<<<<<<< HEAD:boto/tests/test_resumable_downloads.py
         except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+=======
+        except ResumableDownloadException, e:
+            self.assertEqual(e.disposition,
+                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
+>>>>>>> a4e8e065473b5ff9af554ceb91391f286ac5cac7:tests/s3/test_resumable_downloads.py
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
         # Try it one more time; this time should succeed.
@@ -369,8 +376,15 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
+<<<<<<< HEAD:boto/tests/test_resumable_downloads.py
         except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+=======
+        except ResumableDownloadException, e:
+            # First abort (from harnass-forced failure) should be
+            # ABORT_CUR_PROCESS.
+            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
+>>>>>>> a4e8e065473b5ff9af554ceb91391f286ac5cac7:tests/s3/test_resumable_downloads.py
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
         # Try it again, this time with different src key (simulating an
@@ -379,7 +393,13 @@ class ResumableDownloadTests(unittest.TestCase):
             self.small_src_key.get_contents_to_file(
                 self.dst_fp, res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
+<<<<<<< HEAD:boto/tests/test_resumable_downloads.py
         except ResumableDownloadException as e:
+=======
+        except ResumableDownloadException, e:
+            # This abort should be a hard abort (object size changing during
+            # transfer).
+>>>>>>> a4e8e065473b5ff9af554ceb91391f286ac5cac7:tests/s3/test_resumable_downloads.py
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('md5 signature doesn\'t match etag'), -1)
@@ -402,8 +422,16 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
+<<<<<<< HEAD:boto/tests/test_resumable_downloads.py
         except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+=======
+        except ResumableDownloadException, e:
+            # First abort (from harnass-forced failure) should be
+            # ABORT_CUR_PROCESS.
+            self.assertEqual(e.disposition,
+                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
+>>>>>>> a4e8e065473b5ff9af554ceb91391f286ac5cac7:tests/s3/test_resumable_downloads.py
             # Ensure a tracker file survived.
             self.assertTrue(os.path.exists(self.tracker_file_name))
         # Before trying again change the first byte of the file fragment
@@ -418,7 +446,13 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
+<<<<<<< HEAD:boto/tests/test_resumable_downloads.py
         except ResumableDownloadException as e:
+=======
+        except ResumableDownloadException, e:
+            # This abort should be a hard abort (file content changing during
+            # transfer).
+>>>>>>> a4e8e065473b5ff9af554ceb91391f286ac5cac7:tests/s3/test_resumable_downloads.py
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('md5 signature doesn\'t match etag'), -1)

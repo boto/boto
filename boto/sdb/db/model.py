@@ -96,10 +96,6 @@ class Model(object):
         return q
 
     @classmethod
-    def lookup(cls, name, value):
-        return cls._manager.lookup(cls, name, value)
-
-    @classmethod
     def all(cls, limit=None, next_token=None):
         return cls.find(limit=limit, next_token=next_token)
 
@@ -152,9 +148,12 @@ class Model(object):
 
     def __init__(self, id=None, **kw):
         self._loaded = False
-        # first initialize all properties to their default values
+        # first try to initialize all properties to their default values
         for prop in self.properties(hidden=False):
-            setattr(self, prop.name, prop.default_value())
+            try:
+                setattr(self, prop.name, prop.default_value())
+            except ValueError:
+                pass
         if kw.has_key('manager'):
             self._manager = kw['manager']
         self.id = id
@@ -188,8 +187,8 @@ class Model(object):
             self._loaded = False
             self._manager.load_object(self)
 
-    def put(self):
-        self._manager.save_object(self)
+    def put(self, expected_value=None):
+        self._manager.save_object(self, expected_value)
 
     save = put
         

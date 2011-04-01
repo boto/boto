@@ -409,7 +409,7 @@ class XMLManager(object):
                 text_node = doc.createTextNode(item)
                 item_node.appendChild(text_node)
 
-    def save_object(self, obj):
+    def save_object(self, obj, expected_value=None):
         """
         Marshal the object and do a PUT
         """

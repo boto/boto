@@ -892,8 +892,7 @@ class Key(object):
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
-                                              version_id=version_id,
-                                              response_headers=response_headers)
+                                              version_id=version_id)
             else:
                 self.get_file(fp, headers, cb, num_cb, torrent=torrent,
                               version_id=version_id,

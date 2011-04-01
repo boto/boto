@@ -34,6 +34,9 @@ Follow project updates on Twitter (http://twitter.com/pythonboto).
 
 Follow Mitch on Twitter (http://twitter.com/garnaat).
 
+Join our `IRC channel`_ (#boto on FreeNode).
+
+.. _IRC channel: http://webchat.freenode.net/?channels=boto
 
 Documentation Contents
 ----------------------

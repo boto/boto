@@ -44,7 +44,7 @@ class Policy:
                 elif g.type == 'Group':
                     u = g.uri
                 else:
-                    u = g.email
+                    u = g.email_address
                 grants.append("%s = %s" % (u, g.permission))
         return "<Policy: %s>" % ", ".join(grants)
 

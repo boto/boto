@@ -378,10 +378,29 @@ class DateProperty(Property):
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
             setattr(model_instance, self.name, self.now())
-        return Property.get_value_for_datastore(self, model_instance)
+        val = Property.get_value_for_datastore(self, model_instance)
+        if isinstance(val, datetime.datetime):
+            val = val.date()
+        return val
 
     def now(self):
         return datetime.date.today()
+
+
+class TimeProperty(Property):
+    data_type = datetime.time
+    type_name = 'Time'
+
+    def __init__(self, verbose_name=None, name=None,
+                 default=None, required=False, validator=None, choices=None, unique=False):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+
+    def validate(self, value):
+        if value is None:
+            return
+        if not isinstance(value, self.data_type):
+            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+
 
 class ReferenceProperty(Property):
 

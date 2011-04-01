@@ -160,7 +160,7 @@ class DistributionConfig:
             if value.lower() == 'true':
                 self.enabled = True
             else:
-                self.enabledFalse
+                self.enabled = False
         elif name == 'CallerReference':
             self.caller_reference = value
         elif name == 'DefaultRootObject':
@@ -286,6 +286,7 @@ class Distribution:
         self.id = id
         self.last_modified_time = last_modified_time
         self.status = status
+        self.in_progress_invalidation_batches = 0
         self.active_signers = None
         self.etag = None
         self._bucket = None
@@ -308,6 +309,8 @@ class Distribution:
             self.last_modified_time = value
         elif name == 'Status':
             self.status = value
+        elif name == 'InProgressInvalidationBatches':
+            self.in_progress_invalidation_batches = int(value)
         elif name == 'DomainName':
             self.domain_name = value
         else:
@@ -344,12 +347,6 @@ class Distribution:
             new_config.cnames = cnames
         if comment != None:
             new_config.comment = comment
-        if origin != None:
-            new_config.origin = get_oai_value(origin_access_identity)
-        if trusted_signers:
-            new_config.trusted_signers = trusted_signers
-        if default_root_object:
-            new_config.default_root_object = default_root_object
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
         self._object_class = Object

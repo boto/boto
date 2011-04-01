@@ -35,10 +35,24 @@ from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
+import boto.jsonresponse
 import boto.utils
 import xml.sax
 import urllib
 import re
+from collections import defaultdict
+
+# as per http://goo.gl/BDuud (02/19/2011)
+class S3WebsiteEndpointTranslate:
+    trans_region = defaultdict(lambda :'s3-website-us-east-1')
+
+    trans_region['EU'] = 's3-website-eu-west-1'
+    trans_region['us-west-1'] = 's3-website-us-west-1'
+    trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
+
+    @classmethod
+    def translate_region(self, reg):
+        return self.trans_region[reg]
 
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
@@ -68,6 +82,14 @@ class Bucket(object):
          <Status>%s</Status>
          <MfaDelete>%s</MfaDelete>
        </VersioningConfiguration>"""
+
+    WebsiteBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+        <IndexDocument><Suffix>%s</Suffix></IndexDocument>
+        %s
+      </WebsiteConfiguration>"""
+
+    WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
 
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
@@ -153,7 +175,15 @@ class Bucket(object):
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
             k.last_modified = response.getheader('last-modified')
-            k.size = int(response.getheader('content-length'))
+            # the following machinations are a workaround to the fact that
+            # apache/fastcgi omits the content-length header on HEAD
+            # requests when the content-length is zero.
+            # See http://goo.gl/0Tdax for more details.
+            clen = response.getheader('content-length')
+            if clen:
+                k.size = int(response.getheader('content-length'))
+            else:
+                k.size = 0
             k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
@@ -506,12 +536,16 @@ class Bucket(object):
         :returns: An instance of the newly created key object
         """
         if preserve_acl:
-            acl = self.get_xml_acl(src_key_name)
+            if self.name == src_bucket_name:
+                src_bucket = self
+            else:
+                src_bucket = self.connection.get_bucket(src_bucket_name)
+            acl = src_bucket.get_xml_acl(src_key_name)
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
         provider = self.connection.provider
-        headers = {provider.copy_source_header : src}
+        headers = {provider.copy_source_header : str(src)}
         if storage_class != 'STANDARD':
             headers[provider.storage_class_header] = storage_class
         if metadata:
@@ -848,6 +882,92 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def configure_website(self, suffix, error_key='', headers=None):
+        """
+        Configure this bucket to act as a website
+
+        :type suffix: str
+        :param suffix: Suffix that is appended to a request that is for a
+                       "directory" on the website endpoint (e.g. if the suffix
+                       is index.html and you make a request to
+                       samplebucket/images/ the data that is returned will
+                       be for the object with the key name images/index.html).
+                       The suffix must not be empty and must not include a
+                       slash character.
+
+        :type error_key: str
+        :param error_key: The object key name to use when a 4XX class
+                          error occurs.  This is optional.
+
+        """
+        if error_key:
+            error_frag = self.WebsiteErrorFragment % error_key
+        else:
+            error_frag = ''
+        body = self.WebsiteBody % (suffix, error_frag)
+        response = self.connection.make_request('PUT', self.name, data=body,
+                                                query_args='website',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
+    def get_website_configuration(self, headers=None):
+        """
+        Returns the current status of website configuration on the bucket.
+
+        :rtype: dict
+        :returns: A dictionary containing a Python representation
+                  of the XML response from S3.  The overall structure is:
+
+                   * WebsiteConfiguration
+                     * IndexDocument
+                       * Suffix : suffix that is appended to request that
+                         is for a "directory" on the website endpoint
+                     * ErrorDocument
+                       * Key : name of object to serve when an error occurs
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def delete_website_configuration(self, headers=None):
+        """
+        Removes all website configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_website_endpoint(self):
+        """
+        Returns the fully qualified hostname to use is you want to access this
+        bucket as a website.  This doesn't validate whether the bucket has
+        been correctly configured as a website or not.
+        """
+        l = [self.name]
+        l.append(S3WebsiteEndpointTranslate.translate_region(self.get_location()))
+        l.append('.'.join(self.connection.host.split('.')[-2:]))
+        return '.'.join(l)
+
     def get_policy(self, headers=None):
         response = self.connection.make_request('GET', self.name,
                 query_args='policy', headers=headers)
@@ -870,8 +990,47 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def initiate_multipart_upload(self, key_name, headers=None):
+    def initiate_multipart_upload(self, key_name, headers=None,
+            reduced_redundancy=False, metadata=None):
+        """
+        Start a multipart upload operation.
+
+        :type key_name: string
+        :param key_name: The name of the key that will ultimately result from
+                         this multipart upload operation.  This will be exactly
+                         as the key appears in the bucket after the upload
+                         process has been completed.
+
+        :type headers: dict
+        :param headers: Additional HTTP headers to send and store with the
+                        resulting key in S3.
+
+        :type reduced_redundancy: boolean
+        :param reduced_redundancy: In multipart uploads, the storage class is
+                                   specified when initiating the upload,
+                                   not when uploading individual parts.  So
+                                   if you want the resulting key to use the
+                                   reduced redundancy storage class set this
+                                   flag when you initiate the upload.
+
+        :type metadata: dict
+        :param metadata: Any metadata that you would like to set on the key
+                         that results from the multipart upload.
+        """
         query_args = 'uploads'
+        if headers is None:
+            headers = {}
+        if reduced_redundancy:
+            storage_class_header = self.connection.provider.storage_class_header
+            if storage_class_header:
+                headers[storage_class_header] = 'REDUCED_REDUNDANCY'
+            # TODO: what if the provider doesn't support reduced redundancy?
+            # (see boto.s3.key.Key.set_contents_from_file)
+        if metadata is None:
+            metadata = {}
+
+        headers = boto.utils.merge_meta(headers, metadata,
+                self.connection.provider)
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)
@@ -888,6 +1047,9 @@ class Bucket(object):
         
     def complete_multipart_upload(self, key_name, upload_id,
                                   xml_body, headers=None):
+        """
+        Complete a multipart upload operation.
+        """
         query_args = 'uploadId=%s' % upload_id
         if headers is None:
             headers = {}
@@ -895,9 +1057,15 @@ class Bucket(object):
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers, data=xml_body)
+        contains_error = False
         body = response.read()
+        # Some errors will be reported in the body of the response
+        # even though the HTTP response code is 200.  This check
+        # does a quick and dirty peek in the body for an error element.
+        if body.find('<Error>') > 0:
+            contains_error = True
         boto.log.debug(body)
-        if response.status == 200:
+        if response.status == 200 and not contains_error:
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)
@@ -919,3 +1087,4 @@ class Bucket(object):
         
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
+

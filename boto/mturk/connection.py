@@ -515,9 +515,9 @@ class MTurkConnection(AWSQueryConnection):
         """
         Send a text message to workers.
         """
-        params = {'WorkerId' : worker_ids,
-                  'Subject' : subject,
+        params = {'Subject' : subject,
                   'MessageText': message_text}
+        self.build_list_params(params, worker_ids, 'WorkerId')
 
         return self._process_request('NotifyWorkers', params)
 
@@ -579,7 +579,7 @@ class MTurkConnection(AWSQueryConnection):
             params['Test'] = test.get_as_xml()
 
         if test_duration is not None:
-            params['TestDuration'] = test_duration
+            params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
             if isinstance(answer_key, basestring):
@@ -602,6 +602,11 @@ class MTurkConnection(AWSQueryConnection):
     def get_qualification_type(self, qualification_type_id):
         params = {'QualificationTypeId' : qualification_type_id }
         return self._process_request('GetQualificationType', params,
+                                     [('QualificationType', QualificationType),])
+
+    def get_qualifications_for_qualification_type(self, qualification_type_id):
+        params = {'QualificationTypeId' : qualification_type_id }
+        return self._process_request('GetQualificationsForQualificationType', params,
                                      [('QualificationType', QualificationType),])
 
     def update_qualification_type(self, qualification_type_id,

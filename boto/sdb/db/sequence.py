@@ -219,6 +219,3 @@ class Sequence(object):
     def delete(self):
         """Remove this sequence"""
         self.db.delete_attributes(self.id)
-
-    def __del__(self):
-        self.delete()

@@ -103,6 +103,7 @@ class Instance(TaggedEC2Object):
         self.state_reason = None
         self.group_name = None
         self.client_token = None
+        self.groups = []
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -121,6 +122,9 @@ class Instance(TaggedEC2Object):
         elif name == 'stateReason':
             self.state_reason = StateReason()
             return self.state_reason
+        elif name == 'groupSet':
+            self.groups = ResultSet([('item', Group)])
+            return self.groups
         return None
 
     def endElement(self, name, value, connection):

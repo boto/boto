@@ -361,7 +361,7 @@ class PGManager(object):
     def _find_calculated_props(self, obj):
         return [p for p in obj.properties() if hasattr(p, 'calculated_type')]
 
-    def save_object(self, obj):
+    def save_object(self, obj, expected_value=None):
         obj._auto_update = False
         calculated = self._find_calculated_props(obj)
         if not obj.id:
