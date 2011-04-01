@@ -105,8 +105,20 @@ class ScalingPolicy(object):
         Scaling Policy
 
         :type name: str
-        :param name: Name of scaling policy
-        XXX docs XXX
+        :param name: Name of scaling policy.
+
+        :type adjustment_type: str
+        :param adjustment_type: Specifies the type of adjustment. Valid values are `ChangeInCapacity`, `ExactCapacity` and `PercentChangeInCapacity`.
+        
+        :type as_name: str or int
+        :param as_name: Name or ARN of the Auto Scaling Group.
+        
+        :type scaling_adjustment: int
+        :param scaling_adjustment: Value of adjustment (type specified in `adjustment_type`).
+        
+        :type cooldown: int
+        :param cooldown: Time (in seconds) before Alarm related Scaling Activities can start after the previous Scaling Activity ends.
+
         """
         self.name = kwargs.get('name', None)
         self.adjustment_type = kwargs.get('adjustment_type', None)
