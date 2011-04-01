@@ -22,7 +22,6 @@
 
 from datetime import datetime
 from boto.resultset import ResultSet
-from boto.ec2.autoscale.request import Request
 from boto.ec2.elb.listelement import ListElement
 
 # this should use the corresponding object from boto.ec2
@@ -174,7 +173,7 @@ class LaunchConfiguration(object):
         elif name == 'LaunchConfigurationARN':
             self.launch_configuration_arn = value
         elif name == 'InstanceMonitoring':
-            selfinstance_monitoring = value
+            self.instance_monitoring = value
         else:
             setattr(self, name, value)
 

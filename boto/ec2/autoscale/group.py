@@ -19,13 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import weakref
 
 from boto.ec2.elb.listelement import ListElement
 from boto.resultset import ResultSet
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.instance import Instance
-from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 
 
 class ProcessType(object):

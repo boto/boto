@@ -177,34 +177,6 @@ class AutoScaleConnection(AWSQueryConnection):
 
         return self.get_object('PutScalingPolicy', params)
 
-    def get_all_policies(self, **kwargs):
-        """
-        Returns all Scaling Policies for a given list of names or a Auto Scaling group.
-
-        If no group name or list of policy names are provided, all available policies
-        are returned.
-
-        :type as_name: str
-        :param as_name: the name of the :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
-
-        :type names: list
-        :param names: List of policy names which should be searched for.
-
-        :type max_records: int
-        :param max_records: Maximum amount of groups to return.
-        """
-        params = {}
-        as_name = kwargs.get('as_name', None)
-        names = kwargs.get('names', None)
-        max_records = kwargs.get('max_records', None)
-        if as_name is not None:
-            params['AutoScalingGroupName'] = as_name
-        if names:
-            self.build_list_params(params, names, 'PolicyNames')
-        if max_records:
-            params['MaxRecords'] = max_records
-        return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
-
     def delete_launch_configuration(self, launch_config_name):
         """
         Deletes the specified LaunchConfiguration.
@@ -372,6 +344,18 @@ class AutoScaleConnection(AWSQueryConnection):
         pagination. If the response includes a token, there are more records
         available. To get the additional records, repeat the request with the
         response token as the NextToken parameter.
+
+        If no group name or list of policy names are provided, all available policies
+        are returned.
+
+        :type as_name: str
+        :param as_name: the name of the :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
+
+        :type names: list
+        :param names: List of policy names which should be searched for.
+
+        :type max_records: int
+        :param max_records: Maximum amount of groups to return.
         """
         params = {}
         if as_group:

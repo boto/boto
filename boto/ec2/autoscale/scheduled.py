@@ -22,10 +22,6 @@
 
 from datetime import datetime
 
-from boto.resultset import ResultSet
-from boto.ec2.autoscale.request import Request
-from boto.ec2.elb.listelement import ListElement
-
 
 class ScheduledUpdateGroupAction(object):
     def __init__(self, connection=None):

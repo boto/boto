@@ -21,7 +21,6 @@
 # IN THE SOFTWARE.
 
 from boto.resultset import ResultSet
-from boto.ec2.autoscale.request import Request
 from boto.ec2.elb.listelement import ListElement
 
 class Alarm(object):
@@ -109,13 +108,13 @@ class ScalingPolicy(object):
 
         :type adjustment_type: str
         :param adjustment_type: Specifies the type of adjustment. Valid values are `ChangeInCapacity`, `ExactCapacity` and `PercentChangeInCapacity`.
-        
+
         :type as_name: str or int
         :param as_name: Name or ARN of the Auto Scaling Group.
-        
+
         :type scaling_adjustment: int
         :param scaling_adjustment: Value of adjustment (type specified in `adjustment_type`).
-        
+
         :type cooldown: int
         :param cooldown: Time (in seconds) before Alarm related Scaling Activities can start after the previous Scaling Activity ends.
 
