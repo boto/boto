@@ -228,7 +228,7 @@ class AWSQueryRequest(object):
         conn = self.get_connection(**self.args)
         self.http_response = conn.make_request(self.name(),
                                                self.request_params,
-                                               conn.path, verb)
+                                               verb=verb)
         self.body = self.http_response.read()
         boto.log.debug(self.body)
         if self.http_response.status == 200:
@@ -330,7 +330,6 @@ class AWSQueryRequest(object):
                 if os.path.isfile(path):
                     fp = open(path)
                     value = fp.read()
-                    print value
                     fp.close()
                 else:
                     self.parser.error('Unable to read file: %s' % path)
