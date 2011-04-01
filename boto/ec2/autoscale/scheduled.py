@@ -31,7 +31,11 @@ class ScheduledUpdateGroupAction(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.name = None
-        self.alarm_arn = None
+        self.action_arn = None
+        self.time = None
+        self.desired_capacity = None
+        self.max_size = None
+        self.min_size = None
 
     def __repr__(self):
         return 'ScheduledUpdateGroupAction:%s' % self.name
@@ -54,7 +58,7 @@ class ScheduledUpdateGroupAction(object):
             try:
                 self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
             except ValueError:
-                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+                self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
 

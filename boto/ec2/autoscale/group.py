@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2009-2011 Reza Lotun http://reza.lotun.name/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -151,7 +151,7 @@ class AutoScalingGroup(object):
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
         return self.default_cooldown
-        
+
     def _set_cooldown(self, val):
         self.default_cooldown = val
     cooldown = property(_get_cooldown, _set_cooldown)
