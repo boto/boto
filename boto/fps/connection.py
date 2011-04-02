@@ -27,7 +27,6 @@ import urllib
 import xml.sax
 import uuid
 import boto
-import boto.utils
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet

@@ -60,8 +60,8 @@ class Element(dict):
         dict.__init__(self)
         self.connection = connection
         self.element_name = element_name
-        self.list_marker = utils.mklist(list_marker)
-        self.item_marker = utils.mklist(item_marker)
+        self.list_marker = boto.utils.mklist(list_marker)
+        self.item_marker = boto.utils.mklist(item_marker)
         if stack is None:
             self.stack = []
         else:
@@ -83,7 +83,7 @@ class Element(dict):
 
     def get_name(self, name):
         if self.pythonize_name:
-            name = utils.pythonize_name(name)
+            name = boto.utils.pythonize_name(name)
         return name
 
     def startElement(self, name, attrs, connection):
@@ -128,7 +128,7 @@ class ListElement(list):
 
     def get_name(self, name):
         if self.pythonize_name:
-            name = utils.pythonize_name(name)
+            name = boto.utils.pythonize_name(name)
         return name
 
     def startElement(self, name, attrs, connection):
