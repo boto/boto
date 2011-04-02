@@ -516,7 +516,7 @@ class AWSAuthConnection(object):
         for key in headers:
             val = headers[key]
             if isinstance(val, unicode):
-                headers[key] = quote_plus(val.encode('utf-8'))
+                headers[key] = urllib.quote_plus(val.encode('utf-8'))
 
         self._auth_handler.add_auth(http_request, **kwargs)
 
