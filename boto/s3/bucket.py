@@ -38,9 +38,15 @@ from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 import boto.jsonresponse
 import boto.utils
 import xml.sax
-import urllib
 import re
 from collections import defaultdict
+import sys
+
+if sys.version_info.major >= 3:
+    import urllib.parse as urllib
+    unicode = str
+else:
+    import urllib
 
 # as per http://goo.gl/BDuud (02/19/2011)
 class S3WebsiteEndpointTranslate:
@@ -91,8 +97,8 @@ class Bucket(object):
 
     WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
 
-    VersionRE = '<Status>([A-Za-z]+)</Status>'
-    MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
+    VersionRE = '<Status>([A-Za-z]+)</Status>'.encode('ascii')
+    MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'.encode('ascii')
 
     def __init__(self, connection=None, name=None, key_class=Key):
         self.name = name
