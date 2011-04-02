@@ -286,7 +286,7 @@ class AWSAuthConnection(object):
             # did the same when calculating the V2 signature.  In 2.6
             # (and higher!)
             # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] in ('2.6', '2.7') and port == 443:
+            if (sys.version.startswith('3') or sys.version[:3] in ('2.6', '2.7')) and port == 443:
                 signature_host = self.host
             else:
                 signature_host = '%s:%d' % (self.host, port)
