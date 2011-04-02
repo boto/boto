@@ -101,7 +101,7 @@ class HmacKeys(object):
         else:
             hmac = self._hmac.copy()
         hmac.update(string_to_sign.encode('utf-8'))
-        return base64.encodestring(hmac.digest()).strip().decode('utf-8')
+        return base64.encodebytes(hmac.digest()).strip().decode('utf-8')
 
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """    Implements the HMAC request signing used by S3 and GS."""

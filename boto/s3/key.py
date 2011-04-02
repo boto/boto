@@ -104,7 +104,7 @@ class Key(object):
         """
         import binascii
         digest = binascii.unhexlify(md5_hexdigest)
-        base64md5 = base64.encodestring(digest)
+        base64md5 = base64.encodebytes(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
@@ -540,7 +540,7 @@ class Key(object):
             m.update(s)
             s = fp.read(self.BufferSize)
         hex_md5 = m.hexdigest()
-        base64md5 = base64.encodestring(m.digest())
+        base64md5 = base64.encodebytes(m.digest())
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         self.size = fp.tell()
