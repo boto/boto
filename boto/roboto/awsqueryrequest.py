@@ -126,6 +126,7 @@ class AWSQueryRequest(object):
 
     Description = ''
     Params = []
+    Args = []
     Filters = []
     Response = {}
 
@@ -206,8 +207,8 @@ class AWSQueryRequest(object):
         * Encoding each value into the set of request parameters that will
           be sent in the request to the AWS service.
         """
-        required = [p.name for p in self.Params if not p.optional]
-        for param in self.Params:
+        required = [p.name for p in self.Params+self.Args if not p.optional]
+        for param in self.Params+self.Args:
             if param.long_name:
                 python_name = param.long_name.replace('-', '_')
             else:
@@ -224,6 +225,7 @@ class AWSQueryRequest(object):
                 del self.args[python_name]
         if required:
             raise RequiredParamError(required)
+        print self.request_params
         boto.log.debug('request_params: %s' % self.request_params)
         self.process_markers(self.Response)
 
@@ -326,19 +328,18 @@ class AWSQueryRequest(object):
                                                choices=param.choices,
                                                help=param.doc)
 
-    def do_cli(self, cli_args=None):
+    def do_cli(self):
         if not self.parser:
             self.build_cli_parser()
-        self.cli_options, self.cli_args = self.parser.parse_args(cli_args)
+        self.cli_options, self.cli_args = self.parser.parse_args()
         d = {}
         self.process_standard_options(self.cli_options, self.cli_args, d)
         for param in self.Params:
             if param.long_name:
                 p_name = param.long_name.replace('-', '_')
-                value = getattr(self.cli_options, p_name)
             else:
                 p_name = boto.utils.pythonize_name(param.name)
-                value = args
+            value = getattr(self.cli_options, p_name)
             if param.ptype == 'file' and value:
                 if value == '-':
                     value = sys.stdin.read()
@@ -351,6 +352,18 @@ class AWSQueryRequest(object):
                         fp.close()
                     else:
                         self.parser.error('Unable to read file: %s' % path)
+            d[p_name] = value
+        for arg in self.Args:
+            if arg.long_name:
+                p_name = arg.long_name.replace('-', '_')
+            else:
+                p_name = boto.utils.pythonize_name(arg.name)
+            value = None
+            if arg.cardinality == 1:
+                if len(self.cli_args) >= 1:
+                    value = self.cli_args[0]
+            else:
+                value = self.cli_args
             d[p_name] = value
         self.args.update(d)
         if hasattr(self.cli_options, 'filter') and self.cli_options.filter:
