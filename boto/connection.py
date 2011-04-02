@@ -408,7 +408,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
+        auth = base64.encodebytes(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     def _mexe(self, method, path, data, headers, host=None, sender=None,
