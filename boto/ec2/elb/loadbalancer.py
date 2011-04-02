@@ -26,6 +26,10 @@ from boto.ec2.elb.policies import Policies
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 
+import sys
+if sys.version_info.major >= 3:
+    basestring = str
+
 class LoadBalancer(object):
     """
     Represents an EC2 Load Balancer
@@ -84,7 +88,7 @@ class LoadBalancer(object):
         :param zones: The name of the zone(s) to add.
 
         """
-        if isinstance(zones, str) or isinstance(zones, unicode):
+        if isinstance(zones, basestring):
             zones = [zones]
         new_zones = self.connection.enable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
@@ -97,7 +101,7 @@ class LoadBalancer(object):
         :param zones: The name of the zone(s) to add.
 
         """
-        if isinstance(zones, str) or isinstance(zones, unicode):
+        if isinstance(zones, basestring):
             zones = [zones]
         new_zones = self.connection.disable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
@@ -113,7 +117,7 @@ class LoadBalancer(object):
         :param zones: The name of the endpoint(s) to add.
 
         """
-        if isinstance(instances, str) or isinstance(instances, unicode):
+        if isinstance(instances, basestring):
             instances = [instances]
         new_instances = self.connection.register_instances(self.name, instances)
         self.instances = new_instances
@@ -128,7 +132,7 @@ class LoadBalancer(object):
         :param zones: The name of the endpoint(s) to add.
 
         """
-        if isinstance(instances, str) or isinstance(instances, unicode):
+        if isinstance(instances, basestring):
             instances = [instances]
         new_instances = self.connection.deregister_instances(self.name, instances)
         self.instances = new_instances

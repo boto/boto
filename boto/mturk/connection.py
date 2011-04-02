@@ -32,6 +32,10 @@ from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
 from boto.mturk.question import QuestionForm, ExternalQuestion
 
+import sys
+if sys.version_info.major >= 3:
+    unicode = str
+
 class MTurkRequestError(EC2ResponseError):
     "Error for MTurk Requests"
     # todo: subclass from an abstract parent of EC2ResponseError
