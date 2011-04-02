@@ -210,7 +210,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         s = params['Action'] + params['Timestamp']
         hmac.update(s)
         keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys.sort(key=str.lower)
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
@@ -230,7 +230,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
         boto.log.debug('using _calc_signature_1')
         hmac = self._hmac.copy()
         keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys.sort(key=str.lower)
         pairs = []
         for key in keys:
             hmac.update(key)

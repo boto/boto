@@ -194,7 +194,7 @@ class Volume(Model):
                     snapshot.date = dateutil.parser.parse(snapshot.start_time)
                     snapshot.keep = True
                     snaps.append(snapshot)
-        snaps.sort(cmp=lambda x,y: cmp(x.date, y.date))
+        snaps.sort(key=lambda x: x.date)
         return snaps
 
     def attach(self, server=None):

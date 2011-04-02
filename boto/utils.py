@@ -132,7 +132,7 @@ def canonical_string(method, path, headers, expires=None,
         qsa = [ a.split('=') for a in qsa]
         qsa = [ a for a in qsa if a[0] in qsa_of_interest ]
         if len(qsa) > 0:
-            qsa.sort(cmp=lambda x,y:cmp(x[0], y[0]))
+            qsa.sort(key=lambda x: x[0])
             qsa = [ '='.join(a) for a in qsa ]
             buf += '?'
             buf += '&'.join(qsa)
