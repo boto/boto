@@ -35,7 +35,7 @@ try:
     # Python 3.x
     from io import StringIO
     import email.utils as rfc822
-except:
+except ImportError:
     # Python 2.x
     import rfc822
     import StringIO

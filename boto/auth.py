@@ -42,7 +42,7 @@ from boto.exception import BotoClientError
 try:
     # Python 3.x
     from urllib.parse import quote
-except:
+except ImportError:
     # Python 2.x
     from urllib import quote
 
