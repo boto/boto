@@ -63,6 +63,7 @@ try:
     import queue as Queue
     import http.client as httplib
     import urllib.parse as urllib
+    unicode = str
 except ImportError:
     # Python 2.x
     import Queue
