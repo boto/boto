@@ -30,8 +30,8 @@ from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
-import exception
-import hostedzone
+import boto.exception
+import boto.route53.hostedzone
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
@@ -63,7 +63,7 @@ class Route53Connection(AWSAuthConnection):
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
-            for key, val in params.iteritems():
+            for key, val in params.items():
                 if val is None: continue
                 pairs.append(key + '=' + urllib.quote(str(val)))
             path += '?' + '&'.join(pairs)
@@ -80,7 +80,7 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         e = boto.jsonresponse.Element(list_marker='HostedZones',
@@ -102,7 +102,7 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         e = boto.jsonresponse.Element(list_marker='NameServers',
@@ -161,7 +161,7 @@ class Route53Connection(AWSAuthConnection):
             h.parse(body)
             return e
         else:
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         
@@ -171,7 +171,7 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status not in (200, 204):
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         e = boto.jsonresponse.Element()
@@ -220,7 +220,7 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         rs = ResourceRecordSets(connection=self, hosted_zone_id=hosted_zone_id)
@@ -250,7 +250,7 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         e = boto.jsonresponse.Element()
@@ -276,7 +276,7 @@ class Route53Connection(AWSAuthConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
-            raise exception.DNSServerError(response.status,
+            raise boto.exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
         e = boto.jsonresponse.Element()
