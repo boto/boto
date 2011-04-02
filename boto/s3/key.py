@@ -35,10 +35,12 @@ try:
     # Python 3.x
     from io import StringIO
     import email.utils as rfc822
+    base64_encodestring = base64.encodebytes
 except ImportError:
     # Python 2.x
     import rfc822
     import StringIO
+    base64_encodestring = base64.encodestring
 
 class Key(object):
 
@@ -104,7 +106,7 @@ class Key(object):
         """
         import binascii
         digest = binascii.unhexlify(md5_hexdigest)
-        base64md5 = base64.encodebytes(digest)
+        base64md5 = base64_encodestring(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
@@ -540,7 +542,7 @@ class Key(object):
             m.update(s)
             s = fp.read(self.BufferSize)
         hex_md5 = m.hexdigest()
-        base64md5 = base64.encodebytes(m.digest())
+        base64md5 = base64_encodestring(m.digest())
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         self.size = fp.tell()

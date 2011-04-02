@@ -24,10 +24,14 @@ from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
 from datetime import datetime
 from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
+import base64
 
 import sys
 if sys.version_info.major >= 3:
     basestring = str
+    base64_encodestring = base64.encodebytes
+else:
+    base64_encodestring = base64.encodestring
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -205,8 +209,7 @@ class XMLManager(object):
         self.enable_ssl = enable_ssl
         self.auth_header = None
         if self.db_user:
-            import base64
-            base64string = base64.encodebytes('%s:%s' % (self.db_user, self.db_passwd))[:-1]
+            base64string = base64_encodestring('%s:%s' % (self.db_user, self.db_passwd))[:-1]
             authheader =  "Basic %s" % base64string
             self.auth_header = authheader
 

@@ -64,11 +64,13 @@ try:
     import http.client as httplib
     import urllib.parse as urllib
     unicode = str
+    base64_encodestring = base64.encodebytes
 except ImportError:
     # Python 2.x
     import Queue
     import httplib
     import urllib
+    base64_encodestring = base64.encodestring
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -409,7 +411,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = base64.encodebytes(self.proxy_user + ':' + self.proxy_pass)
+        auth = base64_encodestring(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     def _mexe(self, method, path, data, headers, host=None, sender=None,

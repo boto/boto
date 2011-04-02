@@ -42,9 +42,11 @@ from boto.exception import BotoClientError
 try:
     # Python 3.x
     from urllib.parse import quote
+    base64_encodestring = base64.encodebytes
 except ImportError:
     # Python 2.x
     from urllib import quote
+    base64_encodestring = base64.encodestring
 
 #
 # the following is necessary because of the incompatibilities
@@ -101,7 +103,7 @@ class HmacKeys(object):
         else:
             hmac = self._hmac.copy()
         hmac.update(string_to_sign.encode('utf-8'))
-        return base64.encodebytes(hmac.digest()).strip().decode('utf-8')
+        return base64_encodestring(hmac.digest()).strip().decode('utf-8')
 
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """    Implements the HMAC request signing used by S3 and GS."""
