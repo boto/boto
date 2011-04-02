@@ -22,6 +22,6 @@
 
 # this is here for backward compatibility
 # originally, the IAMConnection class was defined here
-from connection import IAMConnection
-    
-    
+from boto.iam.connection import IAMConnection
+
+
