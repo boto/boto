@@ -30,6 +30,10 @@ from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
 from boto.exception import SDBPersistenceError
 
+import sys
+if sys.version_info.major >= 3:
+    basestring = str
+
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class TimeDecodeError(Exception):
@@ -252,7 +256,7 @@ class SDBConverter(object):
         return float(mantissa + 'e' + exponent)
 
     def encode_datetime(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         return value.strftime(ISO8601)
 
@@ -263,7 +267,7 @@ class SDBConverter(object):
             return None
 
     def encode_date(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         return value.isoformat()
 
@@ -296,7 +300,7 @@ class SDBConverter(object):
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
             return None
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         else:
             return value.id
@@ -533,7 +537,7 @@ class SDBManager(object):
                 order_by = order_by[1:]
             else:
                 order_by_method = "ASC";
-        if isinstance(filters, str) or isinstance(filters, unicode):
+        if isinstance(filters, basestring):
             query = "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
             if order_by != None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)

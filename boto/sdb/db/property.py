@@ -28,6 +28,10 @@ import boto
 import boto.s3.key
 from boto.sdb.db.blob import Blob
 
+import sys
+if sys.version_info.major >= 3:
+    basestring = str
+
 class Property(object):
 
     data_type = str
@@ -111,7 +115,7 @@ class Property(object):
 def validate_string(value):
     if value == None:
         return
-    elif isinstance(value, str) or isinstance(value, unicode):
+    elif isinstance(value, basestring):
         if len(value) > 1024:
             raise ValueError( 'Length of value greater than maxlength' )
     else:
@@ -135,7 +139,7 @@ class TextProperty(Property):
         self.max_length = max_length
 
     def validate(self, value):
-        if not isinstance(value, str) and not isinstance(value, unicode):
+        if not isinstance(value, basestring):
             raise TypeError( 'Expecting Text, got %s' % type(value) )
         if self.max_length and len(value) > self.max_length:
             raise ValueError( 'Length of value greater than maxlength %s' % self.max_length )
@@ -421,7 +425,7 @@ class ReferenceProperty(Property):
             # If the value is still the UUID for the referenced object, we need to create
             # the object now that is the attribute has actually been accessed.  This lazy
             # instantiation saves unnecessary roundtrips to SimpleDB
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, basestring):
                 value = self.reference_class(value)
                 setattr(obj, self.name, value)
             return value
@@ -463,7 +467,7 @@ class ReferenceProperty(Property):
             raise ValueError( '%s is a required property' % self.name )
         if value == self.default_value():
             return
-        if not isinstance(value, str) and not isinstance(value, unicode):
+        if not isinstance(value, basestring):
             self.check_instance(value)
         
 class _ReverseReferenceProperty(Property):
@@ -550,8 +554,8 @@ class ListProperty(Property):
 
         if self.item_type in (int, long):
             item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
+        elif issubclass(self.item_type, basestring):
+            item_type = basestring
         else:
             item_type = self.item_type
 
@@ -574,8 +578,8 @@ class ListProperty(Property):
         """Override the set method to allow them to set the property to an instance of the item_type instead of requiring a list to be passed in"""
         if self.item_type in (int, long):
             item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
+        elif issubclass(self.item_type, basestring):
+            item_type = basestring
         else:
             item_type = self.item_type
         if isinstance(value, item_type):
@@ -603,8 +607,8 @@ class MapProperty(Property):
 
         if self.item_type in (int, long):
             item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
+        elif issubclass(self.item_type, basestring):
+            item_type = basestring
         else:
             item_type = self.item_type
 

@@ -25,6 +25,10 @@ from boto.sdb.db.model import Model
 from datetime import datetime
 from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
 
+import sys
+if sys.version_info.major >= 3:
+    basestring = str
+
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class XMLConverter:
@@ -145,7 +149,7 @@ class XMLConverter:
             return None
 
     def encode_reference(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         if value == None:
             return ''
@@ -466,7 +470,7 @@ class XMLManager(object):
         return doc
 
     def unmarshal_object(self, fp, cls=None, id=None):
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, basestring):
             doc = parseString(fp)
         else:
             doc = parse(fp)
@@ -477,7 +481,7 @@ class XMLManager(object):
         Same as unmarshalling an object, except it returns
         from "get_props_from_doc"
         """
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, basestring):
             doc = parseString(fp)
         else:
             doc = parse(fp)

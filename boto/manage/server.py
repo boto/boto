@@ -36,6 +36,10 @@ import os, time, StringIO
 from contextlib import closing
 from boto.exception import EC2ResponseError
 
+import sys
+if sys.version_info.major >= 3:
+    basestring = str
+
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
                  'c1.medium', 'c1.xlarge',
                  'm2.2xlarge', 'm2.4xlarge']
@@ -137,7 +141,7 @@ class CommandLineGetter(object):
     
     def get_region(self, params):
         region = params.get('region', None)
-        if isinstance(region, str) or isinstance(region, unicode):
+        if isinstance(region, basestring):
             region = boto.ec2.get_region(region)
             params['region'] = region
         if not region:
@@ -189,7 +193,7 @@ class CommandLineGetter(object):
 
     def get_group(self, params):
         group = params.get('group', None)
-        if isinstance(group, str) or isinstance(group, unicode):
+        if isinstance(group, basestring):
             group_list = self.ec2.get_all_security_groups()
             for g in group_list:
                 if g.name == group:
@@ -202,7 +206,7 @@ class CommandLineGetter(object):
 
     def get_key(self, params):
         keypair = params.get('keypair', None)
-        if isinstance(keypair, str) or isinstance(keypair, unicode):
+        if isinstance(keypair, basestring):
             key_list = self.ec2.get_all_key_pairs()
             for k in key_list:
                 if k.name == keypair:

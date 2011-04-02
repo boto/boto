@@ -27,6 +27,10 @@ import os
 import string
 from boto.exception import SDBPersistenceError
 
+import sys
+if sys.version_info.major >= 3:
+    basestring = str
+
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 
 class PGConverter:
@@ -92,7 +96,7 @@ class PGConverter:
             return self.decode(prop.data_type, value)
 
     def encode_reference(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         if value == None:
             return ''
