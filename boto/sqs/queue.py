@@ -28,7 +28,7 @@ from boto.sqs.message import Message
 try:
     # Python 3.x
     import urllib.parse as urlparse
-except:
+except ImportError:
     # Python 2.x
     import urlparse
 

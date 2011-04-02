@@ -33,7 +33,7 @@ from boto.exception import S3PermissionsError
 try:
     # Python 3.x version
     from urllib.request import urlopen
-except:
+except ImportError:
     # Python 2.x version
     from urllib import urlopen
 

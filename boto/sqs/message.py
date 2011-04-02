@@ -70,7 +70,7 @@ from boto.exception import SQSDecodeError
 try:
     # Python 3.x
     import io as StringIO
-except:
+except ImportError:
     # Python 2.x
     import StringIO
 

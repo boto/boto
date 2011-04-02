@@ -58,7 +58,7 @@ try:
     from email.utils import formatdate
     import email.encoders as Encoders
     unicode = str
-except:
+except ImportError:
     # Python 2.x
     from urllib2 import HTTPError, urlopen
     import StringIO

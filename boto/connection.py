@@ -63,7 +63,7 @@ try:
     import queue as Queue
     import http.client as httplib
     import urllib.parse as urllib
-except:    
+except ImportError:
     # Python 2.x
     import Queue
     import httplib

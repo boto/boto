@@ -26,7 +26,7 @@ try:
     # Python 2.x
     import StringIO
     import ConfigParser
-except:
+except ImportError:
     # Python 3.x
     import io as StringIO
     import configparser as ConfigParser

@@ -37,7 +37,7 @@ try:
     # Python 3.x
     import urllib.parse as urllib
     #from urllib.parse import quote
-except:    
+except ImportError:
     # Python 2.x
     import urllib
     
