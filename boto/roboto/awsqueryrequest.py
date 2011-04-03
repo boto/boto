@@ -226,7 +226,6 @@ class AWSQueryRequest(object):
             del self.args[python_name]
         if required:
             raise RequiredParamError(required)
-        print self.request_params
         boto.log.debug('request_params: %s' % self.request_params)
         self.process_markers(self.Response)
 
