@@ -239,7 +239,8 @@ class AWSQueryRequest(object):
             self.list_markers.append(prev_name)
             self.item_markers.append(fmt['name'])
         
-    def send(self, verb='GET'):
+    def send(self, verb='GET', **args):
+        self.args.update(args)
         if 'debug' in self.args and self.args['debug'] >= 2:
             boto.set_stream_logger(self.name())
         self.process_args()
