@@ -213,9 +213,11 @@ class AWSQueryRequest(object):
                 python_name = param.long_name.replace('-', '_')
             else:
                 python_name = boto.utils.pythonize_name(param.name, '_')
-            value = param.default
+            value = None
             if python_name in self.args:
                 value = self.args[python_name]
+            if value is None:
+                value = param.default
             if value is not None:
                 if param.name in required:
                     required.remove(param.name)
