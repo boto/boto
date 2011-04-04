@@ -32,6 +32,11 @@ elif 'HOME' in os.environ:
     BotoConfigLocations.append(UserConfigPath)
 else:
     UserConfigPath = None
+    __home_dir = os.path.expanduser('~')
+    if __home_dir and __home_dir != '~':
+      UserConfigPath = os.path.join(__home_dir, '.boto')
+    BotoConfigLocations.append(UserConfigPath)
+
 
 class Config(ConfigParser.SafeConfigParser):
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2009-2010 Reza Lotun http://reza.lotun.name/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,41 +20,41 @@
 # IN THE SOFTWARE.
 
 
-class Instance(object):
+from datetime import datetime
+
+
+class ScheduledUpdateGroupAction(object):
     def __init__(self, connection=None):
         self.connection = connection
-        self.instance_id = None
-        self.health_status = None
-        self.launch_config_name = None
-        self.lifecycle_state = None
-        self.availability_zone = None
-        self.group_name = None
+        self.name = None
+        self.action_arn = None
+        self.time = None
+        self.desired_capacity = None
+        self.max_size = None
+        self.min_size = None
 
     def __repr__(self):
-        r = 'Instance<id:%s, state:%s, health:%s' % (self.instance_id,
-                                                     self.lifecycle_state,
-                                                     self.health_status)
-        if self.group_name:
-            r += ' group:%s' % self.group_name
-        r += '>'
-        return r
+        return 'ScheduledUpdateGroupAction:%s' % self.name
 
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
-        if name == 'InstanceId':
-            self.instance_id = value
-        elif name == 'HealthStatus':
-            self.health_status = value
-        elif name == 'LaunchConfigurationName':
-            self.launch_config_name = value
-        elif name == 'LifecycleState':
-            self.lifecycle_state = value
-        elif name == 'AvailabilityZone':
-            self.availability_zone = value
-        elif name == 'AutoScalingGroupName':
-            self.group_name = value
+        if name == 'DesiredCapacity':
+            self.desired_capacity = value
+        elif name == 'ScheduledActionName':
+            self.name = value
+        elif name == 'MaxSize':
+            self.max_size = int(value)
+        elif name == 'MinSize':
+            self.min_size = int(value)
+        elif name == 'ScheduledActionARN':
+            self.action_arn = value
+        elif name == 'Time':
+            try:
+                self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
 
