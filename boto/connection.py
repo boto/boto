@@ -203,6 +203,11 @@ class AWSAuthConnection(object):
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
 
+        # Timeout used to tell httplib how long to wait for socket timeouts.
+        # Default is 5 seconds.
+        self.http_socket_timeout = config.getint('Boto',
+                'http_socket_timeout', 5)
+
         self.provider = Provider(provider,
                                  aws_access_key_id,
                                  aws_secret_access_key)
@@ -340,10 +345,12 @@ class AWSAuthConnection(object):
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
             else:
-                connection = httplib.HTTPSConnection(host)
+                connection = httplib.HTTPSConnection(host,
+                        timeout=self.http_socket_timeout)
         else:
             boto.log.debug('establishing HTTP connection')
-            connection = httplib.HTTPConnection(host)
+            connection = httplib.HTTPConnection(host,
+                    timeout=self.http_socket_timeout)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
         # self.connection must be maintained for backwards-compatibility
