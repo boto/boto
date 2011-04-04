@@ -54,6 +54,10 @@ class ACL:
         self.parent = parent
         self.entries = []
 
+    @property
+    def acl(self):
+        return self
+
     def __repr__(self):
         # Owner is optional in GS ACLs.
         if hasattr(self, 'owner'):
