@@ -35,7 +35,7 @@ BotoConfigLocations.append(UserConfigPath)
 # IF there's a BOTO_CONFIG variable set, we load ONLY 
 # that variable
 if 'BOTO_CONFIG' in os.environ:
-    BotoConfigLocations[os.path.expanduser(os.environ['BOTO_CONFIG'])]
+    BotoConfigLocations = [os.path.expanduser(os.environ['BOTO_CONFIG'])]
 
 # If there's a BOTO_PATH variable set, we use anything there
 # as the current configuration locations, split with semicolons
