@@ -118,7 +118,7 @@ class AutoScalingGroup(object):
                                    Amazon EC2 or Elastic Load Balancer.
 
         :type launch_config: str
-        :param launch_config: Name of launch configuration name (required).
+        :param launch_config: Name of launch configuration (required).
 
 
         :type load_balancers: list
