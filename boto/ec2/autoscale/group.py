@@ -82,10 +82,10 @@ class EnabledMetric(object):
 
 class AutoScalingGroup(object):
     def __init__(self, connection=None, name=None,
-                 launch_config=None,
-                 availability_zones=None,
+                 launch_config=None, availability_zones=None,
                  load_balancers=None, default_cooldown=None,
-                 desired_capacity=None,
+                 health_check_type=None, health_check_period=None,
+                 placement_group=None, vpc_zone_identifier=None, desired_capacity=None,
                  min_size=None, max_size=None, **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
@@ -96,22 +96,10 @@ class AutoScalingGroup(object):
         used in other calls.
 
         :type name: str
-        :param name: Name of autoscaling group.
-
-        :type launch_config: str
-        :param launch_config: Name of launch configuration name.
+        :param name: Name of autoscaling group (required).
 
         :type availability_zones: list
-        :param availability_zones: List of availability zones.
-
-        :type load_balancers: list
-        :param load_balancers: List of load balancers.
-
-        :type minsize: int
-        :param minsize: Minimum size of group
-
-        :type maxsize: int
-        :param maxsize: Maximum size of group
+        :param availability_zones: List of availability zones (required).
 
         :type default_cooldown: int
         :param default_cooldown: Number of seconds after a Scaling Activity completes
@@ -119,6 +107,35 @@ class AutoScalingGroup(object):
 
         :type desired_capacity: int
         :param desired_capacity: The desired capacity for the group.
+
+        :type health_check_period: str
+        :param health_check_period: Length of time in seconds after a new EC2 instance
+                                    comes into service that Auto Scaling starts checking its
+                                    health.
+
+        :type health_check_type: str
+        :param health_check_type: The service you want the health status from,
+                                   Amazon EC2 or Elastic Load Balancer.
+
+        :type launch_config: str
+        :param launch_config: Name of launch configuration name (required).
+
+
+        :type load_balancers: list
+        :param load_balancers: List of load balancers.
+
+        :type maxsize: int
+        :param maxsize: Maximum size of group (required).
+
+        :type minsize: int
+        :param minsize: Minimum size of group (required).
+
+        :type placement_group: str
+        :param placement_group: Physical location of your cluster placement
+                                group created in Amazon EC2.
+
+        :type vpc_zone_identifier: str
+        :param vpc_zone_identifier: The subnet identifier of the Virtual Private Cloud.
 
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
@@ -140,17 +157,16 @@ class AutoScalingGroup(object):
         self.load_balancers = ListElement(lbs)
         zones = availability_zones or []
         self.availability_zones = ListElement(zones)
-        self.instances = None
-        self.placement_group = None
+        self.health_check_period = health_check_period
+        self.health_check_type = health_check_type
+        self.placement_group = placement_group
         self.autoscaling_group_arn = None
-        self.healthcheck_grace_period = None
-        self.healthcheck_type = None
-        self.vpc_zone_identifier = None
+        self.vpc_zone_identifier = vpc_zone_identifier
+        self.instances = None
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
         return self.default_cooldown
-
     def _set_cooldown(self, val):
         self.default_cooldown = val
     cooldown = property(_get_cooldown, _set_cooldown)
@@ -197,9 +213,9 @@ class AutoScalingGroup(object):
         elif name == 'PlacementGroup':
             self.placement_group = value
         elif name == 'HealthCheckGracePeriod':
-            self.healthcheck_grace_period = int(value)
+            self.health_check_period = int(value)
         elif name == 'HealthCheckType':
-            self.healthcheck_type = value
+            self.health_check_type = value
         elif name == 'VPCZoneIdentifier':
             self.vpc_zone_identifier = value
         else:

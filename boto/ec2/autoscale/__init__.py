@@ -102,9 +102,9 @@ class AutoScaleConnection(AWSQueryConnection):
         if as_group.vpc_zone_identifier:
             params['VPCZoneIdentifier'] = as_group.vpc_zone_identifier
         if as_group.healthcheck_grace_period:
-            params['HealthCheckGracePeriod'] = as_group.healthcheck_grace_period
+            params['HealthCheckGracePeriod'] = as_group.health_check_period
         if as_group.healthcheck_type:
-            params['HealthCheckType'] = as_group.healthcheck_type
+            params['HealthCheckType'] = as_group.health_check_type
         if as_group.default_cooldown:
             params['DefaultCooldown'] = as_group.default_cooldown
         if as_group.placement_group:
