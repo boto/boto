@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2010 Reza Lotun http://reza.lotun.name/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -14,22 +14,47 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class Prefix(object):
-    def __init__(self, bucket=None, name=None):
-        self.bucket = bucket
-        self.name = name
+
+from datetime import datetime
+
+
+class ScheduledUpdateGroupAction(object):
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.name = None
+        self.action_arn = None
+        self.time = None
+        self.desired_capacity = None
+        self.max_size = None
+        self.min_size = None
+
+    def __repr__(self):
+        return 'ScheduledUpdateGroupAction:%s' % self.name
 
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
-        if name == 'Prefix':
+        if name == 'DesiredCapacity':
+            self.desired_capacity = value
+        elif name == 'ScheduledActionName':
             self.name = value
+        elif name == 'MaxSize':
+            self.max_size = int(value)
+        elif name == 'MinSize':
+            self.min_size = int(value)
+        elif name == 'ScheduledActionARN':
+            self.action_arn = value
+        elif name == 'Time':
+            try:
+                self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
 

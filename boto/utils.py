@@ -602,6 +602,3 @@ def pythonize_name(name, sep='_'):
         else:
             s += c
     return s
-
-def awsify_name(name):
-    return name[0:1].upper()+name[1:]

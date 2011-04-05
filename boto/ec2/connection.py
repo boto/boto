@@ -64,7 +64,8 @@ class EC2Connection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/',
+                 api_version=None):
         """
         Init method to create a new connection to EC2.
 
@@ -81,6 +82,8 @@ class EC2Connection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path)
+        if api_version:
+            self.APIVersion = api_version
 
     def _required_auth_capability(self):
         return ['ec2']

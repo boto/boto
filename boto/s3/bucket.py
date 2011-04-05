@@ -536,7 +536,11 @@ class Bucket(object):
         :returns: An instance of the newly created key object
         """
         if preserve_acl:
-            acl = self.get_xml_acl(src_key_name)
+            if self.name == src_bucket_name:
+                src_bucket = self
+            else:
+                src_bucket = self.connection.get_bucket(src_bucket_name)
+            acl = src_bucket.get_xml_acl(src_key_name)
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
@@ -986,7 +990,8 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def initiate_multipart_upload(self, key_name, headers=None, reduced_redundancy=False):
+    def initiate_multipart_upload(self, key_name, headers=None,
+            reduced_redundancy=False, metadata=None):
         """
         Start a multipart upload operation.
 
@@ -1007,6 +1012,10 @@ class Bucket(object):
                                    if you want the resulting key to use the
                                    reduced redundancy storage class set this
                                    flag when you initiate the upload.
+
+        :type metadata: dict
+        :param metadata: Any metadata that you would like to set on the key
+                         that results from the multipart upload.
         """
         query_args = 'uploads'
         if headers is None:
@@ -1017,6 +1026,11 @@ class Bucket(object):
                 headers[storage_class_header] = 'REDUCED_REDUNDANCY'
             # TODO: what if the provider doesn't support reduced redundancy?
             # (see boto.s3.key.Key.set_contents_from_file)
+        if metadata is None:
+            metadata = {}
+
+        headers = boto.utils.merge_meta(headers, metadata,
+                self.connection.provider)
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)

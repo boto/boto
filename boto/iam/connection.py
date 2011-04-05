@@ -54,7 +54,8 @@ class IAMConnection(AWSQueryConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
-            e = boto.jsonresponse.Element(list_marker=list_marker)
+            e = boto.jsonresponse.Element(list_marker=list_marker,
+                                          pythonize_name=True)
             h = boto.jsonresponse.XmlHandler(e, parent)
             h.parse(body)
             return e
@@ -178,7 +179,7 @@ class IAMConnection(AWSQueryConnection):
         Add a user to a group
 
         :type group_name: string
-        :param group_name: The name of the new group
+        :param group_name: The name of the group
 
         :type user_name: string
         :param user_name: The to be added to the group.
@@ -193,7 +194,7 @@ class IAMConnection(AWSQueryConnection):
         Remove a user from a group.
 
         :type group_name: string
-        :param group_name: The name of the new group
+        :param group_name: The name of the group
 
         :type user_name: string
         :param user_name: The user to remove from the group.
@@ -493,7 +494,7 @@ class IAMConnection(AWSQueryConnection):
         Get all access keys associated with an account.
 
         :type user_name: string
-        :param user_name: The username of the new user
+        :param user_name: The username of the user
 
         :type marker: string
         :param marker: Use this only when paginating results and only in
@@ -524,7 +525,7 @@ class IAMConnection(AWSQueryConnection):
         implicitly based on the AWS Access Key ID used to sign the request.
 
         :type user_name: string
-        :param user_name: The username of the new user
+        :param user_name: The username of the user
 
         """
         params = {'UserName' : user_name}
@@ -566,7 +567,7 @@ class IAMConnection(AWSQueryConnection):
         :param access_key_id: The ID of the access key to be deleted.
 
         :type user_name: string
-        :param user_name: The username of the new user
+        :param user_name: The username of the user
 
         """
         params = {'AccessKeyId' : access_key_id}
@@ -647,7 +648,7 @@ class IAMConnection(AWSQueryConnection):
         :param cert_body: The body of the signing certificate.
 
         :type user_name: string
-        :param user_name: The username of the new user
+        :param user_name: The username of the user
 
         """
         params = {'CertificateBody' : cert_body}
@@ -664,7 +665,7 @@ class IAMConnection(AWSQueryConnection):
         on the AWS Access Key ID used to sign the request.
 
         :type user_name: string
-        :param user_name: The username of the new user
+        :param user_name: The username of the user
 
         :type cert_id: string
         :param cert_id: The ID of the certificate.
@@ -913,7 +914,7 @@ class IAMConnection(AWSQueryConnection):
         ability to access AWS services and the AWS Management Console.
 
         :type user_name: string
-        :param user_name: The name of the new user
+        :param user_name: The name of the user
 
         :type password: string
         :param password: The new password for the user
