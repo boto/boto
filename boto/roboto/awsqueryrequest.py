@@ -381,10 +381,10 @@ class AWSQueryRequest(object):
         try:
             response = self.send()
             self.cli_formatter(response)
-        except RequiredParamError as e:
+        except RequiredParamError, e:
             print e
             sys.exit(1)
-        except self.get_connection().ResponseError as err:
+        except self.get_connection().ResponseError, err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
 
     def _generic_cli_formatter(self, fmt, data, label=''):
