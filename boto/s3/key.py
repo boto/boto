@@ -448,7 +448,11 @@ class Key(object):
             fp.seek(0)
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
-            http_conn.set_debuglevel(0)
+            # If the debuglevel < 3 we don't want to show connection
+            # payload, so turn off HTTP connection-level debug output (to
+            # be restored below).
+            if http_conn.debuglevel < 3:
+                http_conn.set_debuglevel(0)
             if cb:
                 if num_cb > 2:
                     cb_count = self.size / self.BufferSize / (num_cb-2)
