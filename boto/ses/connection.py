@@ -73,9 +73,14 @@ class SESConnection(AWSAuthConnection):
         :param params: Parameters that will be sent as POST data with the API
                        call.
         """
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        headers = {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
         params = params or {}
         params['Action'] = action
+
+        for k, v in params.items():
+            if isinstance(v, basestring):
+                params[k] = v.encode('utf-8')
+            
         response = super(SESConnection, self).make_request(
             'POST',
             '/',
