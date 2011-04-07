@@ -1,4 +1,5 @@
 # Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011 Chris Moyer http://coredumped.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -23,15 +24,26 @@ import StringIO, os, re
 import ConfigParser
 import boto
 
+# By default we use two locations for the boto configurations,
+# /etc/boto.cfg and $HOME/.boto (which is ~/.boto on both Windows and
+# Unix platforms for python)
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
+UserConfigPath = os.path.expanduser('~/.boto')
+BotoConfigLocations.append(UserConfigPath)
+
+# IF there's a BOTO_CONFIG variable set, we load ONLY 
+# that variable
 if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [os.path.expanduser(os.environ['BOTO_CONFIG'])]
-elif 'HOME' in os.environ:
-    UserConfigPath = os.path.expanduser('~/.boto')
-    BotoConfigLocations.append(UserConfigPath)
-else:
-    UserConfigPath = None
+
+# If there's a BOTO_PATH variable set, we use anything there
+# as the current configuration locations, split with semicolons
+elif 'BOTO_PATH' in os.environ:
+    BotoConfigLocations = []
+    for path in os.environ['BOTO_PATH'].split(":"):
+        BotoConfigLocations.append(os.path.expanduser(path))
+
 
 class Config(ConfigParser.SafeConfigParser):
 

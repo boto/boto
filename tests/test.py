@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -33,13 +33,14 @@ from s3.test_connection import S3ConnectionTest
 from s3.test_versioning import S3VersionTest
 from s3.test_gsconnection import GSConnectionTest
 from ec2.test_connection import EC2ConnectionTest
+from autoscale.test_connection import AutoscaleConnectionTest
 from sdb.test_connection import SDBConnectionTest
 
 def usage():
     print 'test.py  [-t testsuite] [-v verbosity]'
     print '    -t   run specific testsuite (s3|s3ver|s3nover|gs|sqs|ec2|sdb|all)'
     print '    -v   verbosity (0|1|2)'
-  
+
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'ht:v:',
@@ -66,6 +67,7 @@ def main():
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
         suite.addTest(unittest.makeSuite(EC2ConnectionTest))
         suite.addTest(unittest.makeSuite(SDBConnectionTest))
+        suite.addTest(unittest.makeSuite(AutoscaleConnectionTest))
     elif testsuite == 's3':
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
         suite.addTest(unittest.makeSuite(S3VersionTest))
@@ -79,6 +81,8 @@ def main():
         suite.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == 'ec2':
         suite.addTest(unittest.makeSuite(EC2ConnectionTest))
+    elif testsuite == 'autoscale':
+        suite.addTest(unittest.makeSuite(AutoscaleConnectionTest))
     elif testsuite == 'sdb':
         suite.addTest(unittest.makeSuite(SDBConnectionTest))
     else:
