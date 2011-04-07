@@ -177,7 +177,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if scaling_policy.cooldown is not None:
             params['Cooldown'] = scaling_policy.cooldown
 
-        return self.get_object('PutScalingPolicy', params)
+        return self.get_object('PutScalingPolicy', params, Request)
 
     def delete_launch_configuration(self, launch_config_name):
         """
@@ -235,6 +235,10 @@ class AutoScaleConnection(AWSQueryConnection):
         :type max_records: int
         :param max_records: Maximum amount of configurations to return.
 
+        :type next_token: str
+        :param next_token: If you have more results than can be returned at once, pass in this
+                           parameter to page through all results.
+
         :rtype: list
         :returns: List of :class:`boto.ec2.autoscale.launchconfig.LaunchConfiguration` instances.
         """
@@ -245,6 +249,9 @@ class AutoScaleConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if names:
             self.build_list_params(params, names, 'LaunchConfigurationNames')
+        next_token = kwargs.get('next_token')
+        if next_token:
+            params['NextToken'] = next_token
         return self.get_list('DescribeLaunchConfigurations', params,
                              [('member', LaunchConfiguration)])
 
