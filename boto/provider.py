@@ -139,8 +139,8 @@ class Provider(object):
 
     def __init__(self, name, access_key=None, secret_key=None):
         self.host = None
-        self.access_key = access_key
-        self.secret_key = secret_key
+        self._access_key = access_key
+        self._secret_key = secret_key
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
@@ -155,22 +155,46 @@ class Provider(object):
     def get_credentials(self, access_key=None, secret_key=None):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
-            self.access_key = access_key
+            self._access_key = access_key
         elif os.environ.has_key(access_key_name.upper()):
-            self.access_key = os.environ[access_key_name.upper()]
+            self._access_key = os.environ[access_key_name.upper()]
         elif config.has_option('Credentials', access_key_name):
-            self.access_key = config.get('Credentials', access_key_name)
+            # when the property is called, re-read the access key from
+            # the config file:
+            self._access_key = None 
 
         if secret_key is not None:
-            self.secret_key = secret_key
+            self._secret_key = secret_key
         elif os.environ.has_key(secret_key_name.upper()):
-            self.secret_key = os.environ[secret_key_name.upper()]
+            self._secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
-            self.secret_key = config.get('Credentials', secret_key_name)
+            # when the property is called, re-read the secret access key
+            # from the config file:
+            self._secret_key = None 
         if isinstance(self.secret_key, unicode):
             # the secret key must be bytes and not unicode to work
             #  properly with hmac.new (see http://bugs.python.org/issue5285)
             self.secret_key = str(self.secret_key)
+
+    def read_access_key_from_config(self):
+        access_key_name, secret_key_name = self.CredentialMap[self.name]
+        return config.get('Credentials', access_key_name)
+
+    def read_secret_key_from_config(self):
+        access_key_name, secret_key_name = self.CredentialMap[self.name]
+        return config.get('Credentials', secret_key_name)
+
+    @property
+    def access_key(self):
+        if self._access_key:
+            return self._access_key
+        return self.read_access_key_from_config()
+
+    @property
+    def secret_key(self):
+        if self._secret_key:
+            return self._secret_key
+        return self.read_secret_key_from_config()
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]

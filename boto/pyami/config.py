@@ -45,10 +45,10 @@ elif 'BOTO_PATH' in os.environ:
         BotoConfigLocations.append(os.path.expanduser(path))
 
 
-class Config(ConfigParser.SafeConfigParser):
+class Config(ConfigParser.ConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
+        ConfigParser.ConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
                                                       'debug' : '0'})
         if do_load:
             if path:
@@ -57,8 +57,22 @@ class Config(ConfigParser.SafeConfigParser):
                 self.readfp(fp)
             else:
                 self.read(BotoConfigLocations)
+                self.possibly_hide_credentials()
             if "AWS_CREDENTIAL_FILE" in os.environ:
                 self.load_credential_file(os.path.expanduser(os.environ['AWS_CREDENTIAL_FILE']))
+
+    def possibly_hide_credentials(self):
+        """
+        If the Credentials:do_not_store_credentials flag is set, blank out the credentials
+        from the returned config object and re-read them from the config file in the get 
+        command when needed. In this way, if you have an open python interpreter and you
+        remove a keyfob with your credentials on it when you shutdown for the night, your
+        session can't be used to do something possibly sinister with AWS, should you loose
+        your laptop, until you re-insert your keyfob.
+        """
+        if self.get('Credentials', 'do_not_store_credentials') == 'True':
+            self.set('Credentials', 'aws_access_key_id', 'hidden_per_the_setting_do_not_store_credentials')
+            self.set('Credentials', 'aws_secret_access_key', 'hidden_per_the_setting_do_not_store_credentials')
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
@@ -129,7 +143,16 @@ class Config(ConfigParser.SafeConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            val = ConfigParser.SafeConfigParser.get(self, section, name)
+            if ConfigParser.ConfigParser.get(self, 'Credentials', 'do_not_store_credentials') == 'True':
+                if section == 'Credentials' and name == 'aws_access_key_id':
+                    local_config_parser = ConfigParser.SafeConfigParser({'working_dir' : '/tmp', 'debug' : 0})
+                    local_config_parser.read(BotoConfigLocations)
+                    return local_config_parser.get('Credentials', 'aws_access_key_id')
+                if section == 'Credentials' and name == 'aws_secret_access_key':
+                    local_config_parser = ConfigParser.SafeConfigParser({'working_dir' : '/tmp', 'debug' : 0})
+                    local_config_parser.read(BotoConfigLocations)
+                    return local_config_parser.get('Credentials', 'aws_secret_access_key')
+            val = ConfigParser.ConfigParser.get(self, section, name)
         except:
             val = default
         return val
