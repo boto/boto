@@ -413,7 +413,7 @@ class CloudWatchConnection(AWSQueryConnection):
                     'MetricName'            :       alarm.metric,
                     'Namespace'             :       alarm.namespace,
                     'Statistic'             :       alarm.statistic,
-                    'ComparisonOperator'    :       MetricAlarm._cmp_map[alarm.comparison],
+                    'ComparisonOperator'    :       alarm.comparison,
                     'Threshold'             :       alarm.threshold,
                     'EvaluationPeriods'     :       alarm.evaluation_periods,
                     'Period'                :       alarm.period,
