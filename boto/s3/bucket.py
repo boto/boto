@@ -48,6 +48,7 @@ class S3WebsiteEndpointTranslate:
 
     trans_region['EU'] = 's3-website-eu-west-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
+    trans_region['ap-northeast-1'] = 's3-website-ap-northeast-1'
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
 
     @classmethod

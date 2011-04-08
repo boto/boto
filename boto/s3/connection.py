@@ -114,6 +114,7 @@ class Location:
     DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
+    APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
 
 class S3Connection(AWSAuthConnection):
