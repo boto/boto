@@ -226,8 +226,7 @@ class AutoScaleConnection(AWSQueryConnection):
         longer available for use.
         """
         params = {'LaunchConfigurationName' : launch_config_name}
-        return self.connection.get_object('DeleteLaunchConfiguration', params,
-                                          Request)
+        return self.get_object('DeleteLaunchConfiguration', params, Request)
 
     def get_all_groups(self, names=None, max_records=None, next_token=None):
         """
