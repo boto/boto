@@ -73,7 +73,8 @@ class SESConnection(AWSAuthConnection):
         :param params: Parameters that will be sent as POST data with the API
                        call.
         """
-        headers = {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
+        ct = 'application/x-www-form-urlencoded; charset=UTF-8'
+        headers = {'Content-Type': ct}
         params = params or {}
         params['Action'] = action
 
