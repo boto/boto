@@ -204,13 +204,15 @@ class AWSAuthConnection(object):
             self.port = PORTS_BY_SECURITY[is_secure]
 
         # Timeout used to tell httplib how long to wait for socket timeouts.
-        # Default is 5 seconds, but will only apply if we are running Python
-        # 2.6 or greater.
+        # Default is to leave timeout unchanged, which will in turn result in
+        # the socket's default global timeout being used. To specify a
+        # timeout, set http_socket_timeout in Boto config. Regardless,
+        # timeouts will only be applied if Python is 2.6 or greater.
         self.http_connection_kwargs = {}
         if (sys.version_info.major, sys.version_info.minor) >= (2, 6):
-            self.http_connection_kwargs = {
-                    'timeout': config.getint('Boto', 'http_socket_timeout', 5)
-            }
+            if config.has_option('Boto', 'http_socket_timeout'):
+                timeout = config.getint('Boto', 'http_socket_timeout')
+                self.http_connection_kwargs['timeout'] = timeout
 
         self.provider = Provider(provider,
                                  aws_access_key_id,
