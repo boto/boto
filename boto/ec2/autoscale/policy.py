@@ -140,7 +140,7 @@ class ScalingPolicy(object):
         if name == 'PolicyName':
             self.name = value
         elif name == 'AutoScalingGroupName':
-            self.group_name = value
+            self.as_name = value
         elif name == 'PolicyARN':
             self.policy_arn = value
         elif name == 'ScalingAdjustment':
