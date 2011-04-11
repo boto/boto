@@ -628,6 +628,13 @@ class SDBManager(object):
                         raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
                     pass
+        # Convert the Expected value to SDB format
+        if expected_value:
+            prop = obj.find_property(expected_value[0])
+            v = expected_value[1]
+            if v is not None and not type(v) == bool:
+                v = self.encode_value(prop, v)
+            expected_value[1] = v
         self.domain.put_attributes(obj.id, attrs, replace=True, expected_value=expected_value)
         if len(del_attrs) > 0:
             self.domain.delete_attributes(obj.id, del_attrs)
