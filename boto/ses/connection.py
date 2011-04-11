@@ -57,7 +57,7 @@ class SESConnection(AWSAuthConnection):
         :type label: string
         :param label: The parameter list's name
         """
-        if isinstance(items, str):
+        if isinstance(items, basestring):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
