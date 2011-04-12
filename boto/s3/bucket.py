@@ -808,8 +808,9 @@ class Bucket(object):
                              mfa_token=None, headers=None):
         """
         Configure versioning for this bucket.
-        Note: This feature is currently in beta release and is available
-              only in the Northern California region.
+        
+        ..note:: This feature is currently in beta release and is available
+                 only in the Northern California region.
 
         :type versioning: bool
         :param versioning: A boolean indicating whether version is
@@ -922,14 +923,17 @@ class Bucket(object):
 
         :rtype: dict
         :returns: A dictionary containing a Python representation
-                  of the XML response from S3.  The overall structure is:
+                  of the XML response from S3. The overall structure is:
 
-                   * WebsiteConfiguration
-                     * IndexDocument
-                       * Suffix : suffix that is appended to request that
-                         is for a "directory" on the website endpoint
-                     * ErrorDocument
-                       * Key : name of object to serve when an error occurs
+            * WebsiteConfiguration
+    
+              * IndexDocument
+    
+                * Suffix : suffix that is appended to request that
+                is for a "directory" on the website endpoint
+                * ErrorDocument
+    
+                  * Key : name of object to serve when an error occurs
         """
         response = self.connection.make_request('GET', self.name,
                 query_args='website', headers=headers)

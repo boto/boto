@@ -228,8 +228,9 @@ class MTurkConnection(AWSQueryConnection):
         Change the HIT type of an existing HIT. Note that the reward associated
         with the new HIT type must match the reward of the current HIT type in
         order for the operation to be valid.
-        \thit_id is a string
-        \thit_type is a string
+        
+        :type hit_id: str
+        :type hit_type: str
         """
         params = {'HITId' : hit_id,
                   'HITTypeId': hit_type}
