@@ -69,7 +69,7 @@ boto.ec2.autoscale.request
    :undoc-members:
 
 boto.ec2.autoscale.scheduled
---------------------------
+----------------------------
 
 .. automodule:: boto.ec2.autoscale.scheduled
    :members:   

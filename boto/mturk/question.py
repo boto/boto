@@ -182,21 +182,23 @@ class QuestionForm(ValidatingXML, list):
     Overview element and a Question element followed by a second Overview element and Question
     element--all within the same QuestionForm.
     
-    <QuestionForm xmlns="[the QuestionForm schema URL]">
-        <Overview>
+    ::
+    
+        <QuestionForm xmlns="[the QuestionForm schema URL]">
+            <Overview>
+                [...]
+            </Overview>
+            <Question>
+                [...]
+            </Question>
+            <Overview>
+                [...]
+            </Overview>
+            <Question>
+                [...]
+            </Question>
             [...]
-        </Overview>
-        <Question>
-            [...]
-        </Question>
-        <Overview>
-            [...]
-        </Overview>
-        <Question>
-            [...]
-        </Question>
-        [...]
-    </QuestionForm>
+        </QuestionForm>
     
     QuestionForm is implemented as a list, so to construct a
     QuestionForm, simply append Questions and Overviews (with at least
