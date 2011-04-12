@@ -143,7 +143,8 @@ class Config(ConfigParser.ConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            if ConfigParser.ConfigParser.get(self, 'Credentials', 'do_not_store_credentials') == 'True':
+            if self.has_option('Credentials', 'do_not_store_credentials') and \
+                    ConfigParser.ConfigParser.get(self, 'Credentials', 'do_not_store_credentials') == 'True':
                 if section == 'Credentials' and name == 'aws_access_key_id':
                     local_config_parser = ConfigParser.SafeConfigParser({'working_dir' : '/tmp', 'debug' : 0})
                     local_config_parser.read(BotoConfigLocations)
