@@ -811,7 +811,7 @@ class Bucket(object):
         
         ..note:: This feature is currently in beta release and is available
                  only in the Northern California region.
-
+                 
         :type versioning: bool
         :param versioning: A boolean indicating whether version is
                            enabled (True) or disabled (False).
