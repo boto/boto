@@ -209,7 +209,7 @@ class AWSAuthConnection(object):
         # timeout, set http_socket_timeout in Boto config. Regardless,
         # timeouts will only be applied if Python is 2.6 or greater.
         self.http_connection_kwargs = {}
-        if (sys.version_info.major, sys.version_info.minor) >= (2, 6):
+        if (sys.version_info[0], sys.version_info[1]) >= (2, 6):
             if config.has_option('Boto', 'http_socket_timeout'):
                 timeout = config.getint('Boto', 'http_socket_timeout')
                 self.http_connection_kwargs['timeout'] = timeout
