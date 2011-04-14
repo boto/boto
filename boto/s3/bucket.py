@@ -536,6 +536,8 @@ class Bucket(object):
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
+
+        src_key_name = boto.utils.get_utf8_value(src_key_name)
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self
