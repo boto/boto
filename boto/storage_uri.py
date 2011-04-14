@@ -34,6 +34,10 @@ class StorageUri(object):
     """
 
     connection = None
+    # Optional args that can be set from one of the concrete subclass
+    # constructors, to change connection behavior (e.g., to override
+    # https_connection_factory).
+    connection_args = None
 
     def __init__(self):
         """Uncallable constructor on abstract base StorageUri class.
@@ -66,15 +70,19 @@ class StorageUri(object):
         @return: A connection to storage service provider of the given URI.
         """
 
+        connection_args = dict(self.connection_args or ())
+        connection_args.update(kwargs)
         if not self.connection:
             if self.scheme == 's3':
                 from boto.s3.connection import S3Connection
                 self.connection = S3Connection(access_key_id,
-                                               secret_access_key, **kwargs)
+                                               secret_access_key,
+                                               **connection_args)
             elif self.scheme == 'gs':
                 from boto.gs.connection import GSConnection
                 self.connection = GSConnection(access_key_id,
-                                               secret_access_key, **kwargs)
+                                               secret_access_key,
+                                               **connection_args)
             elif self.scheme == 'file':
                 from boto.file.connection import FileConnection
                 self.connection = FileConnection(self)
@@ -156,7 +164,7 @@ class BucketStorageUri(StorageUri):
     """
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=0):
+                 debug=0, connection_args=None):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -167,6 +175,10 @@ class BucketStorageUri(StorageUri):
         @param object_name: object name
         @type debug: int
         @param debug: debug level to pass in to connection (range 0..2)
+        @type connection_args: map
+        @param connection_args: optional map containing args to be
+            passed to {S3,GS}Connection constructor (e.g., to override
+            https_connection_factory).
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
@@ -175,6 +187,8 @@ class BucketStorageUri(StorageUri):
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
+        if connection_args:
+            self.connection_args = connection_args
         if self.bucket_name and self.object_name:
             self.uri = ('%s://%s/%s' % (self.scheme, self.bucket_name,
                                         self.object_name))
