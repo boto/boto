@@ -58,13 +58,23 @@ import auth_handler
 import boto
 import boto.utils
 
-from boto import config, UserAgent, handler
+from boto import config, UserAgent, handler, cacerts
 from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
+HAVE_HTTPS_CONNECTION = False
+try:
+    import ssl
+    from boto import https_connection
+    HAVE_HTTPS_CONNECTION = True
+except ImportError:
+    pass
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
+
+DEFAULT_CA_CERTS_FILE = os.path.join(
+        os.path.dirname(os.path.abspath(cacerts.__file__ )), "cacerts.txt")
 
 class ConnectionPool:
     def __init__(self, hosts, connections_per_host):
@@ -177,10 +187,30 @@ class AWSAuthConnection(object):
         if config.has_option('Boto', 'is_secure'):
             is_secure = config.getboolean('Boto', 'is_secure')
         self.is_secure = is_secure
+        # Whether or not to validate server certificates.  At some point in the
+        # future, the default should be flipped to true.
+        self.https_validate_certificates = config.getbool(
+                'Boto', 'https_validate_certificates', False)
+        if self.https_validate_certificates and not HAVE_HTTPS_CONNECTION:
+            raise BotoClientError(
+                    "SSL server certificate validation is enabled in boto "
+                    "configuration, but Python dependencies required to "
+                    "support this feature are not available. Certificate "
+                    "validation is only supported when running under Python "
+                    "2.6 or later.")
+        self.ca_certificates_file = config.get_value(
+                'Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
         self.http_exceptions = (httplib.HTTPException, socket.error,
                                 socket.gaierror)
+        # define subclasses of the above that are not retryable.
+        self.http_unretryable_exceptions = []
+        if HAVE_HTTPS_CONNECTION:
+            self.http_unretryable_exceptions.append(ssl.SSLError)
+            self.http_unretryable_exceptions.append(
+                    https_connection.InvalidCertificateException)
+
         # define values in socket exceptions we don't want to catch
         self.socket_exception_values = (errno.EINTR,)
         if https_connection_factory is not None:
@@ -345,12 +375,17 @@ class AWSAuthConnection(object):
         if host is None:
             host = self.server_name()
         if is_secure:
-            boto.log.debug('establishing HTTPS connection: kwargs=%s' %
-                    self.http_connection_kwargs)
+            boto.log.debug(
+                    'establishing HTTPS connection: host=%s, kwargs=%s',
+                    host, self.http_connection_kwargs)
             if self.use_proxy:
                 connection = self.proxy_ssl()
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
+            elif self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
+                connection = https_connection.CertValidatingHTTPSConnection(
+                        host, ca_certs=self.ca_certificates_file,
+                        **self.http_connection_kwargs)
             else:
                 connection = httplib.HTTPSConnection(host,
                         **self.http_connection_kwargs)
@@ -382,13 +417,14 @@ class AWSAuthConnection(object):
             sock.connect((self.proxy, int(self.proxy_port)))
         except:
             raise
+        boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
         sock.sendall("CONNECT %s HTTP/1.0\r\n" % host)
         sock.sendall("User-Agent: %s\r\n" % UserAgent)
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
         sock.sendall("\r\n")
-        resp = httplib.HTTPResponse(sock, strict=True)
+        resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
         if resp.status != 200:
@@ -403,12 +439,29 @@ class AWSAuthConnection(object):
 
         h = httplib.HTTPConnection(host)
 
-        # Wrap the socket in an SSL socket
-        if hasattr(httplib, 'ssl'):
-            sslSock = httplib.ssl.SSLSocket(sock)
-        else: # Old Python, no ssl module
-            sslSock = socket.ssl(sock, None, None)
-            sslSock = httplib.FakeSocket(sock, sslSock)
+        if self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
+            boto.log.debug("wrapping ssl socket for proxied connection; "
+                           "CA certificate file=%s", 
+                           self.ca_certificates_file)
+            key_file = self.http_connection_kwargs.get('key_file', None)
+            cert_file = self.http_connection_kwargs.get('cert_file', None)
+            sslSock = ssl.wrap_socket(sock, keyfile=key_file,
+                                      certfile=cert_file,
+                                      cert_reqs=ssl.CERT_REQUIRED,
+                                      ca_certs=self.ca_certificates_file)
+            cert = sslSock.getpeercert()
+            hostname = self.host.split(':', 0)[0]
+            if not https_connection.ValidateCertificateHostname(cert, hostname):
+                raise https_connection.InvalidCertificateException(
+                        hostname, cert, 'hostname mismatch')
+        else:
+            # Fallback for old Python without ssl.wrap_socket
+            if hasattr(httplib, 'ssl'):
+                sslSock = httplib.ssl.SSLSocket(sock)
+            else:
+                sslSock = socket.ssl(sock, None, None)
+                sslSock = httplib.FakeSocket(sock, sslSock)
+
         # This is a bit unclean
         h.sock = sslSock
         return h
@@ -483,6 +536,12 @@ class AWSAuthConnection(object):
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')
             except self.http_exceptions, e:
+                for unretryable in self.http_unretryable_exceptions:
+                    if isinstance(e, unretryable):
+                        boto.log.debug(
+                            'encountered unretryable %s exception, re-raising' %
+                            e.__class__.__name__)
+                        raise e
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
                 connection = self.new_http_connection(host, self.is_secure)

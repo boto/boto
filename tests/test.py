@@ -24,6 +24,7 @@
 do the unit tests!
 """
 
+import logging
 import sys
 import unittest
 import getopt
@@ -32,13 +33,14 @@ from sqs.test_connection import SQSConnectionTest
 from s3.test_connection import S3ConnectionTest
 from s3.test_versioning import S3VersionTest
 from s3.test_gsconnection import GSConnectionTest
+from s3.test_https_cert_validation import CertValidationTest
 from ec2.test_connection import EC2ConnectionTest
 from autoscale.test_connection import AutoscaleConnectionTest
 from sdb.test_connection import SDBConnectionTest
 
 def usage():
     print 'test.py  [-t testsuite] [-v verbosity]'
-    print '    -t   run specific testsuite (s3|s3ver|s3nover|gs|sqs|ec2|sdb|all)'
+    print '    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|all)'
     print '    -v   verbosity (0|1|2)'
 
 def main():
@@ -71,6 +73,8 @@ def main():
     elif testsuite == 's3':
         suite.addTest(unittest.makeSuite(S3ConnectionTest))
         suite.addTest(unittest.makeSuite(S3VersionTest))
+    elif testsuite == 'ssl':
+        suite.addTest(unittest.makeSuite(CertValidationTest))
     elif testsuite == 's3ver':
         suite.addTest(unittest.makeSuite(S3VersionTest))
     elif testsuite == 's3nover':
@@ -88,6 +92,8 @@ def main():
     else:
         usage()
         sys.exit()
+    if verbosity > 1:
+        logging.basicConfig(level=logging.DEBUG)
     unittest.TextTestRunner(verbosity=verbosity).run(suite)
 
 if __name__ == "__main__":
