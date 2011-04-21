@@ -24,25 +24,32 @@ import StringIO, os, re
 import ConfigParser
 import boto
 
+# If running in Google App Engine there is no "user" and
+# os.path.expanduser() will fail. Use no-op expanduser in this case.
+if 'getuid' in dir(os):
+    expanduser = os.path.expanduser
+else:
+    expanduser = (lambda x: x)
+
 # By default we use two locations for the boto configurations,
 # /etc/boto.cfg and $HOME/.boto (which is ~/.boto on both Windows and
 # Unix platforms for python)
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
-UserConfigPath = os.path.expanduser('~/.boto')
+UserConfigPath = expanduser('~/.boto')
 BotoConfigLocations.append(UserConfigPath)
 
 # IF there's a BOTO_CONFIG variable set, we load ONLY 
 # that variable
 if 'BOTO_CONFIG' in os.environ:
-    BotoConfigLocations = [os.path.expanduser(os.environ['BOTO_CONFIG'])]
+    BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
 
 # If there's a BOTO_PATH variable set, we use anything there
 # as the current configuration locations, split with semicolons
 elif 'BOTO_PATH' in os.environ:
     BotoConfigLocations = []
     for path in os.environ['BOTO_PATH'].split(":"):
-        BotoConfigLocations.append(os.path.expanduser(path))
+        BotoConfigLocations.append(expanduser(path))
 
 
 class Config(ConfigParser.SafeConfigParser):
@@ -58,7 +65,7 @@ class Config(ConfigParser.SafeConfigParser):
             else:
                 self.read(BotoConfigLocations)
             if "AWS_CREDENTIAL_FILE" in os.environ:
-                self.load_credential_file(os.path.expanduser(os.environ['AWS_CREDENTIAL_FILE']))
+                self.load_credential_file(expanduser(os.environ['AWS_CREDENTIAL_FILE']))
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
