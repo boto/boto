@@ -151,6 +151,7 @@ class SESConnection(AWSAuthConnection):
         :param html_body: The html body to send with this email.
 
         """
+        format = format.lower().strip()
         if body is not None:
             if format == "text":
                 if text_body is not None:
@@ -169,13 +170,16 @@ class SESConnection(AWSAuthConnection):
         if return_path:
             params['ReturnPath'] = return_path
 
-        format = format.lower().strip()
         if html_body is not None:
             params['Message.Body.Html.Data'] = html_body
         if text_body is not None:
             params['Message.Body.Text.Data'] = text_body
-        else:
+
+        if(format not in ("text","html")):
             raise ValueError("'format' argument must be 'text' or 'html'")
+		
+	if(not (html_body and text_body)):
+		raise ValueError("No text or html body found for mail")
 
         self._build_list_params(params, to_addresses,
                                'Destination.ToAddresses.member')
