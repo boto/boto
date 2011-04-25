@@ -57,8 +57,10 @@ import auth
 import auth_handler
 import boto
 import boto.utils
+import boto.handler
+import boto.cacerts
 
-from boto import config, UserAgent, handler, cacerts
+from boto import config, UserAgent
 from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
 from boto.provider import Provider
 from boto.resultset import ResultSet
@@ -74,7 +76,7 @@ except ImportError:
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 DEFAULT_CA_CERTS_FILE = os.path.join(
-        os.path.dirname(os.path.abspath(cacerts.__file__ )), "cacerts.txt")
+        os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
 
 class ConnectionPool:
     def __init__(self, hosts, connections_per_host):
@@ -664,7 +666,7 @@ class AWSQueryConnection(AWSAuthConnection):
             raise self.ResponseError(response.status, response.reason, body)
         elif response.status == 200:
             rs = ResultSet(markers)
-            h = handler.XmlHandler(rs, parent)
+            h = boto.handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
             return rs
         else:
@@ -683,7 +685,7 @@ class AWSQueryConnection(AWSAuthConnection):
             raise self.ResponseError(response.status, response.reason, body)
         elif response.status == 200:
             obj = cls(parent)
-            h = handler.XmlHandler(obj, parent)
+            h = boto.handler.XmlHandler(obj, parent)
             xml.sax.parseString(body, h)
             return obj
         else:
@@ -702,7 +704,7 @@ class AWSQueryConnection(AWSAuthConnection):
             raise self.ResponseError(response.status, response.reason, body)
         elif response.status == 200:
             rs = ResultSet()
-            h = handler.XmlHandler(rs, parent)
+            h = boto.handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
             return rs.status
         else:

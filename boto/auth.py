@@ -303,7 +303,8 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         names = [handler.__name__ for handler in checked_handlers]
         raise boto.exception.NoAuthHandlerFound(
               'No handler was ready to authenticate. %d handlers were checked.'
-              ' %s ' % (len(names), str(names)))
+              ' %s ' 
+              'Check your credentials' % (len(names), str(names)))
 
     if len(ready_handlers) > 1:
         # NOTE: Even though it would be nice to accept more than one handler
