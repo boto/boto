@@ -24,6 +24,7 @@ import sys
 import os
 import boto
 import optparse
+import boto.exception
 
 class Line(object):
 
@@ -42,21 +43,25 @@ class Line(object):
             print self.line
             self.printed = True
 
-class RequiredParamError(Exception):
+class RequiredParamError(boto.exception.BotoClientError):
 
     def __init__(self, required):
         self.required = required
+        s = 'Required parameters are missing: %s' % self.required
+        boto.exception.BotoClientError(s)
 
-    def __str__(self):
-        return 'Required parameters are missing: %s' % self.required
-
-class EncoderError(Exception):
+class EncoderError(boto.exception.BotoClientError):
 
     def __init__(self, error_msg):
-        self.error_msg = error_msg
+        s = 'Error encoding value (%s)' % error_msg
+        boto.exception.BotoClientError(s)
+        
+class FilterError(boto.exception.BotoClientError):
 
-    def __str__(self):
-        return 'Error encoding value (%s)' % self.error_msg
+    def __init__(self, filters):
+        self.filters = filters
+        s = 'Unknown filters: %s' % self.filters
+        boto.exception.BotoClientError(s)
         
 class Encoder:
 
@@ -188,11 +193,12 @@ class AWSQueryRequest(object):
         filter_names = [f['name'] for f in self.Filters]
         unknown_filters = [f for f in filters if f not in filter_names]
         if unknown_filters:
-            raise ValueError, 'Unknown filters: %s' % unknown_filters
+            raise FilterError, 'Unknown filters: %s' % unknown_filters
         for i, filter in enumerate(self.Filters):
-            if filter['name'] in filters:
-                self.request_params['Filter.%d.Name' % (i+1)] = filter['name']
-                for j, value in enumerate(boto.utils.mklist(filters[filter['name']])):
+            name = filter['name']
+            if name in filters:
+                self.request_params['Filter.%d.Name' % (i+1)] = name
+                for j, value in enumerate(boto.utils.mklist(filters[name])):
                     Encoder.encode(filter, self.request_params, value,
                                    'Filter.%d.Value.%d' % (i+1,j+1))
 
