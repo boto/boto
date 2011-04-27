@@ -397,9 +397,15 @@ class SDBManager(object):
         return self._domain
 
     def _connect(self):
-        self._sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
-                                    aws_secret_access_key=self.db_passwd,
-                                    is_secure=self.enable_ssl)
+        args = dict(aws_access_key_id=self.db_user,
+                    aws_secret_access_key=self.db_passwd,
+                    is_secure=self.enable_ssl)
+        try:
+            region = [x for x in boto.sdb.regions() if x.endpoint == self.db_host][0]
+            args['region'] = region
+        except IndexError:
+            pass
+        self._sdb = boto.connect_sdb(**args)
         # This assumes that the domain has already been created
         # It's much more efficient to do it this way rather than
         # having this make a roundtrip each time to validate.
