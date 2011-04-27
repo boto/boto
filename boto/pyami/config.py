@@ -32,8 +32,7 @@ else:
     expanduser = (lambda x: x)
 
 # By default we use two locations for the boto configurations,
-# /etc/boto.cfg and $HOME/.boto (which is ~/.boto on both Windows and
-# Unix platforms for python)
+# /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
 UserConfigPath = expanduser('~/.boto')

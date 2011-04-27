@@ -76,7 +76,11 @@ class StorageUri(object):
         # SubdomainCallingFormat because the latter changes the hostname
         # that's checked during cert validation for HTTPS connections,
         # which will fail cert validation (when cert validation is enabled).
-        connection_args['calling_format'] = boto.s3.connection.OrdinaryCallingFormat()
+        # Note: the following import can't be moved up to the start of
+        # this file else it causes a config import failure when run from
+        # the resumable upload/download tests.
+        from boto.s3.connection import OrdinaryCallingFormat
+        connection_args['calling_format'] = OrdinaryCallingFormat()
         connection_args.update(kwargs)
         if not self.connection:
             if self.scheme == 's3':
