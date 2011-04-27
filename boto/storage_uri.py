@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto
 import os
 from boto.exception import BotoClientError
 from boto.exception import InvalidUriError
@@ -71,6 +72,11 @@ class StorageUri(object):
         """
 
         connection_args = dict(self.connection_args or ())
+        # Use OrdinaryCallingFormat instead of boto-default
+        # SubdomainCallingFormat because the latter changes the hostname
+        # that's checked during cert validation for HTTPS connections,
+        # which will fail cert validation (when cert validation is enabled).
+        connection_args['calling_format'] = boto.s3.connection.OrdinaryCallingFormat()
         connection_args.update(kwargs)
         if not self.connection:
             if self.scheme == 's3':
