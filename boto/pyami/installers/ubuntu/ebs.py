@@ -129,7 +129,7 @@ class EBSInstaller(Installer):
                 ec2.attach_volume(self.volume_id, self.instance_id, self.device)
                 attempt_attach = False
             except EC2ResponseError, e:
-                if e.error_code != 'IncorrectState':
+                if e.error_code == 'IncorrectState':
                     # if there's an EC2ResonseError with the code set to IncorrectState, delay a bit for ec2 
                     # to realize the instance is running, then try again. Otherwise, raise the error:
                     boto.log.info('Attempt to attach the EBS volume %s to this instance (%s) returned %s. Trying again in a bit.' % (self.volume_id, self.instance_id, e.errors))
@@ -196,25 +196,29 @@ class EBSInstaller(Installer):
         f.close()
 
     def install(self):
-        # First, find and attach the volume
-        self.attach()
-        
-        # Install the xfs tools
-        self.run('apt-get -y install xfsprogs xfsdump')
+        # Check to see if this invocation is about attaching and backing up a volume.
+        # This may just be about doing snapshot cleanup on a dedicated instance.
+        attach_volume = boto.config.get('EBS', 'attach_volume', 'True')
+        if attach_volume.lower() != 'false':
+            # First, find and attach the volume
+            self.attach()
+            
+            # Install the xfs tools
+            self.run('apt-get -y install xfsprogs xfsdump')
 
-        # Check to see if the filesystem was created or not
-        self.make_fs()
+            # Check to see if the filesystem was created or not
+            self.make_fs()
 
-        # create the /ebs directory for mounting
-        self.handle_mount_point()
+            # create the /ebs directory for mounting
+            self.handle_mount_point()
 
-        # create the backup script
-        self.create_backup_script()
+            # create the backup script
+            self.create_backup_script()
 
-        # Set up the backup script
-        minute = boto.config.get('EBS', 'backup_cron_minute', '0')
-        hour = boto.config.get('EBS', 'backup_cron_hour', '4,16')
-        self.add_cron("ebs_backup", "/usr/local/bin/ebs_backup", minute=minute, hour=hour)
+            # Set up the backup script
+            minute = boto.config.get('EBS', 'backup_cron_minute', '0')
+            hour = boto.config.get('EBS', 'backup_cron_hour', '4,16')
+            self.add_cron("ebs_backup", "/usr/local/bin/ebs_backup", minute=minute, hour=hour)
 
         # Set up the backup cleanup script
         minute = boto.config.get('EBS', 'backup_cleanup_cron_minute')
