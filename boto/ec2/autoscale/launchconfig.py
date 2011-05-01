@@ -21,6 +21,7 @@
 
 
 from datetime import datetime
+import base64
 from boto.resultset import ResultSet
 from boto.ec2.elb.listelement import ListElement
 
@@ -169,7 +170,7 @@ class LaunchConfiguration(object):
         elif name == 'RamdiskId':
             self.ramdisk_id = value
         elif name == 'UserData':
-            self.user_data = value
+            self.user_data = base64.b64decode(value)
         elif name == 'LaunchConfigurationARN':
             self.launch_configuration_arn = value
         elif name == 'InstanceMonitoring':
