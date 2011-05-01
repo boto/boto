@@ -551,7 +551,7 @@ class Bucket(object):
             headers[provider.storage_class_header] = storage_class
         if metadata:
             headers[provider.metadata_directive_header] = 'REPLACE'
-            headers = boto.utils.merge_meta(headers, metadata)
+            headers = boto.utils.merge_meta(headers, metadata, provider)
         else:
             headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
