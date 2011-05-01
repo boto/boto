@@ -502,16 +502,20 @@ class LRUCache(dict):
 
 class Password(object):
     """
-    Password object that stores itself as SHA512 hashed.
+    Password object that stores itself as hashed.
+    Hash defaults to SHA512 if available, MD5 otherwise.
     """
-    def __init__(self, str=None):
+    hashfunc=_hashfn
+    def __init__(self, str=None, hashfunc=None):
         """
-        Load the string from an initial value, this should be the raw SHA512 hashed password
+        Load the string from an initial value, this should be the raw hashed password.
         """
         self.str = str
+        if hashfunc:
+           self.hashfunc = hashfunc
 
     def set(self, value):
-        self.str = _hashfn(value).hexdigest()
+        self.str = self.hashfunc(value).hexdigest()
    
     def __str__(self):
         return str(self.str)
@@ -519,7 +523,7 @@ class Password(object):
     def __eq__(self, other):
         if other == None:
             return False
-        return str(_hashfn(other).hexdigest()) == str(self.str)
+        return str(self.hashfunc(other).hexdigest()) == str(self.str)
 
     def __len__(self):
         if self.str:
