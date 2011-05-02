@@ -414,8 +414,16 @@ class ResumableUploadHandler(object):
             self.upload_start_point = server_end
 
         if server_end == file_length:
-            return #  Done.
-        total_bytes_uploaded = server_end + 1
+            # Boundary condition: complete file was already uploaded (e.g.,
+            # user interrupted a previous upload attempt after the upload
+            # completed but before the gsutil tracker file was deleted). Set
+            # total_bytes_uploaded to server_end so we'll attempt to upload
+            # no more bytes but will still make final HTTP request and get
+            # back the response (which contains the etag we need to compare
+            # at the end).
+            total_bytes_uploaded = server_end
+        else:
+            total_bytes_uploaded = server_end + 1
         fp.seek(total_bytes_uploaded)
         conn = key.bucket.connection
 
