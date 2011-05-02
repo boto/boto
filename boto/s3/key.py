@@ -451,7 +451,8 @@ class Key(object):
             # If the debuglevel < 3 we don't want to show connection
             # payload, so turn off HTTP connection-level debug output (to
             # be restored below).
-            if http_conn.debuglevel < 3:
+            # Use the getattr approach to allow this to work in AppEngine.
+            if getattr(http_conn, 'debuglevel', 0) < 3:
                 http_conn.set_debuglevel(0)
             if cb:
                 if num_cb > 2:
