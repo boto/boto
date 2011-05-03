@@ -107,7 +107,7 @@ class Key(S3Key):
         acl.add_group_grant(permission, group_id)
         self.set_acl(acl)
 
-    def set_contents_from_file(self, fp, headers={}, replace=True,
+    def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                res_upload_handler=None):
         """
@@ -163,8 +163,7 @@ class Key(S3Key):
         just overriding/sharing code the way it currently works).
         """
         provider = self.bucket.connection.provider
-        if headers is None:
-            headers = {}
+        headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
         if hasattr(fp, 'name'):
