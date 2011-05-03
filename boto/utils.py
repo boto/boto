@@ -531,7 +531,8 @@ class Password(object):
         else:
             return 0
 
-def notify(subject, body=None, html_body=None, to_string=None, attachments=[], append_instance_id=True):
+def notify(subject, body=None, html_body=None, to_string=None, attachments=None, append_instance_id=True):
+    attachments = attachments or []
     if append_instance_id:
         subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
     if not to_string:

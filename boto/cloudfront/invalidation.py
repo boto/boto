@@ -27,11 +27,11 @@ class InvalidationBatch(object):
         :see: http://docs.amazonwebservices.com/AmazonCloudFront/2010-08-01/APIReference/index.html?InvalidationBatchDatatype.html
     """
 
-    def __init__(self, paths=[], connection=None, distribution=None, caller_reference=''):
+    def __init__(self, paths=None, connection=None, distribution=None, caller_reference=''):
         """Create a new invalidation request:
             :paths: An array of paths to invalidate
         """
-        self.paths = paths
+        self.paths = paths or []
         self.distribution = distribution
         self.caller_reference = caller_reference
         if not self.caller_reference:
