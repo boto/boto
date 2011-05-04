@@ -110,6 +110,14 @@ class OrdinaryCallingFormat(_CallingFormat):
             path_base += "%s/" % bucket
         return path_base + urllib.quote(key)
 
+class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
+    
+    def build_url_base(self, connection, protocol, server, bucket, key=''):
+        url_base = '//'
+        url_base += self.build_host(server, bucket)
+        url_base += connection.get_path(self.build_path_base(bucket, key))
+        return url_base
+
 class Location:
     DEFAULT = '' # US Classic Region
     EU = 'EU'
