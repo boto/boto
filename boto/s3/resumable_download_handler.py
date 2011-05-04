@@ -65,7 +65,7 @@ class ByteTranslatingCallbackHandler(object):
 
     def call(self, total_bytes_uploaded, total_size):
         self.proxied_cb(self.download_start_point + total_bytes_uploaded,
-                        self.download_start_point + total_size)
+                        total_size)
 
 
 def get_cur_file_size(fp, position_to_eof=False):

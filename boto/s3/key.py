@@ -21,6 +21,7 @@
 
 import mimetypes
 import os
+import re
 import rfc822
 import StringIO
 import base64
@@ -156,8 +157,15 @@ class Key(object):
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
             for name,value in response_headers.items():
-                if name.lower() == 'content-length':
+                # To get correct size for Range GETs, use Content-Range
+                # header if one was returned. If not, use Content-Length
+                # header.
+                if (name.lower() == 'content-length' and
+                    'Content-Range' not in response_headers):
                     self.size = int(value)
+                elif name.lower() == 'content-range':
+                    end_range = re.sub('.*/(.*)', '\\1', value)
+                    self.size = int(end_range)
                 elif name.lower() == 'etag':
                     self.etag = value
                 elif name.lower() == 'content-type':
