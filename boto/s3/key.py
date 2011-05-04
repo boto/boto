@@ -114,7 +114,8 @@ class Key(object):
         # overwrite the version_id in this Key object.  Comprende?
         if self.version_id is None or force:
             self.version_id = resp.getheader(provider.version_id, None)
-        self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
+        self.source_version_id = resp.getheader(provider.copy_source_version_id,
+                                                None)
         if resp.getheader(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
         else:
@@ -405,7 +406,8 @@ class Key(object):
         :param expires_in: How long the url is valid for, in seconds
         
         :type method: string
-        :param method: The method to use for retrieving the file (default is GET)
+        :param method: The method to use for retrieving the file
+                       (default is GET)
         
         :type headers: dict
         :param headers: Any headers to pass along in the request
@@ -418,7 +420,8 @@ class Key(object):
         """
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
-                                                   headers, query_auth, force_http)
+                                                   headers, query_auth,
+                                                   force_http)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None):
         """
@@ -432,10 +435,11 @@ class Key(object):
         
         :type cb: function
         :param cb: a callback function that will be called to report
-                    progress on the upload.  The callback should accept two integer
-                    parameters, the first representing the number of bytes that have
-                    been successfully transmitted to S3 and the second representing
-                    the total number of bytes that need to be transmitted.
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
                     
         :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the cb
@@ -533,8 +537,9 @@ class Key(object):
     def compute_md5(self, fp):
         """
         :type fp: file
-        :param fp: File pointer to the file to MD5 hash.  The file pointer will be
-                   reset to the beginning of the file before the method returns.
+        :param fp: File pointer to the file to MD5 hash.  The file pointer
+                   will be reset to the beginning of the file before the
+                   method returns.
         
         :rtype: tuple
         :return: A tuple containing the hex digest version of the MD5 hash
@@ -567,7 +572,8 @@ class Key(object):
         :param fp: the file whose contents to upload
         
         :type headers: dict
-        :param headers: additional HTTP headers that will be sent with the PUT request.
+        :param headers: Additional HTTP headers that will be sent with
+                        the PUT request.
 
         :type replace: bool
         :param replace: If this parameter is False, the method
@@ -578,26 +584,33 @@ class Key(object):
                     
         :type cb: function
         :param cb: a callback function that will be called to report
-                    progress on the upload.  The callback should accept two integer
-                    parameters, the first representing the number of bytes that have
-                    been successfully transmitted to S3 and the second representing
-                    the total number of bytes that need to be transmitted.
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
                     
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.
+        :param num_cb: (optional) If a callback is specified with the cb
+                       parameter this parameter determines the granularity
+                       of the callback by defining the maximum number of
+                       times the callback will be called during the
+                       file transfer.
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
-             
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
-                   file as the first element and the Base64-encoded version of the plain
-                   checksum as the second element.  This is the same format returned by
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+                       
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
                    the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to upload,
-                    it's silly to have to do it twice so this param, if present, will be
-                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values of
+                    the file.  Otherwise, the checksum will be computed.
+                    
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
@@ -615,7 +628,7 @@ class Key(object):
             self.storage_class = 'REDUCED_REDUNDANCY'
             if provider.storage_class_header:
                 headers[provider.storage_class_header] = self.storage_class
-                # TODO - What if the provider doesn't support reduced reduncancy?
+                # TODO - What if provider doesn't support reduced reduncancy?
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
@@ -650,33 +663,41 @@ class Key(object):
         :param filename: The name of the file that you want to put onto S3
         
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to AWS.
+        :param headers: Additional headers to pass along with the
+                        request to AWS.
         
         :type replace: bool
-        :param replace: If True, replaces the contents of the file if it already exists.
+        :param replace: If True, replaces the contents of the file
+                        if it already exists.
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.        
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
                     
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
              
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
-                   file as the first element and the Base64-encoded version of the plain
-                   checksum as the second element.  This is the same format returned by
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
                    the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to upload,
-                    it's silly to have to do it twice so this param, if present, will be
-                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values
+                    of the file.  Otherwise, the checksum will be computed.
                     
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
@@ -700,33 +721,41 @@ class Key(object):
         parameters.
         
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to AWS.
+        :param headers: Additional headers to pass along with the
+                        request to AWS.
         
         :type replace: bool
-        :param replace: If True, replaces the contents of the file if it already exists.
+        :param replace: If True, replaces the contents of the file if
+                        it already exists.
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.        
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
                     
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
              
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
-                   file as the first element and the Base64-encoded version of the plain
-                   checksum as the second element.  This is the same format returned by
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
                    the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to upload,
-                    it's silly to have to do it twice so this param, if present, will be
-                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values
+                    of the file.  Otherwise, the checksum will be computed.
                     
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
@@ -754,17 +783,19 @@ class Key(object):
         :param: headers to send when retrieving the files
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.
-        
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
                     
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         :type torrent: bool
         :param torrent: Flag for whether to get a torrent for the file
@@ -832,19 +863,19 @@ class Key(object):
         :param headers: Headers to be passed
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to
-                   report progress on the download.  The callback should
-                   accept two integer parameters, the first representing
-                   the number of bytes that have been successfully
-                   transmitted from S3 and the second representing the
-                   total number of bytes that need to be transmitted.
-
-        :type num_cb: int
-        :param num_cb: (optional) If a callback is specified with the
-                       cb parameter this parameter determines the
-                       granularity of the callback by defining the
-                       maximum number of times the callback will be
-                       called during the file transfer.  
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+                    
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         """
         return self.get_file(fp, headers, cb, num_cb, torrent=True)
@@ -868,19 +899,19 @@ class Key(object):
                         the GET request.
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to
-                   report progress on the download.  The callback should
-                   accept two integer parameters, the first representing
-                   the number of bytes that have been successfully
-                   transmitted from S3 and the second representing the
-                   total number of bytes that need to be transmitted.
-
-        :type num_cb: int
-        :param num_cb: (optional) If a callback is specified with the
-                       cb parameter this parameter determines the
-                       granularity of the callback by defining the
-                       maximum number of times the callback will be
-                       called during the file transfer.  
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+                    
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         :type torrent: bool
         :param torrent: If True, returns the contents of a torrent
@@ -925,19 +956,19 @@ class Key(object):
         :param headers: Any additional headers to send in the request
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to
-                   report progress on the download.  The callback should
-                   accept two integer parameters, the first representing
-                   the number of bytes that have been successfully
-                   transmitted from S3 and the second representing the
-                   total number of bytes that need to be transmitted.
-
-        :type num_cb: int
-        :param num_cb: (optional) If a callback is specified with the
-                       cb parameter this parameter determines the
-                       granularity of the callback by defining the
-                       maximum number of times the callback will be
-                       called during the file transfer.  
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+                    
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         :type torrent: bool
         :param torrent: If True, returns the contents of a torrent file
@@ -982,19 +1013,19 @@ class Key(object):
         :param headers: Any additional headers to send in the request
         
         :type cb: function
-        :param cb: (optional) a callback function that will be called to
-                   report progress on the download.  The callback should
-                   accept two integer parameters, the first representing
-                   the number of bytes that have been successfully
-                   transmitted from S3 and the second representing the
-                   total number of bytes that need to be transmitted.
-
-        :type num_cb: int
-        :param num_cb: (optional) If a callback is specified with the
-                       cb parameter this parameter determines the
-                       granularity of the callback by defining the
-                       maximum number of times the callback will be
-                       called during the file transfer.  
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+                    
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.  
              
         :type torrent: bool
         :param torrent: If True, returns the contents of a torrent file
