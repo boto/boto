@@ -92,7 +92,7 @@ class MockKey(object):
                                cb=NOT_IMPL, num_cb=NOT_IMPL,
                                policy=NOT_IMPL, md5=NOT_IMPL,
                                res_upload_handler=NOT_IMPL):
-        self.data = fp.readlines()
+        self.data = fp.read()
         self.size = len(self.data)
         self._handle_headers(headers)
 
@@ -103,13 +103,29 @@ class MockKey(object):
         self.size = len(s)
         self._handle_headers(headers)
 
+    def set_contents_from_filename(self, filename, headers=None, replace=NOT_IMPL,
+                                   cb=NOT_IMPL, num_cb=NOT_IMPL,
+                                   policy=NOT_IMPL, md5=NOT_IMPL,
+                                   res_upload_handler=NOT_IMPL):
+        fp = open(filename, 'rb')
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                    policy, md5, res_upload_handler)
+        fp.close()
+    
+    def copy(self, dst_bucket_name, dst_key, metadata=NOT_IMPL,
+             reduced_redundancy=NOT_IMPL, preserve_acl=NOT_IMPL):
+        dst_bucket = self.bucket.connection.get_bucket(dst_bucket_name)
+        return dst_bucket.copy_key(dst_key, self.bucket.name,
+                                   self.name, metadata)
+
 
 class MockBucket(object):
 
-    def __init__(self, connection=NOT_IMPL, name=None, key_class=NOT_IMPL):
+    def __init__(self, connection=None, name=None, key_class=NOT_IMPL):
         self.name = name
         self.keys = {}
         self.acls = {name: MockAcl()}
+        self.connection = connection
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=NOT_IMPL, src_version_id=NOT_IMPL,
@@ -119,6 +135,7 @@ class MockBucket(object):
             src_bucket_name).get_key(src_key_name)
         new_key.data = copy.copy(src_key.data)
         new_key.size = len(new_key.data)
+        return new_key
 
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
@@ -192,7 +209,7 @@ class MockConnection(object):
         if bucket_name in self.buckets:
             raise boto.exception.StorageCreateError(
                 409, 'BucketAlreadyOwnedByYou', 'bucket already exists')
-        mock_bucket = MockBucket(name=bucket_name)
+        mock_bucket = MockBucket(name=bucket_name, connection=self)
         self.buckets[bucket_name] = mock_bucket
         return mock_bucket
 
