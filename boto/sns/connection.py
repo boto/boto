@@ -387,7 +387,7 @@ class SNSConnection(AWSQueryConnection):
                   'TopicArn' : topic}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptions', params, '/', 'GET')
+        response = self.make_request('ListSubscriptionsByTopic', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)
