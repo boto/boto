@@ -222,8 +222,15 @@ class CloudWatchConnection(AWSQueryConnection):
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
             items = [items]
-        for i in range(1, len(items)+1):
-            params[label % i] = items[i-1]
+        elif isinstance(items, dict):
+            i = 1
+            for name in items:
+                params['%s.%d.Name' % (label,i)] = name
+                params['%s.%d.Value' % (label,i)] = items[name]
+                i += 1
+        else:
+            for i in range(1, len(items)+1):
+                params[label % i] = items[i-1]
 
     def get_metric_statistics(self, period, start_time, end_time, metric_name,
                               namespace, statistics, dimensions=None, unit=None):
@@ -426,7 +433,7 @@ class CloudWatchConnection(AWSQueryConnection):
         if alarm.description:
             params['AlarmDescription'] = alarm.description
         if alarm.dimensions:
-            self.build_list_params(params, alarm.dimensions, 'Dimensions.member.%s')
+            self.build_list_params(params, alarm.dimensions, 'Dimensions.member')
         if alarm.insufficient_data_actions:
             self.build_list_params(params, alarm.insufficient_data_actions, 'InsufficientDataActions.member.%s')
         if alarm.ok_actions:

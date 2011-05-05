@@ -23,7 +23,10 @@
 from datetime import datetime
 from boto.resultset import ResultSet
 from boto.ec2.cloudwatch.listelement import ListElement
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 
 class MetricAlarm(object):
@@ -42,7 +45,8 @@ class MetricAlarm(object):
 
     def __init__(self, connection=None, name=None, metric=None,
                  namespace=None, statistic=None, comparison=None, threshold=None,
-                 period=None, evaluation_periods=None):
+                 period=None, evaluation_periods=None, actions_enabled=None, alarm_action=None,
+                 dimensions=None):
         """
         Creates a new Alarm.
 
@@ -82,18 +86,17 @@ class MetricAlarm(object):
         self.comparison = self._cmp_map.get(comparison)
         self.period = int(period) if period is not None else None
         self.evaluation_periods = int(evaluation_periods) if evaluation_periods is not None else None
-        self.actions_enabled = None
+        self.actions_enabled = int(1) if actions_enabled is True else int(0) 
         self.alarm_arn = None
         self.last_updated = None
         self.description = ''
-        self.dimensions = []
+        self.dimensions = dimensions
         self.insufficient_data_actions = []
         self.ok_actions = []
         self.state_reason = None
         self.state_value = None
         self.unit = None
-        alarm_action = []
-        self.alarm_actions = ListElement(alarm_action)
+        self.alarm_actions = ListElement(alarm_action) if alarm_action is not None else None
 
     def __repr__(self):
         return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric, self.statistic, self.comparison, self.threshold)
