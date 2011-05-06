@@ -38,13 +38,13 @@ BotoConfigLocations = [BotoConfigPath]
 UserConfigPath = expanduser('~/.boto')
 BotoConfigLocations.append(UserConfigPath)
 
-# IF there's a BOTO_CONFIG variable set, we load ONLY 
+# If there's a BOTO_CONFIG variable set, we load ONLY 
 # that variable
 if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
 
 # If there's a BOTO_PATH variable set, we use anything there
-# as the current configuration locations, split with semicolons
+# as the current configuration locations, split with colons
 elif 'BOTO_PATH' in os.environ:
     BotoConfigLocations = []
     for path in os.environ['BOTO_PATH'].split(":"):
