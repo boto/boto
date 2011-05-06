@@ -43,9 +43,9 @@ class MetricAlarm(object):
                }
     _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.iteritems())
 
-    def __init__(self, connection=None, name=None, metric=None,
+    def __init__(self, connection=None, name=None, description='', metric=None,
                  namespace=None, statistic=None, comparison=None, threshold=None,
-                 period=None, evaluation_periods=None, actions_enabled=None, alarm_action=None,
+                 period=None, evaluation_periods=None, actions_enabled=None, alarm_actions=None,
                  dimensions=None):
         """
         Creates a new Alarm.
@@ -53,6 +53,9 @@ class MetricAlarm(object):
         :type name: str
         :param name: Name of alarm.
 
+        :type description: str
+        :param description: Description of alarm.
+        
         :type metric: str
         :param metric: Name of alarm's associated metric.
 
@@ -71,7 +74,7 @@ class MetricAlarm(object):
         :param threshold: The value against which the specified statistic is compared.
 
         :type period: int
-        :param period: The period in seconds over which teh specified statistic is applied.
+        :param period: The period in seconds over which the specified statistic is applied.
 
         :type evaluation_periods: int
         :param evaluation_period: The number of periods over which data is compared to
@@ -89,14 +92,14 @@ class MetricAlarm(object):
         self.actions_enabled = int(1) if actions_enabled is True else int(0) 
         self.alarm_arn = None
         self.last_updated = None
-        self.description = ''
+        self.description = description
         self.dimensions = dimensions
         self.insufficient_data_actions = []
         self.ok_actions = []
         self.state_reason = None
         self.state_value = None
         self.unit = None
-        self.alarm_actions = ListElement(alarm_action) if alarm_action is not None else None
+        self.alarm_actions = ListElement(alarm_actions) if alarm_actions is not None else None
 
     def __repr__(self):
         return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric, self.statistic, self.comparison, self.threshold)
