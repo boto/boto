@@ -55,9 +55,18 @@ class Arg(EmrObject):
 
 
 class BootstrapAction(EmrObject):
-    Fields = set(['Name',
-                  'Args',
-                  'Path'])
+    Fields = set([
+        'Args',
+        'Name',
+        'Path',
+    ])
+
+
+class KeyValue(EmrObject):
+    Fields = set([
+        'Key',
+        'Value',
+    ])
 
 
 class Step(EmrObject):
@@ -67,6 +76,7 @@ class Step(EmrObject):
         'EndDateTime',
         'Jar',
         'LastStateChangeReason',
+        'MainClass',
         'Name',
         'StartDateTime',
         'State',
@@ -80,10 +90,14 @@ class Step(EmrObject):
         if name == 'Args':
             self.args = ResultSet([('member', Arg)])
             return self.args
+        if name == 'Properties':
+            self.properties = ResultSet([('member', KeyValue)])
+            return self.properties
 
 
 class InstanceGroup(EmrObject):
     Fields = set([
+        'BidPrice',
         'CreationDateTime',
         'EndDateTime',
         'InstanceGroupId',
@@ -96,7 +110,6 @@ class InstanceGroup(EmrObject):
         'Market',
         'Name',
         'ReadyDateTime',
-        'SpotPrice',
         'StartDateTime',
         'State',
     ])
@@ -111,7 +124,6 @@ class JobFlow(EmrObject):
         'HadoopVersion',
         'Id',
         'InstanceCount',
-        'InstanceCount',
         'JobFlowId',
         'KeepJobFlowAliveWhenNoSteps',
         'LastStateChangeReason',
@@ -121,11 +133,12 @@ class JobFlow(EmrObject):
         'MasterPublicDnsName',
         'Name',
         'NormalizedInstanceHours',
-        'Placement',
+        'ReadyDateTime',
         'RequestId',
         'SlaveInstanceType',
         'StartDateTime',
         'State',
+        'TerminationProtected',
         'Type',
         'Value',
     ])
