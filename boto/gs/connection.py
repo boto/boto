@@ -19,9 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.gs.bucket import Bucket            
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
-from boto.gs.bucket import Bucket            
+from boto.s3.connection import check_lowercase_bucketname
+
+class Location:
+    DEFAULT = '' # US
+    EU = 'EU'
 
 class GSConnection(S3Connection):
 
@@ -37,3 +42,51 @@ class GSConnection(S3Connection):
                  is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                  host, debug, https_connection_factory, calling_format, path,
                  "google", Bucket)
+
+    def create_bucket(self, bucket_name, headers=None,
+                      location=Location.DEFAULT, policy=None):
+        """
+        Creates a new bucket. By default it's located in the USA. You can
+        pass Location.EU to create an European bucket. You can also pass
+        a LocationConstraint, which (in addition to locating the bucket
+        in the specified location) informs Google that Google services
+        must not copy data out of that location.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the new bucket
+        
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to AWS.
+
+        :type location: :class:`boto.gs.connection.Location`
+        :param location: The location of the new bucket
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key in S3.
+             
+        """
+        check_lowercase_bucketname(bucket_name)
+
+        if policy:
+            if headers:
+                headers[self.provider.acl_header] = policy
+            else:
+                headers = {self.provider.acl_header : policy}
+        if not location:
+            data = ''
+        else:
+            data = ('<CreateBucketConfiguration>'
+                        '<LocationConstraint>%s</LocationConstraint>'
+                    '</CreateBucketConfiguration>' % location)
+        response = self.make_request('PUT', bucket_name, headers=headers,
+                data=data)
+        body = response.read()
+        if response.status == 409:
+            raise self.provider.storage_create_error(
+                response.status, response.reason, body)
+        if response.status == 200:
+            return self.bucket_class(self, bucket_name)
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, body)
+

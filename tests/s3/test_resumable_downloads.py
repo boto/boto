@@ -47,6 +47,15 @@ from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
 from tests.s3.cb_test_harnass import CallbackTestHarnass
 
+# We don't use the OAuth2 authentication plugin directly; importing it here
+# ensures that it's loaded and available by default.
+try:
+  from oauth2_plugin import oauth2_plugin
+except ImportError:
+  # Do nothing - if user doesn't have OAuth2 configured it doesn't matter;
+  # and if they do, the tests will fail (as they should in that case).
+  pass
+
 
 class ResumableDownloadTests(unittest.TestCase):
     """

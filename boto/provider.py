@@ -114,6 +114,8 @@ class Provider(object):
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
             SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
+            # Note that this version header is not to be confused with
+            # the Google Storage 'x-goog-api-version' header.
             VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY : None,
             MFA_HEADER_KEY : None,
