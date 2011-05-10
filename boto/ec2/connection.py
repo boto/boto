@@ -1625,6 +1625,7 @@ class EC2Connection(AWSQueryConnection):
                  The material attribute of the new KeyPair object
                  will contain the the unencrypted PEM encoded RSA private key.
         """
+        public_key_material = base64.b64encode(public_key_material)
         params = {'KeyName' : key_name,
                   'PublicKeyMaterial' : public_key_material}
         return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
