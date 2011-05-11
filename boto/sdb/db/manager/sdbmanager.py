@@ -352,7 +352,7 @@ class SDBConverter(object):
             return unicode(value, 'utf-8')
         except: # really, this should throw an exception.
                 # in the interest of not breaking current
-		# systems, however:
+                # systems, however:
             arr = []
             for ch in value:
                 arr.append(unichr(ord(ch)))
