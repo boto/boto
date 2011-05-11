@@ -147,6 +147,10 @@ from boto.ec2.cloudwatch.datapoint import Datapoint
 from boto.regioninfo import RegionInfo
 import boto
 
+import logging
+log = logging.getLogger(__name__)
+
+
 RegionData = {
     'us-east-1' : 'monitoring.us-east-1.amazonaws.com',
     'us-west-1' : 'monitoring.us-west-1.amazonaws.com',
@@ -265,6 +269,78 @@ class CloudWatchConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         return self.get_list('ListMetrics', params, [('member', Metric)])
+    
+    def put_metric_data(self, namespace, name, value=None, timestamp=None, 
+                        unit=None, dimensions=None, statistics=None):
+        """
+        Publishes metric data points to Amazon CloudWatch. Amazon Cloudwatch 
+        associates the data points with the specified metric. If the specified 
+        metric does not exist, Amazon CloudWatch creates the metric.
+
+        :type namespace: string
+        :param namespace: The namespace of the metric.
+
+        :type name: string
+        :param name: The name of the metric.
+
+        :type value: int
+        :param value: The value for the metric.
+
+        :type timestamp: datetime
+        :param timestamp: The time stamp used for the metric. If not specified, 
+                          the default value is set to the time the metric data 
+                          was received.
+        
+        :type unit: string
+        :param unit: The unit of the metric.  Valid Values: Seconds | 
+                     Microseconds | Milliseconds | Bytes | Kilobytes | 
+                     Megabytes | Gigabytes | Terabytes | Bits | Kilobits | 
+                     Megabits | Gigabits | Terabits | Percent | Count | 
+                     Bytes/Second | Kilobytes/Second | Megabytes/Second | 
+                     Gigabytes/Second | Terabytes/Second | Bits/Second | 
+                     Kilobits/Second | Megabits/Second | Gigabits/Second | 
+                     Terabits/Second | Count/Second | None
+        
+        :type dimensions: dict
+        :param dimensions: Add extra name value pairs to associate 
+                           with the metric, ie {'name1': value1, 'name2': value2}
+        
+        :type statistics: dict
+        :param statistics: Use a statistic set instead of a value, for example
+                           {'maximum': 30, 'minimum': 1, 'samplecount': 100, 'sum': 10000}
+        """
+        params = {'Namespace': namespace}
+        metric_data = {'MetricName': name}
+
+        if timestamp:
+            metric_data['Timestamp'] = timestamp.isoformat()
+        
+        if unit:
+            metric_data['Unit'] = unit
+        
+        if dimensions:
+            for i, (name, value) in enumerate(dimensions.iteritems(), 1):
+                metric_data['Dimensions.member.%d.Name' % i] = name
+                metric_data['Dimensions.member.%d.Value' % i] = value
+        
+        if statistics:
+            metric_data['StatisticValues.Maximum'] = statistics['maximum']
+            metric_data['StatisticValues.Minimum'] = statistics['minimum']
+            metric_data['StatisticValues.SampleCount'] = statistics['samplecount']
+            metric_data['StatisticValues.Sum'] = statistics['sum']
+            if value != None:
+                log.warn('You supplied a value and statistics for a metric.  Posting statistics and not value.')
+
+        elif value:
+            metric_data['Value'] = value
+        else:
+            raise Exception('Must specify a value or statistics to put for a metric.')
+
+        for k, v in metric_data.iteritems():
+            params['MetricData.member.1.%s' % (k)] = v
+
+        return self.get_status('PutMetricData', params)
+
 
     def describe_alarms(self, action_prefix=None, alarm_name_prefix=None, alarm_names=None,
                         max_records=None, state_value=None, next_token=None):
