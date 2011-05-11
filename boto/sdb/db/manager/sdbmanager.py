@@ -346,16 +346,17 @@ class SDBConverter(object):
             return None
 
     def encode_string(self, value):
-        """Encode string to make sure it's unicode/utf-8 compatible.
-        Thanks to Robert Mela for this code"""
+        """Convert ASCII, Latin-1 or UTF-8 to pure Unicode"""
         if not isinstance(value, str): return value
         try:
-            return unicode(value)
-        except: pass
-        arr = []
-        for ch in value:
-            arr.append(unichr(ord(ch)))
-        return u"".join(arr)
+            return unicode(value, 'utf-8')
+        except: # really, this should throw an exception.
+                # in the interest of not breaking current
+		# systems, however:
+            arr = []
+            for ch in value:
+                arr.append(unichr(ord(ch)))
+            return u"".join(arr)
 
     def decode_string(self, value):
         """Decoding a string is really nothing, just
