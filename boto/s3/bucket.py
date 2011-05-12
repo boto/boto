@@ -609,7 +609,7 @@ class Bucket(object):
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=acl_str,
+                                                data=acl_str.encode('ISO-8859-1'),
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
