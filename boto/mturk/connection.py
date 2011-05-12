@@ -706,8 +706,16 @@ class MTurkConnection(AWSQueryConnection):
         params = {'QualificationTypeId' : qualification_type_id,
                   'WorkerId' : worker_id,
                   'IntegerValue' : value,
-                  'SendNotification' : send_notification, }
+                  'SendNotification' : send_notification}
         return self._process_request('AssignQualification', params)
+
+    def update_qualification_score(self, qualification_type_id, worker_id,
+                                   value):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id,
+                  'IntegerValue' : value}
+        return self._process_request('UpdateQualificationScore', params)
 
     def _process_request(self, request_type, params, marker_elems=None):
         """
