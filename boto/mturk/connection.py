@@ -672,7 +672,7 @@ class MTurkConnection(AWSQueryConnection):
                   'MustBeRequestable' : must_be_requestable,
                   'MustBeOwnedByCaller' : must_be_owned_by_caller}
         return self._process_request('SearchQualificationTypes', params,
-                                     [('QualificationType', QualificationType),])
+                    [('QualificationType', QualificationType),])
 
     def get_qualification_requests(self, qualification_type_id,
                                    sort_by='Expiration',
@@ -685,7 +685,7 @@ class MTurkConnection(AWSQueryConnection):
                   'PageSize' : page_size,
                   'PageNumber' : page_number}
         return self._process_request('GetQualificationRequests', params,
-                                     [('QualificationRequest', QualificationRequest),])
+                    [('QualificationRequest', QualificationRequest),])
 
     def grant_qualification(self, qualification_request_id, integer_value=1):
         """TODO: Document."""
@@ -708,6 +708,13 @@ class MTurkConnection(AWSQueryConnection):
                   'IntegerValue' : value,
                   'SendNotification' : send_notification}
         return self._process_request('AssignQualification', params)
+
+    def get_qualification_score(self, qualification_type_id, worker_id):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id}
+        return self._process_request('GetQualificationScore', params,
+                    [('Qualification', Qualification),])
 
     def update_qualification_score(self, qualification_type_id, worker_id,
                                    value):
@@ -812,6 +819,17 @@ class HIT(BaseAutoResultElement):
 
     # are we there yet?
     expired = property(_has_expired)
+
+class Qualification(BaseAutoResultElement):
+    """
+    Class to extract an Qualification structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide such as
+    QualificationTypeId, IntegerValue. Does not seem to contain GrantTime.
+    """
+    
+    pass
 
 class QualificationType(BaseAutoResultElement):
     """
