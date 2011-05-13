@@ -244,6 +244,21 @@ class ResumableUploadTests(unittest.TestCase):
         self.assertEqual(self.small_src_file_as_string,
                          self.dst_key.get_contents_as_string())
 
+    def test_broken_pipe_recovery(self):
+        """
+        Tests handling of a Broken Pipe (which interacts with an httplib bug)
+        """
+        exception = IOError(errno.EPIPE, "Broken pipe")
+        harnass = CallbackTestHarnass(exception=exception)
+        res_upload_handler = ResumableUploadHandler(num_retries=1)
+        self.dst_key.set_contents_from_file(
+            self.small_src_file, cb=harnass.call,
+            res_upload_handler=res_upload_handler)
+        # Ensure uploaded object has correct content.
+        self.assertEqual(self.small_src_file_size, self.dst_key.size)
+        self.assertEqual(self.small_src_file_as_string,
+                         self.dst_key.get_contents_as_string())
+
     def test_non_retryable_exception_handling(self):
         """
         Tests a resumable upload that fails with a non-retryable exception
