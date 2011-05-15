@@ -294,6 +294,13 @@ class ResumableDownloadHandler(object):
             except self.RETRYABLE_EXCEPTIONS, e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
+                if isinstance(e, IOError) and e.errno == errno.EPIPE:
+                    # Broken pipe error causes httplib to immediately
+                    # close the socket (http://bugs.python.org/issue5542),
+                    # so we need to close and reopen the key before resuming
+                    # the download.
+                    key.get_file(fp, headers, cb, num_cb, torrent, version_id,
+                                 override_num_retries=0)
             except ResumableDownloadException, e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):

@@ -247,6 +247,22 @@ class ResumableDownloadTests(unittest.TestCase):
         self.assertEqual(self.small_src_key_as_string,
                          self.small_src_key.get_contents_as_string())
 
+    def test_broken_pipe_recovery(self):
+        """
+        Tests handling of a Broken Pipe (which interacts with an httplib bug)
+        """
+        exception = IOError(errno.EPIPE, "Broken pipe")
+        harnass = CallbackTestHarnass(exception=exception)
+        res_download_handler = ResumableDownloadHandler(num_retries=1)
+        self.small_src_key.get_contents_to_file(
+            self.dst_fp, cb=harnass.call,
+            res_download_handler=res_download_handler)
+        # Ensure downloaded object has correct content.
+        self.assertEqual(self.small_src_key_size,
+                         get_cur_file_size(self.dst_fp))
+        self.assertEqual(self.small_src_key_as_string,
+                         self.small_src_key.get_contents_as_string())
+
     def test_non_retryable_exception_handling(self):
         """
         Tests resumable download that fails with a non-retryable exception

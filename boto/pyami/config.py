@@ -35,7 +35,7 @@ else:
 # /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
-UserConfigPath = expanduser('~/.boto')
+UserConfigPath = os.path.join(expanduser('~'), '.boto')
 BotoConfigLocations.append(UserConfigPath)
 
 # If there's a BOTO_CONFIG variable set, we load ONLY 
