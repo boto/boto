@@ -272,17 +272,31 @@ class EC2Connection(AWSQueryConnection):
         image_id = getattr(rs, 'imageId', None)
         return image_id
 
-    def deregister_image(self, image_id):
+    def deregister_image(self, image_id, delete_snapshot=False):
         """
         Unregister an AMI.
 
         :type image_id: string
         :param image_id: the ID of the Image to unregister
 
+        :type delete_snapshot: bool
+        :param delete_snapshot: Set to True if we should delete the snapshot associated with an EBS volume mounted at /dev/sda1
+
         :rtype: bool
         :return: True if successful
         """
-        return self.get_status('DeregisterImage', {'ImageId':image_id}, verb='POST')
+        snapshot_id = None
+        if delete_snapshot:
+            image = self.get_image(image_id)
+            for key in image.block_device_mapping:
+                if key == "/dev/sda1":
+                    snapshot_id = image.block_device_mapping[key].snapshot_id
+                    break
+
+        result = self.get_status('DeregisterImage', {'ImageId':image_id}, verb='POST')
+        if result and snapshot_id:
+            return result and self.delete_snapshot(snapshot_id)
+        return result
 
     def create_image(self, instance_id, name, description=None, no_reboot=False):
         """
