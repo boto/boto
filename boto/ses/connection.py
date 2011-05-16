@@ -178,7 +178,7 @@ class SESConnection(AWSAuthConnection):
         if(format not in ("text","html")):
             raise ValueError("'format' argument must be 'text' or 'html'")
 
-        if(not (html_body and text_body)):
+        if(not (html_body or text_body)):
             raise ValueError("No text or html body found for mail")
 
         self._build_list_params(params, to_addresses,
