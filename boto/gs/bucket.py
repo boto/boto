@@ -22,7 +22,7 @@
 import boto
 from boto import handler
 from boto.exception import InvalidAclError
-from boto.gs.acl import ACL
+from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
@@ -52,6 +52,25 @@ class Bucket(S3Bucket):
             xml.sax.parseString(body, h)
             return acl
         else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def set_canned_acl(self, acl_str, key_name='', headers=None,
+                       version_id=None):
+        assert acl_str in CannedACLStrings
+
+        if headers:
+            headers[self.connection.provider.acl_header] = acl_str
+        else:
+            headers={self.connection.provider.acl_header: acl_str}
+
+        query_args='acl'
+        if version_id:
+            query_args += '&versionId=%s' % version_id
+        response = self.connection.make_request('PUT', self.name, key_name,
+                headers=headers, query_args=query_args)
+        body = response.read()
+        if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 

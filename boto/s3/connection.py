@@ -79,12 +79,14 @@ class _CallingFormat:
             return self.get_bucket_server(server, bucket)
 
     def build_auth_path(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path = ''
         if bucket != '':
             path = '/' + bucket
         return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
@@ -105,6 +107,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         return server
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
