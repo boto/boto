@@ -79,12 +79,14 @@ class _CallingFormat:
             return self.get_bucket_server(server, bucket)
 
     def build_auth_path(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path = ''
         if bucket != '':
             path = '/' + bucket
         return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
@@ -105,10 +107,19 @@ class OrdinaryCallingFormat(_CallingFormat):
         return server
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
         return path_base + urllib.quote(key)
+
+class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
+    
+    def build_url_base(self, connection, protocol, server, bucket, key=''):
+        url_base = '//'
+        url_base += self.build_host(server, bucket)
+        url_base += connection.get_path(self.build_path_base(bucket, key))
+        return url_base
 
 class Location:
     DEFAULT = '' # US Classic Region

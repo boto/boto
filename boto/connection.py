@@ -134,6 +134,8 @@ class HTTPRequest(object):
         self.host = host 
         self.port = port
         self.path = path
+        if auth_path is None:
+            auth_path = path
         self.auth_path = auth_path
         self.params = params
         self.headers = headers
@@ -574,6 +576,8 @@ class AWSAuthConnection(object):
             headers = headers.copy()
         host = host or self.host
         if self.use_proxy:
+            if not auth_path:
+                auth_path = path
             path = self.prefix_proxy_to_path(path, host)
             if self.proxy_user and self.proxy_pass and not self.is_secure:
                 # If is_secure, we don't have to set the proxy authentication

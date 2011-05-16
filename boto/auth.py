@@ -179,7 +179,7 @@ class QuerySignatureHelper(HmacKeys):
         params['Timestamp'] = boto.utils.get_ts()
         qs, signature = self._calc_signature(
             http_request.params, http_request.method,
-            http_request.path, http_request.host)
+            http_request.auth_path, http_request.host)
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'

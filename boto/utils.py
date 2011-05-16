@@ -153,8 +153,8 @@ def get_aws_metadata(headers, provider=None):
             del headers[hkey]
     return metadata
 
-def retry_url(url, retry_on_404=True):
-    for i in range(0, 10):
+def retry_url(url, retry_on_404=True, num_retries=10):
+    for i in range(0, num_retries):
         try:
             req = urllib2.Request(url)
             resp = urllib2.urlopen(req)
