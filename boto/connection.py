@@ -73,6 +73,9 @@ try:
 except ImportError:
     pass
 
+_SERVER_SOFTWARE = os.environ.get('SERVER_SOFTWARE', '')
+ON_APP_ENGINE = _SERVER_SOFTWARE.startswith('Google App Engine/')
+
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 DEFAULT_CA_CERTS_FILE = os.path.join(
@@ -326,7 +329,8 @@ class AWSAuthConnection(object):
             # did the same when calculating the V2 signature.  In 2.6
             # (and higher!)
             # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] in ('2.6', '2.7') and port == 443:
+            if ((ON_APP_ENGINE and sys.version[:3] == '2.5') or
+                    sys.version[:3] in ('2.6', '2.7')) and port == 443:
                 signature_host = self.host
             else:
                 signature_host = '%s:%d' % (self.host, port)
