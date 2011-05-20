@@ -97,6 +97,7 @@ class SDBConverter(object):
         return self.encode_map(prop, values)
 
     def encode_map(self, prop, value):
+        import urllib
         if value == None:
             return None
         if not isinstance(value, dict):
@@ -108,7 +109,7 @@ class SDBConverter(object):
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
             if encoded_value != None:
-                new_value.append('%s:%s' % (key, encoded_value))
+                new_value.append('%s:%s' % (urllib.quote(key), encoded_value))
         return new_value
 
     def encode_prop(self, prop, value):
@@ -148,9 +149,11 @@ class SDBConverter(object):
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
+        import urllib
         key = value
         if ":" in value:
             key, value = value.split(':',1)
+            key = urllib.unquote(key)
         if Model in item_type.mro():
             value = item_type(id=value)
         else:

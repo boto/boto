@@ -25,11 +25,14 @@ import ConfigParser
 import boto
 
 # If running in Google App Engine there is no "user" and
-# os.path.expanduser() will fail. Use no-op expanduser in this case.
-if 'getuid' in dir(os):
-    expanduser = os.path.expanduser
-else:
-    expanduser = (lambda x: x)
+# os.path.expanduser() will fail. Attempt to detect this case and use a
+# no-op expanduser function in this case.
+try:
+  os.path.expanduser('~')
+  expanduser = os.path.expanduser
+except AttributeError:
+  # This is probably running on App Engine.
+  expanduser = (lambda x: x)
 
 # By default we use two locations for the boto configurations,
 # /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
