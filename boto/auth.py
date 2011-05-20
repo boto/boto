@@ -192,7 +192,7 @@ class QuerySignatureHelper(HmacKeys):
         http_request.params = {}
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
-    """Class SQS query signature based Auth handler."""
+    """Provides Signature V0 Signing"""
 
     SignatureVersion = 0
     capability = ['sign-v0']

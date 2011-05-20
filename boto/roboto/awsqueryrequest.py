@@ -48,20 +48,20 @@ class RequiredParamError(boto.exception.BotoClientError):
     def __init__(self, required):
         self.required = required
         s = 'Required parameters are missing: %s' % self.required
-        boto.exception.BotoClientError(s)
+        boto.exception.BotoClientError.__init__(self, s)
 
 class EncoderError(boto.exception.BotoClientError):
 
     def __init__(self, error_msg):
         s = 'Error encoding value (%s)' % error_msg
-        boto.exception.BotoClientError(s)
+        boto.exception.BotoClientError.__init__(self, s)
         
 class FilterError(boto.exception.BotoClientError):
 
     def __init__(self, filters):
         self.filters = filters
         s = 'Unknown filters: %s' % self.filters
-        boto.exception.BotoClientError(s)
+        boto.exception.BotoClientError.__init__(self, s)
         
 class Encoder:
 
@@ -231,7 +231,8 @@ class AWSQueryRequest(object):
                     param.encoder(param, self.request_params, value)
                 else:
                     Encoder.encode(param, self.request_params, value)
-            del self.args[python_name]
+            if python_name in self.args:
+                del self.args[python_name]
         if required:
             raise RequiredParamError(required)
         boto.log.debug('request_params: %s' % self.request_params)
