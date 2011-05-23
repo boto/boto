@@ -51,7 +51,10 @@ class Blob(object):
 
 
     def read(self):
-        return self.file.read()
+        if hasattr(self.file, "get_contents_as_string"):
+            return self.file.get_contents_as_string()
+        else:
+            return self.file.read()
 
     def readline(self):
         return self.file.readline()
