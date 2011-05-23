@@ -550,7 +550,9 @@ class Key(object):
         fp.seek(0)
         s = fp.read(self.BufferSize)
         while s:
-            m.update(s.encode('utf-8'))
+            if isinstance(s, unicode):
+                s = s.encode('utf-8')
+            m.update(s)
             s = fp.read(self.BufferSize)
         hex_md5 = m.hexdigest()
         base64md5 = base64.encodestring(m.digest())
