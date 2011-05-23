@@ -764,6 +764,8 @@ class Key(object):
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
         """
+        if isinstance(s, unicode):
+            s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy)
