@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 import StringIO, os, re
+import warnings
 import ConfigParser
 import boto
 
@@ -67,7 +68,11 @@ class Config(ConfigParser.SafeConfigParser):
             else:
                 self.read(BotoConfigLocations)
             if "AWS_CREDENTIAL_FILE" in os.environ:
-                self.load_credential_file(expanduser(os.environ['AWS_CREDENTIAL_FILE']))
+                full_path = expanduser(os.environ['AWS_CREDENTIAL_FILE'])
+                try:
+                    self.load_credential_file(full_path)
+                except IOError:
+                    warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
