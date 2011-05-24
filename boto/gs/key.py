@@ -168,6 +168,21 @@ class Key(S3Key):
             headers[provider.acl_header] = policy
         if hasattr(fp, 'name'):
             self.path = fp.name
+
+        # GS support supports chunked transfer, but should be disabled for
+        # resumable upload. Resumable upload demands that size of object
+        # should be know before hand and in such scenarios, shunked transfer
+        # doesn't really make sense.
+        chunked_transfer = False
+        if 'Transfer-Encoding' in headers and \
+                headers['Transfer-Encoding'].strip() == 'chunked':
+                if res_upload_handler:
+                    del headers['Transfer-Encoding']
+                else:
+                    # Sanitize (User can input extra spaces)
+                    headers['Transfer-Encoding'] = 'chunked'
+                    chunked_transfer = True
+
         if self.bucket != None:
             if not md5:
                 md5 = self.compute_md5(fp)
@@ -188,7 +203,7 @@ class Key(S3Key):
                 res_upload_handler.send_file(self, fp, headers, cb, num_cb)
             else:
                 # Not a resumable transfer so use basic send_file mechanism.
-                self.send_file(fp, headers, cb, num_cb)
+                self.send_file(fp, headers, cb, num_cb, chunked_transfer=chunked_transfer)
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,

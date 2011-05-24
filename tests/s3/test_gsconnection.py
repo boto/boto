@@ -17,7 +17,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -75,6 +75,18 @@ class GSConnectionTest (unittest.TestCase):
         md5 = k.md5
         k.set_contents_from_string(s2)
         assert k.md5 != md5
+        # Test for chunked-transfer
+        headers = {'Transfer-Encoding':'chunked'}
+        k.set_contents_from_filename('foobar', headers=headers)
+        fp = open('foobar1', 'wb')
+        k.get_contents_to_file(fp)
+        fp.close()
+        fp1 = open('foobar', 'rb')
+        fp2 = open('foobar1', 'rb')
+        assert (fp1.read() == fp2.read()), 'Chunked TRansfer corrupted the Data'
+        fp1.close()
+        fp2.close()
+        os.unlink('foobar1')
         os.unlink('foobar')
         all = bucket.get_all_keys()
         assert len(all) == 6
@@ -100,12 +112,12 @@ class GSConnectionTest (unittest.TestCase):
         mdval2 = 'This is the second metadata value'
         k.set_metadata(mdkey2, mdval2)
         # try a unicode metadata value
-        
+
         mdval3 = u'föö'
         mdkey3 = 'meta3'
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
-        
+
         k = bucket.lookup('has_metadata')
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
