@@ -137,9 +137,10 @@ about that particular data point.
 My server obviously isn't very busy right now!
 """
 try:
-    import simplejson as json
-except ImportError:
     import json
+except ImportError:
+    import simplejson as json
+
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
 from boto.ec2.cloudwatch.alarm import MetricAlarm, AlarmHistoryItem

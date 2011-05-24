@@ -196,7 +196,11 @@ class Config(ConfigParser.SafeConfigParser):
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
     
     def dump_to_sdb(self, domain_name, item_name):
-        import simplejson
+        try:
+            import json
+        except ImportError:
+            import simplejson as json
+
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         if not domain:
@@ -207,18 +211,22 @@ class Config(ConfigParser.SafeConfigParser):
             d = {}
             for option in self.options(section):
                 d[option] = self.get(section, option)
-            item[section] = simplejson.dumps(d)
+            item[section] = json.dumps(d)
         item.save()
 
     def load_from_sdb(self, domain_name, item_name):
-        import simplejson
+        try:
+            import json
+        except ImportError:
+            import simplejson as json
+
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         item = domain.get_item(item_name)
         for section in item.keys():
             if not self.has_section(section):
                 self.add_section(section)
-            d = simplejson.loads(item[section])
+            d = json.loads(item[section])
             for attr_name in d.keys():
                 attr_value = d[attr_name]
                 if attr_value == None:
