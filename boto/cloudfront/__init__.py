@@ -246,3 +246,16 @@ class CloudFrontConnection(AWSAuthConnection):
         else:
             raise CloudFrontServerError(response.status, response.reason, body)
 
+    def invalidation_request_status (self, distribution_id, request_id, caller_reference=None):
+        uri = '/%s/distribution/%s/invalidation/%s' % (self.Version, distribution_id, request_id )
+        response = self.make_request('GET', uri, {'Content-Type' : 'text/xml'})
+        body = response.read()
+        if response.status == 200:
+            paths = InvalidationBatch([])
+            h = handler.XmlHandler(paths, self)
+            xml.sax.parseString(body, h)
+            return paths
+        else:
+            raise CloudFrontServerError(response.status, response.reason, body)
+
+

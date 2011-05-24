@@ -443,11 +443,12 @@ class Bucket(object):
         """
         return self.key_class(self, key_name)
 
-    def generate_url(self, expires_in, method='GET',
-                     headers=None, force_http=False):
+    def generate_url(self, expires_in, method='GET', headers=None,
+                     force_http=False, response_headers=None):
         return self.connection.generate_url(expires_in, method, self.name,
                                             headers=headers,
-                                            force_http=force_http)
+                                            force_http=force_http,
+                                            response_headers=response_headers)
 
     def delete_key(self, key_name, headers=None,
                    version_id=None, mfa_token=None):
