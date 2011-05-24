@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -151,7 +151,6 @@ import boto
 import logging
 log = logging.getLogger(__name__)
 
-
 RegionData = {
     'us-east-1' : 'monitoring.us-east-1.amazonaws.com',
     'us-west-1' : 'monitoring.us-west-1.amazonaws.com',
@@ -227,18 +226,31 @@ class CloudWatchConnection(AWSQueryConnection):
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
             items = [items]
-        for i in range(1, len(items)+1):
-            params[label % i] = items[i-1]
+        for i, item in enumerate(items, 1):
+            params[label % i] = item
 
     def get_metric_statistics(self, period, start_time, end_time, metric_name,
                               namespace, statistics, dimensions=None, unit=None):
         """
         Get time-series data for one or more statistics of a given metric.
 
-        :type metric_name: string
-        :param metric_name: CPUUtilization|NetworkIO-in|NetworkIO-out|DiskIO-ALL-read|
-                             DiskIO-ALL-write|DiskIO-ALL-read-bytes|DiskIO-ALL-write-bytes
+        :type period: integer
+        :param period: The granularity, in seconds, of the returned datapoints.
+                       Period must be at least 60 seconds and must be a multiple
+                       of 60. The default value is 60.
 
+        :type start_time: datetime
+        :param start_time: The time stamp to use for determining the first datapoint
+                           to return. The value specified is inclusive; results include
+                           datapoints with the time stamp specified.
+
+        :type end_time: datetime
+        :param end_time: The time stamp to use for determining the last datapoint to
+                         return. The value specified is exclusive; results will include
+                         datapoints up to the time stamp specified.
+
+        :type metric_name: string
+        :param metric_name: The metric name.
         :rtype: list
         """
         params = {'Period' : period,
@@ -248,11 +260,9 @@ class CloudWatchConnection(AWSQueryConnection):
                   'EndTime' : end_time.isoformat()}
         self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
-            i = 1
-            for name in dimensions:
+            for i, name in enumerate(dimensions, 1):
                 params['Dimensions.member.%d.Name' % i] = name
                 params['Dimensions.member.%d.Value' % i] = dimensions[name]
-                i += 1
         return self.get_list('GetMetricStatistics', params, [('member', Datapoint)])
 
     def list_metrics(self, next_token=None):
@@ -368,7 +378,8 @@ class CloudWatchConnection(AWSQueryConnection):
         :param state_value: The state value to be used in matching alarms.
 
         :type next_token: string
-        :param next_token: The token returned by a previous call to indicate that there is more data.
+        :param next_token: The token returned by a previous call to indicate that there
+                           is more data.
 
         :rtype list
         """
@@ -408,13 +419,15 @@ class CloudWatchConnection(AWSQueryConnection):
         :param end_date: The starting date to retrieve alarm history.
 
         :type history_item_type: string
-        :param history_item_type: The type of alarm histories to retreive (ConfigurationUpdate | StateUpdate | Action)
+        :param history_item_type: The type of alarm histories to retreive
+                                  (ConfigurationUpdate | StateUpdate | Action)
 
         :type max_records: int
         :param max_records: The maximum number of alarm descriptions to retrieve.
 
         :type next_token: string
-        :param next_token: The token returned by a previous call to indicate that there is more data.
+        :param next_token: The token returned by a previous call to indicate that
+                           there is more data.
 
         :rtype list
         """
@@ -433,7 +446,8 @@ class CloudWatchConnection(AWSQueryConnection):
             params['NextToken'] = next_token
         return self.get_list('DescribeAlarmHistory', params, [('member', AlarmHistoryItem)])
 
-    def describe_alarms_for_metric(self, metric_name, namespace, period=None, statistic=None, dimensions=None, unit=None):
+    def describe_alarms_for_metric(self, metric_name, namespace, period=None,
+                                   statistic=None, dimensions=None, unit=None):
         """
         Retrieves all alarms for a single metric. Specify a statistic, period,
         or unit to filter the set of alarms further.
@@ -456,10 +470,8 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :rtype list
         """
-        params = {
-                    'MetricName'        :   metric_name,
-                    'Namespace'         :   namespace,
-                 }
+        params = {'MetricName' : metric_name,
+                  'Namespace' : namespace}
         if period:
             params['Period'] = period
         if statistic:
@@ -505,7 +517,8 @@ class CloudWatchConnection(AWSQueryConnection):
         if alarm.dimensions:
             self.build_list_params(params, alarm.dimensions, 'Dimensions.member.%s')
         if alarm.insufficient_data_actions:
-            self.build_list_params(params, alarm.insufficient_data_actions, 'InsufficientDataActions.member.%s')
+            self.build_list_params(params, alarm.insufficient_data_actions,
+                                   'InsufficientDataActions.member.%s')
         if alarm.ok_actions:
             self.build_list_params(params, alarm.ok_actions, 'OKActions.member.%s')
         if alarm.unit:
@@ -546,11 +559,9 @@ class CloudWatchConnection(AWSQueryConnection):
         :type state_reason_data: string
         :param state_reason_data: Reason string (will be jsonified).
         """
-        params = {
-                    'AlarmName'             :   alarm_name,
-                    'StateReason'           :   state_reason,
-                    'StateValue'            :   state_value,
-                 }
+        params = {'AlarmName' : alarm_name,
+                  'StateReason' : state_reason,
+                  'StateValue' : state_value}
         if state_reason_data:
             params['StateReasonData'] = json.dumps(state_reason_data)
 
