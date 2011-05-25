@@ -57,8 +57,7 @@ class HealthCheck(object):
         if not self.access_point:
             return
 
-        new_hc = self.connection.configure_health_check(self.access_point,
-                                                        self)
+        new_hc = self.connection.configure_health_check(self.access_point, self)
         self.interval = new_hc.interval
         self.target = new_hc.target
         self.healthy_threshold = new_hc.healthy_threshold

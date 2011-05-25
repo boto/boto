@@ -23,6 +23,7 @@ from boto.ec2.elb.healthcheck import HealthCheck
 from boto.ec2.elb.listener import Listener
 from boto.ec2.elb.listelement import ListElement
 from boto.ec2.elb.policies import Policies
+from boto.ec2.elb.securitygroup import SecurityGroup
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 
@@ -41,6 +42,9 @@ class LoadBalancer(object):
         self.created_time = None
         self.instances = None
         self.availability_zones = ListElement()
+        self.canonical_hosted_zone_name = None
+        self.canonical_hosted_zone_name_id = None
+        self.source_security_group = None
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -60,6 +64,9 @@ class LoadBalancer(object):
         elif name == 'Policies':
             self.policies = Policies(self)
             return self.policies
+        elif name == 'SourceSecurityGroup':
+            self.source_security_group = SecurityGroup()
+            return self.source_security_group
         else:
             return None
 
@@ -72,6 +79,10 @@ class LoadBalancer(object):
             self.created_time = value
         elif name == 'InstanceId':
             self.instances.append(value)
+        elif name == 'CanonicalHostedZoneName':
+            self.canonical_hosted_zone_name = value
+        elif name == 'CanonicalHostedZoneNameID':
+            self.canonical_hosted_zone_name_id = value
         else:
             setattr(self, name, value)
 
