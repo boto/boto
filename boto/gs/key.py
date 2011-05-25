@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -171,16 +171,13 @@ class Key(S3Key):
 
         # GS support supports chunked transfer, but should be disabled for
         # resumable upload. Resumable upload demands that size of object
-        # should be know before hand and in such scenarios, shunked transfer
+        # should be known before hand and in such scenarios, chunked transfer
         # doesn't really make sense.
         chunked_transfer = False
-        if 'Transfer-Encoding' in headers and \
-                headers['Transfer-Encoding'].strip() == 'chunked':
+        if self.can_do_chunked_transfer(headers):
                 if res_upload_handler:
                     del headers['Transfer-Encoding']
                 else:
-                    # Sanitize (User can input extra spaces)
-                    headers['Transfer-Encoding'] = 'chunked'
                     chunked_transfer = True
 
         if self.bucket != None:

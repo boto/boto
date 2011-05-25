@@ -77,13 +77,27 @@ class GSConnectionTest (unittest.TestCase):
         assert k.md5 != md5
         # Test for chunked-transfer
         headers = {'Transfer-Encoding':'chunked'}
+        k.md5 = None
+        k.base64md5 = None
         k.set_contents_from_filename('foobar', headers=headers)
         fp = open('foobar1', 'wb')
         k.get_contents_to_file(fp)
         fp.close()
         fp1 = open('foobar', 'rb')
         fp2 = open('foobar1', 'rb')
-        assert (fp1.read() == fp2.read()), 'Chunked TRansfer corrupted the Data'
+        assert (fp1.read() == fp2.read()), 'Chunked Transfer corrupted the Data'
+        fp2.close()
+        # Test for stream API
+        fp1.seek(0,0)
+        k.md5 = None
+        k.base64md5 = None
+        k.set_contents_from_stream(fp1, headers=headers)
+        fp = open('foobar1', 'wb')
+        k.get_contents_to_file(fp)
+        fp.close()
+        fp1.seek(0,0)
+        fp2 = open('foobar1', 'rb')
+        assert (fp1.read() == fp2.read()), 'Chunked Transfer corrupted the Data'
         fp1.close()
         fp2.close()
         os.unlink('foobar1')

@@ -455,11 +455,13 @@ class Key(object):
         provider = self.bucket.connection.provider
 
         def sender(http_conn, method, path, data, headers):
+            m = md5()
             http_conn.putrequest(method, path)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-            fp.seek(0)
+            if self.md5:
+                fp.seek(0)
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
             # If the debuglevel < 3 we don't want to show connection
@@ -495,6 +497,8 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(total_bytes, self.size)
                         i = 0
+                if not self.md5:
+                    m.update(l)
                 l = fp.read(self.BufferSize)
             if chunked_transfer:
                 http_conn.send('0\r\n')
@@ -505,12 +509,15 @@ class Key(object):
                 cb(total_bytes, self.size)
             response = http_conn.getresponse()
             body = response.read()
-            fp.seek(0)
+            if not self.md5:
+                self.md5 = m.hexdigest()
+            else:
+                fp.seek(0)
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
             if response.status == 500 or response.status == 503 or \
-                    response.getheader('location'):
-                # we'll try again
+                    response.getheader('location') and seekable:
+                # we'll try again if fp is seekable
                 return response
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
@@ -527,7 +534,8 @@ class Key(object):
         else:
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
-        headers['Content-MD5'] = self.base64md5
+        if self.base64md5:
+            headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
@@ -576,6 +584,61 @@ class Key(object):
         self.size = fp.tell()
         fp.seek(0)
         return (hex_md5, base64md5)
+
+    def can_do_chunked_transfer(self, headers):
+        """
+        Helper method to determine whether chunked transfer is supported.
+        Chunked Transfer can be supported if
+        1) Header contains 'Transfer-Encoding: chunked'
+        2) Cloud provider is not S3
+        """
+        if headers.has_key('Transfer-Encoding') and \
+            headers['Transfer-Encoding'].strip() == 'chunked':
+            # S3 doesn't support chunked transfer.
+            if self.provider.name == 'aws':
+                del headers['Transfer-Encoding']
+                return False
+            else:
+                headers['Transfer-Encoding'] = 'chunked'
+                return True
+        else:
+            return False
+
+    def set_contents_from_stream(self, fp, headers=None, replace=True,
+                                cb=None, num_cb=10, policy=None, md5=None,
+                                reduced_redundancy=False, query_args=None):
+        """
+        Store an object using the name of the Key object as the key in
+        cloud and the conntents of the data stream pointed to by 'fp' as
+        the contents.
+        The stream can be seekable just like a file object or cannot be
+        seekable like a pipe.
+        """
+
+        if not self.can_do_chunked_transfer(headers):
+            raise BotoClientError("Object is not seekable and chunked transfer not possible")
+
+        if not self.name or self.name == '':
+            raise BotoClientError("Cannot determine the name of the object")
+
+        provider = self.bucket.connection.provider
+        if headers is None:
+            headers = {}
+        if policy:
+            headers[provider.acl_header] = policy
+
+        if reduced_redundancy:
+            self.storage_class = 'REDUCED_REDUNDANCY'
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
+                # TODO - What if provider doesn't support reduced reduncancy?
+                # What if different providers provide different classes?
+        if self.bucket != None:
+            if not replace:
+                k = self.bucket.lookup(self.name)
+                if k:
+                    return
+            self.send_file(fp, headers, cb, num_cb, query_args, chunked_transfer=True)
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
@@ -642,10 +705,9 @@ class Key(object):
         if policy:
             headers[provider.acl_header] = policy
 
-        # s3 doesn't support chunked transfer now.
-        if 'Transfer-Encoding' in headers and \
-                headers['Transfer-Encoding'].strip() == 'chunked':
-                del headers['Transfer-Encoding']
+        # Check for chunked Transfer support
+        if self.can_do_chunked_transfer(headers):
+            chunked_transfer = True
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
