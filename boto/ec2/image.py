@@ -243,8 +243,8 @@ class Image(TaggedEC2Object):
                                              private_ip_address,
                                              placement_group)
 
-    def deregister(self):
-        return self.connection.deregister_image(self.id)
+    def deregister(self, delete_snapshot=False):
+        return self.connection.deregister_image(self.id, delete_snapshot)
 
     def get_launch_permissions(self):
         img_attrs = self.connection.get_image_attribute(self.id,
