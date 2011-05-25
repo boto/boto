@@ -26,7 +26,7 @@ from boto.resultset import ResultSet
 class ResourceRecordSets(ResultSet):
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2010-10-01/">
+    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2011-05-05/">
             <ChangeBatch>
                 <Comment>%(comment)s</Comment>
                 <Changes>%(changes)s</Changes>
@@ -104,39 +104,71 @@ class Record(object):
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
-        <TTL>%(ttl)s</TTL>
-        <ResourceRecords>%(records)s</ResourceRecords>
+        %(body)s
     </ResourceRecordSet>"""
+
+    ResourceRecordsBody = """
+        <TTL>%(ttl)s</TTL>
+        <ResourceRecords>
+            %(records)s
+        </ResourceRecords>"""
 
     ResourceRecordBody = """<ResourceRecord>
         <Value>%s</Value>
     </ResourceRecord>"""
 
+    AliasBody = """<AliasTarget>
+        <HostedZoneId>%s</HostedZoneId>
+        <DNSName>%s</DNSName>
+    </AliasTarget>"""
 
-    def __init__(self, name=None, type=None, ttl=600, resource_records=None):
+    def __init__(self, name=None, type=None, ttl=600, resource_records=None, alias_hosted_zone_id=None, alias_dns_name=None):
         self.name = name
         self.type = type
         self.ttl = ttl
         if resource_records == None:
             resource_records = []
         self.resource_records = resource_records
+        self.alias_hosted_zone_id = alias_hosted_zone_id
+        self.alias_dns_name = alias_dns_name
     
     def add_value(self, value):
         """Add a resource record value"""
         self.resource_records.append(value)
 
+    def set_alias(self, alias_hosted_zone_id, alias_dns_name):
+        """Make this an alias resource record set"""
+        self.alias_hosted_zone_id = alias_hosted_zone_id
+        self.alias_dns_name = alias_dns_name
+
     def to_xml(self):
         """Spit this resource record set out as XML"""
-        records = ""
-        for r in self.resource_records:
-            records += self.ResourceRecordBody % r
+        if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
+            # Use alias
+            body = self.AliasBody % (self.alias_hosted_zone_id, self.alias_dns_name)
+        else:
+            # Use resource record(s)
+            records = ""
+            for r in self.resource_records:
+                records += self.ResourceRecordBody % r
+            body = self.ResourceRecordsBody % {
+                "ttl": self.ttl,
+                "records": records,
+            }
         params = {
             "name": self.name,
             "type": self.type,
-            "ttl": self.ttl,
-            "records": records
+            "body": body,
         }
         return self.XMLBody % params
+
+    def to_print(self):
+        if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
+            # Show alias
+            return 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
+        else:
+            # Show resource record(s)
+            return ",".join(self.resource_records)
 
     def endElement(self, name, value, connection):
         if name == 'Name':
@@ -147,6 +179,10 @@ class Record(object):
             self.ttl = value
         elif name == 'Value':
             self.resource_records.append(value)
+        elif name == 'HostedZoneId':
+            self.alias_hosted_zone_id = value
+        elif name == 'DNSName':
+            self.alias_dns_name = value
 
     def startElement(self, name, attrs, connection):
         return None
