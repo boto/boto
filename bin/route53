@@ -61,7 +61,7 @@ def add_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_
     from boto.route53.record import ResourceRecordSets
     changes = ResourceRecordSets(conn, hosted_zone_id, comment)
     change = changes.add_change("CREATE", name, type)
-    change.set_alias((alias_hosted_zone_id, alias_dns_name))
+    change.set_alias(alias_hosted_zone_id, alias_dns_name)
     print changes.commit()
 
 def del_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_name, comment=""):
@@ -69,7 +69,7 @@ def del_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_
     from boto.route53.record import ResourceRecordSets
     changes = ResourceRecordSets(conn, hosted_zone_id, comment)
     change = changes.add_change("DELETE", name, type)
-    change.set_alias((alias_hosted_zone_id, alias_dns_name))
+    change.set_alias(alias_hosted_zone_id, alias_dns_name)
     print changes.commit()
 
 def change_record(conn, hosted_zone_id, name, type, values, ttl=600, comment=""):
