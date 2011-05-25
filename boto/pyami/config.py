@@ -31,7 +31,7 @@ import boto
 try:
   os.path.expanduser('~')
   expanduser = os.path.expanduser
-except AttributeError:
+except (AttributeError, ImportError):
   # This is probably running on App Engine.
   expanduser = (lambda x: x)
 
