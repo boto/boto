@@ -47,8 +47,8 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 class Route53Connection(AWSAuthConnection):
 
     DefaultHost = 'route53.amazonaws.com'
-    Version = '2010-05-05'
-    XMLNameSpace = 'https://route53.amazonaws.com/doc/2010-05-05/'
+    Version = '2011-05-05'
+    XMLNameSpace = 'https://route53.amazonaws.com/doc/2011-05-05/'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
