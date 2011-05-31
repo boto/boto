@@ -197,7 +197,7 @@ class AutoScaleConnection(AWSQueryConnection):
             self.build_list_params(params, launch_config.security_groups,
                                    'SecurityGroups')
         if launch_config.instance_monitoring:
-            params['InstanceMonitoring'] = 'true'
+            params['InstanceMonitoring.member.Enabled'] = 'true'
         return self.get_object('CreateLaunchConfiguration', params,
                                   Request, verb='POST')
 
