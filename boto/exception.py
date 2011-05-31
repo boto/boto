@@ -35,8 +35,8 @@ class BotoClientError(StandardError):
     General Boto Client error (error accessing AWS)
     """
 
-    def __init__(self, reason):
-        StandardError.__init__(self)
+    def __init__(self, reason, *args):
+        StandardError.__init__(self, reason, *args)
         self.reason = reason
 
     def __repr__(self):
@@ -69,8 +69,8 @@ class GSPermissionsError(StoragePermissionsError):
 
 class BotoServerError(StandardError):
 
-    def __init__(self, status, reason, body=None):
-        StandardError.__init__(self)
+    def __init__(self, status, reason, body=None, *args):
+        StandardError.__init__(self, status, reason, body, *args)
         self.status = status
         self.reason = reason
         self.body = body or ''
@@ -221,7 +221,7 @@ class SQSDecodeError(BotoClientError):
     Error when decoding an SQS message.
     """
     def __init__(self, reason, message):
-        BotoClientError.__init__(self, reason)
+        BotoClientError.__init__(self, reason, message)
         self.message = message
 
     def __repr__(self):
@@ -358,14 +358,14 @@ class InvalidUriError(Exception):
     """Exception raised when URI is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self)
+        Exception.__init__(self, message)
         self.message = message
 
 class InvalidAclError(Exception):
     """Exception raised when ACL XML is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self)
+        Exception.__init__(self, message)
         self.message = message
 
 class NoAuthHandlerFound(Exception):
@@ -415,7 +415,7 @@ class ResumableUploadException(Exception):
     """
 
     def __init__(self, message, disposition):
-        Exception.__init__(self)
+        Exception.__init__(self, message, disposition)
         self.message = message
         self.disposition = disposition
 
@@ -431,7 +431,7 @@ class ResumableDownloadException(Exception):
     """
 
     def __init__(self, message, disposition):
-        Exception.__init__(self)
+        Exception.__init__(self, message, disposition)
         self.message = message
         self.disposition = disposition
 
