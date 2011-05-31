@@ -230,7 +230,8 @@ class MultiPartUpload(object):
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
         key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,
-                                   md5, reduced_redundancy=False, query_args=query_args)
+                                   md5, reduced_redundancy=False,
+                                   query_args=query_args)
 
     def complete_upload(self):
         """
@@ -242,8 +243,8 @@ class MultiPartUpload(object):
         :returns: An object representing the completed upload.
         """
         xml = self.to_xml()
-        self.bucket.complete_multipart_upload(self.key_name,
-                                              self.id, xml)
+        return self.bucket.complete_multipart_upload(self.key_name,
+                                                     self.id, xml)
 
     def cancel_upload(self):
         """
