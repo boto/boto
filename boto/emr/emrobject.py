@@ -1,5 +1,6 @@
 # Copyright (c) 2010 Spotify AB
 # Copyright (c) 2010 Jeremy Thurgood <firxen+boto@gmail.com>
+# Copyright (c) 2010-2011 Yelp
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -54,19 +55,32 @@ class Arg(EmrObject):
 
 
 class BootstrapAction(EmrObject):
-    Fields = set(['Name',
-                  'Args',
-                  'Path'])
+    Fields = set([
+        'Args',
+        'Name',
+        'Path',
+    ])
+
+
+class KeyValue(EmrObject):
+    Fields = set([
+        'Key',
+        'Value',
+    ])
 
 
 class Step(EmrObject):
-    Fields = set(['Name',
-                  'ActionOnFailure',
-                  'CreationDateTime',
-                  'StartDateTime',
-                  'EndDateTime',
-                  'LastStateChangeReason',
-                  'State'])
+    Fields = set([
+        'ActionOnFailure',
+        'CreationDateTime',
+        'EndDateTime',
+        'Jar',
+        'LastStateChangeReason',
+        'MainClass',
+        'Name',
+        'StartDateTime',
+        'State',
+    ])
 
     def __init__(self, connection=None):
         self.connection = connection
@@ -76,49 +90,58 @@ class Step(EmrObject):
         if name == 'Args':
             self.args = ResultSet([('member', Arg)])
             return self.args
+        if name == 'Properties':
+            self.properties = ResultSet([('member', KeyValue)])
+            return self.properties
 
 
 class InstanceGroup(EmrObject):
-    Fields = set(['Name',
-                  'CreationDateTime',
-                  'InstanceRunningCount',
-                  'StartDateTime',
-                  'ReadyDateTime',
-                  'State',
-                  'EndDateTime',
-                  'InstanceRequestCount',
-                  'InstanceType',
-                  'Market',
-                  'LastStateChangeReason',
-                  'InstanceRole',
-                  'InstanceGroupId',
-                  'LaunchGroup',
-                  'SpotPrice'])
+    Fields = set([
+        'BidPrice',
+        'CreationDateTime',
+        'EndDateTime',
+        'InstanceGroupId',
+        'InstanceRequestCount',
+        'InstanceRole',
+        'InstanceRunningCount',
+        'InstanceType',
+        'LastStateChangeReason',
+        'LaunchGroup',
+        'Market',
+        'Name',
+        'ReadyDateTime',
+        'StartDateTime',
+        'State',
+    ])
 
 
 class JobFlow(EmrObject):
-    Fields = set(['CreationDateTime',
-                  'StartDateTime',
-                  'State',
-                  'EndDateTime',
-                  'Id',
-                  'InstanceCount',
-                  'JobFlowId',
-                  'LogUri',
-                  'MasterPublicDnsName',
-                  'MasterInstanceId',
-                  'Name',
-                  'Placement',
-                  'RequestId',
-                  'Type',
-                  'Value',
-                  'AvailabilityZone',
-                  'SlaveInstanceType',
-                  'MasterInstanceType',
-                  'Ec2KeyName',
-                  'InstanceCount',
-                  'KeepJobFlowAliveWhenNoSteps',
-                  'LastStateChangeReason'])
+    Fields = set([
+        'AvailabilityZone',
+        'CreationDateTime',
+        'Ec2KeyName',
+        'EndDateTime',
+        'HadoopVersion',
+        'Id',
+        'InstanceCount',
+        'JobFlowId',
+        'KeepJobFlowAliveWhenNoSteps',
+        'LastStateChangeReason',
+        'LogUri',
+        'MasterInstanceId',
+        'MasterInstanceType',
+        'MasterPublicDnsName',
+        'Name',
+        'NormalizedInstanceHours',
+        'ReadyDateTime',
+        'RequestId',
+        'SlaveInstanceType',
+        'StartDateTime',
+        'State',
+        'TerminationProtected',
+        'Type',
+        'Value',
+    ])
 
     def __init__(self, connection=None):
         self.connection = connection
@@ -138,4 +161,3 @@ class JobFlow(EmrObject):
             return self.bootstrapactions
         else:
             return None
-
