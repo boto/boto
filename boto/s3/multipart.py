@@ -102,7 +102,7 @@ class Part(object):
         else:
             setattr(self, name, value)
         
-def part_lister(mpupload, part_number_marker=''):
+def part_lister(mpupload, part_number_marker=None):
     """
     A generator function for listing parts of a multipart upload.
     """
@@ -139,7 +139,7 @@ class MultiPartUpload(object):
         return '<MultiPartUpload %s>' % self.key_name
 
     def __iter__(self):
-        return part_lister(self, part_number_marker=self.part_number_marker)
+        return part_lister(self)
 
     def to_xml(self):
         self.get_all_parts()
