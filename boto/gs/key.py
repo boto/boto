@@ -107,6 +107,64 @@ class Key(S3Key):
         acl.add_group_grant(permission, group_id)
         self.set_acl(acl)
 
+    def set_contents_from_stream(self, fp, headers=None, replace=True,
+                                cb=None, num_cb=10, policy=None, query_args=None):
+        """
+        Store an object using the name of the Key object as the key in
+        Google Storage and the contents of the data stream pointed to by 'fp' as
+        the contents.
+        The stream object is usually not seekable.
+
+        :type fp: file
+        :param fp: the file whose contents are to be uploaded
+
+        :type headers: dict
+        :param headers: additional HTTP headers to be sent with the PUT request.
+
+        :type replace: bool
+        :param replace: If this parameter is False, the method will first check
+            to see if an object exists in the bucket with the same key. If it
+            does, it won't overwrite it. The default value is True which will
+            overwrite the object.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload. The callback should accept two integer
+            parameters, the first representing the number of bytes that have
+            been successfully transmitted to GS and the second representing the
+            total number of bytes that need to be transmitted.
+
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the cb
+            parameter, this parameter determines the granularity of the callback
+            by defining the maximum number of times the callback will be called
+            during the file transfer.
+
+        :type policy: :class:`boto.gs.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key
+            in GS.
+        """
+
+        # Name of the Object should be specified explicitly for Streams.
+        if not self.name or self.name == '':
+            raise BotoClientError("Cannot determine the name of the stream")
+
+        if headers is None:
+            headers = {}
+        if policy:
+            headers[provider.acl_header] = policy
+
+        # Set the Transfer Encoding for Streams.
+        headers['Transfer-Encoding'] = 'chunked'
+
+        if self.bucket != None:
+            if not replace:
+                k = self.bucket.lookup(self.name)
+                if k:
+                    return
+            #TODO: Add support for resumable upload for Streams.
+            self.send_file(fp, headers, cb, num_cb, query_args, chunked_transfer=True)
+
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                res_upload_handler=None):
@@ -168,18 +226,6 @@ class Key(S3Key):
             headers[provider.acl_header] = policy
         if hasattr(fp, 'name'):
             self.path = fp.name
-
-        # GS support supports chunked transfer, but should be disabled for
-        # resumable upload. Resumable upload demands that size of object
-        # should be known before hand and in such scenarios, chunked transfer
-        # doesn't really make sense.
-        chunked_transfer = False
-        if self.can_do_chunked_transfer(headers):
-                if res_upload_handler:
-                    del headers['Transfer-Encoding']
-                else:
-                    chunked_transfer = True
-
         if self.bucket != None:
             if not md5:
                 md5 = self.compute_md5(fp)
@@ -200,7 +246,7 @@ class Key(S3Key):
                 res_upload_handler.send_file(self, fp, headers, cb, num_cb)
             else:
                 # Not a resumable transfer so use basic send_file mechanism.
-                self.send_file(fp, headers, cb, num_cb, chunked_transfer=chunked_transfer)
+                self.send_file(fp, headers, cb, num_cb)
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
