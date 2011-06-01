@@ -196,7 +196,7 @@ def _get_instance_metadata(url):
                 d[key] = val
     return d
 
-def get_instance_metadata(version='latest'):
+def get_instance_metadata(version='latest', url='http://169.254.169.254'):
     """
     Returns the instance metadata as a nested Python dictionary.
     Simple values (e.g. local_hostname, hostname, etc.) will be
@@ -204,12 +204,12 @@ def get_instance_metadata(version='latest'):
     be stored in the dict as a list of string values.  More complex
     fields such as public-keys and will be stored as nested dicts.
     """
-    url = 'http://169.254.169.254/%s/meta-data/' % version
-    return _get_instance_metadata(url)
+    return _get_instance_metadata('%s/%s/meta-data' % (url, version))
 
-def get_instance_userdata(version='latest', sep=None):
-    url = 'http://169.254.169.254/%s/user-data' % version
-    user_data = retry_url(url, retry_on_404=False)
+def get_instance_userdata(version='latest', sep=None,
+                          url='http://169.254.169.254'):
+    ud_url = '%s/%s/user-data' % (url,version)
+    user_data = retry_url(ud_url, retry_on_404=False)
     if user_data:
         if sep:
             l = user_data.split(sep)
