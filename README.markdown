@@ -1,6 +1,6 @@
 # boto
-boto 2.0b5
-15-Mar-2011
+boto 2.0rc1
+02-Jun-2011
 
 ## Introduction
 
