@@ -64,7 +64,7 @@ def main():
         usage()
         sys.exit()
     try:
-        tests = suite(collection)
+        tests = suite(testsuite)
     except ValueError:
         usage()
         sys.exit()
