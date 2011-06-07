@@ -72,7 +72,7 @@ class Param(object):
     def __init__(self, name=None, ptype='string', optional=True,
                  short_name=None, long_name=None, doc='',
                  metavar=None, cardinality=1, default=None,
-                 choices=None, encoder=None):
+                 choices=None, encoder=None, request_param=True):
         self.name = name
         self.ptype = ptype
         self.optional = optional
@@ -84,6 +84,7 @@ class Param(object):
         self.default = default
         self.choices = choices
         self.encoder = encoder
+        self.request_param = request_param
 
     @property
     def optparse_long_name(self):

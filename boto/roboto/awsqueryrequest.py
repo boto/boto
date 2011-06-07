@@ -24,6 +24,7 @@ import sys
 import os
 import boto
 import optparse
+import copy
 import boto.exception
 
 class Line(object):
@@ -158,6 +159,7 @@ class AWSQueryRequest(object):
         self.list_markers = []
         self.item_markers = []
         self.request_params = {}
+        self.connection_args = None
 
     def __repr__(self):
         return self.name()
@@ -227,12 +229,13 @@ class AWSQueryRequest(object):
             if value is not None:
                 if param.name in required:
                     required.remove(param.name)
-                if param.encoder:
-                    param.encoder(param, self.request_params, value)
-                else:
-                    Encoder.encode(param, self.request_params, value)
+                if param.request_param:
+                    if param.encoder:
+                        param.encoder(param, self.request_params, value)
+                    else:
+                        Encoder.encode(param, self.request_params, value)
             if python_name in self.args:
-                del self.args[python_name]
+                del self.connection_args[python_name]
         if required:
             raise RequiredParamError(required)
         boto.log.debug('request_params: %s' % self.request_params)
@@ -248,11 +251,12 @@ class AWSQueryRequest(object):
         
     def send(self, verb='GET', **args):
         self.args.update(args)
+        self.connection_args = copy.copy(self.args)
         if 'debug' in self.args and self.args['debug'] >= 2:
             boto.set_stream_logger(self.name())
         self.process_args()
         self.process_filters()
-        conn = self.get_connection(**self.args)
+        conn = self.get_connection(**self.connection_args)
         self.http_response = conn.make_request(self.name(),
                                                self.request_params,
                                                verb=verb)
@@ -331,6 +335,8 @@ class AWSQueryRequest(object):
                     if len(param.items) == 1:
                         ptype = param.items[0]['type']
                         action = 'append'
+                elif param.cardinality != 1:
+                    action = 'append'
                 if ptype or action == 'store_true':
                     if param.short_name:
                         self.parser.add_option(param.optparse_short_name,
@@ -433,6 +439,7 @@ class AWSQueryRequest(object):
         :type data: dict
         :param data: The data returned by AWS.
         """
-        self._generic_cli_formatter(self.Response, data)
+        if data:
+            self._generic_cli_formatter(self.Response, data)
 
 
