@@ -22,6 +22,7 @@ API Reference
    file
    sdb
    services
+   ses
    sns
    sqs
    vpc
