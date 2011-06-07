@@ -544,7 +544,7 @@ class SDBManager(object):
             else:
                 order_by_method = "ASC";
         if isinstance(filters, str) or isinstance(filters, unicode):
-            query = "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
+            query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
             if order_by != None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)
             return query
