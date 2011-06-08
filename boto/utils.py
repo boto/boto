@@ -54,6 +54,8 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import formatdate
 from email import Encoders
+import gzip
+
 
 try:
     import hashlib
@@ -607,3 +609,74 @@ def pythonize_name(name, sep='_'):
         else:
             s += c
     return s
+
+def write_mime_multipart(content, compress=False, deftype='text/plain', delimiter=':'):
+    """Description:
+    :param content: A listof the content to be put into the mime multipart
+    :type dict:
+
+    :param compress: Use gzip to compress the scripts, defaults to no compression
+    :type bool:
+
+    :param deftype: The type that should be assumed if nothing else can be figured out
+    :type str:
+
+    :param delimiter: mime delimiter
+    :type str:
+
+    :return: Final mime multipart
+    :rtype: str:
+    """
+    wrapper = MIMEMultipart()
+    print 'mr mime'
+    for name,con in content.items():
+        definite_type = guess_mime_type(con, deftype)
+        maintype, subtype = definite_type.split('/', 1)
+        if maintype == 'text':
+            mime_con = MIMEText(con, _subtype=subtype)
+        else:
+            mime_con = MIMEBase(maintype, subtype)
+            mime_con.set_payload(con)
+            # Encode the payload using Base64
+            Encoders.encode_base64(mime_con)
+        mime_con.add_header('Content Disposition', 'attachment', filename=name)
+        wrapper.attach(mime_con)
+    rcontent = wrapper.as_string()
+
+    if compress:
+        buf = StringIO.StringIO()
+        gz = gzip.GzipFile(mode='wb', fileobj=buf)
+        try:
+            gz.write(rcontent)
+        finally:
+            gz.close()
+        rcontent = buf.getvalue()
+
+    return rcontent
+
+def guess_mime_type(content, deftype):
+    """Description: Guess the mime type of a block of text
+    :param content: content we're finding the type of
+    :type str:
+
+    :param deftype: Default mime type
+    :type str:
+
+    :rtype: <type>:
+    :return: <description>
+    """
+    #Mappings recognized by cloudinit
+    starts_with_mappings={
+        '#include' : 'text/x-include-url',
+        '#!' : 'text/x-shellscript',
+        '#cloud-config' : 'text/cloud-config',
+        '#upstart-job'  : 'text/upstart-job',
+        '#part-handler' : 'text/part-handler',
+        '#cloud-boothook' : 'text/cloud-boothook'
+    }
+    rtype = deftype
+    for possible_type,mimetype in starts_with_mappings.items():
+        if content.startswith(possible_type):
+            rtype = mimetype
+            break
+    return(rtype)
