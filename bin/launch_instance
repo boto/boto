@@ -183,8 +183,6 @@ if __name__ == "__main__":
 
             user_data = boto.utils.write_mime_multipart(script_dict, compress=True)
 
-    if options.test:
-        exit()
     shutdown_proc = "terminate"
     if options.save_ebs:
         shutdown_proc = "save"
