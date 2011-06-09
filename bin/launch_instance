@@ -155,9 +155,6 @@ if __name__ == "__main__":
             l.remove((g, g.name, g.description))
             g = iobj.choose_from_list(l, prompt='Choose Additional Security Group (0 to quit)')
 
-    if options.scripts:
-        scripts = options.scripts
-
     user_data = str(cfg)
     # If it's a cloud init AMI,
     # then we need to wrap the config in our
@@ -165,7 +162,7 @@ if __name__ == "__main__":
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
         if options.scripts:
-            print 'script options'
+            scripts = options.scripts
             script_dict = {'user_data': user_data,}
             for scr in scripts:
                 scr_url = scr
@@ -209,4 +206,5 @@ if __name__ == "__main__":
         time.sleep(3)
 
     if options.dns:
+        print "Public DNS name; %s" % instance.public_dns_name
         print "Private DNS name: %s" % instance.private_dns_name
