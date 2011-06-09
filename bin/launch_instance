@@ -215,5 +215,5 @@ if __name__ == "__main__":
         time.sleep(3)
 
     if options.dns:
-        print "Public DNS name; %s" % instance.public_dns_name
+        print "Public DNS name: %s" % instance.public_dns_name
         print "Private DNS name: %s" % instance.private_dns_name
