@@ -53,6 +53,7 @@ class EC2ConnectionTest (unittest.TestCase):
         # now remove that permission
         status = image.remove_launch_permissions(group_names=['all'])
         assert status
+        time.sleep(10)
         d = image.get_launch_permissions()
         assert not d.has_key('groups')
         

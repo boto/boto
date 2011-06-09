@@ -204,7 +204,7 @@ class AWSQueryRequest(object):
                     Encoder.encode(filter, self.request_params, value,
                                    'Filter.%d.Value.%d' % (i+1,j+1))
 
-    def process_args(self):
+    def process_args(self, **args):
         """
         Responsible for walking through Params defined for the request and:
 
@@ -215,6 +215,10 @@ class AWSQueryRequest(object):
         * Encoding each value into the set of request parameters that will
           be sent in the request to the AWS service.
         """
+        self.args.update(args)
+        self.connection_args = copy.copy(self.args)
+        if 'debug' in self.args and self.args['debug'] >= 2:
+            boto.set_stream_logger(self.name())
         required = [p.name for p in self.Params+self.Args if not p.optional]
         for param in self.Params+self.Args:
             if param.long_name:
@@ -250,11 +254,7 @@ class AWSQueryRequest(object):
             self.item_markers.append(fmt['name'])
         
     def send(self, verb='GET', **args):
-        self.args.update(args)
-        self.connection_args = copy.copy(self.args)
-        if 'debug' in self.args and self.args['debug'] >= 2:
-            boto.set_stream_logger(self.name())
-        self.process_args()
+        self.process_args(**args)
         self.process_filters()
         conn = self.get_connection(**self.connection_args)
         self.http_response = conn.make_request(self.name(),
@@ -324,31 +324,30 @@ class AWSQueryRequest(object):
         self.parser = optparse.OptionParser()
         self.add_standard_options()
         for param in self.Params:
-            if param.long_name:
-                ptype = action = choices = None
-                if param.ptype in self.CLITypeMap:
-                    ptype = self.CLITypeMap[param.ptype]
-                    action = 'store'
-                if param.ptype == 'boolean':
-                    action = 'store_true'
-                elif param.ptype == 'array':
-                    if len(param.items) == 1:
-                        ptype = param.items[0]['type']
-                        action = 'append'
-                elif param.cardinality != 1:
+            ptype = action = choices = None
+            if param.ptype in self.CLITypeMap:
+                ptype = self.CLITypeMap[param.ptype]
+                action = 'store'
+            if param.ptype == 'boolean':
+                action = 'store_true'
+            elif param.ptype == 'array':
+                if len(param.items) == 1:
+                    ptype = param.items[0]['type']
                     action = 'append'
-                if ptype or action == 'store_true':
-                    if param.short_name:
-                        self.parser.add_option(param.optparse_short_name,
-                                               param.optparse_long_name,
-                                               action=action, type=ptype,
-                                               choices=param.choices,
-                                               help=param.doc)
-                    elif param.long_name:
-                        self.parser.add_option(param.optparse_long_name,
-                                               action=action, type=ptype,
-                                               choices=param.choices,
-                                               help=param.doc)
+            elif param.cardinality != 1:
+                action = 'append'
+            if ptype or action == 'store_true':
+                if param.short_name:
+                    self.parser.add_option(param.optparse_short_name,
+                                           param.optparse_long_name,
+                                           action=action, type=ptype,
+                                           choices=param.choices,
+                                           help=param.doc)
+                elif param.long_name:
+                    self.parser.add_option(param.optparse_long_name,
+                                           action=action, type=ptype,
+                                           choices=param.choices,
+                                           help=param.doc)
 
     def do_cli(self):
         if not self.parser:

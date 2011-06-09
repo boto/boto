@@ -187,9 +187,6 @@ class QuerySignatureHelper(HmacKeys):
         else:
             http_request.body = ''
             http_request.path = (http_request.path + '?' + qs + '&Signature=' + urllib.quote(signature))
-        # Now that query params are part of the path, clear the 'params' field
-        # in request.
-        http_request.params = {}
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
     """Provides Signature V0 Signing"""
