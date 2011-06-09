@@ -172,7 +172,7 @@ if __name__ == "__main__":
                     scr_url = "file://%s" % scr_url
                 script_content = boto.utils.fetch_file(scr_url)
                 script_dict[scr] = script_content.read()
-            user_data = boto.utils.write_mime_multipart(script_dict)
+            user_data = boto.utils.write_mime_multipart(script_dict, compress=True)
 
     shutdown_proc = "terminate"
     if options.save_ebs:
