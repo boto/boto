@@ -31,7 +31,7 @@ f.write(\"\"\"%s\"\"\")
 f.close()
 """
 import boto.pyami.config
-from boto.utils import fetch_file
+import boto.utils
 import re, os
 import ConfigParser
 
@@ -55,7 +55,7 @@ class Config(boto.pyami.config.Config):
                 file_url = os.path.join(os.getcwd(), file_url)
             file_url = "file://%s" % file_url
         (base_url, file_name) = file_url.rsplit("/", 1)
-        base_config = fetch_file(file_url)
+        base_config = boto.utils.fetch_file(file_url)
         base_config.seek(0)
         for line in base_config.readlines():
             match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
@@ -107,6 +107,7 @@ if __name__ == "__main__":
     parser.add_option("-w", "--wait", help="Wait until instance is running", default=False, action="store_true", dest="wait")
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
     parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
+    parser.add_option("-s", "--add-script", help="Pass in a script to be run when the instance starts up, assumes cloud-init", default=None, dest="scripts", action="append")
 
     (options, args) = parser.parse_args()
 
@@ -154,15 +155,36 @@ if __name__ == "__main__":
             l.remove((g, g.name, g.description))
             g = iobj.choose_from_list(l, prompt='Choose Additional Security Group (0 to quit)')
 
+    if options.scripts:
+        scripts = options.scripts
+
     user_data = str(cfg)
     # If it's a cloud init AMI,
     # then we need to wrap the config in our
     # little wrapper shell script
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
+        if options.scripts:
+            script_dict = {'user_data': user_data,}
+            for scr in scripts:
+                scr_url = scr
+                if not re.match("^([a-zA-Z0-9]*:\/\/)(.*)", scr_url):
+                    if not scr_url.startswith("/"):
+                        scr_url = os.path.join(os.getcwd(), scr_url)
+                    scr_url = "file://%s" % scr_url
+                script_content = boto.utils.fetch_file(scr_url)
+                #script_content.seek(0)
+                script_dict[scr] = script_content.read()
+            user_data = boto.utils.write_mime_multipart(script_dict)
+
     shutdown_proc = "terminate"
     if options.save_ebs:
         shutdown_proc = "save"
+    #print "count=",int(options.min_count), "max_count=", int(options.max_count)
+    #print "key_name=", key_name
+    print "user_data=", user_data
+    #print"security_groups=", groups
+    #print "instance_type=", options.type, "placement=", options.zone, "instance_initiated_shutdown_behavior=",shutdown_proc
 
     r = ami.run(min_count=int(options.min_count), max_count=int(options.max_count),
             key_name=key_name, user_data=user_data,
@@ -194,4 +216,3 @@ if __name__ == "__main__":
     if options.dns:
         print "Public DNS name: %s" % instance.public_dns_name
         print "Private DNS name: %s" % instance.private_dns_name
-
