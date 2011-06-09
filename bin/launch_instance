@@ -107,7 +107,7 @@ if __name__ == "__main__":
     parser.add_option("-w", "--wait", help="Wait until instance is running", default=False, action="store_true", dest="wait")
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
     parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
-    parser.add_option("-s", "--add-script", help="Pass in a script to be run when the instance starts up, assumes cloud-init", default=None, dest="scripts", action="append")
+    parser.add_option("-s", "--add-script", help="Pass in a script or a folder containing scripts to be run when the instance starts up, assumes cloud-init", default=None, dest="scripts", action="append")
 
     (options, args) = parser.parse_args()
 
@@ -162,18 +162,29 @@ if __name__ == "__main__":
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
         if options.scripts:
-            scripts = options.scripts
             script_dict = {'user_data': user_data,}
+            scripts = options.scripts
             for scr in scripts:
                 scr_url = scr
                 if not re.match("^([a-zA-Z0-9]*:\/\/)(.*)", scr_url):
                     if not scr_url.startswith("/"):
                         scr_url = os.path.join(os.getcwd(), scr_url)
-                    scr_url = "file://%s" % scr_url
-                script_content = boto.utils.fetch_file(scr_url)
-                script_dict[scr] = script_content.read()
+                    try:
+                        newfiles = os.listdir(scr_url)
+                        for f in newfiles:
+                            scripts.append(scr.split("/")[-1]+"/"+f)
+                    except OSError:
+                        scr_url = "file://%s" % scr_url
+                try:
+                    script_content = boto.utils.fetch_file(scr_url)
+                    script_dict[scr] = script_content.read()
+                except ValueError:
+                    pass
+
             user_data = boto.utils.write_mime_multipart(script_dict, compress=True)
 
+    if options.test:
+        exit()
     shutdown_proc = "terminate"
     if options.save_ebs:
         shutdown_proc = "save"
