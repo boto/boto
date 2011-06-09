@@ -165,6 +165,7 @@ if __name__ == "__main__":
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
         if options.scripts:
+            print 'script options'
             script_dict = {'user_data': user_data,}
             for scr in scripts:
                 scr_url = scr
@@ -173,18 +174,12 @@ if __name__ == "__main__":
                         scr_url = os.path.join(os.getcwd(), scr_url)
                     scr_url = "file://%s" % scr_url
                 script_content = boto.utils.fetch_file(scr_url)
-                #script_content.seek(0)
                 script_dict[scr] = script_content.read()
             user_data = boto.utils.write_mime_multipart(script_dict)
 
     shutdown_proc = "terminate"
     if options.save_ebs:
         shutdown_proc = "save"
-    #print "count=",int(options.min_count), "max_count=", int(options.max_count)
-    #print "key_name=", key_name
-    print "user_data=", user_data
-    #print"security_groups=", groups
-    #print "instance_type=", options.type, "placement=", options.zone, "instance_initiated_shutdown_behavior=",shutdown_proc
 
     r = ami.run(min_count=int(options.min_count), max_count=int(options.max_count),
             key_name=key_name, user_data=user_data,
@@ -214,5 +209,4 @@ if __name__ == "__main__":
         time.sleep(3)
 
     if options.dns:
-        print "Public DNS name: %s" % instance.public_dns_name
         print "Private DNS name: %s" % instance.private_dns_name

@@ -628,7 +628,6 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     :rtype: str:
     """
     wrapper = MIMEMultipart()
-    print 'mr mime'
     for name,con in content.items():
         definite_type = guess_mime_type(con, deftype)
         maintype, subtype = definite_type.split('/', 1)
@@ -639,7 +638,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
             mime_con.set_payload(con)
             # Encode the payload using Base64
             Encoders.encode_base64(mime_con)
-        mime_con.add_header('Content Disposition', 'attachment', filename=name)
+        mime_con.add_header('Content-Disposition', 'attachment', filename=name)
         wrapper.attach(mime_con)
     rcontent = wrapper.as_string()
 
