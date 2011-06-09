@@ -151,8 +151,8 @@ class Image(TaggedEC2Object):
             raise ValueError('%s is not a valid Image ID' % self.id)
         return self.state
 
-    def run(self, min_count=1, max_count=1, key_name=None,
-            security_groups=None, user_data=None,
+    def run(self, min_count=1, max_count=1, key_name=None, 
+            security_group_ids=None, security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
             kernel_id=None, ramdisk_id=None,
             monitoring_enabled=False, subnet_id=None,
@@ -173,6 +173,9 @@ class Image(TaggedEC2Object):
         :type key_name: string
         :param key_name: The name of the keypair to run this instance with.
         
+        :type security_group_ids: 
+        :param security_group_ids:
+
         :type security_groups: 
         :param security_groups:
         
@@ -233,10 +236,10 @@ class Image(TaggedEC2Object):
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
         """
         return self.connection.run_instances(self.id, min_count, max_count,
-                                             key_name, security_groups,
-                                             user_data, addressing_type,
-                                             instance_type, placement,
-                                             kernel_id, ramdisk_id,
+                                             key_name, security_group_ids, 
+                                             security_groups, user_data, 
+                                             addressing_type, instance_type, 
+                                             placement, kernel_id, ramdisk_id,
                                              monitoring_enabled, subnet_id,
                                              block_device_map, disable_api_termination,
                                              instance_initiated_shutdown_behavior,

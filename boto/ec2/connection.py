@@ -442,10 +442,10 @@ class EC2Connection(AWSQueryConnection):
                              [('item', Reservation)], verb='POST')
 
     def run_instances(self, image_id, min_count=1, max_count=1,
-                      key_name=None, security_groups=None,
-                      user_data=None, addressing_type=None,
-                      instance_type='m1.small', placement=None,
-                      kernel_id=None, ramdisk_id=None,
+                      key_name=None, security_group_ids=None,
+                      security_groups=None, user_data=None, 
+                      addressing_type=None, instance_type='m1.small', 
+                      placement=None, kernel_id=None, ramdisk_id=None,
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
                       disable_api_termination=False,
@@ -467,6 +467,9 @@ class EC2Connection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the key pair with which to launch instances
 
+        :type security_group_ids: list of strings
+        :param security_groups_ids: The ID of the VPC security groups with which to
+                                associate instances
         :type security_groups: list of strings
         :param security_groups: The names of the security groups with which to
                                 associate instances
@@ -549,6 +552,14 @@ class EC2Connection(AWSQueryConnection):
                   'MaxCount': max_count}
         if key_name:
             params['KeyName'] = key_name
+        if security_group_ids:
+            l = []
+            for group in security_group_ids:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l, 'SecurityGroupId')
         if security_groups:
             l = []
             for group in security_groups:
