@@ -206,7 +206,7 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254'):
     be stored in the dict as a list of string values.  More complex
     fields such as public-keys and will be stored as nested dicts.
     """
-    return _get_instance_metadata('%s/%s/meta-data' % (url, version))
+    return _get_instance_metadata('%s/%s/meta-data/' % (url, version))
 
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
