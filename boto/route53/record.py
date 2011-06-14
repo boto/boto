@@ -51,9 +51,9 @@ class ResourceRecordSets(ResultSet):
     def __repr__(self):
         return '<ResourceRecordSets: %s>' % self.hosted_zone_id
 
-    def add_change(self, action, name, type, ttl=600):
+    def add_change(self, action, name, type, ttl=600, alias_hosted_zone_id=None, alias_dns_name=None):
         """Add a change request"""
-        change = Record(name, type, ttl)
+        change = Record(name, type, ttl, alias_hosted_zone_id=alias_hosted_zone_id, alias_dns_name=alias_dns_name)
         self.changes.append([action, change])
         return change
 
