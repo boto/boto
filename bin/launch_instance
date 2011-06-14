@@ -107,7 +107,7 @@ if __name__ == "__main__":
     parser.add_option("-w", "--wait", help="Wait until instance is running", default=False, action="store_true", dest="wait")
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
     parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
-    parser.add_option("-s", "--add-script", help="Pass in a script or a folder containing scripts to be run when the instance starts up, assumes cloud-init", default=None, dest="scripts", action="append")
+    parser.add_option("-s", "--add-script", help="Pass in a script or a folder containing scripts to be run when the instance starts up, assumes cloud-init. If multiple scripts are specified, they are run in the order they were specified. If they are in a folder, they are run in alphabetical order", default=None, dest="scripts", action="append")
 
     (options, args) = parser.parse_args()
 
@@ -161,9 +161,10 @@ if __name__ == "__main__":
     # little wrapper shell script
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
+        scriptuples = []
         if options.scripts:
-            script_dict = {'user_data': user_data,}
             scripts = options.scripts
+            scriptuples.append(('user_data', user_data))
             for scr in scripts:
                 scr_url = scr
                 if not re.match("^([a-zA-Z0-9]*:\/\/)(.*)", scr_url):
@@ -172,16 +173,17 @@ if __name__ == "__main__":
                     try:
                         newfiles = os.listdir(scr_url)
                         for f in newfiles:
-                            scripts.append(scr.split("/")[-1]+"/"+f)
+                            #put the scripts in the folder in the array such that they run in the correct order
+                            scripts.insert(scripts.index(scr) + 1, scr.split("/")[-1] + "/" + f)
                     except OSError:
                         scr_url = "file://%s" % scr_url
                 try:
                     script_content = boto.utils.fetch_file(scr_url)
-                    script_dict[scr] = script_content.read()
+                    scriptuples.append((scr, script_content.read()))
                 except ValueError:
                     pass
 
-            user_data = boto.utils.write_mime_multipart(script_dict, compress=True)
+            user_data = boto.utils.write_mime_multipart(scriptuples, compress=False)
 
     shutdown_proc = "terminate"
     if options.save_ebs:
