@@ -612,8 +612,9 @@ def pythonize_name(name, sep='_'):
 
 def write_mime_multipart(content, compress=False, deftype='text/plain', delimiter=':'):
     """Description:
-    :param content: A listof the content to be put into the mime multipart
-    :type dict:
+    :param content: A list of tuples of name-content pairs. This is used
+    instead of a dict to ensure that scripts run in order
+    :type list of tuples:
 
     :param compress: Use gzip to compress the scripts, defaults to no compression
     :type bool:
@@ -628,7 +629,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     :rtype: str:
     """
     wrapper = MIMEMultipart()
-    for name,con in content.items():
+    for name,con in content:
         definite_type = guess_mime_type(con, deftype)
         maintype, subtype = definite_type.split('/', 1)
         if maintype == 'text':
