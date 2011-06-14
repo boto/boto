@@ -541,7 +541,7 @@ class AWSAuthConnection(object):
                     body = response.read()
                     print '-------------------------'
                     print '         4 0 8           '
-                    print 'path=%s' % path
+                    print 'path=%s' % request.path
                     print body
                     print '-------------------------'
                 elif response.status < 300 or response.status >= 400 or \
@@ -552,7 +552,7 @@ class AWSAuthConnection(object):
                     scheme, request.host, request.path, params, query, fragment = \
                             urlparse.urlparse(location)
                     if query:
-                        path += '?' + query
+                        request.path += '?' + query
                     boto.log.debug('Redirecting: %s' % scheme + '://' + request.host + request.path)
                     connection = self.get_http_connection(request.host, scheme == 'https')
                     continue
