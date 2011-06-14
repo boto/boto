@@ -2321,12 +2321,9 @@ class EC2Connection(AWSQueryConnection):
             params['Tag.%d.Value'%i] = value
             i += 1
         
-    def get_all_tags(self, tags=None, filters=None):
+    def get_all_tags(self, filters=None):
         """
         Retrieve all the metadata tags associated with your account.
-
-        :type tags: list
-        :param tags: A list of mumble
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -2342,8 +2339,6 @@ class EC2Connection(AWSQueryConnection):
         :return: A dictionary containing metadata tags
         """
         params = {}
-        if tags:
-            self.build_list_params(params, instance_ids, 'InstanceId')
         if filters:
             self.build_filter_params(params, filters)
         return self.get_list('DescribeTags', params, [('item', Tag)], verb='POST')

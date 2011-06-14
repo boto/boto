@@ -28,7 +28,13 @@ from boto.ecs.item import ItemSet
 from boto import handler
 
 class ECSConnection(AWSQueryConnection):
-    """ECommerse Connection"""
+    """
+    ECommerce Connection
+
+    For more information on how to use this module see:
+
+    http://blog.coredumped.org/2010/09/search-for-books-on-amazon-using-boto.html
+    """
 
     APIVersion = '2010-11-01'
 
