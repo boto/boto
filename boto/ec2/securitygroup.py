@@ -222,10 +222,19 @@ class SecurityGroup(TaggedEC2Object):
         return sg
 
     def instances(self):
+        """
+        Find all of the current instances that are running within this
+        security group.
+
+        :rtype: list of :class:`boto.ec2.instance.Instance`
+        :return: A list of Instance objects
+        """
+        # It would be more efficient to do this with filters now
+        # but not all services that implement EC2 API support filters.
         instances = []
         rs = self.connection.get_all_instances()
         for reservation in rs:
-            uses_group = [g.id for g in reservation.groups if g.id == self.name]
+            uses_group = [g.name for g in reservation.groups if g.name == self.name]
             if uses_group:
                 instances.extend(reservation.instances)
         return instances
