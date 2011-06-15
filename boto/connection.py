@@ -443,7 +443,7 @@ class AWSAuthConnection(object):
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
-        sock.sendall("\r\n")
+        #sock.sendall("\r\n")
         resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
