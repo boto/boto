@@ -430,7 +430,7 @@ class AWSAuthConnection(object):
             # gracefully fail in case of pool overflow
             connection.close()
 
-    def proxy_ssl(self):
+    def proxy_ssl(self, goodProxy = True):
         host = '%s:%d' % (self.host, self.port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -443,7 +443,7 @@ class AWSAuthConnection(object):
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
-        #sock.sendall("\r\n")
+        sock.sendall("\r\n")
         resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
@@ -477,7 +477,11 @@ class AWSAuthConnection(object):
         else:
             # Fallback for old Python without ssl.wrap_socket
             if hasattr(httplib, 'ssl'):
-                sslSock = httplib.ssl.SSLSocket(sock)
+                try:
+                    sslSock = httplib.ssl.SSLSocket(sock)
+                except:
+                    h = self.proxy_ssl(False)
+                    return h
             else:
                 sslSock = socket.ssl(sock, None, None)
                 sslSock = httplib.FakeSocket(sock, sslSock)
