@@ -24,6 +24,7 @@ At the moment, boto supports:
  * Identity and Access Management (IAM)
  * Route53 DNS Service (route53)
  * Simple Email Service (SES)
+ * Flexible Payment Service (FPS)
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
