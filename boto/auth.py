@@ -186,6 +186,9 @@ class QuerySignatureHelper(HmacKeys):
             http_request.body = qs + '&Signature=' + urllib.quote(signature)
         else:
             http_request.body = ''
+            # if this is a retried request, the qs from the previous try will
+            # already be there, we need to get rid of that and rebuild it
+            http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs + '&Signature=' + urllib.quote(signature))
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
