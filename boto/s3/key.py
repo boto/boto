@@ -398,7 +398,7 @@ class Key(object):
         return self.bucket.set_canned_acl('public-read', self.name, headers)
 
     def generate_url(self, expires_in, method='GET', headers=None,
-                     query_auth=True, force_http=False):
+                     query_auth=True, force_http=False, response_headers=None):
         """
         Generate a URL to access this key.
         
@@ -421,7 +421,8 @@ class Key(object):
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
                                                    headers, query_auth,
-                                                   force_http)
+                                                   force_http,
+                                                   response_headers)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None):
         """
@@ -764,6 +765,8 @@ class Key(object):
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
         """
+        if isinstance(s, unicode):
+            s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy)

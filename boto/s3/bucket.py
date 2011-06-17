@@ -443,11 +443,12 @@ class Bucket(object):
         """
         return self.key_class(self, key_name)
 
-    def generate_url(self, expires_in, method='GET',
-                     headers=None, force_http=False):
+    def generate_url(self, expires_in, method='GET', headers=None,
+                     force_http=False, response_headers=None):
         return self.connection.generate_url(expires_in, method, self.name,
                                             headers=headers,
-                                            force_http=force_http)
+                                            force_http=force_http,
+                                            response_headers=response_headers)
 
     def delete_key(self, key_name, headers=None,
                    version_id=None, mfa_token=None):
@@ -536,6 +537,8 @@ class Bucket(object):
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
+
+        src_key_name = boto.utils.get_utf8_value(src_key_name)
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self
@@ -607,7 +610,7 @@ class Bucket(object):
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=acl_str,
+                                                data=acl_str.encode('ISO-8859-1'),
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()

@@ -74,9 +74,18 @@ class NotificationMessage:
     def verify(self, secret_key):
         """
         Verifies the authenticity of a notification message.
+
+        TODO: This is doing a form of authentication and
+              this functionality should really be merged
+              with the pluggable authentication mechanism
+              at some point.
         """
-        verification_input = NotificationMessage.SERVICE_NAME + NotificationMessage.OPERATION_NAME + self.timestamp
-        signature_calc = self._auth_handler.sign_string(verification_input)
+        verification_input = NotificationMessage.SERVICE_NAME
+        verification_input += NotificationMessage.OPERATION_NAME
+        verification_input += self.timestamp
+        h = hmac.new(key=secret_key, digestmod=sha)
+        h.update(verification_input)
+        signature_calc = base64.b64encode(h.digest())
         return self.signature == signature_calc
 
 class Event:

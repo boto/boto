@@ -151,7 +151,7 @@ class Image(TaggedEC2Object):
             raise ValueError('%s is not a valid Image ID' % self.id)
         return self.state
 
-    def run(self, min_count=1, max_count=1, key_name=None,
+    def run(self, min_count=1, max_count=1, key_name=None, 
             security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
             kernel_id=None, ramdisk_id=None,
@@ -160,7 +160,7 @@ class Image(TaggedEC2Object):
             disable_api_termination=False,
             instance_initiated_shutdown_behavior=None,
             private_ip_address=None,
-            placement_group=None):
+            placement_group=None, security_group_ids=None):
         """
         Runs this instance.
         
@@ -231,7 +231,11 @@ class Image(TaggedEC2Object):
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+
+        :type security_group_ids: 
+        :param security_group_ids:
         """
+
         return self.connection.run_instances(self.id, min_count, max_count,
                                              key_name, security_groups,
                                              user_data, addressing_type,
@@ -240,11 +244,11 @@ class Image(TaggedEC2Object):
                                              monitoring_enabled, subnet_id,
                                              block_device_map, disable_api_termination,
                                              instance_initiated_shutdown_behavior,
-                                             private_ip_address,
-                                             placement_group)
+                                             private_ip_address, placement_group, 
+                                             security_group_ids=security_group_ids)
 
-    def deregister(self):
-        return self.connection.deregister_image(self.id)
+    def deregister(self, delete_snapshot=False):
+        return self.connection.deregister_image(self.id, delete_snapshot)
 
     def get_launch_permissions(self):
         img_attrs = self.connection.get_image_attribute(self.id,

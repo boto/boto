@@ -1,5 +1,4 @@
-# Copyright 2010 Google Inc.
-# All rights reserved.
+# Copyright (c) 2010 Reza Lotun http://reza.lotun.name
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,4 +18,21 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
+
+class SecurityGroup(object):
+    def __init__(self, connection=None):
+        self.name = None
+        self.owner_alias = None
+
+    def __repr__(self):
+        return 'SecurityGroup(%s, %s)' % (self.name, self.owner_alias)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'GroupName':
+            self.name = value
+        elif name == 'OwnerAlias':
+            self.owner_alias = value
+

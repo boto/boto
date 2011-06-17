@@ -231,6 +231,13 @@ class BucketStorageUri(StorageUri):
         self.check_response(acl, 'acl', self.uri)
         return acl
 
+    def get_location(self, validate=True, headers=None):
+        if not self.bucket_name:
+            raise InvalidUriError('get_location on bucket-less URI (%s)' %
+                                  self.uri)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_location()
+
     def add_group_email_grant(self, permission, email_address, recursive=False,
                               validate=True, headers=None):
         if self.scheme != 'gs':

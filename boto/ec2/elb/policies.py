@@ -28,7 +28,8 @@ class AppCookieStickinessPolicy(object):
         self.policy_name = None
 
     def __repr__(self):
-        return 'AppCookieStickiness(%s, %s)' % (self.policy_name, self.cookie_name)
+        return 'AppCookieStickiness(%s, %s)' % (self.policy_name,
+                                                self.cookie_name)
 
     def startElement(self, name, attrs, connection):
         pass
@@ -46,7 +47,8 @@ class LBCookieStickinessPolicy(object):
         self.cookie_expiration_period = None
 
     def __repr__(self):
-        return 'LBCookieStickiness(%s, %s)' % (self.policy_name, self.cookie_expiration_period)
+        return 'LBCookieStickiness(%s, %s)' % (self.policy_name,
+                                               self.cookie_expiration_period)
 
     def startElement(self, name, attrs, connection):
         pass
@@ -68,14 +70,17 @@ class Policies(object):
         self.lb_cookie_stickiness_policies = None
 
     def __repr__(self):
-        return 'Policies(AppCookieStickiness%s, LBCookieStickiness%s)' % (self.app_cookie_stickiness_policies,
-                                                                           self.lb_cookie_stickiness_policies)
+        app = 'AppCookieStickiness%s' % self.app_cookie_stickiness_policies
+        lb = 'LBCookieStickiness%s' % self.lb_cookie_stickiness_policies
+        return 'Policies(%s,%s)' % (app, lb)
 
     def startElement(self, name, attrs, connection):
         if name == 'AppCookieStickinessPolicies':
-            self.app_cookie_stickiness_policies = ResultSet([('member', AppCookieStickinessPolicy)])
+            rs = ResultSet([('member', AppCookieStickinessPolicy)])
+            self.app_cookie_stickiness_policies = rs
         elif name == 'LBCookieStickinessPolicies':
-            self.lb_cookie_stickiness_policies = ResultSet([('member', LBCookieStickinessPolicy)])
+            rs = ResultSet([('member', LBCookieStickinessPolicy)])
+            self.lb_cookie_stickiness_policies = rs
 
     def endElement(self, name, value, connection):
         return

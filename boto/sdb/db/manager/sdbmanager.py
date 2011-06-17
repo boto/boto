@@ -97,6 +97,7 @@ class SDBConverter(object):
         return self.encode_map(prop, values)
 
     def encode_map(self, prop, value):
+        import urllib
         if value == None:
             return None
         if not isinstance(value, dict):
@@ -108,7 +109,7 @@ class SDBConverter(object):
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
             if encoded_value != None:
-                new_value.append('%s:%s' % (key, encoded_value))
+                new_value.append('%s:%s' % (urllib.quote(key), encoded_value))
         return new_value
 
     def encode_prop(self, prop, value):
@@ -148,9 +149,11 @@ class SDBConverter(object):
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
+        import urllib
         key = value
         if ":" in value:
             key, value = value.split(':',1)
+            key = urllib.unquote(key)
         if Model in item_type.mro():
             value = item_type(id=value)
         else:
@@ -346,16 +349,17 @@ class SDBConverter(object):
             return None
 
     def encode_string(self, value):
-        """Encode string to make sure it's unicode/utf-8 compatible.
-        Thanks to Robert Mela for this code"""
+        """Convert ASCII, Latin-1 or UTF-8 to pure Unicode"""
         if not isinstance(value, str): return value
         try:
-            return unicode(value)
-        except: pass
-        arr = []
-        for ch in value:
-            arr.append(unichr(ord(ch)))
-        return u"".join(arr)
+            return unicode(value, 'utf-8')
+        except: # really, this should throw an exception.
+                # in the interest of not breaking current
+                # systems, however:
+            arr = []
+            for ch in value:
+                arr.append(unichr(ord(ch)))
+            return u"".join(arr)
 
     def decode_string(self, value):
         """Decoding a string is really nothing, just
@@ -540,7 +544,7 @@ class SDBManager(object):
             else:
                 order_by_method = "ASC";
         if isinstance(filters, str) or isinstance(filters, unicode):
-            query = "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
+            query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
             if order_by != None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)
             return query

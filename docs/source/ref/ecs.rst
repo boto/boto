@@ -1,20 +1,13 @@
-.. ref-iam
+.. ref-ecs
 
 ===
-IAM
+ECS
 ===
 
-boto.iam
+boto.ecs
 --------
 
-.. automodule:: boto.iam
-   :members:   
-   :undoc-members:
-
-boto.iam.connection
--------------------
-
-.. automodule:: boto.iam.connection
+.. automodule:: boto.ecs
    :members:   
    :undoc-members:
 
@@ -25,3 +18,9 @@ boto.iam.response
    :members:   
    :undoc-members:
 
+boto.ecs.item
+----------------------------
+
+.. automodule:: boto.ecs.item
+   :members:   
+   :undoc-members:

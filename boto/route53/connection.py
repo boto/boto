@@ -47,8 +47,8 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 class Route53Connection(AWSAuthConnection):
 
     DefaultHost = 'route53.amazonaws.com'
-    Version = '2010-10-01'
-    XMLNameSpace = 'https://route53.amazonaws.com/doc/2010-10-01/'
+    Version = '2011-05-05'
+    XMLNameSpace = 'https://route53.amazonaws.com/doc/2011-05-05/'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
@@ -182,7 +182,7 @@ class Route53Connection(AWSAuthConnection):
     # Resource Record Sets
 
     def get_all_rrsets(self, hosted_zone_id, type=None,
-                       name=None, maxitems=None):
+                       name=None, identifier=None, maxitems=None):
         """
         Retrieve the Resource Record Sets defined for this Hosted Zone.
         Returns the raw XML data returned by the Route53 call.
@@ -205,16 +205,37 @@ class Route53Connection(AWSAuthConnection):
                      * SRV
                      * TXT
 
+                     Valid values for weighted resource record sets:
+
+                     * A
+                     * AAAA
+                     * CNAME
+                     * TXT
+
+                     Valid values for Zone Apex Aliases:
+
+                     * A
+                     * AAAA
+
         :type name: str
         :param name: The first name in the lexicographic ordering of domain
                      names to be retrieved
+
+        :type identifier: str
+        :param identifier: In a hosted zone that includes weighted resource record
+                           sets (multiple resource record sets with the same DNS
+                           name and type that are differentiated only by SetIdentifier),
+                           if results were truncated for a given DNS name and type,
+                           the value of SetIdentifier for the next resource record
+                           set that has the current DNS name and type
 
         :type maxitems: int
         :param maxitems: The maximum number of records
 
         """
         from boto.route53.record import ResourceRecordSets
-        params = {'type': type, 'name': name, 'maxitems': maxitems}
+        params = {'type': type, 'name': name,
+                  'Identifier': identifier, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri, params=params)
         body = response.read()

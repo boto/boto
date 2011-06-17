@@ -73,6 +73,9 @@ try:
 except ImportError:
     pass
 
+_SERVER_SOFTWARE = os.environ.get('SERVER_SOFTWARE', '')
+ON_APP_ENGINE = _SERVER_SOFTWARE.startswith('Google App Engine/')
+
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
 DEFAULT_CA_CERTS_FILE = os.path.join(
@@ -146,6 +149,18 @@ class HTTPRequest(object):
                  'params(%s) headers(%s) body(%s)') % (self.method,
                  self.protocol, self.host, self.port, self.path, self.params,
                  self.headers, self.body))
+
+    def authorize(self, connection, **kwargs):
+        for key in self.headers:
+            val = self.headers[key]
+            if isinstance(val, unicode):
+                self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
+
+        connection._auth_handler.add_auth(self, **kwargs)
+
+        self.headers['User-Agent'] = UserAgent
+        if not self.headers.has_key('Content-Length'):
+            self.headers['Content-Length'] = str(len(self.body))
 
 class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
@@ -326,7 +341,8 @@ class AWSAuthConnection(object):
             # did the same when calculating the V2 signature.  In 2.6
             # (and higher!)
             # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] in ('2.6', '2.7') and port == 443:
+            if ((ON_APP_ENGINE and sys.version[:3] == '2.5') or
+                    sys.version[:3] in ('2.6', '2.7')) and port == 443:
                 signature_host = self.host
             else:
                 signature_host = '%s:%d' % (self.host, port)
@@ -478,8 +494,7 @@ class AWSAuthConnection(object):
         auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
-    def _mexe(self, method, path, data, headers, host=None, sender=None,
-              override_num_retries=None):
+    def _mexe(self, request, sender=None, override_num_retries=None):
         """
         mexe - Multi-execute inside a loop, retrying multiple times to handle
                transient Internet errors by simply trying again.
@@ -488,11 +503,11 @@ class AWSAuthConnection(object):
         This code was inspired by the S3Utils classes posted to the boto-users
         Google group by Larry Bates.  Thanks!
         """
-        boto.log.debug('Method: %s' % method)
-        boto.log.debug('Path: %s' % path)
-        boto.log.debug('Data: %s' % data)
-        boto.log.debug('Headers: %s' % headers)
-        boto.log.debug('Host: %s' % host)
+        boto.log.debug('Method: %s' % request.method)
+        boto.log.debug('Path: %s' % request.path)
+        boto.log.debug('Data: %s' % request.body)
+        boto.log.debug('Headers: %s' % request.headers)
+        boto.log.debug('Host: %s' % request.host)
         response = None
         body = None
         e = None
@@ -501,19 +516,23 @@ class AWSAuthConnection(object):
         else:
             num_retries = override_num_retries
         i = 0
-        connection = self.get_http_connection(host, self.is_secure)
+        connection = self.get_http_connection(request.host, self.is_secure)
         while i <= num_retries:
             try:
+                # we now re-sign each request before it is retried
+                request.authorize(connection=self)
                 if callable(sender):
-                    response = sender(connection, method, path, data, headers)
+                    response = sender(connection, request.method, request.path,
+                                      request.body, request.headers)
                 else:
-                    connection.request(method, path, data, headers)
+                    connection.request(request.method, request.path, request.body,
+                                       request.headers)
                     response = connection.getresponse()
                 location = response.getheader('location')
                 # -- gross hack --
                 # httplib gets confused with chunked responses to HEAD requests
                 # so I have to fake it out
-                if method == 'HEAD' and getattr(response, 'chunked', False):
+                if request.method == 'HEAD' and getattr(response, 'chunked', False):
                     response.chunked = 0
                 if response.status == 500 or response.status == 503:
                     boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2 ** i))
@@ -522,20 +541,20 @@ class AWSAuthConnection(object):
                     body = response.read()
                     print '-------------------------'
                     print '         4 0 8           '
-                    print 'path=%s' % path
+                    print 'path=%s' % request.path
                     print body
                     print '-------------------------'
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
-                    self.put_http_connection(host, self.is_secure, connection)
+                    self.put_http_connection(request.host, self.is_secure, connection)
                     return response
                 else:
-                    scheme, host, path, params, query, fragment = \
+                    scheme, request.host, request.path, params, query, fragment = \
                             urlparse.urlparse(location)
                     if query:
-                        path += '?' + query
-                    boto.log.debug('Redirecting: %s' % scheme + '://' + host + path)
-                    connection = self.get_http_connection(host, scheme == 'https')
+                        request.path += '?' + query
+                    boto.log.debug('Redirecting: %s' % scheme + '://' + request.host + request.path)
+                    connection = self.get_http_connection(request.host, scheme == 'https')
                     continue
             except KeyboardInterrupt:
                 sys.exit('Keyboard Interrupt')
@@ -548,7 +567,7 @@ class AWSAuthConnection(object):
                         raise e
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
-                connection = self.new_http_connection(host, self.is_secure)
+                connection = self.new_http_connection(request.host, self.is_secure)
             time.sleep(2 ** i)
             i += 1
         # If we made it here, it's because we have exhausted our retries and stil haven't
@@ -586,34 +605,13 @@ class AWSAuthConnection(object):
         return HTTPRequest(method, self.protocol, host, self.port,
                            path, auth_path, params, headers, data)
 
-    def fill_in_auth(self, http_request, **kwargs):
-        headers = http_request.headers
-        for key in headers:
-            val = headers[key]
-            if isinstance(val, unicode):
-                headers[key] = urllib.quote_plus(val.encode('utf-8'))
-
-        self._auth_handler.add_auth(http_request, **kwargs)
-
-        headers['User-Agent'] = UserAgent
-        if not headers.has_key('Content-Length'):
-            headers['Content-Length'] = str(len(http_request.body))
-        return http_request
-
-    def _send_http_request(self, http_request, sender=None,
-                           override_num_retries=None):
-        return self._mexe(http_request.method, http_request.path,
-                          http_request.body, http_request.headers,
-                          http_request.host, sender, override_num_retries)
-
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None):
         """Makes a request to the server, with stock multiple-retry logic."""
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     {}, headers, data, host)
-        http_request = self.fill_in_auth(http_request)
-        return self._send_http_request(http_request, sender,
-                                       override_num_retries)
+        #http_request = self.fill_in_auth(http_request)
+        return self._mexe(http_request, sender, override_num_retries)
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,
@@ -648,8 +646,8 @@ class AWSQueryConnection(AWSAuthConnection):
         if action:
             http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
-        http_request = self.fill_in_auth(http_request)
-        return self._send_http_request(http_request)
+        #http_request = self.fill_in_auth(http_request)
+        return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):

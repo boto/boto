@@ -340,6 +340,7 @@ class Group:
 
     def __init__(self, parent=None):
         self.id = None
+        self.name = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -347,6 +348,8 @@ class Group:
     def endElement(self, name, value, connection):
         if name == 'groupId':
             self.id = value
+        elif name == 'groupName':
+            self.name = value
         else:
             setattr(self, name, value)
     

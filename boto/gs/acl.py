@@ -42,7 +42,7 @@ USER_BY_EMAIL = 'UserByEmail'
 USER_BY_ID = 'UserById'
 
 
-CannedACLStrings = ['private', 'public-read',
+CannedACLStrings = ['private', 'public-read', 'project-private',
                     'public-read-write', 'authenticated-read',
                     'bucket-owner-read', 'bucket-owner-full-control']
 

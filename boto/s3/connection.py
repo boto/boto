@@ -79,12 +79,14 @@ class _CallingFormat:
             return self.get_bucket_server(server, bucket)
 
     def build_auth_path(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path = ''
         if bucket != '':
             path = '/' + bucket
         return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
@@ -105,6 +107,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         return server
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
@@ -270,13 +273,22 @@ class S3Connection(AWSAuthConnection):
         return {"action": url, "fields": fields}
 
 
-    def generate_url(self, expires_in, method, bucket='', key='',
-                     headers=None, query_auth=True, force_http=False):
+    def generate_url(self, expires_in, method, bucket='', key='', headers=None,
+                     query_auth=True, force_http=False, response_headers=None):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
+        # Arguments to override response headers become part of the canonical
+        # string to be signed.
+        if response_headers:
+            response_hdrs = ["%s=%s" % (k, v) for k, v in
+                             response_headers.items()]
+            delimiter = '?' if '?' not in auth_path else '&'
+            auth_path = "%s%s%s" % (auth_path, delimiter, '&'.join(response_hdrs))
+        else:
+            response_headers = {}
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
@@ -285,6 +297,8 @@ class S3Connection(AWSAuthConnection):
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                                    self.aws_access_key_id)
+            # The response headers must also be GET parameters in the URL.
+            headers.update(response_headers)
             hdrs = [ '%s=%s'%(name, urllib.quote(val)) for name,val in headers.items() ]
             q_str = '&'.join(hdrs)
             if q_str:

@@ -46,6 +46,15 @@ from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
 from tests.s3.cb_test_harnass import CallbackTestHarnass
 
+# We don't use the OAuth2 authentication plugin directly; importing it here
+# ensures that it's loaded and available by default.
+try:
+  from oauth2_plugin import oauth2_plugin
+except ImportError:
+  # Do nothing - if user doesn't have OAuth2 configured it doesn't matter;
+  # and if they do, the tests will fail (as they should in that case).
+  pass
+
 
 class ResumableUploadTests(unittest.TestCase):
     """
@@ -225,6 +234,21 @@ class ResumableUploadTests(unittest.TestCase):
         """
         # Test one of the RETRYABLE_EXCEPTIONS.
         exception = ResumableUploadHandler.RETRYABLE_EXCEPTIONS[0]
+        harnass = CallbackTestHarnass(exception=exception)
+        res_upload_handler = ResumableUploadHandler(num_retries=1)
+        self.dst_key.set_contents_from_file(
+            self.small_src_file, cb=harnass.call,
+            res_upload_handler=res_upload_handler)
+        # Ensure uploaded object has correct content.
+        self.assertEqual(self.small_src_file_size, self.dst_key.size)
+        self.assertEqual(self.small_src_file_as_string,
+                         self.dst_key.get_contents_as_string())
+
+    def test_broken_pipe_recovery(self):
+        """
+        Tests handling of a Broken Pipe (which interacts with an httplib bug)
+        """
+        exception = IOError(errno.EPIPE, "Broken pipe")
         harnass = CallbackTestHarnass(exception=exception)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         self.dst_key.set_contents_from_file(

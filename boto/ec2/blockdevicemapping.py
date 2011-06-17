@@ -71,7 +71,7 @@ class BlockDeviceMapping(dict):
         self.current_value = None
 
     def startElement(self, name, attrs, connection):
-        if name == 'ebs':
+        if name == 'ebs' or name == 'virtualName':
             self.current_value = BlockDeviceType(self)
             return self.current_value
 

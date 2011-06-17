@@ -272,17 +272,31 @@ class EC2Connection(AWSQueryConnection):
         image_id = getattr(rs, 'imageId', None)
         return image_id
 
-    def deregister_image(self, image_id):
+    def deregister_image(self, image_id, delete_snapshot=False):
         """
         Unregister an AMI.
 
         :type image_id: string
         :param image_id: the ID of the Image to unregister
 
+        :type delete_snapshot: bool
+        :param delete_snapshot: Set to True if we should delete the snapshot associated with an EBS volume mounted at /dev/sda1
+
         :rtype: bool
         :return: True if successful
         """
-        return self.get_status('DeregisterImage', {'ImageId':image_id}, verb='POST')
+        snapshot_id = None
+        if delete_snapshot:
+            image = self.get_image(image_id)
+            for key in image.block_device_mapping:
+                if key == "/dev/sda1":
+                    snapshot_id = image.block_device_mapping[key].snapshot_id
+                    break
+
+        result = self.get_status('DeregisterImage', {'ImageId':image_id}, verb='POST')
+        if result and snapshot_id:
+            return result and self.delete_snapshot(snapshot_id)
+        return result
 
     def create_image(self, instance_id, name, description=None, no_reboot=False):
         """
@@ -428,16 +442,17 @@ class EC2Connection(AWSQueryConnection):
                              [('item', Reservation)], verb='POST')
 
     def run_instances(self, image_id, min_count=1, max_count=1,
-                      key_name=None, security_groups=None,
-                      user_data=None, addressing_type=None,
-                      instance_type='m1.small', placement=None,
+                      key_name=None, security_groups=None, 
+                      user_data=None, addressing_type=None, 
+                      instance_type='m1.small', placement=None, 
                       kernel_id=None, ramdisk_id=None,
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
                       disable_api_termination=False,
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
-                      placement_group=None, client_token=None):
+                      placement_group=None, client_token=None,
+                      security_group_ids=None):
         """
         Runs an image on EC2.
 
@@ -529,12 +544,24 @@ class EC2Connection(AWSQueryConnection):
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
+
+        :type security_group_ids: list of strings
+        :param security_group_ids: The ID of the VPC security groups with which to
+                                associate instances
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
                   'MaxCount': max_count}
         if key_name:
             params['KeyName'] = key_name
+        if security_group_ids:
+            l = []
+            for group in security_group_ids:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l, 'SecurityGroupId')
         if security_groups:
             l = []
             for group in security_groups:
@@ -1625,6 +1652,7 @@ class EC2Connection(AWSQueryConnection):
                  The material attribute of the new KeyPair object
                  will contain the the unencrypted PEM encoded RSA private key.
         """
+        public_key_material = base64.b64encode(public_key_material)
         params = {'KeyName' : key_name,
                   'PublicKeyMaterial' : public_key_material}
         return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
@@ -2306,12 +2334,9 @@ class EC2Connection(AWSQueryConnection):
             params['Tag.%d.Value'%i] = value
             i += 1
         
-    def get_all_tags(self, tags=None, filters=None):
+    def get_all_tags(self, filters=None):
         """
         Retrieve all the metadata tags associated with your account.
-
-        :type tags: list
-        :param tags: A list of mumble
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -2327,8 +2352,6 @@ class EC2Connection(AWSQueryConnection):
         :return: A dictionary containing metadata tags
         """
         params = {}
-        if tags:
-            self.build_list_params(params, instance_ids, 'InstanceId')
         if filters:
             self.build_filter_params(params, filters)
         return self.get_list('DescribeTags', params, [('item', Tag)], verb='POST')

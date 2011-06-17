@@ -526,6 +526,13 @@ class ResumableUploadHandler(object):
             except self.RETRYABLE_EXCEPTIONS, e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
+                if isinstance(e, IOError) and e.errno == errno.EPIPE:
+                    # Broken pipe error causes httplib to immediately
+                    # close the socket (http://bugs.python.org/issue5542),
+                    # so we need to close the connection before we resume
+                    # the upload (which will cause a new connection to be
+                    # opened the next time an HTTP request is sent).
+                    key.bucket.connection.connection.close()
             except ResumableUploadException, e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):

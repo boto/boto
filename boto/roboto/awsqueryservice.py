@@ -83,7 +83,6 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         url = self.args.get('url', None)
         if url:
             del self.args['url']
-        # TODO: move EUARE_URL to class variable
         if not url and self.EnvURL in os.environ:
             url = os.environ[self.EnvURL]
         if url:

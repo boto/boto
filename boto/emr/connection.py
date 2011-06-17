@@ -1,4 +1,5 @@
 # Copyright (c) 2010 Spotify AB
+# Copyright (c) 2010-2011 Yelp
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -25,6 +26,7 @@ Represents a connection to the EMR service
 import types
 
 import boto
+import boto.utils
 from boto.ec2.regioninfo import RegionInfo
 from boto.emr.emrobject import JobFlow, RunJobFlowResponse
 from boto.emr.step import JarStep
@@ -94,9 +96,11 @@ class EmrConnection(AWSQueryConnection):
         if jobflow_ids:
             self.build_list_params(params, jobflow_ids, 'JobFlowIds.member')
         if created_after:
-            params['CreatedAfter'] = created_after.strftime('%Y-%m-%dT%H:%M:%S')
+            params['CreatedAfter'] = created_after.strftime(
+                boto.utils.ISO8601)
         if created_before:
-            params['CreatedBefore'] = created_before.strftime('%Y-%m-%dT%H:%M:%S')
+            params['CreatedBefore'] = created_before.strftime(
+                boto.utils.ISO8601)
 
         return self.get_list('DescribeJobFlows', params, [('member', JobFlow)])
 
@@ -105,9 +109,9 @@ class EmrConnection(AWSQueryConnection):
         Terminate an Elastic MapReduce job flow
 
         :type jobflow_id: str
-        :param jobflow_id: A jobflow id 
+        :param jobflow_id: A jobflow id
         """
-        self.terminate_jobflows([jobflow_id]) 
+        self.terminate_jobflows([jobflow_id])
 
     def terminate_jobflows(self, jobflow_ids):
         """
@@ -118,7 +122,7 @@ class EmrConnection(AWSQueryConnection):
         """
         params = {}
         self.build_list_params(params, jobflow_ids, 'JobFlowIds.member')
-        return self.get_status('TerminateJobFlows', params)
+        return self.get_status('TerminateJobFlows', params, verb='POST')
 
     def add_jobflow_steps(self, jobflow_id, steps):
         """
@@ -138,7 +142,8 @@ class EmrConnection(AWSQueryConnection):
         step_args = [self._build_step_args(step) for step in steps]
         params.update(self._build_step_list(step_args))
 
-        return self.get_object('AddJobFlowSteps', params, RunJobFlowResponse)
+        return self.get_object(
+            'AddJobFlowSteps', params, RunJobFlowResponse, verb='POST')
 
     def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
                     master_instance_type='m1.small',
@@ -207,7 +212,8 @@ class EmrConnection(AWSQueryConnection):
             bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
 
-        response = self.get_object('RunJobFlow', params, RunJobFlowResponse)
+        response = self.get_object(
+            'RunJobFlow', params, RunJobFlowResponse, verb='POST')
         return response.jobflowid
 
     def _build_bootstrap_action_args(self, bootstrap_action):
@@ -274,7 +280,7 @@ class EmrConnection(AWSQueryConnection):
         if ec2_keyname:
             params['Instances.Ec2KeyName'] = ec2_keyname
         if availability_zone:
-            params['Placement'] = availability_zone
+            params['Placement.AvailabilityZone'] = availability_zone
 
         return params
 

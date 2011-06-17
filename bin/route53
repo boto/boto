@@ -34,10 +34,15 @@ def ls(conn):
 
 def get(conn, hosted_zone_id, type=None, name=None, maxitems=None):
     """Get all the records for a single zone"""
-    response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=maxitems)[:]
+    response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=maxitems)
+    # If a maximum number of items was set, we limit to that number
+    # by turning the response into an actual list (copying it)
+    # instead of allowing it to page
+    if maxitems:
+        response = response[:]
     print '%-40s %-5s %-20s %s' % ("Name", "Type", "TTL", "Value(s)")
     for record in response:
-        print '%-40s %-5s %-20s %s' % (record.name, record.type, record.ttl, ",".join(record.resource_records))
+        print '%-40s %-5s %-20s %s' % (record.name, record.type, record.ttl, record.to_print())
 
 
 def add_record(conn, hosted_zone_id, name, type, value, ttl=600, comment=""):
@@ -54,6 +59,22 @@ def del_record(conn, hosted_zone_id, name, type, value, ttl=600, comment=""):
     changes = ResourceRecordSets(conn, hosted_zone_id, comment)
     change = changes.add_change("DELETE", name, type, ttl)
     change.add_value(value)
+    print changes.commit()
+
+def add_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_name, comment=""):
+    """Add a new alias to a zone"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    change = changes.add_change("CREATE", name, type)
+    change.set_alias(alias_hosted_zone_id, alias_dns_name)
+    print changes.commit()
+
+def del_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_name, comment=""):
+    """Delete an alias from a zone"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    change = changes.add_change("DELETE", name, type)
+    change.set_alias(alias_hosted_zone_id, alias_dns_name)
     print changes.commit()
 
 def change_record(conn, hosted_zone_id, name, type, values, ttl=600, comment=""):
