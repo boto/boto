@@ -187,8 +187,10 @@ class AutoScalingGroup(object):
             return self.availability_zones
         elif name == 'EnabledMetrics':
             self.enabled_metrics = ResultSet([('member', EnabledMetric)])
+            return self.enabled_metrics
         elif name == 'SuspendedProcesses':
             self.suspended_processes = ResultSet([('member', SuspendedProcess)])
+            return self.suspended_processes
         else:
             return
 
