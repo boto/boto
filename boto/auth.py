@@ -186,6 +186,9 @@ class QuerySignatureHelper(HmacKeys):
             http_request.body = qs + '&Signature=' + urllib.quote(signature)
         else:
             http_request.body = ''
+            # if this is a retried request, the qs from the previous try will
+            # already be there, we need to get rid of that and rebuild it
+            http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs + '&Signature=' + urllib.quote(signature))
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
@@ -203,7 +206,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
-            val = bot.utils.get_utf8_value(params[key])
+            val = boto.utils.get_utf8_value(params[key])
             pairs.append(key + '=' + urllib.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
