@@ -359,7 +359,7 @@ class ConsoleOutput:
         self.parent = parent
         self.instance_id = None
         self.timestamp = None
-        self.comment = None
+        self.output = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -367,6 +367,8 @@ class ConsoleOutput:
     def endElement(self, name, value, connection):
         if name == 'instanceId':
             self.instance_id = value
+        elif name == 'timestamp':
+            self.timestamp = timestamp
         elif name == 'output':
             self.output = base64.b64decode(value)
         else:
