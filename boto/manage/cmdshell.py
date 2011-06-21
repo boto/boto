@@ -166,9 +166,50 @@ class LocalClient(object):
     def close(self):
         pass
 
+class FakeServer(object):
+    """
+    A little class to fake out SSHClient (which is expecting a
+    :class`boto.manage.server.Server` instance.  This allows us
+    to 
+    """
+    def __init__(self, instance, ssh_key_file):
+        self.instance = instance
+        self.ssh_key_file = ssh_key_file
+        self.hostname = instance.dns_name
+        self.instance_id = self.instance.id
+        
 def start(server):
     instance_id = boto.config.get('Instance', 'instance-id', None)
     if instance_id == server.instance_id:
         return LocalClient(server)
     else:
         return SSHClient(server)
+
+def sshclient_from_instance(instance, ssh_key_file,
+                            host_key_file='~/.ssh/known_hosts',
+                            user_name='root', ssh_pwd=None):
+    """
+    Create and return an SSHClient object given an
+    instance object.
+
+    :type instance: :class`boto.ec2.instance.Instance` object
+    :param instance: The instance object.
+
+    :type ssh_key_file: str
+    :param ssh_key_file: A path to the private key file used
+                         to log into instance.
+
+    :type host_key_file: str
+    :param host_key_file: A path to the known_hosts file used
+                          by the SSH client.
+                          Defaults to ~/.ssh/known_hosts
+    :type user_name: str
+    :param user_name: The username to use when logging into
+                      the instance.  Defaults to root.
+
+    :type ssh_pwd: str
+    :param ssh_pwd: The passphrase, if any, associated with
+                    private key.
+    """
+    s = FakeServer(instance, ssh_key_file)
+    return SSHClient(s, host_key_file, user_name, ssh_pwd)
