@@ -30,7 +30,7 @@ from boto.sdb.db.blob import Blob
 
 class Property(object):
 
-    data_type = str
+    data_type = basestring
     type_name = ''
     name = ''
     verbose_name = ''
@@ -75,7 +75,7 @@ class Property(object):
         self.slot_name = '_' + self.name
 
     def default_validator(self, value):
-        if isinstance(value, basestring) or value == self.default_value():
+        if value == self.default_value():
             return
         if not isinstance(value, self.data_type):
             raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
@@ -258,7 +258,10 @@ class S3KeyProperty(Property):
                           validator, choices, unique)
 
     def validate(self, value):
-        value = super(S3KeyProperty, self).validate(value)
+        if self.required and value==None:
+            raise ValueError, '%s is a required property' % self.name
+        if self.validator:
+            self.validator(value)
         if value == self.default_value() or value == str(self.default_value()):
             return self.default_value()
         if isinstance(value, self.data_type):
@@ -600,6 +603,8 @@ class ListProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
+        if self.required and value==None:
+            raise ValueError, '%s is a required property' % self.name
         if self.validator:
             self.validator(value)
         if value is not None:
@@ -655,7 +660,10 @@ class MapProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
-        value = super(MapProperty, self).validate(value)
+        if self.required and value==None:
+            raise ValueError, '%s is a required property' % self.name
+        if self.validator:
+            self.validator(value)
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError, 'Value must of type dict'
