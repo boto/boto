@@ -513,7 +513,8 @@ class ReferenceProperty(Property):
             raise ValueError, '%s is not a Model' % value
             
     def validate(self, value):
-        value = super(ReferenceProperty, self).validate(value)
+        if self.validator:
+            self.validator(value)
         if self.required and value==None:
             raise ValueError, '%s is a required property' % self.name
         if value == self.default_value():
@@ -599,7 +600,8 @@ class ListProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
-        value = super(ListProperty, self).validate(value)
+        if self.validator:
+            self.validator(value)
         if value is not None:
             if not isinstance(value, list):
                 value = [value]
