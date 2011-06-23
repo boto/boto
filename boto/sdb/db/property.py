@@ -135,6 +135,7 @@ class TextProperty(Property):
         self.max_length = max_length
 
     def validate(self, value):
+        value = super(TextProperty, self).validate(value)
         if not isinstance(value, str) and not isinstance(value, unicode):
             raise TypeError, 'Expecting Text, got %s' % type(value)
         if self.max_length and len(value) > self.max_length:
@@ -257,6 +258,7 @@ class S3KeyProperty(Property):
                           validator, choices, unique)
 
     def validate(self, value):
+        value = super(S3KeyProperty, self).validate(value)
         if value == self.default_value() or value == str(self.default_value()):
             return self.default_value()
         if isinstance(value, self.data_type):
@@ -389,6 +391,7 @@ class DateTimeProperty(Property):
         return Property.default_value(self)
 
     def validate(self, value):
+        value = super(DateTimeProperty, self).validate(value)
         if value == None:
             return
         if not isinstance(value, self.data_type):
@@ -419,6 +422,7 @@ class DateProperty(Property):
         return Property.default_value(self)
 
     def validate(self, value):
+        value = super(DateProperty, self).validate(value)
         if value == None:
             return
         if not isinstance(value, self.data_type):
@@ -445,6 +449,7 @@ class TimeProperty(Property):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
     def validate(self, value):
+        value = super(TimeProperty, self).validate(value)
         if value is None:
             return
         if not isinstance(value, self.data_type):
@@ -508,6 +513,7 @@ class ReferenceProperty(Property):
             raise ValueError, '%s is not a Model' % value
             
     def validate(self, value):
+        value = super(ReferenceProperty, self).validate(value)
         if self.required and value==None:
             raise ValueError, '%s is a required property' % self.name
         if value == self.default_value():
@@ -593,6 +599,7 @@ class ListProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
+        value = super(ListProperty, self).validate(value)
         if value is not None:
             if not isinstance(value, list):
                 value = [value]
@@ -646,6 +653,7 @@ class MapProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
+        value = super(MapProperty, self).validate(value)
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError, 'Value must of type dict'
