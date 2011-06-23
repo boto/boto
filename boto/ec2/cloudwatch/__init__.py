@@ -357,7 +357,7 @@ class CloudWatchConnection(AWSQueryConnection):
             if value != None:
                 log.warn('You supplied a value and statistics for a metric.  Posting statistics and not value.')
 
-        elif value:
+        elif value != None:
             metric_data['Value'] = value
         else:
             raise Exception('Must specify a value or statistics to put.')
