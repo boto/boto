@@ -61,6 +61,11 @@ class BootstrapAction(EmrObject):
         'Path',
     ])
 
+    def startElement(self, name, attrs, connection):
+        if name == 'Args':
+            self.args = ResultSet([('member', Arg)])
+            return self.args
+
 
 class KeyValue(EmrObject):
     Fields = set([
