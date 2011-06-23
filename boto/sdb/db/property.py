@@ -75,7 +75,7 @@ class Property(object):
         self.slot_name = '_' + self.name
 
     def default_validator(self, value):
-        if value == self.default_value():
+        if isinstance(value, basestring) or value == self.default_value():
             return
         if not isinstance(value, self.data_type):
             raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
