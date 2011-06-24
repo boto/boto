@@ -368,7 +368,7 @@ class ConsoleOutput:
         if name == 'instanceId':
             self.instance_id = value
         elif name == 'timestamp':
-            self.timestamp = timestamp
+            self.timestamp = value
         elif name == 'output':
             self.output = base64.b64decode(value)
         else:
