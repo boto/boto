@@ -182,8 +182,7 @@ class FPSConnection(AWSQueryConnection):
         params['recipientPaysFee'] = str(recipientPaysFee)
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
-        params["transactionAmount"] = transactionAmount
-
+       
         if(not params.has_key('callerReference')):
             params['callerReference'] = str(uuid.uuid4())
 
