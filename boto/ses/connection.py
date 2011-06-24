@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -81,7 +81,7 @@ class SESConnection(AWSAuthConnection):
         for k, v in params.items():
             if isinstance(v, basestring):
                 params[k] = v.encode('utf-8')
-            
+
         response = super(SESConnection, self).make_request(
             'POST',
             '/',
@@ -131,17 +131,17 @@ class SESConnection(AWSAuthConnection):
                        or "html".
 
         :type reply_addresses: list of strings or string
-        :param reply_addresses: The reply-to email address(es) for the 
-                                message. If the recipient replies to the 
-                                message, each reply-to address will 
+        :param reply_addresses: The reply-to email address(es) for the
+                                message. If the recipient replies to the
+                                message, each reply-to address will
                                 receive the reply.
 
         :type return_path: string
-        :param return_path: The email address to which bounce notifications are 
-                            to be forwarded. If the message cannot be delivered 
-                            to the recipient, then an error message will be 
+        :param return_path: The email address to which bounce notifications are
+                            to be forwarded. If the message cannot be delivered
+                            to the recipient, then an error message will be
                             returned from the recipient's ISP; this message will
-                            then be forwarded to the email address specified by 
+                            then be forwarded to the email address specified by
                             the ReturnPath parameter.
 
         :type text_body: string
@@ -197,7 +197,7 @@ class SESConnection(AWSAuthConnection):
 
         return self._make_request('SendEmail', params)
 
-    def send_raw_email(self, source, raw_message, destinations=None):
+    def send_raw_email(self, raw_message, source=None, destinations=None):
         """Sends an email message, with header and content specified by the
         client. The SendRawEmail action is useful for sending multipart MIME
         emails, with attachments or inline content. The raw text of the message
@@ -205,7 +205,12 @@ class SESConnection(AWSAuthConnection):
         cannot be sent.
 
         :type source: string
-        :param source: The sender's email address.
+        :param source: The sender's email address. Amazon's docs say:
+
+          If you specify the Source parameter, then bounce notifications and
+          complaints will be sent to this email address. This takes precedence
+          over any Return-Path header that you might include in the raw text of
+          the message.
 
         :type raw_message: string
         :param raw_message: The raw text of the message. The client is
@@ -294,4 +299,3 @@ class SESConnection(AWSAuthConnection):
         return self._make_request('VerifyEmailAddress', {
             'EmailAddress': email_address,
         })
-
