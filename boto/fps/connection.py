@@ -160,7 +160,7 @@ class FPSConnection(AWSQueryConnection):
 
     def make_recipient_url(self, returnURL, pipelineName, callerReference,
                            maxFixedFee='0.0', maxVariableFee='0.0', 
-                           recipientPaysFee="True"):
+                           recipientPaysFee="True", **params):
 
         """
         Generate the URL with the signature required for a transaction
