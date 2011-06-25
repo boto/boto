@@ -124,7 +124,6 @@ class FPSConnection(AWSQueryConnection):
             endpoint_host = 'authorize.payments-sandbox.amazon.com'
         base = "/cobranded-ui/actions/start"
 
-
         params['callerKey'] = str(self.aws_access_key_id)
         params['returnURL'] = str(returnURL)
         params['pipelineName'] = pipelineName
@@ -133,7 +132,6 @@ class FPSConnection(AWSQueryConnection):
         
         if(not params.has_key('callerReference')):
             params['callerReference'] = str(uuid.uuid4())
-
 
         parts = ''
         for k in sorted(params.keys()):
