@@ -127,14 +127,16 @@ class FPSConnection(AWSQueryConnection):
 
         params['callerKey'] = str(self.aws_access_key_id)
         params['returnURL'] = str(returnURL)
-        params['paymentReason'] = str(paymentReason)
         params['pipelineName'] = pipelineName
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
-        params["transactionAmount"] = transactionAmount
-
+        
         if(not params.has_key('callerReference')):
             params['callerReference'] = str(uuid.uuid4())
+            params['paymentReason'] = str(paymentReason)
+            params["transactionAmount"] = transactionAmount
+
+
 
         parts = ''
         for k in sorted(params.keys()):
@@ -156,61 +158,6 @@ class FPSConnection(AWSQueryConnection):
         fmt = "https://%(endpoint_host)s%(base)s?%(urlsuffix)s"
         final = fmt % vars()
         return final
-
-
-    def make_recipient_url(self, returnURL, pipelineName, callerReference,
-                           maxFixedFee='0.0', maxVariableFee='0.0', 
-                           recipientPaysFee="True", **params):
-
-        """
-        Generate the URL with the signature required for a transaction
-        """
-        # use the sandbox authorization endpoint if we're using the
-        #  sandbox for API calls.
-        endpoint_host = 'authorize.payments.amazon.com'
-        if 'sandbox' in self.host:
-            endpoint_host = 'authorize.payments-sandbox.amazon.com'
-        base = "/cobranded-ui/actions/start"
-
-
-        params['callerKey'] = str(self.aws_access_key_id)
-        params['returnURL'] = str(returnURL)
-        params['pipelineName'] = pipelineName
-        params['callerReference'] = str(callerReference)
-        params['maxFixedFee'] = str(maxFixedFee)
-        params['maxVariableFee'] = str(maxVariableFee)
-        params['recipientPaysFee'] = str(recipientPaysFee)
-        params["signatureMethod"] = 'HmacSHA256'
-        params["signatureVersion"] = '2'
-       
-        if(not params.has_key('callerReference')):
-            params['callerReference'] = str(uuid.uuid4())
-
-        parts = ''
-        for k in sorted(params.keys()):
-            parts += "&%s=%s" % (k, urllib.quote(params[k], '~'))
-
-        canonical = '\n'.join(['GET',
-                               str(endpoint_host).lower(),
-                               base,
-                               parts[1:]])
-
-        signature = self._auth_handler.sign_string(canonical)
-        params["signature"] = signature
-
-        urlsuffix = ''
-        for k in sorted(params.keys()):
-            urlsuffix += "&%s=%s" % (k, urllib.quote(params[k], '~'))
-        urlsuffix = urlsuffix[1:] # strip the first &
-        
-        fmt = "https://%(endpoint_host)s%(base)s?%(urlsuffix)s"
-        final = fmt % vars()
-        return final
-
-                           
-
-
-
 
     def pay(self, transactionAmount, senderTokenId,
             recipientTokenId=None, callerTokenId=None,
