@@ -172,7 +172,9 @@ class FPSConnection(AWSQueryConnection):
 
         params['callerKey'] = str(self.aws_access_key_id)
         params['returnURL'] = str(returnURL)
+        params['paymentReason'] = str(paymentReason)
         params['pipelineName'] = pipelineName
+        params['transactionAmount'] = transactionAmount
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
         
