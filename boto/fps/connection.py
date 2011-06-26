@@ -113,7 +113,7 @@ class FPSConnection(AWSQueryConnection):
         else:
             raise FPSResponseError(response.status, response.reason, body)
 
-    def make_marketplace_registration_url(self, returnURL, piplineName, maxFixedFee=0.0, maxVariableFee=0.0, recipientPaysFee='True'):  
+    def make_marketplace_registration_url(self, returnURL, piplineName, maxFixedFee=0.0, maxVariableFee=0.0, recipientPaysFee='True', **params):  
         """
         Generate the URL with the signature required for signing up a recipient
         """
