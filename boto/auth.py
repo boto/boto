@@ -184,6 +184,7 @@ class QuerySignatureHelper(HmacKeys):
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
             http_request.body = qs + '&Signature=' + urllib.quote(signature)
+            http_request.headers['Content-Length'] = str(len(http_request.body))
         else:
             http_request.body = ''
             # if this is a retried request, the qs from the previous try will
