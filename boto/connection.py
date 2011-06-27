@@ -159,8 +159,12 @@ class HTTPRequest(object):
         connection._auth_handler.add_auth(self, **kwargs)
 
         self.headers['User-Agent'] = UserAgent
-        if not self.headers.has_key('Content-Length'):
-            self.headers['Content-Length'] = str(len(self.body))
+
+        # Always set the content-length, even if there already was
+        # one.  Re-signing a request can result in the signature being
+        # a different length (because of URL encoding), and thus the
+        # whole body being a different length.
+        self.headers['Content-Length'] = str(len(self.body))
 
 class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
