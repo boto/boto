@@ -187,7 +187,7 @@ if __name__ == "__main__":
                     pass
 
             user_data = boto.utils.write_mime_multipart(scriptuples, compress=False)
-    print user_data
+
     shutdown_proc = "terminate"
     if options.save_ebs:
         shutdown_proc = "save"
