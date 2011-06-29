@@ -71,13 +71,16 @@ class Config(boto.pyami.config.Config):
             self.set('Credentials', 'aws_access_key_id', ec2.aws_access_key_id)
             self.set('Credentials', 'aws_secret_access_key', ec2.aws_secret_access_key)
 
-    
+
     def __str__(self):
         """Get config as string"""
         from StringIO import StringIO
         s = StringIO()
         self.write(s)
         return s.getvalue()
+
+def scripts_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, value.split(','))
 
 
 if __name__ == "__main__":
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     parser.add_option("-w", "--wait", help="Wait until instance is running", default=False, action="store_true", dest="wait")
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
     parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
-    parser.add_option("-s", "--add-script", help="Pass in a script or a folder containing scripts to be run when the instance starts up, assumes cloud-init. If multiple scripts are specified, they are run in the order they were specified. If they are in a folder, they are run in alphabetical order", default=None, dest="scripts", action="append")
+    parser.add_option("-s", "--scripts", help="Pass in a script or a folder containing scripts to be run when the instance starts up, assumes cloud-init. Specify scripts in a list specified by commas. If multiple scripts are specified, they are run lexically (A good way to ensure they run in the order is to prefix filenames with numbers)", type='string', action="callback", callback=scripts_callback)
 
     (options, args) = parser.parse_args()
 
@@ -184,7 +187,7 @@ if __name__ == "__main__":
                     pass
 
             user_data = boto.utils.write_mime_multipart(scriptuples, compress=False)
-
+    print user_data
     shutdown_proc = "terminate"
     if options.save_ebs:
         shutdown_proc = "save"
