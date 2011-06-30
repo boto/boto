@@ -186,7 +186,7 @@ def _get_instance_metadata(url):
         fields = data.split('\n')
         for field in fields:
             if field.endswith('/'):
-                d[field[0:-1]] = _get_instance_metadata(url + field)
+                d[field[0:-1]] = _get_instance_metadata(url + "/" + field)
             else:
                 p = field.find('=')
                 if p > 0:
@@ -194,7 +194,7 @@ def _get_instance_metadata(url):
                     resource = field[0:p] + '/openssh-key'
                 else:
                     key = resource = field
-                val = retry_url(url + resource)
+                val = retry_url(url + "/" + resource)
                 p = val.find('\n')
                 if p > 0:
                     val = val.split('\n')
