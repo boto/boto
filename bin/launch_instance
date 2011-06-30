@@ -82,6 +82,21 @@ class Config(boto.pyami.config.Config):
 def scripts_callback(option, opt, value, parser):
     setattr(parser.values, option.dest, value.split(','))
 
+def add_script(scr_url):
+    """Read a script and any scripts that are added using #import"""
+    base_url = '/'.join(scr_url.split('/')[:-1]) + '/'
+    script_raw = boto.utils.fetch_file(scr_url)
+    script_content = ''
+    for line in script_raw.readlines():
+        match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
+        #if there is an import
+        if match:
+            #Read the other script and put it in that spot
+            script_content += add_script("%s/%s" % (base_url, match.group(1)))
+        else:
+            #Otherwise, just add the line and move on
+            script_content += line
+    return script_content
 
 if __name__ == "__main__":
     try:
@@ -162,20 +177,6 @@ if __name__ == "__main__":
     # If it's a cloud init AMI,
     # then we need to wrap the config in our
     # little wrapper shell script
-    def add_script(scr_url):
-        base_url = '/'.join(scr_url.split('/')[:-1]) + '/'
-        script_raw = boto.utils.fetch_file(scr_url)
-        script_content = ''
-        for line in script_raw.readlines():
-            match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
-            #if there is an import
-            if match:
-                #Read the other script and put it in that spot
-                script_content = script_content.__add__(add_script("%s/%s" % (base_url, match.group(1))))
-            else:
-                #Otherwise, just add the line and move on
-                script_content = script_content.__add__(line)
-        return script_content
 
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
