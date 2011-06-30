@@ -162,6 +162,21 @@ if __name__ == "__main__":
     # If it's a cloud init AMI,
     # then we need to wrap the config in our
     # little wrapper shell script
+    def add_script(scr_url):
+        base_url = '/'.join(scr_url.split('/')[:-1]) + '/'
+        script_raw = boto.utils.fetch_file(scr_url)
+        script_content = ''
+        for line in script_raw.readlines():
+            match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
+            #if there is an import
+            if match:
+                #Read the other script and put it in that spot
+                script_content = script_content.__add__(add_script("%s/%s" % (base_url, match.group(1))))
+            else:
+                #Otherwise, just add the line and move on
+                script_content = script_content.__add__(line)
+        return script_content
+
     if options.cloud_init:
         user_data = CLOUD_INIT_SCRIPT % user_data
         scriptuples = []
@@ -181,9 +196,8 @@ if __name__ == "__main__":
                     except OSError:
                         scr_url = "file://%s" % scr_url
                 try:
-                    script_content = boto.utils.fetch_file(scr_url)
-                    scriptuples.append((scr, script_content.read()))
-                except ValueError:
+                    scriptuples.append((scr, add_script(scr_url)))
+                except Exception, e:
                     pass
 
             user_data = boto.utils.write_mime_multipart(scriptuples, compress=False)
