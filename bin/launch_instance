@@ -87,7 +87,6 @@ def scripts_callback(option, opt, value, parser):
         SCRIPTS.append(arg[0])
     else:
         SCRIPTS.extend(arg)
-    print SCRIPTS
     setattr(parser.values, option.dest, SCRIPTS)
 
 def add_script(scr_url):
