@@ -79,8 +79,16 @@ class Config(boto.pyami.config.Config):
         self.write(s)
         return s.getvalue()
 
+SCRIPTS = []
+
 def scripts_callback(option, opt, value, parser):
-    setattr(parser.values, option.dest, value.split(','))
+    arg = value.split(',')
+    if len(arg) == 1:
+        SCRIPTS.append(arg[0])
+    else:
+        SCRIPTS.extend(arg)
+    print SCRIPTS
+    setattr(parser.values, option.dest, SCRIPTS)
 
 def add_script(scr_url):
     """Read a script and any scripts that are added using #import"""
@@ -94,7 +102,7 @@ def add_script(scr_url):
             #Read the other script and put it in that spot
             script_content += add_script("%s/%s" % (base_url, match.group(1)))
         else:
-            #Otherwise, just add the line and move on
+            #As long as it's not the shebang line, add it and move on
             script_content += line
     return script_content
 
