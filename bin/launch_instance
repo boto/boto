@@ -102,7 +102,7 @@ def add_script(scr_url):
             #Read the other script and put it in that spot
             script_content += add_script("%s/%s" % (base_url, match.group(1)))
         else:
-            #As long as it's not the shebang line, add it and move on
+            #Otherwise, add the line and move on
             script_content += line
     return script_content
 
