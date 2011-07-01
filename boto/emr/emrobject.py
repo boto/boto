@@ -45,6 +45,8 @@ class EmrObject(object):
 class RunJobFlowResponse(EmrObject):
     Fields = set(['JobFlowId'])
 
+class AddInstanceGroupsResponse(EmrObject):
+    Fields = set(['InstanceGroupIds', 'JobFlowId'])
 
 class Arg(EmrObject):
     def __init__(self, connection=None):

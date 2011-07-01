@@ -145,6 +145,27 @@ class EmrConnection(AWSQueryConnection):
         return self.get_object(
             'AddJobFlowSteps', params, RunJobFlowResponse, verb='POST')
 
+	def add_instance_groups(self, jobflow_id, instance_groups):
+		"""
+		Adds instance groups to a running cluster.
+		
+		:type jobflow_id: str
+		:param jobflow_id: The id of the jobflow which will take the new instance groups
+		:type instance_groups: list(boto.emr.InstanceGroup)
+		:param instance_groups: A list of instance groups to add to the job
+		"""
+		if type(instance_groups) != types.ListType:
+			instance_groups = [instance_groups]
+		params = {}
+		params['JobFlowId'] = jobflow_id
+		
+		instance_group_args = [self._build_instance_group_args(ig) for ig in instance_groups]
+		params.update(self._build_instance_group_list(instance_group_args))
+		
+		return self.get_object(
+			'AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
+
+
     def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
                     master_instance_type='m1.small',
                     slave_instance_type='m1.small', num_instances=1,
@@ -284,3 +305,24 @@ class EmrConnection(AWSQueryConnection):
 
         return params
 
+    def _build_instance_group_args(self, instance_group):
+		params = {
+			'InstanceCount' : instance_group.num_instances,
+			'InstanceRole' : instance_group.role,
+			'InstanceType' : instance_group.type,
+			'Name' : instance_group.name,
+			'Market' : instance_group.market
+		}
+		
+		return params
+		
+		
+    def _build_instance_group_list(self, instance_groups):
+        if type(instance_groups) != types.ListType:
+            instance_groups = [instance_groups]
+
+        params = {}
+        for i, instance_group in enumerate(instance_groups):
+            for key, value in instance_group.iteritems():
+                params['InstanceGroups.member.%s.%s' % (i+1, key)] = value
+        return params
