@@ -162,8 +162,24 @@ class EmrConnection(AWSQueryConnection):
 		instance_group_args = [self._build_instance_group_args(ig) for ig in instance_groups]
 		params.update(self._build_instance_group_list(instance_group_args))
 		
-		return self.get_object(
-			'AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
+		return self.get_object('AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
+			
+	def modify_instance_groups(self, new_instance_groups):
+		"""
+		Modify the number of nodes and configuration settings in an instance group.
+				
+		:type new_instance_groups: list((int, str))
+		:param new_instance_groups: A list of tuples holding an integer for the new size and a string for the InstanceGroupId of the instance group to be modified
+		"""
+		params = {}
+		
+		for k, ig in enumerate(new_instance_groups):
+			#could be wrong - the example amazon gives uses InstanceRequestCount, 
+			#while the api documentation says InstanceCount
+			params['InstanceGroups.member.%s.InstanceCount' % k+1 ] = ig[0] 
+			params['InstanceGroups.member.%s.InstanceGroupId' % k+1 ] = ig[1]
+		
+		return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
 
 
     def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
