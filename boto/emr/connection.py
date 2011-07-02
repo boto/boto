@@ -342,6 +342,10 @@ class EmrConnection(AWSQueryConnection):
 
 		
 	def _get_instance_group_types(self, jobflow_id):
+		"""
+		Takes a jobflow_id, returns a dictionary with Instance Group IDs
+		for keys and their associated Instance Roles as values.
+		"""
 		jobflow_detail = self.describe_jobflow(jobflow_id)
 		instance_group_list = jobflow_detail.instancegroups
 		instance_group_types = {}
