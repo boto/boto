@@ -164,21 +164,28 @@ class EmrConnection(AWSQueryConnection):
 		
 		return self.get_object('AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
 			
-	def modify_instance_groups(self, new_instance_groups):
+	def modify_instance_groups(self, instance_group_ids, new_sizes):
 		"""
 		Modify the number of nodes and configuration settings in an instance group.
 				
-		:type new_instance_groups: list((int, str))
-		:param new_instance_groups: A list of tuples holding an integer for the new size and a string for the InstanceGroupId of the instance group to be modified
+		:type instance_group_ids: list(str)
+		:param instance_group_ids: A list of the ID's of the instance groups to be modified
+		:type new_sizes: list(int)
+		:param new_sizes: A list of the new sizes for each instance group
 		"""
-		params = {}
-		
-		for k, ig in enumerate(new_instance_groups):
+		if type(instance_group_ids) != types.ListType:
+			instance_group_ids = [instance_group_ids]
+		if type(new_sizes) != types.ListType:
+			new_sizes = [new_sizes]
+			
+		instance_groups = zip(instance_group_ids, new_sizes)
+				
+		for k, ig in enumerate(instance_groups):
 			#could be wrong - the example amazon gives uses InstanceRequestCount, 
 			#while the api documentation says InstanceCount
-			params['InstanceGroups.member.%s.InstanceCount' % k+1 ] = ig[0] 
-			params['InstanceGroups.member.%s.InstanceGroupId' % k+1 ] = ig[1]
-		
+			params['InstanceGroups.member.%s.InstanceGroupId' % k+1 ] = ig[1][0] 
+			params['InstanceGroups.member.%s.InstanceCount' % k+1 ] = ig[1][1]
+			
 		return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
 
     def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
@@ -339,16 +346,3 @@ class EmrConnection(AWSQueryConnection):
             for key, value in instance_group.iteritems():
                 params['InstanceGroups.member.%s.%s' % (i+1, key)] = value
         return params
-
-		
-	def _get_instance_group_types(self, jobflow_id):
-		"""
-		Takes a jobflow_id, returns a dictionary with Instance Group IDs
-		for keys and their associated Instance Roles as values.
-		"""
-		jobflow_detail = self.describe_jobflow(jobflow_id)
-		instance_group_list = jobflow_detail.instancegroups
-		instance_group_types = {}
-		for ig in instance_group_list:
-			instance_groups_types['%s' % ig['InstanceGroupId'] = ig['InstanceRole']
-		return instance_group_types
