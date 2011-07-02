@@ -181,7 +181,6 @@ class EmrConnection(AWSQueryConnection):
 		
 		return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
 
-
     def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
                     master_instance_type='m1.small',
                     slave_instance_type='m1.small', num_instances=1,
@@ -329,9 +328,7 @@ class EmrConnection(AWSQueryConnection):
 			'Name' : instance_group.name,
 			'Market' : instance_group.market
 		}
-		
 		return params
-		
 		
     def _build_instance_group_list(self, instance_groups):
         if type(instance_groups) != types.ListType:
@@ -342,3 +339,12 @@ class EmrConnection(AWSQueryConnection):
             for key, value in instance_group.iteritems():
                 params['InstanceGroups.member.%s.%s' % (i+1, key)] = value
         return params
+
+		
+	def _get_instance_group_types(self, jobflow_id):
+		jobflow_detail = self.describe_jobflow(jobflow_id)
+		instance_group_list = jobflow_detail.instancegroups
+		instance_group_types = {}
+		for ig in instance_group_list:
+			instance_groups_types['%s' % ig['InstanceGroupId'] = ig['InstanceRole']
+		return instance_group_types
