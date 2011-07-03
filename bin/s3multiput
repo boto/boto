@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -42,7 +42,7 @@ SYNOPSIS
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-q/--quiet]
-          [-g/--grant grant] [-w/--no_overwrite] path
+          [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -76,6 +76,7 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
+        reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
                 transferred to S3.  The value of provided must be one
                 of the "canned" ACL policies supported by S3:
@@ -134,7 +135,7 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
 def upload(bucketname, aws_key, aws_secret, source_path, keyname,
     reduced, debug, cb, num_cb,
     acl='private', headers={}, guess_mimetype=True, parallel_processes=4):
-    
+
     print "upload()"
     """
     Parallel multipart upload.
@@ -174,7 +175,7 @@ def upload(bucketname, aws_key, aws_secret, source_path, keyname,
 
 
 def main():
-    
+
     # default values
     aws_access_key_id     = None
     aws_secret_access_key = None
@@ -248,7 +249,8 @@ def main():
     c.debug = debug
     b = c.get_bucket(bucket_name)
 
-    if os.path.isdir(path): # walk directory tree
+    # upload a directory of files recursively
+    if os.path.isdir(path):
         if no_overwrite:
             if not quiet:
                 print 'Getting list of existing keys to check against'
@@ -268,21 +270,25 @@ def main():
                         copy_file = False
                         if not quiet:
                             print 'Skipping %s as it exists in s3' % file
-                            
+
                 if copy_file:
                     if not quiet:
                         print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
-                        
+
                     if not no_op:
-                        upload(bucket_name, aws_access_key_id, 
-                               aws_secret_access_key, fullpath, key_name, 
-                               reduced, debug, cb, num_cb)
-                        # k = b.new_key(key_name)
-                        # k.set_contents_from_filename(fullpath, cb=cb,
-                        #                                 num_cb=num_cb, policy=grant)
+                        if os.stat(fullpath).st_size == 0:
+                            # 0-byte files don't work and also don't need multipart upload
+                            k = b.new_key(key_name)
+                            k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb,
+                                                         policy=grant, reduced_redundancy=reduced)
+                        else:
+                            upload(bucket_name, aws_access_key_id,
+                                   aws_secret_access_key, fullpath, key_name,
+                                   reduced, debug, cb, num_cb)
                 total += 1
 
-    elif os.path.isfile(path): # upload a single file
+    # upload a single file
+    elif os.path.isfile(path):
         key_name = os.path.split(path)[1]
         copy_file = True
         if no_overwrite:
@@ -290,17 +296,22 @@ def main():
                 copy_file = False
                 if not quiet:
                     print 'Skipping %s as it exists in s3' % path
-                    
+
         if copy_file:
             if not quiet:
                 print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
 
             if not no_op:
-                upload(bucket_name, aws_access_key_id, 
-                       aws_secret_access_key, path, key_name, 
-                       reduced, debug, cb, num_cb)
-                # k = b.new_key(key_name)
-                # k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant)
+                if os.stat(path).st_size == 0:
+                    # 0-byte files don't work and also don't need multipart upload
+                    k = b.new_key(key_name)
+                    k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant,
+                                                 reduced_redundancy=reduced)
+                else:
+                    upload(bucket_name, aws_access_key_id,
+                           aws_secret_access_key, path, key_name,
+                           reduced, debug, cb, num_cb)
+
 
 
 
