@@ -105,13 +105,15 @@ def get_key_name(fullpath, prefix):
 
 def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
     source_path, offset, bytes, debug, cb, num_cb, amount_of_retries=10):
-    print "_upload_part(%s, %s, %s)" % (source_path, offset, bytes)
+    if debug == 1:
+        print "_upload_part(%s, %s, %s)" % (source_path, offset, bytes)
     """
     Uploads a part with retries.
     """
     def _upload(retries_left=amount_of_retries):
         try:
-            print 'Start uploading part #%d ...' % part_num
+            if debug == 1:
+                print 'Start uploading part #%d ...' % part_num
             conn = S3Connection(aws_key, aws_secret)
             conn.debug = debug
             bucket = conn.get_bucket(bucketname)
@@ -125,18 +127,17 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
             if retries_left:
                 _upload(retries_left=retries_left - 1)
             else:
-                print '... Failed uploading part #%d' % part_num
+                print 'Failed uploading part #%d' % part_num
                 raise exc
         else:
-            print '... Uploaded part #%d' % part_num
+            if debug == 1:
+                print '... Uploaded part #%d' % part_num
 
     _upload()
 
 def upload(bucketname, aws_key, aws_secret, source_path, keyname,
     reduced, debug, cb, num_cb,
     acl='private', headers={}, guess_mimetype=True, parallel_processes=4):
-
-    print "upload()"
     """
     Parallel multipart upload.
     """
@@ -312,9 +313,5 @@ def main():
                            aws_secret_access_key, path, key_name,
                            reduced, debug, cb, num_cb)
 
-
-
-
 if __name__ == "__main__":
     main()
-
