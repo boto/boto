@@ -208,7 +208,7 @@ if __name__ == "__main__":
                 except Exception, e:
                     pass
 
-            user_data = boto.utils.write_mime_multipart(scriptuples, compress=False)
+            user_data = boto.utils.write_mime_multipart(scriptuples, compress=True)
 
     shutdown_proc = "terminate"
     if options.save_ebs:
