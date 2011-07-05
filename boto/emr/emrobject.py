@@ -42,14 +42,14 @@ class EmrObject(object):
             setattr(self, name.lower(), value)
 
 
+class ModifyInstanceGroupsResponse(EmrObject):
+    Fields = set(['RequestId'])
+	
 class RunJobFlowResponse(EmrObject):
     Fields = set(['JobFlowId'])
 
 class AddInstanceGroupsResponse(EmrObject):
     Fields = set(['InstanceGroupIds', 'JobFlowId'])
-    
-class ModifyInstanceGroupsResponse(EmrObject):
-    Fields = set(['RequestId'])
     
 
 class Arg(EmrObject):
@@ -135,6 +135,7 @@ class JobFlow(EmrObject):
         'HadoopVersion',
         'Id',
         'InstanceCount',
+        'InstanceGroups',
         'JobFlowId',
         'KeepJobFlowAliveWhenNoSteps',
         'LastStateChangeReason',

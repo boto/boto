@@ -20,14 +20,14 @@
 
 
 class InstanceGroup(object):
-	def __init__(self, num_instances, role, type, market, name):
+	def __init__(self, num_instances, role, instance_type, market, name):
 		self.num_instances = num_instances
 		self.role = role
-		self.type = type
+		self.type = instance_type
 		self.market = market
 		self.name = name
 	
 	def __repr__(self):
-		return '%s.%s(name=%r, num_instances=%r, role=%r, type=%r, market = %r)' % (
+		return '%s.%s(name=%r, num_instances=%r, role=%r, instance_type=%r, market = %r)' % (
             self.__class__.__module__, self.__class__.__name__,
-            self.name, self.num_instances, self.role, self.type, self.market)
+            self.name, self.num_instances, self.role, self.instance_type, self.market)

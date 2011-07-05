@@ -28,7 +28,7 @@ import types
 import boto
 import boto.utils
 from boto.ec2.regioninfo import RegionInfo
-from boto.emr.emrobject import JobFlow, RunJobFlowResponse
+from boto.emr.emrobject import JobFlow, RunJobFlowResponse, AddInstanceGroupsResponse, ModifyInstanceGroupsResponse
 from boto.emr.step import JarStep
 from boto.connection import AWSQueryConnection
 from boto.exception import EmrResponseError
@@ -58,21 +58,21 @@ class EmrConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path)
-
+    
     def _required_auth_capability(self):
         return ['emr']
-
+    
     def describe_jobflow(self, jobflow_id):
         """
         Describes a single Elastic MapReduce job flow
-
+        
         :type jobflow_id: str
         :param jobflow_id: The job flow id of interest
         """
         jobflows = self.describe_jobflows(jobflow_ids=[jobflow_id])
         if jobflows:
             return jobflows[0]
-
+    
     def describe_jobflows(self, states=None, jobflow_ids=None,
                            created_after=None, created_before=None):
         """
@@ -103,6 +103,7 @@ class EmrConnection(AWSQueryConnection):
                 boto.utils.ISO8601)
 
         return self.get_list('DescribeJobFlows', params, [('member', JobFlow)])
+
 
     def terminate_jobflow(self, jobflow_id):
         """
@@ -141,52 +142,48 @@ class EmrConnection(AWSQueryConnection):
         # Step args
         step_args = [self._build_step_args(step) for step in steps]
         params.update(self._build_step_list(step_args))
-
         return self.get_object(
             'AddJobFlowSteps', params, RunJobFlowResponse, verb='POST')
 
-	def add_instance_groups(self, jobflow_id, instance_groups):
-		"""
-		Adds instance groups to a running cluster.
-		
-		:type jobflow_id: str
-		:param jobflow_id: The id of the jobflow which will take the new instance groups
-		:type instance_groups: list(boto.emr.InstanceGroup)
-		:param instance_groups: A list of instance groups to add to the job
-		"""
-		if type(instance_groups) != types.ListType:
-			instance_groups = [instance_groups]
-		params = {}
-		params['JobFlowId'] = jobflow_id
-		
-		instance_group_args = [self._build_instance_group_args(ig) for ig in instance_groups]
-		params.update(self._build_instance_group_list(instance_group_args))
-		
-		return self.get_object('AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
-			
-	def modify_instance_groups(self, instance_group_ids, new_sizes):
-		"""
-		Modify the number of nodes and configuration settings in an instance group.
-				
-		:type instance_group_ids: list(str)
-		:param instance_group_ids: A list of the ID's of the instance groups to be modified
-		:type new_sizes: list(int)
-		:param new_sizes: A list of the new sizes for each instance group
-		"""
-		if type(instance_group_ids) != types.ListType:
-			instance_group_ids = [instance_group_ids]
-		if type(new_sizes) != types.ListType:
-			new_sizes = [new_sizes]
-			
-		instance_groups = zip(instance_group_ids, new_sizes)
-				
-		for k, ig in enumerate(instance_groups):
-			#could be wrong - the example amazon gives uses InstanceRequestCount, 
-			#while the api documentation says InstanceCount
-			params['InstanceGroups.member.%s.InstanceGroupId' % k+1 ] = ig[1][0] 
-			params['InstanceGroups.member.%s.InstanceCount' % k+1 ] = ig[1][1]
-			
-		return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
+    def add_instance_groups(self, jobflow_id, instance_groups):
+        """
+        Adds instance groups to a running cluster.
+        
+        :type jobflow_id: str
+        :param jobflow_id: The id of the jobflow which will take the new instance groups
+        :type instance_groups: list(boto.emr.InstanceGroup)
+        :param instance_groups: A list of instance groups to add to the job
+        """
+        if type(instance_groups) != types.ListType:
+            instance_groups = [instance_groups]
+        params = {}
+        params['JobFlowId'] = jobflow_id
+        
+        instance_group_args = [self._build_instance_group_args(ig) for ig in instance_groups]
+        params.update(self._build_instance_group_list(instance_group_args))
+        
+        return self.get_object('AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
+        
+    def modify_instance_groups(self, instance_group_ids, new_sizes):
+        """
+        Modify the number of nodes and configuration settings in an instance group.
+        
+        :type instance_group_ids: list(str)
+        :param instance_group_ids: A list of the ID's of the instance groups to be modified
+        :type new_sizes: list(int)
+        :param new_sizes: A list of the new sizes for each instance group
+        """
+        if type(instance_group_ids) != types.ListType:
+            instance_group_ids = [instance_group_ids]
+        if type(new_sizes) != types.ListType:
+            new_sizes = [new_sizes]
+        
+        params = {}
+        for i in range(0, len(instance_group_ids)):
+            params['InstanceGroups.member.%s.InstanceGroupId' % (i+1)] = instance_group_ids[i]
+            params['InstanceGroups.member.%s.InstanceCount' % (i+1)] = new_sizes[i]
+                        
+        return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
 
     def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
                     master_instance_type='m1.small',
@@ -328,15 +325,15 @@ class EmrConnection(AWSQueryConnection):
         return params
 
     def _build_instance_group_args(self, instance_group):
-		params = {
-			'InstanceCount' : instance_group.num_instances,
-			'InstanceRole' : instance_group.role,
-			'InstanceType' : instance_group.type,
-			'Name' : instance_group.name,
-			'Market' : instance_group.market
-		}
-		return params
-		
+        params = {
+            'InstanceCount' : instance_group.num_instances,
+            'InstanceRole' : instance_group.role,
+            'InstanceType' : instance_group.type,
+            'Name' : instance_group.name,
+            'Market' : instance_group.market
+        }
+        return params
+        
     def _build_instance_group_list(self, instance_groups):
         if type(instance_groups) != types.ListType:
             instance_groups = [instance_groups]
