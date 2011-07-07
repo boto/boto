@@ -34,11 +34,10 @@ import sys
 
 from boto import Version
 
-install_requires = []
-maj, min, micro, rel, serial = sys.version_info
-if (maj, min) == (2, 4):
-    # boto needs hashlib module which is not in py2.4
-    install_requires.append("hashlib")
+if sys.version_info <= (2, 4):
+    error = "ERROR: boto requires Python Version 2.5 or above...exiting."
+    print >> sys.stderr, error
+    sys.exit(1)
 
 setup(name = "boto",
       version = Version,
@@ -51,7 +50,6 @@ setup(name = "boto",
                  "bin/list_instances", "bin/taskadmin", "bin/kill_instance",
                  "bin/bundle_image", "bin/pyami_sendmail", "bin/lss3",
                  "bin/cq", "bin/route53"],
-      install_requires = install_requires,
       url = "http://code.google.com/p/boto/",
       packages = ["boto", "boto.sqs", "boto.s3", "boto.gs", "boto.file",
                   "boto.ec2", "boto.ec2.cloudwatch", "boto.ec2.autoscale",
