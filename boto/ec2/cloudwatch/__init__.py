@@ -137,9 +137,9 @@ about that particular data point.
 My server obviously isn't very busy right now!
 """
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
