@@ -616,7 +616,6 @@ class AWSAuthConnection(object):
         """Makes a request to the server, with stock multiple-retry logic."""
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     {}, headers, data, host)
-        #http_request = self.fill_in_auth(http_request)
         return self._mexe(http_request, sender, override_num_retries)
 
     def close(self):
@@ -652,7 +651,6 @@ class AWSQueryConnection(AWSAuthConnection):
         if action:
             http_request.params['Action'] = action
         http_request.params['Version'] = self.APIVersion
-        #http_request = self.fill_in_auth(http_request)
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):

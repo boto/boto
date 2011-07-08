@@ -907,6 +907,17 @@ class IAMConnection(AWSQueryConnection):
     #
     # Login Profiles
     #
+
+    def get_login_profiles(self, user_name):
+        """
+        Retrieves the login profile for the specified user.
+        
+        :type user_name: string
+        :param user_name: The username of the user
+        
+        """
+        params = {'UserName' : user_name}
+        return self.get_response('GetLoginProfile', params)
     
     def create_login_profile(self, user_name, password):
         """
