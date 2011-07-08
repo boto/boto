@@ -197,9 +197,9 @@ class Config(ConfigParser.SafeConfigParser):
     
     def dump_to_sdb(self, domain_name, item_name):
         try:
-            import json
-        except ImportError:
             import simplejson as json
+        except ImportError:
+            import json
 
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)

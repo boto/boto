@@ -24,9 +24,9 @@ from boto.sdb.regioninfo import SDBRegionInfo
 import boto
 import uuid
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 #boto.set_stream_logger('sns')
 
