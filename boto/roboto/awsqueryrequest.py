@@ -27,6 +27,33 @@ import optparse
 import copy
 import boto.exception
 
+import bdb
+import traceback
+try:
+    import epdb as debugger
+except ImportError:
+    import pdb as debugger
+
+def boto_except_hook(debugger_flag, debug_flag):
+    def excepthook(typ, value, tb):
+        if typ is bdb.BdbQuit:
+            sys.exit(1)
+        sys.excepthook = sys.__excepthook__
+
+        if debugger_flag and sys.stdout.isatty() and sys.stdin.isatty():
+            if debugger.__name__ == 'epdb':
+                debugger.post_mortem(tb, typ, value)
+            else:
+                debugger.post_mortem(tb)
+        elif debug_flag:
+            print traceback.print_tb(tb)
+            sys.exit(1)
+        else:
+            print value
+            sys.exit(1)
+
+    return excepthook
+
 class Line(object):
 
     def __init__(self, fmt, data, label):
@@ -281,6 +308,9 @@ class AWSQueryRequest(object):
         # add standard options that all commands get
         group.add_option('-D', '--debug', action='store_true',
                          help='Turn on all debugging output')
+        group.add_option('--debugger', action='store_true',
+                         default=False,
+                         help='Enable interactive debugger on error')
         group.add_option('-U', '--url', action='store',
                          help='Override service URL with value provided')
         group.add_option('--region', action='store',
@@ -319,6 +349,8 @@ class AWSQueryRequest(object):
             # TODO - Where should the version # come from?
             print 'version x.xx'
             exit(0)
+        sys.excepthook = boto_except_hook(options.debugger,
+                                          options.debug)
 
     def build_cli_parser(self):
         self.parser = optparse.OptionParser()
