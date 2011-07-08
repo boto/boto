@@ -23,9 +23,9 @@ from boto.sqs.message import MHMessage
 from boto.exception import SQSDecodeError
 import base64
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 class JSONMessage(MHMessage):
     """
