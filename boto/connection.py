@@ -430,8 +430,11 @@ class AWSAuthConnection(object):
         try:
             self._pool[self._cached_name(host, is_secure)].put_nowait(connection)
         except Queue.Full:
-            # gracefully fail in case of pool overflow
-            connection.close()
+            # Don't close the connection here, because the caller of
+            # _mexe, which calls this, has not read the response body
+            # yet.  We'll just let the connection object close itself
+            # when it is freed.
+            pass
 
     def proxy_ssl(self):
         host = '%s:%d' % (self.host, self.port)
