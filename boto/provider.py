@@ -205,6 +205,12 @@ class Provider(object):
     def get_provider_name(self):
         return self.HostKeyMap[self.name]
 
+    def supports_chunked_transfer(self):
+        if self.name == 'aws':
+            return False
+        else:
+            return True
+
 # Static utility method for getting default Provider.
 def get_default():
     return Provider('aws')
