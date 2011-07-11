@@ -74,6 +74,11 @@ try:
 except ImportError:
     pass
 
+try:
+    import threading
+except ImportError:
+    import dummy_threading as threading
+
 _SERVER_SOFTWARE = os.environ.get('SERVER_SOFTWARE', '')
 ON_APP_ENGINE = _SERVER_SOFTWARE.startswith('Google App Engine/')
 
@@ -82,7 +87,7 @@ PORTS_BY_SECURITY = { True: 443, False: 80 }
 DEFAULT_CA_CERTS_FILE = os.path.join(
         os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
 
-class ConnectionPool:
+class OldConnectionPool:
     def __init__(self, hosts, connections_per_host):
         self._hosts = boto.utils.LRUCache(hosts)
         self.connections_per_host = connections_per_host
@@ -94,6 +99,181 @@ class ConnectionPool:
 
     def __repr__(self):
         return 'ConnectionPool:%s' % ','.join(self._hosts._dict.keys())
+
+    def get_http_connection(self, host, is_secure):
+        queue = self[(host, is_secure)]
+        try:
+            return queue.get_nowait()
+        except Queue.Empty:
+            return None
+
+    def put_http_connection(self, host, is_secure, connection):
+        try:
+            self[(host, is_secure)].put_nowait(connection)
+        except Queue.Full:
+            # Don't close the connection here, because the caller of
+            # _mexe, which calls this, has not read the response body
+            # yet.  We'll just let the connection object close itself
+            # when it is freed.
+            pass
+
+class HostConnectionPool(object):
+
+    """
+    A pool of connections for one remote (host,is_secure).
+
+    When connections are added to the pool, they are put into a
+    pending queue.  The _mexe method returns connections to the pool
+    before the response body has been read, so they connections aren't
+    ready to send another request yet.  They stay in the pending queue
+    until they are ready for another request, at which point they are
+    returned to the pool of ready connections.
+
+    The pool of ready connections is an ordered list of
+    (connection,time) pairs, where the time is the time the connection
+    was returned from _mexe.  After a certain period of time,
+    connections are considered stale, and discarded rather than being
+    reused.  This saves having to wait for the connection to time out
+    if AWS has decided to close it on the other end because of
+    inactivity.
+
+    Thread Safety:
+
+        This class is used only fram ConnectionPool while it's mutex
+        is held.
+    """
+
+    def __init__(self):
+        self.queue = []
+
+    def size(self):
+        return len(self.queue)
+    
+    def put(self, conn):
+        """
+        Adds a connection to the pool, along with the time it was
+        added.
+        """
+        self.queue.append((conn, time.time()))
+
+    def get(self):
+        # Discard ready connections that are too old.
+        self.clean()
+
+        # Return the first connection that is ready, and remove it
+        # from the queue.  Connections that aren't ready are returned
+        # to the end of the queue with an updated time, on the
+        # assumption that somebody is actively reading the response.
+        for i in range(len(self.queue)):
+            (conn, _) = self.queue.pop(0)
+            if self._conn_ready(conn):
+                return conn
+            else:
+                self.put(conn)
+        return None
+
+    def _conn_ready(self, conn):
+        """
+        There is a nice state diagram at the top of httplib.py.  It
+        indicates that once the response headers have been read (which
+        _mexe does before adding the connection to the pool), a
+        response is attached to the connection, and it stays there
+        until it's done reading.  This isn't entirely true: even after
+        the client is done reading, the response may be closed, but
+        not removed from the connection yet.
+
+        This is ugly, reading a private instance variable, but the
+        state we care about isn't available in any public methods.
+        """
+        response = conn._HTTPConnection__response
+        return (response is None) or response.isclosed()
+
+    def clean(self):
+        """
+        Get rid of stale connections.
+        """
+        # Note that we do not close the connection here -- somebody
+        # may still be reading from it.
+        while len(self.queue) > 0 and self._pair_stale(self.queue[0]):
+            self.queue.pop(0)
+
+    def _pair_stale(self, pair):
+        (_conn, return_time) = pair
+        now = time.time()
+        return return_time + ConnectionPool.STALE_DURATION < now
+
+class ConnectionPool(object):
+
+    """
+    A connection pool that expires connections after a fixed period of
+    time.  This saves time spent waiting for a connection that AWS has
+    timed out on the other end.
+
+    This class is thread-safe.
+    """
+
+    #
+    # The amout of time between calls to clean.
+    #
+    
+    CLEAN_INTERVAL = 5.0
+
+    #
+    # How long before a connection becomes "stale" and won't be reused
+    # again.  The intention is that this time is less that the timeout
+    # period that AWS uses, so we'll never try to reuse a connection
+    # and find that AWS is timing it out.
+    #
+
+    STALE_DURATION = 10.0
+
+    def __init__(self, hosts, connections_per_host):
+        # Mapping from (host,is_secure) to HostConnectionPool.
+        # If a pool becomes empty, it is removed.
+        self.host_to_pool = {}
+        # The last time the pool was cleaned.
+        self.last_clean_time = 0.0
+        self.mutex = threading.Lock()
+
+    def size(self):
+        """
+        Returns the number of connections in the pool.
+        """
+        return sum(pool.size() for pool in self.host_to_pool.values())
+
+    def get_http_connection(self, host, is_secure):
+        with self.mutex:
+            self.clean()
+            key = (host, is_secure)
+            if key not in self.host_to_pool:
+                return None
+            return self.host_to_pool[key].get()
+
+    def put_http_connection(self, host, is_secure, conn):
+        with self.mutex:
+            key = (host, is_secure)
+            if key not in self.host_to_pool:
+                self.host_to_pool[key] = HostConnectionPool()
+            self.host_to_pool[key].put(conn)
+
+    def clean(self):
+        """
+        Clean up the stale connections in all of the pools, and then
+        get rid of empty pools.  Pools clean themselves every time a
+        connection is fetched; this cleaning takes care of pools that
+        aren't being used any more, so nothing is being gotten from
+        them. 
+        """
+        now = time.time()
+        if self.last_clean_time + self.CLEAN_INTERVAL < now:
+            to_remove = []
+            for (host, pool) in self.host_to_pool.items():
+                pool.clean()
+                if pool.size() == 0:
+                    to_remove.append(host)
+            for host in to_remove:
+                del self.host_to_pool[host]
+            self.last_clean_time = now
 
 class HTTPRequest(object):
 
@@ -296,13 +476,6 @@ class AWSAuthConnection(object):
     def _required_auth_capability(self):
         return []
 
-    def _cached_name(self, host, is_secure):
-        if host is None:
-            host = self.server_name()
-        cached_name = is_secure and 'https://' or 'http://'
-        cached_name += host
-        return cached_name
-
     def connection(self):
         return self.get_http_connection(*self._connection)
     connection = property(connection)
@@ -395,10 +568,10 @@ class AWSAuthConnection(object):
         self.use_proxy = (self.proxy != None)
 
     def get_http_connection(self, host, is_secure):
-        queue = self._pool[self._cached_name(host, is_secure)]
-        try:
-            return queue.get_nowait()
-        except Queue.Empty:
+        conn = self._pool.get_http_connection(host, is_secure)
+        if conn is not None:
+            return conn
+        else:
             return self.new_http_connection(host, is_secure)
 
     def new_http_connection(self, host, is_secure):
@@ -436,14 +609,7 @@ class AWSAuthConnection(object):
         return connection
 
     def put_http_connection(self, host, is_secure, connection):
-        try:
-            self._pool[self._cached_name(host, is_secure)].put_nowait(connection)
-        except Queue.Full:
-            # Don't close the connection here, because the caller of
-            # _mexe, which calls this, has not read the response body
-            # yet.  We'll just let the connection object close itself
-            # when it is freed.
-            pass
+        self._pool.put_http_connection(host, is_secure, connection)
 
     def proxy_ssl(self):
         host = '%s:%d' % (self.host, self.port)
