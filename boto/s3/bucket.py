@@ -684,8 +684,8 @@ class Bucket(object):
             for key in self:
                 key.add_email_grant(permission, email_address, headers=headers)
 
-    def add_user_grant(self, permission, user_id,
-                       recursive=False, headers=None):
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       headers=None, display_name=None):
         """
         Convenience method that provides a quick way to add a canonical
         user grant to a bucket.  This method retrieves the current ACL,
@@ -708,16 +708,22 @@ class Bucket(object):
                           in the bucket and apply the same grant to each key.
                           CAUTION: If you have a lot of keys, this could take
                           a long time!
+                          
+        :type display_name: string
+        :param display_name: An option string containing the user's
+                             Display Name.  Only required on Walrus.
         """
         if permission not in S3Permissions:
             raise self.connection.provider.storage_permissions_error(
                 'Unknown Permission: %s' % permission)
         policy = self.get_acl(headers=headers)
-        policy.acl.add_user_grant(permission, user_id)
+        policy.acl.add_user_grant(permission, user_id,
+                                  display_name=display_name)
         self.set_acl(policy, headers=headers)
         if recursive:
             for key in self:
-                key.add_user_grant(permission, user_id, headers=headers)
+                key.add_user_grant(permission, user_id, headers=headers,
+                                   display_name=display_name)
 
     def list_grants(self, headers=None):
         policy = self.get_acl(headers=headers)

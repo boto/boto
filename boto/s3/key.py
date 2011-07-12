@@ -424,8 +424,7 @@ class Key(object):
                                                    force_http,
                                                    response_headers)
 
-    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None,
-                                                chunked_transfer=False):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None):
         """
         Upload a file to a key into a bucket on S3.
 
@@ -455,13 +454,11 @@ class Key(object):
         provider = self.bucket.connection.provider
 
         def sender(http_conn, method, path, data, headers):
-            m = md5()
             http_conn.putrequest(method, path)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-            if chunked_transfer:
-                fp.seek(0)
+            fp.seek(0)
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
             # If the debuglevel < 3 we don't want to show connection
@@ -471,11 +468,7 @@ class Key(object):
             if getattr(http_conn, 'debuglevel', 0) < 3:
                 http_conn.set_debuglevel(0)
             if cb:
-                if chunked_transfer:
-                    # For chunked Transfer, if size is not known, we call
-                    # the cb for every 1MB of data transferred.
-                    cb_count = (1024 * 1024)/self.BufferSize
-                elif num_cb > 2:
+                if num_cb > 2:
                     cb_count = self.size / self.BufferSize / (num_cb-2)
                 elif num_cb < 0:
                     cb_count = -1
@@ -485,34 +478,19 @@ class Key(object):
                 cb(total_bytes, self.size)
             l = fp.read(self.BufferSize)
             while len(l) > 0:
-                if chunked_transfer:
-                    http_conn.send('%x;\r\n' %len(l))
-                    http_conn.send(l)
-                    http_conn.send('\r\n')
-                else:
-                    http_conn.send(l)
+                http_conn.send(l)
                 if cb:
                     total_bytes += len(l)
                     i += 1
                     if i == cb_count or cb_count == -1:
                         cb(total_bytes, self.size)
                         i = 0
-                if chunked_transfer:
-                    m.update(l)
                 l = fp.read(self.BufferSize)
-            if chunked_transfer:
-                http_conn.send('0\r\n')
-                http_conn.send('\r\n')
-                if cb:
-                    self.size = total_bytes
-                # Get the md5 which is calculated on the fly.
-                self.md5 = m.hexdigest()
-            else:
-                fp.seek(0)
             if cb:
                 cb(total_bytes, self.size)
             response = http_conn.getresponse()
             body = response.read()
+            fp.seek(0)
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
             if response.status == 500 or response.status == 503 or \
@@ -534,8 +512,7 @@ class Key(object):
         else:
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
-        if self.base64md5:
-            headers['Content-MD5'] = self.base64md5
+        headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
@@ -549,8 +526,7 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
-        if not chunked_transfer:
-            headers['Content-Length'] = str(self.size)
+        headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
@@ -584,80 +560,6 @@ class Key(object):
         self.size = fp.tell()
         fp.seek(0)
         return (hex_md5, base64md5)
-
-    def set_contents_from_stream(self, fp, headers=None, replace=True,
-                                cb=None, num_cb=10, policy=None,
-                                reduced_redundancy=False, query_args=None):
-        """
-        Store an object using the name of the Key object as the key in
-        cloud and the conntents of the data stream pointed to by 'fp' as
-        the contents.
-        The stream object is usually not seekable.
-
-        :type fp: file
-        :param fp: the file whose contents are to be uploaded
-
-        :type headers: dict
-        :param headers: additional HTTP headers to be sent with the PUT request.
-
-        :type replace: bool
-        :param replace: If this parameter is False, the method will first check
-            to see if an object exists in the bucket with the same key. If it
-            does, it won't overwrite it. The default value is True which will
-            overwrite the object.
-
-        :type cb: function
-        :param cb: a callback function that will be called to report
-            progress on the upload. The callback should accept two integer
-            parameters, the first representing the number of bytes that have
-            been successfully transmitted to GS and the second representing the
-            total number of bytes that need to be transmitted.
-
-        :type num_cb: int
-        :param num_cb: (optional) If a callback is specified with the cb
-            parameter, this parameter determines the granularity of the callback
-            by defining the maximum number of times the callback will be called
-            during the file transfer.
-
-        :type policy: :class:`boto.gs.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key
-            in GS.
-
-        :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will set the storage
-                                   class of the new Key to be
-                                   REDUCED_REDUNDANCY. The Reduced Redundancy
-                                   Storage (RRS) feature of S3, provides lower
-                                   redundancy at lower storage cost.
-        """
-
-        provider = self.bucket.connection.provider
-        if not provider.supports_chunked_transfer():
-            raise BotoClientError("Provider does not support chunked transfer")
-
-        # Name of the Object should be specified explicitly for Streams.
-        if not self.name or self.name == '':
-            raise BotoClientError("Cannot determine the name of the stream")
-
-        if headers is None:
-            headers = {}
-        if policy:
-            headers[provider.acl_header] = policy
-
-        # Set the Transfer Encoding for Streams.
-        headers['Transfer-Encoding'] = 'chunked'
-
-        if reduced_redundancy:
-            self.storage_class = 'REDUCED_REDUNDANCY'
-            if provider.storage_class_header:
-                headers[provider.storage_class_header] = self.storage_class
-
-        if self.bucket != None:
-            if not replace:
-                k = self.bucket.lookup(self.name)
-                if k:
-                    return
-            self.send_file(fp, headers, cb, num_cb, query_args, chunked_transfer=True)
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
@@ -1176,7 +1078,8 @@ class Key(object):
         policy.acl.add_email_grant(permission, email_address)
         self.set_acl(policy, headers=headers)
 
-    def add_user_grant(self, permission, user_id, headers=None):
+    def add_user_grant(self, permission, user_id, headers=None,
+                       display_name=None):
         """
         Convenience method that provides a quick way to add a canonical
         user grant to a key.  This method retrieves the current ACL,
@@ -1191,15 +1094,11 @@ class Key(object):
         :param user_id:     The canonical user id associated with the AWS
                             account your are granting the permission to.
 
-        :type recursive: boolean
-        :param recursive: A boolean value to controls whether the command
-                          will apply the grant to all keys within the bucket
-                          or not.  The default value is False.  By passing a
-                          True value, the call will iterate through all keys
-                          in the bucket and apply the same grant to each key.
-                          CAUTION: If you have a lot of keys, this could take
-                          a long time!
+        :type display_name: string
+        :param display_name: An option string containing the user's
+                             Display Name.  Only required on Walrus.
         """
         policy = self.get_acl()
-        policy.acl.add_user_grant(permission, user_id)
+        policy.acl.add_user_grant(permission, user_id,
+                                  display_name=display_name)
         self.set_acl(policy, headers=headers)
