@@ -25,7 +25,7 @@
 
 try:
     from setuptools import setup
-    extra = {"test_suite": "boto.testsuite.test.suite"}
+    extra = {"test_suite": "boto.testsuite.suite"}
 except ImportError:
     from distutils.core import setup
     extra = {}
