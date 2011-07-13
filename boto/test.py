@@ -56,14 +56,16 @@ def __run_tests_from_cli():
         __print_cli_usage()
         sys.exit()
     try:
-        tests = suite(testsuite)
+        run_tests(tests=testsuite, verbosity=verbosity)
     except ValueError:
         __print_cli_usage()
         sys.exit()
+
+def run_tests(tests='all', verbosity=1):
+    tests = suite(tests)
     if verbosity > 1:
         logging.basicConfig(level=logging.DEBUG)
     unittest.TextTestRunner(verbosity=verbosity).run(tests)
-
 
 if __name__ == "__main__":
     __run_tests_from_cli()

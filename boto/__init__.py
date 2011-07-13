@@ -540,11 +540,7 @@ def storage_uri_for_key(key):
     return storage_uri(uri_str)
 
 def test(tests='all', verbosity=1):
-    import unittest
-    from boto.testsuite import suite
-    tests = suite(tests)
-    if verbosity > 1:
-        logging.basicConfig(level=logging.DEBUG)
-    unittest.TextTestRunner(verbosity=verbosity).run(tests)
+    from boto.test import run_tests
+    run_tests(tests, verbosity)
 
 boto.plugin.load_plugins(config)
