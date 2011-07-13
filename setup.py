@@ -25,7 +25,7 @@
 
 try:
     from setuptools import setup
-    extra = {"test_suite": "tests.test.suite"}
+    extra = {"test_suite": "boto.testsuite.suite"}
 except ImportError:
     from distutils.core import setup
     extra = {}
@@ -59,8 +59,9 @@ setup(name = "boto",
                   "boto.services", "boto.cloudfront", "boto.roboto",
                   "boto.rds", "boto.vpc", "boto.fps", "boto.emr", "boto.sns",
                   "boto.ecs", "boto.iam", "boto.route53", "boto.ses",
-                  "tests", "tests.devpay", "tests.ec2", "tests.sdb",
-                  "tests.sqs", "tests.s3"],
+                  "boto.testsuite", "boto.testsuite.devpay",
+                  "boto.testsuite.ec2", "boto.testsuite.sdb",
+                  "boto.testsuite.sqs", "boto.testsuite.s3"],
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",
       classifiers = ["Development Status :: 5 - Production/Stable",

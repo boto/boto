@@ -539,4 +539,8 @@ def storage_uri_for_key(key):
     uri_str = '%s://%s/%s' % (prov_name, key.bucket.name, key.name)
     return storage_uri(uri_str)
 
+def test(tests='all', verbosity=1):
+    from boto.test import run_tests
+    run_tests(tests, verbosity)
+
 boto.plugin.load_plugins(config)
