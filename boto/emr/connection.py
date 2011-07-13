@@ -323,7 +323,7 @@ class EmrConnection(AWSQueryConnection):
         if ec2_keyname:
             params['Instances.Ec2KeyName'] = ec2_keyname
         if availability_zone:
-            params['Placement.AvailabilityZone'] = availability_zone
+            params['Instances.Placement.AvailabilityZone'] = availability_zone
 
         return params
 
