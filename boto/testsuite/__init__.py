@@ -18,15 +18,10 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 """
-Unit tests!
+Test suites!
 """
-
-import logging
-import sys
 import unittest
-import getopt
 
 from sqs.test_connection import SQSConnectionTest
 from s3.test_connection import S3ConnectionTest
@@ -36,40 +31,6 @@ from s3.test_https_cert_validation import CertValidationTest
 from ec2.test_connection import EC2ConnectionTest
 from autoscale.test_connection import AutoscaleConnectionTest
 from sdb.test_connection import SDBConnectionTest
-
-def __print_cli_usage():
-    print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|all)"
-    print "    -v   verbosity (0|1|2)"
-
-def __run_tests_from_cli():
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "ht:v:",
-                                   ["help", "testsuite", "verbosity"])
-    except:
-        __print_cli_usage()
-        sys.exit(2)
-    testsuite = "all"
-    verbosity = 1
-    for o, a in opts:
-        if o in ("-h", "--help"):
-            __print_cli_usage()
-            sys.exit()
-        if o in ("-t", "--testsuite"):
-            testsuite = a
-        if o in ("-v", "--verbosity"):
-            verbosity = int(a)
-    if len(args) != 0:
-        __print_cli_usage()
-        sys.exit()
-    try:
-        tests = suite(testsuite)
-    except ValueError:
-        __print_cli_usage()
-        sys.exit()
-    if verbosity > 1:
-        logging.basicConfig(level=logging.DEBUG)
-    unittest.TextTestRunner(verbosity=verbosity).run(tests)
 
 def suite(testsuite="all"):
     tests = unittest.TestSuite()
@@ -101,6 +62,3 @@ def suite(testsuite="all"):
     else:
         raise ValueError("Invalid choice.")
     return tests
-
-if __name__ == "__main__":
-    __run_tests_from_cli()
