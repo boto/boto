@@ -539,4 +539,12 @@ def storage_uri_for_key(key):
     uri_str = '%s://%s/%s' % (prov_name, key.bucket.name, key.name)
     return storage_uri(uri_str)
 
+def test(tests='all', verbosity=1):
+    import unittest
+    from boto.testsuite import suite
+    tests = suite(tests)
+    if verbosity > 1:
+        logging.basicConfig(level=logging.DEBUG)
+    unittest.TextTestRunner(verbosity=verbosity).run(tests)
+
 boto.plugin.load_plugins(config)
