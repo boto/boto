@@ -110,7 +110,7 @@ class Volume(TaggedEC2Object):
 
         :type device: str
         :param device: The device on the instance through which the
-                       volume will be exposted (e.g. /dev/sdh)
+                       volume will be exposed (e.g. /dev/sdh)
 
         :rtype: bool
         :return: True if successful
