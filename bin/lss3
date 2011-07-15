@@ -33,10 +33,10 @@ def list_bucket(b, prefix=None):
                         mode = "-rwxr--"
                     elif g.permission == "FULL_CONTROL":
                         mode = "-rwxrwx"
-        print "%s\t%010s\t%s" % (mode, sizeof_fmt(size), k.name)
+        print "%s\t%s\t%010s\t%s" % (mode, k.last_modified, sizeof_fmt(size), k.name)
         total += size
-    print "="*60
-    print "TOTAL: \t%010s \t%i Files" % (sizeof_fmt(total), num)
+    print "="*80
+    print "\t\tTOTAL:  \t%010s \t%i Files" % (sizeof_fmt(total), num)
 
 def list_buckets(s3):
     """List all the buckets"""
