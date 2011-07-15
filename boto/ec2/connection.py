@@ -837,7 +837,8 @@ class EC2Connection(AWSQueryConnection):
         
         :type product_description: str
         :param product_descripton: Filter responses to a particular platform.
-                                   Valid values are currently: Linux
+                                   Valid values are currently: "Linux/UNIX",
+                                   "SUSE Linux", and "Windows"
         
         :rtype: list
         :return: A list tuples containing price and timestamp.
