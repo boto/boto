@@ -301,8 +301,9 @@ class FPSConnection(AWSQueryConnection):
         """
         params = {}
         params['ReserveTransactionId'] = reserveTransactionId
+        params['TransactionAmount.CurrencyCode'] = 'USD'
         if(transactionAmount != None):
-            params['TransactionAmount'] = transactionAmount
+            params['TransactionAmount.Amount'] = transactionAmount
         
         response = self.make_request("Settle", params)
         body = response.read()
