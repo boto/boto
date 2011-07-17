@@ -34,8 +34,8 @@ import boto.plugin
 import boto.utils
 import hmac
 import sys
-import time
 import urllib
+from email.utils import formatdate
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -111,8 +111,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         method = http_request.method
         auth_path = http_request.auth_path
         if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+            headers['Date'] = formatdate(usegmt=True)
 
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                None, self._provider)
@@ -136,8 +135,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+            headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])
         auth_hdr = self._provider.auth_header
@@ -157,8 +155,7 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+            headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])
         s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._provider.access_key
