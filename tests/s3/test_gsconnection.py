@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2011, Nexenta Systems, Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,6 +76,20 @@ class GSConnectionTest (unittest.TestCase):
         md5 = k.md5
         k.set_contents_from_string(s2)
         assert k.md5 != md5
+        # Test for stream API
+        fp2 = open('foobar', 'rb')
+        k.md5 = None
+        k.base64md5 = None
+        k.set_contents_from_stream(fp2, headers=headers)
+        fp = open('foobar1', 'wb')
+        k.get_contents_to_file(fp)
+        fp.close()
+        fp2.seek(0,0)
+        fp = open('foobar1', 'rb')
+        assert (fp2.read() == fp.read()), 'Chunked Transfer corrupted the Data'
+        fp.close()
+        fp2.close()
+        os.unlink('foobar1')
         os.unlink('foobar')
         all = bucket.get_all_keys()
         assert len(all) == 6
