@@ -55,8 +55,13 @@ def stats(namespace, metric_name, dimensions, statistics="Average", start_time=N
             
     print "%-30s %s" % ('Timestamp', statistics)
     print "-"*50
+    data = {}
     for m in cw.get_metric_statistics(int(period), start_time, end_time, metric_name, namespace, statistics, dimensions, unit):
-        print "%-30s %s" % (m['Timestamp'], m[statistics])
+        data[m['Timestamp']] = m[statistics]
+    keys = data.keys()
+    keys.sort()
+    for k in keys:
+        print "%-30s %s" % (k, data[k])
 
 def help(fnc=None):
     """Print help message, optionally about a specific function"""
