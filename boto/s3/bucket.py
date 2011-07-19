@@ -818,8 +818,7 @@ class Bucket(object):
         """
         Configure versioning for this bucket.
         
-        ..note:: This feature is currently in beta release and is available
-                 only in the Northern California region.
+        ..note:: This feature is currently in beta.
                  
         :type versioning: bool
         :param versioning: A boolean indicating whether version is
