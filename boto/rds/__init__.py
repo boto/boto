@@ -237,7 +237,7 @@ class RDSConnection(AWSQueryConnection):
             params['AvailabilityZone'] = availability_zone
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
-        if backup_retention_period:
+        if backup_retention_period is not None:
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
@@ -408,7 +408,7 @@ class RDSConnection(AWSQueryConnection):
             params['AllocatedStorage'] = allocated_storage
         if instance_class:
             params['DBInstanceClass'] = instance_class
-        if backup_retention_period:
+        if backup_retention_period is not None:
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
