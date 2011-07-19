@@ -1,1 +1,1 @@
-recursive-include tests *
+include boto/cacerts/cacerts.txt

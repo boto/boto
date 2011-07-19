@@ -32,7 +32,7 @@ except ImportError:
 
 import sys
 
-from boto import Version
+from boto import __version__
 
 if sys.version_info <= (2, 4):
     error = "ERROR: boto requires Python Version 2.5 or above...exiting."
@@ -40,7 +40,7 @@ if sys.version_info <= (2, 4):
     sys.exit(1)
 
 setup(name = "boto",
-      version = Version,
+      version = __version__,
       description = "Amazon Web Services Library",
       long_description = "Python interface to Amazon's Web Services.",
       author = "Mitch Garnaat",
