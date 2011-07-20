@@ -192,6 +192,7 @@ class CloudFormationConnection(AWSQueryConnection):
         if len(stack_status_filters) > 0:
             self.build_list_params(params, stack_status_filters,
                 "StackStatusFilter.member")
+
         response = self.make_request('ListStacks', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
@@ -210,7 +211,7 @@ class CloudFormationConnection(AWSQueryConnection):
         if template_body and template_url:
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
-        response = self.make_request('ValidateTemplate', params, '/', 'POST')
+        response = self.make_request('ValidateTemplate', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)
@@ -218,4 +219,3 @@ class CloudFormationConnection(AWSQueryConnection):
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
-
