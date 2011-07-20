@@ -1,4 +1,5 @@
 # Copyright 2010 Google Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -366,7 +367,7 @@ class FileStorageUri(StorageUri):
     See file/README about how we map StorageUri operations onto a file system.
     """
 
-    def __init__(self, object_name, debug):
+    def __init__(self, object_name, debug, is_stream=False):
         """Instantiate a FileStorageUri from a path name.
 
         @type object_name: string
@@ -384,6 +385,7 @@ class FileStorageUri(StorageUri):
         self.object_name = object_name
         self.uri = 'file://' + object_name
         self.debug = debug
+        self.stream = is_stream
 
     def clone_replace_name(self, new_name):
         """Instantiate a FileStorageUri from the current FileStorageUri,
@@ -392,20 +394,33 @@ class FileStorageUri(StorageUri):
         @type new_name: string
         @param new_name: new object name
         """
-        return FileStorageUri(new_name, self.debug)
+        return FileStorageUri(new_name, self.debug, self.stream)
 
     def names_container(self):
-        """Returns True if this URI names a directory.
+        """Returns True if this URI is not representing input/output stream
+        and names a directory.
         """
-        return os.path.isdir(self.object_name)
+        if not self.stream:
+            return os.path.isdir(self.object_name)
+        else:
+            return False
 
     def names_singleton(self):
-        """Returns True if this URI names a file.
+        """Returns True if this URI names a file or
+        if URI represents input/output stream.
         """
-        return os.path.isfile(self.object_name)
+        if self.stream:
+            return True
+        else:
+            return os.path.isfile(self.object_name)
 
     def is_file_uri(self):
         return True
 
     def is_cloud_uri(self):
         return False
+
+    def is_stream(self):
+        """Retruns True if this URI represents input/output stream.
+        """
+        return self.stream
