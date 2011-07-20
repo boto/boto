@@ -1,4 +1,4 @@
-import dateutil.parser
+from datetime import datetime
 
 from boto.resultset import ResultSet
 
@@ -8,9 +8,9 @@ class Stack:
         self.creation_time = None
         self.description = None
         self.disable_rollback = None
-        self.notification_arns = None
-        self.outputs = None
-        self.parameters = None
+        self.notification_arns = []
+        self.outputs = []
+        self.parameters = []
         self.stack_id = None
         self.stack_status = None
         self.stack_name = None
@@ -29,7 +29,7 @@ class Stack:
 
     def endElement(self, name, value, connection):
         if name == 'CreationTime':
-            self.creation_time = dateutil.parser.parse(value)
+            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == "Description":
             self.description = value
         elif name == "DisableRollback":
@@ -51,8 +51,17 @@ class Stack:
         else:
             setattr(self, name, value)
 
-    def describe_events(self):
-        return self.connection.describe_stack_events(self.stack_name)
+    def describe_events(self, next_token=None):
+        return self.connection.describe_stack_events(
+            stack_name_or_id = self.stack_id,
+            next_token = next_token
+        )
+
+    def delete(self):
+        return self.connection.delete_stack(stack_name_or_id = self.stack_id)
+
+    def get_template(self):
+        return self.connection.get_template(stack_name_or_id = self.stack_id)
 
 class StackSummary:
     def __init__(self, connection=None):
@@ -75,9 +84,9 @@ class StackSummary:
         elif name == 'StackName':
             self.stack_name = value
         elif name == 'CreationTime':
-            self.creation_time = dateutil.parser.parse(value)
+            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == "DeletionTime":
-            self.deletion_time = dateutil.parser.parse(value)
+            self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'TemplateDescription':
             self.template_description = value
         elif name == "member":
@@ -103,7 +112,7 @@ class Parameter:
             setattr(self, name, value)
 
     def __repr__(self):
-        return "<Parameter %s=%s>" % (self.key, self.value)
+        return "Parameter %s=%s" % (self.key, self.value)
 
 class Output:
     def __init__(self, connection=None):
@@ -126,7 +135,7 @@ class Output:
             setattr(self, name, value)
 
     def __repr__(self):
-        return "<Output %s=%s>" % (self.key, self.value)
+        return "Output %s=%s" % (self.key, self.value)
 
 class StackEvent:
     valid_states = ("CREATE_IN_PROGRESS", "CREATE_FAILED", "CREATE_COMPLETE",
@@ -167,7 +176,7 @@ class StackEvent:
         elif name == "StackName":
             self.stack_name = value
         elif name == "Timestamp":
-            self.timestamp = dateutil.parser.parse(value)
+            self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
 

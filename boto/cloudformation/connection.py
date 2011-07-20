@@ -19,9 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import json
+try:
+    import simplejson
+except:
+    import json
 
 import boto
+from boto.cloudformation.stack import Stack
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 
@@ -148,18 +152,10 @@ class CloudFormationConnection(AWSQueryConnection):
             raise self.ResponseError(response.status, response.reason, body)
 
     def describe_stacks(self, stack_name_or_id=None):
-        params = {'ContentType' : 'JSON'}
+        params = {}
         if stack_name_or_id:
             params['StackName'] = stack_name_or_id
-        #return self.get_list('DescribeStacks', params, [('member', Stack)])
-        response = self.make_request('DescribeStacks', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_list('DescribeStacks', params, [('member', Stack)])
 
     def get_template(self, stack_name_or_id):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
