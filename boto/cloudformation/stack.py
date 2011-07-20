@@ -1,0 +1,176 @@
+import dateutil.parser
+
+from boto.resultset import ResultSet
+
+class Stack:
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.creation_time = None
+        self.description = None
+        self.disable_rollback = None
+        self.notification_arns = None
+        self.outputs = None
+        self.parameters = None
+        self.stack_id = None
+        self.stack_status = None
+        self.stack_name = None
+        self.stack_name_reason = None
+        self.timeout_in_minutes = None
+
+    def startElement(self, name, attrs, connection):
+        if name == "Parameters":
+            self.parameters = ResultSet([('member', Parameter)])
+            return self.parameters
+        elif name == "Outputs":
+            self.outputs = ResultSet([('member', Output)])
+            return self.outputs
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        if name == 'CreationTime':
+            self.creation_time = dateutil.parser.parse(value)
+        elif name == "Description":
+            self.description = value
+        elif name == "DisableRollback":
+            self.disable_rollback = bool(value)
+        elif name == "NotificationARNs":
+            self.notification_arns = value
+        elif name == 'StackId':
+            self.stack_id = value
+        elif name == 'StackName':
+            self.stack_name = value
+        elif name == 'StackStatus':
+            self.stack_status = value
+        elif name == "StackStatusReason":
+            self.stack_status_reason = value
+        elif name == "TimeoutInMinutes":
+            self.timeout_in_minutes = int(value)
+        elif name == "member":
+            pass
+        else:
+            setattr(self, name, value)
+
+    def describe_events(self):
+        return self.connection.describe_stack_events(self.stack_name)
+
+class StackSummary:
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.stack_id = None
+        self.stack_status = None
+        self.stack_name = None
+        self.creation_time = None
+        self.deletion_time = None
+        self.template_description = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'StackId':
+            self.stack_id = value
+        elif name == 'StackStatus':
+            self.stack_status = value
+        elif name == 'StackName':
+            self.stack_name = value
+        elif name == 'CreationTime':
+            self.creation_time = dateutil.parser.parse(value)
+        elif name == "DeletionTime":
+            self.deletion_time = dateutil.parser.parse(value)
+        elif name == 'TemplateDescription':
+            self.template_description = value
+        elif name == "member":
+            pass
+        else:
+            setattr(self, name, value)
+
+class Parameter:
+    def __init__(self, connection=None):
+        self.connection = None
+        self.key = None
+        self.value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == "ParameterKey":
+            self.key = value
+        elif name == "ParameterValue":
+            self.value = value
+        else:
+            setattr(self, name, value)
+
+    def __repr__(self):
+        return "<Parameter %s=%s>" % (self.key, self.value)
+
+class Output:
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.description = None
+        self.key = None
+        self.value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == "Description":
+            self.description = value
+        elif name == "OutputKey":
+            self.key = value
+        elif name == "OutputValue":
+            self.value = value
+        else:
+            setattr(self, name, value)
+
+    def __repr__(self):
+        return "<Output %s=%s>" % (self.key, self.value)
+
+class StackEvent:
+    valid_states = ("CREATE_IN_PROGRESS", "CREATE_FAILED", "CREATE_COMPLETE",
+            "DELETE_IN_PROGRESS", "DELETE_FAILED", "DELETE_COMPLETE")
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.event_id = None
+        self.logical_resource_id = None
+        self.physical_resource_id = None
+        self.resource_properties = None
+        self.resource_status = None
+        self.resource_status_reason = None
+        self.resource_type = None
+        self.stack_id = None
+        self.stack_name = None
+        self.timestamp = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == "EventId":
+            self.event_id = value
+        elif name == "LogicalResourceId":
+            self.logical_resource_id = value
+        elif name == "PhysicalResourceId":
+            self.physical_resource_id = value
+        elif name == "ResourceProperties":
+            self.resource_properties = value
+        elif name == "ResourceStatus":
+            self.resource_status = value
+        elif name == "ResourceStatusReason":
+            self.resource_status_reason = value
+        elif name == "ResourceType":
+            self.resource_type = value
+        elif name == "StackId":
+            self.stack_id = value
+        elif name == "StackName":
+            self.stack_name = value
+        elif name == "Timestamp":
+            self.timestamp = dateutil.parser.parse(value)
+        else:
+            setattr(self, name, value)
+
+    def __repr__(self):
+        return "StackEvent %s %s %s" % (self.resource_type,
+                self.logical_resource_id, self.resource_status)
