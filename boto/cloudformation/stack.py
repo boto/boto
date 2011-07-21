@@ -80,6 +80,14 @@ class Stack:
             next_token=next_token
         )
 
+    def update(self):
+        rs = self.connection.describe_stacks(self.stack_id)
+        if len(rs) == 1 and rs[0].stack_id == self.stack_id:
+            self.__dict__.update(rs[0].__dict__)
+        else:
+            raise ValueError("%s is not a valid Stack ID or Name" %
+                self.stack_id)
+
     def get_template(self):
         return self.connection.get_template(stack_name_or_id=self.stack_id)
 

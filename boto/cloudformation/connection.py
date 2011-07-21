@@ -25,7 +25,9 @@ except:
     import json
 
 import boto
-from boto.cloudformation.stack import Stack, StackResource, StackResourceSummary
+from boto.cloudformation.stack import Stack, StackSummary
+from boto.cloudformation.stack import StackResource, StackResourceSummary
+from boto.cloudformation.template import Template
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 
@@ -85,7 +87,8 @@ class CloudFormationConnection(AWSQueryConnection):
         response = self.make_request('CreateStack', params, '/', 'POST')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            body = json.loads(body)
+            return body['CreateStackResponse']['CreateStackResult']['StackId']
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -167,24 +170,18 @@ class CloudFormationConnection(AWSQueryConnection):
             StackResourceSummary)])
 
     def list_stacks(self, stack_status_filters=[], next_token=None):
-        params = {'ContentType' : 'JSON'}
+        params = {}
         if next_token:
             params['NextToken'] = next_token
         if len(stack_status_filters) > 0:
             self.build_list_params(params, stack_status_filters,
                 "StackStatusFilter.member")
 
-        response = self.make_request('ListStacks', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_list('ListStacks', params, [('member',
+            StackSummary)])
 
     def validate_template(self, template_body=None, template_url=None):
-        params = {'ContentType': "JSON"}
+        params = {}
         if template_body:
             params['TemplateBody'] = template_body
         if template_url:
@@ -192,11 +189,4 @@ class CloudFormationConnection(AWSQueryConnection):
         if template_body and template_url:
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
-        response = self.make_request('ValidateTemplate', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_object('ValidateTemplate', params, Template)

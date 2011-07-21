@@ -1,6 +1,6 @@
 from boto.resultset import ResultSet
 
-class ValidateTemplateResult:
+class Template:
     def __init__(self, connection=None):
         self.connection = connection
         self.description = None
