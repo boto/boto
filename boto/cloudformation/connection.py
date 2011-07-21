@@ -25,7 +25,7 @@ except:
     import json
 
 import boto
-from boto.cloudformation.stack import Stack
+from boto.cloudformation.stack import Stack, StackResource, StackResourceSummary
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 
@@ -108,8 +108,6 @@ class CloudFormationConnection(AWSQueryConnection):
             params['StackName'] = stack_name_or_id
         if next_token:
             params['NextToken'] = next_token
-        #return self.get_list('DescribeStackEvents', params, [('member',
-        #    StackEvent)])
         response = self.make_request('DescribeStackEvents', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
@@ -134,22 +132,15 @@ class CloudFormationConnection(AWSQueryConnection):
     def describe_stack_resources(self, stack_name_or_id=None,
             logical_resource_id=None,
             physical_resource_id=None):
-        params = {'ContentType': "JSON"}
+        params = {}
         if stack_name_or_id:
             params['StackName'] = stack_name_or_id
         if logical_resource_id:
             params['LogicalResourceId'] = logical_resource_id
         if physical_resource_id:
             params['PhysicalResourceId'] = physical_resource_id
-
-        response = self.make_request('DescribeStackResources', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_list('DescribeStackResources', params, [('member',
+            StackResource)])
 
     def describe_stacks(self, stack_name_or_id=None):
         params = {}
@@ -169,17 +160,11 @@ class CloudFormationConnection(AWSQueryConnection):
             raise self.ResponseError(response.status, response.reason, body)
 
     def list_stack_resources(self, stack_name_or_id, next_token=None):
-        params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
+        params = {'StackName': stack_name_or_id}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListStackResources', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_list('ListStackResources', params, [('member',
+            StackResourceSummary)])
 
     def list_stacks(self, stack_status_filters=[], next_token=None):
         params = {'ContentType' : 'JSON'}
