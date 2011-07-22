@@ -433,7 +433,7 @@ class ResumableUploadTests(unittest.TestCase):
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
-                e.message.find('attempt to upload a different size file'), -1)
+                e.message.find('File changed during upload'), -1)
 
     def test_upload_with_file_size_change_during_upload(self):
         """

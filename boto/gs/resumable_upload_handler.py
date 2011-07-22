@@ -331,7 +331,20 @@ class ResumableUploadHandler(object):
         # in debug stream.
         http_conn.set_debuglevel(0)
         while buf:
-            http_conn.send(buf)
+            try:
+              http_conn.send(buf)
+            except socket.error, e:
+              # The server will close the connection if you send more
+              # bytes in a resumed upload than the original file size.
+              if (e.args[0] == errno.EPIPE and
+                  total_bytes_uploaded != file_length):
+                raise ResumableUploadException(
+                    'File changed during upload: sent %d bytes for file for '
+                    'which original size was %d bytes file.' %
+                    (total_bytes_uploaded, file_length),
+                    ResumableTransferDisposition.ABORT)
+              # Some other failure happened. Pass the exception on.
+              raise e
             total_bytes_uploaded += len(buf)
             if cb:
                 i += 1
