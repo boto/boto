@@ -3,6 +3,7 @@
 # Copyright (c) 2008 rPath, Inc.
 # Copyright (c) 2009 The Echo Nest Corporation
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -141,7 +142,14 @@ class HTTPRequest(object):
             auth_path = path
         self.auth_path = auth_path
         self.params = params
-        self.headers = headers
+        # chunked Transfer-Encoding should act only on PUT request.
+        if headers and 'Transfer-Encoding' in headers and \
+                headers['Transfer-Encoding'] == 'chunked' and \
+                self.method != 'PUT':
+            self.headers = headers.copy()
+            del self.headers['Transfer-Encoding']
+        else:
+            self.headers = headers
         self.body = body
 
     def __str__(self):
@@ -162,7 +170,9 @@ class HTTPRequest(object):
         # I'm not sure if this is still needed, now that add_auth is
         # setting the content-length for POST requests.
         if not self.headers.has_key('Content-Length'):
-            self.headers['Content-Length'] = str(len(self.body))
+            if not self.headers.has_key('Transfer-Encoding') or \
+                    self.headers['Transfer-Encoding'] != 'chunked':
+                self.headers['Content-Length'] = str(len(self.body))
 
 class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,

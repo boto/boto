@@ -1,4 +1,5 @@
 # Copyright 2010 Google Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,14 +23,31 @@
 # File representation of key, for use with "file://" URIs.
 
 import os, shutil, StringIO
+import sys
 
 class Key(object):
 
-    def __init__(self, bucket, name, fp=None):
+    KEY_STREAM_READABLE = 0x01
+    KEY_STREAM_WRITABLE = 0x02
+    KEY_STREAM          = (KEY_STREAM_READABLE | KEY_STREAM_WRITABLE)
+    KEY_REGULAR_FILE    = 0x00
+
+    def __init__(self, bucket, name, fp=None, key_type=KEY_REGULAR_FILE):
         self.bucket = bucket
         self.full_path = name
-        self.name = name
-        self.fp = fp
+        if name == '-':
+            self.name = None
+        else:
+            self.name = name
+        self.key_type = key_type
+        if key_type == self.KEY_STREAM_READABLE:
+            self.fp = sys.stdin
+            self.full_path = '<STDIN>'
+        elif key_type == self.KEY_STREAM_WRITABLE:
+            self.fp = sys.stdout
+            self.full_path = '<STDOUT>'
+        else:
+            self.fp = fp
 
     def __str__(self):
         return 'file://' + self.full_path
@@ -50,7 +68,12 @@ class Key(object):
         :type cb: int
         :param num_cb: ignored in this subclass.
         """
-        key_file = open(self.full_path, 'rb')
+        if self.key_type & self.KEY_STREAM_READABLE:
+            raise BotoClientError('Stream is not Readable')
+        elif self.key_type & self.KEY_STREAM_WRITABLE:
+            key_file = self.fp
+        else:
+            key_file = open(self.full_path, 'rb')
         shutil.copyfileobj(key_file, fp)
 
     def set_contents_from_file(self, fp, headers=None, replace=True, cb=None,
@@ -88,9 +111,14 @@ class Key(object):
                    This is the same format returned by the compute_md5 method.
         :param md5: ignored in this subclass.
         """
-        if not replace and os.path.exists(self.full_path):
-            return
-        key_file = open(self.full_path, 'wb')
+        if self.key_type & self.KEY_STREAM_WRITABLE:
+            raise BotoClientError('Stream is not writable')
+        elif self.key_type & self.KEY_STREAM_READABLE:
+            key_file = self.fp
+        else:
+            if not replace and os.path.exists(self.full_path):
+                return
+            key_file = open(self.full_path, 'wb')
         shutil.copyfileobj(fp, key_file)
         key_file.close()
 
@@ -121,3 +149,6 @@ class Key(object):
         fp = StringIO.StringIO()
         self.get_contents_to_file(fp)
         return fp.getvalue()
+
+    def is_stream(self):
+        return (self.key_type & self.KEY_STREAM)

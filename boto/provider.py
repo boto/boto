@@ -1,6 +1,7 @@
 # Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
 # Copyright 2010 Google Inc.
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,6 +80,11 @@ class Provider(object):
     HostKeyMap = {
         'aws' : 's3',
         'google' : 'gs'
+    }
+
+    ChunkedTransferSupport = {
+        'aws' : False,
+        'google' : True
     }
 
     HeaderInfoMap = {
@@ -204,6 +210,9 @@ class Provider(object):
 
     def get_provider_name(self):
         return self.HostKeyMap[self.name]
+
+    def supports_chunked_transfer(self):
+        return self.ChunkedTransferSupport[self.name]
 
 # Static utility method for getting default Provider.
 def get_default():

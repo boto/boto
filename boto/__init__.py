@@ -1,5 +1,6 @@
 # Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -264,10 +265,10 @@ def connect_emr(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
-   
+
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
-   
+
     :rtype: :class:`boto.emr.EmrConnection`
     :return: A connection to Elastic mapreduce
     """
@@ -325,7 +326,7 @@ def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
 
     :type host: string
     :param host: the host name or ip address of the Eucalyptus server
-    
+
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
 
@@ -351,7 +352,7 @@ def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
 
     :type host: string
     :param host: the host name or ip address of the Walrus server
-    
+
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
 
@@ -506,7 +507,10 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     if scheme == 'file':
         # For file URIs we have no bucket name, and use the complete path
         # (minus 'file://') as the object name.
-        return FileStorageUri(path, debug)
+        is_stream = False
+        if path == '-':
+            is_stream = True
+        return FileStorageUri(path, debug, is_stream)
     else:
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]

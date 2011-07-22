@@ -1,4 +1,5 @@
 # Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011, Nexenta Systems Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -424,7 +425,8 @@ class Key(object):
                                                    force_http,
                                                    response_headers)
 
-    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None,
+							chunked_transfer=False):
         """
         Upload a file to a key into a bucket on S3.
 
@@ -458,7 +460,13 @@ class Key(object):
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-            fp.seek(0)
+            if chunked_transfer:
+                # MD5 for the stream has to be calculated on the fly, as
+                # we don't know the size of the stream before hand.
+                m = md5()
+            else:
+                fp.seek(0)
+
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
             # If the debuglevel < 3 we don't want to show connection
@@ -468,7 +476,12 @@ class Key(object):
             if getattr(http_conn, 'debuglevel', 0) < 3:
                 http_conn.set_debuglevel(0)
             if cb:
-                if num_cb > 2:
+                if chunked_transfer:
+                    # For chunked Transfer, we call the cb for every 1MB
+                    # of data transferred.
+                    cb_count = (1024 * 1024)/self.BufferSize
+                    self.size = 0
+                elif num_cb > 2:
                     cb_count = self.size / self.BufferSize / (num_cb-2)
                 elif num_cb < 0:
                     cb_count = -1
@@ -478,24 +491,39 @@ class Key(object):
                 cb(total_bytes, self.size)
             l = fp.read(self.BufferSize)
             while len(l) > 0:
-                http_conn.send(l)
+                if chunked_transfer:
+                    http_conn.send('%x;\r\n' % len(l))
+                    http_conn.send(l)
+                    http_conn.send('\r\n')
+                else:
+                    http_conn.send(l)
                 if cb:
                     total_bytes += len(l)
                     i += 1
                     if i == cb_count or cb_count == -1:
                         cb(total_bytes, self.size)
                         i = 0
+                if chunked_transfer:
+                    m.update(l)
                 l = fp.read(self.BufferSize)
+            if chunked_transfer:
+                http_conn.send('0\r\n')
+                http_conn.send('\r\n')
+                if cb:
+                    self.size = total_bytes
+                # Get the md5 which is calculated on the fly.
+                self.md5 = m.hexdigest()
+            else:
+                fp.seek(0)
             if cb:
                 cb(total_bytes, self.size)
             response = http_conn.getresponse()
             body = response.read()
-            fp.seek(0)
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
-            if response.status == 500 or response.status == 503 or \
-                    response.getheader('location') and seekable:
-                # we'll try again if fp is seekable
+            if ((response.status == 500 or response.status == 503 or
+                    response.getheader('location')) and not chunked_transfer):
+                # we'll try again.
                 return response
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
@@ -512,7 +540,8 @@ class Key(object):
         else:
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
-        headers['Content-MD5'] = self.base64md5
+        if self.base64md5:
+            headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
@@ -526,7 +555,8 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
-        headers['Content-Length'] = str(self.size)
+        if not chunked_transfer:
+            headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
@@ -560,6 +590,87 @@ class Key(object):
         self.size = fp.tell()
         fp.seek(0)
         return (hex_md5, base64md5)
+
+    def set_contents_from_stream(self, fp, headers=None, replace=True,
+                                cb=None, num_cb=10, policy=None,
+                                reduced_redundancy=False, query_args=None):
+        """
+        Store an object using the name of the Key object as the key in
+        cloud and the contents of the data stream pointed to by 'fp' as
+        the contents.
+        The stream object is not seekable and total size is not known.
+        This has the implication that we can't specify the Content-Size and
+        Content-MD5 in the header. So for huge uploads, the delay in calculating
+        MD5 is avoided but with a penalty of inability to verify the integrity
+        of the uploaded data.
+
+        :type fp: file
+        :param fp: the file whose contents are to be uploaded
+
+        :type headers: dict
+        :param headers: additional HTTP headers to be sent with the PUT request.
+
+        :type replace: bool
+        :param replace: If this parameter is False, the method will first check
+            to see if an object exists in the bucket with the same key. If it
+            does, it won't overwrite it. The default value is True which will
+            overwrite the object.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload. The callback should accept two integer
+            parameters, the first representing the number of bytes that have
+            been successfully transmitted to GS and the second representing the
+            total number of bytes that need to be transmitted.
+
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the cb
+            parameter, this parameter determines the granularity of the callback
+            by defining the maximum number of times the callback will be called
+            during the file transfer.
+
+        :type policy: :class:`boto.gs.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key
+            in GS.
+
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
+                                   redundancy at lower storage cost.
+        """
+
+        provider = self.bucket.connection.provider
+        if not provider.supports_chunked_transfer():
+            raise BotoClientError('%s does not support chunked transfer'
+                % provider.get_provider_name())
+
+        # Name of the Object should be specified explicitly for Streams.
+        if not self.name or self.name == '':
+            raise BotoClientError('Cannot determine the destination '
+                                'object name for the given stream')
+
+        if headers is None:
+            headers = {}
+        if policy:
+            headers[provider.acl_header] = policy
+
+        # Set the Transfer Encoding for Streams.
+        headers['Transfer-Encoding'] = 'chunked'
+
+        if reduced_redundancy:
+            self.storage_class = 'REDUCED_REDUNDANCY'
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
+
+        if self.bucket != None:
+            if not replace:
+                k = self.bucket.lookup(self.name)
+                if k:
+                    return
+            self.send_file(fp, headers, cb, num_cb, query_args,
+                                            chunked_transfer=True)
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
