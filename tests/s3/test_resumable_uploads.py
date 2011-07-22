@@ -44,7 +44,7 @@ from boto.gs.resumable_upload_handler import ResumableUploadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
-from tests.s3.cb_test_harnass import CallbackTestHarnass
+from cb_test_harnass import CallbackTestHarnass
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
 # ensures that it's loaded and available by default.
