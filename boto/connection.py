@@ -233,8 +233,8 @@ class ConnectionPool(object):
         Gets a connection from the pool for the named host.  Returns
         None if there is no connection that can be reused.
         """
+        self.clean()
         with self.mutex:
-            self.clean()
             key = (host, is_secure)
             if key not in self.host_to_pool:
                 return None
@@ -259,16 +259,17 @@ class ConnectionPool(object):
         aren't being used any more, so nothing is being gotten from
         them. 
         """
-        now = time.time()
-        if self.last_clean_time + self.CLEAN_INTERVAL < now:
-            to_remove = []
-            for (host, pool) in self.host_to_pool.items():
-                pool.clean()
-                if pool.size() == 0:
-                    to_remove.append(host)
-            for host in to_remove:
-                del self.host_to_pool[host]
-            self.last_clean_time = now
+        with self.mutex:
+            now = time.time()
+            if self.last_clean_time + self.CLEAN_INTERVAL < now:
+                to_remove = []
+                for (host, pool) in self.host_to_pool.items():
+                    pool.clean()
+                    if pool.size() == 0:
+                        to_remove.append(host)
+                for host in to_remove:
+                    del self.host_to_pool[host]
+                self.last_clean_time = now
 
 class HTTPRequest(object):
 
