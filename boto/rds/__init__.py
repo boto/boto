@@ -38,15 +38,15 @@ def regions():
     :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
     """
     return [RDSRegionInfo(name='us-east-1',
-                          endpoint='rds.amazonaws.com'),
+                          endpoint='rds.us-east-1.amazonaws.com'),
             RDSRegionInfo(name='eu-west-1',
-                          endpoint='eu-west-1.rds.amazonaws.com'),
+                          endpoint='rds.eu-west-1.amazonaws.com'),
             RDSRegionInfo(name='us-west-1',
-                          endpoint='us-west-1.rds.amazonaws.com'),
+                          endpoint='rds.us-west-1.amazonaws.com'),
             RDSRegionInfo(name='ap-northeast-1',
-                          endpoint='ap-northeast-1.rds.amazonaws.com'),
+                          endpoint='rds.ap-northeast-1.amazonaws.com'),
             RDSRegionInfo(name='ap-southeast-1',
-                          endpoint='ap-southeast-1.rds.amazonaws.com')
+                          endpoint='rds.ap-southeast-1.amazonaws.com')
             ]
 
 def connect_to_region(region_name):
