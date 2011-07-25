@@ -24,16 +24,22 @@
 Some multi-threading tests of boto in a greenlet environment.
 """
 
-import gevent.monkey
-gevent.monkey.patch_all()
-
 import boto
 import time
 import uuid
 
 from StringIO import StringIO
 
-from gevent.greenlet import Greenlet
+from threading import Thread
+
+def spawn(function, *args, **kwargs):
+    """
+    Spawns a new thread.  API is the same as
+    gevent.greenlet.Greenlet.spawn.
+    """
+    t = Thread(target = function, args = args, kwargs = kwargs)
+    t.start()
+    return t
 
 def put_object(bucket, name):
     bucket.new_key(name).set_contents_from_string(name)
@@ -71,22 +77,22 @@ def test_close_connections():
     # (20). 
     names = [str(uuid.uuid4) for _ in range(30)]
     threads = [
-        Greenlet.spawn(put_object, bucket, name)
+        spawn(put_object, bucket, name)
         for name in names
         ]
     for t in threads:
-        t.get()
+        t.join()
 
     # Create 30 threads to read the contents of the new objects.  This
     # is where closing the connection early is a problem, because
     # there is a response that needs to be read, and it can't be read
     # if the connection has already been closed.
     threads = [
-        Greenlet.spawn(get_object, bucket, name)
+        spawn(get_object, bucket, name)
         for name in names
         ]
     for t in threads:
-        t.get()
+        t.join()
 
 # test_reuse_connections needs to read a file that is big enough that
 # one read() call on the socket won't read the whole thing.  
@@ -105,7 +111,7 @@ class WriteAndCount(object):
         self.size += len(data)
         time.sleep(0) # yield to other threads
 
-def read_big_object(bucket, name, count):
+def read_big_object(s3, bucket, name, count):
     for _ in range(count):
         key = bucket.get_key(name)
         out = WriteAndCount()
@@ -113,6 +119,7 @@ def read_big_object(bucket, name, count):
         if out.size != BIG_SIZE:
             print out.size, BIG_SIZE
         assert out.size == BIG_SIZE
+        print "    pool size:", s3._pool.size()
 
 class LittleQuerier(object):
 
@@ -125,11 +132,11 @@ class LittleQuerier(object):
         self.running = True
         self.bucket = bucket
         self.small_names = small_names
-        self.thread = Greenlet.spawn(self.run)
+        self.thread = spawn(self.run)
 
     def stop(self):
         self.running = False
-        self.thread.get()
+        self.thread.join()
 
     def run(self):
         count = 0
@@ -199,6 +206,13 @@ def test_reuse_connections():
     for (i, name) in enumerate(small_names):
         bucket.new_key(name).set_contents_from_string(str(i))
 
+    # Wait, clean the connection pool, and make sure it's empty.
+    print "    waiting for all connections to become stale"
+    time.sleep(s3._pool.STALE_DURATION + 1)
+    s3._pool.clean()
+    assert s3._pool.size() == 0
+    print "    pool is empty"
+    
     # Create a big object in S3.
     big_name = str(uuid.uuid4())
     contents = "-" * BIG_SIZE
@@ -207,7 +221,7 @@ def test_reuse_connections():
     # Start some threads to read it and check that they are reading
     # the correct thing.  Each thread will read the object 40 times.
     threads = [
-        Greenlet.spawn(read_big_object, bucket, big_name, 40)
+        spawn(read_big_object, s3, bucket, big_name, 20)
         for _ in range(5)
         ]
 
@@ -220,7 +234,7 @@ def test_reuse_connections():
 
     # Clean up.
     for t in threads:
-        t.get()
+        t.join()
     for q in queriers:
         q.stop()
 
