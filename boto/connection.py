@@ -87,36 +87,6 @@ PORTS_BY_SECURITY = { True: 443, False: 80 }
 DEFAULT_CA_CERTS_FILE = os.path.join(
         os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
 
-class OldConnectionPool:
-    def __init__(self, hosts, connections_per_host):
-        self._hosts = boto.utils.LRUCache(hosts)
-        self.connections_per_host = connections_per_host
-
-    def __getitem__(self, key):
-        if key not in self._hosts:
-            self._hosts[key] = Queue.Queue(self.connections_per_host)
-        return self._hosts[key]
-
-    def __repr__(self):
-        return 'ConnectionPool:%s' % ','.join(self._hosts._dict.keys())
-
-    def get_http_connection(self, host, is_secure):
-        queue = self[(host, is_secure)]
-        try:
-            return queue.get_nowait()
-        except Queue.Empty:
-            return None
-
-    def put_http_connection(self, host, is_secure, connection):
-        try:
-            self[(host, is_secure)].put_nowait(connection)
-        except Queue.Full:
-            # Don't close the connection here, because the caller of
-            # _mexe, which calls this, has not read the response body
-            # yet.  We'll just let the connection object close itself
-            # when it is freed.
-            pass
-
 class HostConnectionPool(object):
 
     """
@@ -224,8 +194,12 @@ class ConnectionPool(object):
     # period that AWS uses, so we'll never try to reuse a connection
     # and find that AWS is timing it out.
     #
+    # Experimentation in July 2011 shows that AWS starts timing things
+    # out after three minutes.  The 60 seconds here is conservative so
+    # we should never hit that 3-minute timout.
+    #
 
-    STALE_DURATION = 10.0
+    STALE_DURATION = 60.0
 
     def __init__(self, hosts, connections_per_host):
         # Mapping from (host,is_secure) to HostConnectionPool.
