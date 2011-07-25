@@ -9,22 +9,35 @@ offered by Amazon Web Services.
 
 Currently, this includes:
 
-- Simple Storage Service (S3)
-- Simple Queue Service (SQS)
-- Elastic Compute Cloud (EC2)
-
- - Elastic Load Balancer (ELB)
+- Compute
+ - Elastic Compute Cloud (EC2)
+ - Elastic MapReduce (EMR)
+ - Auto Scaling
+- Content Delivery
+ - CloudFront
+- Database
+ - SimpleDB
+ - Relational Data Services (RDS)
+- Deployment and Management
+ - CloudFormation
+- Identity & Access
+ - Identity and Access Management (IAM)
+- Messaging
+ - Simple Queue Service (SQS)
+ - Simple Notificaiton Service (SNS)
+ - Simple Email Service (SES)
+- Monitoring
  - CloudWatch
- - AutoScale
- 
-- Mechanical Turk
-- SimpleDB (SDB) - See SimpleDbPage for details
-- CloudFront
-- Virtual Private Cloud (VPC)
-- Relational Data Services (RDS)
-- Elastic Map Reduce (EMR)
-- Flexible Payment Service (FPS)
-- Identity and Access Management (IAM)
+- Networking
+ - Route 53
+ - Virtual Private Cloud (VPC)
+ - Elastic Load Balancing (ELB)
+- Payments & Billing
+ - Flexible Payments Service (FPS)
+- Storage
+ - Simple Storage Service (S3)
+- Workforce
+ - Mechanical Turk
 
 The boto project page is at http://boto.googlecode.com/
 
