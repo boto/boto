@@ -117,6 +117,11 @@ class HostConnectionPool(object):
         self.queue = []
 
     def size(self):
+        """
+        Returns the number of connections in the pool for this host.
+        Some of the connections may still be in use, and may not be
+        ready to be returned by get().
+        """
         return len(self.queue)
     
     def put(self, conn):
@@ -127,6 +132,10 @@ class HostConnectionPool(object):
         self.queue.append((conn, time.time()))
 
     def get(self):
+        """
+        Returns the next connection in this pool that is ready to be
+        reused.  Returns None of there aren't any.
+        """
         # Discard ready connections that are too old.
         self.clean()
 
@@ -134,7 +143,7 @@ class HostConnectionPool(object):
         # from the queue.  Connections that aren't ready are returned
         # to the end of the queue with an updated time, on the
         # assumption that somebody is actively reading the response.
-        for i in range(len(self.queue)):
+        for _ in range(len(self.queue)):
             (conn, _) = self.queue.pop(0)
             if self._conn_ready(conn):
                 return conn
@@ -168,6 +177,10 @@ class HostConnectionPool(object):
             self.queue.pop(0)
 
     def _pair_stale(self, pair):
+        """
+        Returns true of the (connection,time) pair is too old to be
+        used.
+        """
         (_conn, return_time) = pair
         now = time.time()
         return return_time + ConnectionPool.STALE_DURATION < now
@@ -201,7 +214,7 @@ class ConnectionPool(object):
 
     STALE_DURATION = 60.0
 
-    def __init__(self, hosts, connections_per_host):
+    def __init__(self):
         # Mapping from (host,is_secure) to HostConnectionPool.
         # If a pool becomes empty, it is removed.
         self.host_to_pool = {}
@@ -216,6 +229,10 @@ class ConnectionPool(object):
         return sum(pool.size() for pool in self.host_to_pool.values())
 
     def get_http_connection(self, host, is_secure):
+        """
+        Gets a connection from the pool for the named host.  Returns
+        None if there is no connection that can be reused.
+        """
         with self.mutex:
             self.clean()
             key = (host, is_secure)
@@ -224,6 +241,10 @@ class ConnectionPool(object):
             return self.host_to_pool[key].get()
 
     def put_http_connection(self, host, is_secure, conn):
+        """
+        Adds a connection to the pool of connections that can be
+        reused for the named host.
+        """
         with self.mutex:
             key = (host, is_secure)
             if key not in self.host_to_pool:
@@ -437,8 +458,7 @@ class AWSAuthConnection(object):
         if self.provider.host:
             self.host = self.provider.host
 
-        # cache up to 20 connections per host, up to 20 hosts
-        self._pool = ConnectionPool(20, 20)
+        self._pool = ConnectionPool()
         self._connection = (self.server_name(), self.is_secure)
         self._last_rs = None
         self._auth_handler = auth.get_auth_handler(
