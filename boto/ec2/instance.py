@@ -233,7 +233,8 @@ class Instance(TaggedEC2Object):
         Terminate the instance
         """
         rs = self.connection.terminate_instances([self.id])
-        self._update(rs[0])
+        if len(rs) > 0:
+            self._update(rs[0])
 
     def stop(self, force=False):
         """
@@ -246,14 +247,16 @@ class Instance(TaggedEC2Object):
         :return: A list of the instances stopped
         """
         rs = self.connection.stop_instances([self.id])
-        self._update(rs[0])
+        if len(rs) > 0:
+            self._update(rs[0])
 
     def start(self):
         """
         Start the instance.
         """
         rs = self.connection.start_instances([self.id])
-        self._update(rs[0])
+        if len(rs) > 0:
+            self._update(rs[0])
 
     def reboot(self):
         return self.connection.reboot_instances([self.id])
