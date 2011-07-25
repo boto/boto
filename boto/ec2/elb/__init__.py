@@ -89,7 +89,7 @@ class ELBConnection(AWSQueryConnection):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
-        else:
+        elif isinstance(region, basestring):
             self.region = RegionInfo(self, region,
                                 RegionData[region])
 
