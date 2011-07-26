@@ -25,7 +25,7 @@ except:
     import json
 
 import boto
-from boto.cloudformation.stack import Stack, StackSummary
+from boto.cloudformation.stack import Stack, StackSummary, StackEvent
 from boto.cloudformation.stack import StackResource, StackResourceSummary
 from boto.cloudformation.template import Template
 from boto.connection import AWSQueryConnection
@@ -66,6 +66,41 @@ class CloudFormationConnection(AWSQueryConnection):
     def create_stack(self, stack_name, template_body=None, template_url=None,
             parameters=[], notification_arns=[], disable_rollback=False,
             timeout_in_minutes=None):
+        """
+        Creates a CloudFormation Stack as specified by the template.
+
+        :type stack_name: string
+        :param stack_name: The name of the Stack, must be unique amoung running
+                            Stacks
+
+        :type template_body: string
+        :param template_body: The template body (JSON string)
+
+        :type template_url: string
+        :param template_url: An S3 URL of a stored template JSON document. If
+                            both the template_body and template_url are
+                            specified, the template_body takes precedence
+
+        :type parameters: list of tuples
+        :param parameters: A list of (key, value) pairs for template input
+                            parameters.
+
+        :type notification_arns: list of strings
+        :param notification_arns: A list of SNS topics to send Stack event
+                            notifications to
+
+        :type disable_rollback: bool
+        :param disable_rollback: Indicates whether or not to rollback on
+                            failure
+
+        :type timeout_in_minutes: int
+        :param timeout_in_minutes: Maximum amount of time to let the Stack
+                            spend creating itself. If this timeout is exceeded,
+                            the Stack will enter the CREATE_FAILED state
+
+        :rtype: string
+        :return: The unique Stack ID
+        """
         params = {'ContentType': "JSON", 'StackName': stack_name,
                 'DisableRollback': self.encode_bool(disable_rollback)}
         if template_body:
@@ -96,6 +131,7 @@ class CloudFormationConnection(AWSQueryConnection):
 
     def delete_stack(self, stack_name_or_id):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
+        # TODO: change this to get_status ?
         response = self.make_request('DeleteStack', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
@@ -106,19 +142,13 @@ class CloudFormationConnection(AWSQueryConnection):
             raise self.ResponseError(response.status, response.reason, body)
 
     def describe_stack_events(self, stack_name_or_id=None, next_token=None):
-        params = {'ContentType' : 'JSON'}
+        params = {}
         if stack_name_or_id:
             params['StackName'] = stack_name_or_id
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('DescribeStackEvents', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_list('DescribeStackEvents', params, [('member',
+            StackEvent)])
 
     def describe_stack_resource(self, stack_name_or_id, logical_resource_id):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id,
@@ -189,4 +219,5 @@ class CloudFormationConnection(AWSQueryConnection):
         if template_body and template_url:
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
-        return self.get_object('ValidateTemplate', params, Template)
+        return self.get_object('ValidateTemplate', params, Template,
+                verb="POST")
