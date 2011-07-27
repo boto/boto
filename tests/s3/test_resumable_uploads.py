@@ -64,31 +64,29 @@ class ResumableUploadTests(unittest.TestCase):
     def get_suite_description(self):
         return 'Resumable upload test suite'
 
-    @classmethod
-    def setUp(cls):
+    def setUp(self):
         """
         Creates dst_key needed by all tests.
 
         This method's namingCase is required by the unittest framework.
         """
-        cls.dst_key = cls.dst_key_uri.new_key(validate=False)
+        self.dst_key = self.dst_key_uri.new_key(validate=False)
 
-    @classmethod
-    def tearDown(cls):
+    def tearDown(self):
         """
         Deletes any objects or files created by last test run.
 
         This method's namingCase is required by the unittest framework.
         """
         try:
-            cls.dst_key_uri.delete_key()
+            self.dst_key_uri.delete_key()
         except GSResponseError:
             # Ignore possible not-found error.
             pass
         # Recursively delete dst dir and then re-create it, so in effect we
         # remove all dirs and files under that directory.
-        shutil.rmtree(cls.tmp_dir)
-        os.mkdir(cls.tmp_dir)
+        shutil.rmtree(self.tmp_dir)
+        os.mkdir(self.tmp_dir)
 
     @staticmethod
     def build_test_input_file(size):
@@ -102,6 +100,31 @@ class ResumableUploadTests(unittest.TestCase):
             buf.append(str(random.randint(0, 9)))
         file_as_string = ''.join(buf)
         return (file_as_string, StringIO.StringIO(file_as_string))
+
+    @classmethod
+    def get_dst_bucket_uri(cls, debug):
+        """A unique bucket to test."""
+        hostname = socket.gethostname().split('.')[0]
+        uri_base_str = 'gs://res_upload_test_%s_%s_%s' % (
+            hostname, os.getpid(), int(time.time()))
+        return boto.storage_uri('%s_dst' % uri_base_str, debug=debug)
+
+    @classmethod
+    def get_dst_key_uri(cls):
+        """A key to test."""
+        return cls.dst_bucket_uri.clone_replace_name('obj')
+
+    @classmethod
+    def get_staged_host(cls):
+        """URL of an existing bucket."""
+        return 'pub.commondatastorage.googleapis.com'
+
+    @classmethod
+    def get_invalid_upload_id(cls):
+        return (
+            'http://%s/?upload_id='
+            'AyzB2Uo74W4EYxyi5dp_-r68jz8rtbvshsv4TX7srJVkJ57CxTY5Dw2' % (
+                cls.get_staged_host()))
 
     @classmethod
     def set_up_class(cls, debug):
@@ -131,13 +154,9 @@ class ResumableUploadTests(unittest.TestCase):
         cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
 
         # Create the test bucket.
-        hostname = socket.gethostname().split('.')[0]
-        cls.uri_base_str = 'gs://res_upload_test_%s_%s_%s' % (
-            hostname, os.getpid(), int(time.time()))
-        cls.dst_bucket_uri = boto.storage_uri('%s_dst' %
-                                              cls.uri_base_str, debug=debug)
+        cls.dst_bucket_uri = cls.get_dst_bucket_uri(debug)
         cls.dst_bucket_uri.create_bucket()
-        cls.dst_key_uri = cls.dst_bucket_uri.clone_replace_name('obj')
+        cls.dst_key_uri = cls.get_dst_key_uri()
 
         cls.tracker_file_name = '%s%suri_tracker' % (cls.tmp_dir, os.sep)
 
@@ -147,9 +166,7 @@ class ResumableUploadTests(unittest.TestCase):
         f.write('ftp://example.com')
         f.close()
 
-        cls.invalid_upload_id = (
-            'http://pub.commondatastorage.googleapis.com/?upload_id='
-            'AyzB2Uo74W4EYxyi5dp_-r68jz8rtbvshsv4TX7srJVkJ57CxTY5Dw2')
+        cls.invalid_upload_id = cls.get_invalid_upload_id()
         cls.invalid_upload_id_tracker_file_name = (
             '%s%sinvalid_upload_id_tracker' % (cls.tmp_dir, os.sep))
         f = open(cls.invalid_upload_id_tracker_file_name, 'w')
@@ -165,9 +182,6 @@ class ResumableUploadTests(unittest.TestCase):
         """
         if not hasattr(cls, 'created_test_data'):
             return
-        # Call cls.tearDown() in case the tests got interrupted, to ensure
-        # dst objects get deleted.
-        cls.tearDown()
 
         # Retry (for up to 2 minutes) the bucket gets deleted (it may not
         # the first time round, due to eventual consistency of bucket delete
