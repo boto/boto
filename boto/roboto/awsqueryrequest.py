@@ -436,6 +436,10 @@ class AWSQueryRequest(object):
             sys.exit(1)
         except self.ServiceClass.ResponseError, err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
+            sys.exit(1)
+        except:
+            print 'Unexpected error.  Use --debugger option for more info.'
+            sys.exit(1)
 
     def _generic_cli_formatter(self, fmt, data, label=''):
         if fmt['type'] == 'object':
