@@ -88,6 +88,35 @@ class SNSConnection(AWSQueryConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
         
+    def set_topic_attributes(self, topic, attr_name, attr_value):
+        """
+        Get attributes of a Topic
+
+        :type topic: string
+        :param topic: The ARN of the topic.
+
+        :type attr_name: string
+        :param attr_name: The name of the attribute you want to set.
+                          Only a subset of the topic's attributes are mutable.
+                          Valid values: Policy | DisplayName
+
+        :type attr_value: string
+        :param attr_value: The new value for the attribute.
+
+        """
+        params = {'ContentType' : 'JSON',
+                  'TopicArn' : topic,
+                  'AttributeName' : attr_name,
+                  'AttributeValue' : attr_value}
+        response = self.make_request('SetTopicAttributes', params, '/', 'GET')
+        body = response.read()
+        if response.status == 200:
+            return json.loads(body)
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        
     def add_permission(self, topic, label, account_ids, actions):
         """
         Adds a statement to a topic's access control policy, granting
