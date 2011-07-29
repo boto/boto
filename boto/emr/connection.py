@@ -259,6 +259,25 @@ class EmrConnection(AWSQueryConnection):
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')
         return response.jobflowid
 
+
+    def set_termination_protection(self, jobflow_id, termination_protection_status):
+        """
+        Set termination protection on specified Elastic MapReduce job flows
+
+        :type jobflow_ids: list or str
+        :param jobflow_ids: A list of job flow IDs
+        :type termination_protection_status: bool
+        :param termination_protection_status: Termination protection status
+        """
+        assert termination_protection_status in (True, False)
+
+        params = {}
+        params['TerminationProtected'] = (termination_protection_status and "true") or "false"
+        self.build_list_params(params, [jobflow_id], 'JobFlowIds.member')
+
+        return self.get_status('SetTerminationProtection', params, verb='POST')
+
+
     def _build_bootstrap_action_args(self, bootstrap_action):
         bootstrap_action_params = {}
         bootstrap_action_params['ScriptBootstrapAction.Path'] = bootstrap_action.path
