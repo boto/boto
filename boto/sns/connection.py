@@ -41,11 +41,15 @@ class SNSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/', converter=None):
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = SDBRegionInfo(self, self.DefaultRegionName,
+                                   self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['sns']
