@@ -654,6 +654,7 @@ class SDBManager(object):
         self.domain.delete_attributes(obj.id)
 
     def set_property(self, prop, obj, name, value):
+        setattr(obj, name, value)
         value = prop.get_value_for_datastore(obj)
         value = self.encode_value(prop, value)
         if prop.unique:
