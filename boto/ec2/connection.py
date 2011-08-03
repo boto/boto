@@ -2386,9 +2386,8 @@ class EC2Connection(AWSQueryConnection):
         for key in keys:
             value = tags[key]
             params['Tag.%d.Key'%i] = key
-            if value is None:
-                value = ''
-            params['Tag.%d.Value'%i] = value
+            if value is not None:
+                params['Tag.%d.Value'%i] = value
             i += 1
         
     def get_all_tags(self, filters=None):
