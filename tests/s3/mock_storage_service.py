@@ -208,15 +208,17 @@ class MockConnection(object):
                       policy=NOT_IMPL):
         if bucket_name in self.buckets:
             raise boto.exception.StorageCreateError(
-                409, 'BucketAlreadyOwnedByYou', 'bucket already exists')
+                409, 'BucketAlreadyOwnedByYou',
+                "<Message>Your previous request to create the named bucket "
+                "succeeded and you already own it.</Message>")
         mock_bucket = MockBucket(name=bucket_name, connection=self)
         self.buckets[bucket_name] = mock_bucket
         return mock_bucket
 
     def delete_bucket(self, bucket, headers=NOT_IMPL):
         if bucket not in self.buckets:
-            raise boto.exception.StorageResponseError(404, 'NoSuchBucket',
-                                                'no such bucket')
+            raise boto.exception.StorageResponseError(
+                404, 'NoSuchBucket', '<Message>no such bucket</Message>')
         del self.buckets[bucket]
 
     def get_bucket(self, bucket_name, validate=NOT_IMPL, headers=NOT_IMPL):
