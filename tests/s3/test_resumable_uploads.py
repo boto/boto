@@ -105,9 +105,9 @@ class ResumableUploadTests(unittest.TestCase):
     def get_dst_bucket_uri(cls, debug):
         """A unique bucket to test."""
         hostname = socket.gethostname().split('.')[0]
-        uri_base_str = 'gs://res_upload_test_%s_%s_%s' % (
+        uri_base_str = 'gs://res-upload-test-%s-%s-%s' % (
             hostname, os.getpid(), int(time.time()))
-        return boto.storage_uri('%s_dst' % uri_base_str, debug=debug)
+        return boto.storage_uri('%s-dst' % uri_base_str, debug=debug)
 
     @classmethod
     def get_dst_key_uri(cls):
