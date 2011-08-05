@@ -95,7 +95,7 @@ class StreamingStep(Step):
     """
     Hadoop streaming step
     """
-    def __init__(self, name, mapper, reducer=None,
+    def __init__(self, name, mapper, reducer=None, combiner=None,
                  action_on_failure='TERMINATE_JOB_FLOW',
                  cache_files=None, cache_archives=None,
                  step_args=None, input=None, output=None,
@@ -109,6 +109,8 @@ class StreamingStep(Step):
         :param mapper: The mapper URI
         :type reducer: str
         :param reducer: The reducer URI
+        :type combiner: str
+        :param combiner: The combiner URI. Only works for Hadoop 0.20 and later!
         :type action_on_failure: str
         :param action_on_failure: An action, defined in the EMR docs to take on failure.
         :type cache_files: list(str)
@@ -127,6 +129,7 @@ class StreamingStep(Step):
         self.name = name
         self.mapper = mapper
         self.reducer = reducer
+        self.combiner = combiner
         self.action_on_failure = action_on_failure
         self.cache_files = cache_files
         self.cache_archives = cache_archives
@@ -154,6 +157,9 @@ class StreamingStep(Step):
             args.extend(self.step_args)
 
         args.extend(['-mapper', self.mapper])
+
+        if self.combiner:
+            args.extend(['-combiner', self.combiner])
 
         if self.reducer:
             args.extend(['-reducer', self.reducer])
