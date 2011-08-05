@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 try:
-    import simplejson
+    import simplejson as json
 except:
     import json
 
