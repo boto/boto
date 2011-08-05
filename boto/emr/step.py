@@ -95,7 +95,7 @@ class StreamingStep(Step):
     """
     Hadoop streaming step
     """
-    def __init__(self, name, mapper, reducer=None,
+    def __init__(self, name, mapper, reducer=None, combiner=None,
                  action_on_failure='TERMINATE_JOB_FLOW',
                  cache_files=None, cache_archives=None,
                  step_args=None, input=None, output=None,
@@ -127,6 +127,7 @@ class StreamingStep(Step):
         self.name = name
         self.mapper = mapper
         self.reducer = reducer
+        self.combiner = combiner
         self.action_on_failure = action_on_failure
         self.cache_files = cache_files
         self.cache_archives = cache_archives
@@ -145,7 +146,7 @@ class StreamingStep(Step):
     def main_class(self):
         return None
 
-    def args(self):
+    def args(self, hadoop_version='0.18'):
         args = []
 
         # put extra args BEFORE -mapper and -reducer so that e.g. -libjar
@@ -153,7 +154,18 @@ class StreamingStep(Step):
         if self.step_args:
             args.extend(self.step_args)
 
-        args.extend(['-mapper', self.mapper])
+        # Procedure for building combiners differs between Hadoop versions.
+        # In particular, Hadoop Streaming does not explicitly support
+        # combiners before version 0.20.
+        if self.combiner:
+            if float(hadoop_version) >= 0.20:
+                args.extend(['-mapper', self.mapper])
+                args.extend(['-combiner', self.combiner])
+            else:
+                args.extend(['-mapper', '%s | sort | %s' % (self.mapper,
+                                                            self.combiner)])
+        else:
+            args.extend(['-mapper', self.mapper])
 
         if self.reducer:
             args.extend(['-reducer', self.reducer])
