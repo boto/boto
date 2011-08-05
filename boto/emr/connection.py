@@ -138,14 +138,8 @@ class EmrConnection(AWSQueryConnection):
         params = {}
         params['JobFlowId'] = jobflow_id
 
-        # only care about hadoop version if we have combiners
-        if any(step.combiner for step in steps):
-            hadoop_version = self.describe_jobflow(jobflow_id).hadoopversion
-        else:
-            hadoop_version = '0.18'
-
         # Step args
-        step_args = [self._build_step_args(step, hadoop_version) for step in steps]
+        step_args = [self._build_step_args(step) for step in steps]
         params.update(self._build_step_list(step_args))
 
         return self.get_object(
@@ -199,7 +193,7 @@ class EmrConnection(AWSQueryConnection):
                     slave_instance_type='m1.small', num_instances=1,
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
-                    hadoop_version='0.18',
+                    hadoop_version='0.20',
                     steps=[],
                     bootstrap_actions=[]):
         """
@@ -254,7 +248,7 @@ class EmrConnection(AWSQueryConnection):
 
         # Step args
         if steps:
-            step_args = [self._build_step_args(step, hadoop_version) for step in steps]
+            step_args = [self._build_step_args(step) for step in steps]
             params.update(self._build_step_list(step_args))
 
         if bootstrap_actions:
@@ -299,7 +293,7 @@ class EmrConnection(AWSQueryConnection):
 
         return bootstrap_action_params
 
-    def _build_step_args(self, step, hadoop_version='0.18'):
+    def _build_step_args(self, step):
         step_params = {}
         step_params['ActionOnFailure'] = step.action_on_failure
         step_params['HadoopJarStep.Jar'] = step.jar()
@@ -308,7 +302,7 @@ class EmrConnection(AWSQueryConnection):
         if main_class:
             step_params['HadoopJarStep.MainClass'] = main_class
 
-        args = step.args(hadoop_version=hadoop_version)
+        args = step.args()
         if args:
             self.build_list_params(step_params, args, 'HadoopJarStep.Args.member')
 

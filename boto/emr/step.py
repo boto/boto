@@ -109,6 +109,8 @@ class StreamingStep(Step):
         :param mapper: The mapper URI
         :type reducer: str
         :param reducer: The reducer URI
+        :type combiner: str
+        :param combiner: The combiner URI. Only works for Hadoop 0.20 and later!
         :type action_on_failure: str
         :param action_on_failure: An action, defined in the EMR docs to take on failure.
         :type cache_files: list(str)
@@ -146,7 +148,7 @@ class StreamingStep(Step):
     def main_class(self):
         return None
 
-    def args(self, hadoop_version='0.18'):
+    def args(self):
         args = []
 
         # put extra args BEFORE -mapper and -reducer so that e.g. -libjar
@@ -154,18 +156,10 @@ class StreamingStep(Step):
         if self.step_args:
             args.extend(self.step_args)
 
-        # Procedure for building combiners differs between Hadoop versions.
-        # In particular, Hadoop Streaming does not explicitly support
-        # combiners before version 0.20.
+        args.extend(['-mapper', self.mapper])
+
         if self.combiner:
-            if float(hadoop_version) >= 0.20:
-                args.extend(['-mapper', self.mapper])
-                args.extend(['-combiner', self.combiner])
-            else:
-                args.extend(['-mapper', '%s | sort | %s' % (self.mapper,
-                                                            self.combiner)])
-        else:
-            args.extend(['-mapper', self.mapper])
+            args.extend(['-combiner', self.combiner])
 
         if self.reducer:
             args.extend(['-reducer', self.reducer])
