@@ -42,6 +42,8 @@ def connect_to_region(region_name, **kw_params):
     """
     Given a valid region name, return a 
     :class:`boto.ec2.connection.EC2Connection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
 
     :type: str
     :param region_name: The name of the region to connect to.
