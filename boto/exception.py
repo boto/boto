@@ -89,8 +89,9 @@ class BotoServerError(StandardError):
                 # Go ahead and clean up anything that may have
                 # managed to get into the error data so we
                 # don't get partial garbage.
-                print "Warning: failed to parse error message from AWS: %s" % pe
                 self._cleanupParsedProperties()
+                self.error_message = self.body
+                self.status = ''
 
     def __getattr__(self, name):
         if name == 'message':

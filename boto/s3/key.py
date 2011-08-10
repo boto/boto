@@ -233,10 +233,11 @@ class Key(object):
         return data
 
     def read(self, size=0):
-        if size == 0:
-            size = self.BufferSize
         self.open_read()
-        data = self.resp.read(size)
+        if size == 0:
+            data = self.resp.read()
+        else:
+            data = self.resp.read(size)
         if not data:
             self.close()
         return data

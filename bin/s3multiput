@@ -290,7 +290,7 @@ def main():
 
     # upload a single file
     elif os.path.isfile(path):
-        key_name = os.path.split(path)[1]
+        key_name = get_key_name(os.path.abspath(path), prefix)
         copy_file = True
         if no_overwrite:
             if b.get_key(key_name):

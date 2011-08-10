@@ -49,10 +49,23 @@ def regions():
                           endpoint='rds.ap-southeast-1.amazonaws.com')
             ]
 
-def connect_to_region(region_name):
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a 
+    :class:`boto.ec2.connection.EC2Connection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
+
+    :type: str
+    :param region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.ec2.connection.EC2Connection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+             name is given
+    """
     for region in regions():
         if region.name == region_name:
-            return region.connect()
+            return region.connect(**kw_params)
     return None
 
 #boto.set_stream_logger('rds')

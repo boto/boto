@@ -41,11 +41,15 @@ class SNSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/', converter=None):
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = SDBRegionInfo(self, self.DefaultRegionName,
+                                   self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['sns']
@@ -80,6 +84,35 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic}
         response = self.make_request('GetTopicAttributes', params, '/', 'GET')
+        body = response.read()
+        if response.status == 200:
+            return json.loads(body)
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        
+    def set_topic_attributes(self, topic, attr_name, attr_value):
+        """
+        Get attributes of a Topic
+
+        :type topic: string
+        :param topic: The ARN of the topic.
+
+        :type attr_name: string
+        :param attr_name: The name of the attribute you want to set.
+                          Only a subset of the topic's attributes are mutable.
+                          Valid values: Policy | DisplayName
+
+        :type attr_value: string
+        :param attr_value: The new value for the attribute.
+
+        """
+        params = {'ContentType' : 'JSON',
+                  'TopicArn' : topic,
+                  'AttributeName' : attr_name,
+                  'AttributeValue' : attr_value}
+        response = self.make_request('SetTopicAttributes', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)
