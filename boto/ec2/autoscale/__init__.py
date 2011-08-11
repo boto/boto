@@ -485,11 +485,11 @@ class AutoScaleConnection(AWSQueryConnection):
                     'ScheduledActionName'       :   name,
                     'Time'                      :   time.isoformat(),
                  }
-        if desired_capacity:
+        if desired_capacity is not None:
             params['DesiredCapacity'] = desired_capacity
-        if min_size:
+        if min_size is not None:
             params['MinSize'] = min_size
-        if max_size:
+        if max_size is not None:
             params['MaxSize'] = max_size
         return self.get_status('PutScheduledUpdateGroupAction', params)
 
