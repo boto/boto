@@ -170,14 +170,13 @@ class ResumableUploadHandler(object):
 
     def _query_server_state(self, conn, file_length):
         """
-        Queries server to find out what bytes it currently has.
+        Queries server to find out state of given upload.
 
         Note that this method really just makes special case use of the
         fact that the upload server always returns the current start/end
         state whenever a PUT doesn't complete.
 
-        Returns (server_start, server_end), where the values are inclusive.
-        For example, (0, 2) would mean that the server has bytes 0, 1, *and* 2.
+        Returns HTTP response from sending request.
 
         Raises ResumableUploadException if problem querying server.
         """
@@ -187,11 +186,22 @@ class ResumableUploadHandler(object):
         put_headers['Content-Range'] = (
             self._build_content_range_header('*', file_length))
         put_headers['Content-Length'] = '0'
-        resp = AWSAuthConnection.make_request(conn, 'PUT',
+        return AWSAuthConnection.make_request(conn, 'PUT',
                                               path=self.tracker_uri_path,
                                               auth_path=self.tracker_uri_path,
                                               headers=put_headers,
                                               host=self.tracker_uri_host)
+
+    def _query_server_pos(self, conn, file_length):
+        """
+        Queries server to find out what bytes it currently has.
+
+        Returns (server_start, server_end), where the values are inclusive.
+        For example, (0, 2) would mean that the server has bytes 0, 1, *and* 2.
+
+        Raises ResumableUploadException if problem querying server.
+        """
+        resp = self._query_server_state(conn, file_length)
         if resp.status == 200:
             return (0, file_length)  # Completed upload.
         if resp.status != 308:
@@ -263,7 +273,7 @@ class ResumableUploadHandler(object):
         body = resp.read()
 
         # Check for various status conditions.
-        if resp.status == 500 or resp.status == 503:
+        if resp.status in [500, 503]:
             # Retry status 500 and 503 errors after a delay.
             raise ResumableUploadException(
                 'Got status %d from attempt to start resumable upload. '
@@ -331,20 +341,7 @@ class ResumableUploadHandler(object):
         # in debug stream.
         http_conn.set_debuglevel(0)
         while buf:
-            try:
-              http_conn.send(buf)
-            except socket.error, e:
-              # The server will close the connection if you send more
-              # bytes in a resumed upload than the original file size.
-              if (e.args[0] == errno.EPIPE and
-                  total_bytes_uploaded != file_length):
-                raise ResumableUploadException(
-                    'File changed during upload: sent %d bytes for file for '
-                    'which original size was %d bytes file.' %
-                    (total_bytes_uploaded, file_length),
-                    ResumableTransferDisposition.ABORT)
-              # Some other failure happened. Pass the exception on.
-              raise e
+            http_conn.send(buf)
             total_bytes_uploaded += len(buf)
             if cb:
                 i += 1
@@ -356,7 +353,7 @@ class ResumableUploadHandler(object):
             cb(total_bytes_uploaded, file_length)
         if total_bytes_uploaded != file_length:
             # Abort (and delete the tracker file) so if the user retries
-            # they'll start a new resumable uplaod rather than potentially
+            # they'll start a new resumable upload rather than potentially
             # attempting to pick back up later where we left off.
             raise ResumableUploadException(
                 'File changed during upload: EOF at %d bytes of %d byte file.' %
@@ -367,31 +364,17 @@ class ResumableUploadHandler(object):
         # Restore http connection debug level.
         http_conn.set_debuglevel(conn.debug)
 
-        additional_note = ''
         if resp.status == 200:
             return resp.getheader('etag')  # Success
-        elif resp.status == 408:
-          # Request Timeout. Try again later within the current process.
-            disposition = ResumableTransferDisposition.WAIT_BEFORE_RETRY
-        elif resp.status/100 == 4:
-            # Abort for any other 4xx errors.
-            disposition = ResumableTransferDisposition.ABORT
-            # Add some more informative note for particular 4xx error codes.
-            if resp.status == 400:
-                additional_note = ('This can happen for various reasons; one '
-                                   'common case is if you attempt to upload a '
-                                   'different size file on a already partially '
-                                   'uploaded resumable upload')
-        # Retry status 500 and 503 errors after a delay.
-        elif resp.status == 500 or resp.status == 503:
+        # Retry timeout (408) and status 500 and 503 errors after a delay.
+        elif resp.status in [408, 500, 503]:
             disposition = ResumableTransferDisposition.WAIT_BEFORE_RETRY
         else:
             # Catch all for any other error codes.
             disposition = ResumableTransferDisposition.ABORT
         raise ResumableUploadException('Got response code %d while attempting '
-                                       'upload (%s)%s' %
-                                       (resp.status, resp.reason,
-                                        additional_note), disposition)
+                                       'upload (%s)' %
+                                       (resp.status, resp.reason), disposition)
 
     def _attempt_resumable_upload(self, key, fp, file_length, headers, cb,
                                   num_cb):
@@ -408,7 +391,7 @@ class ResumableUploadHandler(object):
             # Try to resume existing resumable upload.
             try:
                 (server_start, server_end) = (
-                    self._query_server_state(conn, file_length))
+                    self._query_server_pos(conn, file_length))
                 self.server_has_bytes = server_start
                 key=key
                 if conn.debug >= 1:
@@ -454,6 +437,15 @@ class ResumableUploadHandler(object):
         try:
             return self._upload_file_bytes(conn, http_conn, fp, file_length,
                                            total_bytes_uploaded, cb, num_cb)
+        except socket.error:
+            resp = self._query_server_state(conn, file_length)
+            if resp.status == 400:
+                raise ResumableUploadException('Got 400 response from server '
+                    'state query after failed resumable upload attempt. This '
+                    'can happen if the file size changed between upload '
+                    'attempts', ResumableTransferDisposition.ABORT)
+            else:
+                raise
         finally:
             http_conn.close()
 

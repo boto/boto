@@ -446,8 +446,7 @@ class ResumableUploadTests(unittest.TestCase):
             # This abort should be a hard abort (file size changing during
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(
-                e.message.find('File changed during upload'), -1)
+            self.assertNotEqual(e.message.find('file size changed'), -1, e.message) 
 
     def test_upload_with_file_size_change_during_upload(self):
         """
