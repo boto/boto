@@ -1285,11 +1285,11 @@ class EC2Connection(AWSQueryConnection):
         if snapshot_ids:
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
         if owner:
-            if not isinstance(owner, list()):
+            if not isinstance(owner, type([])):
                 owner=[owner]
             self.build_list_params(params, owner, 'Owner')
         if restorable_by:
-            if not isinstance(restorable_by, list()):
+            if not isinstance(restorable_by, type([])):
                 restorable_by=[restorable_by]
             self.build_list_params(params, restorable_by, 'RestorableBy')
         if filters:
