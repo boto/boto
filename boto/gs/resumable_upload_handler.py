@@ -437,7 +437,7 @@ class ResumableUploadHandler(object):
         try:
             return self._upload_file_bytes(conn, http_conn, fp, file_length,
                                            total_bytes_uploaded, cb, num_cb)
-        except socket.error:
+        except (ResumableUploadException, socket.error):
             resp = self._query_server_state(conn, file_length)
             if resp.status == 400:
                 raise ResumableUploadException('Got 400 response from server '
