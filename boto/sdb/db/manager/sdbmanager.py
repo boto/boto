@@ -536,6 +536,10 @@ class SDBManager(object):
         """
         import types
         query_parts = []
+
+        if select:
+            query_parts.append("(%s)" % select)
+
         order_by_filtered = False
         if order_by:
             if order_by[0] == "-":
@@ -591,9 +595,6 @@ class SDBManager(object):
             if not order_by_filtered:
                 query_parts.append("`%s` LIKE '%%'" % order_by)
             order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
-
-        if select:
-            query_parts.append("(%s)" % select)
 
         if len(query_parts) > 0:
             return "WHERE %s %s" % (" AND ".join(query_parts), order_by_query)
