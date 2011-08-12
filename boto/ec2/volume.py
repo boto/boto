@@ -175,12 +175,12 @@ class Volume(TaggedEC2Object):
         first and then the list is filtered client-side to contain only
         those for this volume.
 
-        :type owner: str
+        :type owner: list
         :param owner: If present, only the snapshots owned by the specified user
                       will be returned.  Valid values are:
                       self | amazon | AWS Account ID
 
-        :type restorable_by: str
+        :type restorable_by: list
         :param restorable_by: If present, only the snapshots that are restorable
                               by the specified account id will be returned.
 
