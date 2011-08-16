@@ -70,9 +70,13 @@ class Config(ConfigParser.ConfigParser):
         session can't be used to do something possibly sinister with AWS, should you loose
         your laptop, until you re-insert your keyfob.
         """
-        if self.get('Credentials', 'do_not_store_credentials') == 'True':
-            self.set('Credentials', 'aws_access_key_id', 'hidden_per_the_setting_do_not_store_credentials')
-            self.set('Credentials', 'aws_secret_access_key', 'hidden_per_the_setting_do_not_store_credentials')
+        # Note, the following calls are all Config.set(self... istead of self.get(... because,
+        # in the case of ServiceDef which extends this class, the passed in self reference
+        # points to a ServiceDef object which means the wrong get function is called. We want
+        # this parent get function, not the get from the chile ServiceDef class.
+        if Config.get(self, 'Credentials', 'do_not_store_credentials') == 'True':
+            Config.set(self, 'Credentials', 'aws_access_key_id', 'hidden_per_the_setting_do_not_store_credentials')
+            Config.set(self, 'Credentials', 'aws_secret_access_key', 'hidden_per_the_setting_do_not_store_credentials')
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
