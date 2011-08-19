@@ -41,6 +41,7 @@ import unittest
 import boto
 from boto.exception import GSResponseError
 from boto.gs.resumable_upload_handler import ResumableUploadHandler
+from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
@@ -496,8 +497,11 @@ class ResumableUploadTests(unittest.TestCase):
             self.assertNotEqual(
                 e.message.find('md5 signature doesn\'t match etag'), -1)
             # Ensure the bad data wasn't left around.
-            all_keys = self.dst_key_uri.get_all_keys()
-            self.assertEqual(0, len(all_keys))
+            try:
+              self.dst_key_uri.get_key()
+              self.fail('Did not get expected InvalidUriError')
+            except InvalidUriError, e:
+              pass
 
     def test_upload_with_content_length_header_set(self):
         """
