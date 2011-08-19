@@ -2361,7 +2361,7 @@ class EC2Connection(AWSQueryConnection):
                          Currently, the only acceptable value is "cluster".
 
         :rtype: :class:`boto.ec2.placementgroup.PlacementGroup`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+        :return: The newly created :class:`boto.ec2.placementgroup.PlacementGroup`.
         """
         params = {'GroupName':name, 'Strategy':strategy}
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
