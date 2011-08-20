@@ -34,7 +34,7 @@ u'InProgress'
 >>> d.config.comment
 u'My new distribution'
 >>> d.config.origin
-u'mybucket.s3.amazonaws.com'
+<S3Origin: mybucket.s3.amazonaws.com>
 >>> d.config.caller_reference
 u'31b8d9cf-a623-4a28-b062-a91856fac6d0'
 >>> d.config.enabled
