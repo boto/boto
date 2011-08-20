@@ -97,7 +97,14 @@ boto.cloudfront.distribution
 ----------------------------
 
 .. automodule:: boto.cloudfront.distribution
-   :members:   
+   :members:
+   :undoc-members:
+
+boto.cloudfront.origin
+----------------------------
+
+.. automodule:: boto.cloudfront.origin
+   :members:
    :undoc-members:
 
 boto.cloudfront.exception
