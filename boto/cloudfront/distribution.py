@@ -375,7 +375,8 @@ class Distribution:
 
     def _get_bucket(self):
         if not self._bucket:
-            bucket_name = self.config.origin.replace('.s3.amazonaws.com', '')
+            origin_dns_name = self.config.origin.dns_name
+            bucket_name = origin_dns_name.replace('.s3.amazonaws.com', '')
             from boto.s3.connection import S3Connection
             s3 = S3Connection(self.connection.aws_access_key_id,
                               self.connection.aws_secret_access_key,
