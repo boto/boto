@@ -9,11 +9,11 @@ A Crash Course in CloudFront in Boto
 
 This new boto module provides an interface to Amazon's new Content Service, CloudFront.
 
-Caveats:
+.. warning::
 
-This module is not well tested.  Paging of distributions is not yet
-supported.  CNAME support is completely untested.  Use with caution.
-Feedback and bug reports are greatly appreciated.
+    This module is not well tested.  Paging of distributions is not yet
+    supported.  CNAME support is completely untested.  Use with caution.
+    Feedback and bug reports are greatly appreciated.
 
 The following shows the main features of the cloudfront module from an interactive shell:
 
