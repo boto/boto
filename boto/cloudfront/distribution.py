@@ -319,11 +319,17 @@ class Distribution:
     def update(self, enabled=None, cnames=None, comment=None):
         """
         Update the configuration of the Distribution.  The only values
-        of the DistributionConfig that can be updated are:
+        of the DistributionConfig that can be directly updated are:
 
          * CNAMES
          * Comment
          * Whether the Distribution is enabled or not
+
+        Any changes to the ``trusted_signers`` or ``origin`` properties of
+        this distribution's current config object will also be included in
+        the update. Therefore, to set the origin access identity for this
+        distribution, set ``Distribution.config.origin.origin_access_identity``
+        before calling this update method.
 
         :type enabled: bool
         :param enabled: Whether the Distribution is active or not.
@@ -375,7 +381,8 @@ class Distribution:
 
     def _get_bucket(self):
         if not self._bucket:
-            bucket_name = self.config.origin.replace('.s3.amazonaws.com', '')
+            origin_dns_name = self.config.origin.dns_name
+            bucket_name = origin_dns_name.replace('.s3.amazonaws.com', '')
             from boto.s3.connection import S3Connection
             s3 = S3Connection(self.connection.aws_access_key_id,
                               self.connection.aws_secret_access_key,
@@ -501,11 +508,18 @@ class StreamingDistribution(Distribution):
     def update(self, enabled=None, cnames=None, comment=None):
         """
         Update the configuration of the StreamingDistribution.  The only values
-        of the StreamingDistributionConfig that can be updated are:
+        of the StreamingDistributionConfig that can be directly updated are:
 
          * CNAMES
          * Comment
          * Whether the Distribution is enabled or not
+
+        Any changes to the ``trusted_signers`` or ``origin`` properties of
+        this distribution's current config object will also be included in
+        the update. Therefore, to set the origin access identity for this
+        distribution, set
+        ``StreamingDistribution.config.origin.origin_access_identity``
+        before calling this update method.
 
         :type enabled: bool
         :param enabled: Whether the StreamingDistribution is active or not.
