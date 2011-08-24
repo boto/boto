@@ -42,6 +42,7 @@
 Handles basic connections to AWS
 """
 
+from __future__ import with_statement
 import base64
 import errno
 import httplib
