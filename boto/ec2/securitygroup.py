@@ -35,6 +35,7 @@ class SecurityGroup(TaggedEC2Object):
         self.owner_id = owner_id
         self.name = name
         self.description = description
+        self.vpc_id = None
         self.rules = []
 
     def __repr__(self):
@@ -57,6 +58,8 @@ class SecurityGroup(TaggedEC2Object):
             self.id = value
         elif name == 'groupName':
             self.name = value
+        elif name == 'vpcId':
+            self.vpc_id = value
         elif name == 'groupDescription':
             self.description = value
         elif name == 'ipRanges':
