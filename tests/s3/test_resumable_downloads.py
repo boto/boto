@@ -122,9 +122,9 @@ class ResumableDownloadTests(unittest.TestCase):
 
         # Create the test bucket.
         hostname = socket.gethostname().split('.')[0]
-        uri_base_str = 'gs://res_download_test_%s_%s_%s' % (
+        uri_base_str = 'gs://res-download-test-%s-%s-%s' % (
             hostname, os.getpid(), int(time.time()))
-        cls.src_bucket_uri = storage_uri('%s_dst' % uri_base_str)
+        cls.src_bucket_uri = storage_uri('%s-dst' % uri_base_str)
         cls.src_bucket_uri.create_bucket()
 
         # Create test source objects.

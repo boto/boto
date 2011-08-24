@@ -108,7 +108,9 @@ class EC2Connection(AWSQueryConnection):
     def build_filter_params(self, params, filters):
         i = 1
         for name in filters:
-            aws_name = name.replace('_', '-')
+            aws_name = name
+            if not aws_name.startswith('tag:'):
+                aws_name = name.replace('_', '-')
             params['Filter.%d.Name' % i] = aws_name
             value = filters[name]
             if not isinstance(value, list):
@@ -451,6 +453,11 @@ class EC2Connection(AWSQueryConnection):
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
         if filters:
+            if 'group-id' in filters:
+                warnings.warn("The group-id filter now requires a security "
+                              "group identifier (sg-*) instead of a group "
+                              "name. To filter by group name use the "
+                              "'group-name' filter instead.", UserWarning)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
@@ -793,10 +800,10 @@ class EC2Connection(AWSQueryConnection):
                                        filters=None):
         """
         Retrieve all the spot instances requests associated with your account.
-        
+
         :type request_ids: list
         :param request_ids: A list of strings of spot instance request IDs
-        
+
         :type filters: dict
         :param filters: Optional filters that can be used to limit
                         the results returned.  Filters are provided
@@ -815,6 +822,11 @@ class EC2Connection(AWSQueryConnection):
         if request_ids:
             self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
         if filters:
+            if 'launch.group-id' in filters:
+                warnings.warn("The 'launch.group-id' filter now requires a "
+                              "security group id (sg-*) and no longer supports "
+                              "filtering by group name. Please update your "
+                              "filters accordingly.", UserWarning)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeSpotInstanceRequests', params,
                              [('item', SpotInstanceRequest)], verb='POST')
@@ -2361,7 +2373,7 @@ class EC2Connection(AWSQueryConnection):
                          Currently, the only acceptable value is "cluster".
 
         :rtype: :class:`boto.ec2.placementgroup.PlacementGroup`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+        :return: The newly created :class:`boto.ec2.placementgroup.PlacementGroup`.
         """
         params = {'GroupName':name, 'Strategy':strategy}
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
@@ -2386,9 +2398,8 @@ class EC2Connection(AWSQueryConnection):
         for key in keys:
             value = tags[key]
             params['Tag.%d.Key'%i] = key
-            if value is None:
-                value = ''
-            params['Tag.%d.Value'%i] = value
+            if value is not None:
+                params['Tag.%d.Value'%i] = value
             i += 1
         
     def get_all_tags(self, filters=None):

@@ -713,13 +713,6 @@ class AWSAuthConnection(object):
                 if response.status == 500 or response.status == 503:
                     boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2 ** i))
                     body = response.read()
-                elif response.status == 408:
-                    body = response.read()
-                    print '-------------------------'
-                    print '         4 0 8           '
-                    print 'path=%s' % request.path
-                    print body
-                    print '-------------------------'
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
                     self.put_http_connection(request.host, self.is_secure, connection)

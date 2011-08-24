@@ -320,29 +320,57 @@ class AutoScaleConnection(AWSQueryConnection):
             params['NextToken'] = next_token
         if activity_ids:
             self.build_list_params(params, activity_ids, 'ActivityIds')
-        return self.get_list('DescribeScalingActivities', params, [('member', Activity)])
+        return self.get_list('DescribeScalingActivities',
+                             params, [('member', Activity)])
 
+    def delete_scheduled_action(self, scheduled_action_name,
+                                autoscale_group=None):
+        """
+        Deletes a previously scheduled action.
 
-    def delete_scheduled_action(self, scheduled_action_name, autoscale_group=None):
-        params = {
-                    'ScheduledActionName'       :   scheduled_action_name,
-                 }
+        type scheduled_action_name: str
+        param scheduled_action_name: The name of the action you want
+                                     to delete.
+
+        type autoscale_group: str
+        param autoscale_group: The name of the autoscale group.
+        """
+        params = {'ScheduledActionName' : scheduled_action_name}
         if autoscale_group:
             params['AutoScalingGroupName'] = autoscale_group
         return self.get_status('DeleteScheduledAction', params)
 
     def terminate_instance(self, instance_id, decrement_capacity=True):
-        params = {
-                  'InstanceId' : instance_id,
-                  'ShouldDecrementDesiredCapacity' : decrement_capacity
-                  }
+        """
+        Terminates the specified instance. The desired group size can
+        also be adjusted, if desired.
+
+        :type instance_id: str
+        :param instance_id: The ID of the instance to be terminated.
+
+        :type decrement_capacity: bool
+        :param decrement_capacity: Whether to decrement the size of the
+                                  autoscaling group or not.
+        """
+        params = {'InstanceId' : instance_id}
+        if decrement_capacity:
+            params['ShouldDecrementDesiredCapacity'] = 'true'
+        else:
+            params['ShouldDecrementDesiredCapacity'] = 'false'
         return self.get_object('TerminateInstanceInAutoScalingGroup', params,
                                Activity)
 
     def delete_policy(self, policy_name, autoscale_group=None):
-        params = {
-                    'PolicyName': policy_name,
-                 }
+        """
+        Delete a policy.
+
+        :type policy_name: str
+        :param policy_name: The name or ARN of the policy to delete.
+
+        :type autoscale_group: str
+        :param autoscale_group: The name of the autoscale group.
+        """
+        params = {'PolicyName': policy_name}
         if autoscale_group:
             params['AutoScalingGroupName'] = autoscale_group
         return self.get_status('DeletePolicy', params)
@@ -350,7 +378,8 @@ class AutoScaleConnection(AWSQueryConnection):
     def get_all_adjustment_types(self):
         return self.get_list('DescribeAdjustmentTypes', {}, [('member', AdjustmentType)])
 
-    def get_all_autoscaling_instances(self, instance_ids=None, max_records=None, next_token=None):
+    def get_all_autoscaling_instances(self, instance_ids=None,
+                                      max_records=None, next_token=None):
         """
         Returns a description of each Auto Scaling instance in the instance_ids
         list. If a list is not provided, the service returns the full details
@@ -361,7 +390,8 @@ class AutoScaleConnection(AWSQueryConnection):
         the returned token as the NextToken parameter.
 
         :type instance_ids: list
-        :param instance_ids: List of Autoscaling Instance IDs which should be searched for.
+        :param instance_ids: List of Autoscaling Instance IDs which should be
+                             searched for.
 
         :type max_records: int
         :param max_records: Maximum number of results to return.
@@ -376,16 +406,19 @@ class AutoScaleConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('DescribeAutoScalingInstances', params, [('member', Instance)])
+        return self.get_list('DescribeAutoScalingInstances',
+                             params, [('member', Instance)])
 
     def get_all_metric_collection_types(self):
         """
         Returns a list of metrics and a corresponding list of granularities
         for each metric.
         """
-        return self.get_object('DescribeMetricCollectionTypes', {}, MetricCollectionTypes)
+        return self.get_object('DescribeMetricCollectionTypes',
+                               {}, MetricCollectionTypes)
 
-    def get_all_policies(self, as_group=None, policy_names=None, max_records=None, next_token=None):
+    def get_all_policies(self, as_group=None, policy_names=None,
+                         max_records=None, next_token=None):
         """
         Returns descriptions of what each policy does. This action supports
         pagination. If the response includes a token, there are more records
@@ -413,13 +446,15 @@ class AutoScaleConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('DescribePolicies', params, [('member', ScalingPolicy)])
+        return self.get_list('DescribePolicies', params,
+                             [('member', ScalingPolicy)])
 
     def get_all_scaling_process_types(self):
         """ Returns scaling process types for use in the ResumeProcesses and
         SuspendProcesses actions.
         """
-        return self.get_list('DescribeScalingProcessTypes', {}, [('member', ProcessType)])
+        return self.get_list('DescribeScalingProcessTypes', {},
+                             [('member', ProcessType)])
 
     def suspend_processes(self, as_group, scaling_processes=None):
         """ Suspends Auto Scaling processes for an Auto Scaling group.
@@ -431,9 +466,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param scaling_processes: Processes you want to suspend. If omitted, all
                                   processes will be suspended.
         """
-        params = {
-                    'AutoScalingGroupName'      :   as_group
-                 }
+        params = {'AutoScalingGroupName' : as_group}
         if scaling_processes:
             self.build_list_params(params, scaling_processes, 'ScalingProcesses')
         return self.get_status('SuspendProcesses', params)
@@ -485,11 +518,11 @@ class AutoScaleConnection(AWSQueryConnection):
                     'ScheduledActionName'       :   name,
                     'Time'                      :   time.isoformat(),
                  }
-        if desired_capacity:
+        if desired_capacity is not None:
             params['DesiredCapacity'] = desired_capacity
-        if min_size:
+        if min_size is not None:
             params['MinSize'] = min_size
-        if max_size:
+        if max_size is not None:
             params['MaxSize'] = max_size
         return self.get_status('PutScheduledUpdateGroupAction', params)
 

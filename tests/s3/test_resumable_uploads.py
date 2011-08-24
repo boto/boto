@@ -41,6 +41,7 @@ import unittest
 import boto
 from boto.exception import GSResponseError
 from boto.gs.resumable_upload_handler import ResumableUploadHandler
+from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
@@ -105,9 +106,9 @@ class ResumableUploadTests(unittest.TestCase):
     def get_dst_bucket_uri(cls, debug):
         """A unique bucket to test."""
         hostname = socket.gethostname().split('.')[0]
-        uri_base_str = 'gs://res_upload_test_%s_%s_%s' % (
+        uri_base_str = 'gs://res-upload-test-%s-%s-%s' % (
             hostname, os.getpid(), int(time.time()))
-        return boto.storage_uri('%s_dst' % uri_base_str, debug=debug)
+        return boto.storage_uri('%s-dst' % uri_base_str, debug=debug)
 
     @classmethod
     def get_dst_key_uri(cls):
@@ -446,8 +447,7 @@ class ResumableUploadTests(unittest.TestCase):
             # This abort should be a hard abort (file size changing during
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(
-                e.message.find('File changed during upload'), -1)
+            self.assertNotEqual(e.message.find('file size changed'), -1, e.message) 
 
     def test_upload_with_file_size_change_during_upload(self):
         """
@@ -497,8 +497,11 @@ class ResumableUploadTests(unittest.TestCase):
             self.assertNotEqual(
                 e.message.find('md5 signature doesn\'t match etag'), -1)
             # Ensure the bad data wasn't left around.
-            all_keys = self.dst_key_uri.get_all_keys()
-            self.assertEqual(0, len(all_keys))
+            try:
+              self.dst_key_uri.get_key()
+              self.fail('Did not get expected InvalidUriError')
+            except InvalidUriError, e:
+              pass
 
     def test_upload_with_content_length_header_set(self):
         """
