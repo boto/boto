@@ -28,7 +28,7 @@ from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
-from boto.exception import SDBPersistenceError
+from boto.exception import SDBPersistenceError, S3ResponseError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -340,7 +340,12 @@ class SDBConverter(object):
         if match:
             s3 = self.manager.get_s3_connection()
             bucket = s3.get_bucket(match.group(1), validate=False)
-            key = bucket.get_key(match.group(2))
+            try:
+                key = bucket.get_key(match.group(2))
+            except S3ResponseError, e:
+                if e.reason != "Forbidden":
+                    raise
+                return None
         else:
             return None
         if key:
