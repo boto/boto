@@ -374,19 +374,23 @@ class Distribution:
         self.connection.delete_distribution(self.id, self.etag)
 
     def _get_bucket(self):
-        if not self._bucket:
-            bucket_name = self.config.origin.replace('.s3.amazonaws.com', '')
-            from boto.s3.connection import S3Connection
-            s3 = S3Connection(self.connection.aws_access_key_id,
-                              self.connection.aws_secret_access_key,
-                              proxy=self.connection.proxy,
-                              proxy_port=self.connection.proxy_port,
-                              proxy_user=self.connection.proxy_user,
-                              proxy_pass=self.connection.proxy_pass)
-            self._bucket = s3.get_bucket(bucket_name)
-            self._bucket.distribution = self
-            self._bucket.set_key_class(self._object_class)
-        return self._bucket
+        if isinstance(self.config.origin, S3Origin):
+            if not self._bucket:
+                bucket_dns_name = self.config.origin.dns_name
+                bucket_name = bucket_dns_name.replace('.s3.amazonaws.com', '')
+                from boto.s3.connection import S3Connection
+                s3 = S3Connection(self.connection.aws_access_key_id,
+                                  self.connection.aws_secret_access_key,
+                                  proxy=self.connection.proxy,
+                                  proxy_port=self.connection.proxy_port,
+                                  proxy_user=self.connection.proxy_user,
+                                  proxy_pass=self.connection.proxy_pass)
+                self._bucket = s3.get_bucket(bucket_name)
+                self._bucket.distribution = self
+                self._bucket.set_key_class(self._object_class)
+            return self._bucket
+        else:
+            raise NotImplemented, 'Unable to get_objects on CustomOrigin'
     
     def get_objects(self):
         """
