@@ -336,7 +336,14 @@ class ResumableDownloadHandler(object):
 
             # Close the key, in case a previous download died partway
             # through and left data in the underlying key HTTP buffer.
-            key.close()
+            # Do this within a try/except block in case the connection is
+            # closed (since key.close() attempts to do a final read, in which
+            # case this read attempt would get an IncompleteRead exception,
+            # which we can safely ignore.
+            try:
+                key.close()
+            except httplib.IncompleteRead:
+                pass
 
             sleep_time_secs = 2**progress_less_iterations
             if debug >= 1:
