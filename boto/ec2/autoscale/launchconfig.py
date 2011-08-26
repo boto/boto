@@ -166,7 +166,10 @@ class LaunchConfiguration(object):
         elif name == 'ImageId':
             self.image_id = value
         elif name == 'CreatedTime':
-            self.created_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            try:
+                self.created_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.created_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'KernelId':
             self.kernel_id = value
         elif name == 'RamdiskId':
