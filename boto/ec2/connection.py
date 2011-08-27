@@ -832,7 +832,8 @@ class EC2Connection(AWSQueryConnection):
                              [('item', SpotInstanceRequest)], verb='POST')
 
     def get_spot_price_history(self, start_time=None, end_time=None,
-                               instance_type=None, product_description=None):
+                               instance_type=None, product_description=None,
+                               availability_zone=None):
         """
         Retrieve the recent history of spot instances pricing.
         
@@ -864,6 +865,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceType'] = instance_type
         if product_description:
             params['ProductDescription'] = product_description
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
         return self.get_list('DescribeSpotPriceHistory', params,
                              [('item', SpotPriceHistory)], verb='POST')
 
