@@ -29,6 +29,7 @@ import boto
 import boto.utils
 from boto.ec2.regioninfo import RegionInfo
 from boto.emr.emrobject import JobFlow, RunJobFlowResponse
+from boto.emr.emrobject import AddInstanceGroupsResponse, ModifyInstanceGroupsResponse
 from boto.emr.step import JarStep
 from boto.connection import AWSQueryConnection
 from boto.exception import EmrResponseError
@@ -180,11 +181,12 @@ class EmrConnection(AWSQueryConnection):
 
         instance_groups = zip(instance_group_ids, new_sizes)
 
+        params = {}
         for k, ig in enumerate(instance_groups):
             #could be wrong - the example amazon gives uses InstanceRequestCount,
             #while the api documentation says InstanceCount
-            params['InstanceGroups.member.%s.InstanceGroupId' % k+1 ] = ig[1][0]
-            params['InstanceGroups.member.%s.InstanceCount' % k+1 ] = ig[1][1]
+            params['InstanceGroups.member.%d.InstanceGroupId' % (k+1) ] = ig[0]
+            params['InstanceGroups.member.%d.InstanceCount' % (k+1) ] = ig[1]
 
         return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
 
