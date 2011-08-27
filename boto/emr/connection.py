@@ -356,6 +356,8 @@ class EmrConnection(AWSQueryConnection):
             'Name' : instance_group.name,
             'Market' : instance_group.market
         }
+        if instance_group.market == 'SPOT':
+            params['BidPrice'] = instance_group.bidprice
         return params
 
     def _build_instance_group_list(self, instance_groups):
