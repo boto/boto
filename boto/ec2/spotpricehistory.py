@@ -33,6 +33,7 @@ class SpotPriceHistory(EC2Object):
         self.instance_type = None
         self.product_description = None
         self.timestamp = None
+        self.availability_zone = None
 
     def __repr__(self):
         return 'SpotPriceHistory(%s):%2f' % (self.instance_type, self.price)
@@ -46,6 +47,8 @@ class SpotPriceHistory(EC2Object):
             self.product_description = value
         elif name == 'timestamp':
             self.timestamp = value
+        elif name == 'availabilityZone':
+            self.availability_zone = value
         else:
             setattr(self, name, value)
 
