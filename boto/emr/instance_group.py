@@ -20,14 +20,24 @@
 
 
 class InstanceGroup(object):
-    def __init__(self, num_instances, role, type, market, name):
+    def __init__(self, num_instances, role, type, market, name, bidprice=None):
         self.num_instances = num_instances
         self.role = role
         self.type = type
         self.market = market
         self.name = name
+        if market == 'SPOT':
+            if not isinstance(bidprice, basestring):
+                raise ValueError('bidprice must be specified if market == SPOT')
+            self.bidprice = bidprice
 
     def __repr__(self):
-        return '%s.%s(name=%r, num_instances=%r, role=%r, type=%r, market = %r)' % (
-            self.__class__.__module__, self.__class__.__name__,
-            self.name, self.num_instances, self.role, self.type, self.market)
+        if self.market == 'SPOT':
+            return '%s.%s(name=%r, num_instances=%r, role=%r, type=%r, market = %r, bidprice = %r)' % (
+                self.__class__.__module__, self.__class__.__name__,
+                self.name, self.num_instances, self.role, self.type, self.market,
+                self.bidprice)
+        else:
+            return '%s.%s(name=%r, num_instances=%r, role=%r, type=%r, market = %r)' % (
+                self.__class__.__module__, self.__class__.__name__,
+                self.name, self.num_instances, self.role, self.type, self.market)
