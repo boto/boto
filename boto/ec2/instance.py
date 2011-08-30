@@ -32,6 +32,16 @@ from boto.ec2.image import ProductCodes
 import base64
 
 class Reservation(EC2Object):
+    """
+    Represents a Reservation response object.
+
+    :ivar id: The unique ID of the Reservation.
+    :ivar owner_id: The unique ID of the owner of the Reservation.
+    :ivar groups: A list of Group objects representing the security
+                  groups associated with launched instances.
+    :ivar instances: A list of Instance objects launched in this
+                     Reservation.
+    """
     
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
