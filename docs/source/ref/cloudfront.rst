@@ -9,11 +9,11 @@ A Crash Course in CloudFront in Boto
 
 This new boto module provides an interface to Amazon's new Content Service, CloudFront.
 
-Caveats:
+.. warning::
 
-This module is not well tested.  Paging of distributions is not yet
-supported.  CNAME support is completely untested.  Use with caution.
-Feedback and bug reports are greatly appreciated.
+    This module is not well tested.  Paging of distributions is not yet
+    supported.  CNAME support is completely untested.  Use with caution.
+    Feedback and bug reports are greatly appreciated.
 
 The following shows the main features of the cloudfront module from an interactive shell:
 
@@ -34,7 +34,7 @@ u'InProgress'
 >>> d.config.comment
 u'My new distribution'
 >>> d.config.origin
-u'mybucket.s3.amazonaws.com'
+<S3Origin: mybucket.s3.amazonaws.com>
 >>> d.config.caller_reference
 u'31b8d9cf-a623-4a28-b062-a91856fac6d0'
 >>> d.config.enabled
@@ -97,7 +97,14 @@ boto.cloudfront.distribution
 ----------------------------
 
 .. automodule:: boto.cloudfront.distribution
-   :members:   
+   :members:
+   :undoc-members:
+
+boto.cloudfront.origin
+----------------------------
+
+.. automodule:: boto.cloudfront.origin
+   :members:
    :undoc-members:
 
 boto.cloudfront.exception
