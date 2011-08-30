@@ -482,14 +482,14 @@ class Distribution:
         :rtype: :class:`boto.cloudfront.object.Object`
         :return: The newly created object.
         """
-        if self.config.origin_access_identity:
+        if self.config.origin.origin_access_identity:
             policy = 'private'
         else:
             policy = 'public-read'
         bucket = self._get_bucket()
         object = bucket.new_key(name)
         object.set_contents_from_file(content, headers=headers, policy=policy)
-        if self.config.origin_access_identity:
+        if self.config.origin.origin_access_identity:
             self.set_permissions(object, replace)
         return object
             
