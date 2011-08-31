@@ -21,11 +21,13 @@
 # IN THE SOFTWARE.
 
 """
-Represents an EC2 Elastic IP Snapshot
+Represents an EC2 Elastic Block Store Snapshot
 """
 from boto.ec2.ec2object import TaggedEC2Object
 
 class Snapshot(TaggedEC2Object):
+    
+    AttrName = 'createVolumePermission'
     
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
@@ -88,26 +90,26 @@ class Snapshot(TaggedEC2Object):
         return self.connection.delete_snapshot(self.id)
 
     def get_permissions(self):
-        attrs = self.connection.get_snapshot_attribute(self.id,
-                                                       attribute='createVolumePermission')
+        attrs = self.connection.get_snapshot_attribute(self.id, self.AttrName)
         return attrs.attrs
 
     def share(self, user_ids=None, groups=None):
         return self.connection.modify_snapshot_attribute(self.id,
-                                                         'createVolumePermission',
+                                                         self.AttrName,
                                                          'add',
                                                          user_ids,
                                                          groups)
 
     def unshare(self, user_ids=None, groups=None):
         return self.connection.modify_snapshot_attribute(self.id,
-                                                         'createVolumePermission',
+                                                         self.AttrName,
                                                          'remove',
                                                          user_ids,
                                                          groups)
 
     def reset_permissions(self):
-        return self.connection.reset_snapshot_attribute(self.id, 'createVolumePermission')
+        return self.connection.reset_snapshot_attribute(self.id,
+                                                        self.AttrName)
 
 class SnapshotAttribute:
 
