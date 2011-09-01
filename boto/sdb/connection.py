@@ -21,6 +21,7 @@
 
 import xml.sax
 import threading
+import boto
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain, DomainMetaData
@@ -95,12 +96,22 @@ class SDBConnection(AWSQueryConnection):
         via :py:func:`boto.connect_sdb`.
     
         :type region: :class:`boto.sdb.regioninfo.SDBRegionInfo`
-        :keyword region: Explicitly specify a region. Defaults to ``us-east-1`` 
-            if not specified.
+        :keyword region: Explicitly specify a region. Defaults to ``us-east-1``
+            if not specified. You may also specify the region in your ``boto.cfg``:
+
+            .. code-block:: cfg
+
+                [SDB]
+                region = eu-west-1
+
         """
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName,
-                                   self.DefaultRegionEndpoint)
+            region_name = boto.config.get('SDB', 'region', self.DefaultRegionName)
+            for reg in boto.sdb.regions():
+                if reg.name == region_name:
+                    region = reg
+                    break
+
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
