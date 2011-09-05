@@ -228,7 +228,8 @@ class CloudWatchConnection(AWSQueryConnection):
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
             items = [items]
-        for i, item in enumerate(items, 1):
+        for index, item in enumerate(items):
+            i = index + 1
             if isinstance(item, dict):
                 for k,v in item.iteritems():
                     params[label % (i, 'Name')] = k
@@ -270,7 +271,8 @@ class CloudWatchConnection(AWSQueryConnection):
                   'EndTime' : end_time.isoformat()}
         self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
-            for i, name in enumerate(dimensions, 1):
+            for index, name in enumerate(dimensions):
+                i = index + 1
                 params['Dimensions.member.%d.Name' % i] = name
                 params['Dimensions.member.%d.Value' % i] = dimensions[name]
         return self.get_list('GetMetricStatistics', params,
@@ -345,7 +347,8 @@ class CloudWatchConnection(AWSQueryConnection):
             metric_data['Unit'] = unit
         
         if dimensions:
-            for i, (name, val) in enumerate(dimensions.iteritems(), 1):
+            for index, (name, val) in enumerate(dimensions.iteritems()):
+                i = index + 1
                 metric_data['Dimensions.member.%d.Name' % i] = name
                 metric_data['Dimensions.member.%d.Value' % i] = val
         
