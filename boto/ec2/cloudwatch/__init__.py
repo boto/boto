@@ -262,6 +262,13 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type metric_name: string
         :param metric_name: The metric name.
+
+        :type namespace: string
+        :param namespace: The metric's namespace.
+
+        :type statistics: list
+        :param statistics: A list of statistics names Valid values:
+                           Average | Sum | SampleCount | Maximum | Minimum
         :rtype: list
         """
         params = {'Period' : period,
