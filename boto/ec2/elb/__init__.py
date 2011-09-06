@@ -103,8 +103,8 @@ class ELBConnection(AWSQueryConnection):
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
             items = [items]
-        for i, item in enumerate(items, 1):
-            params[label % i] = item
+        for index, item in enumerate(items):
+            params[label % (index + 1)] = item
 
     def get_all_load_balancers(self, load_balancer_names=None):
         """
@@ -147,7 +147,8 @@ class ELBConnection(AWSQueryConnection):
         :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {'LoadBalancerName' : name}
-        for i, listener in enumerate(listeners, 1):
+        for index, listener in enumerate(listeners):
+            i = index + 1
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
             params['Listeners.member.%d.Protocol' % i] = listener[2]
@@ -181,7 +182,8 @@ class ELBConnection(AWSQueryConnection):
         :return: The status of the request
         """
         params = {'LoadBalancerName' : name}
-        for i, listener in enumerate(listeners, 1):
+        for index, listener in enumerate(listeners):
+            i = index + 1
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
             params['Listeners.member.%d.Protocol' % i] = listener[2]
@@ -213,8 +215,8 @@ class ELBConnection(AWSQueryConnection):
         :return: The status of the request
         """
         params = {'LoadBalancerName' : name}
-        for i, port in enumerate(ports, 1):
-            params['LoadBalancerPorts.member.%d' % i] = port
+        for index, port in enumerate(ports):
+            params['LoadBalancerPorts.member.%d' % (index + 1)] = port
         return self.get_status('DeleteLoadBalancerListeners', params)
 
     def enable_availability_zones(self, load_balancer_name, zones_to_add):
