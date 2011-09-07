@@ -317,7 +317,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Will create an AMI from the instance in the running or stopped
         state.
-        
+
         :type instance_id: string
         :param instance_id: the ID of the instance to image.
 
@@ -334,7 +334,7 @@ class EC2Connection(AWSQueryConnection):
                           bundling.  If this flag is True, the responsibility
                           of maintaining file system integrity is left to the
                           owner of the instance.
-        
+
         :rtype: string
         :return: The new image id
         """
@@ -346,7 +346,7 @@ class EC2Connection(AWSQueryConnection):
             params['NoReboot'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
         return img.id
-        
+
     # ImageAttribute methods
 
     def get_image_attribute(self, image_id, attribute='launchPermission'):
@@ -463,9 +463,9 @@ class EC2Connection(AWSQueryConnection):
                              [('item', Reservation)], verb='POST')
 
     def run_instances(self, image_id, min_count=1, max_count=1,
-                      key_name=None, security_groups=None, 
-                      user_data=None, addressing_type=None, 
-                      instance_type='m1.small', placement=None, 
+                      key_name=None, security_groups=None,
+                      user_data=None, addressing_type=None,
+                      instance_type='m1.small', placement=None,
                       kernel_id=None, ramdisk_id=None,
                       monitoring_enabled=False, subnet_id=None,
                       block_device_map=None,
@@ -498,7 +498,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
-                              
+
                               * m1.small
                               * m1.large
                               * m1.xlarge
@@ -551,7 +551,7 @@ class EC2Connection(AWSQueryConnection):
                                                      instance-initiated
                                                      shutdown.
                                                      Valid values are:
-                                                     
+
                                                      * stop
                                                      * terminate
 
@@ -643,13 +643,13 @@ class EC2Connection(AWSQueryConnection):
     def stop_instances(self, instance_ids=None, force=False):
         """
         Stop the instances specified
-        
+
         :type instance_ids: list
         :param instance_ids: A list of strings of the Instance IDs to stop
 
         :type force: bool
         :param force: Forces the instance to stop
-        
+
         :rtype: list
         :return: A list of the instances stopped
         """
@@ -664,10 +664,10 @@ class EC2Connection(AWSQueryConnection):
     def start_instances(self, instance_ids=None):
         """
         Start the instances specified
-        
+
         :type instance_ids: list
         :param instance_ids: A list of strings of the Instance IDs to start
-        
+
         :rtype: list
         :return: A list of the instances started
         """
@@ -723,7 +723,7 @@ class EC2Connection(AWSQueryConnection):
         :type attribute: string
         :param attribute: The attribute you need information about
                           Valid choices are:
-                          
+
                           * instanceType|kernel|ramdisk|userData|
                           * disableApiTermination|
                           * instanceInitiatedShutdownBehavior|
@@ -748,7 +748,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: string
         :param attribute: The attribute you wish to change.
-        
+
                           * AttributeName - Expected value (default)
                           * instanceType - A valid instance type (m1.small)
                           * kernel - Kernel ID (None)
@@ -836,23 +836,23 @@ class EC2Connection(AWSQueryConnection):
                                availability_zone=None):
         """
         Retrieve the recent history of spot instances pricing.
-        
+
         :type start_time: str
         :param start_time: An indication of how far back to provide price
                            changes for. An ISO8601 DateTime string.
-        
+
         :type end_time: str
         :param end_time: An indication of how far forward to provide price
                          changes for.  An ISO8601 DateTime string.
-        
+
         :type instance_type: str
         :param instance_type: Filter responses to a particular instance type.
-        
+
         :type product_description: str
         :param product_descripton: Filter responses to a particular platform.
                                    Valid values are currently: "Linux/UNIX",
                                    "SUSE Linux", and "Windows"
-        
+
         :rtype: list
         :return: A list tuples containing price and timestamp.
         """
@@ -884,13 +884,13 @@ class EC2Connection(AWSQueryConnection):
 
         :type price: str
         :param price: The maximum price of your bid
-        
+
         :type image_id: string
         :param image_id: The ID of the image to run
 
         :type count: int
         :param count: The of instances to requested
-        
+
         :type type: str
         :param type: Type of request. Can be 'one-time' or 'persistent'.
                      Default is one-time.
@@ -904,12 +904,12 @@ class EC2Connection(AWSQueryConnection):
         :type launch_group: str
         :param launch_group: If supplied, all requests will be fulfilled
                              as a group.
-                             
+
         :type availability_zone_group: str
         :param availability_zone_group: If supplied, all requests will be
                                         fulfilled within a single
                                         availability zone.
-                             
+
         :type key_name: string
         :param key_name: The name of the key pair with which to launch instances
 
@@ -922,7 +922,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
-                              
+
                               * m1.small
                               * m1.large
                               * m1.xlarge
@@ -1007,14 +1007,14 @@ class EC2Connection(AWSQueryConnection):
                              [('item', SpotInstanceRequest)],
                              verb='POST')
 
-        
+
     def cancel_spot_instance_requests(self, request_ids):
         """
         Cancel the specified Spot Instance Requests.
-        
+
         :type request_ids: list
         :param request_ids: A list of strings of the Request IDs to terminate
-        
+
         :rtype: list
         :return: A list of the instances terminated
         """
@@ -1028,7 +1028,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Return the current spot instance data feed subscription
         associated with this account, if any.
-        
+
         :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
@@ -1048,7 +1048,7 @@ class EC2Connection(AWSQueryConnection):
         :type prefix: str or unicode
         :param prefix: An optional prefix that will be pre-pended to all
                        data files written to the bucket.
-                       
+
         :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
@@ -1062,7 +1062,7 @@ class EC2Connection(AWSQueryConnection):
         """
         Delete the current spot instance data feed subscription
         associated with this account
-        
+
         :rtype: bool
         :return: True if successful
         """
@@ -1103,7 +1103,7 @@ class EC2Connection(AWSQueryConnection):
 
     # Address methods
 
-    def get_all_addresses(self, addresses=None, filters=None):
+    def get_all_addresses(self, addresses=None, filters=None, allocation_ids=None):
         """
         Get all EIP's associated with the current credentials.
 
@@ -1122,65 +1122,106 @@ class EC2Connection(AWSQueryConnection):
                         being performed.  Check the EC2 API guide
                         for details.
 
+        :type allocation_ids: list
+        :param allocation_ids: Optional list of allocation IDs.  If this list is
+                           present, only the Addresses associated with the given
+                           allocation IDs will be returned.
+
         :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
         """
         params = {}
         if addresses:
             self.build_list_params(params, addresses, 'PublicIp')
+        if allocation_ids:
+            self.build_list_params(params, allocation_ids, 'AllocationId')
         if filters:
             self.build_filter_params(params, filters)
         return self.get_list('DescribeAddresses', params, [('item', Address)], verb='POST')
 
-    def allocate_address(self):
+    def allocate_address(self, domain=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
 
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
         """
-        return self.get_object('AllocateAddress', {}, Address, verb='POST')
+        params = {}
 
-    def associate_address(self, instance_id, public_ip):
+        if domain is not None:
+            params['Domain'] = domain
+
+        return self.get_object('AllocateAddress', params, Address, verb='POST')
+
+    def associate_address(self, instance_id, public_ip=None, allocation_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
+        This requires one of ``public_ip`` or ``allocation_id`` depending
+        on if you're associating a VPC address or a plain EC2 address.
 
         :type instance_id: string
         :param instance_id: The ID of the instance
 
         :type public_ip: string
-        :param public_ip: The public IP address
+        :param public_ip: The public IP address for EC2 based allocations.
+
+        :type allocation_id: string
+        :param allocation_id: The allocation ID for a VPC-based elastic IP.
 
         :rtype: bool
         :return: True if successful
         """
-        params = {'InstanceId' : instance_id, 'PublicIp' : public_ip}
+        params = { 'InstanceId' : instance_id }
+
+        if public_ip is not None:
+            params['PublicIp'] = public_ip
+        elif allocation_id is not None:
+            params['AllocationId'] = allocation_id
+
         return self.get_status('AssociateAddress', params, verb='POST')
 
-    def disassociate_address(self, public_ip):
+    def disassociate_address(self, public_ip=None, association_id=None):
         """
         Disassociate an Elastic IP address from a currently running instance.
 
         :type public_ip: string
-        :param public_ip: The public IP address
+        :param public_ip: The public IP address for EC2 elastic IPs.
+
+        :type association_id: string
+        :param association_id: The association ID for a VPC based elastic ip.
 
         :rtype: bool
         :return: True if successful
         """
-        params = {'PublicIp' : public_ip}
+        params = {}
+
+        if public_ip is not None:
+            params['PublicIp'] = public_ip
+        elif association_id is not None:
+            params['AssociationId'] = association_id
+
         return self.get_status('DisassociateAddress', params, verb='POST')
 
-    def release_address(self, public_ip):
+    def release_address(self, public_ip=None, allocation_id=None):
         """
-        Free up an Elastic IP address
+        Free up an Elastic IP address.
 
         :type public_ip: string
-        :param public_ip: The public IP address
+        :param public_ip: The public IP address for EC2 elastic IPs.
+
+        :type allocation_id: string
+        :param allocation_id: The ID for VPC elastic IPs.
 
         :rtype: bool
         :return: True if successful
         """
-        params = {'PublicIp' : public_ip}
+        params = {}
+
+        if public_ip is not None:
+            params['PublicIp'] = public_ip
+        elif allocation_id is not None:
+            params['AllocationId'] = allocation_id
+
         return self.get_status('ReleaseAddress', params, verb='POST')
 
     # Volume methods
@@ -1328,7 +1369,7 @@ class EC2Connection(AWSQueryConnection):
         :type owner: str
         :param owner: If present, only the snapshots owned by the specified user
                       will be returned.  Valid values are:
-                      
+
                       * self
                       * amazon
                       * AWS Account ID
@@ -1407,7 +1448,7 @@ class EC2Connection(AWSQueryConnection):
         For every group of like-named snapshots, this function retains
         the newest and oldest snapshots, as well as, by default,  the
         first snapshots taken in each of the last eight hours, the first
-        snapshots taken in each of the last seven days, the first snapshots 
+        snapshots taken in each of the last seven days, the first snapshots
         taken in the last 4 weeks (counting Midnight Sunday morning as
         the start of the week), and the first snapshot from the first
         Sunday of each month forever.
@@ -1528,7 +1569,7 @@ class EC2Connection(AWSQueryConnection):
                             #leaving the time period alone
                         else:
                             # this was the first snapshot found for this
-                            #time period. Leave it alone and look at the 
+                            #time period. Leave it alone and look at the
                             # next snapshot:
                             snap_found_for_this_time_period = True
                         check_this_snap = False
@@ -1550,7 +1591,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: str
         :param attribute: The requested attribute.  Valid values are:
-        
+
                           * createVolumePermission
 
         :rtype: list of :class:`boto.ec2.snapshotattribute.SnapshotAttribute`
@@ -1914,7 +1955,7 @@ class EC2Connection(AWSQueryConnection):
         NOTE: This method uses the old-style request parameters
               that did not allow a port to be specified when
               authorizing a group.
-              
+
         Remove an existing rule from an existing security group.
         You need to pass in either src_security_group_name and
         src_security_group_owner_id OR ip_protocol, from_port, to_port,
@@ -1963,7 +2004,7 @@ class EC2Connection(AWSQueryConnection):
         if cidr_ip:
             params['CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress', params)
-    
+
     def revoke_security_group(self, group_name, src_security_group_name=None,
                               src_security_group_owner_id=None,
                               ip_protocol=None, from_port=None, to_port=None,
@@ -2236,12 +2277,12 @@ class EC2Connection(AWSQueryConnection):
         """
         return self.unmonitor_instances([instance_id])
 
-    # 
+    #
     # Bundle Windows Instances
     #
 
     def bundle_instance(self, instance_id,
-                        s3_bucket, 
+                        s3_bucket,
                         s3_prefix,
                         s3_upload_policy):
         """
@@ -2272,7 +2313,7 @@ class EC2Connection(AWSQueryConnection):
         signature = s3auth.sign_string(s3_upload_policy)
         params['Storage.S3.UploadPolicySignature'] = signature
         return self.get_object('BundleInstance', params,
-                               BundleInstanceTask, verb='POST') 
+                               BundleInstanceTask, verb='POST')
 
     def get_all_bundle_tasks(self, bundle_ids=None, filters=None):
         """
@@ -2280,9 +2321,9 @@ class EC2Connection(AWSQueryConnection):
         tasks are retrieved.
 
         :type bundle_ids: list
-        :param bundle_ids: A list of strings containing identifiers for 
+        :param bundle_ids: A list of strings containing identifiers for
                            previously created bundling tasks.
-                           
+
         :type filters: dict
         :param filters: Optional filters that can be used to limit
                         the results returned.  Filters are provided
@@ -2294,7 +2335,7 @@ class EC2Connection(AWSQueryConnection):
                         for details.
 
         """
- 
+
         params = {}
         if bundle_ids:
             self.build_list_params(params, bundle_ids, 'BundleId')
@@ -2306,10 +2347,10 @@ class EC2Connection(AWSQueryConnection):
     def cancel_bundle_task(self, bundle_id):
         """
         Cancel a previously submitted bundle task
- 
+
         :type bundle_id: string
         :param bundle_id: The identifier of the bundle task to cancel.
-        """                        
+        """
 
         params = {'BundleId' : bundle_id}
         return self.get_object('CancelBundleTask', params,
@@ -2328,7 +2369,7 @@ class EC2Connection(AWSQueryConnection):
         rs = self.get_object('GetPasswordData', params, ResultSet, verb='POST')
         return rs.passwordData
 
-    # 
+    #
     # Cluster Placement Groups
     #
 
@@ -2404,7 +2445,7 @@ class EC2Connection(AWSQueryConnection):
             if value is not None:
                 params['Tag.%d.Value'%i] = value
             i += 1
-        
+
     def get_all_tags(self, filters=None):
         """
         Retrieve all the metadata tags associated with your account.
