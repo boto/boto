@@ -26,6 +26,7 @@ Represents a connection to the EC2 service.
 from boto.ec2.connection import EC2Connection
 from boto.vpc.vpc import VPC
 from boto.vpc.customergateway import CustomerGateway
+from boto.vpc.internetgateway import InternetGateway
 from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
@@ -93,6 +94,91 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpcId': vpc_id}
         return self.get_status('DeleteVpc', params)
+
+    # Internet Gateways
+
+    def get_all_internet_gateways(self, internet_gateway_ids=None, filters=None):
+        """
+        Get a list of internet gateways. You can filter results to return information
+        about only those gateways that you're interested in.
+
+        :type internet_gateway_ids: list
+        :param internet_gateway_ids: A list of strings with the desired gateway IDs.
+
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters.  Each tuple
+                        consists of a filter key and a filter value.
+        """
+        params = {}
+
+        if internet_gateway_ids:
+            self.build_list_params(params, internet_gateway_ids, 'InternetGatewayId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
+
+        return self.get_list('DescribeInternetGateways', params, [('item', InternetGateway)])
+
+    def create_internet_gateway(self):
+        """
+        Creates an internet gateway for VPC.
+
+        :rtype: Newly created internet gateway.
+        :return: `boto.vpc.internetgateway.InternetGateway`
+        """
+        return self.get_object('CreateInternetGateway', {}, InternetGateway)
+
+    def delete_internet_gateway(self, internet_gateway_id):
+        """
+        Deletes an internet gateway from the VPC.
+
+        :type internet_gateway_id: str
+        :param internet_gateway_id: The ID of the internet gateway to delete.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = { 'InternetGatewayId': internet_gateway_id }
+        return self.get_status('DeleteInternetGateway', params)
+
+    def attach_internet_gateway(self, internet_gateway_id, vpc_id):
+        """
+        Attach an internet gateway to a specific VPC.
+
+        :type internet_gateway_id: str
+        :param internet_gateway_id: The ID of the internet gateway to delete.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC to attach to.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = {
+            'InternetGatewayId': internet_gateway_id,
+            'VpcId': vpc_id
+        }
+
+        return self.get_status('AttachInternetGateway', params)
+
+    def detach_internet_gateway(self, internet_gateway_id, vpc_id):
+        """
+        Detach an internet gateway from a specific VPC.
+
+        :type internet_gateway_id: str
+        :param internet_gateway_id: The ID of the internet gateway to delete.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC to attach to.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = {
+            'InternetGatewayId': internet_gateway_id,
+            'VpcId': vpc_id
+        }
+
+        return self.get_status('DetachInternetGateway', params)
 
     # Customer Gateways
 
