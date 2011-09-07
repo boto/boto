@@ -34,6 +34,7 @@ class Address(EC2Object):
         self.instance_id = instance_id
         self.domain = None
         self.allocation_id = None
+        self.association_id = None
 
     def __repr__(self):
         return 'Address:%s' % self.public_ip
@@ -47,6 +48,8 @@ class Address(EC2Object):
             self.domain = value
         elif name == 'allocationId':
             self.allocation_id = value
+        elif name == 'associationId':
+            self.association_id = value
         else:
             setattr(self, name, value)
 
