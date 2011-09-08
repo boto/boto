@@ -2003,7 +2003,7 @@ class EC2Connection(AWSQueryConnection):
         security groups in the same VPC.
         """
         params = {
-            'GroupId': group_id
+            'GroupId': group_id,
             'IpPermissions.1.IpProtocol': ip_protocol
         }
 
