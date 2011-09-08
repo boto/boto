@@ -1989,6 +1989,36 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('AuthorizeSecurityGroupIngress',
                                params, verb='POST')
 
+    def authorize_security_group_egress(group_id,
+                                        ip_protocol,
+                                        from_port=None,
+                                        to_port=None,
+                                        src_group_id=None,
+                                        cidr_ip=None):
+        """
+        The action adds one or more egress rules to a VPC security
+        group. Specifically, this action permits instances in a
+        security group to send traffic to one or more destination
+        CIDR IP address ranges, or to one or more destination
+        security groups in the same VPC.
+        """
+        params = {
+            'GroupId': group_id
+            'IpPermissions.1.IpProtocol': ip_protocol
+        }
+
+        if from_port is not None:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port is not None:
+            params['IpPermissions.1.ToPort'] = to_port
+        if src_group_id is not None:
+            params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
+        if cidr_ip is not None:
+            params['IpPermissions.1.Groups.1.CidrIp'] = cidr_ip
+
+        return self.get_status('AuthorizeSecurityGroupEgress',
+                               params, verb='POST')
+
     def revoke_security_group_deprecated(self, group_name,
                                          src_security_group_name=None,
                                          src_security_group_owner_id=None,
