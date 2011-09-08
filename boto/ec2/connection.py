@@ -1767,7 +1767,7 @@ class EC2Connection(AWSQueryConnection):
 
     # SecurityGroup methods
 
-    def get_all_security_groups(self, groupnames=None, filters=None):
+    def get_all_security_groups(self, groupnames=None, group_ids=None, filters=None):
         """
         Get all security groups associated with your account in a region.
 
@@ -1775,6 +1775,10 @@ class EC2Connection(AWSQueryConnection):
         :param groupnames: A list of the names of security groups to retrieve.
                            If not provided, all security groups will be
                            returned.
+
+        :type group_ids: list
+        :param group_ids: A list of IDs of security groups to retrieve for
+                          security groups within a VPC.
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -1790,10 +1794,13 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.securitygroup.SecurityGroup`
         """
         params = {}
-        if groupnames:
+        if groupnames is not None:
             self.build_list_params(params, groupnames, 'GroupName')
-        if filters:
+        if group_ids is not None:
+            self.build_list_params(params, group_ids, 'GroupId')
+        if filters is not None:
             self.build_filter_params(params, filters)
+
         return self.get_list('DescribeSecurityGroups', params,
                              [('item', SecurityGroup)], verb='POST')
 
