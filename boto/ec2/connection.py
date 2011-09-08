@@ -1809,6 +1809,10 @@ class EC2Connection(AWSQueryConnection):
         :type description: string
         :param description: The description of the new security group
 
+        :type vpc_id: string
+        :param vpc_id: The ID of the VPC to create the security group in,
+                       if any.
+
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
         """
@@ -1826,14 +1830,27 @@ class EC2Connection(AWSQueryConnection):
         group.description = description
         return group
 
-    def delete_security_group(self, name):
+    def delete_security_group(self, name=None, group_id=None):
         """
         Delete a security group from your account.
 
-        :type key_name: string
-        :param key_name: The name of the keypair to delete
+        :type name: string
+        :param name: The name of the security group to delete.
+
+        :type group_id: string
+        :param group_id: The ID of the security group to delete within
+          a VPC.
+
+        :rtype: bool
+        :return: True if successful.
         """
-        params = {'GroupName':name}
+        params = {}
+
+        if name is not None:
+            params['GroupName'] = name
+        elif group_id is not None:
+            params['GroupId'] = group_id
+
         return self.get_status('DeleteSecurityGroup', params, verb='POST')
 
     def authorize_security_group_deprecated(self, group_name,
