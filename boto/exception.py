@@ -86,12 +86,12 @@ class BotoServerError(StandardError):
                 h = handler.XmlHandler(self, self)
                 xml.sax.parseString(self.body, h)
             except xml.sax.SAXParseException, pe:
-                # Go ahead and clean up anything that may have
-                # managed to get into the error data so we
-                # don't get partial garbage.
-                self._cleanupParsedProperties()
+                # Remove unparsable message body so we don't include garbage
+                # in exception. But first, save self.body in self.error_message
+                # because occasionally we get error messages from Eucalyptus
+                # that are just text strings that we want to preserve.
                 self.error_message = self.body
-                self.status = ''
+                self.body = None
 
     def __getattr__(self, name):
         if name == 'message':
