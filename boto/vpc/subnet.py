@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -30,6 +30,7 @@ class Subnet(TaggedEC2Object):
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
+        self.vpc_id = None
         self.state = None
         self.cidr_block = None
         self.available_ip_address_count = 0
@@ -37,10 +38,12 @@ class Subnet(TaggedEC2Object):
 
     def __repr__(self):
         return 'Subnet:%s' % self.id
-    
+
     def endElement(self, name, value, connection):
         if name == 'subnetId':
             self.id = value
+        elif name == 'vpcId':
+            self.vpc_id = value
         elif name == 'state':
             self.state = value
         elif name == 'cidrBlock':
