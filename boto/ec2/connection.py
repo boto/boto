@@ -1797,7 +1797,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSecurityGroups', params,
                              [('item', SecurityGroup)], verb='POST')
 
-    def create_security_group(self, name, description):
+    def create_security_group(self, name, description, vpc_id=None):
         """
         Create a new security group for your account.
         This will create the security group within the region you
@@ -1812,7 +1812,14 @@ class EC2Connection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
         """
-        params = {'GroupName':name, 'GroupDescription':description}
+        params = {
+            'GroupName': name,
+            'GroupDescription': description
+        }
+
+        if vpc_id is not None:
+            params['VpcId'] = vpc_id
+
         group = self.get_object('CreateSecurityGroup', params,
                                 SecurityGroup, verb='POST')
         group.name = name
