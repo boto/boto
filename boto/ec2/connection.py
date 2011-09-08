@@ -1977,13 +1977,13 @@ class EC2Connection(AWSQueryConnection):
         if src_security_group_group_id:
             param_name = 'IpPermissions.1.Groups.1.GroupId'
             params[param_name] = src_security_group_group_id
-        if ip_protocol:
+        if ip_protocol is not None:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
-        if from_port:
+        if from_port is not None:
             params['IpPermissions.1.FromPort'] = from_port
-        if to_port:
+        if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
-        if cidr_ip:
+        if cidr_ip is not None:
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
 
         return self.get_status('AuthorizeSecurityGroupIngress',
@@ -2130,13 +2130,13 @@ class EC2Connection(AWSQueryConnection):
         if src_security_group_owner_id:
             param_name = 'IpPermissions.1.Groups.1.UserId'
             params[param_name] = src_security_group_owner_id
-        if ip_protocol:
+        if ip_protocol is not None:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
-        if from_port:
+        if from_port is not None:
             params['IpPermissions.1.FromPort'] = from_port
-        if to_port:
+        if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
-        if cidr_ip:
+        if cidr_ip is not None:
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress',
                                params, verb='POST')
