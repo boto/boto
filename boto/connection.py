@@ -70,6 +70,8 @@ from boto.resultset import ResultSet
 HAVE_HTTPS_CONNECTION = False
 try:
     import ssl
+    if not hasattr(ssl, 'SSLError') or not isinstance(ssl.SSLError, Exception):
+      raise ImportError
     from boto import https_connection
     HAVE_HTTPS_CONNECTION = True
 except ImportError:
@@ -165,8 +167,13 @@ class HostConnectionPool(object):
         This is ugly, reading a private instance variable, but the
         state we care about isn't available in any public methods.
         """
-        response = conn._HTTPConnection__response
-        return (response is None) or response.isclosed()
+        if hasattr(conn, '_HTTPConnection__response'):
+          response = conn._HTTPConnection__response
+          return (response is None) or response.isclosed()
+        elif hasattr(conn, 'getresponse'):
+          # Google AppEngine's httplib is a wrapper for urlfetch
+          response = conn.getresponse()
+          return bool(response)
 
     def clean(self):
         """
