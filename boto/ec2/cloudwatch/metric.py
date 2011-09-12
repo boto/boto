@@ -36,8 +36,13 @@ class Dimensions(dict):
 class Metric(object):
 
     Statistics = ['Minimum', 'Maximum', 'Sum', 'Average', 'SampleCount']
-    Units = ['Seconds', 'Percent', 'Bytes', 'Bits', 'Count',
-             'Bytes/Second', 'Bits/Second', 'Count/Second']
+    Units = ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes',
+             'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits',
+             'Megabits', 'Gigabits', 'Terabits', 'Percent', 'Count',
+             'Bytes/Second', 'Kilobytes/Second', 'Megabytes/Second',
+             'Gigabytes/Second', 'Terabytes/Second', 'Bits/Second',
+             'Kilobits/Second', 'Megabits/Second', 'Gigabits/Second',
+             'Terabits/Second', 'Count/Second', None]
 
     def __init__(self, connection=None):
         self.connection = connection
@@ -78,3 +83,5 @@ class Metric(object):
                                                           dimensions,
                                                           unit)
 
+
+    

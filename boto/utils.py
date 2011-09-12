@@ -225,6 +225,7 @@ def get_instance_userdata(version='latest', sep=None,
     return user_data
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
+ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
     
 def get_ts(ts=None):
     if not ts:
@@ -232,7 +233,12 @@ def get_ts(ts=None):
     return time.strftime(ISO8601, ts)
 
 def parse_ts(ts):
-    return datetime.datetime.strptime(ts, ISO8601)
+    try:
+        dt = datetime.datetime.strptime(ts, ISO8601)
+        return dt
+    except ValueError:
+        dt = datetime.datetime.strptime(ts, ISO8601_MS)
+        return dt
 
 def find_class(module_name, class_name=None):
     if class_name:

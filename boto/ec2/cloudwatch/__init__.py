@@ -233,7 +233,8 @@ class CloudWatchConnection(AWSQueryConnection):
             if isinstance(item, dict):
                 for k,v in item.iteritems():
                     params[label % (i, 'Name')] = k
-                    params[label % (i, 'Value')] = v
+                    if v is not None:
+                        params[label % (i, 'Value')] = v
             else:
                 params[label % i] = item
 
@@ -285,22 +286,48 @@ class CloudWatchConnection(AWSQueryConnection):
         return self.get_list('GetMetricStatistics', params,
                              [('member', Datapoint)])
 
-    def list_metrics(self, next_token=None):
+    def list_metrics(self, next_token=None, dimension_filters=None,
+                     metric_name=None, namespace=None):
         """
         Returns a list of the valid metrics for which there is recorded
         data available.
 
-        :type next_token: string
+        :type next_token: str
         :param next_token: A maximum of 500 metrics will be returned at one
                            time.  If more results are available, the
                            ResultSet returned will contain a non-Null
                            next_token attribute.  Passing that token as a
                            parameter to list_metrics will retrieve the
                            next page of metrics.
+
+        :type dimension_filters: dict
+        :param dimension_filters: A dictionary containing name/value pairs
+                                  that will be used to filter the results.
+                                  The key in the dictionary is the name of
+                                  a Dimension.  The value in the dictionary
+                                  is either a specific value of that Dimension
+                                  name that you want to filter on or None if
+                                  you want all metrics with that Dimension name.
+
+        :type metric_name: str
+        :param metric_name: The name of the Metric to filter against.  If None,
+                            all Metric names will be returned.
+
+        :type namespace: str
+        :param namespace: A Metric namespace to filter against (e.g. AWS/EC2).
+                          If None, Metrics from all namespaces will be returned.
         """
         params = {}
         if next_token:
             params['NextToken'] = next_token
+        if dimension_filters:
+            self.build_list_params(params, [dimension_filters],
+                                   'Dimensions.member.%d.%s')
+        if metric_name:
+            params['MetricName'] = metric_name
+        if namespace:
+            params['Namespace'] = namespace
+        
         return self.get_list('ListMetrics', params, [('member', Metric)])
     
     def put_metric_data(self, namespace, name, value=None, timestamp=None, 
