@@ -71,7 +71,9 @@ HAVE_HTTPS_CONNECTION = False
 try:
     import ssl
     from boto import https_connection
-    HAVE_HTTPS_CONNECTION = True
+    # Google App Engine runs on Python 2.5 so doesn't have ssl.SSLError.
+    if hasattr(ssl, 'SSLError'):
+        HAVE_HTTPS_CONNECTION = True
 except ImportError:
     pass
 
