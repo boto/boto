@@ -2490,8 +2490,8 @@ class EC2Connection(AWSQueryConnection):
         :param strategy: The placement strategy of the new placement group.
                          Currently, the only acceptable value is "cluster".
 
-        :rtype: :class:`boto.ec2.placementgroup.PlacementGroup`
-        :return: The newly created :class:`boto.ec2.placementgroup.PlacementGroup`.
+        :rtype: bool
+        :return: True if successful
         """
         params = {'GroupName':name, 'Strategy':strategy}
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
