@@ -71,12 +71,23 @@ class Route53Connection(AWSAuthConnection):
 
     # Hosted Zones
 
-    def get_all_hosted_zones(self):
+    def get_all_hosted_zones(self, start_marker=None, zone_list=None):
         """
         Returns a Python data structure with information about all
         Hosted Zones defined for the AWS account.
+
+        :type start_marker: int
+        :param start_marker: start marker to pass when fetching additional
+        results after a truncated list
+
+        :type zone_list: list
+        :param zone_list: a HostedZones list to prepend to results
         """
-        response = self.make_request('GET', '/%s/hostedzone' % self.Version)
+        params = {}
+        if start_marker:
+            params = {'marker': start_marker}
+        response = self.make_request('GET', '/%s/hostedzone' % self.Version,
+                params=params)
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
@@ -87,8 +98,14 @@ class Route53Connection(AWSAuthConnection):
                                       item_marker=('HostedZone',))
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
+        if zone_list:
+            e['ListHostedZonesResponse']['HostedZones'].extend(zone_list)
+        while e['ListHostedZonesResponse'].has_key('NextMarker'):
+            next_marker = e['ListHostedZonesResponse']['NextMarker']
+            zone_list = e['ListHostedZonesResponse']['HostedZones']
+            e = self.get_all_hosted_zones(next_marker, zone_list)
         return e
-    
+
     def get_hosted_zone(self, hosted_zone_id):
         """
         Get detailed information about a particular Hosted Zone.
