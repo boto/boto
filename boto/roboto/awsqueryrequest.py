@@ -26,6 +26,7 @@ import boto
 import optparse
 import copy
 import boto.exception
+import boto.roboto.awsqueryservice
 
 import bdb
 import traceback
@@ -436,6 +437,9 @@ class AWSQueryRequest(object):
             sys.exit(1)
         except self.ServiceClass.ResponseError, err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
+            sys.exit(1)
+        except boto.roboto.awsqueryservice.NoCredentialsError, err:
+            print 'Unable to find credentials.'
             sys.exit(1)
         except:
             print 'Unexpected error.  Use --debugger option for more info.'
