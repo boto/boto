@@ -45,7 +45,7 @@ class MetricAlarm(object):
     def __init__(self, connection=None, name=None, metric=None,
                  namespace=None, statistic=None, comparison=None, threshold=None,
                  period=None, evaluation_periods=None, unit=None, description='',
-                 dimensions=[]):
+                 dimensions=[], alarm_actions=[], insufficient_data_actions=[], ok_actions=[]):
         """
         Creates a new Alarm.
 
@@ -87,9 +87,18 @@ class MetricAlarm(object):
         :type description: str
         :param description: Description of MetricAlarm
 
-        :type dimensions list of dicts
+        :type dimensions: list of dicts
         :param description: Dimensions of alarm, such as:
                             [{'InstanceId':'i-0123456,i-0123457'}]
+        
+        :type alarm_actions: list of strs
+        :param alarm_actions: A list of the ARNs of the actions to take in ALARM state
+        
+        :type insufficient_data_actions: list of strs
+        :param insufficient_data_actions: A list of the ARNs of the actions to take in INSUFFICIENT_DATA state
+        
+        :type ok_actions: list of strs
+        :param ok_actions: A list of the ARNs of the actions to take in OK state
         """
         self.name = name
         self.connection = connection
@@ -105,13 +114,12 @@ class MetricAlarm(object):
         self.last_updated = None
         self.description = description
         self.dimensions = dimensions
-        self.insufficient_data_actions = []
-        self.ok_actions = []
         self.state_reason = None
         self.state_value = None
         self.unit = unit
-        alarm_action = []
-        self.alarm_actions = ListElement(alarm_action)
+        self.alarm_actions = ListElement(alarm_actions)
+        self.insufficient_data_actions = ListElement(insufficient_data_actions)
+        self.ok_actions = ListElement(ok_actions)
 
     def __repr__(self):
         return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric, self.statistic, self.comparison, self.threshold)
@@ -119,6 +127,10 @@ class MetricAlarm(object):
     def startElement(self, name, attrs, connection):
         if name == 'AlarmActions':
             return self.alarm_actions
+        elif name == 'InsufficientDataActions':
+            return self.insufficient_data_actions
+        elif name == 'OKActions':
+            return self.ok_actions
         else:
             pass
 
@@ -183,7 +195,7 @@ class MetricAlarm(object):
         return self.connection.describe_alarm_history(self.name, start_date, end_date,
                                                       max_records, history_item_type, next_token)
 
-    def add_alarm_action(self, sns_topic=None):
+    def add_alarm_action(self, action_arn=None):
         """
         Adds an alarm action, represented as an SNS topic, to this alarm. 
         What do do when alarm is triggered.
@@ -192,11 +204,38 @@ class MetricAlarm(object):
         :param action_arn: SNS topics to which notification should be 
                            sent if the alarm goes to state ALARM.
         """
-        if not sns_topic:
+        if not action_arn:
             return # Raise exception instead?
         self.actions_enabled = 'true'
-        self.alarm_actions.append(sns_topic)
+        self.alarm_actions.append(action_arn)
 
+    def add_insufficient_data_action(self, action_arn=None):
+        """
+        Adds an insufficient_data action, represented as an SNS topic, to
+        this alarm. What to do when the insufficient_data state is reached.
+
+        :type action_arn: str
+        :param action_arn: SNS topics to which notification should be 
+                           sent if the alarm goes to state INSUFFICIENT_DATA.
+        """
+        if not action_arn:
+            return
+        self.actions_enabled = 'true'
+        self.insufficient_data_actions.append(action_arn)
+    
+    def add_ok_action(self, action_arn=None):
+        """
+        Adds an ok action, represented as an SNS topic, to this alarm. What
+        to do when the ok state is reached.
+
+        :type action_arn: str
+        :param action_arn: SNS topics to which notification should be 
+                           sent if the alarm goes to state INSUFFICIENT_DATA.
+        """
+        if not action_arn:
+            return
+        self.actions_enabled = 'true'
+        self.ok_actions.append(action_arn)    
 
 class AlarmHistoryItem(object):
     def __init__(self, connection=None):
