@@ -354,7 +354,7 @@ class AWSQueryRequest(object):
                                           options.debug)
 
     def build_cli_parser(self):
-        self.parser = optparse.OptionParser()
+        self.parser = optparse.OptionParser(description=self.Description)
         self.add_standard_options()
         for param in self.Params:
             ptype = action = choices = None
