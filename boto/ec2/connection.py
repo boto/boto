@@ -1915,12 +1915,11 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('AuthorizeSecurityGroupIngress', params)
 
     def authorize_security_group(self, group_name=None,
-                                 group_id=None,
                                  src_security_group_name=None,
                                  src_security_group_owner_id=None,
-                                 src_security_group_group_id=None,
                                  ip_protocol=None, from_port=None, to_port=None,
-                                 cidr_ip=None):
+                                 cidr_ip=None, group_id=None,
+                                 src_security_group_group_id=None):
         """
         Add a new rule to an existing security group.
         You need to pass in either src_security_group_name and
@@ -1953,6 +1952,18 @@ class EC2Connection(AWSQueryConnection):
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://goo.gl/Yj5QC
 
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC security group to modify.
+                         This is required for VPC security groups and
+                         can be used instead of group_name for EC2
+                         security groups.
+
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC source security group.
+                         This is required for VPC security groups and
+                         can be used instead of group_name for EC2
+                         security groups.
+
         :rtype: bool
         :return: True if successful.
         """
@@ -1964,9 +1975,9 @@ class EC2Connection(AWSQueryConnection):
 
         params = {}
 
-        if group_name is not None:
+        if group_name:
             params['GroupName'] = group_name
-        if group_id is not None:
+        if group_id:
             params['GroupId'] = group_id
         if src_security_group_name:
             param_name = 'IpPermissions.1.Groups.1.GroupName'
@@ -1977,13 +1988,13 @@ class EC2Connection(AWSQueryConnection):
         if src_security_group_group_id:
             param_name = 'IpPermissions.1.Groups.1.GroupId'
             params[param_name] = src_security_group_group_id
-        if ip_protocol is not None:
+        if ip_protocol:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
         if from_port is not None:
             params['IpPermissions.1.FromPort'] = from_port
         if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
-        if cidr_ip is not None:
+        if cidr_ip:
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
 
         return self.get_status('AuthorizeSecurityGroupIngress',
@@ -2061,6 +2072,18 @@ class EC2Connection(AWSQueryConnection):
         :param to_port: The CIDR block you are revoking access to.
                         http://goo.gl/Yj5QC
 
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC security group to modify.
+                         This is required for VPC security groups and
+                         can be used instead of group_name for EC2
+                         security groups.
+
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC source security group.
+                         This is required for VPC security groups and
+                         can be used instead of group_name for EC2
+                         security groups.
+
         :rtype: bool
         :return: True if successful.
         """
@@ -2082,7 +2105,8 @@ class EC2Connection(AWSQueryConnection):
     def revoke_security_group(self, group_name, src_security_group_name=None,
                               src_security_group_owner_id=None,
                               ip_protocol=None, from_port=None, to_port=None,
-                              cidr_ip=None):
+                              cidr_ip=None, group_id=None,
+                              src_security_group_group_id=None):
         """
         Remove an existing rule from an existing security group.
         You need to pass in either src_security_group_name and
@@ -2123,20 +2147,22 @@ class EC2Connection(AWSQueryConnection):
                 return self.revoke_security_group_deprecated(
                     group_name, src_security_group_name,
                     src_security_group_owner_id)
-        params = {'GroupName':group_name}
+        params = {}
+        if group_name:
+            params['GroupName'] = group_name
         if src_security_group_name:
             param_name = 'IpPermissions.1.Groups.1.GroupName'
             params[param_name] = src_security_group_name
         if src_security_group_owner_id:
             param_name = 'IpPermissions.1.Groups.1.UserId'
             params[param_name] = src_security_group_owner_id
-        if ip_protocol is not None:
+        if ip_protocol:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
         if from_port is not None:
             params['IpPermissions.1.FromPort'] = from_port
         if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
-        if cidr_ip is not None:
+        if cidr_ip:
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress',
                                params, verb='POST')
