@@ -82,8 +82,8 @@ try:
 except ImportError:
     import dummy_threading as threading
 
-_SERVER_SOFTWARE = os.environ.get('SERVER_SOFTWARE', '')
-ON_APP_ENGINE = _SERVER_SOFTWARE.startswith('Google App Engine/')
+ON_APP_ENGINE = all(key in os.environ for key in (
+    'USER_IS_ADMIN', 'CURRENT_VERSION_ID', 'APPLICATION_ID'))
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
