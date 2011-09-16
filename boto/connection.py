@@ -82,8 +82,8 @@ try:
 except ImportError:
     import dummy_threading as threading
 
-_SERVER_SOFTWARE = os.environ.get('SERVER_SOFTWARE', '')
-ON_APP_ENGINE = _SERVER_SOFTWARE.startswith('Google App Engine/')
+ON_APP_ENGINE = all(key in os.environ for key in (
+    'USER_IS_ADMIN', 'CURRENT_VERSION_ID', 'APPLICATION_ID'))
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -167,8 +167,15 @@ class HostConnectionPool(object):
         This is ugly, reading a private instance variable, but the
         state we care about isn't available in any public methods.
         """
-        response = conn._HTTPConnection__response
-        return (response is None) or response.isclosed()
+        if ON_APP_ENGINE:
+            # Google App Engine implementation of HTTPConnection doesn't contain
+            # _HTTPConnection__response attribute. Moreover, it's not possible
+            # to determine if given connection is ready. Reusing connections
+            # simply doesn't make sense with App Engine urlfetch service.
+            return False
+        else:
+            response = conn._HTTPConnection__response
+            return (response is None) or response.isclosed()
 
     def clean(self):
         """
