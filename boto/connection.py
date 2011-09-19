@@ -728,8 +728,6 @@ class AWSAuthConnection(object):
                     boto.log.debug('Redirecting: %s' % scheme + '://' + request.host + request.path)
                     connection = self.get_http_connection(request.host, scheme == 'https')
                     continue
-            except KeyboardInterrupt:
-                sys.exit('Keyboard Interrupt')
             except self.http_exceptions, e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
