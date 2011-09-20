@@ -62,7 +62,7 @@ class TaggedEC2Object(EC2Object):
         else:
             return None
 
-    def add_tag(self, key, value=None):
+    def add_tag(self, key, value=''):
         """
         Add a tag to this object.  Tag's are stored by AWS and can be used
         to organize and filter resources.  Adding a tag involves a round-trip
@@ -73,6 +73,8 @@ class TaggedEC2Object(EC2Object):
 
         :type value: str
         :param value: An optional value that can be stored with the tag.
+                      If you want only the tag name and no value, the
+                      value should be the empty string.
         """
         status = self.connection.create_tags([self.id], {key : value})
         if self.tags is None:
@@ -91,7 +93,10 @@ class TaggedEC2Object(EC2Object):
         :param value: An optional value that can be stored with the tag.
                       If a value is provided, it must match the value
                       currently stored in EC2.  If not, the tag will not
-                      be removed.
+                      be removed.  If a value of None is provided, all
+                      tags with the specified name will be deleted.
+                      NOTE: There is an important distinction between
+                      a value of '' and a value of None.
         """
         if value:
             tags = {key : value}
