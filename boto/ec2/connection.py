@@ -2577,7 +2577,10 @@ class EC2Connection(AWSQueryConnection):
         :param resource_ids: List of strings
 
         :type tags: dict
-        :param tags: A dictionary containing the name/value pairs
+        :param tags: A dictionary containing the name/value pairs.
+                     If you want to create only a tag name, the
+                     value for that tag should be the empty string
+                     (e.g. '').
 
         """
         params = {}
@@ -2597,7 +2600,9 @@ class EC2Connection(AWSQueryConnection):
                      or a list containing just tag names.
                      If you pass in a dictionary, the values must
                      match the actual tag values or the tag will
-                     not be deleted.
+                     not be deleted.  If you pass in a value of None
+                     for the tag value, all tags with that name will
+                     be deleted.
 
         """
         if isinstance(tags, list):

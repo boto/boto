@@ -40,7 +40,7 @@ class IObject(object):
             n = 1
             choices = []
             for item in item_list:
-                if isinstance(item, str):
+                if isinstance(item, basestring):
                     print '[%d] %s' % (n, item)
                     choices.append(item)
                     n += 1
