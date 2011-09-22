@@ -271,8 +271,6 @@ class SNSConnection(AWSQueryConnection):
                          * For https, this would be a URL beginning with https
                          * For sqs, this would be the ARN of an SQS Queue
 
-        :rtype: :class:`boto.sdb.domain.Domain` object
-        :return: The newly created domain
         """
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic,
