@@ -228,9 +228,11 @@ class SESConnection(AWSAuthConnection):
 
         """
         params = {
-            'Source': source,
             'RawMessage.Data': base64.b64encode(raw_message),
         }
+        
+        if source:
+            params['Source'] = source
 
         if destinations:
             self._build_list_params(params, destinations,
