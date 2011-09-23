@@ -544,10 +544,10 @@ class Server(Model):
         self.get_ssh_key_file()
         return Bundler(self, uname)
 
-    def get_ssh_client(self, uname='root'):
+    def get_ssh_client(self, uname='root', ssh_pwd=None):
         from boto.manage.cmdshell import SSHClient
         self.get_ssh_key_file()
-        return SSHClient(self, uname=uname)
+        return SSHClient(self, uname=uname, ssh_pwd=ssh_pwd)
 
     def install(self, pkg):
         return self.run('apt-get -y install %s' % pkg)

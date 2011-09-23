@@ -54,14 +54,35 @@ A Note About Regions and Endpoints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Like EC2 the ELB service has a different endpoint for each region. By default
 the US endpoint is used. To choose a specific region, instantiate the
-ELBConnection object with that region's endpoint.
+ELBConnection object with that region's information.
 
->>> ec2 = boto.connect_elb(host='eu-west-1.elasticloadbalancing.amazonaws.com')
+>>> from boto.regioninfo import RegionInfo
+>>> reg = RegionInfo(name='eu-west-1', endpoint='elasticloadbalancing.eu-west-1.amazonaws.com')
+>>> elb = boto.connect_elb(region=reg)
+
+Another way to connect to an alternative region is like this:
+
+>>> import boto.ec2.elb
+>>> elb = boto.ec2.elb.connect_to_region('eu-west-1')
+
+Here's yet another way to discover what regions are available and then
+connect to one:
+
+>>> import boto.ec2.elb
+>>> regions = boto.ec2.elb.regions()
+>>> regions
+[RegionInfo:us-east-1,
+ RegionInfo:ap-northeast-1,
+ RegionInfo:us-west-1,
+ RegionInfo:ap-southeast-1,
+ RegionInfo:eu-west-1]
+>>> elb = regions[-1].connect()
 
 Alternatively, edit your boto.cfg with the default ELB endpoint to use::
 
     [Boto]
-    elb_endpoint = eu-west-1.elasticloadbalancing.amazonaws.com
+    elb_region_name = eu-west-1
+    elb_region_endpoint = elasticloadbalancing.eu-west-1.amazonaws.com
 
 Getting Existing Load Balancers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

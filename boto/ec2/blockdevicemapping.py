@@ -22,16 +22,25 @@
 
 class BlockDeviceType(object):
 
-    def __init__(self, connection=None):
+    def __init__(self,
+                 connection=None,
+                 ephemeral_name=None,
+                 no_device=False,
+                 volume_id=None,
+                 snapshot_id=None,
+                 status=None,
+                 attach_time=None,
+                 delete_on_termination=False,
+                 size=None):
         self.connection = connection
-        self.ephemeral_name = None
-        self.no_device = False
-        self.volume_id = None
-        self.snapshot_id = None
-        self.status = None
-        self.attach_time = None
-        self.delete_on_termination = False
-        self.size = None
+        self.ephemeral_name = ephemeral_name
+        self.no_device = no_device
+        self.volume_id = volume_id
+        self.snapshot_id = snapshot_id
+        self.status = status
+        self.attach_time = attach_time
+        self.delete_on_termination = delete_on_termination
+        self.size = size
 
     def startElement(self, name, attrs, connection):
         pass
@@ -71,7 +80,7 @@ class BlockDeviceMapping(dict):
         self.current_value = None
 
     def startElement(self, name, attrs, connection):
-        if name == 'ebs':
+        if name == 'ebs' or name == 'virtualName':
             self.current_value = BlockDeviceType(self)
             return self.current_value
 

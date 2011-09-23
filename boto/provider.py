@@ -1,6 +1,7 @@
 # Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
 # Copyright 2010 Google Inc.
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,6 +82,11 @@ class Provider(object):
         'google' : 'gs'
     }
 
+    ChunkedTransferSupport = {
+        'aws' : False,
+        'google' : True
+    }
+
     HeaderInfoMap = {
         'aws' : {
             HEADER_PREFIX_KEY : AWS_HEADER_PREFIX,
@@ -114,6 +120,8 @@ class Provider(object):
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
             SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
+            # Note that this version header is not to be confused with
+            # the Google Storage 'x-goog-api-version' header.
             VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY : None,
             MFA_HEADER_KEY : None,
@@ -202,6 +210,9 @@ class Provider(object):
 
     def get_provider_name(self):
         return self.HostKeyMap[self.name]
+
+    def supports_chunked_transfer(self):
+        return self.ChunkedTransferSupport[self.name]
 
 # Static utility method for getting default Provider.
 def get_default():

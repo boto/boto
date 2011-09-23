@@ -1,4 +1,5 @@
 # Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011, Nexenta Systems Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -14,13 +15,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 import mimetypes
 import os
+import re
 import rfc822
 import StringIO
 import base64
@@ -91,7 +93,7 @@ class Key(object):
             if self.bucket.connection:
                 provider = self.bucket.connection.provider
         return provider
-    
+
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
         A utility function to create the 2-tuple (md5hexdigest, base64md5)
@@ -103,7 +105,7 @@ class Key(object):
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
-    
+
     def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
         # If the Key object already has a version_id attribute value, it
@@ -113,30 +115,37 @@ class Key(object):
         # overwrite the version_id in this Key object.  Comprende?
         if self.version_id is None or force:
             self.version_id = resp.getheader(provider.version_id, None)
-        self.source_version_id = resp.getheader(provider.copy_source_version_id, None)
+        self.source_version_id = resp.getheader(provider.copy_source_version_id,
+                                                None)
         if resp.getheader(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
         else:
             self.delete_marker = False
 
     def open_read(self, headers=None, query_args=None,
-                  override_num_retries=None):
+                  override_num_retries=None, response_headers=None):
         """
         Open this key for reading
-        
+
         :type headers: dict
         :param headers: Headers to pass in the web request
-        
+
         :type query_args: string
         :param query_args: Arguments to pass in the query string (ie, 'torrent')
-        
+
         :type override_num_retries: int
         :param override_num_retries: If not None will override configured
                                      num_retries parameter for underlying GET.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         if self.resp == None:
             self.mode = 'r'
-            
+
             provider = self.bucket.connection.provider
             self.resp = self.bucket.connection.make_request(
                 'GET', self.bucket.name, self.name, headers,
@@ -150,8 +159,15 @@ class Key(object):
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
             for name,value in response_headers.items():
-                if name.lower() == 'content-length':
+                # To get correct size for Range GETs, use Content-Range
+                # header if one was returned. If not, use Content-Length
+                # header.
+                if (name.lower() == 'content-length' and
+                    'Content-Range' not in response_headers):
                     self.size = int(value)
+                elif name.lower() == 'content-range':
+                    end_range = re.sub('.*/(.*)', '\\1', value)
+                    self.size = int(end_range)
                 elif name.lower() == 'etag':
                     self.etag = value
                 elif name.lower() == 'content-type':
@@ -166,9 +182,9 @@ class Key(object):
 
     def open_write(self, headers=None, override_num_retries=None):
         """
-        Open this key for writing. 
+        Open this key for writing.
         Not yet implemented
-        
+
         :type headers: dict
         :param headers: Headers to pass in the write request
 
@@ -198,7 +214,7 @@ class Key(object):
         self.resp = None
         self.mode = None
         self.closed = True
-    
+
     def next(self):
         """
         By providing a next method, the key object supports use as an iterator.
@@ -217,10 +233,11 @@ class Key(object):
         return data
 
     def read(self, size=0):
-        if size == 0:
-            size = self.BufferSize
         self.open_read()
-        data = self.resp.read(size)
+        if size == 0:
+            data = self.resp.read()
+        else:
+            data = self.resp.read(size)
         if not data:
             self.close()
         return data
@@ -244,7 +261,7 @@ class Key(object):
         :param dst_bucket: The name of a destination bucket.  If not
                            provided the current bucket of the key
                            will be used.
-                                  
+
         """
         if new_storage_class == 'STANDARD':
             return self.copy(self.bucket.name, self.name,
@@ -266,7 +283,7 @@ class Key(object):
 
         :type dst_key: string
         :param dst_key: The name of the destination key
-        
+
         :type metadata: dict
         :param metadata: Metadata to be associated with new key.
                          If metadata is supplied, it will replace the
@@ -338,7 +355,7 @@ class Key(object):
     def exists(self):
         """
         Returns True if the key exists
-        
+
         :rtype: bool
         :return: Whether the key exists on S3
         """
@@ -358,7 +375,7 @@ class Key(object):
 
     def update_metadata(self, d):
         self.metadata.update(d)
-    
+
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str, headers=None):
         if self.bucket != None:
@@ -378,51 +395,56 @@ class Key(object):
 
     def set_canned_acl(self, acl_str, headers=None):
         return self.bucket.set_canned_acl(acl_str, self.name, headers)
-        
+
     def make_public(self, headers=None):
         return self.bucket.set_canned_acl('public-read', self.name, headers)
 
     def generate_url(self, expires_in, method='GET', headers=None,
-                     query_auth=True, force_http=False):
+                     query_auth=True, force_http=False, response_headers=None):
         """
         Generate a URL to access this key.
-        
+
         :type expires_in: int
         :param expires_in: How long the url is valid for, in seconds
-        
+
         :type method: string
-        :param method: The method to use for retrieving the file (default is GET)
-        
+        :param method: The method to use for retrieving the file
+                       (default is GET)
+
         :type headers: dict
         :param headers: Any headers to pass along in the request
-        
+
         :type query_auth: bool
-        :param query_auth: 
-        
+        :param query_auth:
+
         :rtype: string
         :return: The URL to access the key
         """
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
-                                                   headers, query_auth, force_http)
+                                                   headers, query_auth,
+                                                   force_http,
+                                                   response_headers)
 
-    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None,
+							chunked_transfer=False):
         """
         Upload a file to a key into a bucket on S3.
-        
+
         :type fp: file
         :param fp: The file pointer to upload
-        
+
         :type headers: dict
         :param headers: The headers to pass along with the PUT request
-        
+
         :type cb: function
         :param cb: a callback function that will be called to report
-                    progress on the upload.  The callback should accept two integer
-                    parameters, the first representing the number of bytes that have
-                    been successfully transmitted to S3 and the second representing
-                    the total number of bytes that need to be transmitted.
-                    
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the cb
                        parameter this parameter determines the granularity
@@ -430,7 +452,7 @@ class Key(object):
                        times the callback will be called during the file
                        transfer. Providing a negative integer will cause
                        your callback to be called with each buffer read.
-             
+
         """
         provider = self.bucket.connection.provider
 
@@ -439,12 +461,28 @@ class Key(object):
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-            fp.seek(0)
+            if chunked_transfer:
+                # MD5 for the stream has to be calculated on the fly, as
+                # we don't know the size of the stream before hand.
+                m = md5()
+            else:
+                fp.seek(0)
+
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
-            http_conn.set_debuglevel(0)
+            # If the debuglevel < 3 we don't want to show connection
+            # payload, so turn off HTTP connection-level debug output (to
+            # be restored below).
+            # Use the getattr approach to allow this to work in AppEngine.
+            if getattr(http_conn, 'debuglevel', 0) < 3:
+                http_conn.set_debuglevel(0)
             if cb:
-                if num_cb > 2:
+                if chunked_transfer:
+                    # For chunked Transfer, we call the cb for every 1MB
+                    # of data transferred.
+                    cb_count = (1024 * 1024)/self.BufferSize
+                    self.size = 0
+                elif num_cb > 2:
                     cb_count = self.size / self.BufferSize / (num_cb-2)
                 elif num_cb < 0:
                     cb_count = -1
@@ -454,24 +492,39 @@ class Key(object):
                 cb(total_bytes, self.size)
             l = fp.read(self.BufferSize)
             while len(l) > 0:
-                http_conn.send(l)
+                if chunked_transfer:
+                    http_conn.send('%x;\r\n' % len(l))
+                    http_conn.send(l)
+                    http_conn.send('\r\n')
+                else:
+                    http_conn.send(l)
                 if cb:
                     total_bytes += len(l)
                     i += 1
                     if i == cb_count or cb_count == -1:
                         cb(total_bytes, self.size)
                         i = 0
+                if chunked_transfer:
+                    m.update(l)
                 l = fp.read(self.BufferSize)
+            if chunked_transfer:
+                http_conn.send('0\r\n')
+                http_conn.send('\r\n')
+                if cb:
+                    self.size = total_bytes
+                # Get the md5 which is calculated on the fly.
+                self.md5 = m.hexdigest()
+            else:
+                fp.seek(0)
             if cb:
                 cb(total_bytes, self.size)
             response = http_conn.getresponse()
             body = response.read()
-            fp.seek(0)
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
-            if response.status == 500 or response.status == 503 or \
-                    response.getheader('location'):
-                # we'll try again
+            if ((response.status == 500 or response.status == 503 or
+                    response.getheader('location')) and not chunked_transfer):
+                # we'll try again.
                 return response
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
@@ -488,7 +541,8 @@ class Key(object):
         else:
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
-        headers['Content-MD5'] = self.base64md5
+        if self.base64md5:
+            headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
@@ -502,7 +556,8 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
-        headers['Content-Length'] = str(self.size)
+        if not chunked_transfer:
+            headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request('PUT', self.bucket.name,
@@ -514,9 +569,10 @@ class Key(object):
     def compute_md5(self, fp):
         """
         :type fp: file
-        :param fp: File pointer to the file to MD5 hash.  The file pointer will be
-                   reset to the beginning of the file before the method returns.
-        
+        :param fp: File pointer to the file to MD5 hash.  The file pointer
+                   will be reset to the beginning of the file before the
+                   method returns.
+
         :rtype: tuple
         :return: A tuple containing the hex digest version of the MD5 hash
                  as the first element and the base64 encoded version of the
@@ -536,6 +592,87 @@ class Key(object):
         fp.seek(0)
         return (hex_md5, base64md5)
 
+    def set_contents_from_stream(self, fp, headers=None, replace=True,
+                                cb=None, num_cb=10, policy=None,
+                                reduced_redundancy=False, query_args=None):
+        """
+        Store an object using the name of the Key object as the key in
+        cloud and the contents of the data stream pointed to by 'fp' as
+        the contents.
+        The stream object is not seekable and total size is not known.
+        This has the implication that we can't specify the Content-Size and
+        Content-MD5 in the header. So for huge uploads, the delay in calculating
+        MD5 is avoided but with a penalty of inability to verify the integrity
+        of the uploaded data.
+
+        :type fp: file
+        :param fp: the file whose contents are to be uploaded
+
+        :type headers: dict
+        :param headers: additional HTTP headers to be sent with the PUT request.
+
+        :type replace: bool
+        :param replace: If this parameter is False, the method will first check
+            to see if an object exists in the bucket with the same key. If it
+            does, it won't overwrite it. The default value is True which will
+            overwrite the object.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload. The callback should accept two integer
+            parameters, the first representing the number of bytes that have
+            been successfully transmitted to GS and the second representing the
+            total number of bytes that need to be transmitted.
+
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the cb
+            parameter, this parameter determines the granularity of the callback
+            by defining the maximum number of times the callback will be called
+            during the file transfer.
+
+        :type policy: :class:`boto.gs.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key
+            in GS.
+
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
+                                   redundancy at lower storage cost.
+        """
+
+        provider = self.bucket.connection.provider
+        if not provider.supports_chunked_transfer():
+            raise BotoClientError('%s does not support chunked transfer'
+                % provider.get_provider_name())
+
+        # Name of the Object should be specified explicitly for Streams.
+        if not self.name or self.name == '':
+            raise BotoClientError('Cannot determine the destination '
+                                'object name for the given stream')
+
+        if headers is None:
+            headers = {}
+        if policy:
+            headers[provider.acl_header] = policy
+
+        # Set the Transfer Encoding for Streams.
+        headers['Transfer-Encoding'] = 'chunked'
+
+        if reduced_redundancy:
+            self.storage_class = 'REDUCED_REDUNDANCY'
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
+
+        if self.bucket != None:
+            if not replace:
+                k = self.bucket.lookup(self.name)
+                if k:
+                    return
+            self.send_file(fp, headers, cb, num_cb, query_args,
+                                            chunked_transfer=True)
+
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                reduced_redundancy=False, query_args=None):
@@ -543,12 +680,13 @@ class Key(object):
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
         contents.
-        
+
         :type fp: file
         :param fp: the file whose contents to upload
-        
+
         :type headers: dict
-        :param headers: additional HTTP headers that will be sent with the PUT request.
+        :param headers: Additional HTTP headers that will be sent with
+                        the PUT request.
 
         :type replace: bool
         :param replace: If this parameter is False, the method
@@ -556,29 +694,36 @@ class Key(object):
                         bucket with the same key.  If it does, it won't
                         overwrite it.  The default value is True which will
                         overwrite the object.
-                    
+
         :type cb: function
         :param cb: a callback function that will be called to report
-                    progress on the upload.  The callback should accept two integer
-                    parameters, the first representing the number of bytes that have
-                    been successfully transmitted to S3 and the second representing
-                    the total number of bytes that need to be transmitted.
-                    
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.
+        :param num_cb: (optional) If a callback is specified with the cb
+                       parameter this parameter determines the granularity
+                       of the callback by defining the maximum number of
+                       times the callback will be called during the
+                       file transfer.
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
-             
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
-                   file as the first element and the Base64-encoded version of the plain
-                   checksum as the second element.  This is the same format returned by
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
                    the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to upload,
-                    it's silly to have to do it twice so this param, if present, will be
-                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values of
+                    the file.  Otherwise, the checksum will be computed.
+
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
@@ -592,11 +737,12 @@ class Key(object):
             headers = {}
         if policy:
             headers[provider.acl_header] = policy
+
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
             if provider.storage_class_header:
                 headers[provider.storage_class_header] = self.storage_class
-                # TODO - What if the provider doesn't support reduced reduncancy?
+                # TODO - What if provider doesn't support reduced reduncancy?
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
@@ -626,39 +772,47 @@ class Key(object):
         key in S3 and the contents of the file named by 'filename'.
         See set_contents_from_file method for details about the
         parameters.
-        
+
         :type filename: string
         :param filename: The name of the file that you want to put onto S3
-        
+
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to AWS.
-        
+        :param headers: Additional headers to pass along with the
+                        request to AWS.
+
         :type replace: bool
-        :param replace: If True, replaces the contents of the file if it already exists.
-        
+        :param replace: If True, replaces the contents of the file
+                        if it already exists.
+
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.        
-                    
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
-             
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
-                   file as the first element and the Base64-encoded version of the plain
-                   checksum as the second element.  This is the same format returned by
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
                    the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to upload,
-                    it's silly to have to do it twice so this param, if present, will be
-                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
-                    
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values
+                    of the file.  Otherwise, the checksum will be computed.
+
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
@@ -679,36 +833,44 @@ class Key(object):
         key in S3 and the string 's' as the contents.
         See set_contents_from_file method for details about the
         parameters.
-        
+
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to AWS.
-        
+        :param headers: Additional headers to pass along with the
+                        request to AWS.
+
         :type replace: bool
-        :param replace: If True, replaces the contents of the file if it already exists.
-        
+        :param replace: If True, replaces the contents of the file if
+                        it already exists.
+
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.        
-                    
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
-             
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum of the
-                   file as the first element and the Base64-encoded version of the plain
-                   checksum as the second element.  This is the same format returned by
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
                    the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to upload,
-                    it's silly to have to do it twice so this param, if present, will be
-                    used as the MD5 values of the file.  Otherwise, the checksum will be computed.
-                    
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values
+                    of the file.  Otherwise, the checksum will be computed.
+
         :type reduced_redundancy: bool
         :param reduced_redundancy: If True, this will set the storage
                                    class of the new Key to be
@@ -716,6 +878,8 @@ class Key(object):
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
         """
+        if isinstance(s, unicode):
+            s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy)
@@ -723,35 +887,44 @@ class Key(object):
         return r
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
-                 torrent=False, version_id=None, override_num_retries=None):
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None):
         """
         Retrieves a file from an S3 Key
-        
+
         :type fp: file
         :param fp: File pointer to put the data into
-        
+
         :type headers: string
         :param: headers to send when retrieving the files
-        
+
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.
-        
-                    
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         :type torrent: bool
         :param torrent: Flag for whether to get a torrent for the file
 
         :type override_num_retries: int
         :param override_num_retries: If not None will override configured
                                      num_retries parameter for underlying GET.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         if cb:
             if num_cb > 2:
@@ -765,17 +938,21 @@ class Key(object):
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
-        
-        query_args = ''
+
+        query_args = []
         if torrent:
-            query_args = 'torrent'
+            query_args.append('torrent')
         # If a version_id is passed in, use that.  If not, check to see
         # if the Key object has an explicit version_id and, if so, use that.
         # Otherwise, don't pass a version_id query param.
         if version_id is None:
             version_id = self.version_id
         if version_id:
-            query_args = 'versionId=%s' % version_id
+            query_args.append('versionId=%s' % version_id)
+        if response_headers:
+            for key in response_headers:
+                query_args.append('%s=%s' % (key, response_headers[key]))
+        query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
         for bytes in self:
@@ -794,60 +971,77 @@ class Key(object):
     def get_torrent_file(self, fp, headers=None, cb=None, num_cb=10):
         """
         Get a torrent file (see to get_file)
-        
+
         :type fp: file
         :param fp: The file pointer of where to put the torrent
-        
+
         :type headers: dict
         :param headers: Headers to be passed
-        
+
         :type cb: function
-        :param cb: Callback function to call on retrieved data
-        
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         """
         return self.get_file(fp, headers, cb, num_cb, torrent=True)
-    
+
     def get_contents_to_file(self, fp, headers=None,
                              cb=None, num_cb=10,
                              torrent=False,
                              version_id=None,
-                             res_download_handler=None):
+                             res_download_handler=None,
+                             response_headers=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Write the contents of the object to the file pointed
         to by 'fp'.
-        
+
         :type fp: File -like object
         :param fp:
-        
+
         :type headers: dict
-        :param headers: additional HTTP headers that will be sent with the GET request.
-        
+        :param headers: additional HTTP headers that will be sent with
+                        the GET request.
+
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.
-             
-                    
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         :type torrent: bool
-        :param torrent: If True, returns the contents of a torrent file as a string.
+        :param torrent: If True, returns the contents of a torrent
+                        file as a string.
 
         :type res_upload_handler: ResumableDownloadHandler
-        :param res_download_handler: If provided, this handler will perform the
-            download.
+        :param res_download_handler: If provided, this handler will
+                                     perform the download.
 
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         if self.bucket != None:
             if res_download_handler:
@@ -856,50 +1050,61 @@ class Key(object):
                                               version_id=version_id)
             else:
                 self.get_file(fp, headers, cb, num_cb, torrent=torrent,
-                              version_id=version_id)
+                              version_id=version_id,
+                              response_headers=response_headers)
 
     def get_contents_to_filename(self, filename, headers=None,
                                  cb=None, num_cb=10,
                                  torrent=False,
                                  version_id=None,
-                                 res_download_handler=None):
+                                 res_download_handler=None,
+                                 response_headers=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Store contents of the object to a file named by 'filename'.
         See get_contents_to_file method for details about the
         parameters.
-        
+
         :type filename: string
         :param filename: The filename of where to put the file contents
-        
+
         :type headers: dict
         :param headers: Any additional headers to send in the request
-        
+
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.
-             
-                    
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         :type torrent: bool
-        :param torrent: If True, returns the contents of a torrent file as a string.
+        :param torrent: If True, returns the contents of a torrent file
+                        as a string.
 
         :type res_upload_handler: ResumableDownloadHandler
-        :param res_download_handler: If provided, this handler will perform the
-            download.
+        :param res_download_handler: If provided, this handler will
+                                     perform the download.
 
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         """
         fp = open(filename, 'wb')
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
                                   version_id=version_id,
-                                  res_download_handler=res_download_handler)
+                                  res_download_handler=res_download_handler,
+                                  response_headers=response_headers)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
@@ -912,81 +1117,100 @@ class Key(object):
     def get_contents_as_string(self, headers=None,
                                cb=None, num_cb=10,
                                torrent=False,
-                               version_id=None):
+                               version_id=None,
+                               response_headers=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
         See get_contents_to_file method for details about the
         parameters.
-        
+
         :type headers: dict
         :param headers: Any additional headers to send in the request
-        
+
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-             progress on the download.  The callback should accept two integer
-             parameters, the first representing the number of bytes that have
-             been successfully transmitted from S3 and the second representing
-             the total number of bytes that need to be transmitted.
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
 
         :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
-                    
-        :type cb: int
-        :param num_cb: (optional) If a callback is specified with the cb parameter
-             this parameter determines the granularity of the callback by defining
-             the maximum number of times the callback will be called during the file transfer.  
-             
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
         :type torrent: bool
-        :param torrent: If True, returns the contents of a torrent file as a string.
-        
+        :param torrent: If True, returns the contents of a torrent file
+                        as a string.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
+
         :rtype: string
         :returns: The contents of the file as a string
         """
         fp = StringIO.StringIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id)
+                                  version_id=version_id,
+                                  response_headers=response_headers)
         return fp.getvalue()
 
     def add_email_grant(self, permission, email_address, headers=None):
         """
-        Convenience method that provides a quick way to add an email grant to a key.
-        This method retrieves the current ACL, creates a new grant based on the parameters
-        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
-        
+        Convenience method that provides a quick way to add an email grant
+        to a key. This method retrieves the current ACL, creates a new
+        grant based on the parameters passed in, adds that grant to the ACL
+        and then PUT's the new ACL back to S3.
+
         :type permission: string
-        :param permission: The permission being granted.  Should be one of:
-                            READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
-                            See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
-                            for more details on permissions.
-        
+        :param permission: The permission being granted. Should be one of:
+                           (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
+
         :type email_address: string
-        :param email_address: The email address associated with the AWS account your are granting
-                                the permission to.
+        :param email_address: The email address associated with the AWS
+                              account your are granting the permission to.
+
+        :type recursive: boolean
+        :param recursive: A boolean value to controls whether the command
+                          will apply the grant to all keys within the bucket
+                          or not.  The default value is False.  By passing a
+                          True value, the call will iterate through all keys
+                          in the bucket and apply the same grant to each key.
+                          CAUTION: If you have a lot of keys, this could take
+                          a long time!
         """
         policy = self.get_acl(headers=headers)
         policy.acl.add_email_grant(permission, email_address)
         self.set_acl(policy, headers=headers)
 
-    def add_user_grant(self, permission, user_id):
+    def add_user_grant(self, permission, user_id, headers=None,
+                       display_name=None):
         """
-        Convenience method that provides a quick way to add a canonical user grant to a key.
-        This method retrieves the current ACL, creates a new grant based on the parameters
-        passed in, adds that grant to the ACL and then PUT's the new ACL back to S3.
-        
+        Convenience method that provides a quick way to add a canonical
+        user grant to a key.  This method retrieves the current ACL,
+        creates a new grant based on the parameters passed in, adds that
+        grant to the ACL and then PUT's the new ACL back to S3.
+
         :type permission: string
-        :param permission: The permission being granted.  Should be one of:
-                            READ|WRITE|READ_ACP|WRITE_ACP|FULL_CONTROL
-                            See http://docs.amazonwebservices.com/AmazonS3/2006-03-01/UsingAuthAccess.html
-                            for more details on permissions.
-        
+        :param permission: The permission being granted. Should be one of:
+                           (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
+
         :type user_id: string
-        :param user_id: The canonical user id associated with the AWS account your are granting
-                        the permission to.
+        :param user_id:     The canonical user id associated with the AWS
+                            account your are granting the permission to.
+
+        :type display_name: string
+        :param display_name: An option string containing the user's
+                             Display Name.  Only required on Walrus.
         """
         policy = self.get_acl()
-        policy.acl.add_user_grant(permission, user_id)
-        self.set_acl(policy)
+        policy.acl.add_user_grant(permission, user_id,
+                                  display_name=display_name)
+        self.set_acl(policy, headers=headers)

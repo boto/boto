@@ -1,4 +1,5 @@
 # Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011 Chris Moyer http://coredumped.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,18 +21,39 @@
 # IN THE SOFTWARE.
 #
 import StringIO, os, re
+import warnings
 import ConfigParser
 import boto
 
+# If running in Google App Engine there is no "user" and
+# os.path.expanduser() will fail. Attempt to detect this case and use a
+# no-op expanduser function in this case.
+try:
+  os.path.expanduser('~')
+  expanduser = os.path.expanduser
+except (AttributeError, ImportError):
+  # This is probably running on App Engine.
+  expanduser = (lambda x: x)
+
+# By default we use two locations for the boto configurations,
+# /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
+UserConfigPath = os.path.join(expanduser('~'), '.boto')
+BotoConfigLocations.append(UserConfigPath)
+
+# If there's a BOTO_CONFIG variable set, we load ONLY 
+# that variable
 if 'BOTO_CONFIG' in os.environ:
-    BotoConfigLocations = [os.path.expanduser(os.environ['BOTO_CONFIG'])]
-elif 'HOME' in os.environ:
-    UserConfigPath = os.path.expanduser('~/.boto')
-    BotoConfigLocations.append(UserConfigPath)
-else:
-    UserConfigPath = None
+    BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
+
+# If there's a BOTO_PATH variable set, we use anything there
+# as the current configuration locations, split with colons
+elif 'BOTO_PATH' in os.environ:
+    BotoConfigLocations = []
+    for path in os.environ['BOTO_PATH'].split(":"):
+        BotoConfigLocations.append(expanduser(path))
+
 
 class Config(ConfigParser.SafeConfigParser):
 
@@ -46,7 +68,11 @@ class Config(ConfigParser.SafeConfigParser):
             else:
                 self.read(BotoConfigLocations)
             if "AWS_CREDENTIAL_FILE" in os.environ:
-                self.load_credential_file(os.path.expanduser(os.environ['AWS_CREDENTIAL_FILE']))
+                full_path = expanduser(os.environ['AWS_CREDENTIAL_FILE'])
+                try:
+                    self.load_credential_file(full_path)
+                except IOError:
+                    warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
@@ -170,7 +196,11 @@ class Config(ConfigParser.SafeConfigParser):
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
     
     def dump_to_sdb(self, domain_name, item_name):
-        import simplejson
+        try:
+            import simplejson as json
+        except ImportError:
+            import json
+
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         if not domain:
@@ -181,18 +211,22 @@ class Config(ConfigParser.SafeConfigParser):
             d = {}
             for option in self.options(section):
                 d[option] = self.get(section, option)
-            item[section] = simplejson.dumps(d)
+            item[section] = json.dumps(d)
         item.save()
 
     def load_from_sdb(self, domain_name, item_name):
-        import simplejson
+        try:
+            import json
+        except ImportError:
+            import simplejson as json
+
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         item = domain.get_item(item_name)
         for section in item.keys():
             if not self.has_section(section):
                 self.add_section(section)
-            d = simplejson.loads(item[section])
+            d = json.loads(item[section])
             for attr_name in d.keys():
                 attr_value = d[attr_name]
                 if attr_value == None:

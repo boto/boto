@@ -76,12 +76,14 @@ class KeyPair(EC2Object):
         :return: True if successful.
         """
         if self.material:
+            directory_path = os.path.expanduser(directory_path)
             file_path = os.path.join(directory_path, '%s.pem' % self.name)
             if os.path.exists(file_path):
                 raise BotoClientError('%s already exists, it will not be overwritten' % file_path)
             fp = open(file_path, 'wb')
             fp.write(self.material)
             fp.close()
+            os.chmod(file_path, 0600)
             return True
         else:
             raise BotoClientError('KeyPair contains no material')

@@ -72,9 +72,9 @@ class MTurkConnection(AWSQueryConnection):
                           keywords=None, approval_delay=None, qual_req=None):
         """
         Register a new HIT Type
-        \ttitle, description are strings
-        \treward is a Price object
-        \tduration can be a timedelta, or an object castable to an int
+        title, description are strings
+        reward is a Price object
+        duration can be a timedelta, or an object castable to an int
         """
         params = dict(
             Title=title,
@@ -228,8 +228,9 @@ class MTurkConnection(AWSQueryConnection):
         Change the HIT type of an existing HIT. Note that the reward associated
         with the new HIT type must match the reward of the current HIT type in
         order for the operation to be valid.
-        \thit_id is a string
-        \thit_type is a string
+        
+        :type hit_id: str
+        :type hit_type: str
         """
         params = {'HITId' : hit_id,
                   'HITTypeId': hit_type}
@@ -515,11 +516,213 @@ class MTurkConnection(AWSQueryConnection):
         """
         Send a text message to workers.
         """
-        params = {'WorkerId' : worker_ids,
-                  'Subject' : subject,
+        params = {'Subject' : subject,
                   'MessageText': message_text}
+        self.build_list_params(params, worker_ids, 'WorkerId')
 
         return self._process_request('NotifyWorkers', params)
+
+    def create_qualification_type(self,
+                                  name,
+                                  description,
+                                  status,
+                                  keywords=None,
+                                  retry_delay=None,
+                                  test=None,
+                                  answer_key=None,
+                                  answer_key_xml=None,
+                                  test_duration=None,
+                                  auto_granted=False,
+                                  auto_granted_value=1):
+        """
+        Create a new Qualification Type.
+
+        name: This will be visible to workers and must be unique for a
+           given requester.
+
+        description: description shown to workers.  Max 2000 characters.
+
+        status: 'Active' or 'Inactive'
+
+        keywords: list of keyword strings or comma separated string.
+           Max length of 1000 characters when concatenated with commas.
+
+        retry_delay: number of seconds after requesting a
+           qualification the worker must wait before they can ask again.
+           If not specified, workers can only request this qualification
+           once.
+
+        test: a QuestionForm
+
+        answer_key: an XML string of your answer key, for automatically
+           scored qualification tests.
+           (Consider implementing an AnswerKey class for this to support.)
+
+        test_duration: the number of seconds a worker has to complete the test.
+
+        auto_granted: if True, requests for the Qualification are granted immediately.
+          Can't coexist with a test.
+
+        auto_granted_value: auto_granted qualifications are given this value.
+
+        """
+
+        params = {'Name' : name,
+                  'Description' : description,
+                  'QualificationTypeStatus' : status,
+                  }
+        if retry_delay is not None:
+            params['RetryDelay'] = retry_delay
+
+        if test is not None:
+            assert(isinstance(test, QuestionForm))
+            assert(test_duration is not None)
+            params['Test'] = test.get_as_xml()
+
+        if test_duration is not None:
+            params['TestDurationInSeconds'] = test_duration
+
+        if answer_key is not None:
+            if isinstance(answer_key, basestring):
+                params['AnswerKey'] = answer_key # xml
+            else:
+                raise TypeError
+                # Eventually someone will write an AnswerKey class.
+
+        if auto_granted:
+            assert(test is False)
+            params['AutoGranted'] = True
+            params['AutoGrantedValue'] = auto_granted_value
+
+        if keywords:
+            params['Keywords'] = self.get_keywords_as_string(keywords)
+
+        return self._process_request('CreateQualificationType', params,
+                                     [('QualificationType', QualificationType),])
+
+    def get_qualification_type(self, qualification_type_id):
+        params = {'QualificationTypeId' : qualification_type_id }
+        return self._process_request('GetQualificationType', params,
+                                     [('QualificationType', QualificationType),])
+
+    def get_qualifications_for_qualification_type(self, qualification_type_id):
+        params = {'QualificationTypeId' : qualification_type_id }
+        return self._process_request('GetQualificationsForQualificationType', params,
+                                     [('QualificationType', QualificationType),])
+
+    def update_qualification_type(self, qualification_type_id,
+                                  description=None,
+                                  status=None,
+                                  retry_delay=None,
+                                  test=None,
+                                  answer_key=None,
+                                  test_duration=None,
+                                  auto_granted=None,
+                                  auto_granted_value=None):
+
+        params = {'QualificationTypeId' : qualification_type_id }
+
+        if description is not None:
+            params['Description'] = description
+
+        if status is not None:
+            params['QualificationTypeStatus'] = status
+
+        if retry_delay is not None:
+            params['RetryDelay'] = retry_delay
+
+        if test is not None:
+            assert(isinstance(test, QuestionForm))
+            params['Test'] = test.get_as_xml()
+
+        if test_duration is not None:
+            params['TestDuration'] = test_duration
+
+        if answer_key is not None:
+            if isinstance(answer_key, basestring):
+                params['AnswerKey'] = answer_key # xml
+            else:
+                raise TypeError
+                # Eventually someone will write an AnswerKey class.
+
+        if auto_granted is not None:
+            params['AutoGranted'] = auto_granted
+
+        if auto_granted_value is not None:
+            params['AutoGrantedValue'] = auto_granted_value
+
+        return self._process_request('UpdateQualificationType', params,
+                                     [('QualificationType', QualificationType),])
+
+    def dispose_qualification_type(self, qualification_type_id):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id}
+        return self._process_request('DisposeQualificationType', params)
+
+    def search_qualification_types(self, query=None, sort_by='Name',
+                                   sort_direction='Ascending', page_size=10,
+                                   page_number=1, must_be_requestable=True,
+                                   must_be_owned_by_caller=True):
+        """TODO: Document."""
+        params = {'Query' : query,
+                  'SortProperty' : sort_by,
+                  'SortDirection' : sort_direction,
+                  'PageSize' : page_size,
+                  'PageNumber' : page_number,
+                  'MustBeRequestable' : must_be_requestable,
+                  'MustBeOwnedByCaller' : must_be_owned_by_caller}
+        return self._process_request('SearchQualificationTypes', params,
+                    [('QualificationType', QualificationType),])
+
+    def get_qualification_requests(self, qualification_type_id,
+                                   sort_by='Expiration',
+                                   sort_direction='Ascending', page_size=10,
+                                   page_number=1):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SortProperty' : sort_by,
+                  'SortDirection' : sort_direction,
+                  'PageSize' : page_size,
+                  'PageNumber' : page_number}
+        return self._process_request('GetQualificationRequests', params,
+                    [('QualificationRequest', QualificationRequest),])
+
+    def grant_qualification(self, qualification_request_id, integer_value=1):
+        """TODO: Document."""
+        params = {'QualificationRequestId' : qualification_request_id,
+                  'IntegerValue' : integer_value}
+        return self._process_request('GrantQualification', params)
+
+    def revoke_qualification(self, subject_id, qualification_type_id,
+                             reason=None):
+        """TODO: Document."""
+        params = {'SubjectId' : subject_id,
+                  'QualificationTypeId' : qualification_type_id,
+                  'Reason' : reason}
+        return self._process_request('RevokeQualification', params)
+
+    def assign_qualification(self, qualification_type_id, worker_id,
+                             value=1, send_notification=True):
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'WorkerId' : worker_id,
+                  'IntegerValue' : value,
+                  'SendNotification' : send_notification}
+        return self._process_request('AssignQualification', params)
+
+    def get_qualification_score(self, qualification_type_id, worker_id):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id}
+        return self._process_request('GetQualificationScore', params,
+                    [('Qualification', Qualification),])
+
+    def update_qualification_score(self, qualification_type_id, worker_id,
+                                   value):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id,
+                  'IntegerValue' : value}
+        return self._process_request('UpdateQualificationScore', params)
 
     def _process_request(self, request_type, params, marker_elems=None):
         """
@@ -617,6 +820,42 @@ class HIT(BaseAutoResultElement):
     # are we there yet?
     expired = property(_has_expired)
 
+class Qualification(BaseAutoResultElement):
+    """
+    Class to extract an Qualification structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide such as
+    QualificationTypeId, IntegerValue. Does not seem to contain GrantTime.
+    """
+    
+    pass
+
+class QualificationType(BaseAutoResultElement):
+    """
+    Class to extract an QualificationType structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide, 
+    e.g. QualificationTypeId, CreationTime, Name, etc
+    """
+    
+    pass
+
+class QualificationRequest(BaseAutoResultElement):
+    """
+    Class to extract an QualificationRequest structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide, 
+    e.g. QualificationRequestId, QualificationTypeId, SubjectId, etc
+
+    TODO: Ensure that Test and Answer attribute are treated properly if the
+          qualification requires a test. These attributes are XML-encoded.
+    """
+    
+    pass
+
 class Assignment(BaseAutoResultElement):
     """
     Class to extract an Assignment structure from a response (used in
@@ -669,7 +908,7 @@ class QuestionFormAnswer(BaseAutoResultElement):
     def endElement(self, name, value, connection):
         if name == 'QuestionIdentifier':
             self.qid = value
-        elif name in ['FreeText', 'SelectionIdentifier'] and self.qid:
+        elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
             self.fields.append((self.qid,value))
         elif name == 'Answer':
             self.qid = None

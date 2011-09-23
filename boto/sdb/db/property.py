@@ -75,7 +75,7 @@ class Property(object):
         self.slot_name = '_' + self.name
 
     def default_validator(self, value):
-        if value == self.default_value():
+        if isinstance(value, basestring) or value == self.default_value():
             return
         if not isinstance(value, self.data_type):
             raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
@@ -135,6 +135,7 @@ class TextProperty(Property):
         self.max_length = max_length
 
     def validate(self, value):
+        value = super(TextProperty, self).validate(value)
         if not isinstance(value, str) and not isinstance(value, unicode):
             raise TypeError, 'Expecting Text, got %s' % type(value)
         if self.max_length and len(value) > self.max_length:
@@ -142,18 +143,67 @@ class TextProperty(Property):
 
 class PasswordProperty(StringProperty):
     """
-    Hashed property who's original value can not be
-    retrieved, but still can be compaired.
+
+    Hashed property whose original value can not be
+    retrieved, but still can be compared.
+
+    Works by storing a hash of the original value instead
+    of the original value.  Once that's done all that
+    can be retrieved is the hash.
+
+    The comparison
+
+       obj.password == 'foo' 
+
+    generates a hash of 'foo' and compares it to the
+    stored hash.
+
+    Underlying data type for hashing, storing, and comparing
+    is boto.utils.Password.  The default hash function is
+    defined there ( currently sha512 in most cases, md5
+    where sha512 is not available )
+
+    It's unlikely you'll ever need to use a different hash
+    function, but if you do, you can control the behavior 
+    in one of two ways:
+
+      1) Specifying hashfunc in PasswordProperty constructor
+
+         import hashlib
+
+         class MyModel(model):
+             password = PasswordProperty(hashfunc=hashlib.sha224)
+
+      2) Subclassing Password and PasswordProperty
+        
+         class SHA224Password(Password):
+             hashfunc=hashlib.sha224
+
+         class SHA224PasswordProperty(PasswordProperty):
+             data_type=MyPassword
+             type_name="MyPassword"
+
+         class MyModel(Model):
+             password = SHA224PasswordProperty()
+
     """
     data_type = Password
     type_name = 'Password'
 
     def __init__(self, verbose_name=None, name=None, default='', required=False,
-                 validator=None, choices=None, unique=False):
+                 validator=None, choices=None, unique=False, hashfunc=None):
+
+        """
+           The hashfunc parameter overrides the default hashfunc in boto.utils.Password.
+
+           The remaining parameters are passed through to StringProperty.__init__"""
+
+
         StringProperty.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+        self.hashfunc=hashfunc
 
     def make_value_from_datastore(self, value):
-        p = Password(value)
+        p = self.data_type(value, hashfunc=self.hashfunc)
         return p
 
     def get_value_for_datastore(self, model_instance):
@@ -164,22 +214,22 @@ class PasswordProperty(StringProperty):
             return None
 
     def __set__(self, obj, value):
-        if not isinstance(value, Password):
-            p = Password()
+        if not isinstance(value, self.data_type):
+            p = self.data_type(hashfunc=self.hashfunc)
             p.set(value)
             value = p
         Property.__set__(self, obj, value)
 
     def __get__(self, obj, objtype):
-        return Password(StringProperty.__get__(self, obj, objtype))
+        return self.data_type(StringProperty.__get__(self, obj, objtype), hashfunc=self.hashfunc)
 
     def validate(self, value):
         value = Property.validate(self, value)
-        if isinstance(value, Password):
+        if isinstance(value, self.data_type):
             if len(value) > 1024:
                 raise ValueError, 'Length of value greater than maxlength'
         else:
-            raise TypeError, 'Expecting Password, got %s' % type(value)
+            raise TypeError, 'Expecting %s, got %s' % (type(self.data_type), type(value))
 
 class BlobProperty(Property):
     data_type = Blob
@@ -208,6 +258,7 @@ class S3KeyProperty(Property):
                           validator, choices, unique)
 
     def validate(self, value):
+        value = super(S3KeyProperty, self).validate(value)
         if value == self.default_value() or value == str(self.default_value()):
             return self.default_value()
         if isinstance(value, self.data_type):
@@ -340,6 +391,7 @@ class DateTimeProperty(Property):
         return Property.default_value(self)
 
     def validate(self, value):
+        value = super(DateTimeProperty, self).validate(value)
         if value == None:
             return
         if not isinstance(value, self.data_type):
@@ -370,6 +422,7 @@ class DateProperty(Property):
         return Property.default_value(self)
 
     def validate(self, value):
+        value = super(DateProperty, self).validate(value)
         if value == None:
             return
         if not isinstance(value, self.data_type):
@@ -378,10 +431,30 @@ class DateProperty(Property):
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
             setattr(model_instance, self.name, self.now())
-        return Property.get_value_for_datastore(self, model_instance)
+        val = Property.get_value_for_datastore(self, model_instance)
+        if isinstance(val, datetime.datetime):
+            val = val.date()
+        return val
 
     def now(self):
         return datetime.date.today()
+
+
+class TimeProperty(Property):
+    data_type = datetime.time
+    type_name = 'Time'
+
+    def __init__(self, verbose_name=None, name=None,
+                 default=None, required=False, validator=None, choices=None, unique=False):
+        Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
+
+    def validate(self, value):
+        value = super(TimeProperty, self).validate(value)
+        if value is None:
+            return
+        if not isinstance(value, self.data_type):
+            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+
 
 class ReferenceProperty(Property):
 
@@ -440,6 +513,8 @@ class ReferenceProperty(Property):
             raise ValueError, '%s is not a Model' % value
             
     def validate(self, value):
+        if self.validator:
+            self.validator(value)
         if self.required and value==None:
             raise ValueError, '%s is a required property' % self.name
         if value == self.default_value():
@@ -525,6 +600,8 @@ class ListProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
+        if self.validator:
+            self.validator(value)
         if value is not None:
             if not isinstance(value, list):
                 value = [value]
@@ -578,6 +655,7 @@ class MapProperty(Property):
         Property.__init__(self, verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
+        value = super(MapProperty, self).validate(value)
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError, 'Value must of type dict'

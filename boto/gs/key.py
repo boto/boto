@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -65,7 +65,7 @@ class Key(S3Key):
         acl.add_user_grant(permission, user_id)
         self.set_acl(acl)
 
-    def add_group_email_grant(self, permission, email_address):
+    def add_group_email_grant(self, permission, email_address, headers=None):
         """
         Convenience method that provides a quick way to add an email group
         grant to a key. This method retrieves the current ACL, creates a new
@@ -82,9 +82,9 @@ class Key(S3Key):
         :param email_address: The email address associated with the Google
             Group to which you are granting the permission.
         """
-        acl = self.get_acl()
+        acl = self.get_acl(headers=headers)
         acl.add_group_email_grant(permission, email_address)
-        self.set_acl(acl)
+        self.set_acl(acl, headers=headers)
 
     def add_group_grant(self, permission, group_id):
         """
@@ -107,7 +107,7 @@ class Key(S3Key):
         acl.add_group_grant(permission, group_id)
         self.set_acl(acl)
 
-    def set_contents_from_file(self, fp, headers={}, replace=True,
+    def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                res_upload_handler=None):
         """
@@ -163,8 +163,7 @@ class Key(S3Key):
         just overriding/sharing code the way it currently works).
         """
         provider = self.bucket.connection.provider
-        if headers is None:
-            headers = {}
+        headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
         if hasattr(fp, 'name'):

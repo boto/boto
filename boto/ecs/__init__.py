@@ -28,9 +28,15 @@ from boto.ecs.item import ItemSet
 from boto import handler
 
 class ECSConnection(AWSQueryConnection):
-    """ECommerse Connection"""
+    """
+    ECommerce Connection
 
-    APIVersion = '2010-09-01'
+    For more information on how to use this module see:
+
+    http://blog.coredumped.org/2010/09/search-for-books-on-amazon-using-boto.html
+    """
+
+    APIVersion = '2010-11-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -51,7 +57,7 @@ class ECSConnection(AWSQueryConnection):
         params['Operation'] = action
         if page:
             params['ItemPage'] = page
-        response = self.make_request("GET", params, "/onca/xml")
+        response = self.make_request(None, params, "/onca/xml")
         body = response.read()
         boto.log.debug(body)
 

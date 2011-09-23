@@ -113,10 +113,19 @@ class OrdinaryCallingFormat(_CallingFormat):
             path_base += "%s/" % bucket
         return path_base + urllib.quote(key)
 
+class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
+    
+    def build_url_base(self, connection, protocol, server, bucket, key=''):
+        url_base = '//'
+        url_base += self.build_host(server, bucket)
+        url_base += connection.get_path(self.build_path_base(bucket, key))
+        return url_base
+
 class Location:
     DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
+    APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
 
 class S3Connection(AWSAuthConnection):
@@ -259,18 +268,27 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "key", "value": key})
 
         # HTTPS protocol will be used if the secure HTTP option is enabled.
-        url = '%s://%s.%s/' % (http_method, bucket_name, self.host)
+        url = '%s://%s/' % (http_method, self.calling_format.build_host(self.server_name(), bucket_name))
 
         return {"action": url, "fields": fields}
 
 
-    def generate_url(self, expires_in, method, bucket='', key='',
-                     headers=None, query_auth=True, force_http=False):
+    def generate_url(self, expires_in, method, bucket='', key='', headers=None,
+                     query_auth=True, force_http=False, response_headers=None):
         if not headers:
             headers = {}
         expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
+        # Arguments to override response headers become part of the canonical
+        # string to be signed.
+        if response_headers:
+            response_hdrs = ["%s=%s" % (k, v) for k, v in
+                             response_headers.items()]
+            delimiter = '?' if '?' not in auth_path else '&'
+            auth_path = "%s%s%s" % (auth_path, delimiter, '&'.join(response_hdrs))
+        else:
+            response_headers = {}
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
@@ -278,11 +296,13 @@ class S3Connection(AWSAuthConnection):
         self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
-                                             self.aws_access_key_id)
-            sec_hdr = self.provider.security_token_header
-            if sec_hdr in headers:
-                query_part += ('&%s=%s' % (sec_hdr,
-                                           urllib.quote(headers[sec_hdr])));
+                                                   self.aws_access_key_id)
+            # The response headers must also be GET parameters in the URL.
+            headers.update(response_headers)
+            hdrs = [ '%s=%s'%(name, urllib.quote(val)) for name,val in headers.items() ]
+            q_str = '&'.join(hdrs)
+            if q_str:
+                query_part += '&' + q_str
         else:
             query_part = ''
         if force_http:

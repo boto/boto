@@ -23,12 +23,21 @@
 class Instance(object):
     def __init__(self, connection=None):
         self.connection = connection
-        self.instance_id = ''
+        self.instance_id = None
+        self.health_status = None
+        self.launch_config_name = None
         self.lifecycle_state = None
-        self.availability_zone = ''
+        self.availability_zone = None
+        self.group_name = None
 
     def __repr__(self):
-        return 'Instance:%s' % self.instance_id
+        r = 'Instance<id:%s, state:%s, health:%s' % (self.instance_id,
+                                                     self.lifecycle_state,
+                                                     self.health_status)
+        if self.group_name:
+            r += ' group:%s' % self.group_name
+        r += '>'
+        return r
 
     def startElement(self, name, attrs, connection):
         return None
@@ -36,11 +45,16 @@ class Instance(object):
     def endElement(self, name, value, connection):
         if name == 'InstanceId':
             self.instance_id = value
+        elif name == 'HealthStatus':
+            self.health_status = value
+        elif name == 'LaunchConfigurationName':
+            self.launch_config_name = value
         elif name == 'LifecycleState':
             self.lifecycle_state = value
         elif name == 'AvailabilityZone':
             self.availability_zone = value
+        elif name == 'AutoScalingGroupName':
+            self.group_name = value
         else:
             setattr(self, name, value)
-
 

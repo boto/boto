@@ -1,4 +1,7 @@
 *.pyc
 .*.swp
 *.log
-
+boto.egg-info
+build/
+dist/
+MANIFEST

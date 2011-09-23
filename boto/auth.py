@@ -34,8 +34,8 @@ import boto.plugin
 import boto.utils
 import hmac
 import sys
-import time
 import urllib
+from email.utils import formatdate
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -106,13 +106,12 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         method = http_request.method
         auth_path = http_request.auth_path
         if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+            headers['Date'] = formatdate(usegmt=True)
 
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                None, self._provider)
@@ -133,11 +132,10 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+            headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])
         auth_hdr = self._provider.auth_header
@@ -148,17 +146,16 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """Implements the new Version 3 HMAC authorization used by Route53."""
     
-    capability = ['hmac-v3', 'route53']
+    capability = ['hmac-v3', 'route53', 'ses']
     
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         
-    def add_auth(self, http_request):
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if not headers.has_key('Date'):
-            headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT",
-                                            time.gmtime())
+            headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])
         s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._provider.access_key
@@ -171,46 +168,29 @@ class QuerySignatureHelper(HmacKeys):
     Concrete sub class need to implement _calc_sigature method.
     """
 
-    def add_auth(self, http_request):
-        server_name = self._server_name(http_request.host, http_request.port)
+    def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         params = http_request.params
         params['AWSAccessKeyId'] = self._provider.access_key
         params['SignatureVersion'] = self.SignatureVersion
-        params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        params['Timestamp'] = boto.utils.get_ts()
         qs, signature = self._calc_signature(
             http_request.params, http_request.method,
-            http_request.path, server_name)
+            http_request.auth_path, http_request.host)
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
             http_request.body = qs + '&Signature=' + urllib.quote(signature)
+            http_request.headers['Content-Length'] = str(len(http_request.body))
         else:
             http_request.body = ''
+            # if this is a retried request, the qs from the previous try will
+            # already be there, we need to get rid of that and rebuild it
+            http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs + '&Signature=' + urllib.quote(signature))
-        # Now that query params are part of the path, clear the 'params' field
-        # in request.
-        http_request.params = {}
-
-    def _server_name(self, host, port):
-        if port == 80:
-            signature_host = host
-        else:
-            # This unfortunate little hack can be attributed to
-            # a difference in the 2.6 version of httplib.  In old
-            # versions, it would append ":443" to the hostname sent
-            # in the Host header and so we needed to make sure we
-            # did the same when calculating the V2 signature.  In 2.6
-            # (and higher!)
-            # it no longer does that.  Hence, this kludge.
-            if sys.version[:3] in ('2.6', '2.7') and port == 443:
-                signature_host = host
-            else:
-                signature_host = '%s:%d' % (host, port)
-        return signature_host
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
-    """Class SQS query signature based Auth handler."""
+    """Provides Signature V0 Signing"""
 
     SignatureVersion = 0
     capability = ['sign-v0']
@@ -224,7 +204,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
-            val = bot.utils.get_utf8_value(params[key])
+            val = boto.utils.get_utf8_value(params[key])
             pairs.append(key + '=' + urllib.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
@@ -256,7 +236,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
 
     SignatureVersion = 2
     capability = ['sign-v2', 'ec2', 'ec2', 'emr', 'fps', 'ecs',
-                  'sdb', 'iam', 'rds', 'sns', 'sqs']
+                  'sdb', 'iam', 'rds', 'sns', 'sqs', 'cloudformation']
 
     def _calc_signature(self, params, verb, path, server_name):
         boto.log.debug('using _calc_signature_2')
@@ -321,7 +301,8 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         names = [handler.__name__ for handler in checked_handlers]
         raise boto.exception.NoAuthHandlerFound(
               'No handler was ready to authenticate. %d handlers were checked.'
-              ' %s ' % (len(names), str(names)))
+              ' %s ' 
+              'Check your credentials' % (len(names), str(names)))
 
     if len(ready_handlers) > 1:
         # NOTE: Even though it would be nice to accept more than one handler

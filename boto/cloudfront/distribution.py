@@ -160,7 +160,7 @@ class DistributionConfig:
             if value.lower() == 'true':
                 self.enabled = True
             else:
-                self.enabledFalse
+                self.enabled = False
         elif name == 'CallerReference':
             self.caller_reference = value
         elif name == 'DefaultRootObject':
@@ -286,6 +286,7 @@ class Distribution:
         self.id = id
         self.last_modified_time = last_modified_time
         self.status = status
+        self.in_progress_invalidation_batches = 0
         self.active_signers = None
         self.etag = None
         self._bucket = None
@@ -308,6 +309,8 @@ class Distribution:
             self.last_modified_time = value
         elif name == 'Status':
             self.status = value
+        elif name == 'InProgressInvalidationBatches':
+            self.in_progress_invalidation_batches = int(value)
         elif name == 'DomainName':
             self.domain_name = value
         else:
@@ -316,11 +319,17 @@ class Distribution:
     def update(self, enabled=None, cnames=None, comment=None):
         """
         Update the configuration of the Distribution.  The only values
-        of the DistributionConfig that can be updated are:
+        of the DistributionConfig that can be directly updated are:
 
          * CNAMES
          * Comment
          * Whether the Distribution is enabled or not
+
+        Any changes to the ``trusted_signers`` or ``origin`` properties of
+        this distribution's current config object will also be included in
+        the update. Therefore, to set the origin access identity for this
+        distribution, set ``Distribution.config.origin.origin_access_identity``
+        before calling this update method.
 
         :type enabled: bool
         :param enabled: Whether the Distribution is active or not.
@@ -344,12 +353,6 @@ class Distribution:
             new_config.cnames = cnames
         if comment != None:
             new_config.comment = comment
-        if origin != None:
-            new_config.origin = get_oai_value(origin_access_identity)
-        if trusted_signers:
-            new_config.trusted_signers = trusted_signers
-        if default_root_object:
-            new_config.default_root_object = default_root_object
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
         self._object_class = Object
@@ -377,19 +380,23 @@ class Distribution:
         self.connection.delete_distribution(self.id, self.etag)
 
     def _get_bucket(self):
-        if not self._bucket:
-            bucket_name = self.config.origin.replace('.s3.amazonaws.com', '')
-            from boto.s3.connection import S3Connection
-            s3 = S3Connection(self.connection.aws_access_key_id,
-                              self.connection.aws_secret_access_key,
-                              proxy=self.connection.proxy,
-                              proxy_port=self.connection.proxy_port,
-                              proxy_user=self.connection.proxy_user,
-                              proxy_pass=self.connection.proxy_pass)
-            self._bucket = s3.get_bucket(bucket_name)
-            self._bucket.distribution = self
-            self._bucket.set_key_class(self._object_class)
-        return self._bucket
+        if isinstance(self.config.origin, S3Origin):
+            if not self._bucket:
+                bucket_dns_name = self.config.origin.dns_name
+                bucket_name = bucket_dns_name.replace('.s3.amazonaws.com', '')
+                from boto.s3.connection import S3Connection
+                s3 = S3Connection(self.connection.aws_access_key_id,
+                                  self.connection.aws_secret_access_key,
+                                  proxy=self.connection.proxy,
+                                  proxy_port=self.connection.proxy_port,
+                                  proxy_user=self.connection.proxy_user,
+                                  proxy_pass=self.connection.proxy_pass)
+                self._bucket = s3.get_bucket(bucket_name)
+                self._bucket.distribution = self
+                self._bucket.set_key_class(self._object_class)
+            return self._bucket
+        else:
+            raise NotImplemented, 'Unable to get_objects on CustomOrigin'
     
     def get_objects(self):
         """
@@ -475,14 +482,14 @@ class Distribution:
         :rtype: :class:`boto.cloudfront.object.Object`
         :return: The newly created object.
         """
-        if self.config.origin_access_identity:
+        if self.config.origin.origin_access_identity:
             policy = 'private'
         else:
             policy = 'public-read'
         bucket = self._get_bucket()
         object = bucket.new_key(name)
         object.set_contents_from_file(content, headers=headers, policy=policy)
-        if self.config.origin_access_identity:
+        if self.config.origin.origin_access_identity:
             self.set_permissions(object, replace)
         return object
             
@@ -504,11 +511,18 @@ class StreamingDistribution(Distribution):
     def update(self, enabled=None, cnames=None, comment=None):
         """
         Update the configuration of the StreamingDistribution.  The only values
-        of the StreamingDistributionConfig that can be updated are:
+        of the StreamingDistributionConfig that can be directly updated are:
 
          * CNAMES
          * Comment
          * Whether the Distribution is enabled or not
+
+        Any changes to the ``trusted_signers`` or ``origin`` properties of
+        this distribution's current config object will also be included in
+        the update. Therefore, to set the origin access identity for this
+        distribution, set
+        ``StreamingDistribution.config.origin.origin_access_identity``
+        before calling this update method.
 
         :type enabled: bool
         :param enabled: Whether the StreamingDistribution is active or not.

@@ -42,7 +42,7 @@ USER_BY_EMAIL = 'UserByEmail'
 USER_BY_ID = 'UserById'
 
 
-CannedACLStrings = ['private', 'public-read',
+CannedACLStrings = ['private', 'public-read', 'project-private',
                     'public-read-write', 'authenticated-read',
                     'bucket-owner-read', 'bucket-owner-full-control']
 
@@ -53,6 +53,10 @@ class ACL:
     def __init__(self, parent=None):
         self.parent = parent
         self.entries = []
+
+    @property
+    def acl(self):
+        return self
 
     def __repr__(self):
         # Owner is optional in GS ACLs.

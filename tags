@@ -1,0 +1,727 @@
+ACL	boto/gs/acl.py	/^class ACL:$/
+ACL	boto/s3/acl.py	/^class ACL:$/
+AWSAuthConnection	boto/connection.py	/^class AWSAuthConnection(object):$/
+AWSConnectionError	boto/exception.py	/^class AWSConnectionError(BotoClientError):$/
+AWSQueryConnection	boto/connection.py	/^class AWSQueryConnection(AWSAuthConnection):$/
+AuthHandler	boto/auth_handler.py	/^class AuthHandler(Plugin):$/
+AuthPlugin	boto/plugin.py	/^class AuthPlugin(Plugin):$/
+AuthSMTPHandler	boto/utils.py	/^class AuthSMTPHandler(logging.handlers.SMTPHandler/
+BooleanResult	boto/resultset.py	/^class BooleanResult(object):$/
+BotoClientError	boto/exception.py	/^class BotoClientError(StandardError):$/
+BotoServerError	boto/exception.py	/^class BotoServerError(StandardError):$/
+Bucket	boto/gs/bucket.py	/^class Bucket(S3Bucket):$/
+Bucket	boto/s3/bucket.py	/^class Bucket(object):$/
+BucketListResultSet	boto/s3/bucketlistresultset.py	/^class BucketListResultSet:$/
+BucketStorageUri	boto/storage_uri.py	/^class BucketStorageUri(StorageUri):$/
+ByteTranslatingCallbackHandler	boto/s3/resumable_download_handler.py	/^class ByteTranslatingCallbackHandler(object):$/
+CallbackTestHarnass	tests/s3/cb_test_harnass.py	/^class CallbackTestHarnass(object):$/
+CertValidatingHTTPSConnection	boto/https_connection.py	/^class CertValidatingHTTPSConnection(httplib.HTTPCo/
+CertValidationTest	tests/s3/test_https_cert_validation.py	/^class CertValidationTest (unittest.TestCase):$/
+CompleteMultiPartUpload	boto/s3/multipart.py	/^class CompleteMultiPartUpload(object):$/
+ConnectionPool	boto/connection.py	/^class ConnectionPool:$/
+ConsoleOutput	boto/exception.py	/^class ConsoleOutput:$/
+DeleteMarker	boto/s3/deletemarker.py	/^class DeleteMarker:$/
+EC2ResponseError	boto/exception.py	/^class EC2ResponseError(BotoServerError):$/
+Element	boto/jsonresponse.py	/^class Element(dict):$/
+EmrResponseError	boto/exception.py	/^class EmrResponseError(BotoServerError):$/
+Entries	boto/gs/acl.py	/^class Entries:$/
+Entry	boto/gs/acl.py	/^class Entry:$/
+FPSResponseError	boto/exception.py	/^class FPSResponseError(BotoServerError):$/
+Faker	boto/auth.py	/^        class Faker:$/
+FileStorageUri	boto/storage_uri.py	/^class FileStorageUri(StorageUri):$/
+GSConnection	boto/gs/connection.py	/^class GSConnection(S3Connection):$/
+GSConnectionTest	tests/s3/test_gsconnection.py	/^class GSConnectionTest (unittest.TestCase):$/
+GSCopyError	boto/exception.py	/^class GSCopyError(StorageCopyError):$/
+GSCreateError	boto/exception.py	/^class GSCreateError(StorageCreateError):$/
+GSDataError	boto/exception.py	/^class GSDataError(StorageDataError):$/
+GSPermissionsError	boto/exception.py	/^class GSPermissionsError(StoragePermissionsError):/
+GSResponseError	boto/exception.py	/^class GSResponseError(StorageResponseError):$/
+GetValidHostsForCert	boto/https_connection.py	/^def GetValidHostsForCert(cert):$/
+Grant	boto/s3/acl.py	/^class Grant:$/
+HTTPRequest	boto/connection.py	/^class HTTPRequest(object):$/
+HmacAuthV1Handler	boto/auth.py	/^class HmacAuthV1Handler(AuthHandler, HmacKeys):$/
+HmacAuthV2Handler	boto/auth.py	/^class HmacAuthV2Handler(AuthHandler, HmacKeys):$/
+HmacAuthV3Handler	boto/auth.py	/^class HmacAuthV3Handler(AuthHandler, HmacKeys):$/
+HmacKeys	boto/auth.py	/^class HmacKeys(object):$/
+InvalidAclError	boto/exception.py	/^class InvalidAclError(Exception):$/
+InvalidCertificateException	boto/https_connection.py	/^class InvalidCertificateException(httplib.HTTPExce/
+InvalidUriError	boto/exception.py	/^class InvalidUriError(Exception):$/
+Key	boto/gs/key.py	/^class Key(S3Key):$/
+Key	boto/s3/key.py	/^class Key(object):$/
+LRUCache	boto/utils.py	/^class LRUCache(dict):$/
+ListElement	boto/jsonresponse.py	/^class ListElement(list):$/
+LittleQuerier	tests/s3/test_pool.py	/^class LittleQuerier(object):$/
+Location	boto/gs/connection.py	/^class Location:$/
+Location	boto/s3/connection.py	/^class Location:$/
+MockAcl	tests/s3/mock_storage_service.py	/^class MockAcl(object):$/
+MockBucket	tests/s3/mock_storage_service.py	/^class MockBucket(object):$/
+MockBucketStorageUri	tests/s3/mock_storage_service.py	/^class MockBucketStorageUri(object):$/
+MockConnection	tests/s3/mock_storage_service.py	/^class MockConnection(object):$/
+MockKey	tests/s3/mock_storage_service.py	/^class MockKey(object):$/
+Mtest_pool.py	tests/s3/test_pool.py	/^def main():$/
+MultiPartUpload	boto/s3/multipart.py	/^class MultiPartUpload(object):$/
+MultiPartUploadListResultSet	boto/s3/bucketlistresultset.py	/^class MultiPartUploadListResultSet:$/
+MyFancyAuth	boto/plugin.py	/^class MyFancyAuth(AuthPlugin):$/
+NoAuthHandlerFound	boto/exception.py	/^class NoAuthHandlerFound(Exception):$/
+NotReadyToAuthenticate	boto/auth_handler.py	/^class NotReadyToAuthenticate(Exception):$/
+NullHandler	boto/__init__.py	/^class NullHandler(logging.Handler):$/
+OrdinaryCallingFormat	boto/s3/connection.py	/^class OrdinaryCallingFormat(_CallingFormat):$/
+Part	boto/s3/multipart.py	/^class Part(object):$/
+Password	boto/utils.py	/^class Password(object):$/
+Plugin	boto/plugin.py	/^class Plugin(object):$/
+Policy	boto/s3/acl.py	/^class Policy:$/
+Prefix	boto/s3/prefix.py	/^class Prefix(object):$/
+ProtocolIndependentOrdinaryCallingFormat	boto/s3/connection.py	/^class ProtocolIndependentOrdinaryCallingFormat(Ord/
+Provider	boto/provider.py	/^class Provider(object):$/
+QuerySignatureHelper	boto/auth.py	/^class QuerySignatureHelper(HmacKeys):$/
+QuerySignatureV0AuthHandler	boto/auth.py	/^class QuerySignatureV0AuthHandler(QuerySignatureHe/
+QuerySignatureV1AuthHandler	boto/auth.py	/^class QuerySignatureV1AuthHandler(QuerySignatureHe/
+QuerySignatureV2AuthHandler	boto/auth.py	/^class QuerySignatureV2AuthHandler(QuerySignatureHe/
+RegionInfo	boto/regioninfo.py	/^class RegionInfo(object):$/
+ResultSet	boto/resultset.py	/^class ResultSet(list):$/
+ResumableDownloadException	boto/exception.py	/^class ResumableDownloadException(Exception):$/
+ResumableDownloadHandler	boto/s3/resumable_download_handler.py	/^class ResumableDownloadHandler(object):$/
+ResumableDownloadTests	tests/s3/test_resumable_downloads.py	/^class ResumableDownloadTests(unittest.TestCase):$/
+ResumableTransferDisposition	boto/exception.py	/^class ResumableTransferDisposition(object):$/
+ResumableUploadException	boto/exception.py	/^class ResumableUploadException(Exception):$/
+ResumableUploadHandler	boto/gs/resumable_upload_handler.py	/^class ResumableUploadHandler(object):$/
+ResumableUploadTests	tests/s3/test_resumable_uploads.py	/^class ResumableUploadTests(unittest.TestCase):$/
+S3Connection	boto/s3/connection.py	/^class S3Connection(AWSAuthConnection):$/
+S3ConnectionTest	tests/s3/test_connection.py	/^class S3ConnectionTest (unittest.TestCase):$/
+S3CopyError	boto/exception.py	/^class S3CopyError(StorageCopyError):$/
+S3CreateError	boto/exception.py	/^class S3CreateError(StorageCreateError):$/
+S3DataError	boto/exception.py	/^class S3DataError(StorageDataError):$/
+S3PermissionsError	boto/exception.py	/^class S3PermissionsError(StoragePermissionsError):/
+S3ResponseError	boto/exception.py	/^class S3ResponseError(StorageResponseError):$/
+S3VersionTest	tests/s3/test_versioning.py	/^class S3VersionTest (unittest.TestCase):$/
+S3WebsiteEndpointTranslate	boto/s3/bucket.py	/^class S3WebsiteEndpointTranslate:$/
+SDBPersistenceError	boto/exception.py	/^class SDBPersistenceError(StandardError):$/
+SDBResponseError	boto/exception.py	/^class SDBResponseError(BotoServerError):$/
+SQSDecodeError	boto/exception.py	/^class SQSDecodeError(BotoClientError):$/
+SQSError	boto/exception.py	/^class SQSError(BotoServerError):$/
+Scope	boto/gs/acl.py	/^class Scope:$/
+ShellCommand	boto/utils.py	/^class ShellCommand(object):$/
+StorageCopyError	boto/exception.py	/^class StorageCopyError(BotoServerError):$/
+StorageCreateError	boto/exception.py	/^class StorageCreateError(BotoServerError):$/
+StorageDataError	boto/exception.py	/^class StorageDataError(BotoClientError):$/
+StoragePermissionsError	boto/exception.py	/^class StoragePermissionsError(BotoClientError):$/
+StorageResponseError	boto/exception.py	/^class StorageResponseError(BotoServerError):$/
+StorageUri	boto/storage_uri.py	/^class StorageUri(object):$/
+SubdomainCallingFormat	boto/s3/connection.py	/^class SubdomainCallingFormat(_CallingFormat):$/
+TooManyAuthHandlerReadyToAuthenticate	boto/exception.py	/^class TooManyAuthHandlerReadyToAuthenticate(Except/
+User	boto/gs/user.py	/^class User:$/
+User	boto/s3/user.py	/^class User:$/
+VHostCallingFormat	boto/s3/connection.py	/^class VHostCallingFormat(_CallingFormat):$/
+ValidateCertificateHostname	boto/https_connection.py	/^def ValidateCertificateHostname(cert, hostname):$/
+VersionedBucketListResultSet	boto/s3/bucketlistresultset.py	/^class VersionedBucketListResultSet:$/
+WriteAndCount	tests/s3/test_pool.py	/^class WriteAndCount(object):$/
+XmlHandler	boto/handler.py	/^class XmlHandler(xml.sax.ContentHandler):$/
+XmlHandler	boto/jsonresponse.py	/^class XmlHandler(xml.sax.ContentHandler):$/
+_CallingFormat	boto/s3/connection.py	/^class _CallingFormat:$/
+_EC2Error	boto/exception.py	/^class _EC2Error:$/
+_Item	boto/utils.py	/^    class _Item(object):$/
+__contains__	boto/s3/bucket.py	/^    def __contains__(self, key_name):$/
+__contains__	boto/s3/connection.py	/^    def __contains__(self, bucket_name):$/
+__contains__	boto/utils.py	/^    def __contains__(self, key):$/
+__eq__	boto/utils.py	/^    def __eq__(self, other):$/
+__getattr__	boto/s3/key.py	/^    def __getattr__(self, name):$/
+__getattr__	boto/exception.py	/^    def __getattr__(self, name):$/
+__getattr__	boto/jsonresponse.py	/^    def __getattr__(self, key):$/
+__getitem__	boto/connection.py	/^    def __getitem__(self, key):$/
+__getitem__	boto/utils.py	/^    def __getitem__(self, key):$/
+__init__	boto/gs/acl.py	/^    def __init__(self, parent=None):$/
+__init__	boto/gs/acl.py	/^    def __init__(self, parent=None):$/
+__init__	boto/gs/acl.py	/^    def __init__(self, scope=None, type=None, id=N/
+__init__	boto/gs/acl.py	/^    def __init__(self, parent, type=None, id=None,/
+__init__	boto/gs/bucket.py	/^    def __init__(self, connection=None, name=None,/
+__init__	boto/gs/connection.py	/^    def __init__(self, gs_access_key_id=None, gs_s/
+__init__	boto/gs/resumable_upload_handler.py	/^    def __init__(self, tracker_file_name=None, num/
+__init__	boto/gs/user.py	/^    def __init__(self, parent=None, id='', name=''/
+__init__	boto/s3/acl.py	/^    def __init__(self, parent=None):$/
+__init__	boto/s3/acl.py	/^    def __init__(self, policy=None):$/
+__init__	boto/s3/acl.py	/^    def __init__(self, permission=None, type=None,/
+__init__	boto/s3/bucket.py	/^    def __init__(self, connection=None, name=None,/
+__init__	boto/s3/bucketlistresultset.py	/^    def __init__(self, bucket=None, prefix='', del/
+__init__	boto/s3/bucketlistresultset.py	/^    def __init__(self, bucket=None, prefix='', del/
+__init__	boto/s3/bucketlistresultset.py	/^    def __init__(self, bucket=None, key_marker='',/
+__init__	boto/s3/connection.py	/^    def __init__(self, aws_access_key_id=None, aws/
+__init__	boto/s3/deletemarker.py	/^    def __init__(self, bucket=None, name=None):$/
+__init__	boto/s3/key.py	/^    def __init__(self, bucket=None, name=None):$/
+__init__	boto/s3/multipart.py	/^    def __init__(self, bucket=None):$/
+__init__	boto/s3/multipart.py	/^    def __init__(self, bucket=None):$/
+__init__	boto/s3/multipart.py	/^    def __init__(self, bucket=None):$/
+__init__	boto/s3/prefix.py	/^    def __init__(self, bucket=None, name=None):$/
+__init__	boto/s3/resumable_download_handler.py	/^    def __init__(self, proxied_cb, download_start_/
+__init__	boto/s3/resumable_download_handler.py	/^    def __init__(self, tracker_file_name=None, num/
+__init__	boto/s3/user.py	/^    def __init__(self, parent=None, id='', display/
+__init__	boto/auth.py	/^            def __init__(self, which):$/
+__init__	boto/auth.py	/^    def __init__(self, host, config, provider):$/
+__init__	boto/auth.py	/^    def __init__(self, host, config, provider):$/
+__init__	boto/auth.py	/^    def __init__(self, host, config, provider):$/
+__init__	boto/auth.py	/^    def __init__(self, host, config, provider):$/
+__init__	boto/auth_handler.py	/^    def __init__(self, host, config, provider):$/
+__init__	boto/connection.py	/^    def __init__(self, hosts, connections_per_host/
+__init__	boto/connection.py	/^    def __init__(self, method, protocol, host, por/
+__init__	boto/connection.py	/^    def __init__(self, host, aws_access_key_id=Non/
+__init__	boto/connection.py	/^    def __init__(self, aws_access_key_id=None, aws/
+__init__	boto/exception.py	/^    def __init__(self, reason, *args):$/
+__init__	boto/exception.py	/^    def __init__(self, status, reason, body=None, /
+__init__	boto/exception.py	/^    def __init__(self, parent=None):$/
+__init__	boto/exception.py	/^    def __init__(self, status, reason, body=None):/
+__init__	boto/exception.py	/^    def __init__(self, status, reason, body=None):/
+__init__	boto/exception.py	/^    def __init__(self, reason, message):$/
+__init__	boto/exception.py	/^    def __init__(self, status, reason, body=None):/
+__init__	boto/exception.py	/^    def __init__(self, status, reason, body=None):/
+__init__	boto/exception.py	/^    def __init__(self, connection=None):$/
+__init__	boto/exception.py	/^    def __init__(self, message):$/
+__init__	boto/exception.py	/^    def __init__(self, message):$/
+__init__	boto/exception.py	/^    def __init__(self, message, disposition):$/
+__init__	boto/exception.py	/^    def __init__(self, message, disposition):$/
+__init__	boto/handler.py	/^    def __init__(self, root_node, connection):$/
+__init__	boto/https_connection.py	/^  def __init__(self, host, cert, reason):$/
+__init__	boto/https_connection.py	/^  def __init__(self, host, port=None, key_file=Non/
+__init__	boto/jsonresponse.py	/^    def __init__(self, root_node, connection):$/
+__init__	boto/jsonresponse.py	/^    def __init__(self, connection=None, element_na/
+__init__	boto/jsonresponse.py	/^    def __init__(self, connection=None, element_na/
+__init__	boto/provider.py	/^    def __init__(self, name, access_key=None, secr/
+__init__	boto/regioninfo.py	/^    def __init__(self, connection=None, name=None,/
+__init__	boto/resultset.py	/^    def __init__(self, marker_elem=None):$/
+__init__	boto/resultset.py	/^    def __init__(self, marker_elem=None):$/
+__init__	boto/storage_uri.py	/^    def __init__(self):$/
+__init__	boto/storage_uri.py	/^    def __init__(self, scheme, bucket_name=None, o/
+__init__	boto/storage_uri.py	/^    def __init__(self, object_name, debug, is_stre/
+__init__	boto/utils.py	/^    def __init__(self, command, wait=True, fail_fa/
+__init__	boto/utils.py	/^    def __init__(self, mailhost, username, passwor/
+__init__	boto/utils.py	/^        def __init__(self, key, value):$/
+__init__	boto/utils.py	/^    def __init__(self, capacity):$/
+__init__	boto/utils.py	/^    def __init__(self, str=None, hashfunc=None):$/
+__init__	tests/s3/cb_test_harnass.py	/^    def __init__(self, fail_after_n_bytes=0, num_t/
+__init__	tests/s3/mock_storage_service.py	/^    def __init__(self, parent=NOT_IMPL):$/
+__init__	tests/s3/mock_storage_service.py	/^    def __init__(self, bucket=None, name=None):$/
+__init__	tests/s3/mock_storage_service.py	/^    def __init__(self, connection=None, name=None,/
+__init__	tests/s3/mock_storage_service.py	/^    def __init__(self, aws_access_key_id=NOT_IMPL,/
+__init__	tests/s3/mock_storage_service.py	/^    def __init__(self, scheme, bucket_name=None, o/
+__init__	tests/s3/test_pool.py	/^    def __init__(self):$/
+__init__	tests/s3/test_pool.py	/^    def __init__(self, bucket, small_names):$/
+__iter__	boto/s3/bucket.py	/^    def __iter__(self):$/
+__iter__	boto/s3/bucketlistresultset.py	/^    def __iter__(self):$/
+__iter__	boto/s3/bucketlistresultset.py	/^    def __iter__(self):$/
+__iter__	boto/s3/bucketlistresultset.py	/^    def __iter__(self):$/
+__iter__	boto/s3/connection.py	/^    def __iter__(self):$/
+__iter__	boto/s3/key.py	/^    def __iter__(self):$/
+__iter__	boto/s3/multipart.py	/^    def __iter__(self):$/
+__iter__	boto/utils.py	/^    def __iter__(self):$/
+__len__	boto/utils.py	/^    def __len__(self):$/
+__len__	boto/utils.py	/^    def __len__(self):$/
+__nonzero__	boto/resultset.py	/^    def __nonzero__(self):$/
+__repr__	boto/gs/acl.py	/^    def __repr__(self):$/
+__repr__	boto/gs/acl.py	/^    def __repr__(self):$/
+__repr__	boto/gs/acl.py	/^    def __repr__(self):$/
+__repr__	boto/gs/acl.py	/^    def __repr__(self):$/
+__repr__	boto/gs/user.py	/^    def __repr__(self):$/
+__repr__	boto/s3/acl.py	/^    def __repr__(self):$/
+__repr__	boto/s3/bucket.py	/^    def __repr__(self):$/
+__repr__	boto/s3/key.py	/^    def __repr__(self):$/
+__repr__	boto/s3/multipart.py	/^    def __repr__(self):$/
+__repr__	boto/s3/multipart.py	/^    def __repr__(self):$/
+__repr__	boto/s3/multipart.py	/^    def __repr__(self):$/
+__repr__	boto/connection.py	/^    def __repr__(self):$/
+__repr__	boto/connection.py	/^    def __repr__(self):$/
+__repr__	boto/exception.py	/^    def __repr__(self):$/
+__repr__	boto/exception.py	/^    def __repr__(self):$/
+__repr__	boto/exception.py	/^    def __repr__(self):$/
+__repr__	boto/exception.py	/^    def __repr__(self):$/
+__repr__	boto/exception.py	/^    def __repr__(self):$/
+__repr__	boto/regioninfo.py	/^    def __repr__(self):$/
+__repr__	boto/resultset.py	/^    def __repr__(self):$/
+__repr__	boto/storage_uri.py	/^    def __repr__(self):$/
+__repr__	boto/utils.py	/^        def __repr__(self):$/
+__repr__	boto/utils.py	/^    def __repr__(self):$/
+__repr__	tests/s3/mock_storage_service.py	/^    def __repr__(self):$/
+__setattr__	boto/s3/key.py	/^    def __setattr__(self, name, value):$/
+__setitem__	boto/utils.py	/^    def __setitem__(self, key, value):$/
+__str__	boto/connection.py	/^    def __str__(self):$/
+__str__	boto/exception.py	/^    def __str__(self):$/
+__str__	boto/exception.py	/^    def __str__(self):$/
+__str__	boto/exception.py	/^    def __str__(self):$/
+__str__	boto/https_connection.py	/^  def __str__(self):$/
+__str__	boto/utils.py	/^    def __str__(self):$/
+_attempt_resumable_download	boto/s3/resumable_download_handler.py	/^    def _attempt_resumable_download(self, key, fp,/
+_attempt_resumable_upload	boto/gs/resumable_upload_handler.py	/^    def _attempt_resumable_upload(self, key, fp, f/
+_build_content_range_header	boto/gs/resumable_upload_handler.py	/^    def _build_content_range_header(self, range_sp/
+_cached_name	boto/connection.py	/^    def _cached_name(self, host, is_secure):$/
+_calc_signature	boto/auth.py	/^    def _calc_signature(self, params, *args):$/
+_calc_signature	boto/auth.py	/^    def _calc_signature(self, params, *args):$/
+_calc_signature	boto/auth.py	/^    def _calc_signature(self, params, verb, path, /
+_check_final_md5	boto/gs/resumable_upload_handler.py	/^    def _check_final_md5(self, key, etag):$/
+_check_final_md5	boto/s3/resumable_download_handler.py	/^    def _check_final_md5(self, key, file_name):$/
+_cleanupParsedProperties	boto/exception.py	/^    def _cleanupParsedProperties(self):$/
+_cleanupParsedProperties	boto/exception.py	/^    def _cleanupParsedProperties(self):$/
+_cleanupParsedProperties	boto/exception.py	/^    def _cleanupParsedProperties(self):$/
+_cleanupParsedProperties	boto/exception.py	/^    def _cleanupParsedProperties(self):$/
+_get_all	boto/s3/bucket.py	/^    def _get_all(self, element_map, initial_query_/
+_get_aws_conn	boto/__init__.py	/^def _get_aws_conn(service):$/
+_get_instance_metadata	boto/utils.py	/^def _get_instance_metadata(url):$/
+_handle_headers	tests/s3/mock_storage_service.py	/^    def _handle_headers(self, headers):$/
+_import_module	boto/plugin.py	/^def _import_module(filename):$/
+_insert_item	boto/utils.py	/^    def _insert_item(self, item):$/
+_load_tracker_file_etag	boto/s3/resumable_download_handler.py	/^    def _load_tracker_file_etag(self):$/
+_load_tracker_uri_from_file	boto/gs/resumable_upload_handler.py	/^    def _load_tracker_uri_from_file(self):$/
+_manage_size	boto/utils.py	/^    def _manage_size(self):$/
+_mexe	boto/connection.py	/^    def _mexe(self, request, sender=None, override/
+_query_server_state	boto/gs/resumable_upload_handler.py	/^    def _query_server_state(self, conn, file_lengt/
+_remove_tracker_file	boto/gs/resumable_upload_handler.py	/^    def _remove_tracker_file(self):$/
+_remove_tracker_file	boto/s3/resumable_download_handler.py	/^    def _remove_tracker_file(self):$/
+_required_auth_capability	boto/s3/connection.py	/^    def _required_auth_capability(self):$/
+_required_auth_capability	boto/connection.py	/^    def _required_auth_capability(self):$/
+_required_auth_capability	boto/connection.py	/^    def _required_auth_capability(self):$/
+_save_tracker_info	boto/s3/resumable_download_handler.py	/^    def _save_tracker_info(self, key):$/
+_save_tracker_uri_to_file	boto/gs/resumable_upload_handler.py	/^    def _save_tracker_uri_to_file(self):$/
+_set_tracker_uri	boto/gs/resumable_upload_handler.py	/^    def _set_tracker_uri(self, uri):$/
+_start_new_resumable_upload	boto/gs/resumable_upload_handler.py	/^    def _start_new_resumable_upload(self, key, hea/
+_update_item	boto/utils.py	/^    def _update_item(self, item):$/
+_upload_file_bytes	boto/gs/resumable_upload_handler.py	/^    def _upload_file_bytes(self, conn, http_conn, /
+acl	boto/gs/acl.py	/^    def acl(self):$/
+acl_class	boto/storage_uri.py	/^    def acl_class(self):$/
+acl_class	tests/s3/mock_storage_service.py	/^    def acl_class(self):$/
+add_auth	boto/auth.py	/^    def add_auth(self, http_request, **kwargs):$/
+add_auth	boto/auth.py	/^    def add_auth(self, http_request, **kwargs):$/
+add_auth	boto/auth.py	/^    def add_auth(self, http_request, **kwargs):$/
+add_auth	boto/auth.py	/^    def add_auth(self, http_request, **kwargs):$/
+add_auth	boto/auth_handler.py	/^    def add_auth(self, http_request):$/
+add_email_grant	boto/gs/acl.py	/^    def add_email_grant(self, permission, email_ad/
+add_email_grant	boto/gs/bucket.py	/^    def add_email_grant(self, permission, email_ad/
+add_email_grant	boto/gs/key.py	/^    def add_email_grant(self, permission, email_ad/
+add_email_grant	boto/s3/acl.py	/^    def add_email_grant(self, permission, email_ad/
+add_email_grant	boto/s3/bucket.py	/^    def add_email_grant(self, permission, email_ad/
+add_email_grant	boto/s3/key.py	/^    def add_email_grant(self, permission, email_ad/
+add_email_grant	boto/storage_uri.py	/^    def add_email_grant(self, permission, email_ad/
+add_grant	boto/s3/acl.py	/^    def add_grant(self, grant):$/
+add_group_email_grant	boto/gs/acl.py	/^    def add_group_email_grant(self, permission, em/
+add_group_email_grant	boto/gs/bucket.py	/^    def add_group_email_grant(self, permission, em/
+add_group_email_grant	boto/gs/key.py	/^    def add_group_email_grant(self, permission, em/
+add_group_email_grant	boto/storage_uri.py	/^    def add_group_email_grant(self, permission, em/
+add_group_grant	boto/gs/acl.py	/^    def add_group_grant(self, permission, group_id/
+add_group_grant	boto/gs/key.py	/^    def add_group_grant(self, permission, group_id/
+add_user_grant	boto/gs/acl.py	/^    def add_user_grant(self, permission, user_id):/
+add_user_grant	boto/gs/bucket.py	/^    def add_user_grant(self, permission, user_id, /
+add_user_grant	boto/gs/key.py	/^    def add_user_grant(self, permission, user_id):/
+add_user_grant	boto/s3/acl.py	/^    def add_user_grant(self, permission, user_id, /
+add_user_grant	boto/s3/bucket.py	/^    def add_user_grant(self, permission, user_id, /
+add_user_grant	boto/s3/key.py	/^    def add_user_grant(self, permission, user_id, /
+add_user_grant	boto/storage_uri.py	/^    def add_user_grant(self, permission, user_id, /
+algorithm	boto/auth.py	/^    def algorithm(self):$/
+assertConnectionThrows	tests/s3/test_https_cert_validation.py	/^    def assertConnectionThrows(self, connection_cl/
+assert_case_insensitive	boto/s3/connection.py	/^def assert_case_insensitive(f):$/
+authorize	boto/connection.py	/^    def authorize(self, connection, **kwargs):$/
+aws_access_key_id	boto/connection.py	/^    def aws_access_key_id(self):$/
+aws_secret_access_key	boto/connection.py	/^    def aws_secret_access_key(self):$/
+bucket_lister	boto/s3/bucketlistresultset.py	/^def bucket_lister(bucket, prefix='', delimiter='',/
+build_auth_path	boto/s3/connection.py	/^    def build_auth_path(self, bucket, key=''):$/
+build_base_http_request	boto/connection.py	/^    def build_base_http_request(self, method, path/
+build_host	boto/s3/connection.py	/^    def build_host(self, server, bucket):$/
+build_list_params	boto/connection.py	/^    def build_list_params(self, params, items, lab/
+build_path_base	boto/s3/connection.py	/^    def build_path_base(self, bucket, key=''):$/
+build_path_base	boto/s3/connection.py	/^    def build_path_base(self, bucket, key=''):$/
+build_post_form_args	boto/s3/connection.py	/^    def build_post_form_args(self, bucket_name, ke/
+build_post_policy	boto/s3/connection.py	/^    def build_post_policy(self, expiration_time, c/
+build_test_input_file	tests/s3/test_resumable_uploads.py	/^    def build_test_input_file(size):$/
+build_test_input_object	tests/s3/test_resumable_downloads.py	/^    def build_test_input_object(cls, obj_name, siz/
+build_url_base	boto/s3/connection.py	/^    def build_url_base(self, connection, protocol,/
+build_url_base	boto/s3/connection.py	/^    def build_url_base(self, connection, protocol,/
+call	boto/s3/resumable_download_handler.py	/^    def call(self, total_bytes_uploaded, total_siz/
+call	tests/s3/cb_test_harnass.py	/^    def call(self, total_bytes_transferred, unused/
+cancel_multipart_upload	boto/s3/bucket.py	/^    def cancel_multipart_upload(self, key_name, up/
+cancel_upload	boto/s3/multipart.py	/^    def cancel_upload(self):$/
+canned_acls	boto/storage_uri.py	/^    def canned_acls(self):$/
+canned_acls	tests/s3/mock_storage_service.py	/^    def canned_acls(self):$/
+canonical_string	boto/utils.py	/^def canonical_string(method, path, headers, expire/
+change_storage_class	boto/s3/key.py	/^    def change_storage_class(self, new_storage_cla/
+characters	boto/handler.py	/^    def characters(self, content):$/
+characters	boto/jsonresponse.py	/^    def characters(self, content):$/
+check_extensions	boto/__init__.py	/^def check_extensions(module_name, module_path):$/
+check_lowercase_bucketname	boto/s3/connection.py	/^def check_lowercase_bucketname(n):$/
+check_response	boto/storage_uri.py	/^    def check_response(self, resp, level, uri):$/
+clone_replace_name	boto/storage_uri.py	/^    def clone_replace_name(self, new_name):$/
+clone_replace_name	boto/storage_uri.py	/^    def clone_replace_name(self, new_name):$/
+clone_replace_name	tests/s3/mock_storage_service.py	/^    def clone_replace_name(self, new_name):$/
+close	boto/s3/key.py	/^    def close(self):$/
+close	boto/connection.py	/^    def close(self):$/
+complete_multipart_upload	boto/s3/bucket.py	/^    def complete_multipart_upload(self, key_name, /
+complete_upload	boto/s3/multipart.py	/^    def complete_upload(self):$/
+compute_md5	boto/s3/key.py	/^    def compute_md5(self, fp):$/
+configure_errors	boto/provider.py	/^    def configure_errors(self):$/
+configure_headers	boto/provider.py	/^    def configure_headers(self):$/
+configure_versioning	boto/s3/bucket.py	/^    def configure_versioning(self, versioning, mfa/
+configure_website	boto/s3/bucket.py	/^    def configure_website(self, suffix, error_key=/
+connect	boto/https_connection.py	/^  def connect(self):$/
+connect	boto/regioninfo.py	/^    def connect(self, **kw_params):$/
+connect	boto/storage_uri.py	/^    def connect(self, access_key_id=None, secret_a/
+connect	tests/s3/mock_storage_service.py	/^    def connect(self, access_key_id=NOT_IMPL, secr/
+connect_autoscale	boto/__init__.py	/^def connect_autoscale(aws_access_key_id=None, aws_/
+connect_cloudfront	boto/__init__.py	/^def connect_cloudfront(aws_access_key_id=None, aws/
+connect_cloudwatch	boto/__init__.py	/^def connect_cloudwatch(aws_access_key_id=None, aws/
+connect_ec2	boto/__init__.py	/^def connect_ec2(aws_access_key_id=None, aws_secret/
+connect_elb	boto/__init__.py	/^def connect_elb(aws_access_key_id=None, aws_secret/
+connect_emr	boto/__init__.py	/^def connect_emr(aws_access_key_id=None, aws_secret/
+connect_euca	boto/__init__.py	/^def connect_euca(host, aws_access_key_id=None, aws/
+connect_fps	boto/__init__.py	/^def connect_fps(aws_access_key_id=None, aws_secret/
+connect_gs	boto/__init__.py	/^def connect_gs(gs_access_key_id=None, gs_secret_ac/
+connect_ia	boto/__init__.py	/^def connect_ia(ia_access_key_id=None, ia_secret_ac/
+connect_iam	boto/__init__.py	/^def connect_iam(aws_access_key_id=None, aws_secret/
+connect_mturk	boto/__init__.py	/^def connect_mturk(aws_access_key_id=None, aws_secr/
+connect_rds	boto/__init__.py	/^def connect_rds(aws_access_key_id=None, aws_secret/
+connect_route53	boto/__init__.py	/^def connect_route53(aws_access_key_id=None, aws_se/
+connect_s3	boto/__init__.py	/^def connect_s3(aws_access_key_id=None, aws_secret_/
+connect_sdb	boto/__init__.py	/^def connect_sdb(aws_access_key_id=None, aws_secret/
+connect_ses	boto/__init__.py	/^def connect_ses(aws_access_key_id=None, aws_secret/
+connect_sns	boto/__init__.py	/^def connect_sns(aws_access_key_id=None, aws_secret/
+connect_sqs	boto/__init__.py	/^def connect_sqs(aws_access_key_id=None, aws_secret/
+connect_vpc	boto/__init__.py	/^def connect_vpc(aws_access_key_id=None, aws_secret/
+connect_walrus	boto/__init__.py	/^def connect_walrus(host, aws_access_key_id=None, a/
+connection	boto/connection.py	/^    def connection(self):$/
+copy	boto/s3/key.py	/^    def copy(self, dst_bucket, dst_key, metadata=N/
+copy	tests/s3/mock_storage_service.py	/^    def copy(self, dst_bucket_name, dst_key, metad/
+copy_key	boto/s3/bucket.py	/^    def copy_key(self, new_key_name, src_bucket_na/
+copy_key	tests/s3/mock_storage_service.py	/^    def copy_key(self, new_key_name, src_bucket_na/
+create_bucket	boto/gs/connection.py	/^    def create_bucket(self, bucket_name, headers=N/
+create_bucket	boto/s3/connection.py	/^    def create_bucket(self, bucket_name, headers=N/
+create_bucket	boto/storage_uri.py	/^    def create_bucket(self, headers=None, location/
+create_bucket	tests/s3/mock_storage_service.py	/^    def create_bucket(self, bucket_name, headers=N/
+create_bucket	tests/s3/mock_storage_service.py	/^    def create_bucket(self, headers=NOT_IMPL, loca/
+delete	boto/s3/bucket.py	/^    def delete(self, headers=None):$/
+delete	boto/s3/key.py	/^    def delete(self):$/
+delete_bucket	boto/s3/connection.py	/^    def delete_bucket(self, bucket, headers=None):/
+delete_bucket	boto/storage_uri.py	/^    def delete_bucket(self, headers=None):$/
+delete_bucket	tests/s3/mock_storage_service.py	/^    def delete_bucket(self, bucket, headers=NOT_IM/
+delete_bucket	tests/s3/mock_storage_service.py	/^    def delete_bucket(self, headers=NOT_IMPL):$/
+delete_key	boto/s3/bucket.py	/^    def delete_key(self, key_name, headers=None,$/
+delete_key	boto/storage_uri.py	/^    def delete_key(self, validate=True, headers=No/
+delete_key	tests/s3/mock_storage_service.py	/^    def delete_key(self, key_name, headers=NOT_IMP/
+delete_key	tests/s3/mock_storage_service.py	/^    def delete_key(self, validate=NOT_IMPL, header/
+delete_website_configuration	boto/s3/bucket.py	/^    def delete_website_configuration(self, headers/
+disable_logging	boto/s3/bucket.py	/^    def disable_logging(self, headers=None):$/
+do_test_invalid_host	tests/s3/test_https_cert_validation.py	/^    def do_test_invalid_host(self):$/
+do_test_invalid_host	tests/s3/test_https_cert_validation.py	/^    def do_test_invalid_host(self):$/
+do_test_invalid_signature	tests/s3/test_https_cert_validation.py	/^    def do_test_invalid_signature(self):$/
+do_test_valid_cert	tests/s3/test_https_cert_validation.py	/^    def do_test_valid_cert(self):$/
+emit	boto/__init__.py	/^    def emit(self, record):$/
+emit	boto/utils.py	/^    def emit(self, record):$/
+enableProxy	tests/s3/test_https_cert_validation.py	/^    def enableProxy(self):$/
+enable_logging	boto/s3/bucket.py	/^    def enable_logging(self, target_bucket, target/
+endElement	boto/gs/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/gs/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/gs/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/gs/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/gs/user.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/acl.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/bucket.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/deletemarker.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/key.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/multipart.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/multipart.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/multipart.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/prefix.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/s3/user.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/exception.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/handler.py	/^    def endElement(self, name):$/
+endElement	boto/jsonresponse.py	/^    def endElement(self, name):$/
+endElement	boto/jsonresponse.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/jsonresponse.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/regioninfo.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/resultset.py	/^    def endElement(self, name, value, connection):/
+endElement	boto/resultset.py	/^    def endElement(self, name, value, connection):/
+endElement	tests/s3/mock_storage_service.py	/^    def endElement(self, name, value, connection):/
+equals	boto/storage_uri.py	/^    def equals(self, uri):$/
+equals	tests/s3/mock_storage_service.py	/^    def equals(self, uri):$/
+exists	boto/s3/key.py	/^    def exists(self):$/
+fetch_file	boto/utils.py	/^def fetch_file(uri, file=None, username=None, pass/
+find_class	boto/utils.py	/^def find_class(module_name, class_name=None):$/
+generate_url	boto/s3/bucket.py	/^    def generate_url(self, expires_in, method='GET/
+generate_url	boto/s3/connection.py	/^    def generate_url(self, expires_in, method, buc/
+generate_url	boto/s3/key.py	/^    def generate_url(self, expires_in, method='GET/
+getOutput	boto/utils.py	/^    def getOutput(self):$/
+getStatus	boto/utils.py	/^    def getStatus(self):$/
+get_acl	boto/gs/bucket.py	/^    def get_acl(self, key_name='', headers=None, v/
+get_acl	boto/s3/bucket.py	/^    def get_acl(self, key_name='', headers=None, v/
+get_acl	boto/s3/key.py	/^    def get_acl(self, headers=None):$/
+get_acl	boto/storage_uri.py	/^    def get_acl(self, validate=True, headers=None,/
+get_acl	tests/s3/mock_storage_service.py	/^    def get_acl(self, key_name='', headers=NOT_IMP/
+get_acl	tests/s3/mock_storage_service.py	/^    def get_acl(self, validate=NOT_IMPL, headers=N/
+get_all_buckets	boto/s3/connection.py	/^    def get_all_buckets(self, headers=None):$/
+get_all_buckets	boto/storage_uri.py	/^    def get_all_buckets(self, headers=None):$/
+get_all_buckets	tests/s3/mock_storage_service.py	/^    def get_all_buckets(self, headers=NOT_IMPL):$/
+get_all_buckets	tests/s3/mock_storage_service.py	/^    def get_all_buckets(self, headers=NOT_IMPL):$/
+get_all_keys	boto/s3/bucket.py	/^    def get_all_keys(self, headers=None, **params)/
+get_all_keys	boto/storage_uri.py	/^    def get_all_keys(self, validate=True, headers=/
+get_all_keys	tests/s3/mock_storage_service.py	/^    def get_all_keys(self, headers=NOT_IMPL):$/
+get_all_keys	tests/s3/mock_storage_service.py	/^    def get_all_keys(self, validate=NOT_IMPL, head/
+get_all_multipart_uploads	boto/s3/bucket.py	/^    def get_all_multipart_uploads(self, headers=No/
+get_all_parts	boto/s3/multipart.py	/^    def get_all_parts(self, max_parts=None, part_n/
+get_all_versions	boto/s3/bucket.py	/^    def get_all_versions(self, headers=None, **par/
+get_auth_handler	boto/auth.py	/^def get_auth_handler(host, config, provider, reque/
+get_aws_metadata	boto/utils.py	/^def get_aws_metadata(headers, provider=None):$/
+get_bucket	boto/s3/connection.py	/^    def get_bucket(self, bucket_name, validate=Tru/
+get_bucket	boto/storage_uri.py	/^    def get_bucket(self, validate=True, headers=No/
+get_bucket	tests/s3/mock_storage_service.py	/^    def get_bucket(self, bucket_name, validate=NOT/
+get_bucket	tests/s3/mock_storage_service.py	/^    def get_bucket(self, validate=NOT_IMPL, header/
+get_bucket_server	boto/s3/connection.py	/^    def get_bucket_server(self, server, bucket):$/
+get_bucket_server	boto/s3/connection.py	/^    def get_bucket_server(self, server, bucket):$/
+get_bucket_server	boto/s3/connection.py	/^    def get_bucket_server(self, server, bucket):$/
+get_canonical_user_id	boto/s3/connection.py	/^    def get_canonical_user_id(self, headers=None):/
+get_contents_as_string	boto/s3/key.py	/^    def get_contents_as_string(self, headers=None,/
+get_contents_as_string	boto/storage_uri.py	/^    def get_contents_as_string(self, validate=True/
+get_contents_as_string	tests/s3/mock_storage_service.py	/^    def get_contents_as_string(self, headers=NOT_I/
+get_contents_to_file	boto/s3/key.py	/^    def get_contents_to_file(self, fp, headers=Non/
+get_contents_to_file	tests/s3/mock_storage_service.py	/^    def get_contents_to_file(self, fp, headers=NOT/
+get_contents_to_filename	boto/s3/key.py	/^    def get_contents_to_filename(self, filename, h/
+get_credentials	boto/provider.py	/^    def get_credentials(self, access_key=None, sec/
+get_cur_file_size	boto/s3/resumable_download_handler.py	/^def get_cur_file_size(fp, position_to_eof=False):$/
+get_default	boto/provider.py	/^def get_default():$/
+get_file	boto/s3/key.py	/^    def get_file(self, fp, headers=None, cb=None, /
+get_file	boto/s3/resumable_download_handler.py	/^    def get_file(self, key, fp, headers, cb=None, /
+get_file	tests/s3/mock_storage_service.py	/^    def get_file(self, fp, headers=NOT_IMPL, cb=NO/
+get_http_connection	boto/connection.py	/^    def get_http_connection(self, host, is_secure)/
+get_instance_metadata	boto/utils.py	/^def get_instance_metadata(version='latest', url='h/
+get_instance_userdata	boto/utils.py	/^def get_instance_userdata(version='latest', sep=No/
+get_key	boto/s3/bucket.py	/^    def get_key(self, key_name, headers=None, vers/
+get_key	boto/storage_uri.py	/^    def get_key(self, validate=True, headers=None,/
+get_key	tests/s3/mock_storage_service.py	/^    def get_key(self, key_name, headers=NOT_IMPL, /
+get_key	tests/s3/mock_storage_service.py	/^    def get_key(self, validate=NOT_IMPL, headers=N/
+get_list	boto/connection.py	/^    def get_list(self, action, params, markers, pa/
+get_location	boto/s3/bucket.py	/^    def get_location(self):$/
+get_location	boto/storage_uri.py	/^    def get_location(self, validate=True, headers=/
+get_logging_status	boto/s3/bucket.py	/^    def get_logging_status(self, headers=None):$/
+get_md5_from_hexdigest	boto/s3/key.py	/^    def get_md5_from_hexdigest(self, md5_hexdigest/
+get_metadata	boto/s3/key.py	/^    def get_metadata(self, name):$/
+get_name	boto/jsonresponse.py	/^    def get_name(self, name):$/
+get_name	boto/jsonresponse.py	/^    def get_name(self, name):$/
+get_object	boto/connection.py	/^    def get_object(self, action, params, cls, path/
+get_object	tests/s3/test_pool.py	/^def get_object(bucket, name):$/
+get_path	boto/connection.py	/^    def get_path(self, path='\/'):$/
+get_plugin	boto/plugin.py	/^def get_plugin(cls, requested_capability=None):$/
+get_policy	boto/s3/bucket.py	/^    def get_policy(self, headers=None):$/
+get_provider	boto/storage_uri.py	/^    def get_provider(self):$/
+get_provider_name	boto/provider.py	/^    def get_provider_name(self):$/
+get_proxy_auth_header	boto/connection.py	/^    def get_proxy_auth_header(self):$/
+get_request_payment	boto/s3/bucket.py	/^    def get_request_payment(self, headers=None):$/
+get_status	boto/connection.py	/^    def get_status(self, action, params, path='\/',/
+get_suite_description	tests/s3/test_resumable_downloads.py	/^    def get_suite_description(self):$/
+get_suite_description	tests/s3/test_resumable_uploads.py	/^    def get_suite_description(self):$/
+get_torrent_file	boto/s3/key.py	/^    def get_torrent_file(self, fp, headers=None, c/
+get_tracker_uri	boto/gs/resumable_upload_handler.py	/^    def get_tracker_uri(self):$/
+get_ts	boto/utils.py	/^def get_ts(ts=None):$/
+get_utf8_value	boto/connection.py	/^    def get_utf8_value(self, value):$/
+get_utf8_value	boto/utils.py	/^def get_utf8_value(value):$/
+get_versioning_status	boto/s3/bucket.py	/^    def get_versioning_status(self, headers=None):/
+get_website_configuration	boto/s3/bucket.py	/^    def get_website_configuration(self, headers=No/
+get_website_endpoint	boto/s3/bucket.py	/^    def get_website_endpoint(self):$/
+get_xml_acl	boto/s3/bucket.py	/^    def get_xml_acl(self, key_name='', headers=Non/
+get_xml_acl	boto/s3/key.py	/^    def get_xml_acl(self, headers=None):$/
+guess_mime_type	boto/utils.py	/^def guess_mime_type(content, deftype):$/
+handle_proxy	boto/connection.py	/^    def handle_proxy(self, proxy, proxy_port, prox/
+handle_version_headers	boto/s3/key.py	/^    def handle_version_headers(self, resp, force=F/
+init_logging	boto/__init__.py	/^def init_logging():$/
+initiate_multipart_upload	boto/s3/bucket.py	/^    def initiate_multipart_upload(self, key_name, /
+is_capable	boto/plugin.py	/^    def is_capable(cls, requested_capability):$/
+is_cloud_uri	boto/storage_uri.py	/^    def is_cloud_uri(self):$/
+is_cloud_uri	boto/storage_uri.py	/^    def is_cloud_uri(self):$/
+is_cloud_uri	tests/s3/mock_storage_service.py	/^    def is_cloud_uri(self):$/
+is_file_uri	boto/storage_uri.py	/^    def is_file_uri(self):$/
+is_file_uri	boto/storage_uri.py	/^    def is_file_uri(self):$/
+is_file_uri	tests/s3/mock_storage_service.py	/^    def is_file_uri(self):$/
+is_stream	boto/storage_uri.py	/^    def is_stream(self):$/
+list	boto/s3/bucket.py	/^    def list(self, prefix='', delimiter='', marker/
+list	tests/s3/mock_storage_service.py	/^    def list(self, prefix='', delimiter=NOT_IMPL, /
+list_grants	boto/gs/bucket.py	/^    def list_grants(self, headers=None):$/
+list_grants	boto/s3/bucket.py	/^    def list_grants(self, headers=None):$/
+list_grants	boto/storage_uri.py	/^    def list_grants(self, headers=None):$/
+list_multipart_uploads	boto/s3/bucket.py	/^    def list_multipart_uploads(self, key_marker=''/
+list_versions	boto/s3/bucket.py	/^    def list_versions(self, prefix='', delimiter='/
+load_plugins	boto/plugin.py	/^def load_plugins(config):$/
+lookup	boto/s3/bucket.py	/^    def lookup(self, key_name, headers=None):$/
+lookup	boto/s3/connection.py	/^    def lookup(self, bucket_name, validate=True, h/
+lookup	boto/__init__.py	/^def lookup(service, name):$/
+make_public	boto/s3/bucket.py	/^    def make_public(self, recursive=False, headers/
+make_public	boto/s3/key.py	/^    def make_public(self, headers=None):$/
+make_request	boto/s3/connection.py	/^    def make_request(self, method, bucket='', key=/
+make_request	boto/connection.py	/^    def make_request(self, method, path, headers=N/
+make_request	boto/connection.py	/^    def make_request(self, action, params=None, pa/
+merge_meta	boto/utils.py	/^def merge_meta(headers, metadata, provider=None):$/
+mklist	boto/utils.py	/^def mklist(value):$/
+multipart_upload_lister	boto/s3/bucketlistresultset.py	/^def multipart_upload_lister(bucket, key_marker='',/
+names_container	boto/storage_uri.py	/^    def names_container(self):$/
+names_container	boto/storage_uri.py	/^    def names_container(self):$/
+names_container	tests/s3/mock_storage_service.py	/^    def names_container(self):$/
+names_singleton	boto/storage_uri.py	/^    def names_singleton(self):$/
+names_singleton	boto/storage_uri.py	/^    def names_singleton(self):$/
+names_singleton	tests/s3/mock_storage_service.py	/^    def names_singleton(self):$/
+new	boto/auth.py	/^            def new(self, *args, **kwargs):$/
+new_http_connection	boto/connection.py	/^    def new_http_connection(self, host, is_secure)/
+new_key	boto/s3/bucket.py	/^    def new_key(self, key_name=None):$/
+new_key	boto/storage_uri.py	/^    def new_key(self, validate=True, headers=None)/
+new_key	tests/s3/mock_storage_service.py	/^    def new_key(self, key_name=None):$/
+new_key	tests/s3/mock_storage_service.py	/^    def new_key(self, validate=NOT_IMPL, headers=N/
+next	boto/s3/key.py	/^    def next(self):$/
+notify	boto/utils.py	/^def notify(subject, body=None, html_body=None, to_/
+of	boto/s3/key.py	/^                                   class of the ne/
+of	boto/s3/key.py	/^                                   class of the ne/
+of	boto/s3/key.py	/^                                   class of the ne/
+of	boto/s3/key.py	/^                                   class of the ne/
+of	boto/s3/key.py	/^                                   class of the ne/
+open	boto/s3/key.py	/^    def open(self, mode='r', headers=None, query_a/
+open_read	boto/s3/key.py	/^    def open_read(self, headers=None, query_args=N/
+open_read	tests/s3/mock_storage_service.py	/^    def open_read(self, headers=NOT_IMPL, query_ar/
+open_write	boto/s3/key.py	/^    def open_write(self, headers=None, override_nu/
+parse	boto/jsonresponse.py	/^    def parse(self, s):$/
+parse_ts	boto/utils.py	/^def parse_ts(ts):$/
+part_lister	boto/s3/multipart.py	/^def part_lister(mpupload, part_number_marker=None)/
+prefix_proxy_to_path	boto/connection.py	/^    def prefix_proxy_to_path(self, path, host=None/
+provider	boto/s3/key.py	/^    def provider(self):$/
+proxy_ssl	boto/connection.py	/^    def proxy_ssl(self):$/
+put_http_connection	boto/connection.py	/^    def put_http_connection(self, host, is_secure,/
+put_object	tests/s3/test_pool.py	/^def put_object(bucket, name):$/
+pythonize_name	boto/utils.py	/^def pythonize_name(name, sep='_'):$/
+read	boto/s3/key.py	/^    def read(self, size=0):$/
+read_big_object	tests/s3/test_pool.py	/^def read_big_object(bucket, name, count):$/
+resilient_close	tests/s3/test_resumable_downloads.py	/^    def resilient_close(key):$/
+retry_url	boto/utils.py	/^def retry_url(url, retry_on_404=True, num_retries=/
+run	boto/utils.py	/^    def run(self, cwd=None):$/
+run	tests/s3/test_pool.py	/^    def run(self):$/
+send_file	boto/gs/resumable_upload_handler.py	/^    def send_file(self, key, fp, headers, cb=None,/
+send_file	boto/s3/key.py	/^    def send_file(self, fp, headers=None, cb=None,/
+sender	boto/s3/key.py	/^        def sender(http_conn, method, path, data, /
+server_name	boto/connection.py	/^    def server_name(self, port=None):$/
+set	boto/utils.py	/^    def set(self, value):$/
+setReadOnly	boto/utils.py	/^    def setReadOnly(self, value):$/
+setUp	tests/s3/test_https_cert_validation.py	/^    def setUp(self):$/
+setUp	tests/s3/test_resumable_downloads.py	/^    def setUp(cls):$/
+setUp	tests/s3/test_resumable_uploads.py	/^    def setUp(cls):$/
+set_acl	boto/gs/bucket.py	/^    def set_acl(self, acl_or_str, key_name='', hea/
+set_acl	boto/s3/bucket.py	/^    def set_acl(self, acl_or_str, key_name='', hea/
+set_acl	boto/s3/key.py	/^    def set_acl(self, acl_str, headers=None):$/
+set_acl	boto/storage_uri.py	/^    def set_acl(self, acl_or_str, key_name='', val/
+set_acl	tests/s3/mock_storage_service.py	/^    def set_acl(self, acl_or_str, key_name='', hea/
+set_acl	tests/s3/mock_storage_service.py	/^    def set_acl(self, acl_or_str, key_name='', val/
+set_as_logging_target	boto/s3/bucket.py	/^    def set_as_logging_target(self, headers=None):/
+set_bucket_class	boto/s3/connection.py	/^    def set_bucket_class(self, bucket_class):$/
+set_canned_acl	boto/gs/bucket.py	/^    def set_canned_acl(self, acl_str, key_name='',/
+set_canned_acl	boto/s3/bucket.py	/^    def set_canned_acl(self, acl_str, key_name='',/
+set_canned_acl	boto/s3/key.py	/^    def set_canned_acl(self, acl_str, headers=None/
+set_canned_acl	boto/storage_uri.py	/^    def set_canned_acl(self, acl_str, validate=Tru/
+set_contents_from_file	boto/gs/key.py	/^    def set_contents_from_file(self, fp, headers=N/
+set_contents_from_file	boto/s3/key.py	/^    def set_contents_from_file(self, fp, headers=N/
+set_contents_from_file	tests/s3/mock_storage_service.py	/^    def set_contents_from_file(self, fp, headers=N/
+set_contents_from_filename	boto/gs/key.py	/^    def set_contents_from_filename(self, filename,/
+set_contents_from_filename	boto/s3/key.py	/^    def set_contents_from_filename(self, filename,/
+set_contents_from_filename	tests/s3/mock_storage_service.py	/^    def set_contents_from_filename(self, filename,/
+set_contents_from_stream	boto/s3/key.py	/^    def set_contents_from_stream(self, fp, headers/
+set_contents_from_string	boto/s3/key.py	/^    def set_contents_from_string(self, s, headers=/
+set_contents_from_string	boto/storage_uri.py	/^    def set_contents_from_string(self, s, headers=/
+set_contents_from_string	tests/s3/mock_storage_service.py	/^    def set_contents_from_string(self, s, headers=/
+set_file_logger	boto/__init__.py	/^def set_file_logger(name, filepath, level=logging./
+set_key_class	boto/s3/bucket.py	/^    def set_key_class(self, key_class):$/
+set_metadata	boto/s3/key.py	/^    def set_metadata(self, name, value):$/
+set_policy	boto/s3/bucket.py	/^    def set_policy(self, policy, headers=None):$/
+set_request_payment	boto/s3/bucket.py	/^    def set_request_payment(self, payer='BucketOwn/
+set_stream_logger	boto/__init__.py	/^def set_stream_logger(name, level=logging.DEBUG, f/
+set_up_class	tests/s3/test_resumable_downloads.py	/^    def set_up_class(cls, debug):$/
+set_up_class	tests/s3/test_resumable_uploads.py	/^    def set_up_class(cls, debug):$/
+set_xml_acl	boto/s3/bucket.py	/^    def set_xml_acl(self, acl_str, key_name='', he/
+set_xml_acl	boto/s3/key.py	/^    def set_xml_acl(self, acl_str, headers=None):$/
+sign_string	boto/auth.py	/^    def sign_string(self, string_to_sign):$/
+startElement	boto/gs/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/gs/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/gs/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/gs/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/gs/user.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/acl.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/bucket.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/deletemarker.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/key.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/multipart.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/multipart.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/multipart.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/prefix.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/s3/user.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/exception.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/exception.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/exception.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/exception.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/exception.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/exception.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/handler.py	/^    def startElement(self, name, attrs):$/
+startElement	boto/jsonresponse.py	/^    def startElement(self, name, attrs):$/
+startElement	boto/jsonresponse.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/jsonresponse.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/regioninfo.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/resultset.py	/^    def startElement(self, name, attrs, connection/
+startElement	boto/resultset.py	/^    def startElement(self, name, attrs, connection/
+startElement	tests/s3/mock_storage_service.py	/^    def startElement(self, name, attrs, connection/
+stop	tests/s3/test_pool.py	/^    def stop(self):$/
+storage_uri	boto/__init__.py	/^def storage_uri(uri_str, default_scheme='file', de/
+storage_uri_for_key	boto/__init__.py	/^def storage_uri_for_key(key):$/
+supports_chunked_transfer	boto/provider.py	/^    def supports_chunked_transfer(self):$/
+tearDown	tests/s3/test_resumable_downloads.py	/^    def tearDown(cls):$/
+tearDown	tests/s3/test_resumable_uploads.py	/^    def tearDown(cls):$/
+tear_down_class	tests/s3/test_resumable_downloads.py	/^    def tear_down_class(cls):$/
+tear_down_class	tests/s3/test_resumable_uploads.py	/^    def tear_down_class(cls):$/
+test_1_basic	tests/s3/test_connection.py	/^    def test_1_basic(self):$/
+test_1_basic	tests/s3/test_gsconnection.py	/^    def test_1_basic(self):$/
+test_1_versions	tests/s3/test_versioning.py	/^    def test_1_versions(self):$/
+test_broken_pipe_recovery	tests/s3/test_resumable_downloads.py	/^    def test_broken_pipe_recovery(self):$/
+test_close_connections	tests/s3/test_pool.py	/^def test_close_connections():$/
+test_download_with_file_content_change_during_download	tests/s3/test_resumable_downloads.py	/^    def test_download_with_file_content_change_dur/
+test_download_with_inconsistent_etag_in_tracker	tests/s3/test_resumable_downloads.py	/^    def test_download_with_inconsistent_etag_in_tr/
+test_download_with_inital_partial_download_before_failure	tests/s3/test_resumable_downloads.py	/^    def test_download_with_inital_partial_download/
+test_download_with_invalid_tracker_etag	tests/s3/test_resumable_downloads.py	/^    def test_download_with_invalid_tracker_etag(se/
+test_download_with_object_size_change_between_starts	tests/s3/test_resumable_downloads.py	/^    def test_download_with_object_size_change_betw/
+test_download_with_unwritable_tracker_file	tests/s3/test_resumable_downloads.py	/^    def test_download_with_unwritable_tracker_file/
+test_download_without_persistent_tracker	tests/s3/test_resumable_downloads.py	/^    def test_download_without_persistent_tracker(s/
+test_failed_and_restarted_download_with_persistent_tracker	tests/s3/test_resumable_downloads.py	/^    def test_failed_and_restarted_download_with_pe/
+test_failed_download_with_persistent_tracker	tests/s3/test_resumable_downloads.py	/^    def test_failed_download_with_persistent_track/
+test_invalid_host	tests/s3/test_https_cert_validation.py	/^    def test_invalid_host(self):$/
+test_invalid_host_with_proxy	tests/s3/test_https_cert_validation.py	/^    def test_invalid_host_with_proxy(self):$/
+test_invalid_signature	tests/s3/test_https_cert_validation.py	/^    def test_invalid_signature(self):$/
+test_invalid_signature_with_proxy	tests/s3/test_https_cert_validation.py	/^    def test_invalid_signature_with_proxy(self):$/
+test_multiple_in_process_failures_then_succeed	tests/s3/test_resumable_downloads.py	/^    def test_multiple_in_process_failures_then_suc/
+test_multiple_in_process_failures_then_succeed_with_tracker_file	tests/s3/test_resumable_downloads.py	/^    def test_multiple_in_process_failures_then_suc/
+test_non_resumable_download	tests/s3/test_resumable_downloads.py	/^    def test_non_resumable_download(self):$/
+test_non_retryable_exception_handling	tests/s3/test_resumable_downloads.py	/^    def test_non_retryable_exception_handling(self/
+test_retryable_exception_recovery	tests/s3/test_resumable_downloads.py	/^    def test_retryable_exception_recovery(self):$/
+test_reuse_connections	tests/s3/test_pool.py	/^def test_reuse_connections():$/
+test_upload_with_file_size_change_between_starts	tests/s3/test_resumable_uploads.py	/^    def test_upload_with_file_size_change_between_/
+test_valid_cert	tests/s3/test_https_cert_validation.py	/^    def test_valid_cert(self):$/
+test_valid_cert_with_proxy	tests/s3/test_https_cert_validation.py	/^    def test_valid_cert_with_proxy(self):$/
+test_zero_length_object_download	tests/s3/test_resumable_downloads.py	/^    def test_zero_length_object_download(self):$/
+to_boolean	boto/resultset.py	/^    def to_boolean(self, value, true_value='true')/
+to_boolean	boto/resultset.py	/^    def to_boolean(self, value, true_value='true')/
+to_xml	boto/gs/acl.py	/^    def to_xml(self):$/
+to_xml	boto/gs/acl.py	/^    def to_xml(self):$/
+to_xml	boto/gs/acl.py	/^    def to_xml(self):$/
+to_xml	boto/gs/acl.py	/^    def to_xml(self):$/
+to_xml	boto/gs/user.py	/^    def to_xml(self, element_name='Owner'):$/
+to_xml	boto/s3/acl.py	/^    def to_xml(self):$/
+to_xml	boto/s3/acl.py	/^    def to_xml(self):$/
+to_xml	boto/s3/acl.py	/^    def to_xml(self):$/
+to_xml	boto/s3/multipart.py	/^    def to_xml(self):$/
+to_xml	boto/s3/user.py	/^    def to_xml(self, element_name='Owner'):$/
+to_xml	tests/s3/mock_storage_service.py	/^    def to_xml(self):$/
+translate_region	boto/s3/bucket.py	/^    def translate_region(self, reg):$/
+update_dme	boto/utils.py	/^def update_dme(username, password, dme_id, ip_addr/
+update_metadata	boto/s3/key.py	/^    def update_metadata(self, d):$/
+upload_part_from_file	boto/s3/multipart.py	/^    def upload_part_from_file(self, fp, part_num, /
+versioned_bucket_lister	boto/s3/bucketlistresultset.py	/^def versioned_bucket_lister(bucket, prefix='', del/
+wrapper	boto/s3/connection.py	/^    def wrapper(*args, **kwargs):$/
+write	tests/s3/test_pool.py	/^    def write(self, data):$/
+write_mime_multipart	boto/utils.py	/^def write_mime_multipart(content, compress=False, /

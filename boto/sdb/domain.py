@@ -276,7 +276,7 @@ class Domain:
         """
         Delete this domain, and all items under it
         """
-        return self.connection.delete(self)
+        return self.connection.delete_domain(self)
 
 
 class DomainMetaData:

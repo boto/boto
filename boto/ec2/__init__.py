@@ -39,12 +39,36 @@ def regions(**kw_params):
     return c.get_all_regions()
 
 def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a 
+    :class:`boto.ec2.connection.EC2Connection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
+
+    :type: str
+    :param region_name: The name of the region to connect to.
+    
+    :rtype: :class:`boto.ec2.connection.EC2Connection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+             name is given
+    """
     for region in regions(**kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
     return None
     
 def get_region(region_name, **kw_params):
+    """
+    Find and return a :class:`boto.ec2.regioninfo.RegionInfo` object
+    given a region name.
+
+    :type: str
+    :param: The name of the region.
+
+    :rtype: :class:`boto.ec2.regioninfo.RegionInfo`
+    :return: The RegionInfo object for the given region or None if
+             an invalid region name is provided.
+    """
     for region in regions(**kw_params):
         if region.name == region_name:
             return region

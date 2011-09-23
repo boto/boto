@@ -405,7 +405,7 @@ class Queue:
     def load_from_filename(self, file_name, sep='\n'):
         """Utility function to load messages from a local filename to a queue"""
         fp = open(file_name, 'rb')
-        n = self.load_file_file(fp, sep)
+        n = self.load_from_file(fp, sep)
         fp.close()
         return n
 

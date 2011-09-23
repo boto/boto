@@ -85,7 +85,9 @@ def create(elb, name, zones, listeners):
     l_list = []
     for l in listeners:
         l = l.split(",")
-        l_list.append((int(l[0]), int(l[1]), l[2]))
+        if l[2]=='HTTPS':
+            l_list.append((int(l[0]), int(l[1]), l[2], l[3]))
+        else : l_list.append((int(l[0]), int(l[1]), l[2]))
     
     b = elb.create_load_balancer(name, zones, l_list)
     return get(elb, name)
@@ -191,6 +193,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     elb = boto.connect_elb()
+
+    print "%s" % (elb.region.endpoint)
+
     command = args[0].lower()
     if command in ("ls", "list"):
         list(elb)
