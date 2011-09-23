@@ -222,8 +222,10 @@ class EmrConnection(AWSQueryConnection):
         :param enable_debugging: Denotes whether AWS console debugging should be enabled.
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
-        :type steps: list(boto.emr.InstanceGroup)
-        :param steps: Optional list of instance groups to use when creating
+        :type bootstrap_actions: list(boto.emr.BootstrapAction)
+        :param bootstrap_actions: List of bootstrap actions that run before Hadoop starts.
+        :type instance_groups: list(boto.emr.InstanceGroup)
+        :param instance_groups: Optional list of instance groups to use when creating
                       this job. NB: When provided, this argument supersedes
                       num_instances and master/slave_instance_type.
         :rtype: str
