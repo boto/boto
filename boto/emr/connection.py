@@ -195,7 +195,8 @@ class EmrConnection(AWSQueryConnection):
                     enable_debugging=False,
                     hadoop_version='0.18',
                     steps=[],
-                    bootstrap_actions=[]):
+                    bootstrap_actions=[],
+                    additional_info=None):
         """
         Runs a job flow
 
@@ -221,6 +222,8 @@ class EmrConnection(AWSQueryConnection):
         :param enable_debugging: Denotes whether AWS console debugging should be enabled.
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
+        :type additional_info: JSON str
+        :param additional_info: A JSON string for selecting additional features
 
         :rtype: str
         :return: The jobflow id
@@ -254,6 +257,9 @@ class EmrConnection(AWSQueryConnection):
         if bootstrap_actions:
             bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
+
+        if additional_info is not None:
+            params['AdditionalInfo'] = additional_info
 
         response = self.get_object(
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')
