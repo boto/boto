@@ -441,8 +441,8 @@ class AWSQueryRequest(object):
         except boto.roboto.awsqueryservice.NoCredentialsError, err:
             print 'Unable to find credentials.'
             sys.exit(1)
-        except:
-            print 'Unexpected error.  Use --debugger option for more info.'
+        except Exception, e:
+            print e
             sys.exit(1)
 
     def _generic_cli_formatter(self, fmt, data, label=''):
