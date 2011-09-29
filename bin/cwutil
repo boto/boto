@@ -12,8 +12,17 @@ from datetime import datetime, timedelta
 def _parse_time(time_string):
     """Internal function to parse a time string"""
 
+def _parse_dict(d_string):
+    result = {}
+    if d_string:
+        for d in d_string.split(","):
+            d = d.split(":")
+            result[d[0]] = d[1]
+    return result
+
 def ls(namespace=None):
-    """List metrics, optionally filtering by a specific namespace
+    """
+    List metrics, optionally filtering by a specific namespace
         namespace: Optional Namespace to filter on
     """
     print "%-10s %-50s %s" % ("Namespace", "Metric Name", "Dimensions")
@@ -22,10 +31,11 @@ def ls(namespace=None):
         if namespace is None or namespace.upper() in m.namespace:
             print "%-10s %-50s %s" % (m.namespace, m.name, m.dimensions)
 
-def stats(namespace, metric_name, dimensions, statistics="Average", start_time=None, end_time=None, period=60, unit=None):
-    """Lists the statistics for a specific metric
+def stats(namespace, metric_name, dimensions=None, statistics="Average", start_time=None, end_time=None, period=60, unit=None):
+    """
+    Lists the statistics for a specific metric
         namespace: The namespace to use, usually "AWS/EC2", "AWS/SQS", etc.
-        metric_name: The name of the metric to track, pulled from list_metrics
+        metric_name: The name of the metric to track, pulled from `ls`
         dimensions: The dimensions to use, formatted as Name:Value (such as QueueName:myQueue)
         statistics: The statistics to measure, defaults to "Average"
              'Minimum', 'Maximum', 'Sum', 'Average', 'SampleCount'
@@ -36,13 +46,8 @@ def stats(namespace, metric_name, dimensions, statistics="Average", start_time=N
     """
 
     # Parse the dimensions
-    d_string = dimensions
-    dimensions = {}
-    if d_string:
-        for d in d_string.split(","):
-            d = d.split(":")
-            dimensions[d[0]] = d[1]
-    
+    dimensions = _parse_dict(dimensions)
+
     # Parse the times
     if end_time:
         end_time = _parse_time(end_time)
@@ -63,8 +68,35 @@ def stats(namespace, metric_name, dimensions, statistics="Average", start_time=N
     for k in keys:
         print "%-30s %s" % (k, data[k])
 
+def put(namespace, metric_name, dimensions=None, value=None, unit=None, statistics=None, timestamp=None):
+    """
+    Publish custom metrics
+        namespace: The namespace to use; values starting with "AWS/" are reserved
+        metric_name: The name of the metric to update
+        dimensions: The dimensions to use, formatted as Name:Value (such as QueueName:myQueue)
+        value: The value to store, mutually exclusive with `statistics`
+        statistics: The statistics to store, mutually exclusive with `value`
+            (must specify all of "Minimum", "Maximum", "Sum", "SampleCount")
+        timestamp: The timestamp of this measurement, default is current server time
+        unit: Unit to track, default depends on what metric is being tracked
+    """
+    
+    def simplify(lst):
+      if len(lst) == 1:
+        return lst[0]
+      return lst
+
+    print cw.put_metric_data(namespace, simplify(metric_name.split(';')),
+        dimensions = simplify(map(_parse_dict, dimensions.split(';'))) if dimensions else None,
+        value = simplify(value.split(';')) if value else None,
+        statistics = simplify(map(_parse_dict, statistics.split(';'))) if statistics else None,
+        timestamp = simplify(timestamp.split(';')) if timestamp else None,
+        unit = simplify(unit.split(';')) if unit else None)
+
 def help(fnc=None):
-    """Print help message, optionally about a specific function"""
+    """
+    Print help message, optionally about a specific function
+    """
     import inspect
     self = sys.modules['__main__']
     if fnc:
