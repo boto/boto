@@ -82,9 +82,7 @@ def put(namespace, metric_name, dimensions=None, value=None, unit=None, statisti
     """
     
     def simplify(lst):
-      if len(lst) == 1:
-        return lst[0]
-      return lst
+        return lst[0] if len(lst) == 1 else lst
 
     print cw.put_metric_data(namespace, simplify(metric_name.split(';')),
         dimensions = simplify(map(_parse_dict, dimensions.split(';'))) if dimensions else None,
@@ -109,7 +107,7 @@ def help(fnc=None):
             sys.exit(2)
         (args, varargs, varkw, defaults) = inspect.getargspec(cmd)
         print cmd.__doc__
-        print "Usage: %s %s" % (fnc, " ".join([ "[%s]" % a for a in args[1:]]))
+        print "Usage: %s %s" % (fnc, " ".join([ "[%s]" % a for a in args]))
     else:
         print "Usage: cwutil [command]"
         for cname in dir(self):
