@@ -22,7 +22,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import boto
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
 import boto.plugin
@@ -341,15 +340,15 @@ def connect_euca(host=None, aws_access_key_id=None, aws_secret_access_key=None,
 
     # Check for values in boto config, if not supplied as args
     if not aws_access_key_id:
-        aws_access_key_id = boto.config.get('Credentials',
-                                            'euca_access_key_id',
-                                            None)
+        aws_access_key_id = config.get('Credentials',
+                                       'euca_access_key_id',
+                                       None)
     if not aws_secret_access_key:
-        aws_secret_access_key = boto.config.get('Credentials',
-                                                'euca_secret_access_key',
-                                                None)
+        aws_secret_access_key = config.get('Credentials',
+                                           'euca_secret_access_key',
+                                           None)
     if not host:
-        host = boto.config.get('Boto', 'eucalyptus_host', None)
+        host = config.get('Boto', 'eucalyptus_host', None)
 
     reg = RegionInfo(name='eucalyptus', endpoint=host)
     return EC2Connection(aws_access_key_id, aws_secret_access_key,
@@ -379,15 +378,15 @@ def connect_walrus(host=None, aws_access_key_id=None, aws_secret_access_key=None
 
     # Check for values in boto config, if not supplied as args
     if not aws_access_key_id:
-        aws_access_key_id = boto.config.get('Credentials',
-                                            'euca_access_key_id',
-                                            None)
+        aws_access_key_id = config.get('Credentials',
+                                       'euca_access_key_id',
+                                       None)
     if not aws_secret_access_key:
-        aws_secret_access_key = boto.config.get('Credentials',
-                                                'euca_secret_access_key',
-                                                None)
+        aws_secret_access_key = config.get('Credentials',
+                                           'euca_secret_access_key',
+                                           None)
     if not host:
-        host = boto.config.get('Boto', 'walrus_host', None)
+        host = config.get('Boto', 'walrus_host', None)
         
     return S3Connection(aws_access_key_id, aws_secret_access_key,
                         host=host, port=port, path=path,
