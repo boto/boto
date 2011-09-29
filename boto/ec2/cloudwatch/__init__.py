@@ -238,6 +238,45 @@ class CloudWatchConnection(AWSQueryConnection):
             else:
                 params[label % i] = item
 
+    def build_put_params(self, params, name, value=None, timestamp=None, 
+                        unit=None, dimensions=None, statistics=None):
+        args = (name, value, unit, dimensions, statistics)
+        length = max(map(lambda a: len(a) if isinstance(a, list) else 1, args))
+
+        def aslist(a):
+            if isinstance(a, list):
+                if len(a) != length:
+                    raise Exception('Must specify equal number of elements; expected %d.' % length)
+                return a
+            return [a] * length
+
+        for index, (name, value, unit, dimensions, statistics) in enumerate(zip(*map(aslist, args))):
+            metric_data = {'MetricName': name}
+
+            if timestamp:
+                metric_data['Timestamp'] = timestamp.isoformat()
+            
+            if unit:
+                metric_data['Unit'] = unit
+            
+            if dimensions:
+                self.build_list_params(metric_data, [dimensions], 'Dimensions.member.%d.%s')
+            
+            if statistics:
+                metric_data['StatisticValues.Maximum'] = statistics['maximum']
+                metric_data['StatisticValues.Minimum'] = statistics['minimum']
+                metric_data['StatisticValues.SampleCount'] = statistics['samplecount']
+                metric_data['StatisticValues.Sum'] = statistics['sum']
+                if value != None:
+                    log.warn('You supplied a value and statistics for a metric.  Posting statistics and not value.')
+            elif value != None:
+                metric_data['Value'] = value
+            else:
+                raise Exception('Must specify a value or statistics to put.')
+
+            for k, v in metric_data.iteritems():
+                params['MetricData.member.%d.%s' % (index + 1, k)] = v
+
     def get_metric_statistics(self, period, start_time, end_time, metric_name,
                               namespace, statistics, dimensions=None,
                               unit=None):
@@ -335,23 +374,25 @@ class CloudWatchConnection(AWSQueryConnection):
         """
         Publishes metric data points to Amazon CloudWatch. Amazon Cloudwatch 
         associates the data points with the specified metric. If the specified 
-        metric does not exist, Amazon CloudWatch creates the metric.
+        metric does not exist, Amazon CloudWatch creates the metric. If a list 
+        is specified for some, but not all, of the arguments, the remaining 
+        arguments are repeated a corresponding number of times.
 
         :type namespace: string
         :param namespace: The namespace of the metric.
 
-        :type name: string
+        :type name: string or list
         :param name: The name of the metric.
 
-        :type value: int
+        :type value: float or list
         :param value: The value for the metric.
 
-        :type timestamp: datetime
+        :type timestamp: datetime or list
         :param timestamp: The time stamp used for the metric. If not specified, 
                           the default value is set to the time the metric data 
                           was received.
         
-        :type unit: string
+        :type unit: string or list
         :param unit: The unit of the metric.  Valid Values: Seconds | 
                      Microseconds | Milliseconds | Bytes | Kilobytes | 
                      Megabytes | Gigabytes | Terabytes | Bits | Kilobits | 
@@ -361,46 +402,19 @@ class CloudWatchConnection(AWSQueryConnection):
                      Kilobits/Second | Megabits/Second | Gigabits/Second | 
                      Terabits/Second | Count/Second | None
         
-        :type dimensions: dict
+        :type dimensions: dict or list
         :param dimensions: Add extra name value pairs to associate 
                            with the metric, i.e.:
                            {'name1': value1, 'name2': value2}
         
-        :type statistics: dict
+        :type statistics: dict or list
         :param statistics: Use a statistic set instead of a value, for example
                            {'maximum': 30, 'minimum': 1,
                             'samplecount': 100, 'sum': 10000}
         """
         params = {'Namespace': namespace}
-        metric_data = {'MetricName': name}
-
-        if timestamp:
-            metric_data['Timestamp'] = timestamp.isoformat()
-        
-        if unit:
-            metric_data['Unit'] = unit
-        
-        if dimensions:
-            for index, (name, val) in enumerate(dimensions.iteritems()):
-                i = index + 1
-                metric_data['Dimensions.member.%d.Name' % i] = name
-                metric_data['Dimensions.member.%d.Value' % i] = val
-        
-        if statistics:
-            metric_data['StatisticValues.Maximum'] = statistics['maximum']
-            metric_data['StatisticValues.Minimum'] = statistics['minimum']
-            metric_data['StatisticValues.SampleCount'] = statistics['samplecount']
-            metric_data['StatisticValues.Sum'] = statistics['sum']
-            if value != None:
-                log.warn('You supplied a value and statistics for a metric.  Posting statistics and not value.')
-
-        elif value != None:
-            metric_data['Value'] = value
-        else:
-            raise Exception('Must specify a value or statistics to put.')
-
-        for k, v in metric_data.iteritems():
-            params['MetricData.member.1.%s' % (k)] = v
+        self.build_put_params(params, name, value=value, timestamp=timestamp,
+            unit=unit, dimensions=dimensions, statistics=statistics)
 
         return self.get_status('PutMetricData', params)
 

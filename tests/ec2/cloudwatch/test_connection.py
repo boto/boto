@@ -45,6 +45,60 @@ class CloudWatchConnectionTest(unittest.TestCase):
             }
         self.assertEqual(params, expected_params)
 
+    def test_build_put_params_one(self):
+        c = CloudWatchConnection()
+        params = {}
+        c.build_put_params(params, name="N", value=1, dimensions={"D": "V"})
+        expected_params = {
+            'MetricData.member.1.MetricName': 'N',
+            'MetricData.member.1.Value': 1,
+            'MetricData.member.1.Dimensions.member.1.Name': 'D',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
+            }
+        self.assertEqual(params, expected_params)
+
+    def test_build_put_params_multiple_metrics(self):
+        c = CloudWatchConnection()
+        params = {}
+        c.build_put_params(params, name=["N", "M"], value=[1, 2], dimensions={"D": "V"})
+        expected_params = {
+            'MetricData.member.1.MetricName': 'N',
+            'MetricData.member.1.Value': 1,
+            'MetricData.member.1.Dimensions.member.1.Name': 'D',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
+            'MetricData.member.2.MetricName': 'M',
+            'MetricData.member.2.Value': 2,
+            'MetricData.member.2.Dimensions.member.1.Name': 'D',
+            'MetricData.member.2.Dimensions.member.1.Value': 'V',
+            }
+        self.assertEqual(params, expected_params)
+
+    def test_build_put_params_multiple_dimensions(self):
+        c = CloudWatchConnection()
+        params = {}
+        c.build_put_params(params, name="N", value=[1, 2], dimensions=[{"D": "V"}, {"D": "W"}])
+        expected_params = {
+            'MetricData.member.1.MetricName': 'N',
+            'MetricData.member.1.Value': 1,
+            'MetricData.member.1.Dimensions.member.1.Name': 'D',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
+            'MetricData.member.2.MetricName': 'N',
+            'MetricData.member.2.Value': 2,
+            'MetricData.member.2.Dimensions.member.1.Name': 'D',
+            'MetricData.member.2.Dimensions.member.1.Value': 'W',
+            }
+        self.assertEqual(params, expected_params)
+
+    def test_build_put_params_invalid(self):
+        c = CloudWatchConnection()
+        params = {}
+        try:
+            c.build_put_params(params, name=["N", "M"], value=[1, 2, 3])
+        except:
+            pass
+        else:
+            self.fail("Should not accept lists of different lengths.")
+
     def test_get_metric_statistics(self):
         c = CloudWatchConnection()
         m = c.list_metrics()[0]
