@@ -100,10 +100,17 @@ class SSHClient(object):
         return 1
 
     def shell(self):
+        """
+        Start an interactive shell session on the remote host.
+        """
         channel = self._ssh_client.invoke_shell()
         interactive_shell(channel)
 
     def run(self, command):
+        """
+        Execute a command on the remote host.  Return a tuple containing
+        an integer status and a string containing all output from the command.
+        """
         boto.log.info('running:%s on %s' % (command, self.server.instance_id))
         log_fp = StringIO.StringIO()
         status = 0
@@ -118,6 +125,17 @@ class SSHClient(object):
         t[2].close()
         boto.log.info('output: %s' % log_fp.getvalue())
         return (status, log_fp.getvalue())
+
+    def run_pty(self, command):
+        """
+        Execute a command on the remote host with a pseudo-terminal.
+        Returns a string containing the output of the command.
+        """
+        boto.log.info('running:%s on %s' % (command, self.server.instance_id))
+        channel = self._ssh_client.get_transport().open_session()
+        channel.get_pty()
+        channel.exec_command(command)
+        return channel.recv(1024)
 
     def close(self):
         transport = self._ssh_client.get_transport()
