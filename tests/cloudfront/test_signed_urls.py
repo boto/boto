@@ -56,7 +56,13 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         """
         Test base64 encoding custom policy 1 from Amazon's documentation.
         """
-        expected = "eyAKICAgIlN0YXRlbWVudCI6IFt7IAogICAgICAiUmVzb3VyY2UiOiJodHRwOi8vZDYwNDcyMWZ4YWFxeTkuY2xvdWRmcm9udC5uZXQvdHJhaW5pbmcvKiIsIAogICAgICAiQ29uZGl0aW9uIjp7IAogICAgICAgICAiSXBBZGRyZXNzIjp7IkFXUzpTb3VyY2VJcCI6IjE0NS4xNjguMTQzLjAvMjQifSwgCiAgICAgICAgICJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTI1ODIzNzIwMH0gICAgICAKICAgICAgfSAKICAgfV0gCn0K"
+        expected = ("eyAKICAgIlN0YXRlbWVudCI6IFt7IAogICAgICAiUmVzb3VyY2Ui"
+                    "OiJodHRwOi8vZDYwNDcyMWZ4YWFxeTkuY2xvdWRmcm9udC5uZXQv"
+                    "dHJhaW5pbmcvKiIsIAogICAgICAiQ29uZGl0aW9uIjp7IAogICAg"
+                    "ICAgICAiSXBBZGRyZXNzIjp7IkFXUzpTb3VyY2VJcCI6IjE0NS4x"
+                    "NjguMTQzLjAvMjQifSwgCiAgICAgICAgICJEYXRlTGVzc1RoYW4i"
+                    "OnsiQVdTOkVwb2NoVGltZSI6MTI1ODIzNzIwMH0gICAgICAKICAg"
+                    "ICAgfSAKICAgfV0gCn0K")
         encoded = self.dist._url_base64_encode(self.custom_policy_1)
         self.assertEqual(expected, encoded)
 
@@ -64,7 +70,13 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         """
         Test base64 encoding custom policy 2 from Amazon's documentation.
         """
-        expected = "eyAKICAgIlN0YXRlbWVudCI6IFt7IAogICAgICAiUmVzb3VyY2UiOiJodHRwOi8vKiIsIAogICAgICAiQ29uZGl0aW9uIjp7IAogICAgICAgICAiSXBBZGRyZXNzIjp7IkFXUzpTb3VyY2VJcCI6IjIxNi45OC4zNS4xLzMyIn0sCiAgICAgICAgICJEYXRlR3JlYXRlclRoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTI0MTA3Mzc5MH0sCiAgICAgICAgICJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTI1NTY3NDcxNn0KICAgICAgfSAKICAgfV0gCn0K"
+        expected = ("eyAKICAgIlN0YXRlbWVudCI6IFt7IAogICAgICAiUmVzb3VyY2Ui"
+                    "OiJodHRwOi8vKiIsIAogICAgICAiQ29uZGl0aW9uIjp7IAogICAg"
+                    "ICAgICAiSXBBZGRyZXNzIjp7IkFXUzpTb3VyY2VJcCI6IjIxNi45"
+                    "OC4zNS4xLzMyIn0sCiAgICAgICAgICJEYXRlR3JlYXRlclRoYW4i"
+                    "OnsiQVdTOkVwb2NoVGltZSI6MTI0MTA3Mzc5MH0sCiAgICAgICAg"
+                    "ICJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTI1NTY3"
+                    "NDcxNn0KICAgICAgfSAKICAgfV0gCn0K")
         encoded = self.dist._url_base64_encode(self.custom_policy_2)
         self.assertEqual(expected, encoded)
 
@@ -72,28 +84,37 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         """
         Test signing the canned policy from amazon's cloudfront documentation.
         """
-        expected_sig = "Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyEXPDNv0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6tdNx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5jt9w2EOwi6sIIqrg_"
+        expected = ("Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyEXPDN"
+                    "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
+                    "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
+                    "t9w2EOwi6sIIqrg_")
         sig = self.dist._sign_string(self.canned_policy, private_key_string=self.pk_str)
         encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected_sig, encoded_sig)
+        self.assertEqual(expected, encoded_sig)
 
     def test_sign_custom_policy_1(self):
         """
         Test signing custom policy 1 from amazon's cloudfront documentation.
         """
-        expected_sig = "cPFtRKvUfYNYmxek6ZNs6vgKEZP6G3Cb4cyVt~FjqbHOnMdxdT7eT6pYmhHYzuDsFH4Jpsctke2Ux6PCXcKxUcTIm8SO4b29~1QvhMl-CIojki3Hd3~Unxjw7Cpo1qRjtvrimW0DPZBZYHFZtiZXsaPt87yBP9GWnTQoaVysMxQ_"
+        expected = ("cPFtRKvUfYNYmxek6ZNs6vgKEZP6G3Cb4cyVt~FjqbHOnMdxdT7e"
+                    "T6pYmhHYzuDsFH4Jpsctke2Ux6PCXcKxUcTIm8SO4b29~1QvhMl-"
+                    "CIojki3Hd3~Unxjw7Cpo1qRjtvrimW0DPZBZYHFZtiZXsaPt87yB"
+                    "P9GWnTQoaVysMxQ_")
         sig = self.dist._sign_string(self.custom_policy_1, private_key_string=self.pk_str)
         encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected_sig, encoded_sig)
+        self.assertEqual(expected, encoded_sig)
 
     def test_sign_custom_policy_2(self):
         """
         Test signing custom policy 2 from amazon's cloudfront documentation.
         """
-        expected_sig = "rc~5Qbbm8EJXjUTQ6Cn0LAxR72g1DOPrTmdtfbWVVgQNw0q~KHUAmBa2Zv1Wjj8dDET4XSL~Myh44CLQdu4dOH~N9huH7QfPSR~O4tIOS1WWcP~2JmtVPoQyLlEc8YHRCuN3nVNZJ0m4EZcXXNAS-0x6Zco2SYx~hywTRxWR~5Q_"
+        expected = ("rc~5Qbbm8EJXjUTQ6Cn0LAxR72g1DOPrTmdtfbWVVgQNw0q~KHUA"
+                    "mBa2Zv1Wjj8dDET4XSL~Myh44CLQdu4dOH~N9huH7QfPSR~O4tIO"
+                    "S1WWcP~2JmtVPoQyLlEc8YHRCuN3nVNZJ0m4EZcXXNAS-0x6Zco2"
+                    "SYx~hywTRxWR~5Q_")
         sig = self.dist._sign_string(self.custom_policy_2, private_key_string=self.pk_str)
         encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected_sig, encoded_sig)
+        self.assertEqual(expected, encoded_sig)
 
     def test_create_canned_policy(self):
         """
