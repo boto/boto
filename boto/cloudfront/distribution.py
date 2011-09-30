@@ -20,6 +20,8 @@
 # IN THE SOFTWARE.
 
 import uuid
+import base64
+import json
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
 from boto.cloudfront.signers import ActiveTrustedSigners, TrustedSigners
@@ -492,7 +494,123 @@ class Distribution:
         if self.config.origin.origin_access_identity:
             self.set_permissions(object, replace)
         return object
-            
+
+    def create_signed_url(self, url, keypair_id,
+                          expire_time=None, valid_after_time=None,
+                          ip_address=None, policy_url=None,
+                          private_key_file=None, private_key_string=None):
+        """
+        Creates a signed URL that is only valid within the specified
+        parameters.
+        """
+        # If no policy_url is specified, default to the full url.
+        if policy_url is None:
+            policy_url = url
+        canned = False
+        # Check if we can use a canned policy
+        if expire_time and not valid_after_time and not ip_address:
+            # we manually construct this policy string to ensure formatting
+            # matches signature
+            policy = self._canned_policy(url, expire_time)
+            canned = True
+        else:
+            # Can't use canned policy
+            policy = json.dumps(policy, separators=(",", ":"))
+#            with open("/home/milnerm/policy.txt", "wb") as f:
+#                f.write(policy)           
+        #sign the policy
+        signature = self._sign_string(policy, private_key_file, private_key_string)
+        #now base64 encode the signature (URL safe as well)
+        encoded_signature = self._url_base64_encode(signature)
+        #combine these into a full url
+        if "?" in url:
+            sep = "&"
+        else:
+            sep = "?"
+        if canned:
+            signed_url = ("%(url)s%(sep)s"
+                          "Expires=%(expires)s&"
+                          "Signature=%(encoded_signature)s&"
+                          "Key-Pair-Id=%(key_pair_id)s") % {
+                'url':url,
+                'sep':sep,
+                'expires':expire_time,
+                'encoded_signature':encoded_signature,
+                'key_pair_id':keypair_id,
+                }
+        else:
+            encoded_policy = self._url_base64_encode(policy)
+            signed_url = ("%(url)s%(sep)s"
+                          "Policy=%(encoded_policy)s&"
+                          "Signature=%(encoded_signature)s&"
+                          "Key-Pair-Id=%(key_pair_id)s") % {
+                'url':url,
+                'sep':sep,
+                'encoded_policy':encoded_policy,
+                'encoded_signature':encoded_signature,
+                'key_pair_id':keypair_id,
+                }
+
+        return signed_url
+
+    @staticmethod
+    def _canned_policy(resource, expires):
+        policy = ('{"Statement":[{"Resource":"%(resource)s",'
+                  '"Condition":{"DateLessThan":{"AWS:EpochTime":'
+                  '%(expires)s}}}]}' % locals())
+        return policy
+
+    @staticmethod
+    def _custom_policy(resource, expires=None, valid_after=None, ip_address=None):
+        condition = {}
+        if expires:
+            condition["DateLessThan"] = {"AWS:EpochTime": expires}
+        if valid_after:
+            condition["DateGreaterThan"] = {"AWS:EpochTime": valid_after}
+        if ip_address:
+            if '/' not in ip_address:
+                ip_address += "/32"
+            condition["IpAddress"] = {"AWS:SourceIp": ip_address}
+        policy = {"Statement": [{
+                     "Resource": resource,
+                     "Condition": condition}]}
+        return json.dumps(policy, separators=(",", ":"))
+
+    @staticmethod
+    def _sign_string(message, private_key_file=None, private_key_string=None):
+        try:
+            from M2Crypto import EVP
+        except ImportError:
+            raise NotImplementedError("Boto depends on the python M2Crypto "
+                                      "library to generate signed URLs for "
+                                      "CloudFront")
+        # Make sure only one of private_key_file and private_key_string is set
+        if private_key_file and private_key_string:
+            raise ValueError("Only specify the private_key_file or the private_key_string not both")
+        if not private_key_file and not private_key_string:
+            raise ValueError("You must specify one of private_key_file or private_key_string")
+        # if private_key_file is a file object read the key string from there
+        if isinstance(private_key_file, file):
+            private_key_string = private_key_file.read()
+        # Now load key and calculate signature
+        if private_key_string:
+            key = EVP.load_key_string(private_key_string)
+        else:
+            key = EVP.load_key(private_key_file)
+        key.reset_context(md='sha1')
+        key.sign_init()
+        key.sign_update(message)
+        signature = key.sign_final()
+        return signature
+
+    @staticmethod
+    def _url_base64_encode(msg):
+        msg_base64 = base64.b64encode(msg)
+        msg_base64 = msg_base64.replace('+', '-')
+        msg_base64 = msg_base64.replace('=', '_')
+        msg_base64 = msg_base64.replace('/', '~')
+        return msg_base64
+
 class StreamingDistribution(Distribution):
 
     def __init__(self, connection=None, config=None, domain_name='',
