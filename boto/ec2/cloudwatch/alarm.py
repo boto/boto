@@ -43,9 +43,11 @@ class MetricAlarm(object):
     _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.iteritems())
 
     def __init__(self, connection=None, name=None, metric=None,
-                 namespace=None, statistic=None, comparison=None, threshold=None,
-                 period=None, evaluation_periods=None, unit=None, description='',
-                 dimensions=[], alarm_actions=[], insufficient_data_actions=[], ok_actions=[]):
+                 namespace=None, statistic=None, comparison=None,
+                 threshold=None, period=None, evaluation_periods=None,
+                 unit=None, description='', dimensions=None,
+                 alarm_actions=None, insufficient_data_actions=None,
+                 ok_actions=None):
         """
         Creates a new Alarm.
 
@@ -59,43 +61,51 @@ class MetricAlarm(object):
         :param namespace: The namespace for the alarm's metric.
 
         :type statistic: str
-        :param statistic: The statistic to apply to the alarm's associated metric. Can
-                          be one of 'SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'
+        :param statistic: The statistic to apply to the alarm's associated
+                          metric.
+                          Valid values: SampleCount|Average|Sum|Minimum|Maximum
 
         :type comparison: str
-        :param comparison: Comparison used to compare statistic with threshold. Can be
-                           one of '>=', '>', '<', '<='
+        :param comparison: Comparison used to compare statistic with threshold.
+                           Valid values: >= | > | < | <=
 
         :type threshold: float
-        :param threshold: The value against which the specified statistic is compared.
+        :param threshold: The value against which the specified statistic
+                          is compared.
 
         :type period: int
-        :param period: The period in seconds over which teh specified statistic is applied.
+        :param period: The period in seconds over which teh specified
+                       statistic is applied.
 
         :type evaluation_periods: int
-        :param evaluation_period: The number of periods over which data is compared to
-                                  the specified threshold
+        :param evaluation_period: The number of periods over which data is
+                                  compared to the specified threshold.
 
         :type unit: str
-        :param unit: Allowed Values are: Seconds, Microseconds, Milliseconds, Bytes, 
-                     Kilobytes, Megabytes, Gigabytes, Terabytes, Bits, Kilobits, Megabits, 
-                     Gigabits, Terabits, Percent, Count, Bytes/Second, Kilobytes/Second, 
-                     Megabytes/Second, Gigabytes/Second, Terabytes/Second, Bits/Second, 
-                     Kilobits/Second, Megabits/Second, Gigabits/Second, Terabits/Second, 
-                     Count/Second, None
+        :param unit: Allowed Values are:
+                     Seconds|Microseconds|Milliseconds,
+                     Bytes|Kilobytes|Megabytes|Gigabytes|Terabytes,
+                     Bits|Kilobits|Megabits|Gigabits|Terabits,
+                     Percent|Count|
+                     Bytes/Second|Kilobytes/Second|Megabytes/Second|
+                     Gigabytes/Second|Terabytes/Second,
+                     Bits/Second|Kilobits/Second|Megabits/Second,
+                     Gigabits/Second|Terabits/Second|Count/Second|None
 
         :type description: str
         :param description: Description of MetricAlarm
 
         :type dimensions: list of dicts
         :param description: Dimensions of alarm, such as:
-                            [{'InstanceId':'i-0123456,i-0123457'}]
+                            [{'InstanceId':['i-0123456,i-0123457']}]
         
         :type alarm_actions: list of strs
-        :param alarm_actions: A list of the ARNs of the actions to take in ALARM state
+        :param alarm_actions: A list of the ARNs of the actions to take in
+                              ALARM state
         
         :type insufficient_data_actions: list of strs
-        :param insufficient_data_actions: A list of the ARNs of the actions to take in INSUFFICIENT_DATA state
+        :param insufficient_data_actions: A list of the ARNs of the actions to
+                                          take in INSUFFICIENT_DATA state
         
         :type ok_actions: list of strs
         :param ok_actions: A list of the ARNs of the actions to take in OK state
@@ -105,10 +115,19 @@ class MetricAlarm(object):
         self.metric = metric
         self.namespace = namespace
         self.statistic = statistic
-        self.threshold = float(threshold) if threshold is not None else None
+        if threshold is not None:
+            self.threshold = float(threshold)
+        else:
+            self.threshold = None
         self.comparison = self._cmp_map.get(comparison)
-        self.period = int(period) if period is not None else None
-        self.evaluation_periods = int(evaluation_periods) if evaluation_periods is not None else None
+        if period is not None:
+            self.period = int(period)
+        else:
+            self.period = None
+        if evaluation_periods is not None:
+            self.evaluation_periods = int(evaluation_periods)
+        else:
+            self.evaluation_periods = None
         self.actions_enabled = None
         self.alarm_arn = None
         self.last_updated = None
@@ -117,19 +136,25 @@ class MetricAlarm(object):
         self.state_reason = None
         self.state_value = None
         self.unit = unit
-        self.alarm_actions = ListElement(alarm_actions)
-        self.insufficient_data_actions = ListElement(insufficient_data_actions)
-        self.ok_actions = ListElement(ok_actions)
+        self.alarm_actions = alarm_actions
+        self.insufficient_data_actions = insufficient_data_actions
+        self.ok_actions = ok_actions
 
     def __repr__(self):
-        return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric, self.statistic, self.comparison, self.threshold)
+        return 'MetricAlarm:%s[%s(%s) %s %s]' % (self.name, self.metric,
+                                                 self.statistic,
+                                                 self.comparison,
+                                                 self.threshold)
 
     def startElement(self, name, attrs, connection):
         if name == 'AlarmActions':
+            self.alarm_actions = ListElement()
             return self.alarm_actions
         elif name == 'InsufficientDataActions':
+            self.insufficient_data_actions = ListElement()
             return self.insufficient_data_actions
         elif name == 'OKActions':
+            self.ok_actions = ListElement()
             return self.ok_actions
         else:
             pass
@@ -191,9 +216,12 @@ class MetricAlarm(object):
     def disable_actions(self):
         return self.connection.disable_alarm_actions([self.name])
 
-    def describe_history(self, start_date=None, end_date=None, max_records=None, history_item_type=None, next_token=None):
-        return self.connection.describe_alarm_history(self.name, start_date, end_date,
-                                                      max_records, history_item_type, next_token)
+    def describe_history(self, start_date=None, end_date=None, max_records=None,
+                         history_item_type=None, next_token=None):
+        return self.connection.describe_alarm_history(self.name, start_date,
+                                                      end_date, max_records,
+                                                      history_item_type,
+                                                      next_token)
 
     def add_alarm_action(self, action_arn=None):
         """
@@ -235,7 +263,10 @@ class MetricAlarm(object):
         if not action_arn:
             return
         self.actions_enabled = 'true'
-        self.ok_actions.append(action_arn)    
+        self.ok_actions.append(action_arn)
+
+    def delete(self):
+        self.connection.delete_alarms([self])
 
 class AlarmHistoryItem(object):
     def __init__(self, connection=None):

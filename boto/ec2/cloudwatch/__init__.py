@@ -270,6 +270,10 @@ class CloudWatchConnection(AWSQueryConnection):
         :type statistics: list
         :param statistics: A list of statistics names Valid values:
                            Average | Sum | SampleCount | Maximum | Minimum
+
+        :type dimensions: DimensionList
+        :param dimensions: A list of Dimensions describing qualities
+                           of the metric.
         :rtype: list
         """
         params = {'Period' : period,
@@ -279,14 +283,11 @@ class CloudWatchConnection(AWSQueryConnection):
                   'EndTime' : end_time.isoformat()}
         self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
-            for index, name in enumerate(dimensions):
-                i = index + 1
-                params['Dimensions.member.%d.Name' % i] = name
-                params['Dimensions.member.%d.Value' % i] = dimensions[name]
+            dimensions.build_param_list(params)
         return self.get_list('GetMetricStatistics', params,
                              [('member', Datapoint)])
 
-    def list_metrics(self, next_token=None, dimension_filters=None,
+    def list_metrics(self, next_token=None, dimensions=None,
                      metric_name=None, namespace=None):
         """
         Returns a list of the valid metrics for which there is recorded
@@ -300,7 +301,7 @@ class CloudWatchConnection(AWSQueryConnection):
                            parameter to list_metrics will retrieve the
                            next page of metrics.
 
-        :type dimension_filters: dict
+        :type dimension: dict
         :param dimension_filters: A dictionary containing name/value pairs
                                   that will be used to filter the results.
                                   The key in the dictionary is the name of
@@ -320,8 +321,8 @@ class CloudWatchConnection(AWSQueryConnection):
         params = {}
         if next_token:
             params['NextToken'] = next_token
-        if dimension_filters:
-            self.build_list_params(params, [dimension_filters],
+        if dimensions:
+            self.build_list_params(params, [dimensions],
                                    'Dimensions.member.%d.%s')
         if metric_name:
             params['MetricName'] = metric_name
@@ -381,10 +382,7 @@ class CloudWatchConnection(AWSQueryConnection):
             metric_data['Unit'] = unit
         
         if dimensions:
-            for index, (name, val) in enumerate(dimensions.iteritems()):
-                i = index + 1
-                metric_data['Dimensions.member.%d.Name' % i] = name
-                metric_data['Dimensions.member.%d.Value' % i] = val
+            dimensions.build_param_list(params)
         
         if statistics:
             metric_data['StatisticValues.Maximum'] = statistics['maximum']
@@ -537,7 +535,7 @@ class CloudWatchConnection(AWSQueryConnection):
         if statistic:
             params['Statistic'] = statistic
         if dimensions:
-            self.build_list_params(params, dimensions,
+            self.build_param_list(params, dimensions,
                                    'Dimensions.member.%s.%s')
         if unit:
             params['Unit'] = unit
