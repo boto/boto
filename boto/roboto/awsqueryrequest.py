@@ -367,6 +367,9 @@ class AWSQueryRequest(object):
         s = 'usage: %prog [options] '
         l = [ a.long_name for a in self.Args ]
         s += ' '.join(l)
+        for a in self.Args:
+            if a.doc:
+                s += '\n\n\t%s - %s' % (a.long_name, a.doc)
         return s
     
     def build_cli_parser(self):
