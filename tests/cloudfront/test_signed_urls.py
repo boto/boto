@@ -268,6 +268,22 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         source_ip = ip_address["AWS:SourceIp"]
         self.assertEqual(ip_range, source_ip)
 
+    def test_params_canned_policy(self):
+        """
+        Test the correct params are generated for a canned policy.
+        """
+        url = "http://d604721fxaaqy9.cloudfront.net/horizon.jpg?large=yes&license=yes"
+        expire_time = 1258237200
+        expected_sig = ("Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyE"
+                        "XPDNv0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4"
+                        "kXAJK6tdNx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCM"
+                        "IYHIaiOB6~5jt9w2EOwi6sIIqrg_")
+        signed_url_params = self.dist._create_signing_params(url, self.pk_id, expire_time, private_key_string=self.pk_str)
+        self.assertEqual(3, len(signed_url_params))
+        self.assertEqual(signed_url_params["Expires"], "1258237200")
+        self.assertEqual(signed_url_params["Signature"], expected_sig)
+        self.assertEqual(signed_url_params["Key-Pair-Id"], "PK123456789754")
+
     def test_canned_policy(self):
         """
         Generate signed url from the Example Canned Policy in Amazon's
