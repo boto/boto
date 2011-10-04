@@ -31,31 +31,12 @@ class Dimension(dict):
         if name == 'Name':
             self._name = value
         elif name == 'Value':
-            self[self._name] = value
+            if self._name in self:
+                self[self._name].append(value)
+            else:
+                self[self._name] = [value]
         else:
             setattr(self, name, value)
-
-    def build_param_list(self, params, index):
-        name, value = self.items()[0]
-        params['Dimensions.member.%d.Name' % index] = name
-        params['Dimensions.member.%d.Value' % index] = value
-
-class DimensionList(list):
-
-    def startElement(self, name, attrs, connection):
-        if name == 'member':
-            d = Dimension()
-            self.append(d)
-            return d
-        else:
-            return None
-
-    def endElement(self, name, value, connection):
-        pass
-
-    def build_param_list(self, params):
-        for i, dimension in enumerate(self):
-            dimension.build_param_list(params, i+1)
 
 class Metric(object):
 
@@ -79,7 +60,7 @@ class Metric(object):
 
     def startElement(self, name, attrs, connection):
         if name == 'Dimensions':
-            self.dimensions = DimensionList()
+            self.dimensions = Dimension()
             return self.dimensions
 
     def endElement(self, name, value, connection):
