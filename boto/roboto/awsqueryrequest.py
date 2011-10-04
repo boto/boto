@@ -370,7 +370,7 @@ class AWSQueryRequest(object):
         return s
     
     def build_cli_parser(self):
-        self.parser = optparse.OptionParser(description=self.Description
+        self.parser = optparse.OptionParser(description=self.Description,
                                             usage=self.get_usage())
         self.add_standard_options()
         for param in self.Params:
