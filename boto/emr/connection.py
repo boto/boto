@@ -196,7 +196,8 @@ class EmrConnection(AWSQueryConnection):
                     hadoop_version='0.20',
                     steps=[],
                     bootstrap_actions=[],
-                    instance_groups=None):
+                    instance_groups=None,
+                    additional_info=None):
         """
         Runs a job flow
 
@@ -228,6 +229,8 @@ class EmrConnection(AWSQueryConnection):
         :param instance_groups: Optional list of instance groups to use when creating
                       this job. NB: When provided, this argument supersedes
                       num_instances and master/slave_instance_type.
+        :type additional_info: JSON str
+        :param additional_info: A JSON string for selecting additional features
         :rtype: str
         :return: The jobflow id
         """
@@ -280,6 +283,9 @@ class EmrConnection(AWSQueryConnection):
         if bootstrap_actions:
             bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
+
+        if additional_info is not None:
+            params['AdditionalInfo'] = additional_info
 
         response = self.get_object(
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')
