@@ -92,6 +92,19 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         encoded_sig = self.dist._url_base64_encode(sig)
         self.assertEqual(expected, encoded_sig)
 
+    def test_sign_canned_policy_unicode(self):
+        """
+        Test signing the canned policy from amazon's cloudfront documentation.
+        """
+        expected = ("Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyEXPDN"
+                    "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
+                    "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
+                    "t9w2EOwi6sIIqrg_")
+        unicode_policy = unicode(self.canned_policy)
+        sig = self.dist._sign_string(unicode_policy, private_key_string=self.pk_str)
+        encoded_sig = self.dist._url_base64_encode(sig)
+        self.assertEqual(expected, encoded_sig)
+
     def test_sign_custom_policy_1(self):
         """
         Test signing custom policy 1 from amazon's cloudfront documentation.

@@ -605,7 +605,7 @@ class Distribution:
             key = EVP.load_key(private_key_file)
         key.reset_context(md='sha1')
         key.sign_init()
-        key.sign_update(message)
+        key.sign_update(str(message))
         signature = key.sign_final()
         return signature
 
