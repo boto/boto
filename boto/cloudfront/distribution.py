@@ -398,7 +398,7 @@ class Distribution:
                 self._bucket.set_key_class(self._object_class)
             return self._bucket
         else:
-            raise NotImplemented, 'Unable to get_objects on CustomOrigin'
+            raise NotImplementedError('Unable to get_objects on CustomOrigin')
     
     def get_objects(self):
         """
