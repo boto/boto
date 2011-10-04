@@ -72,20 +72,27 @@ class SSHClient(object):
                 retry += 1
         print 'Could not establish SSH connection'
 
+    def open_sftp(self):
+        return self._ssh_client.open_sftp()
+
     def get_file(self, src, dst):
-        sftp_client = self._ssh_client.open_sftp()
+        sftp_client = self.open_sftp()
         sftp_client.get(src, dst)
 
     def put_file(self, src, dst):
-        sftp_client = self._ssh_client.open_sftp()
+        sftp_client = self.open_sftp()
         sftp_client.put(src, dst)
 
-    def listdir(self, path):
-        sftp_client = self._ssh_client.open_sftp()
-        return sftp_client.listdir(path)
+    def open(self, filename, mode='r', bufsize=-1):
+        """
+        Open a file on the remote system and return a file-like object.
+        """
+        sftp_client = self.open_sftp()
+        return sftp_client.open(filename, mode, bufsize)
 
-    def open_sftp(self):
-        return self._ssh_client.open_sftp()
+    def listdir(self, path):
+        sftp_client = self.open_sftp()
+        return sftp_client.listdir(path)
 
     def isdir(self, path):
         status = self.run('[ -d %s ] || echo "FALSE"' % path)
@@ -109,29 +116,30 @@ class SSHClient(object):
     def run(self, command):
         """
         Execute a command on the remote host.  Return a tuple containing
-        an integer status and a string containing all output from the command.
+        an integer status and a two strings, the first containing stdout
+        and the second containing stderr from the command.
         """
-        boto.log.info('running:%s on %s' % (command, self.server.instance_id))
-        log_fp = StringIO.StringIO()
+        boto.log.debug('running:%s on %s' % (command, self.server.instance_id))
         status = 0
         try:
             t = self._ssh_client.exec_command(command)
         except paramiko.SSHException:
             status = 1
-        log_fp.write(t[1].read())
-        log_fp.write(t[2].read())
+        std_out = t[1].read()
+        std_err = t[2].read()
         t[0].close()
         t[1].close()
         t[2].close()
-        boto.log.info('output: %s' % log_fp.getvalue())
-        return (status, log_fp.getvalue())
+        boto.log.debug('stdout: %s' % std_out)
+        boto.log.debug('stderr: %s' % std_err)
+        return (status, std_out, std_err)
 
     def run_pty(self, command):
         """
         Execute a command on the remote host with a pseudo-terminal.
         Returns a string containing the output of the command.
         """
-        boto.log.info('running:%s on %s' % (command, self.server.instance_id))
+        boto.log.debug('running:%s on %s' % (command, self.server.instance_id))
         channel = self._ssh_client.get_transport().open_session()
         channel.get_pty()
         channel.exec_command(command)
