@@ -31,7 +31,7 @@ Web Services.  In addition, boto provides support for other public
 services such as Google Storage in addition to private cloud systems
 like Eucalyptus, OpenStack and Open Nebula.
 
-Boto is developed mainly using Python 2.6.6 and Python 2.71 on Mac OSX
+Boto is developed mainly using Python 2.6.6 and Python 2.7.1 on Mac OSX
 and Ubuntu Maverick.  It is known to work on other Linux distributions
 and on Windows.  Boto requires no additional libraries or packages
 other than those that are distributed with Python.  Efforts are made
@@ -41,7 +41,7 @@ to keep boto compatible with Python 2.5.x but no guarantees are made.
 
 The main source code repository for boto can be found on [github.com](http://github.com/boto/boto)
 
-[Online documentation](http://boto.cloudhackers.com/) is also
+[Online documentation](http://readthedocs.org/docs/boto/en/latest/) is also
 available.  The online documentation includes full API documentation
 as well as Getting Started Guides for many of the boto modules.
 
