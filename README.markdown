@@ -41,7 +41,7 @@ to keep boto compatible with Python 2.5.x but no guarantees are made.
 
 The main source code repository for boto can be found on [github.com](http://github.com/boto/boto)
 
-[Online documentation](http://readthedocs.org/docs/boto/en/latest/) is also
+[Online documentation](http://boto.cloudhackers.com/) is also
 available.  The online documentation includes full API documentation
 as well as Getting Started Guides for many of the boto modules.
 
