@@ -39,8 +39,6 @@ Currently, this includes:
 - Workforce
  - Mechanical Turk
 
-The boto project page is at http://boto.googlecode.com/
-
 The boto source repository is at http://github.com/boto
 
 Follow project updates on Twitter (http://twitter.com/pythonboto).

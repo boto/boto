@@ -39,13 +39,16 @@ to keep boto compatible with Python 2.5.x but no guarantees are made.
 
 ## Finding Out More About Boto
 
-The main source code repository for boto can be found on [github.com](http://github.com/boto/boto)
+The main source code repository for boto can be found on
+[github.com](http://github.com/boto/boto)
 
-[Online documentation](http://boto.cloudhackers.com/) is also
+[Online documentation](http://readthedocs.org/docs/boto/) is also
 available.  The online documentation includes full API documentation
 as well as Getting Started Guides for many of the boto modules.
 
-Boto releases can be found on the [Google Project page](http://code.google.com/p/boto/downloads/list) or on the [Python Cheese Shop](http://pypi.python.org/).
+Boto releases can be found on the [Google Project
+page](http://code.google.com/p/boto/downloads/list) or on the [Python
+Cheese Shop](http://pypi.python.org/).
 
 Join our `IRC channel`_ (#boto on FreeNode).
     IRC channel: http://webchat.freenode.net/?channels=boto
@@ -59,8 +62,9 @@ following environment variables to ascertain your credentials:
 AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
-Credentials and other boto-related settings can also be stored in a boto config
-file.  See [this](http://code.google.com/p/boto/wiki/BotoConfig) for details.
+Credentials and other boto-related settings can also be stored in a
+boto config file.  See
+[this](http://code.google.com/p/boto/wiki/BotoConfig) for details.
 
 Copyright (c) 2006-2011 Mitch Garnaat <mitch@garnaat.com>
 Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
