@@ -23,13 +23,11 @@
 
 import boto
 from boto import handler
-from boto.provider import Provider
 from boto.resultset import ResultSet
-from boto.s3.acl import ACL, Policy, CannedACLStrings, Grant
+from boto.s3.acl import Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
-from boto.s3.user import User
 from boto.s3.multipart import MultiPartUpload
 from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.bucketlistresultset import BucketListResultSet
@@ -107,7 +105,7 @@ class Bucket(object):
         return iter(BucketListResultSet(self))
 
     def __contains__(self, key_name):
-       return not (self.get_key(key_name) is None)
+        return not (self.get_key(key_name) is None)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -188,6 +186,7 @@ class Bucket(object):
             k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
+            k.handle_encryption_headers(response)
             return k
         else:
             if response.status == 404:
@@ -290,7 +289,7 @@ class Bucket(object):
     def _get_all(self, element_map, initial_query_string='',
                  headers=None, **params):
         l = []
-        for k,v in params.items():
+        for k, v in params.items():
             k = k.replace('_', '-')
             if  k == 'maxkeys':
                 k = 'max-keys'
@@ -303,7 +302,8 @@ class Bucket(object):
         else:
             s = initial_query_string
         response = self.connection.make_request('GET', self.name,
-                headers=headers, query_args=s)
+                                                headers=headers,
+                                                query_args=s)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -489,7 +489,8 @@ class Bucket(object):
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
-                 storage_class='STANDARD', preserve_acl=False):
+                 storage_class='STANDARD', preserve_acl=False,
+                 encrypt_key=False):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -534,10 +535,17 @@ class Bucket(object):
                              of False will be significantly more
                              efficient.
 
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
-
+        headers = {}
+        provider = self.connection.provider
         src_key_name = boto.utils.get_utf8_value(src_key_name)
         if preserve_acl:
             if self.name == src_bucket_name:
@@ -545,10 +553,11 @@ class Bucket(object):
             else:
                 src_bucket = self.connection.get_bucket(src_bucket_name)
             acl = src_bucket.get_xml_acl(src_key_name)
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?version_id=%s' % src_version_id
-        provider = self.connection.provider
         headers = {provider.copy_source_header : str(src)}
         if storage_class != 'STANDARD':
             headers[provider.storage_class_header] = storage_class
@@ -571,7 +580,8 @@ class Bucket(object):
                 self.set_xml_acl(acl, new_key_name)
             return key
         else:
-            raise provider.storage_response_error(response.status, response.reason, body)
+            raise provider.storage_response_error(response.status,
+                                                  response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name='', headers=None,
                        version_id=None):
@@ -582,7 +592,7 @@ class Bucket(object):
         else:
             headers={self.connection.provider.acl_header: acl_str}
 
-        query_args='acl'
+        query_args = 'acl'
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
@@ -1017,7 +1027,8 @@ class Bucket(object):
         
 
     def initiate_multipart_upload(self, key_name, headers=None,
-            reduced_redundancy=False, metadata=None):
+                                  reduced_redundancy=False,
+                                  metadata=None, encrypt_key=False):
         """
         Start a multipart upload operation.
 
@@ -1042,16 +1053,25 @@ class Bucket(object):
         :type metadata: dict
         :param metadata: Any metadata that you would like to set on the key
                          that results from the multipart upload.
+                         
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
         """
         query_args = 'uploads'
+        provider = self.connection.provider
         if headers is None:
             headers = {}
         if reduced_redundancy:
-            storage_class_header = self.connection.provider.storage_class_header
+            storage_class_header = provider.storage_class_header
             if storage_class_header:
                 headers[storage_class_header] = 'REDUCED_REDUNDANCY'
             # TODO: what if the provider doesn't support reduced redundancy?
             # (see boto.s3.key.Key.set_contents_from_file)
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
         if metadata is None:
             metadata = {}
 

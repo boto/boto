@@ -32,6 +32,7 @@ import getopt
 from sqs.test_connection import SQSConnectionTest
 from s3.test_connection import S3ConnectionTest
 from s3.test_versioning import S3VersionTest
+from s3.test_encryption import S3EncryptionTest
 from s3.test_gsconnection import GSConnectionTest
 from s3.test_https_cert_validation import CertValidationTest
 from ec2.test_connection import EC2ConnectionTest
@@ -83,12 +84,14 @@ def suite(testsuite="all"):
     elif testsuite == "s3":
         tests.addTest(unittest.makeSuite(S3ConnectionTest))
         tests.addTest(unittest.makeSuite(S3VersionTest))
+        tests.addTest(unittest.makeSuite(S3EncryptionTest))
     elif testsuite == "ssl":
         tests.addTest(unittest.makeSuite(CertValidationTest))
     elif testsuite == "s3ver":
         tests.addTest(unittest.makeSuite(S3VersionTest))
     elif testsuite == "s3nover":
         tests.addTest(unittest.makeSuite(S3ConnectionTest))
+        tests.addTest(unittest.makeSuite(S3EncryptionTest))
     elif testsuite == "gs":
         tests.addTest(unittest.makeSuite(GSConnectionTest))
     elif testsuite == "sqs":

@@ -27,7 +27,6 @@ import time
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
-from boto.provider import Provider
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
@@ -64,7 +63,10 @@ def assert_case_insensitive(f):
         return f(*args, **kwargs)
     return wrapper
 
-class _CallingFormat:
+class _CallingFormat(object):
+
+    def get_bucket_server(self, server, bucket):
+        return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
         url_base = '%s://' % protocol
@@ -137,8 +139,8 @@ class S3Connection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/', provider='aws',
-                 bucket_class=Bucket):
+                 calling_format=SubdomainCallingFormat(), path='/',
+                 provider='aws', bucket_class=Bucket):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         AWSAuthConnection.__init__(self, host,
@@ -155,7 +157,7 @@ class S3Connection(AWSAuthConnection):
             yield bucket
 
     def __contains__(self, bucket_name):
-       return not (self.lookup(bucket_name) is None)
+        return not (self.lookup(bucket_name) is None)
 
     def set_bucket_class(self, bucket_class):
         """
@@ -182,8 +184,10 @@ class S3Connection(AWSAuthConnection):
 
 
     def build_post_form_args(self, bucket_name, key, expires_in = 6000,
-                        acl = None, success_action_redirect = None, max_content_length = None,
-                        http_method = "http", fields=None, conditions=None):
+                             acl = None, success_action_redirect = None,
+                             max_content_length = None,
+                             http_method = "http", fields=None,
+                             conditions=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
         This only returns the arguments required for the post form, not the actual form
@@ -327,11 +331,13 @@ class S3Connection(AWSAuthConnection):
 
     def get_canonical_user_id(self, headers=None):
         """
-        Convenience method that returns the "CanonicalUserID" of the user who's credentials
-        are associated with the connection.  The only way to get this value is to do a GET
-        request on the service which returns all buckets associated with the account.  As part
-        of that response, the canonical userid is returned.  This method simply does all of
-        that and then returns just the user id.
+        Convenience method that returns the "CanonicalUserID" of the
+        user who's credentials are associated with the connection.
+        The only way to get this value is to do a GET request on the
+        service which returns all buckets associated with the account.
+        As part of that response, the canonical userid is returned.
+        This method simply does all of that and then returns just the
+        user id.
 
         :rtype: string
         :return: A string containing the canonical user id.

@@ -47,7 +47,7 @@ class S3VersionTest (unittest.TestCase):
         d = bucket.get_versioning_status()
         assert not d.has_key('Versioning')
         bucket.configure_versioning(versioning=True)
-        time.sleep(5)
+        time.sleep(15)
         d = bucket.get_versioning_status()
         assert d['Versioning'] == 'Enabled'
         
