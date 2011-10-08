@@ -312,7 +312,10 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         # on the wrong account.
         names = [handler.__class__.__name__ for handler in ready_handlers]
         raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
-               '%d AuthHandlers ready to authenticate, '
-               'only 1 expected: %s' % (len(names), str(names)))
+               '%d AuthHandlers %s ready to authenticate for requested_capability '
+               '%s, only 1 expected. This happens if you import multiple '
+               'pluging.Plugin implementations that declare support for the '
+               'requested_capability.' % (len(names), str(names),
+               requested_capability))
 
     return ready_handlers[0]
