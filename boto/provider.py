@@ -88,6 +88,9 @@ class Provider(object):
         'google' : True
     }
 
+    # If you update this map please make sure to put "None" for the
+    # right-hand-side for any headers that don't apply to a provider, rather
+    # than simply leaving that header out (which would cause KeyErrors).
     HeaderInfoMap = {
         'aws' : {
             HEADER_PREFIX_KEY : AWS_HEADER_PREFIX,
@@ -122,6 +125,7 @@ class Provider(object):
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
             SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY : None,
             # Note that this version header is not to be confused with
             # the Google Storage 'x-goog-api-version' header.
             VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',

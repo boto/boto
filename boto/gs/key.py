@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import StringIO
 from boto.s3.key import Key as S3Key
 
 class Key(S3Key):
@@ -244,3 +245,56 @@ class Key(S3Key):
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
         fp.close()
+
+    def set_contents_from_string(self, s, headers=None, replace=True,
+                                 cb=None, num_cb=10, policy=None, md5=None):
+        """
+        Store an object in S3 using the name of the Key object as the
+        key in S3 and the string 's' as the contents.
+        See set_contents_from_file method for details about the
+        parameters.
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the
+                        request to AWS.
+
+        :type replace: bool
+        :param replace: If True, replaces the contents of the file if
+                        it already exists.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
+                   the compute_md5 method.
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values
+                    of the file.  Otherwise, the checksum will be computed.
+        """
+        if isinstance(s, unicode):
+            s = s.encode("utf-8")
+        fp = StringIO.StringIO(s)
+        r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5)
+        fp.close()
+        return r

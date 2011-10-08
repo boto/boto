@@ -109,7 +109,10 @@ class Key(object):
 
     def handle_encryption_headers(self, resp):
         provider = self.bucket.connection.provider
-        self.encrypted = resp.getheader(provider.server_side_encryption_header, None)
+        if provider.server_side_encryption_header:
+            self.encrypted = resp.getheader(provider.server_side_encryption_header, None)
+        else:
+            self.encrypted = None
 
     def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
