@@ -40,13 +40,20 @@ class SQSConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None):
         if not region:
-            region = SQSRegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = SQSRegionInfo(self, self.DefaultRegionName,
+                                   self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port,
+                                    proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path,
+                                    security_token=security_token)
 
     def _required_auth_capability(self):
         return ['sqs']
@@ -56,17 +63,21 @@ class SQSConnection(AWSQueryConnection):
         Create an SQS Queue.
 
         :type queue_name: str or unicode
-        :param queue_name: The name of the new queue.  Names are scoped to an account and need to
-                           be unique within that account.  Calling this method on an existing
-                           queue name will not return an error from SQS unless the value for
-                           visibility_timeout is different than the value of the existing queue
-                           of that name.  This is still an expensive operation, though, and not
-                           the preferred way to check for the existence of a queue.  See the
+        :param queue_name: The name of the new queue.  Names are scoped to
+                           an account and need to be unique within that
+                           account.  Calling this method on an existing
+                           queue name will not return an error from SQS
+                           unless the value for visibility_timeout is
+                           different than the value of the existing queue
+                           of that name.  This is still an expensive operation,
+                           though, and not the preferred way to check for
+                           the existence of a queue.  See the
                            :func:`boto.sqs.connection.SQSConnection.lookup` method.
 
         :type visibility_timeout: int
-        :param visibility_timeout: The default visibility timeout for all messages written in the
-                                   queue.  This can be overridden on a per-message.
+        :param visibility_timeout: The default visibility timeout for all
+                                   messages written in the queue.  This can
+                                   be overridden on a per-message.
 
         :rtype: :class:`boto.sqs.queue.Queue`
         :return: The newly created queue.
@@ -85,10 +96,12 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The SQS queue to be deleted
         
         :type force_deletion: Boolean
-        :param force_deletion: Normally, SQS will not delete a queue that contains messages.
-                               However, if the force_deletion argument is True, the
-                               queue will be deleted regardless of whether there are messages in
-                               the queue or not.  USE WITH CAUTION.  This will delete all
+        :param force_deletion: Normally, SQS will not delete a queue that
+                               contains messages.  However, if the
+                               force_deletion argument is True, the
+                               queue will be deleted regardless of whether
+                               there are messages in the queue or not.
+                               USE WITH CAUTION.  This will delete all
                                messages in the queue as well.
                                
         :rtype: bool
@@ -104,27 +117,30 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The SQS queue to be deleted
 
         :type attribute: str
-        :type attribute: The specific attribute requested.  If not supplied, the default
-                         is to return all attributes.  Valid attributes are:
-                         ApproximateNumberOfMessages,
-                         ApproximateNumberOfMessagesNotVisible,
-                         VisibilityTimeout,
-                         CreatedTimestamp,
-                         LastModifiedTimestamp,
+        :type attribute: The specific attribute requested.  If not supplied,
+                         the default is to return all attributes.
+                         Valid attributes are:
+                         
+                         ApproximateNumberOfMessages|
+                         ApproximateNumberOfMessagesNotVisible|
+                         VisibilityTimeout|
+                         CreatedTimestamp|
+                         LastModifiedTimestamp|
                          Policy
                          
         :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
         """
         params = {'AttributeName' : attribute}
-        return self.get_object('GetQueueAttributes', params, Attributes, queue.id)
+        return self.get_object('GetQueueAttributes', params,
+                               Attributes, queue.id)
 
     def set_queue_attribute(self, queue, attribute, value):
         params = {'Attribute.Name' : attribute, 'Attribute.Value' : value}
         return self.get_status('SetQueueAttributes', params, queue.id)
 
-    def receive_message(self, queue, number_messages=1, visibility_timeout=None,
-                        attributes=None):
+    def receive_message(self, queue, number_messages=1,
+                        visibility_timeout=None, attributes=None):
         """
         Read messages from an SQS Queue.
 
@@ -132,20 +148,22 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The Queue from which messages are read.
         
         :type number_messages: int
-        :param number_messages: The maximum number of messages to read (default=1)
+        :param number_messages: The maximum number of messages to read
+                                (default=1)
         
         :type visibility_timeout: int
-        :param visibility_timeout: The number of seconds the message should remain invisible
-                                   to other queue readers (default=None which uses the Queues default)
+        :param visibility_timeout: The number of seconds the message should
+                                   remain invisible to other queue readers
+                                   (default=None which uses the Queues default)
 
         :type attributes: str
-        :param attributes: The name of additional attribute to return with response
-                           or All if you want all attributes.  The default is to
-                           return no additional attributes.  Valid values:
-                           All
-                           SenderId
-                           SentTimestamp
-                           ApproximateReceiveCount
+        :param attributes: The name of additional attribute to return
+                           with response or All if you want all attributes.
+                           The default is to return no additional attributes.
+                           Valid values:
+                           
+                           All|SenderId|SentTimestamp|
+                           ApproximateReceiveCount|
                            ApproximateFirstReceiveTimestamp
         
         :rtype: list
@@ -156,7 +174,8 @@ class SQSConnection(AWSQueryConnection):
             params['VisibilityTimeout'] = visibility_timeout
         if attributes:
             self.build_list_params(params, attributes, 'AttributeName')
-        return self.get_list('ReceiveMessage', params, [('Message', queue.message_class)],
+        return self.get_list('ReceiveMessage', params,
+                             [('Message', queue.message_class)],
                              queue.id, queue)
 
     def delete_message(self, queue, message):
@@ -193,12 +212,14 @@ class SQSConnection(AWSQueryConnection):
 
     def send_message(self, queue, message_content):
         params = {'MessageBody' : message_content}
-        return self.get_object('SendMessage', params, Message, queue.id, verb='POST')
+        return self.get_object('SendMessage', params, Message,
+                               queue.id, verb='POST')
 
-    def change_message_visibility(self, queue, receipt_handle, visibility_timeout):
+    def change_message_visibility(self, queue, receipt_handle,
+                                  visibility_timeout):
         """
-        Extends the read lock timeout for the specified message from the specified queue
-        to the specified value.
+        Extends the read lock timeout for the specified message from
+        the specified queue to the specified value.
 
         :type queue: A :class:`boto.sqs.queue.Queue` object
         :param queue: The Queue from which messages are read.
@@ -208,8 +229,8 @@ class SQSConnection(AWSQueryConnection):
                       visibility timeout will be changed.
         
         :type visibility_timeout: int
-        :param visibility_timeout: The new value of the message's visibility timeout
-                                   in seconds.
+        :param visibility_timeout: The new value of the message's visibility
+                                   timeout in seconds.
         """
         params = {'ReceiptHandle' : receipt_handle,
                   'VisibilityTimeout' : visibility_timeout}
@@ -247,9 +268,10 @@ class SQSConnection(AWSQueryConnection):
                       Example, AliceSendMessage
 
         :type aws_account_id: str or unicode
-        :param principal_id: The AWS account number of the principal who will be given
-                             permission.  The principal must have an AWS account, but
-                             does not need to be signed up for Amazon SQS. For information
+        :param principal_id: The AWS account number of the principal who will
+                             be given permission.  The principal must have
+                             an AWS account, but does not need to be signed
+                             up for Amazon SQS. For information
                              about locating the AWS account identification.
 
         :type action_name: str or unicode
@@ -274,7 +296,8 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The queue object
 
         :type label: str or unicode
-        :param label: The unique label associated with the permission being removed.
+        :param label: The unique label associated with the permission
+                      being removed.
 
         :rtype: bool
         :return: True if successful, False otherwise.

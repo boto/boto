@@ -68,7 +68,7 @@ class EC2Connection(AWSQueryConnection):
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 api_version=None):
+                 api_version=None, security_token=None):
         """
         Init method to create a new connection to EC2.
 
@@ -84,7 +84,8 @@ class EC2Connection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path,
+                                    security_token)
         if api_version:
             self.APIVersion = api_version
 

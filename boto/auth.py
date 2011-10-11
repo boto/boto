@@ -252,6 +252,8 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         else:
             hmac = self._hmac.copy()
             params['SignatureMethod'] = 'HmacSHA1'
+        if self._provider.security_token:
+            params['SecurityToken'] = self._provider.security_token
         keys = params.keys()
         keys.sort()
         pairs = []

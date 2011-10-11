@@ -806,10 +806,13 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, path='/'):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug, https_connection_factory, path)
+                 https_connection_factory=None, path='/', security_token=None):
+        AWSAuthConnection.__init__(self, host, aws_access_key_id,
+                                   aws_secret_access_key,
+                                   is_secure, port, proxy,
+                                   proxy_port, proxy_user, proxy_pass,
+                                   debug, https_connection_factory, path,
+                                   security_token=security_token)
 
     def _required_auth_capability(self):
         return []
@@ -834,7 +837,8 @@ class AWSQueryConnection(AWSAuthConnection):
 
     # generics
 
-    def get_list(self, action, params, markers, path='/', parent=None, verb='GET'):
+    def get_list(self, action, params, markers, path='/',
+                 parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
@@ -853,7 +857,8 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-    def get_object(self, action, params, cls, path='/', parent=None, verb='GET'):
+    def get_object(self, action, params, cls, path='/',
+                   parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
