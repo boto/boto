@@ -22,6 +22,7 @@
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
+from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
 
@@ -32,15 +33,23 @@ import base64
 class SESConnection(AWSAuthConnection):
 
     ResponseError = BotoServerError
-    DefaultHost = 'email.us-east-1.amazonaws.com'
+    DefaultRegionName = 'us-east-1'
+    DefaultRegionEndpoint = 'email.us-east-1.amazonaws.com'
     APIVersion = '2010-12-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id,
-                                   aws_secret_access_key, True, port, proxy,
-                                   proxy_port, debug=debug)
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None, path='/'):
+        if not region:
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint)
+        self.region = region
+        AWSAuthConnection.__init__(self, self.region.endpoint,
+                                   aws_access_key_id, aws_secret_access_key,
+                                   is_secure, port, proxy, proxy_port,
+                                   proxy_user, proxy_pass, debug,
+                                   https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['ses']

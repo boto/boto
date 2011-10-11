@@ -29,5 +29,6 @@ API Reference
    ses
    sns
    sqs
+   sts
    vpc
  

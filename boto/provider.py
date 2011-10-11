@@ -151,10 +151,12 @@ class Provider(object):
         }
     }
 
-    def __init__(self, name, access_key=None, secret_key=None):
+    def __init__(self, name, access_key=None, secret_key=None,
+                 security_token=None):
         self.host = None
         self.access_key = access_key
         self.secret_key = secret_key
+        self.security_token = security_token
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]

@@ -407,6 +407,20 @@ def connect_ses(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.ses import SESConnection
     return SESConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def connect_sts(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.sts.STSConnection`
+    :return: A connection to Amazon's STS
+    """
+    from boto.sts import STSConnection
+    return STSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
 def connect_ia(ia_access_key_id=None, ia_secret_access_key=None,
                is_secure=False, **kwargs):
     """
@@ -418,9 +432,10 @@ def connect_ia(ia_access_key_id=None, ia_secret_access_key=None,
                              section called "ia_access_key_id"
 
     :type ia_secret_access_key: string
-    :param ia_secret_access_key: Your IA Secret Access Key.  This will also look in your
-                                 boto config file for an entry in the Credentials
-                                 section called "ia_secret_access_key"
+    :param ia_secret_access_key: Your IA Secret Access Key.  This will also
+                                 look in your boto config file for an entry
+                                 in the Credentials section called
+                                 "ia_secret_access_key"
 
     :rtype: :class:`boto.s3.connection.S3Connection`
     :return: A connection to the Internet Archive

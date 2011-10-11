@@ -77,7 +77,8 @@ class HmacKeys(object):
         self._provider = provider
         self._hmac = hmac.new(self._provider.secret_key, digestmod=sha)
         if sha256:
-            self._hmac_256 = hmac.new(self._provider.secret_key, digestmod=sha256)
+            self._hmac_256 = hmac.new(self._provider.secret_key,
+                                      digestmod=sha256)
         else:
             self._hmac_256 = None
 
@@ -113,6 +114,9 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         if not headers.has_key('Date'):
             headers['Date'] = formatdate(usegmt=True)
 
+        if self._provider.security_token:
+            key = self._provider.security_token_header
+            headers[key] = self._provider.security_token
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                None, self._provider)
         b64_hmac = self.sign_string(c_string)
@@ -187,7 +191,8 @@ class QuerySignatureHelper(HmacKeys):
             # if this is a retried request, the qs from the previous try will
             # already be there, we need to get rid of that and rebuild it
             http_request.path = http_request.path.split('?')[0]
-            http_request.path = (http_request.path + '?' + qs + '&Signature=' + urllib.quote(signature))
+            http_request.path = (http_request.path + '?' + qs +
+                                 '&Signature=' + urllib.quote(signature))
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
     """Provides Signature V0 Signing"""

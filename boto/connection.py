@@ -364,7 +364,8 @@ class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, path='/', provider='aws'):
+                 https_connection_factory=None, path='/',
+                 provider='aws', security_token=None):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -463,7 +464,8 @@ class AWSAuthConnection(object):
 
         self.provider = Provider(provider,
                                  aws_access_key_id,
-                                 aws_secret_access_key)
+                                 aws_secret_access_key,
+                                 security_token)
 
         # allow config file to override default host
         if self.provider.host:
