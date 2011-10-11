@@ -22,6 +22,7 @@
 
 import boto
 import boto.jsonresponse
+from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
 
 #boto.set_stream_logger('iam')
@@ -1016,3 +1017,17 @@ class IAMConnection(AWSQueryConnection):
             raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
 
         return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
+
+    def get_account_summary(self):
+        """
+        Get the alias for the current account.
+
+        This is referred to in the docs as list_account_aliases,
+        but it seems you can only have one account alias currently.
+        
+        For more information on account id aliases, please see
+        http://goo.gl/ToB7G
+        """
+        return self.get_object('GetAccountSummary', {}, SummaryMap)
+
+    
