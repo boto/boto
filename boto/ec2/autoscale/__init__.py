@@ -110,12 +110,21 @@ class AutoScaleConnection(AWSQueryConnection):
         return ['ec2']
 
     def build_list_params(self, params, items, label):
-        """ items is a list of dictionaries or strings:
-                [{'Protocol' : 'HTTP',
-                 'LoadBalancerPort' : '80',
-                 'InstancePort' : '80'},..] etc.
-             or
-                ['us-east-1b',...]
+        """
+        Items is a list of dictionaries or strings::
+
+            [
+                {
+                    'Protocol' : 'HTTP',
+                    'LoadBalancerPort' : '80',
+                    'InstancePort' : '80'
+                },
+                ..
+            ] etc.
+
+        or::
+
+            ['us-east-1b',...]
         """
         # different from EC2 list params
         for i in xrange(1, len(items)+1):
@@ -328,12 +337,9 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Deletes a previously scheduled action.
 
-        type scheduled_action_name: str
-        param scheduled_action_name: The name of the action you want
-                                     to delete.
-
-        type autoscale_group: str
-        param autoscale_group: The name of the autoscale group.
+        :param str scheduled_action_name: The name of the action you want
+            to delete.
+        :param str autoscale_group: The name of the autoscale group.
         """
         params = {'ScheduledActionName' : scheduled_action_name}
         if autoscale_group:
@@ -345,12 +351,9 @@ class AutoScaleConnection(AWSQueryConnection):
         Terminates the specified instance. The desired group size can
         also be adjusted, if desired.
 
-        :type instance_id: str
-        :param instance_id: The ID of the instance to be terminated.
-
-        :type decrement_capacity: bool
-        :param decrement_capacity: Whether to decrement the size of the
-                                  autoscaling group or not.
+        :param str instance_id: The ID of the instance to be terminated.
+        :param bool decrement_capacity: Whether to decrement the size of the
+            autoscaling group or not.
         """
         params = {'InstanceId' : instance_id}
         if decrement_capacity:
