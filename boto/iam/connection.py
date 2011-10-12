@@ -35,8 +35,7 @@ class IAMConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='iam.amazonaws.com',
                  debug=0, https_connection_factory=None,
-                 path='/', trim_responses=True):
-        self.trim_responses = trim_responses
+                 path='/'):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
@@ -309,10 +308,7 @@ class IAMConnection(AWSQueryConnection):
             params['Marker'] = marker
         if max_items:
             params['MaxItems'] = max_items
-        data = self.get_response('ListUsers', params, list_marker='Users')
-        if self.trim_responses:
-            data = data.users
-        return data
+        return self.get_response('ListUsers', params, list_marker='Users')
         
     #
     # User methods
