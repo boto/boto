@@ -34,12 +34,15 @@ class IAMConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='iam.amazonaws.com',
-                 debug=0, https_connection_factory=None, path='/'):
+                 debug=0, https_connection_factory=None,
+                 path='/', trim_responses=True):
+        self.trim_responses = trim_responses
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory, path)
+                                    host, debug, https_connection_factory,
+                                    path)
 
     def _required_auth_capability(self):
         return ['iam']
@@ -306,7 +309,10 @@ class IAMConnection(AWSQueryConnection):
             params['Marker'] = marker
         if max_items:
             params['MaxItems'] = max_items
-        return self.get_response('ListUsers', params, list_marker='Users')
+        data = self.get_response('ListUsers', params, list_marker='Users')
+        if self.trim_responses:
+            data = data.users
+        return data
         
     #
     # User methods
@@ -998,11 +1004,8 @@ class IAMConnection(AWSQueryConnection):
         For more information on account id aliases, please see
         http://goo.gl/ToB7G
         """
-        r = self.get_response('ListAccountAliases', {})
-        response = r.get('ListAccountAliasesResponse')
-        result = response.get('ListAccountAliasesResult')
-        aliases = result.get('AccountAliases')
-        return aliases.get('member', None)
+        return self.get_response('ListAccountAliases', {},
+                                 list_marker='AccountAliases')
 
     def get_signin_url(self, service='ec2'):
         """
