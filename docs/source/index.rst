@@ -9,35 +9,56 @@ offered by Amazon Web Services.
 
 Currently, this includes:
 
-- Compute
- - Elastic Compute Cloud (EC2)
- - Elastic MapReduce (EMR)
- - Auto Scaling
-- Content Delivery
- - CloudFront
-- Database
- - SimpleDB
- - Relational Data Services (RDS)
-- Deployment and Management
- - CloudFormation
-- Identity & Access
- - Identity and Access Management (IAM)
-- Messaging
- - Simple Queue Service (SQS)
- - Simple Notificaiton Service (SNS)
- - Simple Email Service (SES)
-- Monitoring
- - CloudWatch
-- Networking
- - Route 53
- - Virtual Private Cloud (VPC)
- - Elastic Load Balancing (ELB)
-- Payments & Billing
- - Flexible Payments Service (FPS)
-- Storage
- - Simple Storage Service (S3)
-- Workforce
- - Mechanical Turk
+* Compute
+
+  * Elastic Compute Cloud (EC2)
+  * Elastic MapReduce (EMR)
+  * Auto Scaling
+
+* Content Delivery
+
+  * CloudFront
+
+* Database
+
+  * SimpleDB
+  * Relational Data Services (RDS)
+
+* Deployment and Management
+
+  * CloudFormation
+
+* Identity & Access
+
+  * Identity and Access Management (IAM)
+
+* Messaging
+
+  * Simple Queue Service (SQS)
+  * Simple Notificaiton Service (SNS)
+  * Simple Email Service (SES)
+
+* Monitoring
+
+  * CloudWatch
+
+* Networking
+
+  * Route 53
+  * Virtual Private Cloud (VPC)
+  * Elastic Load Balancing (ELB)
+
+* Payments & Billing
+
+  * Flexible Payments Service (FPS)
+
+* Storage
+
+  * Simple Storage Service (S3)
+
+* Workforce
+
+  * Mechanical Turk
 
 The boto source repository is at http://github.com/boto
 

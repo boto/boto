@@ -22,11 +22,11 @@
 
 class Credentials(object):
     """
-    ivar access_key: The AccessKeyID.
-    ivar secret_key: The SecretAccessKey.
-    ivar session_token: The session token that must be passed with
-                        requests to use the temporary credentials
-    ivar expiration: The timestamp for when the credentials will expire
+    :ivar access_key: The AccessKeyID.
+    :ivar secret_key: The SecretAccessKey.
+    :ivar session_token: The session token that must be passed with
+                         requests to use the temporary credentials
+    :ivar expiration: The timestamp for when the credentials will expire
     """
 
     def __init__(self, parent=None):
@@ -55,10 +55,10 @@ class Credentials(object):
     
 class FederationToken(object):
     """
-    ivar credentials: A Credentials object containing the credentials.
-    ivar federated_user_arn: ARN specifying federated user using credentials.
-    ivar federated_user_id: The ID of the federated user using credentials.
-    ivar packed_policy_size: A percentage value indicating the size of
+    :ivar credentials: A Credentials object containing the credentials.
+    :ivar federated_user_arn: ARN specifying federated user using credentials.
+    :ivar federated_user_id: The ID of the federated user using credentials.
+    :ivar packed_policy_size: A percentage value indicating the size of
                              the policy in packed form
     """
 
