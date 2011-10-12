@@ -941,14 +941,14 @@ class Bucket(object):
 
         :rtype: dict
         :returns: A dictionary containing a Python representation
-                  of the XML response from S3. The overall structure is:
+            of the XML response from S3. The overall structure is:
 
             * WebsiteConfiguration
     
               * IndexDocument
     
                 * Suffix : suffix that is appended to request that
-                is for a "directory" on the website endpoint
+                  is for a "directory" on the website endpoint
                 * ErrorDocument
     
                   * Key : name of object to serve when an error occurs

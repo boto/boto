@@ -390,10 +390,10 @@ class CloudWatchConnection(AWSQueryConnection):
         is specified for some, but not all, of the arguments, the remaining 
         arguments are repeated a corresponding number of times.
 
-        :type namespace: string
+        :type namespace: str
         :param namespace: The namespace of the metric.
 
-        :type name: string or list
+        :type name: str or list
         :param name: The name of the metric.
 
         :type value: float or list
@@ -401,28 +401,27 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type timestamp: datetime or list
         :param timestamp: The time stamp used for the metric. If not specified, 
-                          the default value is set to the time the metric data 
-                          was received.
+            the default value is set to the time the metric data was received.
         
         :type unit: string or list
         :param unit: The unit of the metric.  Valid Values: Seconds | 
-                     Microseconds | Milliseconds | Bytes | Kilobytes | 
-                     Megabytes | Gigabytes | Terabytes | Bits | Kilobits | 
-                     Megabits | Gigabits | Terabits | Percent | Count | 
-                     Bytes/Second | Kilobytes/Second | Megabytes/Second | 
-                     Gigabytes/Second | Terabytes/Second | Bits/Second | 
-                     Kilobits/Second | Megabits/Second | Gigabits/Second | 
-                     Terabits/Second | Count/Second | None
+            Microseconds | Milliseconds | Bytes | Kilobytes |
+            Megabytes | Gigabytes | Terabytes | Bits | Kilobits |
+            Megabits | Gigabits | Terabits | Percent | Count |
+            Bytes/Second | Kilobytes/Second | Megabytes/Second |
+            Gigabytes/Second | Terabytes/Second | Bits/Second |
+            Kilobits/Second | Megabits/Second | Gigabits/Second |
+            Terabits/Second | Count/Second | None
         
         :type dimensions: dict
         :param dimensions: Add extra name value pairs to associate 
-                           with the metric, i.e.:
-                           {'name1': value1, 'name2': (value2, value3)}
+            with the metric, i.e.:
+            {'name1': value1, 'name2': (value2, value3)}
         
         :type statistics: dict or list
-        :param statistics: Use a statistic set instead of a value, for example
-                           {'maximum': 30, 'minimum': 1,
-                            'samplecount': 100, 'sum': 10000}
+        :param statistics: Use a statistic set instead of a value, for example::
+
+            {'maximum': 30, 'minimum': 1, 'samplecount': 100, 'sum': 10000}
         """
         params = {'Namespace': namespace}
         self.build_put_params(params, name, value=value, timestamp=timestamp,

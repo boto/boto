@@ -33,12 +33,10 @@ class ItemThread(threading.Thread):
     """
     A threaded :class:`Item <boto.sdb.item.Item>` retriever utility class. 
     Retrieved :class:`Item <boto.sdb.item.Item>` objects are stored in the
-    ``items`` instance variable after 
-    :py:meth:`run() <run>` is called. 
+    ``items`` instance variable after :py:meth:`run() <run>` is called.
     
-    .. tip:: 
-        The item retrieval will not start until the 
-        :func:`run() <boto.sdb.connection.ItemThread.run>` method is called.
+    .. tip:: The item retrieval will not start until
+        the :func:`run() <boto.sdb.connection.ItemThread.run>` method is called.
     """
     def __init__(self, name, domain_name, item_names):
         """

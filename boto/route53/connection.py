@@ -45,10 +45,14 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 #boto.set_stream_logger('dns')
 
 class Route53Connection(AWSAuthConnection):
-
     DefaultHost = 'route53.amazonaws.com'
+    """The default Route53 API endpoint to connect to."""
+
     Version = '2011-05-05'
+    """Route53 API version."""
+
     XMLNameSpace = 'https://route53.amazonaws.com/doc/2011-05-05/'
+    """XML schema for this Route53 API version."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
@@ -76,12 +80,9 @@ class Route53Connection(AWSAuthConnection):
         Returns a Python data structure with information about all
         Hosted Zones defined for the AWS account.
 
-        :type start_marker: int
-        :param start_marker: start marker to pass when fetching additional
-        results after a truncated list
-
-        :type zone_list: list
-        :param zone_list: a HostedZones list to prepend to results
+        :param int start_marker: start marker to pass when fetching additional
+                                 results after a truncated list
+        :param list zone_list: a HostedZones list to prepend to results
         """
         params = {}
         if start_marker:
@@ -209,30 +210,30 @@ class Route53Connection(AWSAuthConnection):
 
         :type type: str
         :param type: The type of resource record set to begin the record
-                     listing from.  Valid choices are:
+            listing from.  Valid choices are:
 
-                     * A
-                     * AAAA
-                     * CNAME
-                     * MX
-                     * NS
-                     * PTR
-                     * SOA
-                     * SPF
-                     * SRV
-                     * TXT
+                * A
+                * AAAA
+                * CNAME
+                * MX
+                * NS
+                * PTR
+                * SOA
+                * SPF
+                * SRV
+                * TXT
 
-                     Valid values for weighted resource record sets:
+            Valid values for weighted resource record sets:
 
-                     * A
-                     * AAAA
-                     * CNAME
-                     * TXT
+                * A
+                * AAAA
+                * CNAME
+                * TXT
 
-                     Valid values for Zone Apex Aliases:
+            Valid values for Zone Apex Aliases:
 
-                     * A
-                     * AAAA
+                * A
+                * AAAA
 
         :type name: str
         :param name: The first name in the lexicographic ordering of domain
