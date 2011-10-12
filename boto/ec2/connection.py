@@ -850,9 +850,13 @@ class EC2Connection(AWSQueryConnection):
         :param instance_type: Filter responses to a particular instance type.
 
         :type product_description: str
-        :param product_descripton: Filter responses to a particular platform.
-                                   Valid values are currently: "Linux/UNIX",
-                                   "SUSE Linux", and "Windows"
+        :param product_description: Filter responses to a particular platform.
+                                    Valid values are currently: "Linux/UNIX",
+                                    "SUSE Linux", and "Windows"
+
+        :type availability_zone: str
+        :param availability_zone: The availability zone for which prices
+                                  should be returned
 
         :rtype: list
         :return: A list tuples containing price and timestamp.
