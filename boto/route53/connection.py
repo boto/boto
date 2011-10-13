@@ -81,7 +81,7 @@ class Route53Connection(AWSAuthConnection):
         Hosted Zones defined for the AWS account.
 
         :param int start_marker: start marker to pass when fetching additional
-                                 results after a truncated list
+            results after a truncated list
         :param list zone_list: a HostedZones list to prepend to results
         """
         params = {}
@@ -136,28 +136,25 @@ class Route53Connection(AWSAuthConnection):
         
         :type domain_name: str
         :param domain_name: The name of the domain. This should be a
-                            fully-specified domain, and should end with
-                            a final period as the last label indication.
-                            If you omit the final period, Amazon Route 53
-                            assumes the domain is relative to the root.
-                            This is the name you have registered with your
-                            DNS registrar. It is also the name you will
-                            delegate from your registrar to the Amazon
-                            Route 53 delegation servers returned in
-                            response to this request.A list of strings
-                            with the image IDs wanted
+            fully-specified domain, and should end with a final period
+            as the last label indication.  If you omit the final period,
+            Amazon Route 53 assumes the domain is relative to the root.
+            This is the name you have registered with your DNS registrar.
+            It is also the name you will delegate from your registrar to
+            the Amazon Route 53 delegation servers returned in
+            response to this request.A list of strings with the image
+            IDs wanted.
 
         :type caller_ref: str
         :param caller_ref: A unique string that identifies the request
-                           and that allows failed CreateHostedZone requests
-                           to be retried without the risk of executing the
-                           operation twice.
-                           If you don't provide a value for this, boto will
-                           generate a Type 4 UUID and use that.
+            and that allows failed CreateHostedZone requests to be retried
+            without the risk of executing the operation twice.  If you don't
+            provide a value for this, boto will generate a Type 4 UUID and
+            use that.
 
         :type comment: str
-        :param comment: Any comments you want to include about the hosted
-                        zone.
+        :param comment: Any comments you want to include about the hosted      
+            zone.
 
         """
         if caller_ref is None:
@@ -240,12 +237,12 @@ class Route53Connection(AWSAuthConnection):
                      names to be retrieved
 
         :type identifier: str
-        :param identifier: In a hosted zone that includes weighted resource record
-                           sets (multiple resource record sets with the same DNS
-                           name and type that are differentiated only by SetIdentifier),
-                           if results were truncated for a given DNS name and type,
-                           the value of SetIdentifier for the next resource record
-                           set that has the current DNS name and type
+        :param identifier: In a hosted zone that includes weighted resource
+            record sets (multiple resource record sets with the same DNS
+            name and type that are differentiated only by SetIdentifier),
+            if results were truncated for a given DNS name and type,
+            the value of SetIdentifier for the next resource record
+            set that has the current DNS name and type
 
         :type maxitems: int
         :param maxitems: The maximum number of records
@@ -279,7 +276,7 @@ class Route53Connection(AWSAuthConnection):
 
         :type xml_body: str
         :param xml_body: The list of changes to be made, defined in the
-                         XML schema defined by the Route53 service.
+            XML schema defined by the Route53 service.
 
         """
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
@@ -306,8 +303,7 @@ class Route53Connection(AWSAuthConnection):
 
         :type change_id: str
         :param change_id: The unique identifier for the set of changes.
-                          This ID is returned in the response to the
-                          change_rrsets method.
+            This ID is returned in the response to the change_rrsets method.
 
         """
         uri = '/%s/change/%s' % (self.Version, change_id)
