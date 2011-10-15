@@ -109,10 +109,10 @@ def connect_s3(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
 def connect_gs(gs_access_key_id=None, gs_secret_access_key=None, **kwargs):
     """
     @type gs_access_key_id: string
-    @param gs_access_key_id: Your Google Storage Access Key ID
+    @param gs_access_key_id: Your Google Cloud Storage Access Key ID
 
     @type gs_secret_access_key: string
-    @param gs_secret_access_key: Your Google Storage Secret Access Key
+    @param gs_secret_access_key: Your Google Cloud Storage Secret Access Key
 
     @rtype: L{GSConnection<boto.gs.connection.GSConnection>}
     @return: A connection to Google's Storage service

@@ -35,7 +35,7 @@ from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 
 """
-Handler for Google Storage resumable uploads. See
+Handler for Google Cloud Storage resumable uploads. See
 http://code.google.com/apis/storage/docs/developer-guide.html#resumable
 for details.
 

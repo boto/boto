@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 
 """
-Tests of Google Storage resumable uploads.
+Tests of Google Cloud Storage resumable uploads.
 """
 
 import errno
