@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -51,9 +51,14 @@ class ResourceRecordSets(ResultSet):
     def __repr__(self):
         return '<ResourceRecordSets: %s>' % self.hosted_zone_id
 
-    def add_change(self, action, name, type, ttl=600, alias_hosted_zone_id=None, alias_dns_name=None):
+    def add_change(self, action, name, type, ttl=600,
+            alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
+            weight=None):
         """Add a change request"""
-        change = Record(name, type, ttl, alias_hosted_zone_id=alias_hosted_zone_id, alias_dns_name=alias_dns_name)
+        change = Record(name, type, ttl,
+                alias_hosted_zone_id=alias_hosted_zone_id,
+                alias_dns_name=alias_dns_name, identifier=identifier,
+                weight=weight)
         self.changes.append([action, change])
         return change
 
@@ -75,7 +80,7 @@ class ResourceRecordSets(ResultSet):
         return self.connection.change_rrsets(self.hosted_zone_id, self.to_xml())
 
     def endElement(self, name, value, connection):
-        """Overwritten to also add the NextRecordName and 
+        """Overwritten to also add the NextRecordName and
         NextRecordType to the base object"""
         if name == 'NextRecordName':
             self.next_record_name = value
@@ -104,8 +109,14 @@ class Record(object):
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
+        %(weight)s
         %(body)s
     </ResourceRecordSet>"""
+
+    WRRBody = """
+        <SetIdentifier>%(identifier)s</SetIdentifier>
+        <Weight>%(weight)s</Weight>
+    """
 
     ResourceRecordsBody = """
         <TTL>%(ttl)s</TTL>
@@ -122,7 +133,11 @@ class Record(object):
         <DNSName>%s</DNSName>
     </AliasTarget>"""
 
-    def __init__(self, name=None, type=None, ttl=600, resource_records=None, alias_hosted_zone_id=None, alias_dns_name=None):
+
+
+    def __init__(self, name=None, type=None, ttl=600, resource_records=None,
+            alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
+            weight=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -131,7 +146,9 @@ class Record(object):
         self.resource_records = resource_records
         self.alias_hosted_zone_id = alias_hosted_zone_id
         self.alias_dns_name = alias_dns_name
-    
+        self.identifier = identifier
+        self.weight = weight
+
     def add_value(self, value):
         """Add a resource record value"""
         self.resource_records.append(value)
@@ -155,9 +172,14 @@ class Record(object):
                 "ttl": self.ttl,
                 "records": records,
             }
+        weight = ""
+        if self.identifier != None and self.weight != None:
+            weight = self.WRRBody % {"identifier": self.identifier, "weight":
+                    self.weight}
         params = {
             "name": self.name,
             "type": self.type,
+            "weight": weight,
             "body": body,
         }
         return self.XMLBody % params
@@ -166,6 +188,9 @@ class Record(object):
         if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
             # Show alias
             return 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
+        elif self.identifier != None and self.weight != None:
+            return 'WRR %s, %s, %s' % (self.identifier,
+                    ",".join(self.resource_records), self.weight)
         else:
             # Show resource record(s)
             return ",".join(self.resource_records)
@@ -183,6 +208,10 @@ class Record(object):
             self.alias_hosted_zone_id = value
         elif name == 'DNSName':
             self.alias_dns_name = value
+        elif name == 'SetIdentifier':
+            self.identifier = value
+        elif name == 'Weight':
+            self.weight = value
 
     def startElement(self, name, attrs, connection):
         return None

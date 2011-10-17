@@ -12,7 +12,7 @@ def _print_zone_info(zoneinfo):
     print "="*80
     print zoneinfo['Config']
     print
-    
+
 
 def create(conn, hostname, caller_reference=None, comment=''):
     """Create a hosted zone, returning the nameservers"""
@@ -63,6 +63,28 @@ def del_record(conn, hosted_zone_id, name, type, values, ttl=600, comment=""):
         change.add_value(value)
     print changes.commit()
 
+def add_weighted_record(conn, hosted_zone_id, name, type, values,
+        identifier, weight, ttl=600, comment=""):
+    """Add a new weighted record"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    change = changes.add_change("CREATE", name, type, ttl,
+            identifier=identifier, weight=weight)
+    for value in values.split(','):
+        change.add_value(value)
+    print changes.commit()
+
+def del_weighted_record(conn, hosted_zone_id, name, type, values, ttl=600,
+        identifier=None, weight=None, comment=""):
+    """Delete a weighted record from a zone"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    change = changes.add_change("DELETE", name, type, ttl,
+            identifier=identifier, weight=weight)
+    for value in values.split(','):
+        change.add_value(value)
+    print changes.commit()
+
 def add_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_name, comment=""):
     """Add a new alias to a zone"""
     from boto.route53.record import ResourceRecordSets
@@ -84,10 +106,12 @@ def change_record(conn, hosted_zone_id, name, type, values, ttl=600, comment="")
     from boto.route53.record import ResourceRecordSets
     changes = ResourceRecordSets(conn, hosted_zone_id, comment)
     response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=1)[0]
-    change1 = changes.add_change("DELETE", name, type, response.ttl)
+    change1 = changes.add_change("DELETE", name, type, response.ttl,
+            identifier=identifier, weight=weight)
     for old_value in response.resource_records:
         change1.add_value(old_value)
-    change2 = changes.add_change("CREATE", name, type, ttl)
+    change2 = changes.add_change("CREATE", name, type, ttl,
+            identifier=identifier, weight=weight)
     for new_value in values.split(','):
         change2.add_value(new_value)
     print changes.commit()
@@ -101,6 +125,22 @@ def change_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_d
     change1.set_alias(response.alias_hosted_zone_id, response.alias_dns_name)
     change2 = changes.add_change("CREATE", name, type)
     change2.set_alias(alias_hosted_zone_id, alias_dns_name)
+    print changes.commit()
+
+def change_weighted_record(conn, hosted_zone_id, name, type, values, ttl=600,
+        identifier=None, weight=None, comment=""):
+    """Delete and then add a weighted  record to a zone"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=1)[0]
+    change1 = changes.add_change("DELETE", name, type, response.ttl,
+            identifier=identifier, weight=weight)
+    for old_value in response.resource_records:
+        change1.add_value(old_value)
+    change2 = changes.add_change("CREATE", name, type, ttl,
+            identifier=identifier, weight=weight)
+    for new_value in values.split(','):
+        change2.add_value(new_value)
     print changes.commit()
 
 def help(conn, fnc=None):
