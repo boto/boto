@@ -653,6 +653,80 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def set_subresource(self, subresource, value, key_name = '', headers=None,
+                        version_id=None):
+        """
+        Set a subresource for a bucket or key.
+
+        :type subresource: string
+        :param subresource: The subresource to set.
+
+        :type value: string
+        :param value: The value of the subresource.
+
+        :type key_name: string
+        :param key_name: The key to operate on, or None to operate on the
+                         bucket.
+
+        :type headers: dict
+        :param headers: Additional HTTP headers to include in the request.
+
+        :type src_version_id: string
+        :param src_version_id: Optional. The version id of the key to operate
+                               on. If not specified, operate on the newest
+                               version.
+        """
+        if not subresource:
+            raise TypeError('set_subresource called with subresource=None')
+        query_args = subresource
+        if version_id:
+            query_args += '&versionId=%s' % version_id
+        response = self.connection.make_request('PUT', self.name, key_name,
+                                                data=value.encode('UTF-8'),
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_subresource(self, subresource, key_name='', headers=None,
+                        version_id=None):
+        """
+        Get a subresource for a bucket or key.
+
+        :type subresource: string
+        :param subresource: The subresource to get.
+
+        :type key_name: string
+        :param key_name: The key to operate on, or None to operate on the
+                         bucket.
+
+        :type headers: dict
+        :param headers: Additional HTTP headers to include in the request.
+
+        :type src_version_id: string
+        :param src_version_id: Optional. The version id of the key to operate
+                               on. If not specified, operate on the newest
+                               version.
+
+        :rtype: string
+        :returns: The value of the subresource.
+        """
+        if not subresource:
+            raise TypeError('get_subresource called with subresource=None')
+        query_args = subresource
+        if version_id:
+            query_args += '&versionId=%s' % version_id
+        response = self.connection.make_request('GET', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        return body
+
     def make_public(self, recursive=False, headers=None):
         self.set_canned_acl('public-read', headers=headers)
         if recursive:
@@ -941,14 +1015,14 @@ class Bucket(object):
 
         :rtype: dict
         :returns: A dictionary containing a Python representation
-            of the XML response from S3. The overall structure is:
+                  of the XML response from S3. The overall structure is:
 
             * WebsiteConfiguration
     
               * IndexDocument
     
                 * Suffix : suffix that is appended to request that
-                  is for a "directory" on the website endpoint
+                is for a "directory" on the website endpoint
                 * ErrorDocument
     
                   * Key : name of object to serve when an error occurs
@@ -1133,4 +1207,3 @@ class Bucket(object):
         
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
-

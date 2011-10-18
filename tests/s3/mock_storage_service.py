@@ -125,6 +125,7 @@ class MockBucket(object):
         self.name = name
         self.keys = {}
         self.acls = {name: MockAcl()}
+        self.subresources = {}
         self.connection = connection
 
     def copy_key(self, new_key_name, src_bucket_name,
@@ -144,6 +145,13 @@ class MockBucket(object):
         else:
             # Return ACL for the bucket.
             return self.acls[self.name]
+
+    def get_subresource(self, subresource, key_name=NOT_IMPL, headers=NOT_IMPL,
+                        version_id=NOT_IMPL):
+        if subresource in self.subresources:
+            return self.subresources[subresource]
+        else:
+            return '<Subresource/>'
 
     def new_key(self, key_name=None):
         mock_key = MockKey(self, key_name)
@@ -189,6 +197,10 @@ class MockBucket(object):
         else:
             # Set ACL for the bucket.
             self.acls[self.name] = acl_or_str
+
+    def set_subresource(self, subresource, value, key_name=NOT_IMPL,
+                        headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.subresources[subresource] = value
 
 
 class MockConnection(object):
@@ -283,6 +295,10 @@ class MockBucketStorageUri(object):
     def get_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, version_id=NOT_IMPL):
         return self.get_bucket().get_acl(self.object_name)
 
+    def get_subresource(self, subresource, validate=NOT_IMPL, headers=NOT_IMPL,
+                        version_id=NOT_IMPL):
+        return self.get_bucket().get_subresource(subresource, self.object_name)
+
     def get_all_buckets(self, headers=NOT_IMPL):
         return self.connect().get_all_buckets()
 
@@ -315,3 +331,7 @@ class MockBucketStorageUri(object):
     def set_acl(self, acl_or_str, key_name='', validate=NOT_IMPL,
                 headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().set_acl(acl_or_str, key_name)
+
+    def set_subresource(self, subresource, value, validate=NOT_IMPL,
+                        headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.get_bucket().set_subresource(subresource, value, self.object_name)

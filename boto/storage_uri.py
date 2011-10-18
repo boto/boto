@@ -239,6 +239,15 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_location()
 
+    def get_subresource(self, subresource, validate=True, headers=None,
+                        version_id=None):
+        if not self.bucket_name:
+            raise InvalidUriError(
+                'get_subresource on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_subresource(subresource, self.object_name, headers,
+                                      version_id)
+
     def add_group_email_grant(self, permission, email_address, recursive=False,
                               validate=True, headers=None):
         if self.scheme != 'gs':
@@ -349,6 +358,15 @@ class BucketStorageUri(StorageUri):
         key = self.get_key(validate, headers)
         self.check_response(key, 'key', self.uri)
         key.set_canned_acl(acl_str, headers, version_id)
+
+    def set_subresource(self, subresource, value, validate=True, headers=None,
+                        version_id=None):
+        if not self.bucket_name:
+            raise InvalidUriError(
+                'set_subresource on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        bucket.set_subresource(subresource, value, self.object_name, headers,
+                               version_id)
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,

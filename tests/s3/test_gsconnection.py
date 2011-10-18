@@ -154,6 +154,12 @@ class GSConnectionTest (unittest.TestCase):
         k.set_acl('private')
         acl = k.get_acl()
         assert len(acl.entries.entry_list) == 1
+        # try set/get logging subresource
+        logging_str = ("<?xml version='1.0' encoding='UTF-8'?><Logging>"
+                       "<LogBucket>log-bucket</LogBucket>" +
+                       "<LogObjectPrefix>example</LogObjectPrefix></Logging>")
+        bucket.set_subresource('logging', logging_str);
+        assert bucket.get_subresource('logging') == logging_str;
         # now delete all keys in bucket
         for k in bucket:
             bucket.delete_key(k)
