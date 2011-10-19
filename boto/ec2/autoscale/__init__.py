@@ -79,7 +79,7 @@ def connect_to_region(region_name, **kw_params):
 
 
 class AutoScaleConnection(AWSQueryConnection):
-    APIVersion = boto.config.get('Boto', 'autoscale_version', '2010-08-01')
+    APIVersion = boto.config.get('Boto', 'autoscale_version', '2011-01-01')
     DefaultRegionEndpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                             'autoscaling.amazonaws.com')
     DefaultRegionName =  boto.config.get('Boto', 'autoscale_region_name', 'us-east-1')
@@ -170,12 +170,15 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         return self._update_group('CreateAutoScalingGroup', as_group)
 
-    def delete_auto_scaling_group(self, name):
+    def delete_auto_scaling_group(self, name, force_delete=False):
         """
         Deletes the specified auto scaling group if the group has no instances
         and no scaling activities in progress.
         """
-        params = {'AutoScalingGroupName' : name}
+	if(force_delete):
+		params = {'AutoScalingGroupName' : name, 'ForceDelete' : 'true'}
+	else:
+		params = {'AutoScalingGroupName' : name}
         return self.get_object('DeleteAutoScalingGroup', params, Request)
 
     def create_launch_configuration(self, launch_config):
