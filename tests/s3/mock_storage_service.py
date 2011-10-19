@@ -127,6 +127,7 @@ class MockBucket(object):
         self.acls = {name: MockAcl()}
         self.subresources = {}
         self.connection = connection
+        self.logging = False
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=NOT_IMPL, src_version_id=NOT_IMPL,
@@ -137,6 +138,12 @@ class MockBucket(object):
         new_key.data = copy.copy(src_key.data)
         new_key.size = len(new_key.data)
         return new_key
+
+    def disable_logging(self):
+        self.logging = False
+
+    def enable_logging(self, target_bucket_prefix):
+        self.logging = True
 
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
@@ -288,6 +295,15 @@ class MockBucketStorageUri(object):
     def delete_key(self, validate=NOT_IMPL, headers=NOT_IMPL,
                    version_id=NOT_IMPL, mfa_token=NOT_IMPL):
         self.get_bucket().delete_key(self.object_name)
+
+    def disable_logging(self, validate=NOT_IMPL, headers=NOT_IMPL,
+                        version_id=NOT_IMPL):
+        self.get_bucket().disable_logging()
+
+    def enable_logging(self, target_bucket, target_prefix, canned_acl=NOT_IMPL,
+                       validate=NOT_IMPL, headers=NOT_IMPL,
+                       version_id=NOT_IMPL):
+        self.get_bucket().enable_logging(target_bucket)
 
     def equals(self, uri):
         return self.uri == uri.uri

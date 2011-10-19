@@ -375,6 +375,23 @@ class BucketStorageUri(StorageUri):
         key.set_contents_from_string(s, headers, replace, cb, num_cb, policy,
                                      md5, reduced_redundancy)
 
+    def enable_logging(self, target_bucket, target_prefix=None,
+                       canned_acl=None, validate=True, headers=None,
+                       version_id=None):
+        if not self.bucket_name:
+            raise InvalidUriError(
+                'disable_logging on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        bucket.enable_logging(target_bucket, target_prefix, headers=headers,
+                              canned_acl=canned_acl)
+
+    def disable_logging(self, validate=True, headers=None, version_id=None):
+        if not self.bucket_name:
+            raise InvalidUriError(
+                'disable_logging on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        bucket.disable_logging(headers=headers)
+
 
 
 class FileStorageUri(StorageUri):

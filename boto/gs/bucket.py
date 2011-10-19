@@ -190,3 +190,23 @@ class Bucket(S3Bucket):
     def list_grants(self, headers=None):
         acl = self.get_acl(headers=headers)
         return acl.entries
+
+    def disable_logging(self, headers=None):
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging/>'
+        self.set_subresource('logging', xml_str, headers=headers)
+
+    def enable_logging(self, target_bucket, target_prefix=None, headers=None,
+                       canned_acl=None):
+        if isinstance(target_bucket, Bucket):
+            target_bucket = target_bucket.name
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging>'
+        xml_str = (xml_str + '<LogBucket>%s</LogBucket>' % target_bucket)
+        if target_prefix:
+            xml_str = (xml_str +
+                       '<LogObjectPrefix>%s</LogObjectPrefix>' % target_prefix)
+        if canned_acl:
+            xml_str = (xml_str +
+                       '<PredefinedAcl>%s</PredefinedAcl>' % canned_acl)
+        xml_str = xml_str + '</Logging>'
+
+        self.set_subresource('logging', xml_str, headers=headers)
