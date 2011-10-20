@@ -136,7 +136,7 @@ def delete_lc(autoscale, name):
     print "Launch configuration %s deleted" % name
     return list_lc(autoscale)
 
-def update_image(autoscale, name, lc_name, image_id, migrate_instances=False):
+def update_image(autoscale, name, lc_name, image_id, is_migrate_instances=False):
     """ Get the current launch config,
         Update its name and image id
         Re-create it as a new launch config
@@ -153,16 +153,17 @@ def update_image(autoscale, name, lc_name, image_id, migrate_instances=False):
     g.launch_config_name = l.name
     g.update()
 
-    if(migrate_instances):
+    if(is_migrate_instances):
         migrate_instances(autoscale, name)
-    return get(autoscale, name)
+    else:
+        return get(autoscale, name)
 
 def migrate_instances(autoscale, name):
     """ Shut down instances of the old image type one by one
         and let the ASG start up instances with the new image """
     g = get_group(autoscale, name)
 
-    old_instances = i.instances
+    old_instances = g.instances
     ec2 = boto.connect_ec2()
     for old_instance in old_instances:
         print "Terminating instance " + old_instance.instance_id
@@ -176,16 +177,15 @@ def migrate_instances(autoscale, name):
                 if(old_instance.instance_id == new_instance.instance_id):
                     hasOldInstance = True
                     print "Waiting for old instance to shut down..."
-                    time.sleep(20)
                     break
                 elif(new_instance.lifecycle_state != 'InService'):
                     instancesReady = False
                     print "Waiting for instances to be ready...."
-                    time.sleep(20)
                     break
             if(not hasOldInstance and instancesReady):
-                print "Still waiting for old instance to go away and new instance to be ready..."
-            break
+                break
+            else:
+                time.sleep(20)
     return get(autoscale, name)
 
 if __name__ == "__main__":
