@@ -175,10 +175,10 @@ class AutoScaleConnection(AWSQueryConnection):
         Deletes the specified auto scaling group if the group has no instances
         and no scaling activities in progress.
         """
-	if(force_delete):
-		params = {'AutoScalingGroupName' : name, 'ForceDelete' : 'true'}
-	else:
-		params = {'AutoScalingGroupName' : name}
+        if(force_delete):
+            params = {'AutoScalingGroupName' : name, 'ForceDelete' : 'true'}
+        else:
+            params = {'AutoScalingGroupName' : name}
         return self.get_object('DeleteAutoScalingGroup', params, Request)
 
     def create_launch_configuration(self, launch_config):
