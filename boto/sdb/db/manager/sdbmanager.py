@@ -542,16 +542,20 @@ class SDBManager(object):
         import types
         query_parts = []
 
-        if select:
-            query_parts.append("(%s)" % select)
-
         order_by_filtered = False
+
         if order_by:
             if order_by[0] == "-":
                 order_by_method = "DESC";
                 order_by = order_by[1:]
             else:
                 order_by_method = "ASC";
+
+        if select:
+            if order_by in select:
+                order_by_filtered = True
+            query_parts.append("(%s)" % select)
+
         if isinstance(filters, str) or isinstance(filters, unicode):
             query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
             if order_by in ["__id__", "itemName()"]:
@@ -598,6 +602,7 @@ class SDBManager(object):
         query_parts.append(type_query)
 
         order_by_query = ""
+
         if order_by:
             if not order_by_filtered:
                 query_parts.append("`%s` LIKE '%%'" % order_by)
