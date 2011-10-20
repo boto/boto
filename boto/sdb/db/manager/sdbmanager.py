@@ -554,7 +554,9 @@ class SDBManager(object):
                 order_by_method = "ASC";
         if isinstance(filters, str) or isinstance(filters, unicode):
             query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
-            if order_by != None:
+            if order_by in ["__id__", "itemName()"]:
+                query += " ORDER BY itemName() %s" % order_by_method
+            elif order_by != None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)
             return query
 
@@ -599,7 +601,10 @@ class SDBManager(object):
         if order_by:
             if not order_by_filtered:
                 query_parts.append("`%s` LIKE '%%'" % order_by)
-            order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
+            if order_by in ["__id__", "itemName()"]:
+                order_by_query = " ORDER BY itemName() %s" % order_by_method
+            else:
+                order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
 
         if len(query_parts) > 0:
             return "WHERE %s %s" % (" AND ".join(query_parts), order_by_query)
