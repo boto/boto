@@ -552,7 +552,7 @@ class SDBManager(object):
                 order_by_method = "ASC";
 
         if select:
-            if order_by in select:
+            if order_by and order_by in select:
                 order_by_filtered = True
             query_parts.append("(%s)" % select)
 
