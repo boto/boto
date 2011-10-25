@@ -42,7 +42,8 @@ class FPSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None,
                  host='fps.sandbox.amazonaws.com', debug=0,
                  https_connection_factory=None, path="/"):
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass, host, debug,
                                     https_connection_factory, path)
@@ -50,7 +51,9 @@ class FPSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['fps']
 
-    def install_payment_instruction(self, instruction, token_type="Unrestricted", transaction_id=None):
+    def install_payment_instruction(self, instruction,
+                                    token_type="Unrestricted",
+                                    transaction_id=None):
         """
         InstallPaymentInstruction
         instruction: The PaymentInstruction to send, for example: 
@@ -70,13 +73,16 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request("InstallPaymentInstruction", params)
         return response
     
-    def install_caller_instruction(self, token_type="Unrestricted", transaction_id=None):
+    def install_caller_instruction(self, token_type="Unrestricted",
+                                   transaction_id=None):
         """
         Set us up as a caller
         This will install a new caller_token into the FPS section.
         This should really only be called to regenerate the caller token.
         """
-        response = self.install_payment_instruction("MyRole=='Caller';", token_type=token_type, transaction_id=transaction_id)
+        response = self.install_payment_instruction("MyRole=='Caller';",
+                                                    token_type=token_type,
+                                                    transaction_id=transaction_id)
         body = response.read()
         if(response.status == 200):
             rs = ResultSet()
@@ -84,20 +90,25 @@ class FPSConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             caller_token = rs.TokenId
             try:
-                boto.config.save_system_option("FPS", "caller_token", caller_token)
+                boto.config.save_system_option("FPS", "caller_token",
+                                               caller_token)
             except(IOError):
-                boto.config.save_user_option("FPS", "caller_token", caller_token)
+                boto.config.save_user_option("FPS", "caller_token",
+                                             caller_token)
             return caller_token
         else:
             raise FPSResponseError(response.status, response.reason, body)
 
-    def install_recipient_instruction(self, token_type="Unrestricted", transaction_id=None):
+    def install_recipient_instruction(self, token_type="Unrestricted",
+                                      transaction_id=None):
         """
         Set us up as a Recipient
         This will install a new caller_token into the FPS section.
         This should really only be called to regenerate the recipient token.
         """
-        response = self.install_payment_instruction("MyRole=='Recipient';", token_type=token_type, transaction_id=transaction_id)
+        response = self.install_payment_instruction("MyRole=='Recipient';",
+                                                    token_type=token_type,
+                                                    transaction_id=transaction_id)
         body = response.read()
         if(response.status == 200):
             rs = ResultSet()
@@ -105,15 +116,19 @@ class FPSConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             recipient_token = rs.TokenId
             try:
-                boto.config.save_system_option("FPS", "recipient_token", recipient_token)
+                boto.config.save_system_option("FPS", "recipient_token",
+                                               recipient_token)
             except(IOError):
-                boto.config.save_user_option("FPS", "recipient_token", recipient_token)
+                boto.config.save_user_option("FPS", "recipient_token",
+                                             recipient_token)
 
             return recipient_token
         else:
             raise FPSResponseError(response.status, response.reason, body)
 
-    def make_marketplace_registration_url(self, returnURL, pipelineName, maxFixedFee=0.0, maxVariableFee=0.0, recipientPaysFee=True, **params):  
+    def make_marketplace_registration_url(self, returnURL, pipelineName,
+                                          maxFixedFee=0.0, maxVariableFee=0.0,
+                                          recipientPaysFee=True, **params):  
         """
         Generate the URL with the signature required for signing up a recipient
         """
@@ -158,7 +173,8 @@ class FPSConnection(AWSQueryConnection):
         return final
 
 
-    def make_url(self, returnURL, paymentReason, pipelineName, transactionAmount, **params):
+    def make_url(self, returnURL, paymentReason, pipelineName,
+                 transactionAmount, **params):
         """
         Generate the URL with the signature required for a transaction
         """
@@ -205,8 +221,9 @@ class FPSConnection(AWSQueryConnection):
             recipientTokenId=None, callerTokenId=None,
             chargeFeeTo="Recipient",
             callerReference=None, senderReference=None, recipientReference=None,
-            senderDescription=None, recipientDescription=None, callerDescription=None,
-            metadata=None, transactionDate=None, reserve=False):
+            senderDescription=None, recipientDescription=None,
+            callerDescription=None, metadata=None,
+            transactionDate=None, reserve=False):
         """
         Make a payment transaction. You must specify the amount.
         This can also perform a Reserve request if 'reserve' is set to True.
@@ -313,9 +330,11 @@ class FPSConnection(AWSQueryConnection):
         else:
             raise FPSResponseError(response.status, response.reason, body)
     
-    def refund(self, callerReference, transactionId, refundAmount=None, callerDescription=None):
+    def refund(self, callerReference, transactionId, refundAmount=None,
+               callerDescription=None):
         """
-        Refund a transaction. This refunds the full amount by default unless 'refundAmount' is specified.
+        Refund a transaction. This refunds the full amount by default
+        unless 'refundAmount' is specified.
         """
         params = {}
         params['CallerReference'] = callerReference
@@ -354,10 +373,10 @@ class FPSConnection(AWSQueryConnection):
     
     def get_token_by_caller_reference(self, callerReference):
         """
-        Returns details about the token specified by 'callerReference'.
+        Returns details about the token specified by 'CallerReference'.
         """
         params ={}
-        params['callerReference'] = callerReference
+        params['CallerReference'] = callerReference
         
         response = self.make_request("GetTokenByCaller", params)
         body = response.read()
@@ -368,9 +387,10 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
+        
     def get_token_by_caller_token(self, tokenId):
         """
-        Returns details about the token specified by 'callerReference'.
+        Returns details about the token specified by 'TokenId'.
         """
         params ={}
         params['TokenId'] = tokenId
