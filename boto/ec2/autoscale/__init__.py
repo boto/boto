@@ -130,7 +130,11 @@ class AutoScaleConnection(AWSQueryConnection):
         for i in xrange(1, len(items)+1):
             if isinstance(items[i-1], dict):
                 for k, v in items[i-1].iteritems():
-                    params['%s.member.%d.%s' % (label, i, k)] = v
+                    if isinstance(v, dict):
+                        for kk, vv in v.iteritems():
+                            params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
+                    else:
+                        params['%s.member.%d.%s' % (label, i, k)] = v
             elif isinstance(items[i-1], basestring):
                 params['%s.member.%d' % (label, i)] = items[i-1]
 
