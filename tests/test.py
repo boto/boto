@@ -38,6 +38,7 @@ from s3.test_https_cert_validation import CertValidationTest
 from ec2.test_connection import EC2ConnectionTest
 from autoscale.test_connection import AutoscaleConnectionTest
 from sdb.test_connection import SDBConnectionTest
+from cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
 
 def usage():
     print "test.py  [-t testsuite] [-v verbosity]"
@@ -81,6 +82,7 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(EC2ConnectionTest))
         tests.addTest(unittest.makeSuite(SDBConnectionTest))
         tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
+        tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
     elif testsuite == "s3":
         tests.addTest(unittest.makeSuite(S3ConnectionTest))
         tests.addTest(unittest.makeSuite(S3VersionTest))
@@ -102,6 +104,8 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
     elif testsuite == "sdb":
         tests.addTest(unittest.makeSuite(SDBConnectionTest))
+    elif testsuite == "cloudfront":
+        tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
     else:
         raise ValueError("Invalid choice.")
     return tests
