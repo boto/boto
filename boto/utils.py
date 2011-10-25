@@ -83,7 +83,7 @@ def canonical_string(method, path, headers, expires=None,
         lk = key.lower()
         if headers[key] != None and (lk in ['content-md5', 'content-type', 'date'] or
                                      lk.startswith(provider.header_prefix)):
-            interesting_headers[lk] = headers[key].strip()
+            interesting_headers[lk] = str(headers[key]).strip()
 
     # these keys get empty strings if they don't exist
     if not interesting_headers.has_key('content-type'):
