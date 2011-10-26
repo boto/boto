@@ -401,7 +401,7 @@ class AWSAuthConnection(object):
         :type port: int
         :param port: The port to use to connect
         """
-        self.num_retries = 5
+        self.num_retries = 6
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
             is_secure = config.getboolean('Boto', 'is_secure')
