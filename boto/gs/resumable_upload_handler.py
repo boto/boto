@@ -23,6 +23,7 @@ import cgi
 import errno
 import httplib
 import os
+import random
 import re
 import socket
 import time
@@ -572,9 +573,10 @@ class ResumableUploadHandler(object):
                     'progress. You might try this upload again later',
                     ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
-            sleep_time_secs = 2**progress_less_iterations
+            # Use binary exponential backoff to desynchronize client requests
+            sleep_time_secs = random.random() * (2**progress_less_iterations)
             if debug >= 1:
                 print ('Got retryable failure (%d progress-less in a row).\n'
-                       'Sleeping %d seconds before re-trying' %
+                       'Sleeping %3.1f seconds before re-trying' %
                        (progress_less_iterations, sleep_time_secs))
             time.sleep(sleep_time_secs)
