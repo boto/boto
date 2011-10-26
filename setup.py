@@ -25,7 +25,7 @@
 
 try:
     from setuptools import setup
-    extra = {"test_suite": "tests.test.suite"}
+    extra = dict(test_suite="tests.test.suite", include_package_data=True)
 except ImportError:
     from distutils.core import setup
     extra = {}
@@ -60,7 +60,6 @@ setup(name = "boto",
                   "boto.rds", "boto.vpc", "boto.fps", "boto.emr", "boto.sns",
                   "boto.ecs", "boto.iam", "boto.route53", "boto.ses",
                   "boto.cloudformation", "boto.sts"],
-      include_package_data = True,
       package_data = {"boto.cacerts": ["cacerts.txt"]},
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",
