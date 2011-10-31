@@ -85,7 +85,8 @@ class SQSConnection(AWSQueryConnection):
         """
         params = {'QueueName': queue_name}
         if visibility_timeout:
-            params['DefaultVisibilityTimeout'] = '%d' % (visibility_timeout,)
+            params['Attribute.1.Name'] = 'VisibilityTimeout'
+            params['Attribute.1.Value'] = int(visibility_timeout)
         return self.get_object('CreateQueue', params, Queue)
 
     def delete_queue(self, queue, force_deletion=False):
