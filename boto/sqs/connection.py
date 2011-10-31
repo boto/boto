@@ -33,10 +33,10 @@ class SQSConnection(AWSQueryConnection):
     """
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'queue.amazonaws.com'
-    APIVersion = '2009-02-01'
+    APIVersion = '2011-10-01'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
-    
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
@@ -210,8 +210,10 @@ class SQSConnection(AWSQueryConnection):
         params = {'ReceiptHandle' : receipt_handle}
         return self.get_status('DeleteMessage', params, queue.id)
 
-    def send_message(self, queue, message_content):
+    def send_message(self, queue, message_content, delay_seconds=None):
         params = {'MessageBody' : message_content}
+        if delay_seconds:
+            params['DelaySeconds'] = int(delay_seconds)
         return self.get_object('SendMessage', params, Message,
                                queue.id, verb='POST')
 
@@ -241,7 +243,7 @@ class SQSConnection(AWSQueryConnection):
         if prefix:
             params['QueueNamePrefix'] = prefix
         return self.get_list('ListQueues', params, [('QueueUrl', Queue)])
-        
+
     def get_queue(self, queue_name):
         rs = self.get_all_queues(queue_name)
         for q in rs:
@@ -305,7 +307,7 @@ class SQSConnection(AWSQueryConnection):
         params = {'Label': label}
         return self.get_status('RemovePermission', params, queue.id)
 
-    
-    
 
-    
+
+
+
