@@ -559,7 +559,9 @@ class Bucket(object):
         if src_version_id:
             src += '?version_id=%s' % src_version_id
         headers = {provider.copy_source_header : str(src)}
-        headers[provider.storage_class_header] = storage_class
+        # make sure storage_class_header key exists before accessing it
+        if provider.storage_class_header:
+            headers[provider.storage_class_header] = storage_class
         if metadata:
             headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata, provider)
