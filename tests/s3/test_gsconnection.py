@@ -176,4 +176,39 @@ class GSConnectionTest (unittest.TestCase):
         # now delete bucket
         time.sleep(5)
         c.delete_bucket(bucket)
+        # test copying a key from one bucket to another
+        # create two new, empty buckets
+        bucket_name_1 = 'test1-%d' % int(time.time())
+        bucket_name_2 = 'test2-%d' % int(time.time())
+        bucket1 = c.create_bucket(bucket_name_1)
+        bucket2 = c.create_bucket(bucket_name_2)
+        # verify buckets got created 
+        bucket1 = c.get_bucket(bucket_name_1)
+        bucket2 = c.get_bucket(bucket_name_2)
+        # create a key in bucket1 and give it some content
+        k1 = bucket1.new_key()
+        assert isinstance(k1, bucket1.key_class)
+        key_name = 'foobar'
+        k1.name = key_name
+        s = 'This is a test.'
+        k1.set_contents_from_string(s)
+        # copy the new key from bucket1 to bucket2
+        k1.copy(bucket_name_2, key_name) 
+        # now copy the contents from bucket2 to a local file
+        k2 = bucket2.lookup(key_name)
+        assert isinstance(k2, bucket2.key_class)
+        fp = open('foobar', 'wb')
+        k2.get_contents_to_file(fp)
+        fp.close()
+        fp = open('foobar')
+        # check to make sure content read is identical to original
+        assert s == fp.read(), 'move test failed!'
+        fp.close()
+        # delete keys
+        bucket1.delete_key(k1)
+        bucket2.delete_key(k2)
+        # delete test buckets
+        c.delete_bucket(bucket1)
+        c.delete_bucket(bucket2)
+        
         print '--- tests completed ---'
