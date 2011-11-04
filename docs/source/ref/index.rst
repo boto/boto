@@ -8,6 +8,7 @@ API Reference
    :maxdepth: 4
 
    boto
+   cloudformation
    cloudfront
    contrib
    ec2

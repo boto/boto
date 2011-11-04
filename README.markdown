@@ -1,6 +1,6 @@
 # boto
-boto 2.1.0
-27-Oct-2011
+boto 2.1.1
+31-Oct-2011
 
 ## Introduction
 
