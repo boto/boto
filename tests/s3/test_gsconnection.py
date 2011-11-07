@@ -31,10 +31,12 @@ import unittest
 import time
 import os
 from boto.gs.connection import GSConnection
+from boto import storage_uri
 
 class GSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
+        '''basic regression test for Google Cloud Storage'''
         print '--- running GSConnection tests ---'
         c = GSConnection()
         # create a new, empty bucket
@@ -176,7 +178,10 @@ class GSConnectionTest (unittest.TestCase):
         # now delete bucket
         time.sleep(5)
         c.delete_bucket(bucket)
-        # test copying a key from one bucket to another
+
+    def test_2_copy_key(self):
+        '''test copying a key from one bucket to another'''
+        c = GSConnection()
         # create two new, empty buckets
         bucket_name_1 = 'test1-%d' % int(time.time())
         bucket_name_2 = 'test2-%d' % int(time.time())
@@ -210,5 +215,65 @@ class GSConnectionTest (unittest.TestCase):
         # delete test buckets
         c.delete_bucket(bucket1)
         c.delete_bucket(bucket2)
+
+    def test_3_default_object_acls(self):
+        '''test default object acls'''
+        c = GSConnection()
+        # create a new bucket
+        bucket_name = 'test-%d' % int(time.time())
+        bucket = c.create_bucket(bucket_name)
+        # now call get_bucket to see if it's really there
+        bucket = c.get_bucket(bucket_name)
+        # get default acl and make sure it's empty
+        acl = bucket.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # set default acl to a canned acl and verify it gets set
+        bucket.set_def_acl('public-read')
+        acl = bucket.get_def_acl()
+        # save public-read acl for later test
+        public_read_acl = acl
+        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        # back to private acl
+        bucket.set_def_acl('private')
+        acl = bucket.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # set default acl to an xml acl and verify it gets set
+        bucket.set_def_acl(public_read_acl)
+        acl = bucket.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        # back to private acl
+        bucket.set_def_acl('private')
+        acl = bucket.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # delete bucket
+        c.delete_bucket(bucket)
+        # repeat default acl tests using boto's storage_uri interface
+        # create a new bucket
+        bucket_name = 'test-%d' % int(time.time())
+        uri = storage_uri('gs://' + bucket_name)
+        uri.create_bucket()
+        # get default acl and make sure it's empty
+        acl = uri.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # set default acl to a canned acl and verify it gets set
+        uri.set_def_acl('public-read')
+        acl = uri.get_def_acl()
+        # save public-read acl for later test
+        public_read_acl = acl
+        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        # back to private acl
+        uri.set_def_acl('private')
+        acl = uri.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # set default acl to an xml acl and verify it gets set
+        uri.set_def_acl(public_read_acl)
+        acl = uri.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        # back to private acl
+        uri.set_def_acl('private')
+        acl = uri.get_def_acl()
+        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # delete bucket
+        uri.delete_bucket()
         
         print '--- tests completed ---'

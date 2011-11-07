@@ -223,12 +223,24 @@ class BucketStorageUri(StorageUri):
                                 self.debug)
 
     def get_acl(self, validate=True, headers=None, version_id=None):
+        '''get_acl() returns a bucket's acl'''
         if not self.bucket_name:
             raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
         bucket = self.get_bucket(validate, headers)
         # This works for both bucket- and object- level ACLs (former passes
         # key_name=None):
         acl = bucket.get_acl(self.object_name, headers, version_id)
+        self.check_response(acl, 'acl', self.uri)
+        return acl
+
+    def get_def_acl(self, validate=True, headers=None, version_id=None):
+        '''get_def_acl() returns a bucket's default object acl'''
+        if not self.bucket_name:
+            raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        # This works for both bucket- and object- level ACLs (former passes
+        # key_name=None):
+        acl = bucket.get_def_acl(self.object_name, headers, version_id)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
@@ -344,20 +356,43 @@ class BucketStorageUri(StorageUri):
 
     def set_acl(self, acl_or_str, key_name='', validate=True, headers=None,
                 version_id=None):
+        '''set_acl() sets or updates a bucket's acl'''
         if not self.bucket_name:
             raise InvalidUriError('set_acl on bucket-less URI (%s)' %
                                   self.uri)
         self.get_bucket(validate, headers).set_acl(acl_or_str, key_name,
                                                    headers, version_id)
 
+    def set_def_acl(self, acl_or_str, key_name='', validate=True, headers=None,
+                version_id=None):
+        '''set_def_acl() sets or updates a bucket's default object acl'''
+        if not self.bucket_name:
+            raise InvalidUriError('set_acl on bucket-less URI (%s)' %
+                                  self.uri)
+        self.get_bucket(validate, headers).set_def_acl(acl_or_str, key_name,
+                                                   headers, version_id)
+
     def set_canned_acl(self, acl_str, validate=True, headers=None,
                        version_id=None):
+        '''set_canned_acl() sets or updates a bucket's acl to a predefined
+           (canned) value'''
         if not self.object_name:
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
                                   self.uri)
         key = self.get_key(validate, headers)
         self.check_response(key, 'key', self.uri)
         key.set_canned_acl(acl_str, headers, version_id)
+
+    def set_def_canned_acl(self, acl_str, validate=True, headers=None,
+                       version_id=None):
+        '''set_def_canned_acl() sets or updates a bucket's default object
+           acl to a predefined (canned) value'''
+        if not self.object_name:
+            raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
+                                  self.uri)
+        key = self.get_key(validate, headers)
+        self.check_response(key, 'key', self.uri)
+        key.set_def_canned_acl(acl_str, headers, version_id)
 
     def set_subresource(self, subresource, value, validate=True, headers=None,
                         version_id=None):
