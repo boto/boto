@@ -1702,7 +1702,7 @@ class EC2Connection(AWSQueryConnection):
         :return: The KeyPair specified or None if it is not found
         """
         try:
-            return self.get_all_key_pairs(keynames=[keyname])[0]
+            return self.get_all_key_pairs(filters = {'key-name':keyname})[0]
         except IndexError: # None of those key pairs available
             return None
 
