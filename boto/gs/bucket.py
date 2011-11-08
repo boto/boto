@@ -29,6 +29,9 @@ from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 import xml.sax
 
+# name for default object ACL in http query args 
+DEF_OBJ_ACL = 'defaultObjectAcl'
+
 class Bucket(S3Bucket):
 
     def __init__(self, connection=None, name=None, key_class=GSKey):
@@ -76,7 +79,7 @@ class Bucket(S3Bucket):
     def get_def_acl(self, key_name='', headers=None):
         """get_def_acl() returns a bucket's default object acl using 
            the get_acl_helper() function.""" 
-        return self.get_acl_helper(key_name, headers, 'defaultObjectAcl')
+        return self.get_acl_helper(key_name, headers, DEF_OBJ_ACL)
 
     def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
         """set_canned_acl_helper() provides common functionality for 
@@ -105,7 +108,13 @@ class Bucket(S3Bucket):
            acl to a predefined (canned) value using the set_canned_acl_helper() 
            function."""
         return self.set_canned_acl_helper(acl_str, key_name, headers, 
-                                          'defaultObjectAcl')
+                                          query_args=DEF_OBJ_ACL)
+
+    def set_def_xml_acl(self, acl_str, key_name='', headers=None):
+        """set_def_xml_acl() sets or changes a bucket's default object 
+           using the base class' set_xml_acl() function."""
+        return self.set_xml_acl(acl_str, key_name, headers, 
+                                query_args=DEF_OBJ_ACL)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.
