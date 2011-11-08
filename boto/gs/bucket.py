@@ -29,8 +29,9 @@ from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 import xml.sax
 
-# name for default object ACL in http query args 
+# constants for default object ACL and standard acl in http query args 
 DEF_OBJ_ACL = 'defaultObjectAcl'
+STANDARD_ACL = 'acl'
 
 class Bucket(S3Bucket):
 
@@ -72,7 +73,7 @@ class Bucket(S3Bucket):
 
     def get_acl(self, key_name='', headers=None):
         """returns a bucket's acl""" 
-        return self.get_acl_helper(key_name, headers, 'acl')
+        return self.get_acl_helper(key_name, headers, STANDARD_ACL)
 
     def get_def_acl(self, key_name='', headers=None):
         """returns a bucket's default object acl""" 
@@ -97,7 +98,8 @@ class Bucket(S3Bucket):
 
     def set_canned_acl(self, acl_str, key_name='', headers=None):
         """sets or changes a bucket's acl to a predefined (canned) value"""
-        return self.set_canned_acl_helper(acl_str, key_name, headers, 'acl')
+        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+                                          STANDARD_ACL)
 
     def set_def_canned_acl(self, acl_str, key_name='', headers=None):
         """sets or changes a bucket's default object acl to a predefined 
