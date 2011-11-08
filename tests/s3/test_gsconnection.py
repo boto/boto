@@ -232,7 +232,9 @@ class GSConnectionTest (unittest.TestCase):
         acl = bucket.get_def_acl()
         # save public-read acl for later test
         public_read_acl = acl
-        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        assert acl.to_xml() == ('<AccessControlList><Entries><Entry>'    +
+          '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
+          '</Entry></Entries></AccessControlList>')
         # back to private acl
         bucket.set_def_acl('private')
         acl = bucket.get_def_acl()
@@ -240,7 +242,9 @@ class GSConnectionTest (unittest.TestCase):
         # set default acl to an xml acl and verify it gets set
         bucket.set_def_acl(public_read_acl)
         acl = bucket.get_def_acl()
-        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        assert acl.to_xml() == ('<AccessControlList><Entries><Entry>'    +
+          '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
+          '</Entry></Entries></AccessControlList>')
         # back to private acl
         bucket.set_def_acl('private')
         acl = bucket.get_def_acl()
@@ -260,7 +264,9 @@ class GSConnectionTest (unittest.TestCase):
         acl = uri.get_def_acl()
         # save public-read acl for later test
         public_read_acl = acl
-        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        assert acl.to_xml() == ('<AccessControlList><Entries><Entry>'    +
+          '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
+          '</Entry></Entries></AccessControlList>')
         # back to private acl
         uri.set_def_acl('private')
         acl = uri.get_def_acl()
@@ -268,7 +274,9 @@ class GSConnectionTest (unittest.TestCase):
         # set default acl to an xml acl and verify it gets set
         uri.set_def_acl(public_read_acl)
         acl = uri.get_def_acl()
-        assert acl.to_xml() == '<AccessControlList><Entries><Entry><Scope type="AllUsers"></Scope><Permission>READ</Permission></Entry></Entries></AccessControlList>'
+        assert acl.to_xml() == ('<AccessControlList><Entries><Entry>'    +
+          '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
+          '</Entry></Entries></AccessControlList>')
         # back to private acl
         uri.set_def_acl('private')
         acl = uri.get_def_acl()

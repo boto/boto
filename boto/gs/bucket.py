@@ -38,7 +38,7 @@ class Bucket(S3Bucket):
         super(Bucket, self).__init__(connection, name, key_class)
 
     def set_acl(self, acl_or_str, key_name='', headers=None):
-        """set_acl() sets or changes a bucket's acl."""
+        """sets or changes a bucket's acl"""
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -47,7 +47,7 @@ class Bucket(S3Bucket):
             self.set_canned_acl(acl_or_str, key_name, headers=headers)
 
     def set_def_acl(self, acl_or_str, key_name='', headers=None):
-        """set_def_acl() sets or changes a bucket's default object acl."""
+        """sets or changes a bucket's default object acl"""
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -56,8 +56,7 @@ class Bucket(S3Bucket):
             self.set_def_canned_acl(acl_or_str, key_name, headers=headers)
 
     def get_acl_helper(self, key_name, headers, query_args):
-        """get_acl_helper() provides common functionality for get_acl()
-           and get_def_acl()."""
+        """provides common functionality for get_acl() and get_def_acl()"""
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args, 
                                                 headers=headers)
@@ -72,18 +71,16 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def get_acl(self, key_name='', headers=None):
-        """get_acl() returns a bucket's acl using the get_acl_helper()
-           function.""" 
+        """returns a bucket's acl""" 
         return self.get_acl_helper(key_name, headers, 'acl')
 
     def get_def_acl(self, key_name='', headers=None):
-        """get_def_acl() returns a bucket's default object acl using 
-           the get_acl_helper() function.""" 
+        """returns a bucket's default object acl""" 
         return self.get_acl_helper(key_name, headers, DEF_OBJ_ACL)
 
     def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
-        """set_canned_acl_helper() provides common functionality for 
-           set_canned_acl() and set_def_canned_acl()."""
+        """provides common functionality for set_canned_acl() and 
+           set_def_canned_acl()"""
         assert acl_str in CannedACLStrings
 
         if headers:
@@ -99,20 +96,17 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name='', headers=None):
-        """set_canned_acl() sets or changes a bucket's acl to a predefined 
-           (canned) value using the set_canned_acl_helper() function."""
+        """sets or changes a bucket's acl to a predefined (canned) value"""
         return self.set_canned_acl_helper(acl_str, key_name, headers, 'acl')
 
     def set_def_canned_acl(self, acl_str, key_name='', headers=None):
-        """set_def_canned_acl() sets or changes a bucket's default object 
-           acl to a predefined (canned) value using the set_canned_acl_helper() 
-           function."""
+        """sets or changes a bucket's default object acl to a predefined 
+           (canned) value"""
         return self.set_canned_acl_helper(acl_str, key_name, headers, 
                                           query_args=DEF_OBJ_ACL)
 
     def set_def_xml_acl(self, acl_str, key_name='', headers=None):
-        """set_def_xml_acl() sets or changes a bucket's default object 
-           using the base class' set_xml_acl() function."""
+        """sets or changes a bucket's default object"""
         return self.set_xml_acl(acl_str, key_name, headers, 
                                 query_args=DEF_OBJ_ACL)
 
