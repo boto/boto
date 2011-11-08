@@ -34,8 +34,8 @@ class Bucket(S3Bucket):
     def __init__(self, connection=None, name=None, key_class=GSKey):
         super(Bucket, self).__init__(connection, name, key_class)
 
-    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
-        '''set_acl() sets or changes a bucket's acl.'''
+    def set_acl(self, acl_or_str, key_name='', headers=None):
+        """set_acl() sets or changes a bucket's acl."""
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -43,9 +43,8 @@ class Bucket(S3Bucket):
         else:
             self.set_canned_acl(acl_or_str, key_name, headers=headers)
 
-    def set_def_acl(self, acl_or_str, key_name='', headers=None, 
-                    version_id=None):
-        '''set_def_acl() sets or changes a bucket's default object acl.'''
+    def set_def_acl(self, acl_or_str, key_name='', headers=None):
+        """set_def_acl() sets or changes a bucket's default object acl."""
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -53,9 +52,9 @@ class Bucket(S3Bucket):
         else:
             self.set_def_canned_acl(acl_or_str, key_name, headers=headers)
 
-    def get_acl_helper(self, key_name, headers, version_id, query_args):
-        '''get_acl_helper() provides common functionality for get_acl()
-           and get_def_acl().'''
+    def get_acl_helper(self, key_name, headers, query_args):
+        """get_acl_helper() provides common functionality for get_acl()
+           and get_def_acl()."""
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args, 
                                                 headers=headers)
@@ -69,21 +68,19 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def get_acl(self, key_name='', headers=None, version_id=None):
-        '''get_acl() returns a bucket's acl using the get_acl_helper()
-           function.''' 
-        return self.get_acl_helper(key_name, headers, version_id, 'acl')
+    def get_acl(self, key_name='', headers=None):
+        """get_acl() returns a bucket's acl using the get_acl_helper()
+           function.""" 
+        return self.get_acl_helper(key_name, headers, 'acl')
 
-    def get_def_acl(self, key_name='', headers=None, version_id=None):
-        '''get_def_acl() returns a bucket's default object acl using 
-           the get_acl_helper() function.''' 
-        return self.get_acl_helper(key_name, headers, version_id, 
-                                   'defaultObjectAcl')
+    def get_def_acl(self, key_name='', headers=None):
+        """get_def_acl() returns a bucket's default object acl using 
+           the get_acl_helper() function.""" 
+        return self.get_acl_helper(key_name, headers, 'defaultObjectAcl')
 
-    def set_canned_acl_helper(self, acl_str, key_name, headers,
-                              version_id, query_args):
-        '''set_canned_acl_helper() provides common functionality for 
-           set_canned_acl() and set_def_canned_acl().'''
+    def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
+        """set_canned_acl_helper() provides common functionality for 
+           set_canned_acl() and set_def_canned_acl()."""
         assert acl_str in CannedACLStrings
 
         if headers:
@@ -91,8 +88,6 @@ class Bucket(S3Bucket):
         else:
             headers={self.connection.provider.acl_header: acl_str}
 
-        if version_id:
-            query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
                 headers=headers, query_args=query_args)
         body = response.read()
@@ -100,20 +95,17 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name='', headers=None,
-                       version_id=None):
-        '''set_canned_acl() sets or changes a bucket's acl to a predefined 
-           (canned) value using the set_canned_acl_helper() function.'''
-        return self.set_canned_acl_helper(acl_str, key_name, headers, 
-                                          version_id, 'acl')
+    def set_canned_acl(self, acl_str, key_name='', headers=None):
+        """set_canned_acl() sets or changes a bucket's acl to a predefined 
+           (canned) value using the set_canned_acl_helper() function."""
+        return self.set_canned_acl_helper(acl_str, key_name, headers, 'acl')
 
-    def set_def_canned_acl(self, acl_str, key_name='', headers=None,
-                           version_id=None):
-        '''set_def_canned_acl() sets or changes a bucket's default object 
+    def set_def_canned_acl(self, acl_str, key_name='', headers=None):
+        """set_def_canned_acl() sets or changes a bucket's default object 
            acl to a predefined (canned) value using the set_canned_acl_helper() 
-           function.'''
+           function."""
         return self.set_canned_acl_helper(acl_str, key_name, headers, 
-                                          version_id, 'defaultObjectAcl')
+                                          'defaultObjectAcl')
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.

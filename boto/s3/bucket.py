@@ -618,8 +618,8 @@ class Bucket(object):
 
     def set_xml_acl_helper(self, acl_str, key_name, headers, version_id, 
                            query_args):
-        '''set_xml_acl_helper() provides common functionality for
-           set_xml_acl() and set_def_xml_acl().'''
+        """set_xml_acl_helper() provides common functionality for
+           set_xml_acl() and set_def_xml_acl()."""
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
@@ -632,15 +632,15 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None):
-        '''set_def_xml_acl() adds or updates a bucket's acl from an ACL
-           object or an XML string using set_xml_acl_helper().'''
+        """set_def_xml_acl() adds or updates a bucket's acl from an ACL
+           object or an XML string using set_xml_acl_helper()."""
         return self.set_xml_acl_helper(acl_str, key_name, headers, version_id, 
                                        'acl')
 
     def set_def_xml_acl(self, acl_str, key_name='', headers=None, 
                         version_id=None):
-        '''set_def_xml_acl() adds or updates a bucket's default object acl
-           from an ACL object or an XML string using set_xml_acl_helper().'''
+        """set_def_xml_acl() adds or updates a bucket's default object acl
+           from an ACL object or an XML string using set_xml_acl_helper()."""
         return self.set_xml_acl_helper(acl_str, key_name, headers, version_id, 
                                        'defaultObjectAcl')
 

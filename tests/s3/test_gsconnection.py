@@ -36,7 +36,7 @@ from boto import storage_uri
 class GSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        '''basic regression test for Google Cloud Storage'''
+        """basic regression test for Google Cloud Storage"""
         print '--- running GSConnection tests ---'
         c = GSConnection()
         # create a new, empty bucket
@@ -180,7 +180,7 @@ class GSConnectionTest (unittest.TestCase):
         c.delete_bucket(bucket)
 
     def test_2_copy_key(self):
-        '''test copying a key from one bucket to another'''
+        """test copying a key from one bucket to another"""
         c = GSConnection()
         # create two new, empty buckets
         bucket_name_1 = 'test1-%d' % int(time.time())
@@ -217,7 +217,7 @@ class GSConnectionTest (unittest.TestCase):
         c.delete_bucket(bucket2)
 
     def test_3_default_object_acls(self):
-        '''test default object acls'''
+        """test default object acls"""
         c = GSConnection()
         # create a new bucket
         bucket_name = 'test-%d' % int(time.time())

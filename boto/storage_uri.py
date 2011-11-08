@@ -223,7 +223,7 @@ class BucketStorageUri(StorageUri):
                                 self.debug)
 
     def get_acl(self, validate=True, headers=None, version_id=None):
-        '''get_acl() returns a bucket's acl'''
+        """get_acl() returns a bucket's acl"""
         if not self.bucket_name:
             raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
         bucket = self.get_bucket(validate, headers)
@@ -234,7 +234,7 @@ class BucketStorageUri(StorageUri):
         return acl
 
     def get_def_acl(self, validate=True, headers=None, version_id=None):
-        '''get_def_acl() returns a bucket's default object acl'''
+        """get_def_acl() returns a bucket's default object acl"""
         if not self.bucket_name:
             raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
         bucket = self.get_bucket(validate, headers)
@@ -356,7 +356,7 @@ class BucketStorageUri(StorageUri):
 
     def set_acl(self, acl_or_str, key_name='', validate=True, headers=None,
                 version_id=None):
-        '''set_acl() sets or updates a bucket's acl'''
+        """set_acl() sets or updates a bucket's acl"""
         if not self.bucket_name:
             raise InvalidUriError('set_acl on bucket-less URI (%s)' %
                                   self.uri)
@@ -365,7 +365,7 @@ class BucketStorageUri(StorageUri):
 
     def set_def_acl(self, acl_or_str, key_name='', validate=True, headers=None,
                 version_id=None):
-        '''set_def_acl() sets or updates a bucket's default object acl'''
+        """set_def_acl() sets or updates a bucket's default object acl"""
         if not self.bucket_name:
             raise InvalidUriError('set_acl on bucket-less URI (%s)' %
                                   self.uri)
@@ -374,8 +374,8 @@ class BucketStorageUri(StorageUri):
 
     def set_canned_acl(self, acl_str, validate=True, headers=None,
                        version_id=None):
-        '''set_canned_acl() sets or updates a bucket's acl to a predefined
-           (canned) value'''
+        """set_canned_acl() sets or updates a bucket's acl to a predefined
+           (canned) value"""
         if not self.object_name:
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
                                   self.uri)
@@ -385,8 +385,8 @@ class BucketStorageUri(StorageUri):
 
     def set_def_canned_acl(self, acl_str, validate=True, headers=None,
                        version_id=None):
-        '''set_def_canned_acl() sets or updates a bucket's default object
-           acl to a predefined (canned) value'''
+        """set_def_canned_acl() sets or updates a bucket's default object
+           acl to a predefined (canned) value"""
         if not self.object_name:
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
                                   self.uri)
