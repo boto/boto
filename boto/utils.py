@@ -65,12 +65,12 @@ except ImportError:
     _hashfn = md5.md5
 
 # List of Query String Arguments of Interest
-qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
-                   'requestPayment', 'torrent', 'versioning', 'versionId',
-                   'versions', 'website', 'uploads', 'uploadId',
-                   'response-content-type', 'response-content-language',
-                   'response-expires', 'reponse-cache-control',
-                   'response-content-disposition',
+qsa_of_interest = ['acl', 'defaultObjectAcl', 'location', 'logging', 
+                   'partNumber', 'policy', 'requestPayment', 'torrent', 
+                   'versioning', 'versionId', 'versions', 'website', 
+                   'uploads', 'uploadId', 'response-content-type', 
+                   'response-content-language', 'response-expires', 
+                   'reponse-cache-control', 'response-content-disposition',
                    'response-content-encoding']
 
 # generates the aws canonical string for the given parameters
