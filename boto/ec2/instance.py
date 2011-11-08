@@ -256,7 +256,7 @@ class Instance(TaggedEC2Object):
         :rtype: list
         :return: A list of the instances stopped
         """
-        rs = self.connection.stop_instances([self.id])
+        rs = self.connection.stop_instances([self.id], force)
         if len(rs) > 0:
             self._update(rs[0])
 
