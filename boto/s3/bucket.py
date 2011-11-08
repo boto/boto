@@ -616,8 +616,8 @@ class Bucket(object):
                 response.status, response.reason, body)
         return body
 
-    def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None):
-        query_args = 'acl'
+    def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None,
+                    query_args='acl'):
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
