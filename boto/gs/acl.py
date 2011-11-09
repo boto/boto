@@ -61,9 +61,9 @@ class ACL:
     def __repr__(self):
         # Owner is optional in GS ACLs.
         if hasattr(self, 'owner'):
-            entries_repr = ['']
-        else:
             entries_repr = ['Owner:%s' % self.owner.__repr__()]
+        else:
+            entries_repr = ['']
         acl_entries = self.entries
         if acl_entries:
             for e in acl_entries.entry_list:
