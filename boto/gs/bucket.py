@@ -39,7 +39,10 @@ class Bucket(S3Bucket):
         super(Bucket, self).__init__(connection, name, key_class)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
-        """sets or changes a bucket's acl"""
+        """sets or changes a bucket's acl. We include a version_id argument
+           to support a polymorphic interface for callers, however, 
+           version_id is not relevant for Google Cloud Storage buckets 
+           and is therefore ignored here.""" 
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -72,7 +75,10 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def get_acl(self, key_name='', headers=None, version_id=None):
-        """returns a bucket's acl""" 
+        """returns a bucket's acl. We include a version_id argument
+           to support a polymorphic interface for callers, however, 
+           version_id is not relevant for Google Cloud Storage buckets 
+           and is therefore ignored here.""" 
         return self.get_acl_helper(key_name, headers, STANDARD_ACL)
 
     def get_def_acl(self, key_name='', headers=None):
@@ -98,7 +104,10 @@ class Bucket(S3Bucket):
 
     def set_canned_acl(self, acl_str, key_name='', headers=None, 
                        version_id=None):
-        """sets or changes a bucket's acl to a predefined (canned) value"""
+        """sets or changes a bucket's acl to a predefined (canned) value. 
+           We include a version_id argument to support a polymorphic 
+           interface for callers, however, version_id is not relevant for 
+           Google Cloud Storage buckets and is therefore ignored here.""" 
         return self.set_canned_acl_helper(acl_str, key_name, headers, 
                                           STANDARD_ACL)
 
