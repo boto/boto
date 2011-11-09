@@ -213,7 +213,7 @@ class MockBucket(object):
             self.acls[self.name] = acl_or_str
 
     def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, headers=NOT_IMPL,
-                version_id=NOT_IMPL):
+                    version_id=NOT_IMPL):
         # We only handle setting ACL XML here; if you pass a canned ACL
         # the get_acl call will just return that string name.
         # Set default ACL for the bucket.
@@ -367,7 +367,7 @@ class MockBucketStorageUri(object):
         self.get_bucket().set_acl(acl_or_str, key_name)
 
     def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, validate=NOT_IMPL,
-                headers=NOT_IMPL, version_id=NOT_IMPL):
+                    headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().set_def_acl(acl_or_str)
 
     def set_subresource(self, subresource, value, validate=NOT_IMPL,
