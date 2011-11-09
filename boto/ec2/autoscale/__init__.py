@@ -42,6 +42,7 @@ from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 RegionData = {
     'us-east-1' : 'autoscaling.us-east-1.amazonaws.com',
     'us-west-1' : 'autoscaling.us-west-1.amazonaws.com',
+    'us-west-2' : 'autoscaling.us-west-2.amazonaws.com',
     'eu-west-1' : 'autoscaling.eu-west-1.amazonaws.com',
     'ap-northeast-1' : 'autoscaling.ap-northeast-1.amazonaws.com',
     'ap-southeast-1' : 'autoscaling.ap-southeast-1.amazonaws.com'}
