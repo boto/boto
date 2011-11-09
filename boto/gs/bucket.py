@@ -38,7 +38,7 @@ class Bucket(S3Bucket):
     def __init__(self, connection=None, name=None, key_class=GSKey):
         super(Bucket, self).__init__(connection, name, key_class)
 
-    def set_acl(self, acl_or_str, key_name='', headers=None):
+    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
         """sets or changes a bucket's acl"""
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
@@ -71,7 +71,7 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def get_acl(self, key_name='', headers=None):
+    def get_acl(self, key_name='', headers=None, version_id=None):
         """returns a bucket's acl""" 
         return self.get_acl_helper(key_name, headers, STANDARD_ACL)
 
@@ -96,7 +96,8 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name='', headers=None):
+    def set_canned_acl(self, acl_str, key_name='', headers=None, 
+                       version_id=None):
         """sets or changes a bucket's acl to a predefined (canned) value"""
         return self.set_canned_acl_helper(acl_str, key_name, headers, 
                                           STANDARD_ACL)
