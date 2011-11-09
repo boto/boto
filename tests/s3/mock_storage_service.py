@@ -125,6 +125,8 @@ class MockBucket(object):
         self.name = name
         self.keys = {}
         self.acls = {name: MockAcl()}
+        # default object ACLs are one per bucket and not supported for keys
+        self.def_acl = MockAcl()
         self.subresources = {}
         self.connection = connection
         self.logging = False
@@ -152,6 +154,11 @@ class MockBucket(object):
         else:
             # Return ACL for the bucket.
             return self.acls[self.name]
+
+    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL, 
+                    version_id=NOT_IMPL):
+        # Return default ACL for the bucket.
+        return self.def_acl
 
     def get_subresource(self, subresource, key_name=NOT_IMPL, headers=NOT_IMPL,
                         version_id=NOT_IMPL):
@@ -204,6 +211,13 @@ class MockBucket(object):
         else:
             # Set ACL for the bucket.
             self.acls[self.name] = acl_or_str
+
+    def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, headers=NOT_IMPL,
+                version_id=NOT_IMPL):
+        # We only handle setting ACL XML here; if you pass a canned ACL
+        # the get_acl call will just return that string name.
+        # Set default ACL for the bucket.
+        self.def_acl = acl_or_str
 
     def set_subresource(self, subresource, value, key_name=NOT_IMPL,
                         headers=NOT_IMPL, version_id=NOT_IMPL):
@@ -311,6 +325,10 @@ class MockBucketStorageUri(object):
     def get_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, version_id=NOT_IMPL):
         return self.get_bucket().get_acl(self.object_name)
 
+    def get_def_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, 
+                    version_id=NOT_IMPL):
+        return self.get_bucket().get_def_acl(self.object_name)
+
     def get_subresource(self, subresource, validate=NOT_IMPL, headers=NOT_IMPL,
                         version_id=NOT_IMPL):
         return self.get_bucket().get_subresource(subresource, self.object_name)
@@ -347,6 +365,10 @@ class MockBucketStorageUri(object):
     def set_acl(self, acl_or_str, key_name='', validate=NOT_IMPL,
                 headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().set_acl(acl_or_str, key_name)
+
+    def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, validate=NOT_IMPL,
+                headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.get_bucket().set_def_acl(acl_or_str)
 
     def set_subresource(self, subresource, value, validate=NOT_IMPL,
                         headers=NOT_IMPL, version_id=NOT_IMPL):
