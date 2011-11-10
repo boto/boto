@@ -252,7 +252,7 @@ class Key(object):
         return data
 
     def change_storage_class(self, new_storage_class, dst_bucket=None, 
-                             validate_dst_bucket=False):
+                             validate_dst_bucket=True):
         """
         Change the storage class of an existing key.
         Depending on whether a different destination bucket is supplied
@@ -291,7 +291,7 @@ class Key(object):
 
     def copy(self, dst_bucket, dst_key, metadata=None,
              reduced_redundancy=False, preserve_acl=False,
-             encrypt_key=False, validate_dst_bucket=False):
+             encrypt_key=False, validate_dst_bucket=True):
         """
         Copy this Key to another bucket.
 
