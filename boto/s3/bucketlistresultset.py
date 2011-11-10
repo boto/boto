@@ -19,7 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None):
+def bucket_lister(bucket, prefix='', delimiter='', marker='', 
+                  headers=None, max_keys=1000):
     """
     A generator function for listing keys in a bucket.
     """
@@ -27,7 +28,8 @@ def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None):
     k = None
     while more_results:
         rs = bucket.get_all_keys(prefix=prefix, marker=marker,
-                                 delimiter=delimiter, headers=headers)
+                                 delimiter=delimiter, headers=headers, 
+                                 max_keys=max_keys)
         for k in rs:
             yield k
         if k:
