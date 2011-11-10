@@ -251,7 +251,8 @@ class Key(object):
             self.close()
         return data
 
-    def change_storage_class(self, new_storage_class, dst_bucket=None):
+    def change_storage_class(self, new_storage_class, dst_bucket=None, 
+                             validate_dst_bucket=False):
         """
         Change the storage class of an existing key.
         Depending on whether a different destination bucket is supplied
@@ -271,20 +272,26 @@ class Key(object):
                            provided the current bucket of the key
                            will be used.
 
+        :type validate_dst_bucket: bool
+        :param validate_dst_bucket: If True, will validate the dst_bucket
+                                    by using a extra list request.
+
         """
         if new_storage_class == 'STANDARD':
             return self.copy(self.bucket.name, self.name,
-                             reduced_redundancy=False, preserve_acl=True)
+                             reduced_redundancy=False, preserve_acl=True,
+                             validate_dst_bucket=validate_dst_bucket)
         elif new_storage_class == 'REDUCED_REDUNDANCY':
             return self.copy(self.bucket.name, self.name,
-                             reduced_redundancy=True, preserve_acl=True)
+                             reduced_redundancy=True, preserve_acl=True,
+                             validate_dst_bucket=validate_dst_bucket)
         else:
             raise BotoClientError('Invalid storage class: %s' %
                                   new_storage_class)
 
     def copy(self, dst_bucket, dst_key, metadata=None,
              reduced_redundancy=False, preserve_acl=False,
-             encrypt_key=False):
+             encrypt_key=False, validate_dst_bucket=False):
         """
         Copy this Key to another bucket.
 
@@ -329,11 +336,16 @@ class Key(object):
                             be encrypted on the server-side by S3 and
                             will be stored in an encrypted form while
                             at rest in S3.
-                            
+
+        :type validate_dst_bucket: bool
+        :param validate_dst_bucket: If True, will validate the dst_bucket
+                                    by using a extra list request.
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
-        dst_bucket = self.bucket.connection.lookup(dst_bucket)
+        dst_bucket = self.bucket.connection.lookup(dst_bucket,
+                                                   validate=validate_dst_bucket)
         if reduced_redundancy:
             storage_class = 'REDUCED_REDUNDANCY'
         else:
