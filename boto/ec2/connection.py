@@ -2005,7 +2005,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('AuthorizeSecurityGroupIngress',
                                params, verb='POST')
 
-    def authorize_security_group_egress(group_id,
+    def authorize_security_group_egress(self,
+                                        group_id,
                                         ip_protocol,
                                         from_port=None,
                                         to_port=None,
@@ -2170,6 +2171,59 @@ class EC2Connection(AWSQueryConnection):
         if cidr_ip:
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress',
+                               params, verb='POST')
+
+    def revoke_security_group_egress(self,
+                                     group_id,
+                                     ip_protocol,
+                                     from_port=None,
+                                     to_port=None,
+                                     src_group_id=None,
+                                     cidr_ip=None):
+        """
+        Remove an existing egress rule from an existing VPC security group.
+        You need to pass in an ip_protocol, from_port and to_port range only
+        if the protocol you are using is port-based. You also need to pass in either
+        a src_group_id or cidr_ip. 
+
+        :type group_name: string
+        :param group_id:  The name of the security group you are removing
+                           the rule from.
+
+        :type ip_protocol: string
+        :param ip_protocol: Either tcp | udp | icmp | -1
+
+        :type from_port: int
+        :param from_port: The beginning port number you are disabling
+
+        :type to_port: int
+        :param to_port: The ending port number you are disabling
+
+        :type src_group_id: src_group_id
+        :param src_group_id: The source security group you are revoking access to.
+
+        :type cidr_ip: string
+        :param cidr_ip: The CIDR block you are revoking access to.
+                        See http://goo.gl/Yj5QC
+
+        :rtype: bool
+        :return: True if successful.
+        """
+       
+        params = {}
+        if group_id:
+            params['GroupId'] = group_id
+        if ip_protocol:
+            params['IpPermissions.1.IpProtocol'] = ip_protocol
+        if from_port is not None:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port is not None:
+            params['IpPermissions.1.ToPort'] = to_port
+        if src_group_id is not None:
+            params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
+        if cidr_ip:
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
+        return self.get_status('RevokeSecurityGroupEgress',
                                params, verb='POST')
 
     #
