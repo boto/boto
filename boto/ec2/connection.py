@@ -2108,7 +2108,7 @@ class EC2Connection(AWSQueryConnection):
             params['CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress', params)
 
-    def revoke_security_group(self, group_name, src_security_group_name=None,
+    def revoke_security_group(self, group_name=None, src_security_group_name=None,
                               src_security_group_owner_id=None,
                               ip_protocol=None, from_port=None, to_port=None,
                               cidr_ip=None, group_id=None,
@@ -2154,11 +2154,16 @@ class EC2Connection(AWSQueryConnection):
                     group_name, src_security_group_name,
                     src_security_group_owner_id)
         params = {}
-        if group_name:
+        if group_name is not None:
             params['GroupName'] = group_name
+        if group_id is not None:
+            params['GroupId'] = group_id
         if src_security_group_name:
             param_name = 'IpPermissions.1.Groups.1.GroupName'
             params[param_name] = src_security_group_name
+        if src_security_group_group_id:
+            param_name = 'IpPermissions.1.Groups.1.GroupId'
+            params[param_name] = src_security_group_group_id
         if src_security_group_owner_id:
             param_name = 'IpPermissions.1.Groups.1.UserId'
             params[param_name] = src_security_group_owner_id
