@@ -567,7 +567,7 @@ class RDSConnection(AWSQueryConnection):
         :return: The newly created DBSecurityGroup
         """
         params = {'DBParameterGroupName': name,
-                  'Engine': engine,
+                  'DBParameterGroupFamily': engine,
                   'Description' : description}
         return self.get_object('CreateDBParameterGroup', params, ParameterGroup)
 
