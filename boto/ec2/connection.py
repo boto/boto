@@ -1703,8 +1703,11 @@ class EC2Connection(AWSQueryConnection):
         """
         try:
             return self.get_all_key_pairs(keynames=[keyname])[0]
-        except IndexError: # None of those key pairs available
-            return None
+        except self.ResponseError, e:
+            if e.code == 'InvalidKeyPair.NotFound':
+                return None
+            else:
+                raise
 
     def create_key_pair(self, key_name):
         """
