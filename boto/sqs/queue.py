@@ -185,7 +185,7 @@ class Queue:
         else:
             return None
 
-    def write(self, message):
+    def write(self, message, delay_seconds=None):
         """
         Add a single message to the queue.
 
@@ -195,7 +195,7 @@ class Queue:
         :rtype: :class:`boto.sqs.message.Message`
         :return: The :class:`boto.sqs.message.Message` object that was written.
         """
-        new_msg = self.connection.send_message(self, message.get_body_encoded())
+        new_msg = self.connection.send_message(self, message.get_body_encoded(), delay_seconds)
         message.id = new_msg.id
         message.md5 = new_msg.md5
         return message
