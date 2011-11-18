@@ -57,7 +57,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2011-01-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2011-11-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
@@ -71,9 +71,6 @@ class EC2Connection(AWSQueryConnection):
                  api_version=None, security_token=None):
         """
         Init method to create a new connection to EC2.
-
-        B{Note:} The host argument is overridden by the host specified in the
-                 boto configuration file.
         """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
