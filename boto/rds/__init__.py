@@ -558,7 +558,7 @@ class RDSConnection(AWSQueryConnection):
         :param name: The name of the new dbparameter group
 
         :type engine: str
-        :param engine: Name of database engine.  Must be MySQL5.1 for now.
+        :param engine: Name of database engine.
 
         :type description: string
         :param description: The description of the new security group
@@ -567,7 +567,7 @@ class RDSConnection(AWSQueryConnection):
         :return: The newly created DBSecurityGroup
         """
         params = {'DBParameterGroupName': name,
-                  'Engine': engine,
+                  'DBParameterGroupFamily': engine,
                   'Description' : description}
         return self.get_object('CreateDBParameterGroup', params, ParameterGroup)
 
