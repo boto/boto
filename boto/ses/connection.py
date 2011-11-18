@@ -28,6 +28,7 @@ import boto.jsonresponse
 
 import urllib
 import base64
+from boto.ses import exceptions as ses_exceptions
 
 
 class SESConnection(AWSAuthConnection):
@@ -71,7 +72,6 @@ class SESConnection(AWSAuthConnection):
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
 
-
     def _make_request(self, action, params=None):
         """Make a call to the SES API.
 
@@ -80,7 +80,7 @@ class SESConnection(AWSAuthConnection):
 
         :type params: dict
         :param params: Parameters that will be sent as POST data with the API
-                       call.
+            call.
         """
         ct = 'application/x-www-form-urlencoded; charset=UTF-8'
         headers = {'Content-Type': ct}
@@ -105,10 +105,47 @@ class SESConnection(AWSAuthConnection):
             h.parse(body)
             return e
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            # HTTP codes other than 200 are considered errors. Go through
+            # some error handling to determine which exception gets raised,
+            self._handle_error(response, body)
 
+    def _handle_error(self, response, body):
+        """
+        Handle raising the correct exception, depending on the error. Many
+        errors share the same HTTP response code, meaning we have to get really
+        kludgey and do string searches to figure out what went wrong.
+        """
+        boto.log.error('%s %s' % (response.status, response.reason))
+        boto.log.error('%s' % body)
+
+        if "Address blacklisted." in body:
+            # Delivery failures happened frequently enough with the recipient's
+            # email address for Amazon to blacklist it. After a day or three,
+            # they'll be automatically removed, and delivery can be attempted
+            # again (if you write the code to do so in your application).
+            ExceptionToRaise = ses_exceptions.SESAddressBlacklistedError
+            exc_reason = "Address blacklisted."
+        elif "Email address is not verified." in body:
+            # This error happens when the "Reply-To" value passed to
+            # send_email() hasn't been verified yet.
+            ExceptionToRaise = ses_exceptions.SESAddressNotVerifiedError
+            exc_reason = "Email address is not verified."
+        elif "Daily message quota exceeded." in body:
+            # Encountered when your account exceeds the maximum total number
+            # of emails per 24 hours.
+            ExceptionToRaise = ses_exceptions.SESDailyQuotaExceededError
+            exc_reason = "Daily message quota exceeded."
+        elif "Maximum sending rate exceeded." in body:
+            # Your account has sent above its allowed requests a second rate.
+            ExceptionToRaise = ses_exceptions.SESMaxSendingRateExceededError
+            exc_reason = "Maximum sending rate exceeded."
+        else:
+            # This is either a common AWS error, or one that we don't devote
+            # its own exception to.
+            ExceptionToRaise = self.ResponseError
+            exc_reason = response.reason
+
+        raise ExceptionToRaise(response.status, exc_reason, body)
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text', reply_addresses=None,
@@ -239,7 +276,7 @@ class SESConnection(AWSAuthConnection):
         params = {
             'RawMessage.Data': base64.b64encode(raw_message),
         }
-        
+
         if source:
             params['Source'] = source
 
