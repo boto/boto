@@ -100,6 +100,8 @@ class SDBConverter(object):
         import urllib
         if value == None:
             return None
+        if isinstance(value, basestring):
+            return value
         if not isinstance(value, dict):
             raise ValueError, 'Expected a dict value, got %s' % type(value)
         new_value = []
