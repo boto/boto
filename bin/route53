@@ -92,6 +92,17 @@ def change_record(conn, hosted_zone_id, name, type, values, ttl=600, comment="")
         change2.add_value(new_value)
     print changes.commit()
 
+def change_alias(conn, hosted_zone_id, name, type, alias_hosted_zone_id, alias_dns_name, comment=""):
+    """Delete and then add an alias to a zone"""
+    from boto.route53.record import ResourceRecordSets
+    changes = ResourceRecordSets(conn, hosted_zone_id, comment)
+    response = conn.get_all_rrsets(hosted_zone_id, type, name, maxitems=1)[0]
+    change1 = changes.add_change("DELETE", name, type)
+    change1.set_alias(response.alias_hosted_zone_id, response.alias_dns_name)
+    change2 = changes.add_change("CREATE", name, type)
+    change2.set_alias(alias_hosted_zone_id, alias_dns_name)
+    print changes.commit()
+
 def help(conn, fnc=None):
     """Prints this help message"""
     import inspect
