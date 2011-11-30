@@ -199,7 +199,7 @@ class MultiPartUpload(object):
         self._parts = []
         query_args = 'uploadId=%s' % self.id
         if max_parts:
-            query_args += '&max_parts=%d' % max_parts
+            query_args += '&max-parts=%d' % max_parts
         if part_number_marker:
             query_args += '&part-number-marker=%s' % part_number_marker
         response = self.bucket.connection.make_request('GET', self.bucket.name,
