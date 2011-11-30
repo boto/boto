@@ -242,7 +242,9 @@ class ConnectionPool(object):
     def get_http_connection(self, host, is_secure):
         """
         Gets a connection from the pool for the named host.  Returns
-        None if there is no connection that can be reused.
+        None if there is no connection that can be reused. It's the caller's
+        responsibility to call close() on the connection when it's no longer
+        needed.
         """
         self.clean()
         with self.mutex:

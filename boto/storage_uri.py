@@ -41,6 +41,13 @@ class StorageUri(object):
     # https_connection_factory).
     connection_args = None
 
+    # Map of provider scheme ('s3' or 'gs') to AWSAuthConnection object. We
+    # maintain a pool here in addition to the connection pool implemented
+    # in AWSAuthConnection because the latter re-creates its connection pool
+    # every time that class is instantiated (so the current pool is used to
+    # avoid re-instantiating AWSAuthConnection).
+    provider_pool = {}
+
     def __init__(self):
         """Uncallable constructor on abstract base StorageUri class.
         """
@@ -84,16 +91,20 @@ class StorageUri(object):
         connection_args['calling_format'] = OrdinaryCallingFormat()
         connection_args.update(kwargs)
         if not self.connection:
-            if self.scheme == 's3':
+            if self.scheme in self.provider_pool:
+                self.connection = self.provider_pool[self.scheme]
+            elif self.scheme == 's3':
                 from boto.s3.connection import S3Connection
                 self.connection = S3Connection(access_key_id,
                                                secret_access_key,
                                                **connection_args)
+                self.provider_pool[self.scheme] = self.connection
             elif self.scheme == 'gs':
                 from boto.gs.connection import GSConnection
                 self.connection = GSConnection(access_key_id,
                                                secret_access_key,
                                                **connection_args)
+                self.provider_pool[self.scheme] = self.connection
             elif self.scheme == 'file':
                 from boto.file.connection import FileConnection
                 self.connection = FileConnection(self)
@@ -493,3 +504,8 @@ class FileStorageUri(StorageUri):
         """Retruns True if this URI represents input/output stream.
         """
         return self.stream
+
+    def close(self):
+        """Closes the underlying file.
+        """
+        self.get_key().close()
