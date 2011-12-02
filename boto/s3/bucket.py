@@ -557,7 +557,7 @@ class Bucket(object):
             headers[provider.server_side_encryption_header] = 'AES256'
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
-            src += '?version_id=%s' % src_version_id
+            src += '?versionId=%s' % src_version_id
         headers = {provider.copy_source_header : str(src)}
         # make sure storage_class_header key exists before accessing it
         if provider.storage_class_header:
