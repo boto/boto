@@ -802,7 +802,7 @@ class AWSAuthConnection(object):
         and making a new request will open a connection again."""
 
         boto.log.debug('closing all HTTP connections')
-        self.connection = None  # compat field
+        self._connection = None  # compat field
 
 class AWSQueryConnection(AWSAuthConnection):
 
