@@ -74,6 +74,21 @@ class Config(ConfigParser.SafeConfigParser):
                 except IOError:
                     warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
 
+    def load_credential_tuple(self, params):
+        """Load a credential tuple as is setup like the Java utilities"""
+        c_data = StringIO.StringIO()
+        cursor = iter(params)
+        c_data.write("[Credentials]\n")
+        for param in cursor:
+            if param == "AWSAccessKeyId":
+                c_data.write("aws_access_key_id = " + cursor.next() + "\n")
+            elif param == "AWSSecretKey":
+                c_data.write("aws_secret_access_key = " + cursor.next() + "\n")
+            else:
+                c_data.write(param + " = " + cursor.next() + "\n")
+        c_data.seek(0)
+        self.readfp(c_data)
+
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
         c_data = StringIO.StringIO()
