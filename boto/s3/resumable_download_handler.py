@@ -220,7 +220,8 @@ class ResumableDownloadHandler(object):
         gsutil runs), and the user could change some of the file and not
         realize they have inconsistent data.
         """
-        fp = open(file_name, 'r')
+        # Open file in binary mode to avoid surprises in Windows.
+        fp = open(file_name, 'rb')
         if key.bucket.connection.debug >= 1:
             print 'Checking md5 against etag.'
         hex_md5 = key.compute_md5(fp)[0]
@@ -287,10 +288,11 @@ class ResumableDownloadHandler(object):
                                                  torrent, version_id)
                 # Download succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
+                # Close file before re-opening for checksum computation.
+                fp.close()
                 self._check_final_md5(key, fp.name)
                 if debug >= 1:
                     print 'Resumable download complete.'
-                return
             except self.RETRYABLE_EXCEPTIONS, e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
@@ -320,6 +322,11 @@ class ResumableDownloadHandler(object):
                     if debug >= 1:
                         print('Caught ResumableDownloadException (%s) - will '
                               'retry' % e.message)
+            finally:
+                # Take care of exception raised before closing file.
+                if not fp.closed:
+                  fp.close()
+                return
 
             # At this point we had a re-tryable failure; see if made progress.
             if get_cur_file_size(fp) > had_file_bytes_before_attempt:
