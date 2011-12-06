@@ -490,7 +490,7 @@ class Bucket(object):
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
                  storage_class='STANDARD', preserve_acl=False,
-                 encrypt_key=False):
+                 encrypt_key=False, headers=None, query_args=None):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -544,7 +544,7 @@ class Bucket(object):
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
-        headers = {}
+        headers = headers or {}
         provider = self.connection.provider
         src_key_name = boto.utils.get_utf8_value(src_key_name)
         if preserve_acl:
@@ -558,17 +558,18 @@ class Bucket(object):
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?versionId=%s' % src_version_id
-        headers = {provider.copy_source_header : str(src)}
+        headers[provider.copy_source_header] = str(src)
         # make sure storage_class_header key exists before accessing it
-        if provider.storage_class_header:
+        if provider.storage_class_header and storage_class:
             headers[provider.storage_class_header] = storage_class
         if metadata:
             headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata, provider)
-        else:
+        elif not query_args: # Can't use this header with multi-part copy.
             headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
-                                                headers=headers)
+                                                headers=headers,
+                                                query_args=query_args)
         body = response.read()
         if response.status == 200:
             key = self.new_key(new_key_name)
