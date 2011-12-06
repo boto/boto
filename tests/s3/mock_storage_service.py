@@ -28,6 +28,12 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 
 import copy
 import boto
+import base64
+
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 NOT_IMPL = None
 
@@ -53,10 +59,12 @@ class MockKey(object):
         self.bucket = bucket
         self.name = name
         self.data = None
+        self.etag = None
         self.size = None
         self.content_encoding = None
         self.content_type = None
         self.last_modified = 'Wed, 06 Oct 2010 05:11:54 GMT'
+        self.BufferSize = 8192
 
     def get_contents_as_string(self, headers=NOT_IMPL,
                                cb=NOT_IMPL, num_cb=NOT_IMPL,
@@ -93,6 +101,7 @@ class MockKey(object):
                                policy=NOT_IMPL, md5=NOT_IMPL,
                                res_upload_handler=NOT_IMPL):
         self.data = fp.read()
+        self.set_etag()
         self.size = len(self.data)
         self._handle_headers(headers)
 
@@ -100,6 +109,7 @@ class MockKey(object):
                                  cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
                                  md5=NOT_IMPL, reduced_redundancy=NOT_IMPL):
         self.data = copy.copy(s)
+        self.set_etag()
         self.size = len(s)
         self._handle_headers(headers)
 
@@ -118,6 +128,41 @@ class MockKey(object):
         return dst_bucket.copy_key(dst_key, self.bucket.name,
                                    self.name, metadata)
 
+    def set_etag(self):
+        """
+        Set etag attribute by generating hex MD5 checksum on current 
+        contents of mock key.
+        """
+        m = md5()
+        m.update(self.data)
+        hex_md5 = m.hexdigest()
+        self.etag = hex_md5
+
+    def compute_md5(self, fp):
+        """
+        :type fp: file
+        :param fp: File pointer to the file to MD5 hash.  The file pointer
+                   will be reset to the beginning of the file before the
+                   method returns.
+
+        :rtype: tuple
+        :return: A tuple containing the hex digest version of the MD5 hash
+                 as the first element and the base64 encoded version of the
+                 plain digest as the second element.
+        """
+        m = md5()
+        fp.seek(0)
+        s = fp.read(self.BufferSize)
+        while s:
+            m.update(s)
+            s = fp.read(self.BufferSize)
+        hex_md5 = m.hexdigest()
+        base64md5 = base64.encodestring(m.digest())
+        if base64md5[-1] == '\n':
+            base64md5 = base64md5[0:-1]
+        self.size = fp.tell()
+        fp.seek(0)
+        return (hex_md5, base64md5)
 
 class MockBucket(object):
 
