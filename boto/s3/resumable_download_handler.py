@@ -212,28 +212,6 @@ class ResumableDownloadHandler(object):
                      override_num_retries=0)
         fp.flush()
 
-    def _check_final_md5(self, key, file_name):
-        """
-        Checks that etag from server agrees with md5 computed after the
-        download completes. This is important, since the download could
-        have spanned a number of hours and multiple processes (e.g.,
-        gsutil runs), and the user could change some of the file and not
-        realize they have inconsistent data.
-        """
-        # Open file in binary mode to avoid surprises in Windows.
-        fp = open(file_name, 'rb')
-        if key.bucket.connection.debug >= 1:
-            print 'Checking md5 against etag.'
-        hex_md5 = key.compute_md5(fp)[0]
-        if hex_md5 != key.etag.strip('"\''):
-            file_name = fp.name
-            fp.close()
-            os.unlink(file_name)
-            raise ResumableDownloadException(
-                'File changed during download: md5 signature doesn\'t match '
-                'etag (incorrect downloaded file deleted)',
-                ResumableTransferDisposition.ABORT)
-
     def get_file(self, key, fp, headers, cb=None, num_cb=10, torrent=False,
                  version_id=None):
         """
@@ -288,11 +266,13 @@ class ResumableDownloadHandler(object):
                                                  torrent, version_id)
                 # Download succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
-                # Close file before re-opening for checksum computation.
-                fp.close()
-                self._check_final_md5(key, fp.name)
+                # Previously, check_final_md5() was called here to validate 
+                # downloaded file's checksum, however, to be consistent with
+                # non-resumable downloads, this call was removed. Checksum
+                # validation of file contents should be done by the caller.
                 if debug >= 1:
                     print 'Resumable download complete.'
+                return
             except self.RETRYABLE_EXCEPTIONS, e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
@@ -322,11 +302,6 @@ class ResumableDownloadHandler(object):
                     if debug >= 1:
                         print('Caught ResumableDownloadException (%s) - will '
                               'retry' % e.message)
-            finally:
-                # Take care of exception raised before closing file.
-                if not fp.closed:
-                  fp.close()
-                return
 
             # At this point we had a re-tryable failure; see if made progress.
             if get_cur_file_size(fp) > had_file_bytes_before_attempt:
