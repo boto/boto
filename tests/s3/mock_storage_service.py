@@ -29,6 +29,7 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 import copy
 import boto
 import base64
+from boto.utils import compute_md5
 
 try:
     from hashlib import md5
@@ -150,19 +151,11 @@ class MockKey(object):
                  as the first element and the base64 encoded version of the
                  plain digest as the second element.
         """
-        m = md5()
-        fp.seek(0)
-        s = fp.read(self.BufferSize)
-        while s:
-            m.update(s)
-            s = fp.read(self.BufferSize)
-        hex_md5 = m.hexdigest()
-        base64md5 = base64.encodestring(m.digest())
-        if base64md5[-1] == '\n':
-            base64md5 = base64md5[0:-1]
-        self.size = fp.tell()
-        fp.seek(0)
-        return (hex_md5, base64md5)
+        tup = compute_md5(fp)
+        # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
+        # Save the size in an attribute and return the two hash values.
+        self.size = tup[2]
+        return tup[0:2]
 
 class MockBucket(object):
 
