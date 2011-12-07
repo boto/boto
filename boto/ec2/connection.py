@@ -51,6 +51,7 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
+from boto.ec2.instancestatus import InstanceStatusSet
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -487,8 +488,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, instance_ids, 'InstanceId')
         if filters:
             self.build_filter_params(params, filters)
-        return self.get_list('DescribeInstanceStatus', params,
-                             [('item', Instance)], verb='POST')
+        return self.get_object('DescribeInstanceStatus', params,
+                               InstanceStatusSet, verb='POST')
 
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,
