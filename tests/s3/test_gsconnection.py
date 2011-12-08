@@ -224,10 +224,6 @@ class GSConnectionTest (unittest.TestCase):
         bucket = c.create_bucket(bucket_name)
         # now call get_bucket to see if it's really there
         bucket = c.get_bucket(bucket_name)
-        # get default acl and make sure it's empty
-        acl = bucket.get_def_acl()
-        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
-        # set default acl to a canned acl and verify it gets set
         bucket.set_def_acl('public-read')
         acl = bucket.get_def_acl()
         # save public-read acl for later test
@@ -256,10 +252,6 @@ class GSConnectionTest (unittest.TestCase):
         bucket_name = 'test-%d' % int(time.time())
         uri = storage_uri('gs://' + bucket_name)
         uri.create_bucket()
-        # get default acl and make sure it's empty
-        acl = uri.get_def_acl()
-        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
-        # set default acl to a canned acl and verify it gets set
         uri.set_def_acl('public-read')
         acl = uri.get_def_acl()
         # save public-read acl for later test
