@@ -598,7 +598,12 @@ class Key(object):
         """
         tup = compute_md5(fp)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
-        # Save the size in an attribute and return the two hash values.
+        # The internal implementation of compute_md5() needs to return the 
+        # file size but we don't want to return that value to the external 
+        # caller because it changes the class interface (i.e. it might        
+        # break some code) so we consume the third tuple value here and 
+        # return the remainder of the tuple to the caller, thereby preserving 
+        # the existing interface.
         self.size = tup[2]
         return tup[0:2]
 
