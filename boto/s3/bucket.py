@@ -541,6 +541,13 @@ class Bucket(object):
                             will be stored in an encrypted form while
                             at rest in S3.
 
+        :type headers: dict
+        :param headers: A dictionary of header name/value pairs.
+
+        :type query_args: string
+        :param query_args: A string of additional querystring arguments
+                           to append to the request
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
