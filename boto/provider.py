@@ -44,6 +44,7 @@ ACL_HEADER_KEY = 'acl-header'
 AUTH_HEADER_KEY = 'auth-header'
 COPY_SOURCE_HEADER_KEY = 'copy-source-header'
 COPY_SOURCE_VERSION_ID_HEADER_KEY = 'copy-source-version-id-header'
+COPY_SOURCE_RANGE_HEADER_KEY = 'copy-source-range-header'
 DELETE_MARKER_HEADER_KEY = 'delete-marker-header'
 DATE_HEADER_KEY = 'date-header'
 METADATA_DIRECTIVE_HEADER_KEY = 'metadata-directive-header'
@@ -100,6 +101,8 @@ class Provider(object):
             COPY_SOURCE_HEADER_KEY : AWS_HEADER_PREFIX + 'copy-source',
             COPY_SOURCE_VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX +
                                                 'copy-source-version-id',
+            COPY_SOURCE_RANGE_HEADER_KEY : AWS_HEADER_PREFIX +
+                                           'copy-source-range',
             DATE_HEADER_KEY : AWS_HEADER_PREFIX + 'date',
             DELETE_MARKER_HEADER_KEY : AWS_HEADER_PREFIX + 'delete-marker',
             METADATA_DIRECTIVE_HEADER_KEY : AWS_HEADER_PREFIX +
@@ -119,6 +122,7 @@ class Provider(object):
             COPY_SOURCE_HEADER_KEY : GOOG_HEADER_PREFIX + 'copy-source',
             COPY_SOURCE_VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX +
                                                 'copy-source-version-id',
+            COPY_SOURCE_RANGE_HEADER_KEY : None,
             DATE_HEADER_KEY : GOOG_HEADER_PREFIX + 'date',
             DELETE_MARKER_HEADER_KEY : GOOG_HEADER_PREFIX + 'delete-marker',
             METADATA_DIRECTIVE_HEADER_KEY : GOOG_HEADER_PREFIX  +
@@ -197,6 +201,8 @@ class Provider(object):
         self.copy_source_header = header_info_map[COPY_SOURCE_HEADER_KEY]
         self.copy_source_version_id = header_info_map[
             COPY_SOURCE_VERSION_ID_HEADER_KEY]
+        self.copy_source_range_header = header_info_map[
+            COPY_SOURCE_RANGE_HEADER_KEY]
         self.date_header = header_info_map[DATE_HEADER_KEY]
         self.delete_marker = header_info_map[DELETE_MARKER_HEADER_KEY]
         self.metadata_directive_header = (
