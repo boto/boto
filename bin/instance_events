@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+# Copyright (c) 2011 Jim Browne http://www.42lines.net
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+
+VERSION="0.1"
+usage = """%prog [options]
+Options:
+  --version             show program's version number and exit
+  -h, --help            show help message and exit
+  -r REGION, --region=REGION
+                        region to check (default us-east-1)
+  -t TAG, --tag=TAG     tag to print (default hostname)
+  -a ALL, --all=ALL     check all regions
+"""
+
+def list(region, displaytag):
+    """List status events for all instances in a given region"""
+
+    ec2 = boto.connect_ec2(region=region)
+
+    reservations = ec2.get_all_instances()
+    tags = {}
+    events = {}
+    
+    # Collect the tag for every possible instance
+    for res in reservations:
+        for instance in res.instances:
+            iid = instance.id
+            tag = instance.tags.get(displaytag,'')
+            tags[iid] = tag
+        
+    fmt = "%10s %12s %20.20s %18s %24s %24s"
+    print fmt % ('ID','Zone',displaytag,'Code','Not Before','Not After')
+        
+    stats = ec2.get_all_instance_status()
+
+    for stat in stats:
+        if stat.events:
+            for event in stat.events:
+                events[stat.id] = {}
+                events[stat.id]['zone'] = stat.zone
+                events[stat.id]['tag'] = tags[stat.id]
+                events[stat.id]['code'] = event.code
+                events[stat.id]['not_before'] = event.not_before
+                events[stat.id]['not_after'] = event.not_after
+            
+    for instance in sorted(events, key=lambda ev: events[ev]['not_before']):
+        e = events[instance]
+        print fmt % (instance, e['zone'], e['tag'],e['code'],
+                     e['not_before'],e['not_after'])
+
+if __name__ == "__main__":
+    import boto
+    from optparse import OptionParser
+    from boto.ec2 import regions
+
+    parser = OptionParser(version=VERSION, usage=usage)
+    parser.add_option("-r", "--region", help="region to check (default us-east-1)", dest="region", default="us-east-1")
+    parser.add_option("-t", "--tag", help="tag to print (default hostname)", dest="tag", default="hostname")
+    parser.add_option("-a", "--all", help="check all regions", dest="all", default=False,action="store_true")
+
+    (options, args) = parser.parse_args()
+
+    if options.all:
+        for r in regions():
+            print "Region %s" % r.name
+            list(r, options.tag)
+    else:
+        # Connect the region
+        for r in regions():
+            if r.name == options.region:
+                region = r
+                break
+        else:
+            print "Region %s not found." % options.region
+            sys.exit(1)
+
+        list(r, options.tag)
