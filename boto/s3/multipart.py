@@ -115,6 +115,38 @@ def part_lister(mpupload, part_number_marker=None):
         part_number_marker = mpupload.next_part_number_marker
         more_results= mpupload.is_truncated
         
+class FakeFile(object):
+    """
+    A file-like object that will only read a certain amount from
+    a provided file pointer from a specified offset and then act
+    like EOF has been met.
+    """
+    def __init__(self, fp, start, end):
+        # Make a file!
+        self.file = fp
+        # And save our offset and then seek that far into the file
+        self.start = start
+        self.end   = end
+        self.file.seek(self.start)
+
+    # Make this a little more transparently a file, except for
+    # a few methods that we'll define
+    def __getattr__(self, name):
+        return getattr(self.file, name)
+
+    def tell(self):
+        return self.file.tell() - self.start
+
+    def seek(self, pos):
+        return self.file.seek(pos + self.start)
+
+    def read(self, length=-1):
+        # Only read up to the minimum of length, or how much we
+        # can read in this fake file
+        if length < 0:
+            length = self.end - self.file.tell()
+        return self.file.read(min(length, self.end - self.file.tell()))
+
 class MultiPartUpload(object):
     """
     Represents a MultiPart Upload operation.
@@ -266,6 +298,52 @@ class MultiPartUpload(object):
                                     src_key_name, storage_class=None,
                                     headers=headers,
                                     query_args=query_args)
+
+    def upload_from_file(self, fp, chunk=10 * 1024 * 1024, headers=None, 
+                         replace=True, cb=None, num_cb=10, policy=None):
+        """
+        Perform a MultiPart Upload operation, reading the provided
+        file pointer in chunks of size chunk. It is important to note
+        that the size of a multi-part upload is limited to >5MB.
+
+        This method can also be used with file-like objects, including
+        GzipFiles.
+
+        :type fp: file
+        :param fp: The file-like object to upload
+
+        :type chunk: int
+        :param chunk: How many bytes to upload per part or chunk
+
+        The other parameters are exactly as defined for the
+        :class:`boto.s3.key.Key` set_contents_from_file method., except
+        this method does not support the 'md5' parameter. Also note that
+        `cb` is invoked `num_cb` are invoked for each part.
+
+        :returns: `True` if the upload was successful, else `False`
+        """
+        # How many chunks does a wood-chunk chunk?
+        start = 0
+        end   = chunk
+        count = 1
+        while True:
+            # Make a 'fake file' that only reads a portion of the whole
+            # file, from start to end.
+            ff = FakeFile(fp, start, end)
+            self.upload_part_from_file(ff, count, headers, replace, None, 10, policy)
+            # Now, get where we are in the original file, and see how
+            # much is apparently left
+            if fp.tell() < end:
+                # If we've hit the end of the original file, then go
+                # ahead and return that we were successful
+                return True
+            # Now update the window that we're working with
+            start = end
+            end   = start + chunk
+            count += 1
+        # This should obviously never be reached, but it makes my head
+        # happier if it's here.
+        return False
 
     def complete_upload(self):
         """
