@@ -330,7 +330,7 @@ class MultiPartUpload(object):
             # Make a 'fake file' that only reads a portion of the whole
             # file, from start to end.
             ff = FakeFile(fp, start, end)
-            self.upload_part_from_file(ff, count, headers, replace, None, 10, policy)
+            self.upload_part_from_file(ff, count, headers, replace, cb, num_cb, policy)
             # Now, get where we are in the original file, and see how
             # much is apparently left
             if fp.tell() < end:
