@@ -35,6 +35,9 @@ class Queue:
         self.message_class = message_class
         self.visibility_timeout = None
 
+    def __repr__(self):
+        return 'Queue(%s)' % self.url
+
     def _id(self):
         if self.url:
             val = urlparse.urlparse(self.url)[2]

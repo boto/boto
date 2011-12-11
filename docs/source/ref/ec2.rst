@@ -138,6 +138,13 @@ boto.ec2.elb.instancestate
    :members:   
    :undoc-members:
 
+boto.ec2.elb.instancestatus
+--------------------------
+
+.. automodule:: boto.ec2.elb.instancestatus
+   :members:   
+   :undoc-members:
+
 boto.ec2.elb.listelement
 ------------------------
 
