@@ -44,8 +44,10 @@ def get_column(name, event=None):
         return event[name]
     return HEADERS[name]['get'](event)
 
-def list(region, headers, order):
+def list(region, headers, order, completed):
     """List status events for all instances in a given region"""
+
+    import re
 
     ec2 = boto.connect_ec2(region=region)
 
@@ -81,6 +83,9 @@ def list(region, headers, order):
                 events[stat.id]['description'] = event.description
                 events[stat.id]['not_before'] = event.not_before
                 events[stat.id]['not_after'] = event.not_after
+                if completed and re.match('^\[Completed\]',event.description):
+                    events[stat.id]['not_before'] = 'Completed'
+                    events[stat.id]['not_after'] = 'Completed'
 
     # Create format string
     format_string = ""
@@ -109,6 +114,7 @@ if __name__ == "__main__":
     parser.add_option("-r", "--region", help="region to check (default us-east-1)", dest="region", default="us-east-1")
     parser.add_option("-H", "--headers", help="Set headers (use 'T:tagname' for including tags)", default=None, action="store", dest="headers", metavar="ID,Zone,Hostname,Code,Description,NotBefore,NotAfter,T:Name")
     parser.add_option("-S", "--sort", help="Header for sort order", default=None, action="store", dest="order",metavar="HeaderName")
+    parser.add_option("-c", "--completed", help="List time fields as \"Completed\" for completed events (Default: false)", default=False, action="store_true", dest="completed")
 
     (options, args) = parser.parse_args()
 
@@ -125,7 +131,7 @@ if __name__ == "__main__":
     if options.all:
         for r in regions():
             print "Region %s" % r.name
-            list(r, headers, order)
+            list(r, headers, order, options.completed)
     else:
         # Connect the region
         for r in regions():
@@ -136,4 +142,4 @@ if __name__ == "__main__":
             print "Region %s not found." % options.region
             sys.exit(1)
 
-        list(r, headers, order)
+        list(r, headers, order, options.completed)
