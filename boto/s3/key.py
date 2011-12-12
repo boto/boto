@@ -31,6 +31,7 @@ from boto.exception import BotoClientError
 from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
+from boto.utils import compute_md5
 try:
     from hashlib import md5
 except ImportError:
@@ -595,19 +596,16 @@ class Key(object):
                  as the first element and the base64 encoded version of the
                  plain digest as the second element.
         """
-        m = md5()
-        fp.seek(0)
-        s = fp.read(self.BufferSize)
-        while s:
-            m.update(s)
-            s = fp.read(self.BufferSize)
-        hex_md5 = m.hexdigest()
-        base64md5 = base64.encodestring(m.digest())
-        if base64md5[-1] == '\n':
-            base64md5 = base64md5[0:-1]
-        self.size = fp.tell()
-        fp.seek(0)
-        return (hex_md5, base64md5)
+        tup = compute_md5(fp)
+        # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
+        # The internal implementation of compute_md5() needs to return the 
+        # file size but we don't want to return that value to the external 
+        # caller because it changes the class interface (i.e. it might        
+        # break some code) so we consume the third tuple value here and 
+        # return the remainder of the tuple to the caller, thereby preserving 
+        # the existing interface.
+        self.size = tup[2]
+        return tup[0:2]
 
     def set_contents_from_stream(self, fp, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None,
