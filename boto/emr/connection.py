@@ -51,7 +51,8 @@ class EmrConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/'):
         if not region:
-            region = RegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -151,7 +152,9 @@ class EmrConnection(AWSQueryConnection):
         Adds instance groups to a running cluster.
 
         :type jobflow_id: str
-        :param jobflow_id: The id of the jobflow which will take the new instance groups
+        :param jobflow_id: The id of the jobflow which will take the
+            new instance groups
+            
         :type instance_groups: list(boto.emr.InstanceGroup)
         :param instance_groups: A list of instance groups to add to the job
         """
@@ -161,14 +164,18 @@ class EmrConnection(AWSQueryConnection):
         params['JobFlowId'] = jobflow_id
         params.update(self._build_instance_group_list_args(instance_groups))
 
-        return self.get_object('AddInstanceGroups', params, AddInstanceGroupsResponse, verb='POST')
+        return self.get_object('AddInstanceGroups', params,
+                               AddInstanceGroupsResponse, verb='POST')
 
     def modify_instance_groups(self, instance_group_ids, new_sizes):
         """
-        Modify the number of nodes and configuration settings in an instance group.
+        Modify the number of nodes and configuration settings in an
+        instance group.
 
         :type instance_group_ids: list(str)
-        :param instance_group_ids: A list of the ID's of the instance groups to be modified
+        :param instance_group_ids: A list of the ID's of the instance
+            groups to be modified
+            
         :type new_sizes: list(int)
         :param new_sizes: A list of the new sizes for each instance group
         """
@@ -181,14 +188,17 @@ class EmrConnection(AWSQueryConnection):
 
         params = {}
         for k, ig in enumerate(instance_groups):
-            #could be wrong - the example amazon gives uses InstanceRequestCount,
-            #while the api documentation says InstanceCount
+            # could be wrong - the example amazon gives uses
+            # InstanceRequestCount, while the api documentation
+            # says InstanceCount
             params['InstanceGroups.member.%d.InstanceGroupId' % (k+1) ] = ig[0]
             params['InstanceGroups.member.%d.InstanceCount' % (k+1) ] = ig[1]
 
-        return self.get_object('ModifyInstanceGroups', params, ModifyInstanceGroupsResponse, verb='POST')
+        return self.get_object('ModifyInstanceGroups', params,
+                               ModifyInstanceGroupsResponse, verb='POST')
 
-    def run_jobflow(self, name, log_uri, ec2_keyname=None, availability_zone=None,
+    def run_jobflow(self, name, log_uri, ec2_keyname=None,
+                    availability_zone=None,
                     master_instance_type='m1.small',
                     slave_instance_type='m1.small', num_instances=1,
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
@@ -197,43 +207,63 @@ class EmrConnection(AWSQueryConnection):
                     steps=[],
                     bootstrap_actions=[],
                     instance_groups=None,
-                    ami_version="1.0",
-                    additional_info=None):
+                    additional_info=None,
+                    ami_version="1.0"):
         """
         Runs a job flow
 
         :type name: str
         :param name: Name of the job flow
+        
         :type log_uri: str
         :param log_uri: URI of the S3 bucket to place logs
+        
         :type ec2_keyname: str
         :param ec2_keyname: EC2 key used for the instances
+        
         :type availability_zone: str
         :param availability_zone: EC2 availability zone of the cluster
+        
         :type master_instance_type: str
         :param master_instance_type: EC2 instance type of the master
+        
         :type slave_instance_type: str
         :param slave_instance_type: EC2 instance type of the slave nodes
+        
         :type num_instances: int
         :param num_instances: Number of instances in the Hadoop cluster
+        
         :type action_on_failure: str
         :param action_on_failure: Action to take if a step terminates
+        
         :type keep_alive: bool
-        :param keep_alive: Denotes whether the cluster should stay alive upon completion
+        :param keep_alive: Denotes whether the cluster should stay
+            alive upon completion
+            
         :type enable_debugging: bool
-        :param enable_debugging: Denotes whether AWS console debugging should be enabled.
+        :param enable_debugging: Denotes whether AWS console debugging
+            should be enabled.
+            
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
+        
         :type bootstrap_actions: list(boto.emr.BootstrapAction)
-        :param bootstrap_actions: List of bootstrap actions that run before Hadoop starts.
+        :param bootstrap_actions: List of bootstrap actions that run
+            before Hadoop starts.
+            
         :type instance_groups: list(boto.emr.InstanceGroup)
-        :param instance_groups: Optional list of instance groups to use when creating
-                      this job. NB: When provided, this argument supersedes
-                      num_instances and master/slave_instance_type.
+        :param instance_groups: Optional list of instance groups to
+            use when creating this job.
+            NB: When provided, this argument supersedes num_instances
+                and master/slave_instance_type.
+                
         :type ami_version: str
-        :param ami_version: Amazon Machine Image (AMI) version to use for instances.
+        :param ami_version: Amazon Machine Image (AMI) version to use
+            for instances.
+            
         :type additional_info: JSON str
         :param additional_info: A JSON string for selecting additional features
+        
         :rtype: str
         :return: The jobflow id
         """
@@ -246,7 +276,8 @@ class EmrConnection(AWSQueryConnection):
         # Common instance args
         common_params = self._build_instance_common_args(ec2_keyname,
                                                          availability_zone,
-                                                         keep_alive, hadoop_version)
+                                                         keep_alive,
+                                                         hadoop_version)
         params.update(common_params)
 
         # NB: according to the AWS API's error message, we must
@@ -296,12 +327,14 @@ class EmrConnection(AWSQueryConnection):
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')
         return response.jobflowid
 
-    def set_termination_protection(self, jobflow_id, termination_protection_status):
+    def set_termination_protection(self, jobflow_id,
+                                   termination_protection_status):
         """
         Set termination protection on specified Elastic MapReduce job flows
 
         :type jobflow_ids: list or str
         :param jobflow_ids: A list of job flow IDs
+        
         :type termination_protection_status: bool
         :param termination_protection_status: Termination protection status
         """
