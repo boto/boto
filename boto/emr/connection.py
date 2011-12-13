@@ -203,15 +203,14 @@ class EmrConnection(AWSQueryConnection):
                     slave_instance_type='m1.small', num_instances=1,
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
-                    hadoop_version='0.20',
+                    hadoop_version=None,
                     steps=[],
                     bootstrap_actions=[],
                     instance_groups=None,
                     additional_info=None,
-                    ami_version="1.0"):
+                    ami_version='latest'):
         """
         Runs a job flow
-
         :type name: str
         :param name: Name of the job flow
         
@@ -318,7 +317,8 @@ class EmrConnection(AWSQueryConnection):
             bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
 
-        params['AmiVersion'] = ami_version
+        if ami_version:
+            params['AmiVersion'] = ami_version
 
         if additional_info is not None:
             params['AdditionalInfo'] = additional_info
@@ -407,9 +407,10 @@ class EmrConnection(AWSQueryConnection):
         """
         params = {
             'Instances.KeepJobFlowAliveWhenNoSteps' : str(keep_alive).lower(),
-            'Instances.HadoopVersion' : hadoop_version
         }
 
+        if hadoop_version:
+            params['Instances.HadoopVersion'] = hadoop_version
         if ec2_keyname:
             params['Instances.Ec2KeyName'] = ec2_keyname
         if availability_zone:
