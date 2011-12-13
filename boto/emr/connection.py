@@ -197,6 +197,7 @@ class EmrConnection(AWSQueryConnection):
                     steps=[],
                     bootstrap_actions=[],
                     instance_groups=None,
+                    ami_version="1.0",
                     additional_info=None):
         """
         Runs a job flow
@@ -229,6 +230,8 @@ class EmrConnection(AWSQueryConnection):
         :param instance_groups: Optional list of instance groups to use when creating
                       this job. NB: When provided, this argument supersedes
                       num_instances and master/slave_instance_type.
+        :type ami_version: str
+        :param ami_version: Amazon Machine Image (AMI) version to use for instances.
         :type additional_info: JSON str
         :param additional_info: A JSON string for selecting additional features
         :rtype: str
@@ -283,6 +286,8 @@ class EmrConnection(AWSQueryConnection):
         if bootstrap_actions:
             bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
+
+        params['AmiVersion'] = ami_version
 
         if additional_info is not None:
             params['AdditionalInfo'] = additional_info
