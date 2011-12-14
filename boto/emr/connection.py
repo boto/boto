@@ -242,7 +242,12 @@ class EmrConnection(AWSQueryConnection):
         :type enable_debugging: bool
         :param enable_debugging: Denotes whether AWS console debugging
             should be enabled.
-            
+
+        :type hadoop_version: str
+        :param hadoop_version: Version of Hadoop to use. If ami_version
+            is not set, defaults to '0.20' for backwards compatibility
+            with older versions of boto.
+
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
         
@@ -268,6 +273,11 @@ class EmrConnection(AWSQueryConnection):
         :rtype: str
         :return: The jobflow id
         """
+        # hadoop_version used to default to '0.20', but this won't work
+        # on later AMI versions, so only default if it ami_version isn't set.
+        if not (hadoop_version or ami_version):
+            hadoop_version = '0.20'
+
         params = {}
         if action_on_failure:
             params['ActionOnFailure'] = action_on_failure
