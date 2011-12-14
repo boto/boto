@@ -208,7 +208,7 @@ class EmrConnection(AWSQueryConnection):
                     bootstrap_actions=[],
                     instance_groups=None,
                     additional_info=None,
-                    ami_version='latest'):
+                    ami_version=None):
         """
         Runs a job flow
         :type name: str
@@ -258,7 +258,9 @@ class EmrConnection(AWSQueryConnection):
                 
         :type ami_version: str
         :param ami_version: Amazon Machine Image (AMI) version to use
-            for instances.
+            for instances. Values accepted by EMR are '1.0', '2.0', and
+            'latest'; EMR currently defaults to '1.0' if you don't set
+            'ami_version'.
             
         :type additional_info: JSON str
         :param additional_info: A JSON string for selecting additional features
