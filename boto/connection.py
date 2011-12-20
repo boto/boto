@@ -428,7 +428,6 @@ class AWSAuthConnection(object):
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
-            self.http_unretryable_exceptions.append(ssl.SSLError)
             self.http_unretryable_exceptions.append(
                     https_connection.InvalidCertificateException)
 
