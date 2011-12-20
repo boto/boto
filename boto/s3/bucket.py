@@ -450,6 +450,42 @@ class Bucket(object):
                                             force_http=force_http,
                                             response_headers=response_headers)
 
+    def delete_keys(self, keys, headers=None):
+        query_args = 'delete'
+        data = """<?xml version="1.0" encoding="UTF-8"?>"""
+        data += "<Delete>"
+        for key_name in keys:
+            try:
+                key_name, version_id = key_name
+            except:
+                version_id = None
+            if version_id:
+                data += """
+                <Object>
+                    <Key>%s</Key>
+                    <VersionId>%s</VersionId>
+                </Object>
+                """ % (key_name, version_id)
+            else:
+                data += """
+                <Object>
+                    <Key>%s</Key>
+                </Object>
+                """ % key_name
+        data += "</Delete>"
+        data = data.replace('\n', '').replace(' ', '')
+        from hashlib import md5
+        import base64
+        print data
+        base64md5 = base64.encodestring(md5(data).digest()).strip()
+        headers = {'Content-MD5': base64md5}
+        print headers
+        response = self.connection.make_request('POST', self.name, headers=headers,
+                                                query_args=query_args, data=data)
+        return response
+
+
+
     def delete_key(self, key_name, headers=None,
                    version_id=None, mfa_token=None):
         """
