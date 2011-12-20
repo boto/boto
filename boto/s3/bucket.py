@@ -33,11 +33,13 @@ from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
+from hashlib import md5
 import boto.jsonresponse
 import boto.utils
 import xml.sax
 import urllib
 import re
+import base64
 from collections import defaultdict
 
 # as per http://goo.gl/BDuud (02/19/2011)
@@ -450,41 +452,55 @@ class Bucket(object):
                                             force_http=force_http,
                                             response_headers=response_headers)
 
-    def delete_keys(self, keys, headers=None):
+    def delete_keys(self, keys, quiet=False, mfa_token=None):
+        """
+        Deletes a set of keys using S3's Multi-object delete API. If a
+        VersionID is specified for that key then that version is removed.
+        Returns the XML response from S3, which contains Deleted and Error
+        elements for each key you ask to delete.
+        
+        :type keys: list
+        :param keys: A list of either key_names or (key_name, versionid) pairs.
+
+        :type quiet: boolean
+        :param quiet: In quiet mode the response includes only keys where
+                      the delete operation encountered an error. For a
+                      successful deletion, the operation does not return
+                      any information about the delete in the response body.
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: A tuple or list consisting of the serial number
+                          from the MFA device and the current value of
+                          the six-digit token associated with the device.
+                          This value is required anytime you are
+                          deleting versioned objects from a bucket
+                          that has the MFADelete option on the bucket.
+        """
         query_args = 'delete'
+        provider = self.connection.provider
         data = """<?xml version="1.0" encoding="UTF-8"?>"""
         data += "<Delete>"
+        quiet = "<Quiet>true</Quiet>" if quiet else "<Quiet>false</Quiet>"
+        data += quiet
         for key_name in keys:
             try:
                 key_name, version_id = key_name
             except:
-                version_id = None
-            if version_id:
-                data += """
-                <Object>
-                    <Key>%s</Key>
-                    <VersionId>%s</VersionId>
-                </Object>
-                """ % (key_name, version_id)
-            else:
-                data += """
-                <Object>
-                    <Key>%s</Key>
-                </Object>
-                """ % key_name
+                key_name, version_id = key_name, None
+            data += "<Object><Key>%s</Key>" % key_name
+            if version_id: data += "<VersionId>%s</VersionId>"
+            data += "</Object>"
         data += "</Delete>"
-        data = data.replace('\n', '').replace(' ', '')
-        from hashlib import md5
-        import base64
-        print data
-        base64md5 = base64.encodestring(md5(data).digest()).strip()
-        headers = {'Content-MD5': base64md5}
-        print headers
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
+        base64md5 = base64.b64encode(md5(data).digest()).strip()
+        headers = {'Content-MD5': base64md5, 'Content-Length': str(len(data))}
+        headers['Content-Type'] = 'text/xml'
+        if mfa_token:
+            headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('POST', self.name, headers=headers,
                                                 query_args=query_args, data=data)
-        return response
-
-
+        return response.read()
 
     def delete_key(self, key_name, headers=None,
                    version_id=None, mfa_token=None):
