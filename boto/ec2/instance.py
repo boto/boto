@@ -113,6 +113,7 @@ class Instance(TaggedEC2Object):
         self.state_reason = None
         self.group_name = None
         self.client_token = None
+        self.eventsSet = None
         self.groups = []
 
     def __repr__(self):
@@ -130,11 +131,14 @@ class Instance(TaggedEC2Object):
         elif name == 'productCodes':
             return self.product_codes
         elif name == 'stateReason':
-            self.state_reason = StateReason()
+            self.state_reason = SubParse('stateReason')
             return self.state_reason
         elif name == 'groupSet':
             self.groups = ResultSet([('item', Group)])
             return self.groups
+        elif name == "eventsSet":
+            self.eventsSet = SubParse('eventsSet')
+            return self.eventsSet
         return None
 
     def endElement(self, name, value, connection):
@@ -210,6 +214,8 @@ class Instance(TaggedEC2Object):
                 self.group_name = value
         elif name == 'clientToken':
             self.client_token = value
+        elif name == "eventsSet":
+            self.events = value
         else:
             setattr(self, name, value)
 
@@ -420,15 +426,16 @@ class InstanceAttribute(dict):
         elif name in self.ValidValues:
             self[name] = self._current_value
 
-class StateReason(dict):
+class SubParse(dict):
 
-    def __init__(self, parent=None):
+    def __init__(self, section, parent=None):
         dict.__init__(self)
+        self.section = section
 
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
-        if name != 'stateReason':
+        if name != self.section:
             self[name] = value
             

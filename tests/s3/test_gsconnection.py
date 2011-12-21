@@ -30,6 +30,7 @@ Some unit tests for the GSConnection
 import unittest
 import time
 import os
+import re
 from boto.gs.connection import GSConnection
 from boto import storage_uri
 
@@ -162,15 +163,13 @@ class GSConnectionTest (unittest.TestCase):
             "<?xml version='1.0' encoding='UTF-8'?><Logging>"
             "<LogBucket>log-bucket</LogBucket>" +
             "<LogObjectPrefix>example</LogObjectPrefix>" +
-            "<PredefinedAcl>bucket-owner-full-control</PredefinedAcl>" +
             "</Logging>")
         bucket.set_subresource('logging', logging_str);
         assert bucket.get_subresource('logging') == logging_str;
         # try disable/enable logging
         bucket.disable_logging()
         assert bucket.get_subresource('logging') == empty_logging_str
-        bucket.enable_logging('log-bucket', 'example',
-                             canned_acl='bucket-owner-full-control')
+        bucket.enable_logging('log-bucket', 'example')
         assert bucket.get_subresource('logging') == logging_str;
         # now delete all keys in bucket
         for k in bucket:
@@ -218,15 +217,24 @@ class GSConnectionTest (unittest.TestCase):
 
     def test_3_default_object_acls(self):
         """test default object acls"""
+        # regexp for matching project-private default object ACL
+        project_private_re = '\s*<AccessControlList>\s*<Entries>\s*<Entry>' \
+          '\s*<Scope type="GroupById"><ID>[0-9a-fA-F]+</ID></Scope>'        \
+          '\s*<Permission>FULL_CONTROL</Permission>\s*</Entry>\s*<Entry>'   \
+          '\s*<Scope type="GroupById"><ID>[0-9a-fA-F]+</ID></Scope>'        \
+          '\s*<Permission>FULL_CONTROL</Permission>\s*</Entry>\s*<Entry>'   \
+          '\s*<Scope type="GroupById"><ID>[0-9a-fA-F]+</ID></Scope>'        \
+          '\s*<Permission>READ</Permission></Entry>\s*</Entries>'           \
+          '\s*</AccessControlList>\s*'
         c = GSConnection()
         # create a new bucket
         bucket_name = 'test-%d' % int(time.time())
         bucket = c.create_bucket(bucket_name)
         # now call get_bucket to see if it's really there
         bucket = c.get_bucket(bucket_name)
-        # get default acl and make sure it's empty
+        # get default acl and make sure it's project-private
         acl = bucket.get_def_acl()
-        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        assert re.search(project_private_re, acl.to_xml())
         # set default acl to a canned acl and verify it gets set
         bucket.set_def_acl('public-read')
         acl = bucket.get_def_acl()
@@ -256,9 +264,9 @@ class GSConnectionTest (unittest.TestCase):
         bucket_name = 'test-%d' % int(time.time())
         uri = storage_uri('gs://' + bucket_name)
         uri.create_bucket()
-        # get default acl and make sure it's empty
+        # get default acl and make sure it's project-private
         acl = uri.get_def_acl()
-        assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        assert re.search(project_private_re, acl.to_xml())
         # set default acl to a canned acl and verify it gets set
         uri.set_def_acl('public-read')
         acl = uri.get_def_acl()

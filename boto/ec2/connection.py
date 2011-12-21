@@ -51,6 +51,7 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
+from boto.ec2.instancestatus import InstanceStatusSet
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -462,6 +463,33 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
+    def get_all_instance_status(self, instance_ids=None, filters=None):
+        """
+        Retrieve all the instances in your account scheduled for maintenance.
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
+        :rtype: list
+        :return: A list of instances that have maintenance scheduled.
+        """
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_object('DescribeInstanceStatus', params,
+                               InstanceStatusSet, verb='POST')
 
     def run_instances(self, image_id, min_count=1, max_count=1,
                       key_name=None, security_groups=None,

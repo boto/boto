@@ -127,6 +127,7 @@ class Location:
     DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
+    SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
 

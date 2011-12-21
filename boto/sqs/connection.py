@@ -24,6 +24,7 @@ from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
+from boto.sqs.batchresults import BatchResults
 from boto.exception import SQSError
 
 
@@ -216,6 +217,34 @@ class SQSConnection(AWSQueryConnection):
         if delay_seconds:
             params['DelaySeconds'] = int(delay_seconds)
         return self.get_object('SendMessage', params, Message,
+                               queue.id, verb='POST')
+
+    def send_message_batch(self, queue, messages):
+        """
+        Delivers up to 10 messages to a queue in a single request.
+
+        :type queue: A :class:`boto.sqs.queue.Queue` object.
+        :param queue: The Queue to which the messages will be written.
+
+        :type messages: List of lists.
+        :param messages: A list of lists or tuples.  Each inner
+            tuple represents a single message to be written
+            and consists of and ID (string) that must be unique
+            within the list of messages, the message body itself
+            which can be a maximum of 64K in length, and an
+            integer which represents the delay time (in seconds)
+            for the message (0-900) before the message will
+            be delivered to the queue.
+        """
+        params = {}
+        for i, msg in enumerate(messages):
+            p_name = 'SendMessageBatchRequestEntry.%i.Id' % (i+1)
+            params[p_name] = msg[0]
+            p_name = 'SendMessageBatchRequestEntry.%i.MessageBody' % (i+1)
+            params[p_name] = msg[1]
+            p_name = 'SendMessageBatchRequestEntry.%i.DelaySeconds' % (i+1)
+            params[p_name] = msg[2]
+        return self.get_object('SendMessageBatch', params, BatchResults,
                                queue.id, verb='POST')
 
     def change_message_visibility(self, queue, receipt_handle,
