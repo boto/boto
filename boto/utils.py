@@ -75,7 +75,7 @@ qsa_of_interest = ['acl', 'defaultObjectAcl', 'location', 'logging',
                    'versioning', 'versionId', 'versions', 'website', 
                    'uploads', 'uploadId', 'response-content-type', 
                    'response-content-language', 'response-expires', 
-                   'reponse-cache-control', 'response-content-disposition',
+                   'response-cache-control', 'response-content-disposition',
                    'response-content-encoding']
 
 # generates the aws canonical string for the given parameters
