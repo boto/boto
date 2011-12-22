@@ -26,6 +26,7 @@ import re
 import rfc822
 import StringIO
 import base64
+import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.provider import Provider
@@ -988,7 +989,7 @@ class Key(object):
             query_args.append('versionId=%s' % version_id)
         if response_headers:
             for key in response_headers:
-                query_args.append('%s=%s' % (key, response_headers[key]))
+                query_args.append('%s=%s' % (key, urllib.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
