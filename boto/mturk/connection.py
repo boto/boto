@@ -909,6 +909,4 @@ class QuestionFormAnswer(BaseAutoResultElement):
         if name == 'QuestionIdentifier':
             self.qid = value
         elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
-            self.fields.append((self.qid,value))
-        elif name == 'Answer':
-            self.qid = None
+            self.fields.append( value )
