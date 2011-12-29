@@ -36,8 +36,10 @@ from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 import boto.jsonresponse
 import boto.utils
 import xml.sax
+import xml.sax.saxutils
 import urllib
 import re
+import StringIO
 from collections import defaultdict
 
 # as per http://goo.gl/BDuud (02/19/2011)
@@ -450,6 +452,97 @@ class Bucket(object):
                                             force_http=force_http,
                                             response_headers=response_headers)
 
+    def delete_multiple(self, keys, headers=None, mfa_token=None, quiet=True):
+        """
+        Delete Multiple Objects
+
+        :type keys: list
+        :param keys: The list of keys to delete. Each key element of
+                      the list can be one of:
+                         string  ... which will map to a key name
+                         2 tuple ... (key_name, version_id)
+                         Key     ... Key or DeleteMarker Object
+                     A resultset is also valid as this parameter.
+                     Currently only the first 1000 keys will be deleted
+                     and any additional keys will be returned as skipped.
+        
+        :type headers: dict
+        :param headers: Any additional headers you want to include
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: A tuple or list consisting of the serial number
+                          from the MFA device and the current value of
+                          the six-digit token associated with the device.
+                          This value is required anytime you are
+                          deleting versioned objects from a bucket
+                          that has the MFADelete option on the bucket.
+
+        :type quiet: bool
+        :param quiet: Default is quiet. False is supported but doesn't
+                      return any useful information right now.
+
+        :returns: A ResultSet of keys that were skipped or had problems
+                  being deleted. Skipped will be listed first followed
+                  by Error keys. Error keys will have a Code and 
+                  Message attribute set. 
+        """
+        provider = self.connection.provider
+        query_args = 'delete'
+        headers = headers or {}
+        if mfa_token:
+            headers[provider.mfa_header] = ' '.join(mfa_token)
+        headers['Content-Type'] = 'text/xml'
+        x = '<?xml version="1.0" encoding="UTF-8"?>\r\n<Delete>'
+        if quiet:
+            x += "<Quiet>true</Quiet>"
+        count = 0
+        skipped = []
+        for key in keys:
+            if count >= 1000:
+                # we could issue multiple requests, but just
+                # skip for now as its less complex.
+                skipped.append(key)
+                continue
+            if isinstance(key, str):
+                key_name = key
+                key_version = None
+            elif isinstance(key, tuple) and len(key) == 2:
+                (key_name, key_version) = key
+            elif isinstance(key, self.key_class) or isinstance(key, DeleteMarker):
+                key_name = key.name
+                key_version = key.version_id
+            else:
+                skipped.append(key) # skip prefixes etc
+                continue
+            count += 1
+            x += "<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
+            if key_version:
+                x += "<VersionId>%s</VersionId>" % key_version
+            x += "</Object>"
+        x += "</Delete>"
+        fp = StringIO.StringIO(x)
+        md5 = boto.utils.compute_md5(fp)
+        fp.close()
+        headers['Content-MD5'] = md5[1]
+        if count == 0:
+            return skipped
+        response = self.connection.make_request('POST', self.name, '',
+                                                query_args=query_args,
+                                                headers=headers, data=x)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            # A resultset of keys that could not be deleted might be useful.
+            # key.Code and key.Message will be set except where skipped.
+            rs = ResultSet([('Error', self.key_class)])
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            rs = skipped + rs   # prepend any skipped keys
+            return rs
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+    
     def delete_key(self, key_name, headers=None,
                    version_id=None, mfa_token=None):
         """
