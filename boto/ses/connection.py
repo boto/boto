@@ -139,6 +139,10 @@ class SESConnection(AWSAuthConnection):
             # Your account has sent above its allowed requests a second rate.
             ExceptionToRaise = ses_exceptions.SESMaxSendingRateExceededError
             exc_reason = "Maximum sending rate exceeded."
+        elif "Domain ends with dot." in body:
+            # Recipient address ends with a dot/period. This is invalid.
+            ExceptionToRaise = ses_exceptions.SESDomainEndsWithDotError
+            exc_reason = "Domain ends with dot."
         else:
             # This is either a common AWS error, or one that we don't devote
             # its own exception to.
