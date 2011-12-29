@@ -96,9 +96,9 @@ def main():
     try:
         opts, args = getopt.getopt(
                 sys.argv[1:], 'a:b:c::d:g:hi:np:qs:vwr',
-                ['access_key', 'bucket', 'callback', 'debug', 'help', 'grant',
-                 'ignore', 'no_op', 'prefix', 'quiet', 'secret_key',
-                 'no_overwrite', 'reduced']
+                ['access_key=', 'bucket=', 'callback=', 'debug=', 'help',
+                 'grant=', 'ignore=', 'no_op', 'prefix=', 'quiet',
+                 'secret_key=', 'no_overwrite', 'reduced']
                 )
     except:
         usage()
