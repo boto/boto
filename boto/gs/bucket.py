@@ -243,8 +243,7 @@ class Bucket(S3Bucket):
         xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging/>'
         self.set_subresource('logging', xml_str, headers=headers)
 
-    def enable_logging(self, target_bucket, target_prefix=None, headers=None,
-                       canned_acl=None):
+    def enable_logging(self, target_bucket, target_prefix=None, headers=None):
         if isinstance(target_bucket, Bucket):
             target_bucket = target_bucket.name
         xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging>'
@@ -252,9 +251,6 @@ class Bucket(S3Bucket):
         if target_prefix:
             xml_str = (xml_str +
                        '<LogObjectPrefix>%s</LogObjectPrefix>' % target_prefix)
-        if canned_acl:
-            xml_str = (xml_str +
-                       '<PredefinedAcl>%s</PredefinedAcl>' % canned_acl)
         xml_str = xml_str + '</Logging>'
 
         self.set_subresource('logging', xml_str, headers=headers)

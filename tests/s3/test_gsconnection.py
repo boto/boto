@@ -163,15 +163,13 @@ class GSConnectionTest (unittest.TestCase):
             "<?xml version='1.0' encoding='UTF-8'?><Logging>"
             "<LogBucket>log-bucket</LogBucket>" +
             "<LogObjectPrefix>example</LogObjectPrefix>" +
-            "<PredefinedAcl>bucket-owner-full-control</PredefinedAcl>" +
             "</Logging>")
         bucket.set_subresource('logging', logging_str);
         assert bucket.get_subresource('logging') == logging_str;
         # try disable/enable logging
         bucket.disable_logging()
         assert bucket.get_subresource('logging') == empty_logging_str
-        bucket.enable_logging('log-bucket', 'example',
-                             canned_acl='bucket-owner-full-control')
+        bucket.enable_logging('log-bucket', 'example')
         assert bucket.get_subresource('logging') == logging_str;
         # now delete all keys in bucket
         for k in bucket:

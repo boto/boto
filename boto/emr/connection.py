@@ -203,7 +203,7 @@ class EmrConnection(AWSQueryConnection):
                     slave_instance_type='m1.small', num_instances=1,
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
-                    hadoop_version='0.20',
+                    hadoop_version=None,
                     steps=[],
                     bootstrap_actions=[],
                     instance_groups=None,
@@ -212,7 +212,6 @@ class EmrConnection(AWSQueryConnection):
                     api_params=None):
         """
         Runs a job flow
-
         :type name: str
         :param name: Name of the job flow
         
@@ -244,7 +243,12 @@ class EmrConnection(AWSQueryConnection):
         :type enable_debugging: bool
         :param enable_debugging: Denotes whether AWS console debugging
             should be enabled.
-            
+
+        :type hadoop_version: str
+        :param hadoop_version: Version of Hadoop to use. If ami_version
+            is not set, defaults to '0.20' for backwards compatibility
+            with older versions of boto.
+
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
         
@@ -260,7 +264,9 @@ class EmrConnection(AWSQueryConnection):
                 
         :type ami_version: str
         :param ami_version: Amazon Machine Image (AMI) version to use
-            for instances.
+            for instances. Values accepted by EMR are '1.0', '2.0', and
+            'latest'; EMR currently defaults to '1.0' if you don't set
+            'ami_version'.
             
         :type additional_info: JSON str
         :param additional_info: A JSON string for selecting additional features
@@ -274,6 +280,11 @@ class EmrConnection(AWSQueryConnection):
         :rtype: str
         :return: The jobflow id
         """
+        # hadoop_version used to default to '0.20', but this won't work
+        # on later AMI versions, so only default if it ami_version isn't set.
+        if not (hadoop_version or ami_version):
+            hadoop_version = '0.20'
+
         params = {}
         if action_on_failure:
             params['ActionOnFailure'] = action_on_failure
@@ -325,7 +336,8 @@ class EmrConnection(AWSQueryConnection):
             bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
 
-        params['AmiVersion'] = ami_version
+        if ami_version:
+            params['AmiVersion'] = ami_version
 
         if additional_info is not None:
             params['AdditionalInfo'] = additional_info
@@ -421,9 +433,10 @@ class EmrConnection(AWSQueryConnection):
         """
         params = {
             'Instances.KeepJobFlowAliveWhenNoSteps' : str(keep_alive).lower(),
-            'Instances.HadoopVersion' : hadoop_version
         }
 
+        if hadoop_version:
+            params['Instances.HadoopVersion'] = hadoop_version
         if ec2_keyname:
             params['Instances.Ec2KeyName'] = ec2_keyname
         if availability_zone:

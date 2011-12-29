@@ -357,9 +357,8 @@ class MockBucketStorageUri(object):
                         version_id=NOT_IMPL):
         self.get_bucket().disable_logging()
 
-    def enable_logging(self, target_bucket, target_prefix, canned_acl=NOT_IMPL,
-                       validate=NOT_IMPL, headers=NOT_IMPL,
-                       version_id=NOT_IMPL):
+    def enable_logging(self, target_bucket, target_prefix, validate=NOT_IMPL,
+                       headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().enable_logging(target_bucket)
 
     def equals(self, uri):

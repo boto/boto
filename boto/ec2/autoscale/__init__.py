@@ -43,6 +43,7 @@ RegionData = {
     'us-east-1' : 'autoscaling.us-east-1.amazonaws.com',
     'us-west-1' : 'autoscaling.us-west-1.amazonaws.com',
     'us-west-2' : 'autoscaling.us-west-2.amazonaws.com',
+    'sa-east-1' : 'autoscaling.sa-east-1.amazonaws.com',
     'eu-west-1' : 'autoscaling.eu-west-1.amazonaws.com',
     'ap-northeast-1' : 'autoscaling.ap-northeast-1.amazonaws.com',
     'ap-southeast-1' : 'autoscaling.ap-southeast-1.amazonaws.com'}
@@ -214,7 +215,7 @@ class AutoScaleConnection(AWSQueryConnection):
             self.build_list_params(params, launch_config.security_groups,
                                    'SecurityGroups')
         if launch_config.instance_monitoring:
-            params['InstanceMonitoring.member.Enabled'] = 'true'
+            params['InstanceMonitoring.Enabled'] = 'true'
         return self.get_object('CreateLaunchConfiguration', params,
                                   Request, verb='POST')
 

@@ -33,3 +33,10 @@ class SESMaxSendingRateExceededError(BotoServerError):
     Your account's requests/second limit has been exceeded.
     """
     pass
+
+
+class SESDomainEndsWithDotError(BotoServerError):
+    """
+    Recipient's email address' domain ends with a period/dot.
+    """
+    pass

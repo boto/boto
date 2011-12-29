@@ -24,28 +24,36 @@
 import boto
 from boto import handler
 from boto.resultset import ResultSet
+from boto.exception import BotoClientError
 from boto.s3.acl import Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
 from boto.s3.deletemarker import DeleteMarker
 from boto.s3.multipart import MultiPartUpload
 from boto.s3.multipart import CompleteMultiPartUpload
+from boto.s3.multidelete import MultiDeleteResult
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
+from hashlib import md5
 import boto.jsonresponse
 import boto.utils
 import xml.sax
+import xml.sax.saxutils
+import StringIO
 import urllib
 import re
+import base64
 from collections import defaultdict
 
 # as per http://goo.gl/BDuud (02/19/2011)
 class S3WebsiteEndpointTranslate:
     trans_region = defaultdict(lambda :'s3-website-us-east-1')
 
-    trans_region['EU'] = 's3-website-eu-west-1'
+    trans_region['eu-west-1'] = 's3-website-eu-west-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
+    trans_region['us-west-2'] = 's3-website-us-west-2'
+    trans_region['sa-east-1'] = 's3-website-sa-east-1'
     trans_region['ap-northeast-1'] = 's3-website-ap-northeast-1'
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
 
@@ -449,6 +457,81 @@ class Bucket(object):
                                             headers=headers,
                                             force_http=force_http,
                                             response_headers=response_headers)
+
+    def delete_keys(self, keys, quiet=False, mfa_token=None, headers=None):
+        """
+        Deletes a set of keys using S3's Multi-object delete API. If a
+        VersionID is specified for that key then that version is removed.
+        Returns the XML response from S3, which contains Deleted and Error
+        elements for each key you ask to delete.
+        
+        :type keys: list
+        :param keys: A list of either key_names or (key_name, versionid) pairs
+                     or a list of Key instances.
+
+        :type quiet: boolean
+        :param quiet: In quiet mode the response includes only keys where
+                      the delete operation encountered an error. For a
+                      successful deletion, the operation does not return
+                      any information about the delete in the response body.
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: A tuple or list consisting of the serial number
+                          from the MFA device and the current value of
+                          the six-digit token associated with the device.
+                          This value is required anytime you are
+                          deleting versioned objects from a bucket
+                          that has the MFADelete option on the bucket.
+        """
+        if len(keys) > 1000:
+            raise BotoClientError('Max of 1000 keys can be deleted')
+        headers = headers or {}
+        query_args = 'delete'
+        provider = self.connection.provider
+        data = """<?xml version="1.0" encoding="UTF-8"?>"""
+        data += "<Delete>"
+        if quiet:
+            data += "<Quiet>true</Quiet>"
+        else:
+            data += "<Quiet>false</Quiet>"
+        for key in keys:
+            if isinstance(key, basestring):
+                key_name = key
+                version_id = None
+            elif isinstance(key, tuple) and len(tuple) == 2:
+                key_name, version_id = key
+            elif isinstance(key, Key):
+                key_name = key.name
+                version_id = key.version_id
+            else:
+                raise BotoClientError('The key list format is incorrect')
+            data += "<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
+            if version_id:
+                data += "<VersionId>%s</VersionId>"
+            data += "</Object>"
+        data += "</Delete>"
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
+        fp = StringIO.StringIO(data)
+        md5 = boto.utils.compute_md5(fp)
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        if mfa_token:
+            headers[provider.mfa_header] = ' '.join(mfa_token)
+        response = self.connection.make_request('POST', self.name,
+                                                headers=headers,
+                                                query_args=query_args,
+                                                data=data)
+        body = response.read()
+        if response.status == 200:
+            result = MultiDeleteResult(self)
+            h = handler.XmlHandler(result, self)
+            xml.sax.parseString(body, h)
+            return result
+        else:
+            raise provider.storage_response_error(response.status,
+                                                  response.reason,
+                                                  body)
 
     def delete_key(self, key_name, headers=None,
                    version_id=None, mfa_token=None):
