@@ -47,8 +47,10 @@ from collections import defaultdict
 class S3WebsiteEndpointTranslate:
     trans_region = defaultdict(lambda :'s3-website-us-east-1')
 
-    trans_region['EU'] = 's3-website-eu-west-1'
+    trans_region['eu-west-1'] = 's3-website-eu-west-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
+    trans_region['us-west-2'] = 's3-website-us-west-2'
+    trans_region['sa-east-1'] = 's3-website-sa-east-1'
     trans_region['ap-northeast-1'] = 's3-website-ap-northeast-1'
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
 
