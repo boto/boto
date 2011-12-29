@@ -2080,7 +2080,7 @@ class EC2Connection(AWSQueryConnection):
         if src_group_id is not None:
             params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
         if cidr_ip is not None:
-            params['IpPermissions.1.Groups.1.CidrIp'] = cidr_ip
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
 
         return self.get_status('AuthorizeSecurityGroupEgress',
                                params, verb='POST')
