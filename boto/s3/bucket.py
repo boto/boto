@@ -24,6 +24,7 @@
 import boto
 from boto import handler
 from boto.resultset import ResultSet
+from boto.exception import BotoClientError
 from boto.s3.acl import Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
@@ -38,6 +39,8 @@ from hashlib import md5
 import boto.jsonresponse
 import boto.utils
 import xml.sax
+import xml.sax.saxutils
+import StringIO
 import urllib
 import re
 import base64
@@ -455,7 +458,7 @@ class Bucket(object):
                                             force_http=force_http,
                                             response_headers=response_headers)
 
-    def delete_keys(self, keys, quiet=False, mfa_token=None):
+    def delete_keys(self, keys, quiet=False, mfa_token=None, headers=None):
         """
         Deletes a set of keys using S3's Multi-object delete API. If a
         VersionID is specified for that key then that version is removed.
@@ -463,7 +466,8 @@ class Bucket(object):
         elements for each key you ask to delete.
         
         :type keys: list
-        :param keys: A list of either key_names or (key_name, versionid) pairs.
+        :param keys: A list of either key_names or (key_name, versionid) pairs
+                     or a list of Key instances.
 
         :type quiet: boolean
         :param quiet: In quiet mode the response includes only keys where
@@ -479,25 +483,38 @@ class Bucket(object):
                           deleting versioned objects from a bucket
                           that has the MFADelete option on the bucket.
         """
+        if len(keys) > 1000:
+            raise BotoClientError('Max of 1000 keys can be deleted')
+        headers = headers or {}
         query_args = 'delete'
         provider = self.connection.provider
         data = """<?xml version="1.0" encoding="UTF-8"?>"""
         data += "<Delete>"
-        quiet = "<Quiet>true</Quiet>" if quiet else "<Quiet>false</Quiet>"
-        data += quiet
-        for key_name in keys:
-            try:
-                key_name, version_id = key_name
-            except:
-                key_name, version_id = key_name, None
-            data += "<Object><Key>%s</Key>" % key_name
-            if version_id: data += "<VersionId>%s</VersionId>"
+        if quiet:
+            data += "<Quiet>true</Quiet>"
+        else:
+            data += "<Quiet>false</Quiet>"
+        for key in keys:
+            if isinstance(key, basestring):
+                key_name = key
+                version_id = None
+            elif isinstance(key, tuple) and len(tuple) == 2:
+                key_name, version_id = key
+            elif isinstance(key, Key):
+                key_name = key.name
+                version_id = key.version_id
+            else:
+                raise BotoClientError('The key list format is incorrect')
+            data += "<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
+            if version_id:
+                data += "<VersionId>%s</VersionId>"
             data += "</Object>"
         data += "</Delete>"
         if isinstance(data, unicode):
             data = data.encode('utf-8')
-        base64md5 = base64.b64encode(md5(data).digest()).strip()
-        headers = {'Content-MD5': base64md5, 'Content-Length': str(len(data))}
+        fp = StringIO.StringIO(data)
+        md5 = boto.utils.compute_md5(fp)
+        headers['Content-MD5'] = md5[1]
         headers['Content-Type'] = 'text/xml'
         if mfa_token:
             headers[provider.mfa_header] = ' '.join(mfa_token)
