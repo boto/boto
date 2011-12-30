@@ -492,19 +492,19 @@ class Bucket(object):
         data += "<Delete>"
         if quiet:
             data += "<Quiet>true</Quiet>"
-        else:
-            data += "<Quiet>false</Quiet>"
+        skipped = []
         for key in keys:
             if isinstance(key, basestring):
                 key_name = key
                 version_id = None
             elif isinstance(key, tuple) and len(tuple) == 2:
                 key_name, version_id = key
-            elif isinstance(key, Key):
+            elif isinstance(key, Key) or isinstance(key, DeleteMarker):
                 key_name = key.name
                 version_id = key.version_id
             else:
-                raise BotoClientError('The key list format is incorrect')
+                skipped.append(key)
+                continue
             data += "<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
             if version_id:
                 data += "<VersionId>%s</VersionId>"
