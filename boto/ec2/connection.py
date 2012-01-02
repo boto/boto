@@ -52,13 +52,14 @@ from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
 from boto.ec2.instancestatus import InstanceStatusSet
+from boto.ec2.networkinterface import NetworkInterface
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2011-11-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2011-12-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.amazonaws.com')
@@ -625,7 +626,7 @@ class EC2Connection(AWSQueryConnection):
             l = []
             for group in security_group_ids:
                 if isinstance(group, SecurityGroup):
-                    l.append(group.name)
+                    l.append(group.id)
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'SecurityGroupId')
@@ -1821,7 +1822,8 @@ class EC2Connection(AWSQueryConnection):
 
     # SecurityGroup methods
 
-    def get_all_security_groups(self, groupnames=None, group_ids=None, filters=None):
+    def get_all_security_groups(self, groupnames=None, group_ids=None,
+                                filters=None):
         """
         Get all security groups associated with your account in a region.
 
@@ -2724,4 +2726,119 @@ class EC2Connection(AWSQueryConnection):
         self.build_list_params(params, resource_ids, 'ResourceId')
         self.build_tag_param_list(params, tags)
         return self.get_status('DeleteTags', params, verb='POST')
+
+    # Network Interface methods
+
+    def get_all_network_interfaces(self, filters=None):
+        """
+        Retrieve all of the Elastic Network Interfaces (ENI's)
+        associated with your account.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.networkinterface.NetworkInterface`
+        """
+        params = {}
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeNetworkInterfaces', params,
+                             [('item', NetworkInterface)], verb='POST')
+
+    def create_network_interface(self, subnet_id, private_ip_address=None,
+                                 description=None, groups=None):
+        """
+        Creates a network interface in the specified subnet.
+
+        :type subnet_id: str
+        :param subnet_id: The ID of the subnet to associate with the
+            network interface.
+
+        :type private_ip_address: str
+        :param private_ip_address: The private IP address of the
+            network interface.  If not supplied, one will be chosen
+            for you.
+
+        :type description: str
+        :param description: The description of the network interface.
+
+        :type groups: list
+        :param groups: Lists the groups for use by the network interface.
+            This can be either a list of group ID's or a list of
+            :class:`boto.ec2.securitygroup.SecurityGroup` objects.
+
+        :rtype: :class:`boto.ec2.networkinterface.NetworkInterface`
+        :return: The newly created network interface.
+        """
+        params = {'SubnetId' : subnet_id}
+        if private_ip_address:
+            params['PrivateIpAddress'] = private_ip_address
+        if description:
+            params['Description'] = description
+        if groups:
+            ids = []
+            for group in groups:
+                if isinstance(group, SecurityGroup):
+                    ids.append(group.id)
+                else:
+                    ids.append(group)
+            self.build_list_params(params, ids, 'SecurityGroupId')
+        return self.get_object('CreateNetworkInterface', params,
+                               NetworkInterface, verb='POST')
+
+    def attach_network_interface(self, network_interface_id,
+                                 instance_id, device_index):
+        """
+        Attaches a network interface to an instance.
+
+        :type network_interface_id: str
+        :param network_interface_id: The ID of the network interface to attach.
+
+        :type instance_id: str
+        :param instance_id: The ID of the instance that will be attached
+            to the network interface.
+
+        :type device_index: int
+        :param device_index: The index of the device for the network
+            interface attachment on the instance.
+        """
+        params = {'NetworkInterfaceId' : network_interface_id,
+                  'InstanceId' : instance_id,
+                  'Deviceindex' : device_index}
+        return self.get_status('AttachNetworkInterface', params, verb='POST')
+
+    def detach_network_interface(self, network_interface_id, force=False):
+        """
+        Detaches a network interface from an instance.
+
+        :type network_interface_id: str
+        :param network_interface_id: The ID of the network interface to detach.
+
+        :type force: bool
+        :param force: Set to true to force a detachment.
+
+        """
+        params = {'NetworkInterfaceId' : network_interface_id}
+        if force:
+            params['Force'] = 'true'
+        return self.get_status('DetachNetworkInterface', params, verb='POST')
+
+    def delete_network_interface(self, network_interface_id):
+        """
+        Delete the specified network interface.
+
+        :type network_interface_id: str
+        :param network_interface_id: The ID of the network interface to delete.
+
+        """
+        params = {'NetworkInterfaceId' : network_interface_id}
+        return self.get_status('DeleteNetworkInterface', params, verb='POST')
 
