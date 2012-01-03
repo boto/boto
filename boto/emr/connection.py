@@ -208,7 +208,8 @@ class EmrConnection(AWSQueryConnection):
                     bootstrap_actions=[],
                     instance_groups=None,
                     additional_info=None,
-                    ami_version=None):
+                    ami_version="1.0",
+                    api_params=None):
         """
         Runs a job flow
         :type name: str
@@ -269,7 +270,13 @@ class EmrConnection(AWSQueryConnection):
             
         :type additional_info: JSON str
         :param additional_info: A JSON string for selecting additional features
-        
+
+        :type api_params: dict
+        :param api_params: a dictionary of additional parameters to pass
+            directly to the EMR API (so you don't have to upgrade boto to
+            use new EMR features). You can also delete an API parameter
+            by setting it to None.
+
         :rtype: str
         :return: The jobflow id
         """
@@ -334,6 +341,13 @@ class EmrConnection(AWSQueryConnection):
 
         if additional_info is not None:
             params['AdditionalInfo'] = additional_info
+
+        if api_params:
+            for key, value in api_params.iteritems():
+                if value is None:
+                    params.pop(key, None)
+                else:
+                    params[key] = value
 
         response = self.get_object(
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')
