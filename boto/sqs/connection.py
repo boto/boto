@@ -277,7 +277,7 @@ class SQSConnection(AWSQueryConnection):
     def get_queue(self, queue_name):
         rs = self.get_all_queues(queue_name)
         for q in rs:
-            if q.url.endswith(queue_name):
+            if q.name == queue_name:
                 return q
         return None
 
