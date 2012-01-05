@@ -43,6 +43,10 @@ def regions():
                           endpoint='rds.eu-west-1.amazonaws.com'),
             RDSRegionInfo(name='us-west-1',
                           endpoint='rds.us-west-1.amazonaws.com'),
+            RDSRegionInfo(name='us-west-2',
+                          endpoint='rds.us-west-2.amazonaws.com'),
+            RDSRegionInfo(name='sa-east-1',
+                          endpoint='rds.sa-east-1.amazonaws.com'),
             RDSRegionInfo(name='ap-northeast-1',
                           endpoint='rds.ap-northeast-1.amazonaws.com'),
             RDSRegionInfo(name='ap-southeast-1',
@@ -74,7 +78,7 @@ class RDSConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'rds.amazonaws.com'
-    APIVersion = '2009-10-16'
+    APIVersion = '2011-04-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -84,9 +88,11 @@ class RDSConnection(AWSQueryConnection):
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user,
-                                    proxy_pass, self.region.endpoint, debug,
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
                                     https_connection_factory, path)
 
     def _required_auth_capability(self):
@@ -100,9 +106,10 @@ class RDSConnection(AWSQueryConnection):
         Retrieve all the DBInstances in your account.
 
         :type instance_id: str
-        :param instance_id: DB Instance identifier.  If supplied, only information
-                            this instance will be returned.  Otherwise, info
-                            about all DB Instances will be returned.
+        :param instance_id: DB Instance identifier.  If supplied, only
+                            information this instance will be returned.
+                            Otherwise, info about all DB Instances will
+                            be returned.
 
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
@@ -123,7 +130,8 @@ class RDSConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if marker:
             params['Marker'] = marker
-        return self.get_list('DescribeDBInstances', params, [('DBInstance', DBInstance)])
+        return self.get_list('DescribeDBInstances', params,
+                             [('DBInstance', DBInstance)])
 
     def create_dbinstance(self, id, allocated_storage, instance_class,
                           master_username, master_password, port=3306,
@@ -149,9 +157,8 @@ class RDSConnection(AWSQueryConnection):
                                   Valid values are [5-1024]
 
         :type instance_class: str
-        :param instance_class: The compute and memory capacity of the DBInstance.
-
-                               Valid values are:
+        :param instance_class: The compute and memory capacity of
+                               the DBInstance. Valid values are:
 
                                * db.m1.small
                                * db.m1.large
@@ -443,9 +450,9 @@ class RDSConnection(AWSQueryConnection):
         :type skip_final_snapshot: bool
         :param skip_final_snapshot: This parameter determines whether a final
                                     db snapshot is created before the instance
-                                    is deleted.  If True, no snapshot is created.
-                                    If False, a snapshot is created before
-                                    deleting the instance.
+                                    is deleted.  If True, no snapshot
+                                    is created.  If False, a snapshot
+                                    is created before deleting the instance.
 
         :type final_snapshot_id: str
         :param final_snapshot_id: If a final snapshot is requested, this
@@ -553,7 +560,7 @@ class RDSConnection(AWSQueryConnection):
         :param name: The name of the new dbparameter group
 
         :type engine: str
-        :param engine: Name of database engine.  Must be MySQL5.1 for now.
+        :param engine: Name of database engine.
 
         :type description: string
         :param description: The description of the new security group
@@ -562,7 +569,7 @@ class RDSConnection(AWSQueryConnection):
         :return: The newly created DBSecurityGroup
         """
         params = {'DBParameterGroupName': name,
-                  'Engine': engine,
+                  'DBParameterGroupFamily': engine,
                   'Description' : description}
         return self.get_object('CreateDBParameterGroup', params, ParameterGroup)
 
@@ -583,9 +590,11 @@ class RDSConnection(AWSQueryConnection):
         for i in range(0, len(parameters)):
             parameter = parameters[i]
             parameter.merge(params, i+1)
-        return self.get_list('ModifyDBParameterGroup', params, ParameterGroup)
+        return self.get_list('ModifyDBParameterGroup', params,
+                             ParameterGroup, verb='POST')
 
-    def reset_parameter_group(self, name, reset_all_params=False, parameters=None):
+    def reset_parameter_group(self, name, reset_all_params=False,
+                              parameters=None):
         """
         Resets some or all of the parameters of a ParameterGroup to the
         default value
@@ -594,8 +603,8 @@ class RDSConnection(AWSQueryConnection):
         :param key_name: The name of the ParameterGroup to reset
 
         :type parameters: list of :class:`boto.rds.parametergroup.Parameter`
-        :param parameters: The parameters to reset.  If not supplied, all parameters
-                           will be reset.
+        :param parameters: The parameters to reset.  If not supplied,
+                           all parameters will be reset.
         """
         params = {'DBParameterGroupName':name}
         if reset_all_params:
@@ -626,7 +635,8 @@ class RDSConnection(AWSQueryConnection):
 
         :type groupnames: list
         :param groupnames: A list of the names of security groups to retrieve.
-                           If not provided, all security groups will be returned.
+                           If not provided, all security groups will
+                           be returned.
 
         :type max_records: int
         :param max_records: The maximum number of records to be returned.
@@ -668,7 +678,8 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBSecurityGroupName':name}
         if description:
             params['DBSecurityGroupDescription'] = description
-        group = self.get_object('CreateDBSecurityGroup', params, DBSecurityGroup)
+        group = self.get_object('CreateDBSecurityGroup', params,
+                                DBSecurityGroup)
         group.name = name
         group.description = description
         return group
@@ -696,12 +707,13 @@ class RDSConnection(AWSQueryConnection):
                            the rule to.
 
         :type ec2_security_group_name: string
-        :param ec2_security_group_name: The name of the EC2 security group you are
-                                        granting access to.
+        :param ec2_security_group_name: The name of the EC2 security group
+                                        you are granting access to.
 
         :type ec2_security_group_owner_id: string
-        :param ec2_security_group_owner_id: The ID of the owner of the EC2 security
-                                            group you are granting access to.
+        :param ec2_security_group_owner_id: The ID of the owner of the EC2
+                                            security group you are granting
+                                            access to.
 
         :type cidr_ip: string
         :param cidr_ip: The CIDR block you are providing access to.
@@ -717,7 +729,8 @@ class RDSConnection(AWSQueryConnection):
             params['EC2SecurityGroupOwnerId'] = ec2_security_group_owner_id
         if cidr_ip:
             params['CIDRIP'] = urllib.quote(cidr_ip)
-        return self.get_object('AuthorizeDBSecurityGroupIngress', params, DBSecurityGroup)
+        return self.get_object('AuthorizeDBSecurityGroupIngress', params,
+                               DBSecurityGroup)
 
     def revoke_dbsecurity_group(self, group_name, ec2_security_group_name=None,
                                 ec2_security_group_owner_id=None, cidr_ip=None):
@@ -731,12 +744,13 @@ class RDSConnection(AWSQueryConnection):
                            the rule from.
 
         :type ec2_security_group_name: string
-        :param ec2_security_group_name: The name of the EC2 security group from which
-                                        you are removing access.
+        :param ec2_security_group_name: The name of the EC2 security group
+                                        from which you are removing access.
 
         :type ec2_security_group_owner_id: string
-        :param ec2_security_group_owner_id: The ID of the owner of the EC2 security
-                                            from which you are removing access.
+        :param ec2_security_group_owner_id: The ID of the owner of the EC2
+                                            security from which you are
+                                            removing access.
 
         :type cidr_ip: string
         :param cidr_ip: The CIDR block from which you are removing access.
@@ -752,7 +766,8 @@ class RDSConnection(AWSQueryConnection):
             params['EC2SecurityGroupOwnerId'] = ec2_security_group_owner_id
         if cidr_ip:
             params['CIDRIP'] = cidr_ip
-        return self.get_object('RevokeDBSecurityGroupIngress', params, DBSecurityGroup)
+        return self.get_object('RevokeDBSecurityGroupIngress', params,
+                               DBSecurityGroup)
 
     # For backwards compatibility.  This method was improperly named
     # in previous versions.  I have renamed it to match the others.
@@ -842,8 +857,8 @@ class RDSConnection(AWSQueryConnection):
                               which the snapshot is created.
 
         :type instance_class: str
-        :param instance_class: The compute and memory capacity of the DBInstance.
-                               Valid values are:
+        :param instance_class: The compute and memory capacity of the
+                               DBInstance.  Valid values are:
                                db.m1.small | db.m1.large | db.m1.xlarge |
                                db.m2.2xlarge | db.m2.4xlarge
 
@@ -894,8 +909,8 @@ class RDSConnection(AWSQueryConnection):
                              used if use_latest is False.
 
         :type instance_class: str
-        :param instance_class: The compute and memory capacity of the DBInstance.
-                               Valid values are:
+        :param instance_class: The compute and memory capacity of the
+                               DBInstance.  Valid values are:
                                db.m1.small | db.m1.large | db.m1.xlarge |
                                db.m2.2xlarge | db.m2.4xlarge
 

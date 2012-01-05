@@ -8,6 +8,7 @@ API Reference
    :maxdepth: 4
 
    boto
+   cloudformation
    cloudfront
    contrib
    ec2
@@ -29,5 +30,6 @@ API Reference
    ses
    sns
    sqs
+   sts
    vpc
  

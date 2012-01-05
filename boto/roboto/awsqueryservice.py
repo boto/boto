@@ -65,13 +65,17 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
                 lines = fp.readlines()
                 fp.close()
                 for line in lines:
-                    name, value = line.split('=')
-                    if name.strip() == 'AWSAccessKeyId':
-                        if 'aws_access_key_id' not in self.args:
-                            self.args['aws_access_key_id'] = value.strip()
-                    elif name.strip() == 'AWSSecretKey':
-                        if 'aws_secret_access_key' not in self.args:
-                            self.args['aws_secret_access_key'] = value.strip()
+                    if line[0] != '#':
+                        if '=' in line:
+                            name, value = line.split('=', 1)
+                            if name.strip() == 'AWSAccessKeyId':
+                                if 'aws_access_key_id' not in self.args:
+                                    value = value.strip()
+                                    self.args['aws_access_key_id'] = value
+                            elif name.strip() == 'AWSSecretKey':
+                                if 'aws_secret_access_key' not in self.args:
+                                    value = value.strip()
+                                    self.args['aws_secret_access_key'] = value
             else:
                 print 'Warning: unable to read AWS_CREDENTIAL_FILE'
 

@@ -27,7 +27,6 @@ import time
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
-from boto.provider import Provider
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
@@ -64,7 +63,10 @@ def assert_case_insensitive(f):
         return f(*args, **kwargs)
     return wrapper
 
-class _CallingFormat:
+class _CallingFormat(object):
+
+    def get_bucket_server(self, server, bucket):
+        return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
         url_base = '%s://' % protocol
@@ -125,6 +127,7 @@ class Location:
     DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
+    SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
 
@@ -137,15 +140,15 @@ class S3Connection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/', provider='aws',
-                 bucket_class=Bucket):
+                 calling_format=SubdomainCallingFormat(), path='/',
+                 provider='aws', bucket_class=Bucket, security_token=None):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
-                path=path, provider=provider)
+                path=path, provider=provider, security_token=security_token)
 
     def _required_auth_capability(self):
         return ['s3']
@@ -155,7 +158,7 @@ class S3Connection(AWSAuthConnection):
             yield bucket
 
     def __contains__(self, bucket_name):
-       return not (self.lookup(bucket_name) is None)
+        return not (self.lookup(bucket_name) is None)
 
     def set_bucket_class(self, bucket_class):
         """
@@ -182,8 +185,10 @@ class S3Connection(AWSAuthConnection):
 
 
     def build_post_form_args(self, bucket_name, key, expires_in = 6000,
-                        acl = None, success_action_redirect = None, max_content_length = None,
-                        http_method = "http", fields=None, conditions=None):
+                             acl = None, success_action_redirect = None,
+                             max_content_length = None,
+                             http_method = "http", fields=None,
+                             conditions=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
         This only returns the arguments required for the post form, not the actual form
@@ -327,11 +332,13 @@ class S3Connection(AWSAuthConnection):
 
     def get_canonical_user_id(self, headers=None):
         """
-        Convenience method that returns the "CanonicalUserID" of the user who's credentials
-        are associated with the connection.  The only way to get this value is to do a GET
-        request on the service which returns all buckets associated with the account.  As part
-        of that response, the canonical userid is returned.  This method simply does all of
-        that and then returns just the user id.
+        Convenience method that returns the "CanonicalUserID" of the
+        user who's credentials are associated with the connection.
+        The only way to get this value is to do a GET request on the
+        service which returns all buckets associated with the account.
+        As part of that response, the canonical userid is returned.
+        This method simply does all of that and then returns just the
+        user id.
 
         :rtype: string
         :return: A string containing the canonical user id.

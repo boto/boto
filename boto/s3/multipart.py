@@ -199,7 +199,7 @@ class MultiPartUpload(object):
         self._parts = []
         query_args = 'uploadId=%s' % self.id
         if max_parts:
-            query_args += '&max_parts=%d' % max_parts
+            query_args += '&max-parts=%d' % max_parts
         if part_number_marker:
             query_args += '&part-number-marker=%s' % part_number_marker
         response = self.bucket.connection.make_request('GET', self.bucket.name,
@@ -232,6 +232,40 @@ class MultiPartUpload(object):
         key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,
                                    md5, reduced_redundancy=False,
                                    query_args=query_args)
+
+    def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
+                           start=None, end=None):
+        """
+        Copy another part of this MultiPart Upload.
+
+        :type src_bucket_name: string
+        :param src_bucket_name: Name of the bucket containing the source key
+
+        :type src_key_name: string
+        :param src_key_name: Name of the source key
+
+        :type part_num: int
+        :param part_num: The number of this part.
+
+        :type start: int
+        :param start: Zero-based byte offset to start copying from
+
+        :type end: int
+        :param end: Zero-based byte offset to copy to
+        """
+        if part_num < 1:
+            raise ValueError('Part numbers must be greater than zero')
+        query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
+        if start is not None and end is not None:
+            rng = 'bytes=%s-%s' % (start, end)
+            provider = self.bucket.connection.provider
+            headers = {provider.copy_source_range_header: rng}
+        else:
+            headers = None
+        return self.bucket.copy_key(self.key_name, src_bucket_name,
+                                    src_key_name, storage_class=None,
+                                    headers=headers,
+                                    query_args=query_args)
 
     def complete_upload(self):
         """

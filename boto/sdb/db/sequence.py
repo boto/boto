@@ -197,9 +197,9 @@ class Sequence(object):
     def _connect(self):
         """Connect to our domain"""
         if not self._db:
+            import boto
+            sdb = boto.connect_sdb()
             if not self.domain_name:
-                import boto
-                sdb = boto.connect_sdb()
                 self.domain_name = boto.config.get("DB", "sequence_db", boto.config.get("DB", "db_name", "default"))
             try:
                 self._db = sdb.get_domain(self.domain_name)

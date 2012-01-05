@@ -22,25 +22,35 @@
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
+from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
 
 import urllib
 import base64
+from boto.ses import exceptions as ses_exceptions
 
 
 class SESConnection(AWSAuthConnection):
 
     ResponseError = BotoServerError
-    DefaultHost = 'email.us-east-1.amazonaws.com'
+    DefaultRegionName = 'us-east-1'
+    DefaultRegionEndpoint = 'email.us-east-1.amazonaws.com'
     APIVersion = '2010-12-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id,
-                                   aws_secret_access_key, True, port, proxy,
-                                   proxy_port, debug=debug)
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None, path='/'):
+        if not region:
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint)
+        self.region = region
+        AWSAuthConnection.__init__(self, self.region.endpoint,
+                                   aws_access_key_id, aws_secret_access_key,
+                                   is_secure, port, proxy, proxy_port,
+                                   proxy_user, proxy_pass, debug,
+                                   https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['ses']
@@ -62,7 +72,6 @@ class SESConnection(AWSAuthConnection):
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
 
-
     def _make_request(self, action, params=None):
         """Make a call to the SES API.
 
@@ -71,7 +80,7 @@ class SESConnection(AWSAuthConnection):
 
         :type params: dict
         :param params: Parameters that will be sent as POST data with the API
-                       call.
+            call.
         """
         ct = 'application/x-www-form-urlencoded; charset=UTF-8'
         headers = {'Content-Type': ct}
@@ -79,7 +88,7 @@ class SESConnection(AWSAuthConnection):
         params['Action'] = action
 
         for k, v in params.items():
-            if isinstance(v, basestring):
+            if isinstance(v, unicode):  # UTF-8 encode only if it's Unicode
                 params[k] = v.encode('utf-8')
 
         response = super(SESConnection, self).make_request(
@@ -96,10 +105,51 @@ class SESConnection(AWSAuthConnection):
             h.parse(body)
             return e
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            # HTTP codes other than 200 are considered errors. Go through
+            # some error handling to determine which exception gets raised,
+            self._handle_error(response, body)
 
+    def _handle_error(self, response, body):
+        """
+        Handle raising the correct exception, depending on the error. Many
+        errors share the same HTTP response code, meaning we have to get really
+        kludgey and do string searches to figure out what went wrong.
+        """
+        boto.log.error('%s %s' % (response.status, response.reason))
+        boto.log.error('%s' % body)
+
+        if "Address blacklisted." in body:
+            # Delivery failures happened frequently enough with the recipient's
+            # email address for Amazon to blacklist it. After a day or three,
+            # they'll be automatically removed, and delivery can be attempted
+            # again (if you write the code to do so in your application).
+            ExceptionToRaise = ses_exceptions.SESAddressBlacklistedError
+            exc_reason = "Address blacklisted."
+        elif "Email address is not verified." in body:
+            # This error happens when the "Reply-To" value passed to
+            # send_email() hasn't been verified yet.
+            ExceptionToRaise = ses_exceptions.SESAddressNotVerifiedError
+            exc_reason = "Email address is not verified."
+        elif "Daily message quota exceeded." in body:
+            # Encountered when your account exceeds the maximum total number
+            # of emails per 24 hours.
+            ExceptionToRaise = ses_exceptions.SESDailyQuotaExceededError
+            exc_reason = "Daily message quota exceeded."
+        elif "Maximum sending rate exceeded." in body:
+            # Your account has sent above its allowed requests a second rate.
+            ExceptionToRaise = ses_exceptions.SESMaxSendingRateExceededError
+            exc_reason = "Maximum sending rate exceeded."
+        elif "Domain ends with dot." in body:
+            # Recipient address ends with a dot/period. This is invalid.
+            ExceptionToRaise = ses_exceptions.SESDomainEndsWithDotError
+            exc_reason = "Domain ends with dot."
+        else:
+            # This is either a common AWS error, or one that we don't devote
+            # its own exception to.
+            ExceptionToRaise = self.ResponseError
+            exc_reason = response.reason
+
+        raise ExceptionToRaise(response.status, exc_reason, body)
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text', reply_addresses=None,
@@ -228,9 +278,11 @@ class SESConnection(AWSAuthConnection):
 
         """
         params = {
-            'Source': source,
             'RawMessage.Data': base64.b64encode(raw_message),
         }
+
+        if source:
+            params['Source'] = source
 
         if destinations:
             self._build_list_params(params, destinations,

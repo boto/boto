@@ -41,7 +41,7 @@ class MTurkConnection(AWSQueryConnection):
     APIVersion = '2008-08-02'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=None, debug=0,
                  https_connection_factory=None):
@@ -560,8 +560,8 @@ class MTurkConnection(AWSQueryConnection):
 
         test_duration: the number of seconds a worker has to complete the test.
 
-        auto_granted: if True, requests for the Qualification are granted immediately.
-          Can't coexist with a test.
+        auto_granted: if True, requests for the Qualification are granted
+           immediately.  Can't coexist with a test.
 
         auto_granted_value: auto_granted qualifications are given this value.
 
@@ -572,7 +572,7 @@ class MTurkConnection(AWSQueryConnection):
                   'QualificationTypeStatus' : status,
                   }
         if retry_delay is not None:
-            params['RetryDelay'] = retry_delay
+            params['RetryDelayInSeconds'] = retry_delay
 
         if test is not None:
             assert(isinstance(test, QuestionForm))
@@ -629,14 +629,14 @@ class MTurkConnection(AWSQueryConnection):
             params['QualificationTypeStatus'] = status
 
         if retry_delay is not None:
-            params['RetryDelay'] = retry_delay
+            params['RetryDelayInSeconds'] = retry_delay
 
         if test is not None:
             assert(isinstance(test, QuestionForm))
             params['Test'] = test.get_as_xml()
 
         if test_duration is not None:
-            params['TestDuration'] = test_duration
+            params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
             if isinstance(answer_key, basestring):
@@ -908,7 +908,7 @@ class QuestionFormAnswer(BaseAutoResultElement):
     def endElement(self, name, value, connection):
         if name == 'QuestionIdentifier':
             self.qid = value
-        elif name in ['FreeText', 'SelectionIdentifier'] and self.qid:
+        elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
             self.fields.append((self.qid,value))
         elif name == 'Answer':
             self.qid = None

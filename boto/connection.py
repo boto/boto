@@ -42,11 +42,13 @@
 Handles basic connections to AWS
 """
 
+from __future__ import with_statement
 import base64
 import errno
 import httplib
 import os
 import Queue
+import random
 import re
 import socket
 import sys
@@ -70,7 +72,9 @@ HAVE_HTTPS_CONNECTION = False
 try:
     import ssl
     from boto import https_connection
-    HAVE_HTTPS_CONNECTION = True
+    # Google App Engine runs on Python 2.5 so doesn't have ssl.SSLError.
+    if hasattr(ssl, 'SSLError'):
+        HAVE_HTTPS_CONNECTION = True
 except ImportError:
     pass
 
@@ -79,8 +83,8 @@ try:
 except ImportError:
     import dummy_threading as threading
 
-_SERVER_SOFTWARE = os.environ.get('SERVER_SOFTWARE', '')
-ON_APP_ENGINE = _SERVER_SOFTWARE.startswith('Google App Engine/')
+ON_APP_ENGINE = all(key in os.environ for key in (
+    'USER_IS_ADMIN', 'CURRENT_VERSION_ID', 'APPLICATION_ID'))
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -164,8 +168,15 @@ class HostConnectionPool(object):
         This is ugly, reading a private instance variable, but the
         state we care about isn't available in any public methods.
         """
-        response = conn._HTTPConnection__response
-        return (response is None) or response.isclosed()
+        if ON_APP_ENGINE:
+            # Google App Engine implementation of HTTPConnection doesn't contain
+            # _HTTPConnection__response attribute. Moreover, it's not possible
+            # to determine if given connection is ready. Reusing connections
+            # simply doesn't make sense with App Engine urlfetch service.
+            return False
+        else:
+            response = conn._HTTPConnection__response
+            return (response is None) or response.isclosed()
 
     def clean(self):
         """
@@ -231,7 +242,9 @@ class ConnectionPool(object):
     def get_http_connection(self, host, is_secure):
         """
         Gets a connection from the pool for the named host.  Returns
-        None if there is no connection that can be reused.
+        None if there is no connection that can be reused. It's the caller's
+        responsibility to call close() on the connection when it's no longer
+        needed.
         """
         self.clean()
         with self.mutex:
@@ -354,7 +367,8 @@ class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, path='/', provider='aws'):
+                 https_connection_factory=None, path='/',
+                 provider='aws', security_token=None):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -389,7 +403,7 @@ class AWSAuthConnection(object):
         :type port: int
         :param port: The port to use to connect
         """
-        self.num_retries = 5
+        self.num_retries = 6
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
             is_secure = config.getboolean('Boto', 'is_secure')
@@ -414,7 +428,6 @@ class AWSAuthConnection(object):
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
-            self.http_unretryable_exceptions.append(ssl.SSLError)
             self.http_unretryable_exceptions.append(
                     https_connection.InvalidCertificateException)
 
@@ -453,7 +466,8 @@ class AWSAuthConnection(object):
 
         self.provider = Provider(provider,
                                  aws_access_key_id,
-                                 aws_secret_access_key)
+                                 aws_secret_access_key,
+                                 security_token)
 
         # allow config file to override default host
         if self.provider.host:
@@ -694,6 +708,8 @@ class AWSAuthConnection(object):
         i = 0
         connection = self.get_http_connection(request.host, self.is_secure)
         while i <= num_retries:
+            # Use binary exponential backoff to desynchronize client requests
+            next_sleep = random.random() * (2 ** i)
             try:
                 # we now re-sign each request before it is retried
                 request.authorize(connection=self)
@@ -711,7 +727,8 @@ class AWSAuthConnection(object):
                 if request.method == 'HEAD' and getattr(response, 'chunked', False):
                     response.chunked = 0
                 if response.status == 500 or response.status == 503:
-                    boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2 ** i))
+                    boto.log.debug('received %d response, retrying in %3.1f seconds' %
+                                   (response.status, next_sleep))
                     body = response.read()
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
@@ -725,8 +742,6 @@ class AWSAuthConnection(object):
                     boto.log.debug('Redirecting: %s' % scheme + '://' + request.host + request.path)
                     connection = self.get_http_connection(request.host, scheme == 'https')
                     continue
-            except KeyboardInterrupt:
-                sys.exit('Keyboard Interrupt')
             except self.http_exceptions, e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
@@ -737,7 +752,7 @@ class AWSAuthConnection(object):
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
                 connection = self.new_http_connection(request.host, self.is_secure)
-            time.sleep(2 ** i)
+            time.sleep(next_sleep)
             i += 1
         # If we made it here, it's because we have exhausted our retries and stil haven't
         # succeeded.  So, if we have a response object, use it to raise an exception.
@@ -786,7 +801,7 @@ class AWSAuthConnection(object):
         and making a new request will open a connection again."""
 
         boto.log.debug('closing all HTTP connections')
-        self.connection = None  # compat field
+        self._connection = None  # compat field
 
 class AWSQueryConnection(AWSAuthConnection):
 
@@ -796,10 +811,13 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, path='/'):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug, https_connection_factory, path)
+                 https_connection_factory=None, path='/', security_token=None):
+        AWSAuthConnection.__init__(self, host, aws_access_key_id,
+                                   aws_secret_access_key,
+                                   is_secure, port, proxy,
+                                   proxy_port, proxy_user, proxy_pass,
+                                   debug, https_connection_factory, path,
+                                   security_token=security_token)
 
     def _required_auth_capability(self):
         return []
@@ -824,7 +842,8 @@ class AWSQueryConnection(AWSAuthConnection):
 
     # generics
 
-    def get_list(self, action, params, markers, path='/', parent=None, verb='GET'):
+    def get_list(self, action, params, markers, path='/',
+                 parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
@@ -843,7 +862,8 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-    def get_object(self, action, params, cls, path='/', parent=None, verb='GET'):
+    def get_object(self, action, params, cls, path='/',
+                   parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)

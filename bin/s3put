@@ -30,7 +30,7 @@ SYNOPSIS
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-q/--quiet]
-          [-g/--grant grant] [-w/--no_overwrite] path
+          [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -74,6 +74,8 @@ SYNOPSIS
                        sync, even if the file has been updated locally if 
                        the key exists on s3 the file on s3 will not be 
                        updated.
+        reduced - Use Reduced Redundancy storage
+
 
      If the -n option is provided, no files will be transferred to S3 but
      informational messages will be printed about what would happen.
@@ -92,9 +94,12 @@ def get_key_name(fullpath, prefix):
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:np:qs:vw',
-                                   ['access_key', 'bucket', 'callback', 'debug', 'help', 'grant',
-                                    'ignore', 'no_op', 'prefix', 'quiet', 'secret_key', 'no_overwrite'])
+        opts, args = getopt.getopt(
+                sys.argv[1:], 'a:b:c::d:g:hi:np:qs:vwr',
+                ['access_key=', 'bucket=', 'callback=', 'debug=', 'help',
+                 'grant=', 'ignore=', 'no_op', 'prefix=', 'quiet',
+                 'secret_key=', 'no_overwrite', 'reduced']
+                )
     except:
         usage()
     ignore_dirs = []
@@ -110,6 +115,7 @@ def main():
     prefix = '/'
     grant = None
     no_overwrite = False
+    reduced = False
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
@@ -129,8 +135,10 @@ def main():
             ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
             no_op = True
-        if o in ('w', '--no_overwrite'):
+        if o in ('-w', '--no_overwrite'):
             no_overwrite = True
+        if o in ('-r', '--reduced'):
+            reduced = True
         if o in ('-p', '--prefix'):
             prefix = a
             if prefix[-1] != os.sep:
@@ -174,8 +182,10 @@ def main():
                             print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
                         if not no_op:
                             k = b.new_key(key_name)
-                            k.set_contents_from_filename(fullpath, cb=cb,
-                                                            num_cb=num_cb, policy=grant)
+                            k.set_contents_from_filename(
+                                    fullpath, cb=cb, num_cb=num_cb,
+                                    policy=grant, reduced_redundancy=reduced,
+                                    )
                     total += 1
         elif os.path.isfile(path):
             key_name = os.path.split(path)[1]
@@ -187,10 +197,12 @@ def main():
                         print 'Skipping %s as it exists in s3' % path
             if copy_file:
                 k = b.new_key(key_name)
-                k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant)
+                k.set_contents_from_filename(path, cb=cb, num_cb=num_cb,
+                                             policy=grant,
+                                             reduced_redundancy=reduced)
     else:
         print usage()
 
 if __name__ == "__main__":
     main()
-        
+

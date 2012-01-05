@@ -25,7 +25,7 @@
 
 try:
     from setuptools import setup
-    extra = {"test_suite": "tests.test.suite"}
+    extra = dict(test_suite="tests.test.suite", include_package_data=True)
 except ImportError:
     from distutils.core import setup
     extra = {}
@@ -49,7 +49,8 @@ setup(name = "boto",
                  "bin/s3put", "bin/fetch_file", "bin/launch_instance",
                  "bin/list_instances", "bin/taskadmin", "bin/kill_instance",
                  "bin/bundle_image", "bin/pyami_sendmail", "bin/lss3",
-                 "bin/cq", "bin/route53", "bin/s3multiput"],
+                 "bin/cq", "bin/route53", "bin/s3multiput", "bin/cwutil",
+                 "bin/instance_events"],
       url = "http://code.google.com/p/boto/",
       packages = ["boto", "boto.sqs", "boto.s3", "boto.gs", "boto.file",
                   "boto.ec2", "boto.ec2.cloudwatch", "boto.ec2.autoscale",
@@ -59,7 +60,8 @@ setup(name = "boto",
                   "boto.services", "boto.cloudfront", "boto.roboto",
                   "boto.rds", "boto.vpc", "boto.fps", "boto.emr", "boto.sns",
                   "boto.ecs", "boto.iam", "boto.route53", "boto.ses",
-                  "boto.cloudformation"],
+                  "boto.cloudformation", "boto.sts"],
+      package_data = {"boto.cacerts": ["cacerts.txt"]},
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",
       classifiers = ["Development Status :: 5 - Production/Stable",

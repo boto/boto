@@ -41,7 +41,7 @@ class DeleteMarker:
             self.name = value.encode('utf-8')
         elif name == 'IsLatest':
             if value == 'true':
-                self.is_lastest = True
+                self.is_latest = True
             else:
                 self.is_latest = False
         elif name == 'LastModified':

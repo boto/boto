@@ -26,11 +26,13 @@ import re
 import rfc822
 import StringIO
 import base64
+import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
+from boto.utils import compute_md5
 try:
     from hashlib import md5
 except ImportError:
@@ -64,6 +66,7 @@ class Key(object):
         self.version_id = None
         self.source_version_id = None
         self.delete_marker = False
+        self.encrypted = None
 
     def __repr__(self):
         if self.bucket:
@@ -105,6 +108,13 @@ class Key(object):
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
+
+    def handle_encryption_headers(self, resp):
+        provider = self.bucket.connection.provider
+        if provider.server_side_encryption_header:
+            self.encrypted = resp.getheader(provider.server_side_encryption_header, None)
+        else:
+            self.encrypted = None
 
     def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
@@ -179,6 +189,7 @@ class Key(object):
                 elif name.lower() == 'cache-control':
                     self.cache_control = value
             self.handle_version_headers(self.resp)
+            self.handle_encryption_headers(self.resp)
 
     def open_write(self, headers=None, override_num_retries=None):
         """
@@ -274,7 +285,8 @@ class Key(object):
                                   new_storage_class)
 
     def copy(self, dst_bucket, dst_key, metadata=None,
-             reduced_redundancy=False, preserve_acl=False):
+             reduced_redundancy=False, preserve_acl=False,
+             encrypt_key=False):
         """
         Copy this Key to another bucket.
 
@@ -314,6 +326,12 @@ class Key(object):
                              of False will be significantly more
                              efficient.
 
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
+                            
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
@@ -325,7 +343,8 @@ class Key(object):
         return dst_bucket.copy_key(dst_key, self.bucket.name,
                                    self.name, metadata,
                                    storage_class=storage_class,
-                                   preserve_acl=preserve_acl)
+                                   preserve_acl=preserve_acl,
+                                   encrypt_key=encrypt_key)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -426,8 +445,8 @@ class Key(object):
                                                    force_http,
                                                    response_headers)
 
-    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None,
-							chunked_transfer=False):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10,
+                  query_args=None, chunked_transfer=False):
         """
         Upload a file to a key into a bucket on S3.
 
@@ -578,23 +597,20 @@ class Key(object):
                  as the first element and the base64 encoded version of the
                  plain digest as the second element.
         """
-        m = md5()
-        fp.seek(0)
-        s = fp.read(self.BufferSize)
-        while s:
-            m.update(s)
-            s = fp.read(self.BufferSize)
-        hex_md5 = m.hexdigest()
-        base64md5 = base64.encodestring(m.digest())
-        if base64md5[-1] == '\n':
-            base64md5 = base64md5[0:-1]
-        self.size = fp.tell()
-        fp.seek(0)
-        return (hex_md5, base64md5)
+        tup = compute_md5(fp)
+        # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
+        # The internal implementation of compute_md5() needs to return the 
+        # file size but we don't want to return that value to the external 
+        # caller because it changes the class interface (i.e. it might        
+        # break some code) so we consume the third tuple value here and 
+        # return the remainder of the tuple to the caller, thereby preserving 
+        # the existing interface.
+        self.size = tup[2]
+        return tup[0:2]
 
     def set_contents_from_stream(self, fp, headers=None, replace=True,
-                                cb=None, num_cb=10, policy=None,
-                                reduced_redundancy=False, query_args=None):
+                                 cb=None, num_cb=10, policy=None,
+                                 reduced_redundancy=False, query_args=None):
         """
         Store an object using the name of the Key object as the key in
         cloud and the contents of the data stream pointed to by 'fp' as
@@ -675,7 +691,8 @@ class Key(object):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               reduced_redundancy=False, query_args=None):
+                               reduced_redundancy=False, query_args=None,
+                               encrypt_key=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -731,12 +748,19 @@ class Key(object):
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
 
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
         """
         provider = self.bucket.connection.provider
         if headers is None:
             headers = {}
         if policy:
             headers[provider.acl_header] = policy
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
@@ -766,7 +790,8 @@ class Key(object):
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
-                                   reduced_redundancy=False):
+                                   reduced_redundancy=False,
+                                   encrypt_key=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -819,15 +844,22 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
         """
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, reduced_redundancy)
+                                    policy, md5, reduced_redundancy,
+                                    encrypt_key=encrypt_key)
         fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
-                                 reduced_redundancy=False):
+                                 reduced_redundancy=False,
+                                 encrypt_key=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -877,12 +909,18 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
         """
         if isinstance(s, unicode):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5, reduced_redundancy)
+                                        policy, md5, reduced_redundancy,
+                                        encrypt_key=encrypt_key)
         fp.close()
         return r
 
@@ -951,7 +989,7 @@ class Key(object):
             query_args.append('versionId=%s' % version_id)
         if response_headers:
             for key in response_headers:
-                query_args.append('%s=%s' % (key, response_headers[key]))
+                query_args.append('%s=%s' % (key, urllib.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)

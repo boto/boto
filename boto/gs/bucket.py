@@ -29,12 +29,20 @@ from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 import xml.sax
 
+# constants for default object ACL and standard acl in http query args 
+DEF_OBJ_ACL = 'defaultObjectAcl'
+STANDARD_ACL = 'acl'
+
 class Bucket(S3Bucket):
 
     def __init__(self, connection=None, name=None, key_class=GSKey):
         super(Bucket, self).__init__(connection, name, key_class)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
+        """sets or changes a bucket's acl. We include a version_id argument
+           to support a polymorphic interface for callers, however, 
+           version_id is not relevant for Google Cloud Storage buckets 
+           and is therefore ignored here.""" 
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -42,9 +50,20 @@ class Bucket(S3Bucket):
         else:
             self.set_canned_acl(acl_or_str, key_name, headers=headers)
 
-    def get_acl(self, key_name='', headers=None, version_id=None):
+    def set_def_acl(self, acl_or_str, key_name='', headers=None):
+        """sets or changes a bucket's default object acl"""
+        if isinstance(acl_or_str, Policy):
+            raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
+        elif isinstance(acl_or_str, ACL):
+            self.set_def_xml_acl(acl_or_str.to_xml(), key_name, headers=headers)
+        else:
+            self.set_def_canned_acl(acl_or_str, key_name, headers=headers)
+
+    def get_acl_helper(self, key_name, headers, query_args):
+        """provides common functionality for get_acl() and get_def_acl()"""
         response = self.connection.make_request('GET', self.name, key_name,
-                query_args='acl', headers=headers)
+                                                query_args=query_args, 
+                                                headers=headers)
         body = response.read()
         if response.status == 200:
             acl = ACL(self)
@@ -55,8 +74,20 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name='', headers=None,
-                       version_id=None):
+    def get_acl(self, key_name='', headers=None, version_id=None):
+        """returns a bucket's acl. We include a version_id argument
+           to support a polymorphic interface for callers, however, 
+           version_id is not relevant for Google Cloud Storage buckets 
+           and is therefore ignored here.""" 
+        return self.get_acl_helper(key_name, headers, STANDARD_ACL)
+
+    def get_def_acl(self, key_name='', headers=None):
+        """returns a bucket's default object acl""" 
+        return self.get_acl_helper(key_name, headers, DEF_OBJ_ACL)
+
+    def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
+        """provides common functionality for set_canned_acl() and 
+           set_def_canned_acl()"""
         assert acl_str in CannedACLStrings
 
         if headers:
@@ -64,15 +95,32 @@ class Bucket(S3Bucket):
         else:
             headers={self.connection.provider.acl_header: acl_str}
 
-        query_args='acl'
-        if version_id:
-            query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
                 headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+
+    def set_canned_acl(self, acl_str, key_name='', headers=None, 
+                       version_id=None):
+        """sets or changes a bucket's acl to a predefined (canned) value. 
+           We include a version_id argument to support a polymorphic 
+           interface for callers, however, version_id is not relevant for 
+           Google Cloud Storage buckets and is therefore ignored here.""" 
+        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+                                          STANDARD_ACL)
+
+    def set_def_canned_acl(self, acl_str, key_name='', headers=None):
+        """sets or changes a bucket's default object acl to a predefined 
+           (canned) value"""
+        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+                                          query_args=DEF_OBJ_ACL)
+
+    def set_def_xml_acl(self, acl_str, key_name='', headers=None):
+        """sets or changes a bucket's default object"""
+        return self.set_xml_acl(acl_str, key_name, headers, 
+                                query_args=DEF_OBJ_ACL)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.
@@ -190,3 +238,19 @@ class Bucket(S3Bucket):
     def list_grants(self, headers=None):
         acl = self.get_acl(headers=headers)
         return acl.entries
+
+    def disable_logging(self, headers=None):
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging/>'
+        self.set_subresource('logging', xml_str, headers=headers)
+
+    def enable_logging(self, target_bucket, target_prefix=None, headers=None):
+        if isinstance(target_bucket, Bucket):
+            target_bucket = target_bucket.name
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging>'
+        xml_str = (xml_str + '<LogBucket>%s</LogBucket>' % target_bucket)
+        if target_prefix:
+            xml_str = (xml_str +
+                       '<LogObjectPrefix>%s</LogObjectPrefix>' % target_prefix)
+        xml_str = xml_str + '</Logging>'
+
+        self.set_subresource('logging', xml_str, headers=headers)

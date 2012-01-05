@@ -116,6 +116,9 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
     cert = self.sock.getpeercert()
     hostname = self.host.split(':', 0)[0]
     if not ValidateCertificateHostname(cert, hostname):
-      raise InvalidCertificateException(hostname, cert, 'hostname mismatch')
+      raise InvalidCertificateException(hostname,
+                                        cert,
+                                        'remote hostname "%s" does not match '\
+                                        'certificate' % hostname)
 
 

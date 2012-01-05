@@ -22,6 +22,7 @@
 
 import boto
 import boto.jsonresponse
+from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
 
 #boto.set_stream_logger('iam')
@@ -33,12 +34,14 @@ class IAMConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='iam.amazonaws.com',
-                 debug=0, https_connection_factory=None, path='/'):
+                 debug=0, https_connection_factory=None,
+                 path='/'):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory, path)
+                                    host, debug, https_connection_factory,
+                                    path)
 
     def _required_auth_capability(self):
         return ['iam']
@@ -997,11 +1000,8 @@ class IAMConnection(AWSQueryConnection):
         For more information on account id aliases, please see
         http://goo.gl/ToB7G
         """
-        r = self.get_response('ListAccountAliases', {})
-        response = r.get('ListAccountAliasesResponse')
-        result = response.get('ListAccountAliasesResult')
-        aliases = result.get('AccountAliases')
-        return aliases.get('member', None)
+        return self.get_response('ListAccountAliases', {},
+                                 list_marker='AccountAliases')
 
     def get_signin_url(self, service='ec2'):
         """
@@ -1016,3 +1016,17 @@ class IAMConnection(AWSQueryConnection):
             raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
 
         return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
+
+    def get_account_summary(self):
+        """
+        Get the alias for the current account.
+
+        This is referred to in the docs as list_account_aliases,
+        but it seems you can only have one account alias currently.
+        
+        For more information on account id aliases, please see
+        http://goo.gl/ToB7G
+        """
+        return self.get_object('GetAccountSummary', {}, SummaryMap)
+
+    

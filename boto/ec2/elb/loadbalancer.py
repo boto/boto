@@ -167,10 +167,8 @@ class LoadBalancer(object):
     def delete_listeners(self, listeners):
         return self.connection.delete_load_balancer_listeners(self.name, listeners)
 
-    def delete_listener(self, inPort, outPort=None, proto="tcp"):
-        if outPort == None:
-            outPort = inPort
-        return self.delete_listeners([(inPort, outPort, proto)])
+    def delete_listener(self, inPort):
+        return self.delete_listeners([inPort])
 
     def delete_policy(self, policy_name):
         """

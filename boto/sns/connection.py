@@ -20,15 +20,13 @@
 # IN THE SOFTWARE.
 
 from boto.connection import AWSQueryConnection
-from boto.sdb.regioninfo import SDBRegionInfo
+from boto.regioninfo import RegionInfo
 import boto
 import uuid
 try:
     import simplejson as json
 except ImportError:
     import json
-
-#boto.set_stream_logger('sns')
 
 class SNSConnection(AWSQueryConnection):
 
@@ -39,17 +37,20 @@ class SNSConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/', converter=None):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None):
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName,
-                                   self.DefaultRegionEndpoint)
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint,
+                                connection_cls=SNSConnection)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path,
+                                    security_token=security_token)
 
     def _required_auth_capability(self):
         return ['sns']
@@ -271,8 +272,6 @@ class SNSConnection(AWSQueryConnection):
                          * For https, this would be a URL beginning with https
                          * For sqs, this would be the ARN of an SQS Queue
 
-        :rtype: :class:`boto.sdb.domain.Domain` object
-        :return: The newly created domain
         """
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic,
@@ -420,7 +419,8 @@ class SNSConnection(AWSQueryConnection):
                   'TopicArn' : topic}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptionsByTopic', params, '/', 'GET')
+        response = self.make_request('ListSubscriptionsByTopic', params,
+                                     '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)

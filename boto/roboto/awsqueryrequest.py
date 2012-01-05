@@ -26,6 +26,7 @@ import boto
 import optparse
 import copy
 import boto.exception
+import boto.roboto.awsqueryservice
 
 import bdb
 import traceback
@@ -268,7 +269,17 @@ class AWSQueryRequest(object):
             if python_name in self.args:
                 del self.connection_args[python_name]
         if required:
-            raise RequiredParamError(required)
+            l = []
+            for p in self.Params+self.Args:
+                if p.name in required:
+                    if p.short_name and p.long_name:
+                        l.append('(%s, %s)' % (p.optparse_short_name,
+                                               p.optparse_long_name))
+                    elif p.short_name:
+                        l.append('(%s)' % p.optparse_short_name)
+                    else:
+                        l.append('(%s)' % p.optparse_long_name)
+            raise RequiredParamError(','.join(l))
         boto.log.debug('request_params: %s' % self.request_params)
         self.process_markers(self.Response)
 
@@ -352,8 +363,18 @@ class AWSQueryRequest(object):
         sys.excepthook = boto_except_hook(options.debugger,
                                           options.debug)
 
+    def get_usage(self):
+        s = 'usage: %prog [options] '
+        l = [ a.long_name for a in self.Args ]
+        s += ' '.join(l)
+        for a in self.Args:
+            if a.doc:
+                s += '\n\n\t%s - %s' % (a.long_name, a.doc)
+        return s
+    
     def build_cli_parser(self):
-        self.parser = optparse.OptionParser()
+        self.parser = optparse.OptionParser(description=self.Description,
+                                            usage=self.get_usage())
         self.add_standard_options()
         for param in self.Params:
             ptype = action = choices = None
@@ -437,8 +458,11 @@ class AWSQueryRequest(object):
         except self.ServiceClass.ResponseError, err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
             sys.exit(1)
-        except:
-            print 'Unexpected error.  Use --debugger option for more info.'
+        except boto.roboto.awsqueryservice.NoCredentialsError, err:
+            print 'Unable to find credentials.'
+            sys.exit(1)
+        except Exception, e:
+            print e
             sys.exit(1)
 
     def _generic_cli_formatter(self, fmt, data, label=''):

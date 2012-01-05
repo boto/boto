@@ -35,7 +35,9 @@ class SecurityGroup(TaggedEC2Object):
         self.owner_id = owner_id
         self.name = name
         self.description = description
-        self.rules = []
+        self.vpc_id = None
+        self.rules = IPPermissionsList()
+        self.rules_egress = IPPermissionsList()
 
     def __repr__(self):
         return 'SecurityGroup:%s' % self.name
@@ -44,9 +46,10 @@ class SecurityGroup(TaggedEC2Object):
         retval = TaggedEC2Object.startElement(self, name, attrs, connection)
         if retval is not None:
             return retval
-        if name == 'item':
-            self.rules.append(IPPermissions(self))
-            return self.rules[-1]
+        if name == 'ipPermissions':
+            return self.rules
+        elif name == 'ipPermissionsEgress':
+            return self.rules_egress
         else:
             return None
 
@@ -57,6 +60,8 @@ class SecurityGroup(TaggedEC2Object):
             self.id = value
         elif name == 'groupName':
             self.name = value
+        elif name == 'vpcId':
+            self.vpc_id = value
         elif name == 'groupDescription':
             self.description = value
         elif name == 'ipRanges':
@@ -239,6 +244,17 @@ class SecurityGroup(TaggedEC2Object):
                 instances.extend(reservation.instances)
         return instances
 
+class IPPermissionsList(list):
+    
+    def startElement(self, name, attrs, connection):
+        if name == 'item':
+            self.append(IPPermissions(self))
+            return self[-1]
+        return None
+
+    def endElement(self, name, value, connection):
+        pass
+            
 class IPPermissions(object):
 
     def __init__(self, parent=None):

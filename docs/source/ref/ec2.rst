@@ -180,6 +180,13 @@ boto.ec2.instanceinfo
    :members:   
    :undoc-members:
 
+boto.ec2.instancestatus
+--------------------------
+
+.. automodule:: boto.ec2.instancestatus
+   :members:   
+   :undoc-members:
+
 boto.ec2.keypair
 ----------------
 
