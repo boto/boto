@@ -114,12 +114,16 @@ class MultiDeleteResult(object):
         the quiet flag was specified in the request, this list will
         be empty because only error responses would be returned.
 
+    :ivar skipped: A list of keys that could not be deleted due
+                   to the 1000 limit.
+
     :ivar errors: A list of unsuccessfully deleted objects.
     """
 
     def __init__(self, bucket=None):
         self.bucket = None
         self.deleted = []
+        self.skipped = []
         self.errors = []
 
     def startElement(self, name, attrs, connection):
@@ -128,13 +132,11 @@ class MultiDeleteResult(object):
             self.deleted.append(d)
             return d
         elif name == 'Error':
-            d = Error()
-            self.deleted.append(d)
-            return d
+            e = Error()
+            self.errors.append(e)
+            return e
         return None
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
-        
-
-
+ 

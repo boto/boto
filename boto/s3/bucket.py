@@ -32,6 +32,7 @@ from boto.s3.deletemarker import DeleteMarker
 from boto.s3.multipart import MultiPartUpload
 from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.multidelete import MultiDeleteResult
+from boto.s3.multidelete import Error
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
@@ -462,8 +463,9 @@ class Bucket(object):
         """
         Deletes a set of keys using S3's Multi-object delete API. If a
         VersionID is specified for that key then that version is removed.
-        Returns the XML response from S3, which contains Deleted and Error
-        elements for each key you ask to delete.
+        Returns a MultiDeleteResult Object, which contains Skipped, Deleted
+        and Error elements for each key you ask to delete. delete_keys can
+        be called again with the Skipped keys.
         
         :type keys: list
         :param keys: A list of either key_names or (key_name, versionid) pairs
@@ -482,18 +484,22 @@ class Bucket(object):
                           This value is required anytime you are
                           deleting versioned objects from a bucket
                           that has the MFADelete option on the bucket.
+
+        :returns: An instance of MultiDeleteResult
         """
-        if len(keys) > 1000:
-            raise BotoClientError('Max of 1000 keys can be deleted')
         headers = headers or {}
         query_args = 'delete'
         provider = self.connection.provider
-        data = """<?xml version="1.0" encoding="UTF-8"?>"""
-        data += "<Delete>"
+        data = u"""<?xml version="1.0" encoding="UTF-8"?>"""
+        data += u"<Delete>"
         if quiet:
-            data += "<Quiet>true</Quiet>"
-        skipped = []
+            data += u"<Quiet>true</Quiet>"
+        count = 0
+        result = MultiDeleteResult(self)
         for key in keys:
+            if count >= 1000:
+                result.skipped.append(key) # keep as-is
+                continue
             if isinstance(key, basestring):
                 key_name = key
                 version_id = None
@@ -503,15 +509,26 @@ class Bucket(object):
                 key_name = key.name
                 version_id = key.version_id
             else:
-                skipped.append(key)
+                if isinstance(key, Prefix):
+                    key_name = key.name
+                    code = 'PrefixSkipped'   # Don't delete Prefix
+                else:
+                    key_name = repr(key)     # try get a string
+                    code = 'InvalidArgument' # other unknown type
+                message = 'Invalid. No delete action taken for this object.'
+                error = Error(key_name, code=code, message=message)
+                result.errors.append(error)
                 continue
-            data += "<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
+            count += 1
+            key_name = key_name.decode('utf-8')
+            data += u"<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
             if version_id:
-                data += "<VersionId>%s</VersionId>"
-            data += "</Object>"
-        data += "</Delete>"
-        if isinstance(data, unicode):
-            data = data.encode('utf-8')
+                data += u"<VersionId>%s</VersionId>" % version_id
+            data += u"</Object>"
+        data += u"</Delete>"
+        if count <= 0:
+            return result # must have one or more objects
+        data = data.encode('utf-8')
         fp = StringIO.StringIO(data)
         md5 = boto.utils.compute_md5(fp)
         headers['Content-MD5'] = md5[1]
@@ -524,7 +541,6 @@ class Bucket(object):
                                                 data=data)
         body = response.read()
         if response.status == 200:
-            result = MultiDeleteResult(self)
             h = handler.XmlHandler(result, self)
             xml.sax.parseString(body, h)
             return result
