@@ -84,7 +84,8 @@ class Volume(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_volumes([self.id])
+        unfiltered_rs = self.connection.get_all_volumes([self.id])
+        rs = [ x for x in unfiltered_rs if x.id == self.id ]
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
