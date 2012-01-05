@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import boto
 from boto.s3.connection import OrdinaryCallingFormat
-import os
-import urllib2
-import urllib
 
 def sizeof_fmt(num):
     for x in ['b ','KB','MB','GB','TB', 'XB']:
@@ -68,21 +65,7 @@ if __name__ == "__main__":
             if pairs[-1][0].lower() != pairs[-1][0]:
                 mixedCase = True
     
-    s3_url = os.environ.get('S3_URL')
-    s3 = None
-    if s3_url:
-        urlparts = urllib2.urlparse.urlparse(s3_url)
-        is_secure = (urlparts[0] == 'https') and True or False
-        (host, port) = urllib.splitport(urlparts[1])
-        from boto.s3.connection import S3Connection
-        s3 = S3Connection(aws_access_key_id=os.environ.get('EC2_ACCESS_KEY'),
-                          aws_secret_access_key=os.environ.get('EC2_SECRET_KEY'),
-                          is_secure=is_secure,
-                          host=host,
-                          port=int(port),
-                          calling_format=boto.s3.connection.OrdinaryCallingFormat(),
-                          path=urlparts[2])
-    elif mixedCase:
+    if mixedCase:
         s3 = boto.connect_s3(calling_format=OrdinaryCallingFormat())
     else:
         s3 = boto.connect_s3()
