@@ -138,7 +138,7 @@ class S3MultiDeleteTest (unittest.TestCase):
         self.assertEqual(len(result.errors), 0)
 
         # Sometimes takes AWS sometime to settle
-        time.sleep(5)
+        time.sleep(10)
 
         # delete all versions to delete 2000 objects.
         # this tests the 1000 limit.
