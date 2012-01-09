@@ -298,6 +298,13 @@ class EC2ResponseError(BotoServerError):
         for p in ('errors'):
             setattr(self, p, None)
 
+class DynamoDBResponseError(BotoServerError):
+
+    def __init__(self, status, reason, data):
+        BotoServerError.__init__(self, status, reason)
+        self.data = data
+        self.body = '%s' % self.data
+
 class EmrResponseError(BotoServerError):
     """
     Error in response from EMR
