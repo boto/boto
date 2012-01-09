@@ -831,7 +831,8 @@ class AWSQueryConnection(AWSAuthConnection):
                                                     self.server_name())
         if action:
             http_request.params['Action'] = action
-        http_request.params['Version'] = self.APIVersion
+        if self.APIVersion:
+            http_request.params['Version'] = self.APIVersion
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
