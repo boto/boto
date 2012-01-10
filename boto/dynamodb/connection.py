@@ -35,12 +35,34 @@ def is_num(n):
 def is_str(n):
     return isinstance(n, basestring)
 
+def item_object_hook(dct):
+    """
+    A custom object hook for use when decoding JSON item bodys.
+    This hook will transform DynamoDB JSON responses to something
+    that maps directly to native Python types.
+    """
+    if 'S' in dct:
+        return dct['S']
+    if 'N' in dct:
+        try:
+            return int(dct['N'])
+        except ValueError:
+            return float(dct['N'])
+    if 'SS' in dct:
+        return dct['SS']
+    if 'NS' in dct:
+        try:
+            return map(int, dct['NS'])
+        except ValueError:
+            return map(float, dct['NS'])
+    return dct
+
 #
 # To get full debug output, uncomment the following line and set the
 # value of Debug to be 2
 #
-#boto.set_stream_logger('dynamodb')
-Debug=0
+boto.set_stream_logger('dynamodb')
+Debug=2
 
 class DynamoDBConnection(AWSAuthConnection):
     DefaultHost = 'dynamodb.us-east-1.amazonaws.com'
@@ -69,7 +91,7 @@ class DynamoDBConnection(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['hmac-v3-http']
 
-    def make_request(self, action, body=''):
+    def make_request(self, action, body='', object_hook=None):
         """Makes a request to the server, with stock multiple-retry logic."""
         headers = {'X-Amz-Target' : '%sv%s.%s' % (self.ServiceName,
                                                   self.Version, action),
@@ -79,7 +101,9 @@ class DynamoDBConnection(AWSAuthConnection):
                                                     {}, headers, body, None)
         response = self._mexe(http_request, sender=None,
                               override_num_retries=0)
-        json_response = json.loads(response.read())
+        body = response.read()
+        boto.log.debug(body)
+        json_response = json.loads(body, object_hook=object_hook)
         if response.status == 200:
             return json_response
         else:
@@ -160,7 +184,8 @@ class DynamoDBConnection(AWSAuthConnection):
             for key in keys[table_name]['Keys']:
                 l.append(self.dynamize_key(key))
             if 'AttributesToGet' in keys[table_name]:
-                dynamo_keys['AttributesToGet'] = keys[table_name]['AttributesToGet']
+                value = keys[table_name]['AttributesToGet']
+                dynamo_keys['AttributesToGet'] = value
         return dynamodb_keys
 
     def dynamize_throughput(self, throughput_tuple):
@@ -199,6 +224,24 @@ class DynamoDBConnection(AWSAuthConnection):
                          'AttributeType' : self.get_dynamodb_type(schema[1][1])}
             dynamodb_schema['RangeKeyElement'] = range_key
         return dynamodb_schema
+
+    def dynamize_expected(self, expected):
+        """
+        Take a dict of expected values and turn that into
+        a format required by DynamoDB.  Each key in the dict
+        represents an AttributeName.  If the value is None,
+        it means you are expecting the value not to exist.
+        If the value is non-None, it is used as the expected
+        value of the Attribute.
+        """
+        dynamodb_expected = {}
+        for key in expected:
+            value = expected[key]
+            if value is None:
+                dynamodb_expected[key] = {'Exists': False}
+            else:
+                dynamodb_expected[key] = {'Value': self.dynamize_value(value)}
+        return dynamodb_expected
 
     def list_tables(self, limit=None, start_table=None):
         """
@@ -336,7 +379,8 @@ class DynamoDBConnection(AWSAuthConnection):
         if consistent_read:
             data['ConsistentRead'] = True
         json_input = json.dumps(data)
-        return self.make_request('GetItem', json_input)
+        return self.make_request('GetItem', json_input,
+                                 object_hook=item_object_hook)
         
     def batch_get_item(self, table_name, keys):
         """
@@ -381,12 +425,11 @@ class DynamoDBConnection(AWSAuthConnection):
             can also be provided.
 
         :type expected: dict
-        :param expected: Designates an attribute for a conditional
-            put.  You can provide an attribute name and whether or
-            not DynamoDB should check to see if the attribute
-            already exists or if the attribute value is known to
-            exist, if the attribute has a particular value before
-            changing it.
+        :param expected: A dict of expected values.
+            Each key in the dict represents an AttributeName.
+            If the value is None, it means you are expecting the
+            value not to exist.  If the value is non-None, it is
+            used as the expected value of the Attribute.
 
         :type return_values: str
         :param return_values: Controls the return of attribute
@@ -399,7 +442,7 @@ class DynamoDBConnection(AWSAuthConnection):
         data = {'TableName' : table_name,
                 'Item' : dynamodb_item}
         if expected:
-            data['Expected'] = expected
+            data['Expected'] = self.dynamize_expected(expected)
         if return_values:
             data['ReturnValues'] = return_values
         json_input = json.dumps(data)
@@ -445,13 +488,64 @@ class DynamoDBConnection(AWSAuthConnection):
         json_input = json.dumps(data)
         return self.make_request('DeleteItem', json_input)
 
-    def query(self, json_body):
+    def query_raw(self, json_body):
         """
         Perform a query of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
         which is passed as is to DynamoDB.
         """
         return self.make_request('Query', json_body)
+
+    def query(self, table_name, hash_key_value, range_key_conditions=None,
+              attributes_to_get=None, limit=None, consistent_read=False,
+              scan_index_forward=True, exclusive_start_key=None):
+        """
+        Perform a query of DynamoDB.  This version is currently punting
+        and expecting you to provide a full and correct JSON body
+        which is passed as is to DynamoDB.
+
+        :type table_name: str
+        :param table_name: The name of the table to delete.
+
+        :type hash_key_value: str or int or float
+        :param key: The value of the HashKey you are searching for.
+
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+
+        :type limit: int
+        :param limit: The maximum number of items to return.
+
+        :type consistent_read: bool
+        :param consistent_read: If True, a consistent read
+            request is issued.  Otherwise, an eventually consistent
+            request is issued.
+
+        :type scan_index_forward: bool
+        :param scan_index_forward: Specified forward or backward
+            traversal of the index.  Default is forward (True).
+
+        :type exclusive_start_key: list or tuple
+        :param exclusive_start_key: Primary key of the item from
+            which to continue an earlier query.  This would be
+            provided as the LastEvaluatedKey in that query.
+        """
+        data = {'TableName': table_name,
+                'HashKeyValue': self.dynamize_value(hash_key_value)}
+        if attributes_to_get:
+            data['AttributesToGet'] = attributes_to_get
+        if consistent_read:
+            data['ConsistentRead'] = True
+        if scan_index_forward:
+            data['ScanIndexForward'] = True
+        else:
+            data['ScanIndexForward'] = True
+        if exclusive_start_key:
+            data['ExclusiveStartKey'] = self.dynamize_key(exclusive_start_key)
+        json_input = json.dumps(data)
+        return self.make_request('Query', json_input)
 
     def scan(self, json_body):
         """
