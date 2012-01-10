@@ -76,7 +76,13 @@ qsa_of_interest = ['acl', 'defaultObjectAcl', 'location', 'logging',
                    'uploads', 'uploadId', 'response-content-type', 
                    'response-content-language', 'response-expires', 
                    'response-cache-control', 'response-content-disposition',
-                   'response-content-encoding']
+                   'response-content-encoding', 'delete']
+
+def unquote_v(nv):
+    if len(nv) == 1:
+        return nv
+    else:
+        return (nv[0], urllib.unquote(nv[1]))
 
 # generates the aws canonical string for the given parameters
 def canonical_string(method, path, headers, expires=None,
@@ -124,7 +130,7 @@ def canonical_string(method, path, headers, expires=None,
     if len(t) > 1:
         qsa = t[1].split('&')
         qsa = [ a.split('=') for a in qsa]
-        qsa = [ a for a in qsa if a[0] in qsa_of_interest ]
+        qsa = [ unquote_v(a) for a in qsa if a[0] in qsa_of_interest ]
         if len(qsa) > 0:
             qsa.sort(cmp=lambda x,y:cmp(x[0], y[0]))
             qsa = [ '='.join(a) for a in qsa ]

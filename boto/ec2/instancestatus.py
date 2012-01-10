@@ -20,6 +20,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+class Details(dict):
+    """
+    A dict object that contains name/value pairs which provide
+    more detailed information about the status of the system
+    or the instance.
+    """
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'name':
+            self._name = value
+        elif name == 'status':
+            self[self._name] = value
+        else:
+            setattr(self, name, value)
+    
 class Event(object):
     """
     A status event for an instance.
@@ -57,6 +75,35 @@ class Event(object):
         else:
             setattr(self, name, value)
 
+class Status(object):
+    """
+    A generic Status object used for system status and instance status.
+
+    :ivar status: A string indicating overall status.
+    :ivar details: A dict containing name-value pairs which provide
+        more details about the current status.
+    """
+
+    def __init__(self, status=None, details=None):
+        self.status = status
+        if not details:
+            details = Details()
+        self.details = details
+        
+    def __repr__(self):
+        return 'Status:%s' % self.status
+
+    def startElement(self, name, attrs, connection):
+        if name == 'details':
+            return self.details
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'status':
+            self.status = value
+        else:
+            setattr(self, name, value)
+
 class EventSet(list):
     
     def startElement(self, name, attrs, connection):
@@ -82,6 +129,12 @@ class InstanceStatus(object):
         of the instance.
     :ivar state_name: A string describing the current state
         of the instance.
+    :ivar system_status: A Status object that reports impaired
+        functionality that stems from issues related to the systems
+        that support an instance, such as such as hardware failures
+        and network connectivity problems.
+    :ivar instance_status: A Status object that reports impaired
+        functionality that arises from problems internal to the instance.
     """
     
     def __init__(self, id=None, zone=None, events=None,
@@ -91,6 +144,8 @@ class InstanceStatus(object):
         self.events = events
         self.state_code = state_code
         self.state_name = state_name
+        self.system_status = Status()
+        self.instance_status = Status()
 
     def __repr__(self):
         return 'InstanceStatus:%s' % self.id
@@ -99,6 +154,10 @@ class InstanceStatus(object):
         if name == 'eventsSet':
             self.events = EventSet()
             return self.events
+        elif name == 'systemStatus':
+            return self.system_status
+        elif name == 'instanceStatus':
+            return self.instance_status
         else:
             return None
 
