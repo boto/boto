@@ -233,14 +233,16 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
-        params = {'DBInstanceIdentifier' : id,
-                  'AllocatedStorage' : allocated_storage,
-                  'DBInstanceClass' : instance_class,
-                  'Engine' : engine,
-                  'MasterUsername' : master_username,
-                  'MasterUserPassword' : master_password}
-        if port:
-            params['Port'] = port
+        params = {'DBInstanceIdentifier': id,
+                  'AllocatedStorage': allocated_storage,
+                  'DBInstanceClass': instance_class,
+                  'Engine': engine,
+                  'MasterUsername': master_username,
+                  'MasterUserPassword': master_password,
+                  'Port': port,
+                  'MultiAZ': str(multi_az).lower(),
+                  'AutoMinorVersionUpgrade':
+                      str(auto_minor_version_upgrade).lower()}
         if db_name:
             params['DBName'] = db_name
         if param_group:
@@ -261,12 +263,8 @@ class RDSConnection(AWSQueryConnection):
             params['BackupRetentionPeriod'] = backup_retention_period
         if preferred_backup_window:
             params['PreferredBackupWindow'] = preferred_backup_window
-        if multi_az:
-            params['MultiAZ'] = 'true'
         if engine_version:
             params['EngineVersion'] = engine_version
-        if auto_minor_version_upgrade is False:
-            params['AutoMinorVersionUpgrade'] = 'false'
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 
