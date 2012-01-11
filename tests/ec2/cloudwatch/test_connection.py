@@ -31,6 +31,74 @@ import unittest
 from boto.ec2.cloudwatch import CloudWatchConnection
 from boto.ec2.cloudwatch.metric import Metric
 
+# HTTP response body for CloudWatchConnection.describe_alarms
+DESCRIBE_ALARMS_BODY = """<DescribeAlarmsResponse xmlns="http://monitoring.amazonaws.com/doc/2010-08-01/">
+  <DescribeAlarmsResult>
+    <MetricAlarms>
+      <member>
+        <StateUpdatedTimestamp>2011-11-18T23:43:59.111Z</StateUpdatedTimestamp>
+        <InsufficientDataActions/>
+        <StateReasonData>{&quot;version&quot;:&quot;1.0&quot;,&quot;queryDate&quot;:&quot;2011-11-18T23:43:59.089+0000&quot;,&quot;startDate&quot;:&quot;2011-11-18T23:30:00.000+0000&quot;,&quot;statistic&quot;:&quot;Maximum&quot;,&quot;period&quot;:60,&quot;recentDatapoints&quot;:[1.0,null,null,null,null,null,null,null,null,null,1.0],&quot;threshold&quot;:1.0}</StateReasonData>
+        <AlarmArn>arn:aws:cloudwatch:us-east-1:1234:alarm:FancyAlarm</AlarmArn>
+        <AlarmConfigurationUpdatedTimestamp>2011-11-18T23:43:58.489Z</AlarmConfigurationUpdatedTimestamp>
+        <AlarmName>FancyAlarm</AlarmName>
+        <StateValue>OK</StateValue>
+        <Period>60</Period>
+        <OKActions/>
+        <ActionsEnabled>true</ActionsEnabled>
+        <Namespace>AcmeCo/Cronjobs</Namespace>
+        <EvaluationPeriods>15</EvaluationPeriods>
+        <Threshold>1.0</Threshold>
+        <Statistic>Maximum</Statistic>
+        <AlarmActions>
+          <member>arn:aws:sns:us-east-1:1234:Alerts</member>
+        </AlarmActions>
+        <StateReason>Threshold Crossed: 2 datapoints were not less than the threshold (1.0). The most recent datapoints: [1.0, 1.0].</StateReason>
+        <Dimensions>
+          <member>
+            <Name>Job</Name>
+            <Value>ANiceCronJob</Value>
+          </member>
+        </Dimensions>
+        <ComparisonOperator>LessThanThreshold</ComparisonOperator>
+        <MetricName>Success</MetricName>
+      </member>
+      <member>
+        <StateUpdatedTimestamp>2011-11-19T08:09:20.655Z</StateUpdatedTimestamp>
+        <InsufficientDataActions/>
+        <StateReasonData>{&quot;version&quot;:&quot;1.0&quot;,&quot;queryDate&quot;:&quot;2011-11-19T08:09:20.633+0000&quot;,&quot;startDate&quot;:&quot;2011-11-19T08:07:00.000+0000&quot;,&quot;statistic&quot;:&quot;Maximum&quot;,&quot;period&quot;:60,&quot;recentDatapoints&quot;:[1.0],&quot;threshold&quot;:1.0}</StateReasonData>
+        <AlarmArn>arn:aws:cloudwatch:us-east-1:1234:alarm:SuprtFancyAlarm</AlarmArn>
+        <AlarmConfigurationUpdatedTimestamp>2011-11-19T16:20:19.687Z</AlarmConfigurationUpdatedTimestamp>
+        <AlarmName>SuperFancyAlarm</AlarmName>
+        <StateValue>OK</StateValue>
+        <Period>60</Period>
+        <OKActions/>
+        <ActionsEnabled>true</ActionsEnabled>
+        <Namespace>AcmeCo/CronJobs</Namespace>
+        <EvaluationPeriods>60</EvaluationPeriods>
+        <Threshold>1.0</Threshold>
+        <Statistic>Maximum</Statistic>
+        <AlarmActions>
+          <member>arn:aws:sns:us-east-1:1234:alerts</member>
+        </AlarmActions>
+        <StateReason>Threshold Crossed: 1 datapoint (1.0) was not less than the threshold (1.0).</StateReason>
+        <Dimensions>
+          <member>
+            <Name>Job</Name>
+            <Value>ABadCronJob</Value>
+          </member>
+        </Dimensions>
+        <ComparisonOperator>GreaterThanThreshold</ComparisonOperator>
+        <MetricName>Success</MetricName>
+      </member>
+    </MetricAlarms>
+  </DescribeAlarmsResult>
+  <ResponseMetadata>
+    <RequestId>f621311-1463-11e1-95c3-312389123</RequestId>
+  </ResponseMetadata>
+</DescribeAlarmsResponse>"""
+
+
 class CloudWatchConnectionTest(unittest.TestCase):
 
     def test_build_list_params(self):
@@ -128,6 +196,26 @@ class CloudWatchConnectionTest(unittest.TestCase):
         # for row in l:
         #     self.assertEqual(row['Unit'], 'Bytes')
         #     self.assertEqual(row['Average'], 5.0)
+
+
+    def test_describe_alarms(self):
+        c = CloudWatchConnection()
+        def make_request(*args, **kwargs):
+            class Body(object):
+                def __init__(self):
+                    self.status = 200
+                def read(self):
+                    return DESCRIBE_ALARMS_BODY
+            return Body()
+
+        c.make_request = make_request
+        alarms = c.describe_alarms()
+        self.assertEquals(alarms[0].name, 'FancyAlarm')
+        self.assertEquals(alarms[0].comparison, '<')
+        self.assertEquals(alarms[0].dimensions, {u'Job': [u'ANiceCronJob']})
+        self.assertEquals(alarms[1].name, 'SuperFancyAlarm')
+        self.assertEquals(alarms[1].comparison, '>')
+        self.assertEquals(alarms[1].dimensions, {u'Job': [u'ABadCronJob']})
 
 if __name__ == '__main__':
     unittest.main()
