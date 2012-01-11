@@ -128,13 +128,11 @@ class MultiDeleteResult(object):
             self.deleted.append(d)
             return d
         elif name == 'Error':
-            d = Error()
-            self.deleted.append(d)
-            return d
+            e = Error()
+            self.errors.append(e)
+            return e
         return None
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
-        
-
-
+ 
