@@ -23,6 +23,7 @@
 from datetime import datetime
 from boto.resultset import ResultSet
 from boto.ec2.cloudwatch.listelement import ListElement
+from boto.ec2.cloudwatch.dimension import Dimension
 
 try:
     import simplejson as json
@@ -177,8 +178,6 @@ class MetricAlarm(object):
             self.ok_actions = ListElement()
             return self.ok_actions
         elif name == 'Dimensions':
-            # Do the import here to avoid circular imports
-            from boto.ec2.cloudwatch.metric import Dimension
             self.dimensions = Dimension()
             return self.dimensions
         else:
