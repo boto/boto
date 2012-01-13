@@ -156,6 +156,10 @@ class Key(object):
         if self.resp == None:
             self.mode = 'r'
 
+            if self.version_id:
+                query_args = query_args or []
+                query_args.append('versionId=%s' % self.version_id)
+
             provider = self.bucket.connection.provider
             self.resp = self.bucket.connection.make_request(
                 'GET', self.bucket.name, self.name, headers,
