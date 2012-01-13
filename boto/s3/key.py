@@ -355,7 +355,7 @@ class Key(object):
 
     def endElement(self, name, value, connection):
         if name == 'Key':
-            self.name = value.encode('utf-8')
+            self.name = value
         elif name == 'ETag':
             self.etag = value
         elif name == 'LastModified':
