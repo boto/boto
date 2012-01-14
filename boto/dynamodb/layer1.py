@@ -54,14 +54,16 @@ class Layer1(AWSAuthConnection):
     ServiceName = 'DynamoDB'
     """The name of the Service"""
     
-    Version = '20110924'
+    Version = '20111205'
     """DynamoDB API version."""
     
     ResponseError = DynamoDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=Debug):
+                 host=None, debug=0):
+        if not host:
+            host = self.DefaultHost
         self.sts = boto.connect_sts(aws_access_key_id, aws_secret_access_key)
         self.creds = self.sts.get_session_token()
         AWSAuthConnection.__init__(self, host,
@@ -74,8 +76,8 @@ class Layer1(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['hmac-v3-http']
 
-    def make_request(self, action, body=''):
-        headers = {'X-Amz-Target' : '%sv%s.%s' % (self.ServiceName,
+    def make_request(self, action, body='', object_hook=None):
+        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
                                                   self.Version, action),
                    'Content-Type' : 'application/x-amz-json-1.0',
                    'Content-Length' : str(len(body))}
@@ -85,7 +87,7 @@ class Layer1(AWSAuthConnection):
                               override_num_retries=0)
         body = response.read()
         boto.log.debug(body)
-        json_response = json.loads(body)
+        json_response = json.loads(body, object_hook=object_hook)
         if response.status == 200:
             return json_response
         else:
@@ -187,7 +189,7 @@ class Layer1(AWSAuthConnection):
         return self.make_request('DeleteTable', json_input)
 
     def get_item(self, table_name, key, attributes_to_get=None,
-                 consistent_read=False):
+                 consistent_read=False, object_hook=None):
         """
         Return a set of attributes for an item that matches
         the supplied key.
@@ -216,7 +218,8 @@ class Layer1(AWSAuthConnection):
         if consistent_read:
             data['ConsistentRead'] = True
         json_input = json.dumps(data)
-        return self.make_request('GetItem', json_input)
+        return self.make_request('GetItem', json_input,
+                                 object_hook=object_hook)
         
     def batch_get_item(self, request_items):
         """
