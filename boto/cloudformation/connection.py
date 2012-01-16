@@ -47,14 +47,18 @@ class CloudFormationConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/', converter=None):
+                 https_connection_factory=None, region=None, path='/',
+                 converter=None):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                 self.DefaultRegionEndpoint, CloudFormationConnection)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path)
 
     def _required_auth_capability(self):
         return ['cloudformation']
@@ -65,7 +69,7 @@ class CloudFormationConnection(AWSQueryConnection):
 
     def create_stack(self, stack_name, template_body=None, template_url=None,
             parameters=[], notification_arns=[], disable_rollback=False,
-            timeout_in_minutes=None, capabilities=[]):
+            timeout_in_minutes=None, capabilities=None):
         """
         Creates a CloudFormation Stack as specified by the template.
 
@@ -78,32 +82,33 @@ class CloudFormationConnection(AWSQueryConnection):
 
         :type template_url: string
         :param template_url: An S3 URL of a stored template JSON document. If
-                            both the template_body and template_url are
-                            specified, the template_body takes precedence
+            both the template_body and template_url are
+            specified, the template_body takes precedence
 
         :type parameters: list of tuples
         :param parameters: A list of (key, value) pairs for template input
-                            parameters.
+            parameters.
 
         :type notification_arns: list of strings
         :param notification_arns: A list of SNS topics to send Stack event
-                            notifications to
+            notifications to.
 
         :type disable_rollback: bool
         :param disable_rollback: Indicates whether or not to rollback on
-                            failure
+            failure.
 
         :type timeout_in_minutes: int
         :param timeout_in_minutes: Maximum amount of time to let the Stack
-                            spend creating itself. If this timeout is exceeded,
-                            the Stack will enter the CREATE_FAILED state
+            spend creating itself. If this timeout is exceeded,
+            the Stack will enter the CREATE_FAILED state.
 
         :type capabilities: list
         :param capabilities: The list of capabilities you want to allow in
-                            the stack
+            the stack.  Currently, the only valid capability is
+            'CAPABILITY_IAM'.
 
         :rtype: string
-        :return: The unique Stack ID
+        :return: The unique Stack ID.
         """
         params = {'ContentType': "JSON", 'StackName': stack_name,
                 'DisableRollback': self.encode_bool(disable_rollback)}
@@ -118,11 +123,12 @@ class CloudFormationConnection(AWSQueryConnection):
             for i, (key, value) in enumerate(parameters):
                 params['Parameters.member.%d.ParameterKey' % (i+1)] = key
                 params['Parameters.member.%d.ParameterValue' % (i+1)] = value
-        if len(capabilities) > 0:
+        if capabilities:
             for i, value in enumerate(capabilities):
                 params['Capabilities.member.%d' % (i+1)] = value
         if len(notification_arns) > 0:
-            self.build_list_params(params, notification_arns, "NotificationARNs.member")
+            self.build_list_params(params, notification_arns,
+                                   "NotificationARNs.member")
         if timeout_in_minutes:
             params['TimeoutInMinutes'] = int(timeout_in_minutes)
 
@@ -144,27 +150,27 @@ class CloudFormationConnection(AWSQueryConnection):
 
         :type stack_name: string
         :param stack_name: The name of the Stack, must be unique amoung running
-                            Stacks
+            Stacks.
 
         :type template_body: string
         :param template_body: The template body (JSON string)
 
         :type template_url: string
         :param template_url: An S3 URL of a stored template JSON document. If
-                            both the template_body and template_url are
-                            specified, the template_body takes precedence
+            both the template_body and template_url are
+            specified, the template_body takes precedence.
 
         :type parameters: list of tuples
         :param parameters: A list of (key, value) pairs for template input
-                            parameters.
+            parameters.
 
         :type notification_arns: list of strings
         :param notification_arns: A list of SNS topics to send Stack event
-                            notifications to
+            notifications to.
 
         :type disable_rollback: bool
         :param disable_rollback: Indicates whether or not to rollback on
-                            failure
+            failure.
 
         :type timeout_in_minutes: int
         :param timeout_in_minutes: Maximum amount of time to let the Stack
@@ -172,7 +178,7 @@ class CloudFormationConnection(AWSQueryConnection):
                             the Stack will enter the CREATE_FAILED state
 
         :rtype: string
-        :return: The unique Stack ID
+        :return: The unique Stack ID.
         """
         params = {'ContentType': "JSON", 'StackName': stack_name,
                 'DisableRollback': self.encode_bool(disable_rollback)}
@@ -188,7 +194,8 @@ class CloudFormationConnection(AWSQueryConnection):
                 params['Parameters.member.%d.ParameterKey' % (i+1)] = key
                 params['Parameters.member.%d.ParameterValue' % (i+1)] = value
         if len(notification_arns) > 0:
-            self.build_list_params(params, notification_arns, "NotificationARNs.member")
+            self.build_list_params(params, notification_arns,
+                                   "NotificationARNs.member")
         if timeout_in_minutes:
             params['TimeoutInMinutes'] = int(timeout_in_minutes)
 
@@ -226,7 +233,8 @@ class CloudFormationConnection(AWSQueryConnection):
     def describe_stack_resource(self, stack_name_or_id, logical_resource_id):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id,
                 'LogicalResourceId': logical_resource_id}
-        response = self.make_request('DescribeStackResource', params, '/', 'GET')
+        response = self.make_request('DescribeStackResource', params,
+                                     '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)
@@ -245,8 +253,8 @@ class CloudFormationConnection(AWSQueryConnection):
             params['LogicalResourceId'] = logical_resource_id
         if physical_resource_id:
             params['PhysicalResourceId'] = physical_resource_id
-        return self.get_list('DescribeStackResources', params, [('member',
-            StackResource)])
+        return self.get_list('DescribeStackResources', params,
+                             [('member', StackResource)])
 
     def describe_stacks(self, stack_name_or_id=None):
         params = {}
@@ -269,8 +277,8 @@ class CloudFormationConnection(AWSQueryConnection):
         params = {'StackName': stack_name_or_id}
         if next_token:
             params['NextToken'] = next_token
-        return self.get_list('ListStackResources', params, [('member',
-            StackResourceSummary)])
+        return self.get_list('ListStackResources', params,
+                             [('member', StackResourceSummary)])
 
     def list_stacks(self, stack_status_filters=[], next_token=None):
         params = {}
@@ -280,8 +288,8 @@ class CloudFormationConnection(AWSQueryConnection):
             self.build_list_params(params, stack_status_filters,
                 "StackStatusFilter.member")
 
-        return self.get_list('ListStacks', params, [('member',
-            StackSummary)])
+        return self.get_list('ListStacks', params,
+                             [('member', StackSummary)])
 
     def validate_template(self, template_body=None, template_url=None):
         params = {}
