@@ -132,7 +132,7 @@ class Key(object):
         else:
             self.delete_marker = False
 
-    def open_read(self, headers=None, query_args=None,
+    def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
         """
         Open this key for reading
@@ -155,10 +155,6 @@ class Key(object):
         """
         if self.resp == None:
             self.mode = 'r'
-
-            if self.version_id:
-                query_args = query_args or []
-                query_args.append('versionId=%s' % self.version_id)
 
             provider = self.bucket.connection.provider
             self.resp = self.bucket.connection.make_request(
