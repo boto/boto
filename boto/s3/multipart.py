@@ -38,7 +38,7 @@ class CompleteMultiPartUpload(object):
     """
 
     def __init__(self, bucket=None):
-        self.bucket = None
+        self.bucket = bucket
         self.location = None
         self.bucket_name = None
         self.key_name = None
