@@ -142,7 +142,6 @@ class MultiPartUpload(object):
         return part_lister(self)
 
     def to_xml(self):
-        self.get_all_parts()
         s = '<CompleteMultipartUpload>\n'
         for part in self:
             s += '  <Part>\n'
