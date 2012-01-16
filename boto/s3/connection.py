@@ -279,10 +279,14 @@ class S3Connection(AWSAuthConnection):
 
 
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
-                     query_auth=True, force_http=False, response_headers=None):
+                     query_auth=True, force_http=False, response_headers=None,
+                     expires_in_absolute=False):
         if not headers:
             headers = {}
-        expires = int(time.time() + expires_in)
+        if expires_in_absolute:
+            expires = int(expires_in)
+        else:
+            expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
         # Arguments to override response headers become part of the canonical
