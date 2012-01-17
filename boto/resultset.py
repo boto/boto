@@ -48,6 +48,7 @@ class ResultSet(list):
             self.markers = []
         self.marker = None
         self.key_marker = None
+        self.next_marker = None  # avail when delimiter used
         self.next_key_marker = None
         self.next_version_id_marker = None
         self.version_id_marker = None
@@ -76,6 +77,8 @@ class ResultSet(list):
             self.marker = value
         elif name == 'KeyMarker':
             self.key_marker = value
+        elif name == 'NextMarker':
+            self.next_marker = value
         elif name == 'NextKeyMarker':
             self.next_key_marker = value
         elif name == 'VersionIdMarker':

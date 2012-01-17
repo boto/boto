@@ -33,6 +33,7 @@ from sqs.test_connection import SQSConnectionTest
 from s3.test_connection import S3ConnectionTest
 from s3.test_versioning import S3VersionTest
 from s3.test_encryption import S3EncryptionTest
+from s3.test_bucket import S3BucketTest
 from s3.test_multidelete import S3MultiDeleteTest
 from s3.test_multipart import S3MultiPartUploadTest
 from s3.test_gsconnection import GSConnectionTest
@@ -91,6 +92,7 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(S3EncryptionTest))
         tests.addTest(unittest.makeSuite(S3MultiDeleteTest))
         tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
+        tests.addTest(unittest.makeSuite(S3BucketTest))
     elif testsuite == "ssl":
         tests.addTest(unittest.makeSuite(CertValidationTest))
     elif testsuite == "s3ver":
@@ -100,6 +102,7 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(S3EncryptionTest))
         tests.addTest(unittest.makeSuite(S3MultiDeleteTest))
         tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
+        tests.addTest(unittest.makeSuite(S3BucketTest))
     elif testsuite == "gs":
         tests.addTest(unittest.makeSuite(GSConnectionTest))
     elif testsuite == "sqs":
