@@ -110,6 +110,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
             item1.delete(expected_value=expected)
         except c.layer1.ResponseError, e:
             pass
+        else:
+            raise Exception("Expected Value condition failed")
 
         # # Now update the existing object
         # attribute_updates = {'Views': {'Value': {'N': '5'},
