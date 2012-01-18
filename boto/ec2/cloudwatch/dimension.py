@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -14,44 +14,25 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
 
-from boto.s3.user import User
-
-class DeleteMarker:
-    def __init__(self, bucket=None, name=None):
-        self.bucket = bucket
-        self.name = name
-        self.version_id = None
-        self.is_latest = False
-        self.last_modified = None
-        self.owner = None
+class Dimension(dict):
 
     def startElement(self, name, attrs, connection):
-        if name == 'Owner':
-            self.owner = User(self)
-            return self.owner
-        else:
-            return None
+        pass
 
     def endElement(self, name, value, connection):
-        if name == 'Key':
-            self.name = value
-        elif name == 'IsLatest':
-            if value == 'true':
-                self.is_latest = True
+        if name == 'Name':
+            self._name = value
+        elif name == 'Value':
+            if self._name in self:
+                self[self._name].append(value)
             else:
-                self.is_latest = False
-        elif name == 'LastModified':
-            self.last_modified = value
-        elif name == 'Owner':
-            pass
-        elif name == 'VersionId':
-            self.version_id = value
+                self[self._name] = [value]
         else:
             setattr(self, name, value)
-
 

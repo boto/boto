@@ -38,7 +38,7 @@ class CompleteMultiPartUpload(object):
     """
 
     def __init__(self, bucket=None):
-        self.bucket = None
+        self.bucket = bucket
         self.location = None
         self.bucket_name = None
         self.key_name = None
@@ -142,7 +142,6 @@ class MultiPartUpload(object):
         return part_lister(self)
 
     def to_xml(self):
-        self.get_all_parts()
         s = '<CompleteMultipartUpload>\n'
         for part in self:
             s += '  <Part>\n'

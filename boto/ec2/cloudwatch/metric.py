@@ -21,22 +21,7 @@
 #
 
 from boto.ec2.cloudwatch.alarm import MetricAlarm
-
-class Dimension(dict):
-
-    def startElement(self, name, attrs, connection):
-        pass
-
-    def endElement(self, name, value, connection):
-        if name == 'Name':
-            self._name = value
-        elif name == 'Value':
-            if self._name in self:
-                self[self._name].append(value)
-            else:
-                self[self._name] = [value]
-        else:
-            setattr(self, name, value)
+from boto.ec2.cloudwatch.dimension import Dimension
 
 class Metric(object):
 

@@ -443,8 +443,10 @@ class ResumableUploadHandler(object):
             if resp.status == 400:
                 raise ResumableUploadException('Got 400 response from server '
                     'state query after failed resumable upload attempt. This '
-                    'can happen if the file size changed between upload '
-                    'attempts', ResumableTransferDisposition.ABORT)
+                    'can happen for various reasons, including specifying an '
+                    'invalid request (e.g., an invalid canned ACL) or if the '
+                    'file size changed between upload attempts',
+                    ResumableTransferDisposition.ABORT)
             else:
                 raise
         finally:

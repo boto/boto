@@ -45,6 +45,10 @@ class LoadBalancer(object):
         self.canonical_hosted_zone_name = None
         self.canonical_hosted_zone_name_id = None
         self.source_security_group = None
+        self.subnets = ListElement() 
+        self.security_groups = ListElement()
+        self.vpc_id = None 
+
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -67,6 +71,12 @@ class LoadBalancer(object):
         elif name == 'SourceSecurityGroup':
             self.source_security_group = SecurityGroup()
             return self.source_security_group
+        elif name == 'Subnets':
+            return self.subnets
+        elif name == 'SecurityGroups':
+            return self.security_groups
+        elif name == 'VPCId':
+            pass
         else:
             return None
 
@@ -83,6 +93,8 @@ class LoadBalancer(object):
             self.canonical_hosted_zone_name = value
         elif name == 'CanonicalHostedZoneNameID':
             self.canonical_hosted_zone_name_id = value
+        elif name == 'VPCId':
+            self.vpc_id = value
         else:
             setattr(self, name, value)
 
@@ -188,4 +200,50 @@ class LoadBalancer(object):
 
     def set_listener_SSL_certificate(self, lb_port, ssl_certificate_id):
         return self.connection.set_lb_listener_SSL_certificate(self.name, lb_port, ssl_certificate_id)
+
+    def attach_subnets(self, subnets):
+        """
+        Attaches load balancer to one or more subnets.
+        Attaching subnets that are already registered with the 
+        Load Balancer has no effect.
+
+        :type subnets: string or List of strings
+        :param subnets: The name of the subnet(s) to add.
+
+        """
+        if isinstance(subnets, str) or isinstance(subnets, unicode):
+            subnets = [subnets]
+        new_subnets = self.connection.attach_lb_to_subnets(self.name, subnets)
+        self.subnets = new_subnets
+
+    def detach_subnets(self, subnets):
+        """
+        Detaches load balancer from one or more subnets.
+
+        :type subnets: string or List of strings
+        :param subnets: The name of the subnet(s) to detach.
+
+        """
+        if isinstance(subnets, str) or isinstance(subnets, unicode):
+            subnets = [subnets]
+        new_subnets = self.connection.detach_lb_to_subnets(self.name, subnets)
+        self.subnets = new_subnets
+
+    def apply_security_groups(self, security_groups):
+        """
+        Applies security groups to the load balancer.
+        Applying security groups that are already registered with the 
+        Load Balancer has no effect.
+
+        :type security_groups: string or List of strings
+        :param security_groups: The name of the security group(s) to add.
+
+        """
+        if isinstance(security_groups, str) or \
+              isinstance(security_groups, unicode):
+            security_groups = [security_groups]
+        new_sgs = self.connection.apply_security_groups_to_lb(
+                                         self.name, security_groups)
+        self.security_groups = new_sgs 
+
 

@@ -132,7 +132,7 @@ class Key(object):
         else:
             self.delete_marker = False
 
-    def open_read(self, headers=None, query_args=None,
+    def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
         """
         Open this key for reading
@@ -355,7 +355,7 @@ class Key(object):
 
     def endElement(self, name, value, connection):
         if name == 'Key':
-            self.name = value.encode('utf-8')
+            self.name = value
         elif name == 'ETag':
             self.etag = value
         elif name == 'LastModified':
@@ -419,7 +419,8 @@ class Key(object):
         return self.bucket.set_canned_acl('public-read', self.name, headers)
 
     def generate_url(self, expires_in, method='GET', headers=None,
-                     query_auth=True, force_http=False, response_headers=None):
+                     query_auth=True, force_http=False, response_headers=None,
+                     expires_in_absolute=False):
         """
         Generate a URL to access this key.
 
@@ -443,7 +444,8 @@ class Key(object):
                                                    self.bucket.name, self.name,
                                                    headers, query_auth,
                                                    force_http,
-                                                   response_headers)
+                                                   response_headers,
+                                                   expires_in_absolute)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10,
                   query_args=None, chunked_transfer=False):

@@ -143,7 +143,7 @@ except ImportError:
 
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
-from boto.ec2.cloudwatch.alarm import MetricAlarm, AlarmHistoryItem
+from boto.ec2.cloudwatch.alarm import MetricAlarm, MetricAlarms, AlarmHistoryItem
 from boto.ec2.cloudwatch.datapoint import Datapoint
 from boto.regioninfo import RegionInfo
 import boto
@@ -225,13 +225,13 @@ class CloudWatchConnection(AWSQueryConnection):
         return ['ec2']
 
     def build_dimension_param(self, dimension, params):
-        for dim_name in dimension:
+        for i, dim_name in enumerate(dimension):
             dim_value = dimension[dim_name]
             if isinstance(dim_value, basestring):
                 dim_value = [dim_value]
-            for i, value in enumerate(dim_value):
-                params['Dimensions.member.%d.Name' % (i+1)] = dim_name
-                params['Dimensions.member.%d.Value' % (i+1)] = value
+            for j, value in enumerate(dim_value):
+                params['Dimensions.member.%d.Name.%d' % (i+1, j+1)] = dim_name
+                params['Dimensions.member.%d.Value.%d' % (i+1, j+1)] = value
     
     def build_list_params(self, params, items, label):
         if isinstance(items, basestring):
@@ -478,7 +478,7 @@ class CloudWatchConnection(AWSQueryConnection):
         if state_value:
             params['StateValue'] = state_value
         return self.get_list('DescribeAlarms', params,
-                             [('member', MetricAlarm)])
+                             [('MetricAlarms', MetricAlarms)])[0]
 
     def describe_alarm_history(self, alarm_name=None,
                                start_date=None, end_date=None,

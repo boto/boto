@@ -590,7 +590,7 @@ class MTurkConnection(AWSQueryConnection):
                 # Eventually someone will write an AnswerKey class.
 
         if auto_granted:
-            assert(test is False)
+            assert(test is None)
             params['AutoGranted'] = True
             params['AutoGrantedValue'] = auto_granted_value
 
@@ -909,6 +909,4 @@ class QuestionFormAnswer(BaseAutoResultElement):
         if name == 'QuestionIdentifier':
             self.qid = value
         elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
-            self.fields.append((self.qid,value))
-        elif name == 'Answer':
-            self.qid = None
+            self.fields.append( value )
