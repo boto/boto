@@ -78,7 +78,6 @@ class StorageUri(object):
         @rtype: L{AWSAuthConnection<boto.gs.connection.AWSAuthConnection>}
         @return: A connection to storage service provider of the given URI.
         """
-
         connection_args = dict(self.connection_args or ())
         # Use OrdinaryCallingFormat instead of boto-default
         # SubdomainCallingFormat because the latter changes the hostname
@@ -89,6 +88,10 @@ class StorageUri(object):
         # the resumable upload/download tests.
         from boto.s3.connection import OrdinaryCallingFormat
         connection_args['calling_format'] = OrdinaryCallingFormat()
+        if (hasattr(self, 'suppress_consec_slashes') and
+            'suppress_consec_slashes' not in connection_args):
+            connection_args['suppress_consec_slashes'] = (
+                self.suppress_consec_slashes)
         connection_args.update(kwargs)
         if not self.connection:
             if self.scheme in self.provider_pool:
@@ -186,7 +189,7 @@ class BucketStorageUri(StorageUri):
     """
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=0, connection_args=None):
+                 debug=0, connection_args=None, suppress_consec_slashes=True):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -201,6 +204,8 @@ class BucketStorageUri(StorageUri):
         @param connection_args: optional map containing args to be
             passed to {S3,GS}Connection constructor (e.g., to override
             https_connection_factory).
+        @param suppress_consec_slashes: If provided, controls whether
+            consecutive slashes will be suppressed in key paths.
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
@@ -211,6 +216,7 @@ class BucketStorageUri(StorageUri):
         self.object_name = object_name
         if connection_args:
             self.connection_args = connection_args
+        self.suppress_consec_slashes = suppress_consec_slashes
         if self.bucket_name and self.object_name:
             self.uri = ('%s://%s/%s' % (self.scheme, self.bucket_name,
                                         self.object_name))
@@ -230,8 +236,9 @@ class BucketStorageUri(StorageUri):
         if not self.bucket_name:
             raise InvalidUriError('clone_replace_name() on bucket-less URI %s' %
                                   self.uri)
-        return BucketStorageUri(self.scheme, self.bucket_name, new_name,
-                                self.debug)
+        return BucketStorageUri(
+            self.scheme, self.bucket_name, new_name, self.debug,
+            suppress_consec_slashes=self.suppress_consec_slashes)
 
     def get_acl(self, validate=True, headers=None, version_id=None):
         """returns a bucket's acl"""

@@ -314,7 +314,7 @@ mock_connection = MockConnection()
 class MockBucketStorageUri(object):
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=NOT_IMPL):
+                 debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL):
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name

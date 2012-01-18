@@ -304,7 +304,7 @@ class HTTPRequest(object):
                      in which case default port will be chosen.
 
         :type path: string
-        :param path: URL path that is bein accessed.
+        :param path: URL path that is being accessed.
 
         :type auth_path: string
         :param path: The part of the URL path used when creating the
@@ -368,7 +368,8 @@ class AWSAuthConnection(object):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, path='/',
-                 provider='aws', security_token=None):
+                 provider='aws', security_token=None,
+                 suppress_consec_slashes=True):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -402,7 +403,12 @@ class AWSAuthConnection(object):
 
         :type port: int
         :param port: The port to use to connect
+
+        :type suppress_consec_slashes: bool
+        :param suppress_consec_slashes: If provided, controls whether
+            consecutive slashes will be suppressed in key paths.
         """
+        self.suppress_consec_slashes = suppress_consec_slashes
         self.num_retries = 6
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
@@ -502,6 +508,12 @@ class AWSAuthConnection(object):
     secret_key = aws_secret_access_key
 
     def get_path(self, path='/'):
+        # The default behavior is to suppress consecutive slashes for reasons
+        # discussed at
+        # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
+        # You can override that behavior with the suppress_consec_slashes param.
+        if not self.suppress_consec_slashes:
+            return self.path + re.sub('^/*', "", path)
         pos = path.find('?')
         if pos >= 0:
             params = path[pos:]

@@ -141,14 +141,16 @@ class S3Connection(AWSAuthConnection):
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/',
-                 provider='aws', bucket_class=Bucket, security_token=None):
+                 provider='aws', bucket_class=Bucket, security_token=None,
+                 suppress_consec_slashes=True):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
-                path=path, provider=provider, security_token=security_token)
+                path=path, provider=provider, security_token=security_token,
+                suppress_consec_slashes=suppress_consec_slashes)
 
     def _required_auth_capability(self):
         return ['s3']

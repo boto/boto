@@ -556,7 +556,8 @@ def lookup(service, name):
     return obj
 
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
-                bucket_storage_uri_class=BucketStorageUri):
+                bucket_storage_uri_class=BucketStorageUri,
+                suppress_consec_slashes=True):
     """
     Instantiate a StorageUri from a URI string.
 
@@ -570,6 +571,8 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     :param validate: whether to check for bucket name validity.
     :type bucket_storage_uri_class: BucketStorageUri interface.
     :param bucket_storage_uri_class: Allows mocking for unit tests.
+    :param suppress_consec_slashes: If provided, controls whether
+        consecutive slashes will be suppressed in key paths.
 
     We allow validate to be disabled to allow caller
     to implement bucket-level wildcarding (outside the boto library;
@@ -631,7 +634,9 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]
-        return bucket_storage_uri_class(scheme, bucket_name, object_name, debug)
+        return bucket_storage_uri_class(
+            scheme, bucket_name, object_name, debug,
+            suppress_consec_slashes=suppress_consec_slashes)
 
 def storage_uri_for_key(key):
     """Returns a StorageUri for the given key.
