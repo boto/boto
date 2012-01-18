@@ -40,7 +40,7 @@ class DynamoDBLayer1Test (unittest.TestCase):
         hash_key_type = 'S'
         range_key_name = 'subject'
         range_key_type = 'S'
-        read_units = 10
+        read_units = 5
         write_units = 5
         schema = {'HashKeyElement': {'AttributeName': hash_key_name,
                                      'AttributeType': hash_key_type},
@@ -71,8 +71,8 @@ class DynamoDBLayer1Test (unittest.TestCase):
         assert table_name in result['TableNames']
 
         # Update the tables ProvisionedThroughput
-        new_read_units = 20
-        new_write_units = 10
+        new_read_units = 10
+        new_write_units = 5
         new_provisioned_throughput = {'ReadCapacityUnits': new_read_units,
                                       'WriteCapacityUnits': new_write_units}
         result = c.update_table(table_name, new_provisioned_throughput)

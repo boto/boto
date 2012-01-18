@@ -44,7 +44,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                  range_key_name, range_key_proto_value)
         # Now create a table
         table_name = 'test-%d' % int(time.time())
-        read_units = 10
+        read_units = 5
         write_units = 5
         table = c.create_table(table_name, schema, read_units, write_units)
         assert table.name == table_name
@@ -63,14 +63,14 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert table_name in table_names
 
         # Update the tables ProvisionedThroughput
-        # new_read_units = 5
-        # new_write_units = 5
-        # table.update_throughput(new_read_units, new_write_units)
+        new_read_units = 10
+        new_write_units = 5
+        table.update_throughput(new_read_units, new_write_units)
 
         # Wait for table to be updated
-        # table.refresh(wait_for_active=True)
-        # assert table.read_units == new_read_units
-        # assert table.write_units == new_write_units
+        table.refresh(wait_for_active=True)
+        assert table.read_units == new_read_units
+        assert table.write_units == new_write_units
 
         # Put an item
         item1_key = 'Amazon DynamoDB'

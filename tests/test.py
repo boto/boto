@@ -120,7 +120,7 @@ def suite(testsuite="all"):
     elif testsuite == "cloudfront":
         tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
     elif testsuite == "dynamodb":
-        #tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
+        tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
         tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     else:
         raise ValueError("Invalid choice.")

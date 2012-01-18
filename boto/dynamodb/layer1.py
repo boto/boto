@@ -61,11 +61,14 @@ class Layer1(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host=None, debug=0):
+                 host=None, debug=0, session_token=None):
         if not host:
             host = self.DefaultHost
-        self.sts = boto.connect_sts(aws_access_key_id, aws_secret_access_key)
-        self.creds = self.sts.get_session_token()
+        if not session_token:
+            self.sts = boto.connect_sts(aws_access_key_id,
+                                        aws_secret_access_key)
+            session_token = self.sts.get_session_token()
+        self.creds = session_token
         AWSAuthConnection.__init__(self, host,
                                    self.creds.access_key,
                                    self.creds.secret_key,
