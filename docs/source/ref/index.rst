@@ -11,6 +11,7 @@ API Reference
    cloudformation
    cloudfront
    contrib
+   dynamodb
    ec2
    ecs
    emr

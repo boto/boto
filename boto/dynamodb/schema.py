@@ -21,58 +21,37 @@
 # IN THE SOFTWARE.
 #
 
-def is_num(n):
-    return (isinstance(n, int) or isinstance(n, float))
-
-def is_str(n):
-    return isinstance(n, basestring)
-
-def get_dynamodb_type(val):
-    """
-    Take a scalar Python value and return a string representing
-    the corresponding DynamoDB type.  If the value passed in is
-    not a supported type, raise a TypeError.
-    """
-    if isinstance(val, int) or isinstance(val, float):
-        dynamodb_type = 'N'
-    elif isinstance(val, basestring):
-        dynamodb_type = 'S'
-    elif isinstance(val, list):
-        if False not in map(is_num, val):
-            dynamodb_type = 'NS'
-        elif False not in map(is_str, val):
-            dynamodb_type = 'SS'
-    else:
-        raise TypeError('Unsupported type')
-    return dynamodb_type
-
-def dynamize_value(val):
-    """
-    Take a scalar Python value and return a dict consisting
-    of the DynamoDB type specification and the value that
-    needs to be sent to DynamoDB.  If the type of the value
-    is not supported, raise a TypeError
-    """
-    dynamodb_type = get_dynamodb_type(val)
-    if dynamodb_type == 'N':
-        val = {dynamodb_type : str(val)}
-    elif dynamodb_type == 'S':
-        val = {dynamodb_type : val}
-    elif dynamodb_type == 'NS':
-        val = {dynamodb_type : [ str(n) for n in val]}
-    elif dynamodb_type == 'SS':
-        val = {dynamodb_type : val}
-    return val
+from boto.dynamodb.utils import dynamize_value
 
 class Schema(object):
+    """
+    Represents a DynamoDB schema.
 
-    def __init__(self, table, schema_dict):
-        self.table = table
+    :ivar hash_key_name: The name of the hash key of the schema.
+    :ivar hash_key_type: The DynamoDB type specification for the
+        hash key of the schema.
+    :ivar range_key_name: The name of the range key of the schema
+        or None if no range key is defined.
+    :ivar range_key_type: The DynamoDB type specification for the
+        range key of the schema or None if no range key is defined.
+    :ivar dict: The underlying Python dictionary that needs to be
+        passed to Layer1 methods.
+    """
+
+    def __init__(self, schema_dict):
         self._dict = schema_dict
 
     def __repr__(self):
-        return repr(self._dict)
-        
+        if self.range_key_name:
+            s = 'Schema(%s:%s)' % (self.hash_key_name, self.range_key_name)
+        else:
+            s = 'Schema(%s)' % self.hash_key_name
+        return s
+
+    @property
+    def dict(self):
+        return self._dict
+    
     @property
     def hash_key_name(self):
         return self._dict['HashKeyElement']['AttributeName']
@@ -115,11 +94,17 @@ class Schema(object):
             range key.  The type of the range key should match the
             type defined in the schema.
         """
-        # Need to do type checking
         dynamodb_key = {}
-        dynamodb_key['HashKeyElement'] = dynamize_value(hash_key)
+        dynamodb_value = dynamize_value(hash_key)
+        if dynamodb_value.keys()[0] != self.hash_key_type:
+            msg = 'Hashkey must be of type: %s' % self.hash_key_type
+            raise TypeError(msg)
+        dynamodb_key['HashKeyElement'] = dynamodb_value
         if range_key:
-            dynamodb_key['RangeKeyElement'] = dynamize_value(range_key)
+            dynamodb_value = dynamize_value(range_key)
+            if dynamodb_value.keys()[0] != self.range_key_type:
+                msg = 'RangeKey must be of type: %s' % self.range_key_type
+                raise TypeError(msg)
+            dynamodb_key['RangeKeyElement'] = dynamodb_value
         return dynamodb_key
 
-        

@@ -233,7 +233,7 @@ class Layer1(AWSAuthConnection):
         data = {'RequestItems' : request_items}
         json_input = json.dumps(data)
         return self.make_request('BatchGetItem', json_input)
-        
+
     def put_item(self, table_name, item,
                  expected=None, return_values=None):
         """
@@ -346,7 +346,8 @@ class Layer1(AWSAuthConnection):
 
     def query(self, table_name, hash_key_value, range_key_conditions=None,
               attributes_to_get=None, limit=None, consistent_read=False,
-              scan_index_forward=True, exclusive_start_key=None):
+              scan_index_forward=True, exclusive_start_key=None,
+              object_hook=None):
         """
         Perform a query of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -401,7 +402,8 @@ class Layer1(AWSAuthConnection):
         if exclusive_start_key:
             data['ExclusiveStartKey'] = exclusive_start_key
         json_input = json.dumps(data)
-        return self.make_request('Query', json_input)
+        return self.make_request('Query', json_input,
+                                 object_hook=object_hook)
 
     def scan(self, table_name, scan_filter=None,
              attributes_to_get=None, limit=None,

@@ -21,59 +21,89 @@
 # IN THE SOFTWARE.
 #
 
-def item_object_hook(dct):
-    """
-    A custom object hook for use when decoding JSON item bodys.
-    This hook will transform DynamoDB JSON responses to something
-    that maps directly to native Python types.
-    """
-    if 'S' in dct:
-        return dct['S']
-    if 'N' in dct:
-        try:
-            return int(dct['N'])
-        except ValueError:
-            return float(dct['N'])
-    if 'SS' in dct:
-        return dct['SS']
-    if 'NS' in dct:
-        try:
-            return map(int, dct['NS'])
-        except ValueError:
-            return map(float, dct['NS'])
-    return dct
+from utils import item_object_hook, dynamize_value
 
-class Item(dict):
+class Item(object):
 
-    def __init__(self, table, hash_key, range_key=None,
-                 attributes_to_get=None, consistent_read=False):
-        dict.__init__(self)
+    def __init__(self, table, hash_key=None, range_key=None, attrs=None):
         self.table = table
-        self.layer1 = table.layer1
-        self.hash_key = hash_key
-        self.range_key = range_key
-        self.attributes_to_get = attributes_to_get
-        self.reads_used = 0
-        self.key = self.table.schema.build_key_from_values(self.hash_key,
-                                                           self.range_key)
-        response = self.layer1.get_item(self.table.name, self.key,
-                                        self.attributes_to_get,
-                                        consistent_read,
-                                        object_hook=item_object_hook)
-        self._update(response)
-                                             
-    def _update(self, response):
-        """
-        Populate the fields of the Item object with values
-        from a JSON Item response that has been decoded to
-        a Python dictionary.
-        """
-        self.update(response['Item'])
-        self.reads_used = response['ReadsUsed']
-        print response
+        self._hash_key = hash_key
+        self._range_key = range_key
+        if attrs is None:
+            attrs = {}
+        self.attrs = attrs
+        # We don't want the hashkey/rangekey in the attrs dict
+        if self.hash_key_name in self.attrs:
+            del self.attrs[self.hash_key_name]
+        if self.range_key_name in self.attrs:
+            del self.attrs[self.range_key_name]
+        self.consumed_units = 0
 
-    def delete(self):
+    @property
+    def hash_key(self):
+        return self._hash_key
+                                             
+    @property
+    def range_key(self):
+        return self._range_key
+                                             
+    @property
+    def hash_key_name(self):
+        return self.table.schema.hash_key_name
+    
+    @property
+    def range_key_name(self):
+        return self.table.schema.range_key_name
+    
+    def dynamize(self):
+        d = {self.hash_key_name: dynamize_value(self.hash_key)}
+        if self.range_key:
+            d[self.range_key_name] = dynamize_value(self.range_key)
+        for attr_name in self.attrs:
+            d[attr_name] = dynamize_value(self.attrs[attr_name])
+        return d
+
+    def dynamize_expected_value(self, expected_value):
+        """
+        Convert an expected_value parameter into the data structure
+        required for Layer1.
+        """
+        d = None
+        if expected_value:
+            d = {}
+            for attr_name in expected_value:
+                d[attr_name] = dynamize_value(expected_value[attr_name])
+        return d
+
+    def delete(self, expected_value=None, return_values=None):
         """
         Delete the item from DynamoDB.
         """
-        response = self.layer1.delete_item(self.table.name, self.key)
+        expected_value = self.dynamize_expected_value(expected_value)
+        key = self.table.schema.build_key_from_values(self.hash_key,
+                                                      self.range_key)
+        response = self.table.layer1.delete_item(self.table.name, key,
+                                                 expected=expected_value)
+
+    def put(self, expected_value=None, return_values=None):
+        """
+        Store a new item or completely replace an existing item
+        in Amazon DynamoDB.
+
+        :type expected: dict
+        :param expected: A dictionary of name/value pairs that you expect
+
+        :type return_values: str
+        :param return_values: Controls the return of attribute
+            name-value pairs before then were changed.  Possible
+            values are: None or 'ALL_OLD'. If 'ALL_OLD' is
+            specified and the item is overwritten, the content
+            of the old item is returned.
+            
+        """
+        response = self.table.layer1.put_item(self.table.name,
+                                              self.dynamize(),
+                                              expected_value, return_values)
+        if 'ConsumedCapacityUnits' in response:
+            self.consumed_units = response['ConsumedCapacityUnits']
+        

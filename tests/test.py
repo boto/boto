@@ -40,10 +40,12 @@ from ec2.test_connection import EC2ConnectionTest
 from autoscale.test_connection import AutoscaleConnectionTest
 from sdb.test_connection import SDBConnectionTest
 from cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
+from dynamodb.test_layer1 import DynamoDBLayer1Test
+from dynamodb.test_layer2 import DynamoDBLayer2Test
 
 def usage():
     print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|all)"
+    print "    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|dynamodb|all)"
     print "    -v   verbosity (0|1|2)"
 
 def main():
@@ -84,6 +86,8 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(SDBConnectionTest))
         tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
         tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
+        tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
+        tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     elif testsuite == "s3":
         tests.addTest(unittest.makeSuite(S3ConnectionTest))
         tests.addTest(unittest.makeSuite(S3VersionTest))
@@ -109,6 +113,9 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(SDBConnectionTest))
     elif testsuite == "cloudfront":
         tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
+    elif testsuite == "dynamodb":
+        #tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
+        tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     else:
         raise ValueError("Invalid choice.")
     return tests
