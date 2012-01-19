@@ -25,6 +25,7 @@ from schema import Schema
 from item import Item
 from utils import item_object_hook, dynamize_value
 import time
+from boto.dynamodb import exceptions as dynamodb_exceptions
 
 class Table(object):
     """
@@ -197,6 +198,44 @@ class Table(object):
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return item
+
+    def has_item(self, hash_key, range_key=None, consistent_read=False):
+        """
+        Checks the table to see if the Item with the specified ``hash_key``
+        exists. This may save a tiny bit of time/bandwidth over a
+        straight :py:meth:`get_item` if you have no intention to touch
+        the data that is returned, since this method specifically tells
+        Amazon not to return anything but the Item's key.
+
+        :type hash_key: int|long|float|str|unicode
+        :param hash_key: The HashKey of the requested item.  The
+            type of the value must match the type defined in the
+            schema for the table.
+
+        :type range_key: int|long|float|str|unicode
+        :param range_key: The optional RangeKey of the requested item.
+            The type of the value must match the type defined in the
+            schema for the table.
+
+        :type consistent_read: bool
+        :param consistent_read: If True, a consistent read
+            request is issued.  Otherwise, an eventually consistent
+            request is issued.
+
+        :rtype: bool
+        :returns: ``True`` if the Item exists, ``False`` if not.
+        """
+        try:
+            # Attempt to get the key. If it can't be found, it'll raise
+            # an exception.
+            self.get_item(hash_key, range_key=range_key,
+                          # This minimizes the size of the response body.
+                          attributes_to_get=[hash_key],
+                          consistent_read=consistent_read)
+        except dynamodb_exceptions.DynamoDBKeyNotFoundError:
+            # Key doesn't exist.
+            return False
+        return True
 
     def new_item(self, hash_key, range_key=None, attrs=None):
         """
