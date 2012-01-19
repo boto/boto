@@ -231,8 +231,13 @@ class Layer1(AWSAuthConnection):
         if consistent_read:
             data['ConsistentRead'] = True
         json_input = json.dumps(data)
-        return self.make_request('GetItem', json_input,
-                                 object_hook=object_hook)
+        response = self.make_request('GetItem', json_input,
+                                     object_hook=object_hook)
+        if not response.has_key('Item'):
+            raise dynamodb_exceptions.DynamoDBKeyNotFoundError(
+                "Key does not exist."
+            )
+        return response
         
     def batch_get_item(self, request_items):
         """

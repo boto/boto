@@ -26,6 +26,7 @@ Tests for Layer1 of DynamoDB
 
 import unittest
 import time
+from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.layer1 import Layer1
 
 class DynamoDBLayer1Test (unittest.TestCase):
@@ -109,6 +110,12 @@ class DynamoDBLayer1Test (unittest.TestCase):
         result = c.get_item(table_name, key=key1, consistent_read=True)
         for name in item1_data:
             assert name in result['Item']
+
+        # Try to get an item that does not exist.
+        invalid_key = {'HashKeyElement': {hash_key_type: 'bogus_key'},
+                       'RangeKeyElement': {range_key_type: item1_range}}
+        self.assertRaises(DynamoDBKeyNotFoundError,
+                          c.get_item, table_name, key=invalid_key)
 
         # Try retrieving only select attributes
         attributes = ['Message', 'Views']
