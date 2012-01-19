@@ -21,9 +21,9 @@
 # IN THE SOFTWARE.
 #
 
-from schema import Schema
-from item import Item
-from utils import item_object_hook, dynamize_value
+from boto.dynamodb.schema import Schema
+from boto.dynamodb.item import Item
+from boto.dynamodb.utils import item_object_hook, dynamize_value
 import time
 from boto.dynamodb import exceptions as dynamodb_exceptions
 
