@@ -81,31 +81,44 @@ class Layer1(AWSAuthConnection):
         return ['hmac-v3-http']
 
     def make_request(self, action, body='', object_hook=None):
-        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
-                                                  self.Version, action),
-                   'Content-Type' : 'application/x-amz-json-1.0',
-                   'Content-Length' : str(len(body))}
         """
         :raises: ``DynamoDBExpiredTokenError`` if the security token
             expires.
         """
-        http_request = self.build_base_http_request('POST', '/', '/',
-                                                    {}, headers, body, None)
-        response = self._mexe(http_request, sender=None,
-                              override_num_retries=0)
-        body = response.read()
-        boto.log.debug(body)
-        json_response = json.loads(body, object_hook=object_hook)
-        if response.status == 200:
-            return json_response
-        else:
-            if json_response.get('__type') == 'com.amazon.coral.service#ExpiredTokenException':
-                raise dynamodb_exceptions.DynamoDBExpiredTokenError(
-                    response.status, json_response.get('message'), json_response,
-                )
+        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName, self.Version, action),
+                'Content-Type' : 'application/x-amz-json-1.0',
+                'Content-Length' : str(len(body))}
+        numAttempts = 0
+        while numAttempts < self.num_retries:
+            http_request = self.build_base_http_request('POST', '/', '/', {}, headers, body, None)
+            response = self._mexe(http_request, sender=None,
+                                  override_num_retries=0)
+            response_body = response.read()
+            boto.log.debug(response_body)
+            json_response = json.loads(response_body, object_hook=object_hook)
+            if response.status == 200:
+                return json_response
+            elif response.status == 400:
+                # We only handle "soft" retries of ProvisionedThroughput exceptions
+                if "ProvisionedThroughputExceededException" in json_response.get('__type'):
+                    boto.log.debug("ProvisionedThroughputExceededException, retry attempt %s" % numAttempts)
+                    if numAttempts < self.num_retries:
+                        import time
+                        # Sleep a fractional amount of time, which corresponds to
+                        # 1 second for our last attempt, and zero time for our first retry
+                        time.sleep((1.0/self.num_retries)*numAttempts)
+                        numAttempts += 1
+                        continue
+                raise self.ResponseError(response.status, response.reason,
+                                         json_response)
+            else:
+                if json_response.get('__type') == 'com.amazon.coral.service#ExpiredTokenException':
+                    raise dynamodb_exceptions.DynamoDBExpiredTokenError(
+                        response.status, json_response.get('message'), json_response,
+                    )
 
-            raise self.ResponseError(response.status, response.reason,
-                                     json_response)
+                raise self.ResponseError(response.status, response.reason,
+                                         json_response)
 
     def list_tables(self, limit=None, start_table=None):
         """
@@ -432,7 +445,7 @@ class Layer1(AWSAuthConnection):
         which is passed as is to DynamoDB.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table to scan.
 
         :type scan_filter: dict
         :param scan_filter: A Python version of the
