@@ -26,6 +26,7 @@ Tests for Layer2 of Amazon DynamoDB
 
 import unittest
 import time
+from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.utils import get_dynamodb_type
 
@@ -86,6 +87,10 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         item1 = table.new_item(item1_key, item1_range, item1_attrs)
         item1.put()
+
+        # Try to get an item that does not exist.
+        self.assertRaises(DynamoDBKeyNotFoundError,
+                          table.get_item, 'bogus_key', item1_range)
 
         # Now do a consistent read and check results
         item1_copy = table.get_item(item1_key, item1_range,
