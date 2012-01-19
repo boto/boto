@@ -24,6 +24,7 @@
 import boto
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
+from boto.dynamodb import exceptions as dynamodb_exceptions
 from table import Table
 
 try:
@@ -84,6 +85,10 @@ class Layer1(AWSAuthConnection):
                                                   self.Version, action),
                    'Content-Type' : 'application/x-amz-json-1.0',
                    'Content-Length' : str(len(body))}
+        """
+        :raises: ``DynamoDBExpiredTokenError`` if the security token
+            expires.
+        """
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
         response = self._mexe(http_request, sender=None,
@@ -94,6 +99,11 @@ class Layer1(AWSAuthConnection):
         if response.status == 200:
             return json_response
         else:
+            if json_response.get('__type') == 'com.amazon.coral.service#ExpiredTokenException':
+                raise dynamodb_exceptions.DynamoDBExpiredTokenError(
+                    response.status, json_response.get('message'), json_response,
+                )
+
             raise self.ResponseError(response.status, response.reason,
                                      json_response)
 
