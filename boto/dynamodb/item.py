@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 #
 
-from utils import item_object_hook, dynamize_value
+from boto.dynamodb.utils import item_object_hook, dynamize_value
 
 class Item(object):
 
