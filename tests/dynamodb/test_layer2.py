@@ -110,6 +110,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
             item1.delete(expected_value=expected)
         except c.layer1.ResponseError, e:
             pass
+        else:
+            raise Exception("Expected Value condition failed")
 
         # Try to delete a value while expecting a non-existant attribute
         expected = {'FooBar': True}
