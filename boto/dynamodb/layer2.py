@@ -21,9 +21,9 @@
 # IN THE SOFTWARE.
 #
 
-from layer1 import Layer1
-from table import Table
-from schema import Schema
+from boto.dynamodb.layer1 import Layer1
+from boto.dynamodb.table import Table
+from boto.dynamodb.schema import Schema
 from boto.dynamodb.utils import get_dynamodb_type
 
 class Layer2(object):
