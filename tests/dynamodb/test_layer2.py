@@ -109,6 +109,9 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for attr_name in item1_small.attrs:
             assert attr_name in attributes
 
+        self.assertTrue(table.has_item(item1_key, range_key=item1_range,
+                                       consistent_read=True))
+
         # Try to delete the item with the wrong Expected value
         expected = {'Views': 1}
         try:
@@ -175,6 +178,9 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         # Now delete the items
         item1.delete()
+
+        self.assertFalse(table.has_item(item1_key, range_key=item1_range,
+                                       consistent_read=True))
         item2.delete()
         item3.delete()
 
