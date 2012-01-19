@@ -25,7 +25,7 @@ import boto
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
 from boto.dynamodb import exceptions as dynamodb_exceptions
-from table import Table
+from boto.dynamodb.table import Table
 
 try:
     import simplejson as json
