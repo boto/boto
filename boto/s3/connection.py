@@ -142,9 +142,10 @@ class S3Connection(AWSAuthConnection):
                  host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
-                 suppress_consec_slashes=True):
+                 suppress_consec_slashes=True, anon=False):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
+        self.anon = anon
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -153,7 +154,10 @@ class S3Connection(AWSAuthConnection):
                 suppress_consec_slashes=suppress_consec_slashes)
 
     def _required_auth_capability(self):
-        return ['s3']
+        if self.anon:
+            return ['s3-anon']
+        else:
+            return ['s3']
 
     def __iter__(self):
         for bucket in self.get_all_buckets():
