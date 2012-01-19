@@ -215,7 +215,6 @@ class SecurityGroup(TaggedEC2Object):
         sg = rconn.create_security_group(name or self.name, self.description)
         source_groups = []
         for rule in self.rules:
-            grant = rule.grants[0]
             for grant in rule.grants:
                 if grant.name:
                     if grant.name not in source_groups:
