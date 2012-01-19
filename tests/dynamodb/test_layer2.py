@@ -111,6 +111,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
         except c.layer1.ResponseError, e:
             pass
 
+        # Try to delete a value while expecting a non-existant attribute
+        expected = {'FooBar': True}
+        try:
+            item1.delete(expected_value=expected)
+        except c.layer1.ResponseError, e:
+            pass
+
         # # Now update the existing object
         # attribute_updates = {'Views': {'Value': {'N': '5'},
         #                                'Action': 'PUT'},

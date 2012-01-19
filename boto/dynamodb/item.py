@@ -72,12 +72,26 @@ class Item(object):
         if expected_value:
             d = {}
             for attr_name in expected_value:
-                d[attr_name] = dynamize_value(expected_value[attr_name])
+                attr_value = expected_value[attr_name]
+                if attr_value is True:
+                    attr_value = {'Exists': True}
+                elif attr_value is False:
+                    attr_value = {'Exists': False}
+                else:
+                    attr_value = dynamize_value(expected_value[attr_name])
+                d[attr_name] = attr_value
         return d
 
     def delete(self, expected_value=None, return_values=None):
         """
         Delete the item from DynamoDB.
+
+        :type expected: dict
+        :param expected: A dictionary of name/value pairs that you expect.
+            This dictionary should have name/value pairs where the name
+            is the name of the attribute and the value is either the value
+            you are expecting or False if you expect the attribute not to
+            exist.
         """
         expected_value = self.dynamize_expected_value(expected_value)
         key = self.table.schema.build_key_from_values(self.hash_key,
@@ -91,7 +105,11 @@ class Item(object):
         in Amazon DynamoDB.
 
         :type expected: dict
-        :param expected: A dictionary of name/value pairs that you expect
+        :param expected: A dictionary of name/value pairs that you expect.
+            This dictionary should have name/value pairs where the name
+            is the name of the attribute and the value is either the value
+            you are expecting or False if you expect the attribute not to
+            exist.
 
         :type return_values: str
         :param return_values: Controls the return of attribute
