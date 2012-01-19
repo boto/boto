@@ -101,7 +101,7 @@ class Layer1(AWSAuthConnection):
         else:
             if json_response.get('__type') == 'com.amazon.coral.service#ExpiredTokenException':
                 raise dynamodb_exceptions.DynamoDBExpiredTokenError(
-                    response.status, json_response.get('message'), json_response,
+                    response.status, json_response.get('message'), body,
                 )
 
             raise self.ResponseError(response.status, response.reason,
