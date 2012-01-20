@@ -21,6 +21,8 @@ Now that we have a DynamoDB connection object, we can then query for a list of e
 {u'TableNames': [u'test-table']}
 >>>
 
+Creating Tables
+---------------------
 To create a table we need to define a few things. Firstly, we need to define a table name. Secondly, we need a minimal schema specifying the key name and key range. And lastly, we need to define our provisioned read/write throughput. To do so, one could write code as follows:
 
 >>> table_name = 'table-name'
@@ -43,6 +45,9 @@ Then, we can actually send the request for table creation:
 {u'TableDescription': {u'KeySchema': {u'RangeKeyElement': {u'AttributeName': u'subject', u'AttributeType': u'S'}, u'HashKeyElement': {u'AttributeName': u'forum_name', u'AttributeType': u'S'}}, u'TableName': u'table-name', u'CreationDateTime': 1327092563.8180001, u'TableStatus': u'CREATING', u'ProvisionedThroughput': {u'WriteCapacityUnits': 10, u'ReadCapacityUnits': 10}}}
 >>>
 
+Adding Items
+--------------------
+
 Now that we have requested the creation of the table, after a few moments you will want to add records or items. To do so, you need to create a dictionary containing the data you wish to store. So, continuing with our example above, we can create the follwoing data structure:
 
 >>> item_data = {
@@ -60,14 +65,15 @@ After we have that defined, we can use the following code to add the item to the
 {u'ConsumedCapacityUnits': 1.0}
 >>>
 
+Retrieving Items
+------------------
 Now, let's check if it got added correctly. Since DynamoDB works under an 'eventual consistency' mode, we need to specify that we wish a consistent read, as follows:
 
 >>> key1 = {'HashKeyElement': {hash_key_type: item1_key},
        'RangeKeyElement': {range_key_type: item1_range}}
 >>> result = c.get_item(table_name, key=key1, consistent_read=True)
 >>> result
-{u'Item': {u'Tags': {u'SS': [u'primarykey', u'index', u'table']}, u'forum_name': {u'S': u'Amazon DynamoDB'}, u'Views': {u'N': u'0'}, u'LastPostDateTime': {u'S': u'12/9/2011 11:36:03 PM'}, u'LastPostedBy': {u'S': u'User A'}, u'Answered': {u'N': u'0'}, u'Replies': {u'N': u'0'}, u'Message': {u'S': u'DynamoDB thread 1 message text'}, u'subject': {u'S': u'DynamoDB Thread 1'}}, u'ConsumedCapacityUnits': 1.0}
+{u'Item': u'Sample Key Value': {u'S': u'Amazon DynamoDB'},  u'ReceivedTime': {u'S': u'12/9/2011 11:36:03 PM'}, u'SentBy': {u'S': u'User A'}, u'Subject': {u'S': u'LOL watch this lolcat'}, u'Body' : {u'S': u'http://url_to_lolcat.gif'}, u'ConsumedCapacityUnits': 1.0}
 >>>
-
 
 
