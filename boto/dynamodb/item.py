@@ -106,3 +106,30 @@ class Item(object):
         """
         self.table.layer2.put_item(self, expected_value, return_values)
         
+
+    # Dictionary methods
+    def __getitem__(self, key):
+        """Accessor to attributes"""
+        if key == self.hash_key_name:
+            return self.hash_key
+        elif key == self.range_key_name:
+            return self.range_key
+        else:
+            return self.attrs[key]
+
+    def __setitem__(self, key, value):
+        """Setter for attributes"""
+        if key == self.hash_key_name:
+            self.hash_key = value
+        elif key == self.range_key_name:
+            self.range_key = value
+        else:
+            self.attrs[key] = value
+
+    def get(self, key, default=None):
+        if key == self.hash_key_name:
+            return self.hash_key
+        elif key == self.range_key_name:
+            return self.range_key
+        else:
+            return self.attrs.get(key, default)

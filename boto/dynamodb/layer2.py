@@ -137,7 +137,7 @@ class Layer2(object):
             elif False not in map(is_str, val):
                 dynamodb_type = 'SS'
         else:
-            raise TypeError('Unsupported type')
+            raise TypeError('Unsupported type "%s"' % val)
         return dynamodb_type
 
     def dynamize_value(self, val):
@@ -234,6 +234,7 @@ class Layer2(object):
         response = self.layer1.describe_table(name)
         return Table(self,  response)
 
+    lookup = get_table
     def create_table(self, name, schema, read_units, write_units):
         """
         Create a new Amazon DynamoDB table.
