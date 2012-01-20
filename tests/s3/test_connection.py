@@ -29,7 +29,8 @@ import time
 import os
 import urllib
 from boto.s3.connection import S3Connection
-from boto.exception import S3PermissionsError
+from boto.s3.bucket import Bucket
+from boto.exception import S3PermissionsError, S3ResponseError
 
 class S3ConnectionTest (unittest.TestCase):
 
@@ -187,3 +188,31 @@ class S3ConnectionTest (unittest.TestCase):
         time.sleep(5)
         c.delete_bucket(bucket)
         print '--- tests completed ---'
+
+    def test_basic_anon(self):
+        auth_con = S3Connection()
+        # create a new, empty bucket
+        bucket_name = 'test-%d' % int(time.time())
+        auth_bucket = auth_con.create_bucket(bucket_name)
+
+        # try read the bucket anonymously
+        anon_con = S3Connection(anon=True)
+        anon_bucket = Bucket(anon_con, bucket_name)
+        try:
+            iter(anon_bucket.list()).next()
+            self.fail("anon bucket list should fail")
+        except S3ResponseError:
+            pass
+
+        # give bucket anon user access and anon read again
+        auth_bucket.set_acl('public-read')
+        try:
+            iter(anon_bucket.list()).next()
+            self.fail("not expecting contents")
+        except S3ResponseError:
+            self.fail("we should have public-read access.")
+        except StopIteration:
+            pass
+
+        # cleanup
+        auth_con.delete_bucket(auth_bucket)

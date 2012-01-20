@@ -155,7 +155,7 @@ class S3Connection(AWSAuthConnection):
 
     def _required_auth_capability(self):
         if self.anon:
-            return ['s3-anon']
+            return ['anon']
         else:
             return ['s3']
 
