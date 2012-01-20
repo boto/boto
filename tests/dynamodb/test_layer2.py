@@ -127,6 +127,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         except c.layer1.ResponseError, e:
             pass
 
+
         # # Now update the existing object
         # attribute_updates = {'Views': {'Value': {'N': '5'},
         #                                'Action': 'PUT'},
@@ -175,6 +176,28 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # assert 'Count' in result
         # assert result['Count'] == 2
 
+        # Test some integer and float attributes
+        integer_value = 42
+        float_value = 345.678
+        integer_list = [1,2,3,4,5]
+        float_list = [1.1, 2.2, 3.3, 4.4, 5.5]
+        item3.attrs['IntAttr'] = integer_value
+        item3.attrs['FloatAttr'] = float_value
+        item3.attrs['IntListAttr'] = integer_list
+        item3.attrs['FloatListAttr'] = float_list
+        item3.put()
+
+        # Now do a consistent read
+        item4 = table.get_item(item3_key, item3_range, consistent_read=True)
+        assert item4.attrs['IntAttr'] == integer_value
+        assert item4.attrs['FloatAttr'] == float_value
+        # The values will not necessarily be in the same order as when
+        # we wrote them to the DB.
+        for i in item4.attrs['IntListAttr']:
+            assert i in integer_list
+        for i in item4.attrs['FloatListAttr']:
+            assert i in float_list
+        
         # Now delete the items
         item1.delete()
 
