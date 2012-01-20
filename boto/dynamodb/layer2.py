@@ -131,7 +131,7 @@ class Layer2(object):
             dynamodb_type = 'N'
         elif is_str(val):
             dynamodb_type = 'S'
-        elif isinstance(val, list):
+        elif isinstance(val, (set, frozenset)):
             if False not in map(is_num, val):
                 dynamodb_type = 'NS'
             elif False not in map(is_str, val):
