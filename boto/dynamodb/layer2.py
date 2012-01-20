@@ -24,7 +24,40 @@
 from boto.dynamodb.layer1 import Layer1
 from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
-from boto.dynamodb.utils import get_dynamodb_type
+from boto.dynamodb.item import Item
+
+"""
+Some utility functions to deal with mapping Amazon DynamoDB types to
+Python types and vice-versa.
+"""
+
+def is_num(n):
+    return (isinstance(n, (int, long, float)))
+
+def is_str(n):
+    return isinstance(n, basestring)
+
+def item_object_hook(dct):
+    """
+    A custom object hook for use when decoding JSON item bodys.
+    This hook will transform Amazon DynamoDB JSON responses to something
+    that maps directly to native Python types.
+    """
+    if 'S' in dct:
+        return dct['S']
+    if 'N' in dct:
+        try:
+            return int(dct['N'])
+        except TypeError:
+            return float(dct['N'])
+    if 'SS' in dct:
+        return dct['SS']
+    if 'NS' in dct:
+        try:
+            return map(int, dct['NS'])
+        except TypeError:
+            return map(float, dct['NS'])
+    return dct
 
 class Layer2(object):
 
@@ -35,12 +68,157 @@ class Layer2(object):
                              is_secure, port, proxy, proxy_port,
                              host, debug, session_token)
 
-    def list_tables(self):
+    def dynamize_item(self, item):
+        d = {item.hash_key_name: self.dynamize_value(item.hash_key)}
+        if item.range_key:
+            d[item.range_key_name] = self.dynamize_value(item.range_key)
+        for attr_name in item.attrs:
+            d[attr_name] = self.dynamize_value(item.attrs[attr_name])
+        return d
+
+    def dynamize_range_key_condition(self, range_key_condition):
+        """
+        Convert a range_key_condition parameter into the
+        structure required by Layer1.
+        """
+        d = None
+        if range_key_condition:
+            d = {}
+            for range_value in range_key_condition:
+                range_condition = range_key_condition[range_value]
+                if range_condition == 'BETWEEN':
+                    if isinstance(range_value, tuple):
+                        avl = [self.dynamize_value(v) for v in range_value]
+                    else:
+                        msg = 'BETWEEN condition requires a tuple value'
+                        raise TypeError(msg)
+                elif isinstance(range_value, tuple):
+                    msg = 'Tuple can only be supplied with BETWEEN condition'
+                    raise TypeError(msg)
+                else:
+                    avl = [self.dynamize_value(range_value)]
+            d['RangeKeyCondition'] = {'AttributeValueList': avl,
+                                      'ComparisonOperator': range_condition}
+        return d
+
+    def dynamize_expected_value(self, expected_value):
+        """
+        Convert an expected_value parameter into the data structure
+        required for Layer1.
+        """
+        d = None
+        if expected_value:
+            d = {}
+            for attr_name in expected_value:
+                attr_value = expected_value[attr_name]
+                if attr_value is True:
+                    attr_value = {'Exists': True}
+                elif attr_value is False:
+                    attr_value = {'Exists': False}
+                else:
+                    attr_value = self.dynamize_value(expected_value[attr_name])
+                d[attr_name] = attr_value
+        return d
+
+    def get_dynamodb_type(self, val):
+        """
+        Take a scalar Python value and return a string representing
+        the corresponding Amazon DynamoDB type.  If the value passed in is
+        not a supported type, raise a TypeError.
+        """
+        if is_num(val):
+            dynamodb_type = 'N'
+        elif is_str(val):
+            dynamodb_type = 'S'
+        elif isinstance(val, list):
+            if False not in map(is_num, val):
+                dynamodb_type = 'NS'
+            elif False not in map(is_str, val):
+                dynamodb_type = 'SS'
+        else:
+            raise TypeError('Unsupported type')
+        return dynamodb_type
+
+    def dynamize_value(self, val):
+        """
+        Take a scalar Python value and return a dict consisting
+        of the Amazon DynamoDB type specification and the value that
+        needs to be sent to Amazon DynamoDB.  If the type of the value
+        is not supported, raise a TypeError
+        """
+        dynamodb_type = self.get_dynamodb_type(val)
+        if dynamodb_type == 'N':
+            val = {dynamodb_type : str(val)}
+        elif dynamodb_type == 'S':
+            val = {dynamodb_type : val}
+        elif dynamodb_type == 'NS':
+            val = {dynamodb_type : [ str(n) for n in val]}
+        elif dynamodb_type == 'SS':
+            val = {dynamodb_type : val}
+        return val
+
+    def build_key_from_values(self, schema, hash_key, range_key=None):
+        """
+        Build a Key structure to be used for accessing items
+        in Amazon DynamoDB.  This method takes the supplied hash_key
+        and optional range_key and validates them against the
+        schema.  If there is a mismatch, a TypeError is raised.
+        Otherwise, a Python dict version of a Amazon DynamoDB Key
+        data structure is returned.
+
+        :type hash_key: int, float, str, or unicode
+        :param hash_key: The hash key of the item you are looking for.
+            The type of the hash key should match the type defined in
+            the schema.
+
+        :type range_key: int, float, str or unicode
+        :param range_key: The range key of the item your are looking for.
+            This should be supplied only if the schema requires a
+            range key.  The type of the range key should match the
+            type defined in the schema.
+        """
+        dynamodb_key = {}
+        dynamodb_value = self.dynamize_value(hash_key)
+        if dynamodb_value.keys()[0] != schema.hash_key_type:
+            msg = 'Hashkey must be of type: %s' % schema.hash_key_type
+            raise TypeError(msg)
+        dynamodb_key['HashKeyElement'] = dynamodb_value
+        if range_key:
+            dynamodb_value = self.dynamize_value(range_key)
+            if dynamodb_value.keys()[0] != schema.range_key_type:
+                msg = 'RangeKey must be of type: %s' % schema.range_key_type
+                raise TypeError(msg)
+            dynamodb_key['RangeKeyElement'] = dynamodb_value
+        return dynamodb_key
+
+    def list_tables(self, limit=None, start_table=None):
         """
         Return a list of the names of all Tables associated with the
         current account and region.
+        TODO - Layer2 should probably automatically handle pagination.
+
+        :type limit: int
+        :param limit: The maximum number of tables to return.
+
+        :type start_table: str
+        :param limit: The name of the table that starts the
+            list.  If you ran a previous list_tables and not
+            all results were returned, the response dict would
+            include a LastEvaluatedTableName attribute.  Use
+            that value here to continue the listing.
         """
-        return self.layer1.list_tables()['TableNames']
+        result = self.layer1.list_tables(limit, start_table)
+        return result['TableNames']
+
+    def describe_table(self, name):
+        """
+        Retrieve information about an existing table.
+
+        :type name: str
+        :param name: The name of the desired table.
+
+        """
+        return self.layer1.describe_table(name)
 
     def get_table(self, name):
         """
@@ -53,11 +231,11 @@ class Layer2(object):
         :return: A Table object representing the table.
         """
         response = self.layer1.describe_table(name)
-        return Table(self.layer1,  response)
+        return Table(self,  response)
 
     def create_table(self, name, schema, read_units, write_units):
         """
-        Create a new DynamoDB table.
+        Create a new Amazon DynamoDB table.
         
         :type name: str
         :param name: The name of the desired table.
@@ -73,12 +251,41 @@ class Layer2(object):
         :param write_units: The value for WriteCapacityUnits.
         
         :rtype: :class:`boto.dynamodb.table.Table`
-        :return: A Table object representing the new DynamoDB table.
+        :return: A Table object representing the new Amazon DynamoDB table.
         """
         response = self.layer1.create_table(name, schema.dict,
                                             {'ReadCapacityUnits': read_units,
                                              'WriteCapacityUnits': write_units})
-        return Table(self.layer1,  response)
+        return Table(self,  response)
+
+    def update_throughput(self, table, read_units, write_units):
+        """
+        Update the ProvisionedThroughput for the Amazon DynamoDB Table.
+
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object whose throughput is being updated.
+        
+        :type read_units: int
+        :param read_units: The new value for ReadCapacityUnits.
+        
+        :type write_units: int
+        :param write_units: The new value for WriteCapacityUnits.
+        """
+        response = self.layer1.update_table(table.name,
+                                            {'ReadCapacityUnits': read_units,
+                                             'WriteCapacityUnits': write_units})
+        table.update_from_response(response['TableDescription'])
+        
+    def delete_table(self, table):
+        """
+        Delete this table and all items in it.  After calling this
+        the Table objects status attribute will be set to 'DELETING'.
+
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object that is being deleted.
+        """
+        response = self.layer1.delete_table(table.name)
+        table.update_from_response(response)
 
     def create_schema(self, hash_key_name, hash_key_proto_value,
                       range_key_name=None, range_key_proto_value=None):
@@ -104,11 +311,166 @@ class Layer2(object):
         schema = {}
         hash_key = {}
         hash_key['AttributeName'] = hash_key_name
-        hash_key['AttributeType'] = get_dynamodb_type(hash_key_proto_value)
+        hash_key_type = self.get_dynamodb_type(hash_key_proto_value)
+        hash_key['AttributeType'] = hash_key_type
         schema['HashKeyElement'] = hash_key
         if range_key_name and range_key_proto_value is not None:
             range_key = {}
             range_key['AttributeName'] = range_key_name
-            range_key['AttributeType'] = get_dynamodb_type(range_key_proto_value)
+            range_key_type = self.get_dynamodb_type(range_key_proto_value)
+            range_key['AttributeType'] = range_key_type
             schema['RangeKeyElement'] = range_key
         return Schema(schema)
+
+    def get_item(self, table, hash_key, range_key=None,
+                 attributes_to_get=None, consistent_read=False):
+        """
+        Retrieve an existing item from the table.
+
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object from which the item is retrieved.
+        
+        :type hash_key: int|long|float|str|unicode
+        :param hash_key: The HashKey of the requested item.  The
+            type of the value must match the type defined in the
+            schema for the table.
+        
+        :type range_key: int|long|float|str|unicode
+        :param range_key: The optional RangeKey of the requested item.
+            The type of the value must match the type defined in the
+            schema for the table.
+            
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+
+        :type consistent_read: bool
+        :param consistent_read: If True, a consistent read
+            request is issued.  Otherwise, an eventually consistent
+            request is issued.
+        """
+        key = self.build_key_from_values(table.schema, hash_key, range_key)
+        response = self.layer1.get_item(table.name, key,
+                                        attributes_to_get, consistent_read,
+                                        object_hook=item_object_hook)
+        item = Item(table, hash_key, range_key, response['Item'])
+        if 'ConsumedCapacityUnits' in response:
+            item.consumed_units = response['ConsumedCapacityUnits']
+        return item
+
+    def put_item(self, item, expected_value=None, return_values=None):
+        """
+        Store a new item or completely replace an existing item
+        in Amazon DynamoDB.
+
+        :type item: :class:`boto.dynamodb.item.Item`
+        :param item: The Item to write to Amazon DynamoDB.
+        
+        :type expected: dict
+        :param expected: A dictionary of name/value pairs that you expect.
+            This dictionary should have name/value pairs where the name
+            is the name of the attribute and the value is either the value
+            you are expecting or False if you expect the attribute not to
+            exist.
+
+        :type return_values: str
+        :param return_values: Controls the return of attribute
+            name-value pairs before then were changed.  Possible
+            values are: None or 'ALL_OLD'. If 'ALL_OLD' is
+            specified and the item is overwritten, the content
+            of the old item is returned.
+            
+        """
+        expected_value = self.dynamize_expected_value(expected_value)
+        response = self.layer1.put_item(item.table.name,
+                                        self.dynamize_item(item),
+                                        expected_value, return_values)
+        if 'ConsumedCapacityUnits' in response:
+            item.consumed_units = response['ConsumedCapacityUnits']
+            
+    def delete_item(self, item, expected_value=None, return_values=None):
+        """
+        Delete the item from Amazon DynamoDB.
+
+        :type item: :class:`boto.dynamodb.item.Item`
+        :param item: The Item to delete from Amazon DynamoDB.
+        
+        :type expected: dict
+        :param expected: A dictionary of name/value pairs that you expect.
+            This dictionary should have name/value pairs where the name
+            is the name of the attribute and the value is either the value
+            you are expecting or False if you expect the attribute not to
+            exist.
+        """
+        expected_value = self.dynamize_expected_value(expected_value)
+        key = self.build_key_from_values(item.table.schema,
+                                         item.hash_key, item.range_key)
+        response = self.layer1.delete_item(item.table.name, key,
+                                           expected=expected_value)
+
+    def query(self, table, hash_key, range_key_condition=None,
+              attributes_to_get=None, limit=None, consistent_read=False,
+              scan_index_forward=True, exclusive_start_key=None):
+        """
+        Perform a query on the table.
+        
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object that is being queried.
+        
+        :type hash_key: int|long|float|str|unicode
+        :param hash_key: The HashKey of the requested item.  The
+            type of the value must match the type defined in the
+            schema for the table.
+
+        :type range_key_condition: dict
+        :param range_key_condition: A dict where the key is either
+            a scalar value appropriate for the RangeKey in the schema
+            of the database or a tuple of such values.  The value 
+            associated with this key in the dict will be one of the
+            following conditions:
+
+            'EQ'|'LE'|'LT'|'GE'|'GT'|'BEGINS_WITH'|'BETWEEN'
+
+            The only condition which expects or will accept a tuple
+            of values is 'BETWEEN', otherwise a scalar value should
+            be used as the key in the dict.
+        
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+
+        :type limit: int
+        :param limit: The maximum number of items to return.
+
+        :type consistent_read: bool
+        :param consistent_read: If True, a consistent read
+            request is issued.  Otherwise, an eventually consistent
+            request is issued.
+
+        :type scan_index_forward: bool
+        :param scan_index_forward: Specified forward or backward
+            traversal of the index.  Default is forward (True).
+
+        :type exclusive_start_key: list or tuple
+        :param exclusive_start_key: Primary key of the item from
+            which to continue an earlier query.  This would be
+            provided as the LastEvaluatedKey in that query.
+        """
+        rkc = self.dynamize_range_key_condition(range_key_condition)
+        response = self.layer1.query(table.name, self.dynamize_value(hash_key),
+                                     rkc, attributes_to_get, limit,
+                                     consistent_read, scan_index_forward,
+                                     exclusive_start_key,
+                                     object_hook=item_object_hook)
+        items = []
+        for item in response['Items']:
+            hash_key = item[table.schema.hash_key_name]
+            range_key = item[table.schema.range_key_name]
+            items.append(Item(table, hash_key, range_key, item))
+        return items
+
+    
+
+    

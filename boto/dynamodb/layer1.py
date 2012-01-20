@@ -27,6 +27,7 @@ from boto.exception import DynamoDBResponseError
 from boto.dynamodb import exceptions as dynamodb_exceptions
 from boto.dynamodb.table import Table
 
+import time
 try:
     import simplejson as json
 except ImportError:
@@ -57,6 +58,12 @@ class Layer1(AWSAuthConnection):
     
     Version = '20111205'
     """DynamoDB API version."""
+
+    ThruputError = "ProvisionedThroughputExceededException"
+    """The error response returned when provisioned throughput is exceeded"""
+
+    ExpiredSessionError = 'com.amazon.coral.service#ExpiredTokenException'
+    """The error response returned when session token has expired"""
     
     ResponseError = DynamoDBResponseError
 
@@ -85,12 +92,14 @@ class Layer1(AWSAuthConnection):
         :raises: ``DynamoDBExpiredTokenError`` if the security token
             expires.
         """
-        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName, self.Version, action),
+        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
+                                                  self.Version, action),
                 'Content-Type' : 'application/x-amz-json-1.0',
                 'Content-Length' : str(len(body))}
         numAttempts = 0
         while numAttempts < self.num_retries:
-            http_request = self.build_base_http_request('POST', '/', '/', {}, headers, body, None)
+            http_request = self.build_base_http_request('POST', '/', '/',
+                                                        {}, headers, body, None)
             response = self._mexe(http_request, sender=None,
                                   override_num_retries=0)
             response_body = response.read()
@@ -99,23 +108,25 @@ class Layer1(AWSAuthConnection):
             if response.status == 200:
                 return json_response
             elif response.status == 400:
-                # We only handle "soft" retries of ProvisionedThroughput exceptions
-                if "ProvisionedThroughputExceededException" in json_response.get('__type'):
-                    boto.log.debug("ProvisionedThroughputExceededException, retry attempt %s" % numAttempts)
+                # We only handle "soft" retries of ProvisionedThroughput error
+                if self.ThruputError in json_response.get('__type'):
+                    boto.log.debug("%s, retry attempt %s" % (self.ThruputError,
+                                                             numAttempts))
                     if numAttempts < self.num_retries:
-                        import time
-                        # Sleep a fractional amount of time, which corresponds to
-                        # 1 second for our last attempt, and zero time for our first retry
+                        # Sleep a fractional amount of time, which corresponds
+                        # to 1 second for our last attempt, and zero time for
+                        # our first retry.
                         time.sleep((1.0/self.num_retries)*numAttempts)
                         numAttempts += 1
                         continue
                 raise self.ResponseError(response.status, response.reason,
                                          json_response)
             else:
-                if json_response.get('__type') == 'com.amazon.coral.service#ExpiredTokenException':
+                if self.SessionExpiredError in json_response.get('__type'):
+                    # TODO: Retrieve new session token here
                     raise dynamodb_exceptions.DynamoDBExpiredTokenError(
-                        response.status, json_response.get('message'), json_response,
-                    )
+                        response.status, json_response.get('message'),
+                        json_response)
 
                 raise self.ResponseError(response.status, response.reason,
                                          json_response)

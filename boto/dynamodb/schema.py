@@ -21,8 +21,6 @@
 # IN THE SOFTWARE.
 #
 
-from boto.dynamodb.utils import dynamize_value
-
 class Schema(object):
     """
     Represents a DynamoDB schema.
@@ -74,37 +72,3 @@ class Schema(object):
             type = self._dict['RangeKeyElement']['AttributeType']
         return type
     
-    def build_key_from_values(self, hash_key, range_key=None):
-        """
-        Build a Key structure to be used for accessing items
-        in DynamoDB.  This method takes the supplied hash_key
-        and optional range_key and validates them against the
-        schema.  If there is a mismatch, a TypeError is raised.
-        Otherwise, a Python dict version of a DynamoDB Key
-        data structure is returned.
-
-        :type hash_key: int, float, str, or unicode
-        :param hash_key: The hash key of the item you are looking for.
-            The type of the hash key should match the type defined in
-            the schema.
-
-        :type range_key: int, float, str or unicode
-        :param range_key: The range key of the item your are looking for.
-            This should be supplied only if the schema requires a
-            range key.  The type of the range key should match the
-            type defined in the schema.
-        """
-        dynamodb_key = {}
-        dynamodb_value = dynamize_value(hash_key)
-        if dynamodb_value.keys()[0] != self.hash_key_type:
-            msg = 'Hashkey must be of type: %s' % self.hash_key_type
-            raise TypeError(msg)
-        dynamodb_key['HashKeyElement'] = dynamodb_value
-        if range_key:
-            dynamodb_value = dynamize_value(range_key)
-            if dynamodb_value.keys()[0] != self.range_key_type:
-                msg = 'RangeKey must be of type: %s' % self.range_key_type
-                raise TypeError(msg)
-            dynamodb_key['RangeKeyElement'] = dynamodb_value
-        return dynamodb_key
-

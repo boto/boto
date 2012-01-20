@@ -47,7 +47,7 @@ from dynamodb.test_layer2 import DynamoDBLayer2Test
 
 def usage():
     print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|dynamodb|all)"
+    print "    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2all)"
     print "    -v   verbosity (0|1|2)"
 
 def main():
@@ -121,6 +121,10 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
     elif testsuite == "dynamodb":
         tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
+        tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
+    elif testsuite == "dynamodbL1":
+        tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
+    elif testsuite == "dynamodbL2":
         tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     else:
         raise ValueError("Invalid choice.")
