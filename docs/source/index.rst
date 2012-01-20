@@ -20,7 +20,7 @@ Currently Supported Services
 
 * **Content Delivery**
 
-  * CloudFront -- (:doc:`API Reference <ref/cloudfront>`)
+  * :doc:`CloudFront <cloudfront_tut>` -- (:doc:`API Reference <ref/cloudfront>`)
 
 * **Database**
 
@@ -87,6 +87,7 @@ Additional Resources
    emr_tut
    ref/emr
    autoscale_tut
+   cloudfront_tut
    ref/cloudfront
    ref/sdb
    ref/rds
