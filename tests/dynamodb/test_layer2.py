@@ -96,17 +96,22 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                     consistent_read=True)
         assert item1_copy.hash_key == item1.hash_key
         assert item1_copy.range_key == item1.range_key
-        for attr_name in item1_copy.attrs:
-            val = item1_copy.attrs[attr_name]
+        for attr_name in item1_copy:
+            val = item1_copy[attr_name]
             if isinstance(val, (int, long, float, basestring)):
-                assert val == item1.attrs[attr_name]
+                assert val == item1[attr_name]
 
         # Try retrieving only select attributes
         attributes = ['Message', 'Views']
         item1_small = table.get_item(item1_key, item1_range,
-                                     attributes_to_get=attributes)
-        for attr_name in item1_small.attrs:
-            assert attr_name in attributes
+                                     attributes_to_get=attributes,
+                                     consistent_read=True)
+        for attr_name in item1_small:
+            # The item will include the attributes we asked for as
+            # well as the hashkey and rangekey, so filter those out.
+            if attr_name not in (item1_small.hash_key_name,
+                                 item1_small.range_key_name):
+                assert attr_name in attributes
 
         self.assertTrue(table.has_item(item1_key, range_key=item1_range,
                                        consistent_read=True))
@@ -179,33 +184,33 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # Test some integer and float attributes
         integer_value = 42
         float_value = 345.678
-        item3.attrs['IntAttr'] = integer_value
-        item3.attrs['FloatAttr'] = float_value
+        item3['IntAttr'] = integer_value
+        item3['FloatAttr'] = float_value
 
         # Test some set values
         integer_set = set([1,2,3,4,5])
         float_set = set([1.1, 2.2, 3.3, 4.4, 5.5])
         mixed_set = set([1, 2, 3.3, 4, 5.555])
         str_set = set(['foo', 'bar', 'fie', 'baz'])
-        item3.attrs['IntSetAttr'] = integer_set
-        item3.attrs['FloatSetAttr'] = float_set
-        item3.attrs['MixedSetAttr'] = mixed_set
-        item3.attrs['StrSetAttr'] = str_set
+        item3['IntSetAttr'] = integer_set
+        item3['FloatSetAttr'] = float_set
+        item3['MixedSetAttr'] = mixed_set
+        item3['StrSetAttr'] = str_set
         item3.put()
 
         # Now do a consistent read
         item4 = table.get_item(item3_key, item3_range, consistent_read=True)
-        assert item4.attrs['IntAttr'] == integer_value
-        assert item4.attrs['FloatAttr'] == float_value
+        assert item4['IntAttr'] == integer_value
+        assert item4['FloatAttr'] == float_value
         # The values will not necessarily be in the same order as when
         # we wrote them to the DB.
-        for i in item4.attrs['IntSetAttr']:
+        for i in item4['IntSetAttr']:
             assert i in integer_set
-        for i in item4.attrs['FloatSetAttr']:
+        for i in item4['FloatSetAttr']:
             assert i in float_set
-        for i in item4.attrs['MixedSetAttr']:
+        for i in item4['MixedSetAttr']:
             assert i in mixed_set
-        for i in item4.attrs['StrSetAttr']:
+        for i in item4['StrSetAttr']:
             assert i in str_set
         
         # Now delete the items

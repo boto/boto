@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 #
 
-class Item(object):
+class Item(dict):
     """
     An item in Amazon DynamoDB.
 
@@ -31,39 +31,35 @@ class Item(object):
     :ivar hash_key_name: The name of the HashKey associated with this item.
     :ivar range_key_name: The name of the RangeKey associated with this item.
     :ivar table: The Table this item belongs to.
-    :ivar attrs: A dict containing name/value pairs of attributes that
-        are stored in this item.
     """
 
     def __init__(self, table, hash_key=None, range_key=None, attrs=None):
         self.table = table
-        self._hash_key = hash_key
-        self._range_key = range_key
-        if attrs is None:
-            attrs = {}
-        self.attrs = attrs
-        # We don't want the hashkey/rangekey in the attrs dict
-        if self.hash_key_name in self.attrs:
-            del self.attrs[self.hash_key_name]
-        if self.range_key_name in self.attrs:
-            del self.attrs[self.range_key_name]
+        self._hash_key_name = self.table.schema.hash_key_name
+        self._range_key_name = self.table.schema.range_key_name
+        if hash_key:
+            self[self._hash_key_name] = hash_key
+        if range_key:
+            self[self._range_key_name] = range_key
+        if attrs:
+            self.update(attrs)
         self.consumed_units = 0
 
     @property
     def hash_key(self):
-        return self._hash_key
+        return self[self._hash_key_name]
                                              
     @property
     def range_key(self):
-        return self._range_key
+        return self[self._range_key_name]
                                              
     @property
     def hash_key_name(self):
-        return self.table.schema.hash_key_name
+        return self._hash_key_name
     
     @property
     def range_key_name(self):
-        return self.table.schema.range_key_name
+        return self._range_key_name
     
     def delete(self, expected_value=None, return_values=None):
         """
@@ -105,31 +101,3 @@ class Item(object):
             of the old item is returned.
         """
         self.table.layer2.put_item(self, expected_value, return_values)
-        
-
-    # Dictionary methods
-    def __getitem__(self, key):
-        """Accessor to attributes"""
-        if key == self.hash_key_name:
-            return self.hash_key
-        elif key == self.range_key_name:
-            return self.range_key
-        else:
-            return self.attrs[key]
-
-    def __setitem__(self, key, value):
-        """Setter for attributes"""
-        if key == self.hash_key_name:
-            self.hash_key = value
-        elif key == self.range_key_name:
-            self.range_key = value
-        else:
-            self.attrs[key] = value
-
-    def get(self, key, default=None):
-        if key == self.hash_key_name:
-            return self.hash_key
-        elif key == self.range_key_name:
-            return self.range_key
-        else:
-            return self.attrs.get(key, default)

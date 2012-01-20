@@ -70,11 +70,9 @@ class Layer2(object):
                              host, debug, session_token)
 
     def dynamize_item(self, item):
-        d = {item.hash_key_name: self.dynamize_value(item.hash_key)}
-        if item.range_key:
-            d[item.range_key_name] = self.dynamize_value(item.range_key)
-        for attr_name in item.attrs:
-            d[attr_name] = self.dynamize_value(item.attrs[attr_name])
+        d = {}
+        for attr_name in item:
+            d[attr_name] = self.dynamize_value(item[attr_name])
         return d
 
     def dynamize_range_key_condition(self, range_key_condition):
