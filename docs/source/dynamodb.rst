@@ -94,13 +94,13 @@ Deleting Items
 ------------------
 To delete items, you need to provide the table name and the key of the item you wish to delete:
 
->>>conn.delete_item(table_name,key=key1)
+>>> conn.delete_item(table_name,key=key1)
 
 Deleting Tables
 ------------------
 To delete a table all you need to provide is a table name, as follows:
 
->>>conn.delete_table(table_name)
+>>> conn.delete_table(table_name)
 {u'TableDescription': {u'ProvisionedThroughput': {u'WriteCapacityUnits': 10, u'ReadCapacityUnits': 10}, u'TableName': u'table-name', u'TableStatus': u'DELETING'}}
 
 Notice
