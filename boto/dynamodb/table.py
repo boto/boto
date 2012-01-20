@@ -175,6 +175,7 @@ class Table(object):
         return self.layer2.get_item(self, hash_key, range_key,
                                     attributes_to_get, consistent_read)
 
+    lookup = get_item
     def has_item(self, hash_key, range_key=None, consistent_read=False):
         """
         Checks the table to see if the Item with the specified ``hash_key``
