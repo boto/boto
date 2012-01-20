@@ -37,6 +37,13 @@ def is_num(n):
 def is_str(n):
     return isinstance(n, basestring)
 
+def convert_num(s):
+    if '.' in s:
+        n = float(s)
+    else:
+        n = int(s)
+    return n
+
 def item_object_hook(dct):
     """
     A custom object hook for use when decoding JSON item bodys.
@@ -46,19 +53,11 @@ def item_object_hook(dct):
     if 'S' in dct:
         return dct['S']
     if 'N' in dct:
-        val = dct['N']
-        if '.' in val:
-            return float(val)
-        else:
-            return int(val)
+        return convert_num(dct['N'])
     if 'SS' in dct:
-        return dct['SS']
+        return set(dct['SS'])
     if 'NS' in dct:
-        val = dct['NS']
-        if '.' in val[0]:
-            return map(float, val)
-        else:
-            return map(int, val)
+        return set(map(convert_num, dct['NS']))
     return dct
 
 class Layer2(object):

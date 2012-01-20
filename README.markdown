@@ -26,6 +26,7 @@ At the moment, boto supports:
  * Simple Email Service (SES)
  * Flexible Payment Service (FPS)
  * CloudFormation
+ * Amazon DynamoDB
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
