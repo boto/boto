@@ -5,84 +5,105 @@ boto: A Python interface to Amazon Web Services
 ===============================================
 
 An integrated interface to current and future infrastructural services
-offered by Amazon Web Services. 
+offered by `Amazon Web Services`_.
 
-Currently, this includes:
+.. _Amazon Web Services: http://aws.amazon.com/
 
-* Compute
+Currently Supported Services
+----------------------------
 
-  * Elastic Compute Cloud (EC2)
-  * Elastic MapReduce (EMR)
-  * Auto Scaling
+* **Compute**
 
-* Content Delivery
+  * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
+  * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
+  * :doc:`Auto Scaling <autoscale_tut>`
 
-  * CloudFront
+* **Content Delivery**
 
-* Database
+  * CloudFront -- (:doc:`API Reference <ref/cloudfront>`)
 
-  * SimpleDB
-  * Relational Data Services (RDS)
+* **Database**
 
-* Deployment and Management
+  * SimpleDB -- (:doc:`API Reference <ref/sdb>`)
+  * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
 
-  * CloudFormation
+* **Deployment and Management**
 
-* Identity & Access
+  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
 
-  * Identity and Access Management (IAM)
+* **Identity & Access**
 
-* Messaging
+  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
 
-  * Simple Queue Service (SQS)
-  * Simple Notificaiton Service (SNS)
-  * Simple Email Service (SES)
+* **Messaging**
 
-* Monitoring
+  * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
+  * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
+  * Simple Email Service (SES) -- (:doc:`API Reference <ref/ses>`)
 
-  * CloudWatch
+* **Monitoring**
 
-* Networking
+  * CloudWatch -- (API Reference coming soon)
 
-  * Route 53
-  * Virtual Private Cloud (VPC)
-  * Elastic Load Balancing (ELB)
+* **Networking**
 
-* Payments & Billing
+  * Route 53 -- (:doc:`API Reference <ref/route53>`)
+  * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
+  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:ref:`API Reference <ref-ec2-elb>`)
 
-  * Flexible Payments Service (FPS)
+* **Payments & Billing**
 
-* Storage
+  * Flexible Payments Service (FPS) -- (:doc:`API Reference <ref/fps>`)
 
-  * Simple Storage Service (S3)
+* **Storage**
 
-* Workforce
+  * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
 
-  * Mechanical Turk
+* **Workforce**
 
-The boto source repository is at http://github.com/boto
+  * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
 
-Follow project updates on Twitter (http://twitter.com/pythonboto).
+Additional Resources
+--------------------
 
-Follow Mitch on Twitter (http://twitter.com/garnaat).
+* `Boto Source Repository`_
+* `Boto Issue Tracker`_
+* `Boto Twitter`_
+* `Follow Mitch on Twitter`_
+* Join our `IRC channel`_ (#boto on FreeNode).
 
-Join our `IRC channel`_ (#boto on FreeNode).
-
+.. _Boto Issue Tracker: https://github.com/boto/boto/issues
+.. _Boto Source Repository: https://github.com/boto/boto
+.. _Boto Twitter: http://twitter.com/pythonboto
 .. _IRC channel: http://webchat.freenode.net/?channels=boto
-
-Documentation Contents
-----------------------
+.. _Follow Mitch on Twitter: http://twitter.com/garnaat
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
-   sqs_tut
-   s3_tut
    ec2_tut
-   elb_tut
-   autoscale_tut
-   vpc_tut
+   ref/ec2
    emr_tut
+   ref/emr
+   autoscale_tut
+   ref/cloudfront
+   ref/sdb
+   ref/rds
+   ref/cloudformation
+   ref/iam
+   sqs_tut
+   ref/sqs
+   ref/sns
+   ref/ses
+   ref/route53
+   vpc_tut
+   ref/vpc
+   elb_tut
+   ref/fps
+   s3_tut
+   ref/s3
+   ref/mturk
+
    ref/index
    documentation
 
