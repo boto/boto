@@ -81,7 +81,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Views': 0,
             'Replies': 0,
             'Answered': 0,
-            'Tags': ['index', 'primarykey', 'table'],
+            'Tags': set(['index', 'primarykey', 'table']),
             'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
 
         item1 = table.new_item(item1_key, item1_range, item1_attrs)
@@ -145,7 +145,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Views': 0,
             'Replies': 0,
             'Answered': 0,
-            'Tags': ["index", "primarykey", "table"],
+            'Tags': set(["index", "primarykey", "table"]),
             'LastPost2DateTime':  '12/9/2011 11:36:03 PM'}
         item2 = table.new_item(item2_key, item2_range, item2_attrs)
         item2.put()
@@ -158,7 +158,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Views': 0,
             'Replies': 0,
             'Answered': 0,
-            'Tags': ['largeobject', 'multipart upload'],
+            'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
             }
         item3 = table.new_item(item3_key, item3_range, item3_attrs)
@@ -179,14 +179,18 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # Test some integer and float attributes
         integer_value = 42
         float_value = 345.678
-        integer_list = [1,2,3,4,5]
-        float_list = [1.1, 2.2, 3.3, 4.4, 5.5]
-        mixed_list = [1, 2, 3.3, 4, 5.555]
         item3.attrs['IntAttr'] = integer_value
         item3.attrs['FloatAttr'] = float_value
-        item3.attrs['IntListAttr'] = integer_list
-        item3.attrs['FloatListAttr'] = float_list
-        item3.attrs['MixedListAttr'] = mixed_list
+
+        # Test some set values
+        integer_set = set([1,2,3,4,5])
+        float_set = set([1.1, 2.2, 3.3, 4.4, 5.5])
+        mixed_set = set([1, 2, 3.3, 4, 5.555])
+        str_set = set(['foo', 'bar', 'fie', 'baz'])
+        item3.attrs['IntSetAttr'] = integer_set
+        item3.attrs['FloatSetAttr'] = float_set
+        item3.attrs['MixedSetAttr'] = mixed_set
+        item3.attrs['StrSetAttr'] = str_set
         item3.put()
 
         # Now do a consistent read
@@ -195,12 +199,14 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert item4.attrs['FloatAttr'] == float_value
         # The values will not necessarily be in the same order as when
         # we wrote them to the DB.
-        for i in item4.attrs['IntListAttr']:
-            assert i in integer_list
-        for i in item4.attrs['FloatListAttr']:
-            assert i in float_list
-        for i in item4.attrs['MixedListAttr']:
-            assert i in mixed_list
+        for i in item4.attrs['IntSetAttr']:
+            assert i in integer_set
+        for i in item4.attrs['FloatSetAttr']:
+            assert i in float_set
+        for i in item4.attrs['MixedSetAttr']:
+            assert i in mixed_set
+        for i in item4.attrs['StrSetAttr']:
+            assert i in str_set
         
         # Now delete the items
         item1.delete()

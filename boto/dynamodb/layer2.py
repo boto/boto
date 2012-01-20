@@ -155,7 +155,7 @@ class Layer2(object):
         elif dynamodb_type == 'NS':
             val = {dynamodb_type : [ str(n) for n in val]}
         elif dynamodb_type == 'SS':
-            val = {dynamodb_type : val}
+            val = {dynamodb_type : [ n for n in val]}
         return val
 
     def build_key_from_values(self, schema, hash_key, range_key=None):
