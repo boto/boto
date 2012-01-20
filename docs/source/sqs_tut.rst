@@ -11,10 +11,10 @@ downloaded and installed boto.
 Creating a Connection
 ---------------------
 The first step in accessing SQS is to create a connection to the service.
-There are two ways to do this in boto.  The first is:
+There are two ways to do this in boto.  The first is::
 
->>> from boto.sqs.connection import SQSConnection
->>> conn = SQSConnection('<aws access key>', '<aws secret key>')
+    >>> from boto.sqs.connection import SQSConnection
+    >>> conn = SQSConnection('<aws access key>', '<aws secret key>')
 
 At this point the variable conn will point to an SQSConnection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
@@ -23,15 +23,15 @@ method explicitely.  Alternatively, you can set the environment variables:
 AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
-and then call the constructor without any arguments, like this:
+and then call the constructor without any arguments, like this::
 
->>> conn = SQSConnection()
+    >>> conn = SQSConnection()
 
 There is also a shortcut function in the boto package, called connect_sqs
-that may provide a slightly easier means of creating a connection:
+that may provide a slightly easier means of creating a connection::
 
->>> import boto
->>> conn = boto.connect_sqs()
+    >>> import boto
+    >>> conn = boto.connect_sqs()
 
 In either case, conn will point to an SQSConnection object which we will
 use throughout the remainder of this tutorial.
@@ -40,9 +40,9 @@ Creating a Queue
 ----------------
 
 Once you have a connection established with SQS, you will probably want to
-create a queue.  That can be accomplished like this:
+create a queue.  That can be accomplished like this::
 
->>> q = conn.create_queue('myqueue')
+    >>> q = conn.create_queue('myqueue')
 
 The create_queue method will create the requested queue if it does not
 exist or will return the existing queue if it does exist.  There is an
@@ -51,18 +51,17 @@ controls how long a message will remain invisible to other queue readers
 once it has been read (see SQS documentation for more detailed explanation).
 If this is not explicitly specified the queue will be created with whatever
 default value SQS provides (currently 30 seconds).  If you would like to
-specify another value, you could do so like this:
+specify another value, you could do so like this::
 
->>> q = conn.create_queue('myqueue', 120)
+    >>> q = conn.create_queue('myqueue', 120)
 
 This would establish a default visibility timeout for this queue of 120
 seconds.  As you will see later on, this default value for the queue can
 also be overridden each time a message is read from the queue.  If you want
-to check what the default visibility timeout is for a queue:
+to check what the default visibility timeout is for a queue::
 
->>> q.get_timeout()
-30
->>>
+    >>> q.get_timeout()
+    30
 
 Writing Messages
 ----------------

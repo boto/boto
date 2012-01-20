@@ -89,8 +89,7 @@ class Layer1(AWSAuthConnection):
 
     def make_request(self, action, body='', object_hook=None):
         """
-        :raises: ``DynamoDBExpiredTokenError`` if the security token
-            expires.
+        :raises: ``DynamoDBExpiredTokenError`` if the security token expires.
         """
         headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
                                                   self.Version, action),
