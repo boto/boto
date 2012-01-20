@@ -66,7 +66,7 @@ Now, let's check if it got added correctly. Since DynamoDB works under an 'event
        'RangeKeyElement': {range_key_type: item1_range}}
 >>> result = c.get_item(table_name, key=key1, consistent_read=True)
 >>> result
-{u'Item': {u'Tags': {u'SS': [u'primarykey', u'index', u'table']}, u'forum_name': {u'S': u'Amazon DynamoDB'}, u'Views': {u'N': u'0'}, u'LastPostDateTime': {u'S': u'12/9/2011 11:36:03 PM'}, u'LastPostedBy': {u'S': u'User A'}, u'Answered': {u'N': u'0'}, u'Replies': {u'N': u'0'}, u'Message': {u'S': u'DynamoDB thread 1 message text'}, u'subject': {u'S': u'DynamoDB Thread 1'}}, u'ConsumedCapacityUnits': 1.0}
+{u'Item': u'Sample Key Value': {u'S': u'Amazon DynamoDB'},  u'ReceivedTime': {u'S': u'12/9/2011 11:36:03 PM'}, u'SentBy': {u'S': u'User A'}, u'Subject': {u'S': u'LOL watch this lolcat'}, u'Body' : {u'S': u'http://url_to_lolcat.gif'}, u'ConsumedCapacityUnits': 1.0}
 >>>
 
 
