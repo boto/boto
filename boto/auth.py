@@ -97,6 +97,19 @@ class HmacKeys(object):
         hmac.update(string_to_sign)
         return base64.encodestring(hmac.digest()).strip()
 
+class AnonAuthHandler(AuthHandler, HmacKeys):
+    """
+    Implements Anonymous requests.
+    """
+    
+    capability = ['anon']
+    
+    def __init__(self, host, config, provider):
+        AuthHandler.__init__(self, host, config, provider)
+        
+    def add_auth(self, http_request, **kwargs):
+        pass
+
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """    Implements the HMAC request signing used by S3 and GS."""
     
