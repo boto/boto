@@ -117,6 +117,9 @@ boto.ec2.ec2object
    :members:   
    :undoc-members:
 
+
+.. _ref-ec2-elb:
+
 boto.ec2.elb
 ------------
 
