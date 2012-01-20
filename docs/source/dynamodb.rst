@@ -46,9 +46,9 @@ Then, we can actually send the request for table creation:
 >>>
 
 Adding Items
---------------------
+-------------------
 
-Now that we have requested the creation of the table, after a few moments you will want to add records or items. To do so, you need to create a dictionary containing the data you wish to store. So, continuing with our example above, we can create the follwoing data structure:
+Now that we have requested the creation of the table, want to add records or items. To do so, you need to create a dictionary containing the data you wish to store. So, continuing with our example above, we can create the follwoing data structure:
 
 >>> item_data = {
         hash_key_name: {hash_key_type: 'Sample Key Value'},
