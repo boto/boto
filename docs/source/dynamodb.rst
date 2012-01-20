@@ -45,10 +45,17 @@ Then, we can actually send the request for table creation:
 {u'TableDescription': {u'KeySchema': {u'RangeKeyElement': {u'AttributeName': u'subject', u'AttributeType': u'S'}, u'HashKeyElement': {u'AttributeName': u'forum_name', u'AttributeType': u'S'}}, u'TableName': u'table-name', u'CreationDateTime': 1327092563.8180001, u'TableStatus': u'CREATING', u'ProvisionedThroughput': {u'WriteCapacityUnits': 10, u'ReadCapacityUnits': 10}}}
 >>>
 
-Adding Items
--------------------
+Describing Tables
+--------------------
+To get a complete description of the table we just created, we can issue the following call:
 
-Now that we have requested the creation of the table, you'll want to add records or items. To do so, you need to create a dictionary containing the data you wish to store. So, continuing with our example above, we can create the follwoing data structure:
+>>> l1.describe_table(table_name)
+
+which, if successful,  returns a dictionary with set of attributes describing the table.
+
+Adding Items
+--------------------
+Now that we have requested the creation of the table, after a few moments you will want to add records or items. To do so, you need to create a dictionary containing the data you wish to store. So, continuing with our example above, we can create the follwoing data structure:
 
 >>> item_data = {
         hash_key_name: {hash_key_type: 'Sample Key Value'},
@@ -71,9 +78,31 @@ Now, let's check if it got added correctly. Since DynamoDB works under an 'event
 
 >>> key1 = {'HashKeyElement': {hash_key_type: item1_key},
        'RangeKeyElement': {range_key_type: item1_range}}
->>> result = c.get_item(table_name, key=key1, consistent_read=True)
+>>> result = conn.get_item(table_name, key=key1, consistent_read=True)
 >>> result
 {u'Item': u'Sample Key Value': {u'S': u'Amazon DynamoDB'},  u'ReceivedTime': {u'S': u'12/9/2011 11:36:03 PM'}, u'SentBy': {u'S': u'User A'}, u'Subject': {u'S': u'LOL watch this lolcat'}, u'Body' : {u'S': u'http://url_to_lolcat.gif'}, u'ConsumedCapacityUnits': 1.0}
 >>>
 
+Updating Items
+------------------
+If you wish to update an existing item, boto has a convenience method to such end and it's used as follows:
 
+>>> attrs_to_update = {'Subject':{'Value':{'S':'Sup, Groovycat'}, 'Action': 'PUT'}}
+>>> conn.update_item(table_name, key=key1, attrs_to_update)
+
+Deleting Items
+------------------
+To delete items, you need to provide the table name and the key of the item you wish to delete:
+
+>>>conn.delete_item(table_name,key=key1)
+
+Deleting Tables
+------------------
+To delete a table all you need to provide is a table name, as follows:
+
+>>>conn.delete_table(table_name)
+{u'TableDescription': {u'ProvisionedThroughput': {u'WriteCapacityUnits': 10, u'ReadCapacityUnits': 10}, u'TableName': u'table-name', u'TableStatus': u'DELETING'}}
+
+Notice
+-----------------
+This tutorial is a living document and is currently in flux. If you find any inaccuracies, please be sure to file a bug report.
