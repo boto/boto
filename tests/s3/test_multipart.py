@@ -62,7 +62,7 @@ class S3MultiPartUploadTest (unittest.TestCase):
         fp.close()
         cmpu = mpu.complete_upload()
         self.assertEqual(cmpu.key_name, key_name)
-        self.assertIsNotNone(cmpu.etag)
+        self.assertNotEqual(cmpu.etag, None)
 
     def test_complete_japanese(self):
         key_name = u"テスト"
@@ -78,7 +78,7 @@ class S3MultiPartUploadTest (unittest.TestCase):
         # and this test starts failing due to below assertion.
         self.assertEqual(cmpu.key_name, "???")
         #self.assertEqual(cmpu.key_name, key_name)
-        self.assertIsNotNone(cmpu.etag)
+        self.assertNotEqual(cmpu.etag, None)
 
     def test_list_japanese(self):
         key_name = u"テスト"
