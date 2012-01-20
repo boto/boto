@@ -53,8 +53,8 @@ boto.sqs.regioninfo
    :members:   
    :undoc-members:
 
-   boto.sqs.batchresults
--------------------
+boto.sqs.batchresults
+---------------------
 
 .. automodule:: boto.sqs.batchresults
    :members:   

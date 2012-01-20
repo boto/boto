@@ -5,14 +5,14 @@ cloudformation
 ==============
 
 boto.cloudformation
----------------
+-------------------
 
 .. automodule:: boto.cloudformation
    :members:   
    :undoc-members:
 
 boto.cloudformation.stack
-----------------------------
+-------------------------
 
 .. automodule:: boto.cloudformation.stack
    :members:

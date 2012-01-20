@@ -19,7 +19,7 @@ boto.iam.connection
    :undoc-members:
 
 boto.iam.summarymap
------------------
+-------------------
 
 .. automodule:: boto.iam.summarymap
    :members:   

@@ -508,46 +508,44 @@ class Distribution:
 
         :type keypair_id: str
         :param keypair_id: The keypair ID of the Amazon KeyPair used to sign
-                           theURL.  This ID MUST correspond to the private key
-                           specified with private_key_file or
-                           private_key_string.
+            theURL.  This ID MUST correspond to the private key
+            specified with private_key_file or private_key_string.
 
         :type expire_time: int
         :param expire_time: The expiry time of the URL. If provided, the URL
-                            will expire after the time has passed. If not
-                            provided the URL will never expire. Format is a
-                            unix epoch. Use time.time() + duration_in_sec.
+            will expire after the time has passed. If not provided the URL will
+            never expire. Format is a unix epoch.
+            Use time.time() + duration_in_sec.
 
         :type valid_after_time: int
         :param valid_after_time: If provided, the URL will not be valid until
-                                 after valid_after_time. Format is a unix
-                                 epoch. Use time.time() + secs_until_valid.
+            after valid_after_time. Format is a unix epoch.
+            Use time.time() + secs_until_valid.
 
         :type ip_address: str
         :param ip_address: If provided, only allows access from the specified
-                           IP address.  Use '192.168.0.10' for a single IP or
-                           use '192.168.0.0/24' CIDR notation for a subnet.
+            IP address.  Use '192.168.0.10' for a single IP or
+            use '192.168.0.0/24' CIDR notation for a subnet.
 
         :type policy_url: str
         :param policy_url: If provided, allows the signature to contain
-                           wildcard globs in the URL.  For example, you could
-                           provide: 'http://example.com/media/*' and the policy
-                           and signature would allow access to all contents of
-                           the media subdirectory.  If not specified, only
-                           allow access to the exact url provided in 'url'.
+            wildcard globs in the URL.  For example, you could
+            provide: 'http://example.com/media/\*' and the policy
+            and signature would allow access to all contents of
+            the media subdirectory. If not specified, only
+            allow access to the exact url provided in 'url'.
 
         :type private_key_file: str or file object.
         :param private_key_file: If provided, contains the filename of the
-                                 private key file used for signing or an open
-                                 file object containing the private key
-                                 contents.  Only one of private_key_file or
-                                 private_key_string can be provided.
+            private key file used for signing or an open
+            file object containing the private key
+            contents.  Only one of private_key_file or
+            private_key_string can be provided.
 
         :type private_key_string: str
         :param private_key_string: If provided, contains the private key string
-                                   used for signing. Only one of
-                                   private_key_file or private_key_string can
-                                   be provided.
+            used for signing. Only one of private_key_file or
+            private_key_string can be provided.
 
         :rtype: str
         :return: The signed URL.
