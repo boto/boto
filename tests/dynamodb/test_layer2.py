@@ -181,10 +181,12 @@ class DynamoDBLayer2Test (unittest.TestCase):
         float_value = 345.678
         integer_list = [1,2,3,4,5]
         float_list = [1.1, 2.2, 3.3, 4.4, 5.5]
+        mixed_list = [1, 2, 3.3, 4, 5.555]
         item3.attrs['IntAttr'] = integer_value
         item3.attrs['FloatAttr'] = float_value
         item3.attrs['IntListAttr'] = integer_list
         item3.attrs['FloatListAttr'] = float_list
+        item3.attrs['MixedListAttr'] = mixed_list
         item3.put()
 
         # Now do a consistent read
@@ -197,6 +199,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
             assert i in integer_list
         for i in item4.attrs['FloatListAttr']:
             assert i in float_list
+        for i in item4.attrs['MixedListAttr']:
+            assert i in mixed_list
         
         # Now delete the items
         item1.delete()
