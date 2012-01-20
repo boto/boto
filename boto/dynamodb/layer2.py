@@ -46,17 +46,19 @@ def item_object_hook(dct):
     if 'S' in dct:
         return dct['S']
     if 'N' in dct:
-        try:
-            return int(dct['N'])
-        except TypeError:
-            return float(dct['N'])
+        val = dct['N']
+        if '.' in val:
+            return float(val)
+        else:
+            return int(val)
     if 'SS' in dct:
         return dct['SS']
     if 'NS' in dct:
-        try:
-            return map(int, dct['NS'])
-        except TypeError:
-            return map(float, dct['NS'])
+        val = dct['NS']
+        if '.' in val[0]:
+            return map(float, val)
+        else:
+            return map(int, val)
     return dct
 
 class Layer2(object):
