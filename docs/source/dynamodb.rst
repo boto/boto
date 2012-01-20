@@ -1,0 +1,73 @@
+.. dynamodb_tut:
+
+=======================================
+An Introduction to boto's DynamoDB interface
+=======================================
+
+This tutorial focuses on the boto interface to AWS' DynamoDB.  This tutorial assumes that you have boto already downloaded and installed.
+
+Creating a Connection
+---------------------
+The first step in accessing DynamoDB is to create a connection to the service. To do so, the most straight forward way is the following:
+
+>>> from boto.dynamodb.layer1 import Layer1
+>>> conn = Layer1(aws_access_key_id='<YOUR_AWS_KEY_ID>',aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
+
+Bear in mind that if you have your credentials in boto config in your home directory, the two parameters in the call above are not needed. Also important to note is that just as any other AWS service, DynamoDB is region-specific and as such you might want to specify which region to connect to, by default, it'll connect to the US-EAST-1 region.
+
+Now that we have a DynamoDB connection object, we can then query for a list of existing tables in that region:
+
+>>> conn.list_tables()
+{u'TableNames': [u'test-table']}
+>>>
+
+To create a table we need to define a few things. Firstly, we need to define a table name. Secondly, we need a minimal schema specifying the key name and key range. And lastly, we need to define our provisioned read/write throughput. To do so, one could write code as follows:
+
+>>> table_name = 'table-name'
+>>> hash_key_name = 'key_name'
+>>> hash_key_type = 'S'
+>>> range_key_name = 'range_key_name'
+>>> range_key_type = 'S'
+>>> read_units = 10 
+>>> write_units = 10
+>>> schema = {'HashKeyElement': {'AttributeName': hash_key_name,
+                             'AttributeType': hash_key_type},
+          'RangeKeyElement': {'AttributeName': range_key_name,
+                              'AttributeType': range_key_type}}
+>>> provisioned_throughput = {'ReadCapacityUnits': read_units,
+                          'WriteCapacityUnits': write_units}
+                          
+Then, we can actually send the request for table creation:
+
+>>> conn.create_table(table_name, schema, provisioned_throughput)
+{u'TableDescription': {u'KeySchema': {u'RangeKeyElement': {u'AttributeName': u'subject', u'AttributeType': u'S'}, u'HashKeyElement': {u'AttributeName': u'forum_name', u'AttributeType': u'S'}}, u'TableName': u'table-name', u'CreationDateTime': 1327092563.8180001, u'TableStatus': u'CREATING', u'ProvisionedThroughput': {u'WriteCapacityUnits': 10, u'ReadCapacityUnits': 10}}}
+>>>
+
+Now that we have requested the creation of the table, after a few moments you will want to add records or items. To do so, you need to create a dictionary containing the data you wish to store. So, continuing with our example above, we can create the follwoing data structure:
+
+>>> item_data = {
+        hash_key_name: {hash_key_type: 'Sample Key Value'},
+        range_key_name: {range_key_type: 'Sample Range Key Value'},
+        'Subject': {'S': 'LOL watch this lolcat'},
+        'Body' : {'S': 'http://url_to_lolcat.gif'},
+        'SentBy': {'S': 'User A'},
+        'ReceivedTime':  {'S': '12/9/2011 11:36:03 PM'}
+        }
+       
+After we have that defined, we can use the following code to add the item to the table:
+
+>>> result = conn.put_item(table_name, item_data)
+{u'ConsumedCapacityUnits': 1.0}
+>>>
+
+Now, let's check if it got added correctly. Since DynamoDB works under an 'eventual consistency' mode, we need to specify that we wish a consistent read, as follows:
+
+>>> key1 = {'HashKeyElement': {hash_key_type: item1_key},
+       'RangeKeyElement': {range_key_type: item1_range}}
+>>> result = c.get_item(table_name, key=key1, consistent_read=True)
+>>> result
+{u'Item': {u'Tags': {u'SS': [u'primarykey', u'index', u'table']}, u'forum_name': {u'S': u'Amazon DynamoDB'}, u'Views': {u'N': u'0'}, u'LastPostDateTime': {u'S': u'12/9/2011 11:36:03 PM'}, u'LastPostedBy': {u'S': u'User A'}, u'Answered': {u'N': u'0'}, u'Replies': {u'N': u'0'}, u'Message': {u'S': u'DynamoDB thread 1 message text'}, u'subject': {u'S': u'DynamoDB Thread 1'}}, u'ConsumedCapacityUnits': 1.0}
+>>>
+
+
+

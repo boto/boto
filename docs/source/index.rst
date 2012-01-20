@@ -23,6 +23,7 @@ Currently, this includes:
 
   * SimpleDB
   * Relational Data Services (RDS)
+  * DynamoDB
 
 * Deployment and Management
 
@@ -83,6 +84,7 @@ Documentation Contents
    autoscale_tut
    vpc_tut
    emr_tut
+   dynamodb_tut
    ref/index
    documentation
 
