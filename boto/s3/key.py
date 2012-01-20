@@ -569,15 +569,15 @@ class Key(object):
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
         if headers.has_key('Content-Type'):
-            # Some use cases need to suppress sending of the Content-Type header, 
-            # and depend on the receiving server to set the Content-Type. This 
-            # can be achieved by setting headers['Content-Type'] to None.
+            # Some use cases need to suppress sending of the Content-Type 
+            # header and depend on the receiving server to set the content
+            # type. This can be achieved by setting headers['Content-Type'] 
+            # to None when calling this method.
             if headers['Content-Type']:
                 self.content_type = headers['Content-Type']
             else:
-                # Delete null Content-Type header to suppress sending of that header.
+                # Delete null Content-Type value to skip sending that header.
                 del headers['Content-Type']
-
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
