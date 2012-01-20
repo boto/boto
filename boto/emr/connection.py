@@ -260,7 +260,7 @@ class EmrConnection(AWSQueryConnection):
         :param instance_groups: Optional list of instance groups to
             use when creating this job.
             NB: When provided, this argument supersedes num_instances
-                and master/slave_instance_type.
+            and master/slave_instance_type.
                 
         :type ami_version: str
         :param ami_version: Amazon Machine Image (AMI) version to use
