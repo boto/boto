@@ -60,7 +60,7 @@ class STSConnection(AWSQueryConnection):
         """
         params = {}
         if duration:
-            params['Duration'] = duration
+            params['DurationSeconds'] = duration
         return self.get_object('GetSessionToken', params,
                                 Credentials, verb='POST')
         
@@ -81,7 +81,7 @@ class STSConnection(AWSQueryConnection):
         """
         params = {'Name' : name}
         if duration:
-            params['Duration'] = duration
+            params['DurationSeconds'] = duration
         if policy:
             params['Policy'] = policy
         return self.get_object('GetFederationToken', params,
