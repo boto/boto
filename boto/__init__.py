@@ -512,7 +512,7 @@ def connect_dynamodb(aws_access_key_id=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.dynamodb.Layer2`
+    :rtype: :class:`boto.dynamodb.layer2.Layer2`
     :return: A connection to the Layer2 interface for DynamoDB.
     """
     from boto.dynamodb.layer2 import Layer2
