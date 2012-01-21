@@ -16,7 +16,7 @@ Currently Supported Services
 
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
-  * :doc:`Auto Scaling <autoscale_tut>`
+  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/ec2>`)
 
 * **Content Delivery**
 
@@ -44,7 +44,7 @@ Currently Supported Services
 
 * **Monitoring**
 
-  * CloudWatch -- (API Reference coming soon)
+  * :doc:`CloudWatch <cloudwatch_tut>` -- (:doc:`API Reference <ref/cloudwatch>`)
 
 * **Networking**
 
@@ -99,6 +99,8 @@ Additional Resources
    ref/sqs
    ref/sns
    ref/ses
+   cloudwatch_tut
+   ref/cloudwatch
    ref/route53
    vpc_tut
    ref/vpc

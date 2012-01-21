@@ -82,27 +82,6 @@ boto.ec2.buyreservation
    :members:   
    :undoc-members:
 
-boto.ec2.cloudwatch
--------------------
-
-.. automodule:: boto.ec2.cloudwatch
-   :members:   
-   :undoc-members:
-
-boto.ec2.cloudwatch.datapoint
------------------------------
-
-.. automodule:: boto.ec2.cloudwatch.datapoint
-   :members:   
-   :undoc-members:
-
-boto.ec2.cloudwatch.metric
---------------------------
-
-.. automodule:: boto.ec2.cloudwatch.metric
-   :members:   
-   :undoc-members:
-
 boto.ec2.connection
 -------------------
 
@@ -238,3 +217,8 @@ boto.ec2.zone
 .. automodule:: boto.ec2.zone
    :members:   
    :undoc-members:
+
+boto.ec2.cloudwatch
+-------------------
+
+See the :doc:`CloudWatch Reference <cloudwatch>`.
