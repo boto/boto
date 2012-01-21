@@ -16,7 +16,7 @@ Currently Supported Services
 
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
-  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/ec2>`)
+  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
 
 * **Content Delivery**
 
@@ -50,7 +50,7 @@ Currently Supported Services
 
   * Route 53 -- (:doc:`API Reference <ref/route53>`)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
-  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:ref:`API Reference <ref-ec2-elb>`)
+  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
 
 * **Payments & Billing**
 
@@ -87,6 +87,7 @@ Additional Resources
    emr_tut
    ref/emr
    autoscale_tut
+   ref/autoscale
    cloudfront_tut
    ref/cloudfront
    ref/sdb
@@ -105,6 +106,7 @@ Additional Resources
    vpc_tut
    ref/vpc
    elb_tut
+   ref/elb
    ref/fps
    s3_tut
    ref/s3

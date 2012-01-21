@@ -19,61 +19,9 @@ boto.ec2.address
    :undoc-members:
 
 boto.ec2.autoscale
-------------------
+-------------------
 
-.. automodule:: boto.ec2.autoscale
-   :members:   
-   :undoc-members:
-
-boto.ec2.autoscale.activity
----------------------------
-
-.. automodule:: boto.ec2.autoscale.activity
-   :members:   
-   :undoc-members:
-
-boto.ec2.autoscale.group
-------------------------
-
-.. automodule:: boto.ec2.autoscale.group
-   :members:   
-   :undoc-members:
-
-
-boto.ec2.autoscale.instance
----------------------------
-
-.. automodule:: boto.ec2.autoscale.instance
-   :members:   
-   :undoc-members:
-
-boto.ec2.autoscale.launchconfig
--------------------------------
-
-.. automodule:: boto.ec2.autoscale.launchconfig
-   :members:   
-   :undoc-members:
-
-boto.ec2.autoscale.policy
---------------------------
-
-.. automodule:: boto.ec2.autoscale.policy
-   :members:   
-   :undoc-members:
-
-boto.ec2.autoscale.request
---------------------------
-
-.. automodule:: boto.ec2.autoscale.request
-   :members:   
-   :undoc-members:
-
-boto.ec2.autoscale.scheduled
-----------------------------
-
-.. automodule:: boto.ec2.autoscale.scheduled
-   :members:   
-   :undoc-members:
+See the :doc:`Auto Scaling Reference <autoscale>`.
 
 boto.ec2.buyreservation
 -----------------------
@@ -81,6 +29,11 @@ boto.ec2.buyreservation
 .. automodule:: boto.ec2.buyreservation
    :members:   
    :undoc-members:
+
+boto.ec2.cloudwatch
+-------------------
+
+See the :doc:`CloudWatch Reference <cloudwatch>`.
 
 boto.ec2.connection
 -------------------
@@ -96,50 +49,10 @@ boto.ec2.ec2object
    :members:   
    :undoc-members:
 
-
-.. _ref-ec2-elb:
-
 boto.ec2.elb
-------------
+-------------------
 
-.. automodule:: boto.ec2.elb
-   :members:   
-   :undoc-members:
-
-boto.ec2.elb.healthcheck
-------------------------
-
-.. automodule:: boto.ec2.elb.healthcheck
-   :members:   
-   :undoc-members:
-
-boto.ec2.elb.instancestate
---------------------------
-
-.. automodule:: boto.ec2.elb.instancestate
-   :members:   
-   :undoc-members:
-
-boto.ec2.elb.listelement
-------------------------
-
-.. automodule:: boto.ec2.elb.listelement
-   :members:   
-   :undoc-members:
-
-boto.ec2.elb.listener
----------------------
-
-.. automodule:: boto.ec2.elb.listener
-   :members:   
-   :undoc-members:
-
-boto.ec2.elb.loadbalancer
--------------------------
-
-.. automodule:: boto.ec2.elb.loadbalancer
-   :members:   
-   :undoc-members:
+See the :doc:`ELB Reference <elb>`.
 
 boto.ec2.image
 --------------
@@ -218,7 +131,3 @@ boto.ec2.zone
    :members:   
    :undoc-members:
 
-boto.ec2.cloudwatch
--------------------
-
-See the :doc:`CloudWatch Reference <cloudwatch>`.
