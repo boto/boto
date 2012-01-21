@@ -85,8 +85,8 @@ class ELBConnection(AWSQueryConnection):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
-        B{Note:} The region argument is overridden by the region specified in
-        the boto configuration file.
+        .. note:: The region argument is overridden by the region specified in
+            the boto configuration file.
         """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
@@ -113,10 +113,11 @@ class ELBConnection(AWSQueryConnection):
         Retrieve all load balancers associated with your account.
 
         :type load_balancer_names: list
-        :param load_balancer_names: An optional list of load balancer names
+        :keyword load_balancer_names: An optional list of load balancer names.
 
-        :rtype: list
-        :return: A list of :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
+        :rtype: :py:class:`boto.resultset.ResultSet`
+        :return: A ResultSet containing instances of
+            :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {}
         if load_balancer_names:
