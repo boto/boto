@@ -38,12 +38,6 @@ use throughout the remainder of this tutorial.
 
 Creating a Queue
 ----------------
-
-Once you have a connection established with SQS, you will probably want to
-create a queue.  That can be accomplished like this::
-
-    >>> q = conn.create_queue('myqueue')
-
 The create_queue method will create the requested queue if it does not
 exist or will return the existing queue if it does exist.  There is an
 optional parameter to create_queue called visibility_timeout.  This basically
@@ -62,6 +56,11 @@ to check what the default visibility timeout is for a queue::
 
     >>> q.get_timeout()
     30
+
+Alternatively, if you already have a queue you wish to retrieve, you can do so explicitly 
+via the get_queue call as shown below::
+
+    >>> q = conn.create_queue('myqueue')
 
 Listing all Queues
 ------------------
