@@ -143,3 +143,52 @@ class S3VersionTest (unittest.TestCase):
         # now delete bucket
         c.delete_bucket(bucket)
         print '--- tests completed ---'
+
+    def test_latest_version(self):
+        c = S3Connection()
+        bucket_name = 'version-%d' % int(time.time())
+        bucket = c.create_bucket(bucket_name)
+
+        bucket.configure_versioning(versioning=True)
+        
+        # add v1 of an object
+        key_name = "key"
+        kv1 = bucket.new_key(key_name)
+        kv1.set_contents_from_string("v1")
+        
+        # read list which should contain latest v1
+        listed_kv1 = iter(bucket.get_all_versions()).next()
+        self.assertEqual(listed_kv1.name, key_name)
+        self.assertEqual(listed_kv1.version_id, kv1.version_id)
+        self.assertEqual(listed_kv1.is_latest, True)
+
+        # add v2 of the object
+        kv2 = bucket.new_key(key_name)
+        kv2.set_contents_from_string("v2")
+
+        # read 2 versions, confirm v2 is latest
+        i = iter(bucket.get_all_versions())
+        listed_kv2 = i.next()
+        listed_kv1 = i.next()
+        self.assertEqual(listed_kv2.version_id, kv2.version_id)
+        self.assertEqual(listed_kv1.version_id, kv1.version_id)
+        self.assertEqual(listed_kv2.is_latest, True)
+        self.assertEqual(listed_kv1.is_latest, False)
+
+        # delete key, which creates a delete marker as latest
+        bucket.delete_key(key_name)
+        i = iter(bucket.get_all_versions())
+        listed_kv3 = i.next()
+        listed_kv2 = i.next()
+        listed_kv1 = i.next()
+        self.assertNotEqual(listed_kv3.version_id, None)
+        self.assertEqual(listed_kv2.version_id, kv2.version_id)
+        self.assertEqual(listed_kv1.version_id, kv1.version_id)
+        self.assertEqual(listed_kv3.is_latest, True)
+        self.assertEqual(listed_kv2.is_latest, False)
+        self.assertEqual(listed_kv1.is_latest, False)
+
+        # cleanup
+        for k in bucket.list_versions():
+            bucket.delete_key(k.name, version_id=k.version_id)
+        c.delete_bucket(bucket)
