@@ -1137,6 +1137,21 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def delete_lifecycle_configuration(self, headers=None):
+        """
+        Removes all lifecycle configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                                                query_args='lifecycle',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
     def configure_website(self, suffix, error_key='', headers=None):
         """
         Configure this bucket to act as a website
