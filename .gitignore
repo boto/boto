@@ -6,3 +6,5 @@ boto.egg-info
 build/
 dist/
 MANIFEST
+.DS_Store
+.idea
