@@ -92,7 +92,6 @@ Additional Resources
    ref/cloudfront
    ref/sdb
    ref/sdb_db
-   ref/sdb_persist
    dynamodb_tut
    ref/dynamodb
    ref/rds

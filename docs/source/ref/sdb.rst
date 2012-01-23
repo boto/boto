@@ -4,11 +4,10 @@
 SDB Reference
 =============
 
-In addition to what is seen below, boto includes two separate abstraction
-layers for SimpleDB that may be used:
+In addition to what is seen below, boto includes an abstraction
+layer for SimpleDB that may be used:
 
 * :doc:`SimpleDB DB <sdb_db>` (Maintained, but little documentation)
-* :doc:`SimpleDB Persist <sdb_persist>` (Unmaintained)
 
 boto.sdb
 --------

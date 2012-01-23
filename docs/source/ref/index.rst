@@ -20,7 +20,6 @@ API Reference
    gs
    iam
    manage
-   mashups
    mturk
    pyami
    rds
