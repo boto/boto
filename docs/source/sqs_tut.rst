@@ -5,8 +5,8 @@ An Introduction to boto's SQS interface
 =======================================
 
 This tutorial focuses on the boto interface to the Simple Queue Service
-from Amazon Web Services.  This tutorial assumes that you have already
-downloaded and installed boto.
+from Amazon Web Services.  This tutorial assumes that you have boto already
+downloaded and installed.
 
 Creating a Connection
 ---------------------
@@ -16,7 +16,9 @@ There are two ways to do this in boto.  The first is::
     >>> from boto.sqs.connection import SQSConnection
     >>> conn = SQSConnection('<aws access key>', '<aws secret key>')
 
-At this point the variable conn will point to an SQSConnection object.  In
+At this point the variable conn will point to an SQSConnection object. Bear in mind that
+just as any other AWS service SQS is region-specfic. Also important to note is that by default,
+if no region is provided, it'll connect to the US-EAST-1 region. In
 this example, the AWS access key and AWS secret key are passed in to the
 method explicitely.  Alternatively, you can set the environment variables:
 
@@ -38,14 +40,13 @@ use throughout the remainder of this tutorial.
 
 Creating a Queue
 ----------------
-
 Once you have a connection established with SQS, you will probably want to
-create a queue.  That can be accomplished like this::
+create a queue.  In its simplest form, that can be accomplished as follows::
 
     >>> q = conn.create_queue('myqueue')
 
-The create_queue method will create the requested queue if it does not
-exist or will return the existing queue if it does exist.  There is an
+The create_queue method will create (and return) the requested queue if it does not
+exist or will return the existing queue if it does.  There is an
 optional parameter to create_queue called visibility_timeout.  This basically
 controls how long a message will remain invisible to other queue readers
 once it has been read (see SQS documentation for more detailed explanation).
@@ -85,12 +86,12 @@ with ``'another'``::
         Queue(https://queue.amazonaws.com/411358162645/another_queue2)
     ]
 
-Getting a Queue by name
+Getting a Queue (by name)
 -----------------------
+If you wish to explicitly retrieve an existing queue and the name of the queue is known, 
+you can retrieve the queue as follows::
 
-To get an existing Queue instance::
-
-    >>> conn.get_queue('myqueue')
+    >>> my_queue = conn.get_queue('myqueue')
     Queue(https://queue.amazonaws.com/411358162645/myqueue)
 
 This leaves you with a single :py:class:`boto.sqs.queue.Queue`, which abstracts
@@ -98,18 +99,32 @@ the SQS Queue named 'myqueue'.
 
 Writing Messages
 ----------------
-
-Once you have a queue, presumably you will want to write some messages
+Once you have a queue setup, presumably you will want to write some messages
 to it.  SQS doesn't care what kind of information you store in your messages
 or what format you use to store it.  As long as the amount of data per
-message is less than or equal to 256Kb, it's happy.
+message is less than or equal to 256Kb, SQS won't complain.
 
-However, you may have a lot of specific requirements around the format of
-that data.  For example, you may want to store one big string or you might
+So, first we need to create a Message object::
+
+>>> from boto.sqs.message import Message
+>>> m = Message()
+>>> m.set_body('This is my first message.')
+>>> status = q.write(m)
+
+The write method returns a True if everything went well.  If the write
+didn't succeed it will either return a False (meaning SQS simply chose
+not to write the message for some reason) or an exception if there was
+some sort of problem with the request.
+
+Writing Messages (Custom Format)
+--------------------------------
+The technique above will work only if you use boto's default Message payload format;
+however, you may have a lot of specific requirements around the format of
+the message data.  For example, you may want to store one big string or you might
 want to store something that looks more like RFC822 messages or you might want
 to store a binary payload such as pickled Python objects.
 
-The way boto deals with this is to define a simple Message object that
+The way boto deals with this issue is to define a simple Message object that
 treats the message data as one big string which you can set and get.  If that
 Message object meets your needs, you're good to go.  However, if you need to
 incorporate different behavior in your message or handle different types of
@@ -124,19 +139,6 @@ where MyMessage is the class definition for your message class.  Your
 message class should subclass the boto Message because there is a small
 bit of Python magic happening in the __setattr__ method of the boto Message
 class.
-
-For this tutorial, let's just assume that we are using the boto Message
-class.  So, first we need to create a Message object:
-
->>> from boto.sqs.message import Message
->>> m = Message()
->>> m.set_body('This is my first message.')
->>> status = q.write(m)
-
-The write method returns a True if everything went well.  If the write
-didn't succeed it will either return a False (meaning SQS simply chose
-not to write the message for some reason) or an exception if there was
-some sort of problem with the request.
 
 Reading Messages
 ----------------
@@ -161,9 +163,9 @@ familiar to Python programmers.
 
 At this point, we have read the message from the queue and SQS will make
 sure that this message remains invisible to other readers of the queue
-until the visibility timeout period for the queue expires.  If I delete
-the message before the timeout period expires then no one will ever see
-the message again.  However, if I don't delete it (maybe because I crashed
+until the visibility timeout period for the queue expires.  If you delete
+the message before the timeout period expires then no one else will ever see
+the message again.  However, if you don't delete it (maybe because your reader crashed
 or failed in some way, for example) it will magically reappear in my queue
 for someone else to read.  If you aren't happy with the default visibility
 timeout defined for the queue, you can override it when you read a message:
@@ -203,10 +205,8 @@ u'This is my first message'
 
 Deleting Messages and Queues
 ----------------------------
-
-Note that the first message we put in the queue is still there, even though
-we have read it a number of times.  That's because we never deleted it.  To
-remove a message from a queue:
+As stated above, messages are never deleted by the queue unless explicitly told to do so. 
+To remove a message from a queue:
 
 >>> q.delete_message(m)
 []
@@ -215,12 +215,11 @@ If I want to delete the entire queue, I would use:
 
 >>> conn.delete_queue(q)
 
-However, this won't succeed unless the queue is empty.
+However, and this is a good safe guard, this won't succeed unless the queue is empty.
 
-Other Stuff
------------
-
-That covers the basic operations of creating queues, writing messages,
+Additional Information
+----------------------
+The above tutorial covers the basic operations of creating queues, writing messages,
 reading messages, deleting messages, and deleting queues.  There are a
 few utility methods in boto that might be useful as well.  For example,
 to count the number of messages in a queue:
