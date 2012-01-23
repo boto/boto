@@ -76,7 +76,7 @@ qsa_of_interest = ['acl', 'defaultObjectAcl', 'location', 'logging',
                    'uploads', 'uploadId', 'response-content-type', 
                    'response-content-language', 'response-expires', 
                    'response-cache-control', 'response-content-disposition',
-                   'response-content-encoding', 'delete']
+                   'response-content-encoding', 'delete', 'lifecycle']
 
 def unquote_v(nv):
     if len(nv) == 1:

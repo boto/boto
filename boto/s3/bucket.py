@@ -36,7 +36,7 @@ from boto.s3.multidelete import Error
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
-from hashlib import md5
+from boto.s3.lifecycle import Lifecycle
 import boto.jsonresponse
 import boto.utils
 import xml.sax
@@ -1087,6 +1087,52 @@ class Bucket(object):
             if mfa:
                 d['MfaDelete'] = mfa.group(1)
             return d
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def configure_lifecycle(self, lifecycle_config, headers=None):
+        """
+        Configure lifecycle for this bucket.
+        
+        :type lifecycle_config: :class:`boto.s3.lifecycle.Lifecycle`
+        :param lifecycle_config: The lifecycle configuration you want
+            to configure for this bucket.
+        """
+        fp = StringIO.StringIO(lifecycle_config.to_xml())
+        md5 = boto.utils.compute_md5(fp)
+        if headers is None:
+            headers = {}
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('PUT', self.name,
+                                                data=fp.getvalue(),
+                                                query_args='lifecycle',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        
+    def get_lifecycle_config(self, headers=None):
+        """
+        Returns the current lifecycle configuration on the bucket.
+
+        :rtype: :class:`boto.s3.lifecycle.Lifecycle`
+        :returns: A LifecycleConfig object that describes all current
+            lifecycle rules in effect for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='lifecycle', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            lifecycle = Lifecycle(self)
+            h = handler.XmlHandler(lifecycle, self)
+            xml.sax.parseString(body, h)
+            return lifecycle
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
