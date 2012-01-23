@@ -275,10 +275,15 @@ class SQSConnection(AWSQueryConnection):
         return self.get_list('ListQueues', params, [('QueueUrl', Queue)])
 
     def get_queue(self, queue_name):
-        rs = self.get_all_queues(queue_name)
-        for q in rs:
-            if q.url.endswith(queue_name):
-                return q
+        if queue_name.find('/') < 0:
+            rs = self.get_all_queues(queue_name)
+            for q in rs:
+                if q.name == queue_name:
+                    return q
+        else:
+            for q in self.get_all_queues():
+                if q.url.endswith(queue_name):
+                    return q
         return None
 
     lookup = get_queue
