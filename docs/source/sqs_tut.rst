@@ -129,11 +129,15 @@ treats the message data as one big string which you can set and get.  If that
 Message object meets your needs, you're good to go.  However, if you need to
 incorporate different behavior in your message or handle different types of
 data you can create your own Message class.  You just need to register that
-class with the queue so that it knows that when you read a message from the
-queue that it should create one of your message objects rather than the
-default boto Message object.  To register your message class, you would:
+class with the boto queue object so that it knows that, when you read a message from the
+queue, it should create one of your message objects rather than the
+default boto Message object.  To register your message class, you would::
 
+>>> import MyMessage
 >>> q.set_message_class(MyMessage)
+>>> m = MyMessage()
+>>> m.set_body('This is my first message.')
+>>> status = q.write(m)
 
 where MyMessage is the class definition for your message class.  Your
 message class should subclass the boto Message because there is a small
