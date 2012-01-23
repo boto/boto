@@ -269,12 +269,28 @@ class SQSConnection(AWSQueryConnection):
         return self.get_status('ChangeMessageVisibility', params, queue.id)
 
     def get_all_queues(self, prefix=''):
+        """
+        Retrieves all queues.
+
+        :keyword str prefix: Optionally, only return queues that start with
+            this value.
+        :rtype: list
+        :returns: A list of :py:class:`boto.sqs.queue.Queue` instances.
+        """
         params = {}
         if prefix:
             params['QueueNamePrefix'] = prefix
         return self.get_list('ListQueues', params, [('QueueUrl', Queue)])
 
     def get_queue(self, queue_name):
+        """
+        Retrieves the queue with the given name, or ``None`` if no match
+        was found.
+
+        :param str queue_name: The name of the queue to retrieve.
+        :rtype: :py:class:`boto.sqs.queue.Queue` or ``None``
+        :returns: The requested queue, or ``None`` if no match was found.
+        """
         rs = self.get_all_queues(queue_name)
         for q in rs:
             if q.url.endswith(queue_name):

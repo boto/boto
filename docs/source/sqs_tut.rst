@@ -63,6 +63,39 @@ to check what the default visibility timeout is for a queue::
     >>> q.get_timeout()
     30
 
+Listing all Queues
+------------------
+
+To retrieve a list of the queues for your account in the current region::
+
+    >>> conn.get_all_queues()
+    [
+        Queue(https://queue.amazonaws.com/411358162645/myqueue),
+        Queue(https://queue.amazonaws.com/411358162645/another_queue),
+        Queue(https://queue.amazonaws.com/411358162645/another_queue2)
+    ]
+
+This will leave you with a list of all of your :py:class:`boto.sqs.queue.Queue`
+instances. Alternatively, if you wanted to only list the queues that started
+with ``'another'``::
+
+    >>> conn.get_all_queues(prefix='another')
+    [
+        Queue(https://queue.amazonaws.com/411358162645/another_queue),
+        Queue(https://queue.amazonaws.com/411358162645/another_queue2)
+    ]
+
+Getting a Queue by name
+-----------------------
+
+To get an existing Queue instance::
+
+    >>> conn.get_queue('myqueue')
+    Queue(https://queue.amazonaws.com/411358162645/myqueue)
+
+This leaves you with a single :py:class:`boto.sqs.queue.Queue`, which abstracts
+the SQS Queue named 'myqueue'.
+
 Writing Messages
 ----------------
 
@@ -183,24 +216,6 @@ If I want to delete the entire queue, I would use:
 >>> conn.delete_queue(q)
 
 However, this won't succeed unless the queue is empty.
-
-Listing All Available Queues
-----------------------------
-In addition to accessing specific queues via the create_queue method
-you can also get a list of all available queues that you have created.
-
->>> rs = conn.get_all_queues()
-
-This returns a ResultSet object, as described above.  The ResultSet
-can be used as a sequence or list type object to retrieve Queue objects.
-
->>> len(rs)
-11
->>> for q in rs:
-... print q.id
-...
-<listing of available queues>
->>> q = rs[0]
 
 Other Stuff
 -----------
