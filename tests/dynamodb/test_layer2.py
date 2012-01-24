@@ -81,11 +81,16 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Views': 0,
             'Replies': 0,
             'Answered': 0,
+            'Public': True,
             'Tags': set(['index', 'primarykey', 'table']),
             'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
 
         item1 = table.new_item(item1_key, item1_range, item1_attrs)
-        item1.put()
+        # make sure the put() succeeds
+        try:
+            item1.put()
+        except c.layer1.ResponseError, e:
+            raise Exception("Item put failed: %s" % e)
 
         # Try to get an item that does not exist.
         self.assertRaises(DynamoDBKeyNotFoundError,
@@ -187,6 +192,10 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item3['IntAttr'] = integer_value
         item3['FloatAttr'] = float_value
 
+        # Test booleans
+        item3['TrueBoolean'] = True
+        item3['FalseBoolean'] = False
+
         # Test some set values
         integer_set = set([1,2,3,4,5])
         float_set = set([1.1, 2.2, 3.3, 4.4, 5.5])
@@ -202,6 +211,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item4 = table.get_item(item3_key, item3_range, consistent_read=True)
         assert item4['IntAttr'] == integer_value
         assert item4['FloatAttr'] == float_value
+        assert item4['TrueBoolean'] == True
+        assert item4['FalseBoolean'] == False
         # The values will not necessarily be in the same order as when
         # we wrote them to the DB.
         for i in item4['IntSetAttr']:
