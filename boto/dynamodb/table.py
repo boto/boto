@@ -277,9 +277,6 @@ class Table(object):
         and expensive operation, and should be avoided if
         at all possible
 
-        :type table_name: str
-        :param table_name: The name of the table to scan.
-
         :type scan_filter: dict
         :param scan_filter: A Python version of the
             ScanFilter data structure.
@@ -301,6 +298,8 @@ class Table(object):
         :param exclusive_start_key: Primary key of the item from
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
+
+        :rtype: generator
         """
         return self.layer2.scan(self, scan_filter,
             attributes_to_get, limit, count,
