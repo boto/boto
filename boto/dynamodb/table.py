@@ -148,7 +148,8 @@ class Table(object):
         self.layer2.delete_table(self)
 
     def get_item(self, hash_key, range_key=None,
-                 attributes_to_get=None, consistent_read=False):
+                 attributes_to_get=None, consistent_read=False,
+                 item_class=Item):
         """
         Retrieve an existing item from the table.
 
@@ -171,9 +172,14 @@ class Table(object):
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
             request is issued.
+
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
         """
         return self.layer2.get_item(self, hash_key, range_key,
-                                    attributes_to_get, consistent_read)
+                                    attributes_to_get, consistent_read, item_class)
 
     lookup = get_item
     def has_item(self, hash_key, range_key=None, consistent_read=False):

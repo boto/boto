@@ -323,7 +323,8 @@ class Layer2(object):
         return Schema(schema)
 
     def get_item(self, table, hash_key, range_key=None,
-                 attributes_to_get=None, consistent_read=False):
+                 attributes_to_get=None, consistent_read=False,
+                 item_class=Item):
         """
         Retrieve an existing item from the table.
 
@@ -349,12 +350,17 @@ class Layer2(object):
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
             request is issued.
+
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
         """
         key = self.build_key_from_values(table.schema, hash_key, range_key)
         response = self.layer1.get_item(table.name, key,
                                         attributes_to_get, consistent_read,
                                         object_hook=item_object_hook)
-        item = Item(table, hash_key, range_key, response['Item'])
+        item = item_class(table, hash_key, range_key, response['Item'])
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return item
