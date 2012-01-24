@@ -504,6 +504,8 @@ class Layer2(object):
         :param exclusive_start_key: Primary key of the item from
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
+
+        :rtype: generator
         """
         response = True
         while response:
