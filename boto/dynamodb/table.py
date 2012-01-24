@@ -270,11 +270,38 @@ class Table(object):
         return self.layer2.query(self, hash_key, range_key_condition,
                                  attributes_to_get, consistent_read)
 
-    def scan(self):
-        pass
-        
+    def scan(self, scan_filter=None,
+             attributes_to_get=None, limit=None,
+             count=False, exclusive_start_key=None):
+        """Scan through this table, this is a very long
+        and expensive operation, and should be avoided if
+        at all possible
 
+        :type table_name: str
+        :param table_name: The name of the table to scan.
 
-        
-        
+        :type scan_filter: dict
+        :param scan_filter: A Python version of the
+            ScanFilter data structure.
 
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+
+        :type limit: int
+        :param limit: The maximum number of items to return.
+
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Scan operation, even if the
+            operation has no matching items for the assigned filter.
+
+        :type exclusive_start_key: list or tuple
+        :param exclusive_start_key: Primary key of the item from
+            which to continue an earlier query.  This would be
+            provided as the LastEvaluatedKey in that query.
+        """
+        return self.layer2.scan(self, scan_filter,
+            attributes_to_get, limit, count,
+            exclusive_start_key)
