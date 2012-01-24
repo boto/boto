@@ -143,9 +143,6 @@ class Sequence(object):
             import uuid
             self.id = str(uuid.uuid4())
 
-        if not self.val:
-            self.val = init_val
-
         self.item_type = type(fnc(None))
         self.timestamp = None
         # Allow us to pass in a full name to a function
@@ -153,6 +150,10 @@ class Sequence(object):
             from boto.utils import find_class
             fnc = find_class(fnc)
         self.fnc = fnc
+
+        # Bootstrap the value last
+        if not self.val:
+            self.val = init_val
 
     def set(self, val):
         """Set the value"""
