@@ -14,11 +14,10 @@ The first step in accessing SimpleDB is to create a connection to the service.
 To do so, the most straight forward way is the following::
 
 >>> import boto
->>> conn = boto.connect_sdb(
-    aws_access_key_id='<YOUR_AWS_KEY_ID>',
-    aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
+>>> conn = boto.connect_sdb(aws_access_key_id='<YOUR_AWS_KEY_ID>',aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
 >>> conn
 SDBConnection:sdb.amazonaws.com
+>>>
 
 Bear in mind that if you have your credentials in boto config in your home
 directory, the two keyword arguments in the call above are not needed. Also
@@ -33,8 +32,10 @@ Creating new domains is a fairly straight forward operation. To do so, you can p
 
 >>> conn.create_domain('test-domain')
 Domain:test-domain
+>>>
 >>> conn.create_domain('test-domain-2')
 Domain:test-domain
+>>>
 
 Please note that SimpleDB, unlike its newest sibling DynamoDB, is truly and completely schema-less. 
 Thus, there's no need specify domain keys or ranges.
@@ -47,6 +48,7 @@ So, to list all your domains for your account in a region, you can simply do as 
 >>> domains = conn.get_all_domains()
 >>> domains
 [Domain:test-domain, Domain:test-domain-2]
+>>>
 
 The get_all_domains() method returns a :py:class:`boto.resultset.ResultSet` containing
 all :py:class:`boto.sdb.domain.Domain` objects associated with
@@ -59,6 +61,7 @@ If you wish to retrieve a specific domain whose name is known, you can do so as 
 >>> dom = conn.get_domain('test-domain')
 >>> dom
 Domain:test-domain
+>>>
 
 The get_domain call has an optional validate parameter, which defaults to True. This will make sure to raise
 an exception if the domain you are looking for doesn't exist. If you set it to false, it will return a 
@@ -78,6 +81,7 @@ To this end, boto offers a simple and convenient way to do so as shown below::
 'domain', 'endElement', 'item_count', 'item_names_size', 'startElement', 'timestamp']
 >>> domain_meta.item_count
 0
+>>>
 
 Please bear in mind that while in the example above we used a previously retrieved domain object as the parameter, you
 can retrieve the domain metadata via its name (string).
@@ -93,12 +97,14 @@ So, adding an item to a domain looks as follows::
 >>> item_attrs = {'Artist': 'The Jackson 5', 'Genera':'Pop'}
 >>> dom.put_attributes(item_name, item_attrs)
 True
+>>>
 
 Now let's check if it worked::
 
 >>> domain_meta = conn.domain_metadata(dom)
 >>> domain_meta.item_count
 1
+>>>
 
 
 Batch Adding Items (and attributes)
@@ -109,12 +115,14 @@ is a Dictionary-like object with your items and their respective attributes, as 
 >>> items = {'item1':{'attr1':'val1'},'item2':{'attr2':'val2'}}
 >>> dom.batch_put_items(items)
 True
+>>>
 
 Now, let's check the item count once again::
 
 >>> domain_meta = conn.domain_metadata(dom)
 >>> domain_meta.item_count
 3
+>>>
 
 A few words of warning: both batch_put_items() and put_item(), by default, will overwrite the values of the attributes if both 
 the item and attribute already exist. If the item exists, but not the attributes, it will append the new attributes to the 
@@ -128,12 +136,14 @@ To retrieve an item along with its attributes is a fairly straight forward opera
 
 >>> dom.get_item('item1')
 {u'attr1': u'val1'}
+>>>
 
 Since SimpleDB works in an "eventual consistency" manner, we can also request a forced consistent read (though this will 
 invariably adversely affect read performance). The way to accomplish that is as shown below::
 
 >>> dom.get_item('item1', consistent_read=True)
 {u'attr1': u'val1'}
+>>>
 
 Retrieving One or More Items
 ----------------------------
@@ -146,6 +156,7 @@ and you would do something along the lines of::
 ... 	print 'o hai'
 ... 
 o hai
+>>>
 
 This method returns a ResultSet collection you can iterate over.
 
@@ -156,6 +167,7 @@ The easiest way to modify an item's attributes is by manipulating the item's att
 >>> item = dom.get_item('item1')
 >>> item['attr1'] = 'val_changed'
 >>> item.save()
+
 
 Deleting Items (and its attributes)
 -----------------------------------
@@ -170,6 +182,7 @@ To delete a domain and all items under it (i.e. be very careful), you can do it 
 
 >>> conn.delete_domain('test-domain')
 True
+>>>
 
 
 
