@@ -146,6 +146,11 @@ class Layer2(object):
         is not supported, raise a TypeError
         """
         def _str(val):
+            """
+            DynamoDB stores booleans as numbers. True is 1, False is 0.
+            This function converts Python booleans into DynamoDB friendly
+            representation.
+            """
             if isinstance(val, bool):
                 return str(int(val))
             return str(val)
