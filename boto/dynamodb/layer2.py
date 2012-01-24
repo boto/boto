@@ -417,7 +417,7 @@ class Layer2(object):
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, limit=None, consistent_read=False,
-              scan_index_forward=True, exclusive_start_key=None):
+              scan_index_forward=True, exclusive_start_key=None, item_class=Item):
         """
         Perform a query on the table.
         
@@ -463,6 +463,11 @@ class Layer2(object):
         :param exclusive_start_key: Primary key of the item from
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
+
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
         """
         rkc = self.dynamize_range_key_condition(range_key_condition)
         response = self.layer1.query(table.name, self.dynamize_value(hash_key),
@@ -474,13 +479,14 @@ class Layer2(object):
         for item in response['Items']:
             hash_key = item[table.schema.hash_key_name]
             range_key = item[table.schema.range_key_name]
-            items.append(Item(table, hash_key, range_key, item))
+            items.append(item_class(table, hash_key, range_key, item))
         return items
 
     
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None):
+             count=False, exclusive_start_key=None,
+             item_class=Item):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -511,6 +517,11 @@ class Layer2(object):
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
 
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
+
         :rtype: generator
         """
         response = True
@@ -527,4 +538,4 @@ class Layer2(object):
                 count, exclusive_start_key)
             if response:
                 for item in response['Items']:
-                    yield Item(table, attrs=item)
+                    yield item_class(table, attrs=item)

@@ -229,7 +229,8 @@ class Table(object):
 
     def query(self, hash_key, range_key_condition=None,
               attributes_to_get=None, limit=None, consistent_read=False,
-              scan_index_forward=True, exclusive_start_key=None):
+              scan_index_forward=True, exclusive_start_key=None,
+              item_class=Item):
         """
         Perform a query on the table.
         
@@ -272,13 +273,21 @@ class Table(object):
         :param exclusive_start_key: Primary key of the item from
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
+
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
         """
         return self.layer2.query(self, hash_key, range_key_condition,
-                                 attributes_to_get, consistent_read)
+                                 attributes_to_get=attributes_to_get,
+                                 consistent_read=consistent_read,
+                                 item_class=item_class)
 
     def scan(self, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None):
+             count=False, exclusive_start_key=None,
+             item_class=Item):
         """Scan through this table, this is a very long
         and expensive operation, and should be avoided if
         at all possible
@@ -305,8 +314,13 @@ class Table(object):
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
 
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
+
         :rtype: generator
         """
         return self.layer2.scan(self, scan_filter,
             attributes_to_get, limit, count,
-            exclusive_start_key)
+            exclusive_start_key, item_class=item_class)
