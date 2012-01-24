@@ -24,7 +24,7 @@ Currently Supported Services
 
 * **Database**
 
-  * SimpleDB -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`SimpleDB <simpledb_tut>`-- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
   * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
 
@@ -90,6 +90,7 @@ Additional Resources
    ref/autoscale
    cloudfront_tut
    ref/cloudfront
+   simpledb_tut
    ref/sdb
    ref/sdb_db
    dynamodb_tut
