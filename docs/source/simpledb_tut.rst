@@ -173,6 +173,9 @@ Deleting Items (and its attributes)
 Deleting an item is a very simple operation. All you are required to provide is either the name of the item or an item object to the 
 delete_item() method, boto will take care of the rest::
 
+    >>>dom.delete_item(item)
+    >>>True
+
     
 
 Deleting Domains
