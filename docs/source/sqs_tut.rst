@@ -87,7 +87,7 @@ with ``'another'``::
     ]
 
 Getting a Queue (by name)
------------------------
+-------------------------
 If you wish to explicitly retrieve an existing queue and the name of the queue is known, 
 you can retrieve the queue as follows::
 

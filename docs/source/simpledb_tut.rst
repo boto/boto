@@ -18,6 +18,7 @@ To do so, the most straight forward way is the following::
     >>> conn
     SDBConnection:sdb.amazonaws.com
     >>>
+
 Bear in mind that if you have your credentials in boto config in your home
 directory, the two keyword arguments in the call above are not needed. Also
 important to note is that just as any other AWS service, SimpleDB is
@@ -25,7 +26,7 @@ region-specific and as such you might want to specify which region to connect
 to, by default, it'll connect to the US-EAST-1 region.
 
 Creating Domains
-------------------
+----------------
 Arguably, once you have your connection established, you'll want to create one or more dmains.
 Creating new domains is a fairly straight forward operation. To do so, you can proceed as follows::
 
@@ -40,7 +41,7 @@ Please note that SimpleDB, unlike its newest sibling DynamoDB, is truly and comp
 Thus, there's no need specify domain keys or ranges.
 
 Listing All Domains
-------------------
+-------------------
 Unlike DynamoDB or other database systems, SimpleDB uses the concept of 'domains' instead of tables.
 So, to list all your domains for your account in a region, you can simply do as follows::
 

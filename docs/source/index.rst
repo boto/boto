@@ -90,6 +90,7 @@ Additional Resources
    ref/autoscale
    cloudfront_tut
    ref/cloudfront
+   simpledb_tut
    ref/sdb
    ref/sdb_db
    dynamodb_tut
