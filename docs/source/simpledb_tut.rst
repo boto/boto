@@ -10,11 +10,11 @@ assumes that you have boto already downloaded and installed.
 
 Creating a Connection
 ---------------------
-The first step in accessing DynamoDB is to create a connection to the service.
+The first step in accessing SimpleDB is to create a connection to the service.
 To do so, the most straight forward way is the following::
 
 >>> import boto
->>> conn = boto.connect_dynamodb(
+>>> conn = boto.connect_sdb(
     aws_access_key_id='<YOUR_AWS_KEY_ID>',
     aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
 >>> conn
