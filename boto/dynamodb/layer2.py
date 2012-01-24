@@ -472,5 +472,51 @@ class Layer2(object):
         return items
 
     
+    def scan(self, table, scan_filter=None,
+             attributes_to_get=None, limit=None,
+             count=False, exclusive_start_key=None):
+        """
+        Perform a scan of DynamoDB.  This version is currently punting
+        and expecting you to provide a full and correct JSON body
+        which is passed as is to DynamoDB.
 
-    
+        :type table: Table
+        :param table: The table to scan from
+
+        :type scan_filter: dict
+        :param scan_filter: A Python version of the
+            ScanFilter data structure.
+
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+
+        :type limit: int
+        :param limit: The maximum number of items to return.
+
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Scan operation, even if the
+            operation has no matching items for the assigned filter.
+
+        :type exclusive_start_key: list or tuple
+        :param exclusive_start_key: Primary key of the item from
+            which to continue an earlier query.  This would be
+            provided as the LastEvaluatedKey in that query.
+        """
+        response = True
+        while response:
+            if response is True:
+                pass
+            elif response.has_key("LastEvaluatedKey"):
+                exclusive_start_key = response['LastEvaluatedKey']
+            else:
+                break
+
+            response = self.layer1.scan(table.name, scan_filter,
+                attributes_to_get,limit,
+                count, exclusive_start_key)
+            if response:
+                for item in response['Items']:
+                    yield Item(table, attrs=item)
