@@ -175,7 +175,7 @@ class HostConnectionPool(object):
             # simply doesn't make sense with App Engine urlfetch service.
             return False
         else:
-            response = conn._HTTPConnection__response
+            response = getattr(conn, '_HTTPConnection__response', None)
             return (response is None) or response.isclosed()
 
     def clean(self):
