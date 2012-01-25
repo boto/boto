@@ -54,6 +54,7 @@ class Key(object):
         self.content_encoding = None
         self.filename = None
         self.etag = None
+        self.is_latest = False
         self.last_modified = None
         self.owner = None
         self.storage_class = 'STANDARD'
@@ -358,6 +359,11 @@ class Key(object):
             self.name = value
         elif name == 'ETag':
             self.etag = value
+        elif name == 'IsLatest':
+            if value == 'true':
+                self.is_latest = True
+            else:
+                self.is_latest = False
         elif name == 'LastModified':
             self.last_modified = value
         elif name == 'Size':
