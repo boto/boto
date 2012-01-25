@@ -177,7 +177,10 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # Try a few queries
         items = table.query('Amazon DynamoDB',
                              {'DynamoDB': 'BEGINS_WITH'})
-        assert len(items) == 2
+        n = 0
+        for item in items:
+            n += 1
+        assert n == 2
 
         # # Try a few scans
         # result = c.scan(table_name,
