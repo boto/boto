@@ -32,7 +32,7 @@ Python types and vice-versa.
 """
 
 def is_num(n):
-    return (isinstance(n, (int, long, float)))
+    return isinstance(n, (int, long, float, bool))
 
 def is_str(n):
     return isinstance(n, basestring)
@@ -145,9 +145,19 @@ class Layer2(object):
         needs to be sent to Amazon DynamoDB.  If the type of the value
         is not supported, raise a TypeError
         """
+        def _str(val):
+            """
+            DynamoDB stores booleans as numbers. True is 1, False is 0.
+            This function converts Python booleans into DynamoDB friendly
+            representation.
+            """
+            if isinstance(val, bool):
+                return str(int(val))
+            return str(val)
+
         dynamodb_type = self.get_dynamodb_type(val)
         if dynamodb_type == 'N':
-            val = {dynamodb_type : str(val)}
+            val = {dynamodb_type : _str(val)}
         elif dynamodb_type == 'S':
             val = {dynamodb_type : val}
         elif dynamodb_type == 'NS':
