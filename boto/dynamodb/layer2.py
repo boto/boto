@@ -118,7 +118,7 @@ class Layer2(object):
                 elif attr_value is False:
                     attr_value = {'Exists': False}
                 else:
-                    attr_value = self.dynamize_value(expected_value[attr_name])
+                    attr_value = {'Value' : self.dynamize_value(expected_value[attr_name])}
                 d[attr_name] = attr_value
         return d
 
