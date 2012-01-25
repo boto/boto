@@ -468,20 +468,25 @@ class Layer2(object):
         :param item_class: Allows you to override the class used
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
+
+        :rtype: generator
         """
         rkc = self.dynamize_range_key_condition(range_key_condition)
-        response = self.layer1.query(table.name, self.dynamize_value(hash_key),
-                                     rkc, attributes_to_get, limit,
-                                     consistent_read, scan_index_forward,
-                                     exclusive_start_key,
-                                     object_hook=item_object_hook)
-        items = []
-        for item in response['Items']:
-            hash_key = item[table.schema.hash_key_name]
-            range_key = item[table.schema.range_key_name]
-            items.append(item_class(table, hash_key, range_key, item))
-        return items
-
+        response = True
+        while response:
+            if response is True:
+                pass
+            elif response.has_key("LastEvaluatedKey"):
+                exclusive_start_key = response['LastEvaluatedKey']
+            else:
+                break
+            response = self.layer1.query(table.name, self.dynamize_value(hash_key),
+                                         rkc, attributes_to_get, limit,
+                                         consistent_read, scan_index_forward,
+                                         exclusive_start_key,
+                                         object_hook=item_object_hook)
+            for item in response['Items']:
+                yield item_class(table, attrs=item)
     
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, limit=None,
