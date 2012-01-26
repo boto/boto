@@ -26,6 +26,7 @@ Tests for Layer2 of Amazon DynamoDB
 
 import unittest
 import time
+import uuid
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.layer2 import Layer2
 
@@ -42,8 +43,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
         range_key_proto_value = ''
         schema = c.create_schema(hash_key_name, hash_key_proto_value,
                                  range_key_name, range_key_proto_value)
+
+        # Create another schema without a range key
+        schema2 = c.create_schema('post_id', '')
+
         # Now create a table
-        table_name = 'test-%d' % int(time.time())
+        index = int(time.time())
+        table_name = 'test-%d' % index
         read_units = 5
         write_units = 5
         table = c.create_table(table_name, schema, read_units, write_units)
@@ -55,12 +61,18 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert table.read_units == read_units
         assert table.write_units == write_units
 
+        # Create the second table
+        table2_name = 'test-%d' % (index + 1)
+        table2 = c.create_table(table2_name, schema2, read_units, write_units)
+
         # Wait for table to become active
         table.refresh(wait_for_active=True)
+        table2.refresh(wait_for_active=True)
 
         # List tables and make sure new one is there
         table_names = c.list_tables()
         assert table_name in table_names
+        assert table2_name in table_names
 
         # Update the tables ProvisionedThroughput
         new_read_units = 10
@@ -174,6 +186,16 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item3 = table.new_item(item3_key, item3_range, item3_attrs)
         item3.put()
 
+        # Put an item into the second table
+        table2_item1_key = uuid.uuid4().hex
+        table2_item1_attrs = {
+            'DateTimePosted': '25/1/2011 12:34:56 PM',
+            'Text': 'I think boto rocks and so does DynamoDB'
+            }
+        table2_item1 = table2.new_item(table2_item1_key,
+                                       attrs=table2_item1_attrs)
+        table2_item1.put()
+
         # Try a few queries
         items = table.query('Amazon DynamoDB',
                              {'DynamoDB': 'BEGINS_WITH'})
@@ -234,10 +256,12 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                        consistent_read=True))
         item2.delete()
         item3.delete()
+        table2_item1.delete()
 
-        # Now delete the table
+        # Now delete the tables
         table.delete()
+        table2.delete()
         assert table.status == 'DELETING'
+        assert table2.status == 'DELETING'
 
         print '--- tests completed ---'
-
