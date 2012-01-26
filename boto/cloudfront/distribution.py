@@ -589,9 +589,10 @@ class Distribution:
             if policy_url is None:
                 policy_url = url
             # Can't use canned policy
-            policy = self._custom_policy(policy_url, expires=None,
-                                         valid_after=None,
-                                         ip_address=None)
+            policy = self._custom_policy(policy_url, expires=expire_time,
+                                         valid_after=valid_after_time,
+                                         ip_address=ip_address)
+
             encoded_policy = self._url_base64_encode(policy)
             params["Policy"] = encoded_policy
         #sign the policy
