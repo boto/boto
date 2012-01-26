@@ -1,5 +1,5 @@
-# Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2011 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -24,6 +24,7 @@
 import boto
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
+from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 from boto.dynamodb.table import Table
 
@@ -62,7 +63,7 @@ class Layer1(AWSAuthConnection):
     ThruputError = "ProvisionedThroughputExceededException"
     """The error response returned when provisioned throughput is exceeded"""
 
-    ExpiredSessionError = 'com.amazon.coral.service#ExpiredTokenException'
+    SessionExpiredError = 'com.amazon.coral.service#ExpiredTokenException'
     """The error response returned when session token has expired"""
     
     ResponseError = DynamoDBResponseError
@@ -72,10 +73,10 @@ class Layer1(AWSAuthConnection):
                  host=None, debug=0, session_token=None):
         if not host:
             host = self.DefaultHost
+        self._passed_access_key = aws_access_key_id
+        self._passed_secret_key = aws_secret_access_key
         if not session_token:
-            self.sts = boto.connect_sts(aws_access_key_id,
-                                        aws_secret_access_key)
-            session_token = self.sts.get_session_token()
+            session_token = self._get_session_token()
         self.creds = session_token
         AWSAuthConnection.__init__(self, host,
                                    self.creds.access_key,
@@ -83,6 +84,19 @@ class Layer1(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port,
                                    debug=debug,
                                    security_token=self.creds.session_token)
+
+    def _update_provider(self):
+        self.provider = Provider('aws',
+                                 self.creds.access_key,
+                                 self.creds.secret_key,
+                                 self.creds.session_token)
+        self._auth_handler.update_provider(self.provider)
+        
+    def _get_session_token(self):
+        boto.log.debug('Creating new Session Token')
+        sts = boto.connect_sts(self._passed_access_key,
+                               self._passed_secret_key)
+        return sts.get_session_token()
 
     def _required_auth_capability(self):
         return ['hmac-v3-http']
@@ -93,42 +107,39 @@ class Layer1(AWSAuthConnection):
         """
         headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
                                                   self.Version, action),
-                'Content-Type' : 'application/x-amz-json-1.0',
-                'Content-Length' : str(len(body))}
-        numAttempts = 0
-        while numAttempts < self.num_retries:
-            http_request = self.build_base_http_request('POST', '/', '/',
-                                                        {}, headers, body, None)
-            response = self._mexe(http_request, sender=None,
-                                  override_num_retries=0)
+                   'Content-Type' : 'application/x-amz-json-1.0',
+                   'Content-Length' : str(len(body))}
+        http_request = self.build_base_http_request('POST', '/', '/',
+                                                    {}, headers, body, None)
+        response = self._mexe(http_request, sender=None,
+                              retry_handler=self._retry_handler)
+        response_body = response.read()
+        boto.log.debug(response_body)
+        return json.loads(response_body, object_hook=object_hook)
+
+    def _retry_handler(self, response, i, next_sleep):
+        status = None
+        if response.status == 400:
             response_body = response.read()
             boto.log.debug(response_body)
-            json_response = json.loads(response_body, object_hook=object_hook)
-            if response.status == 200:
-                return json_response
-            elif response.status == 400:
-                # We only handle "soft" retries of ProvisionedThroughput error
-                if self.ThruputError in json_response.get('__type'):
-                    boto.log.debug("%s, retry attempt %s" % (self.ThruputError,
-                                                             numAttempts))
-                    if numAttempts < self.num_retries:
-                        # Sleep a fractional amount of time, which corresponds
-                        # to 1 second for our last attempt, and zero time for
-                        # our first retry.
-                        time.sleep((1.0/self.num_retries)*numAttempts)
-                        numAttempts += 1
-                        continue
-                raise self.ResponseError(response.status, response.reason,
-                                         json_response)
+            json_response = json.loads(response_body)
+            if self.ThruputError in json_response.get('__type'):
+                msg = "%s, retry attempt %s" % (self.ThruputError, i)
+                # Sleep a fractional amount of time, which corresponds
+                # to 1 second for our last attempt, and zero time for
+                # our first retry.
+                next_sleep = (1.0/self.num_retries)*i
+                i += 1
+                status = (msg, i, next_sleep)
+            elif self.SessionExpiredError in json_response.get('__type'):
+                msg = 'Renewing Session Token'
+                self.creds = self._get_session_token()
+                self._update_provider()
+                status = (msg, i+self.num_retries-1, next_sleep)
             else:
-                if self.SessionExpiredError in json_response.get('__type'):
-                    # TODO: Retrieve new session token here
-                    raise dynamodb_exceptions.DynamoDBExpiredTokenError(
-                        response.status, json_response.get('message'),
-                        json_response)
-
                 raise self.ResponseError(response.status, response.reason,
                                          json_response)
+        return status
 
     def list_tables(self, limit=None, start_table=None):
         """

@@ -45,6 +45,21 @@ class Credentials(object):
         self.expiration = None
 
     @classmethod
+    def from_json(cls, json_doc):
+        """
+        Create and return a new Session Token based on the contents
+        of a JSON document.
+
+        :type json_doc: str
+        :param json_doc: A string containing a JSON document with a
+            previously saved Credentials object.
+        """
+        d = json.loads(json_doc)
+        token = cls()
+        token.__dict__.update(d)
+        return token
+
+    @classmethod
     def load(cls, file_path):
         """
         Create and return a new Session Token based on the contents
@@ -55,11 +70,9 @@ class Credentials(object):
             file containing the previously saved Session Token information.
         """
         fp = open(file_path)
-        d = json.load(fp)
+        json_doc = fp.read()
         fp.close()
-        token = cls()
-        token.__dict__.update(d)
-        return token
+        return cls.from_json(json_doc)
 
     def startElement(self, name, attrs, connection):
         return None

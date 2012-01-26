@@ -28,12 +28,20 @@ import unittest
 import time
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.layer1 import Layer1
+from boto.sts.credentials import Credentials
+
+json_doc = """{"access_key": "ASIAIV7R2NUUJ6SB7GKQ", "secret_key": "eIfijGxJlejHDSQiaGr6b7U805U0GKWmllCTt2ZM", "request_id": "28c17897-4555-11e1-8bb1-2529f165f2f0", "expiration": "2012-01-23T00:59:45.617Z", "session_token": "AQoDYXdzEPn//////////wEasAGDXeGY8bx36NLRSA1v3dy2x00k3FNA2KVsMEXkQuKY08gPTtYs2tefZTBsTjgjC+O6j8ieoB1on2bPyCq872+Yq3cipls8jna+PNSEcsXtC8CJBKai/FfYNg1XUHam6EUCtRiUHvqztOVgaGqUUS1UbrBKB7kKSXzgKrJ9AT0bvqi4hZS0ayaU8969f2HIbN9psXhRBKpJyB9FUPuVYpYYZsz9NY3y2kGtK+dgfrKvxyDxxfL4BA=="}"""
 
 class DynamoDBLayer1Test (unittest.TestCase):
 
     def test_layer1_basic(self):
         print '--- running DynamoDB Layer1 tests ---'
-        c = Layer1()
+
+        # Create a Layer1 connection with an expired set of
+        # credentials to test the automatic renewal of tokens
+
+        bad_creds = Credentials.from_json(json_doc)
+        c = Layer1(session_token=bad_creds)
 
         # First create a table
         table_name = 'test-%d' % int(time.time())
