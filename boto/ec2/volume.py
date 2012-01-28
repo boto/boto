@@ -149,9 +149,9 @@ class Volume(TaggedEC2Object):
 
         :type description: str
         :param description: A description of the snapshot.  Limited to 256 characters.
-        
-        :rtype: bool
-        :return: True if successful
+
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         return self.connection.create_snapshot(self.id, description)
 
