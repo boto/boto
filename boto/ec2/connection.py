@@ -62,7 +62,7 @@ class EC2Connection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'ec2_version', '2011-12-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
-                                            'ec2.amazonaws.com')
+                                            'ec2.us-east-1.amazonaws.com')
     ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,

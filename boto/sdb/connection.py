@@ -78,7 +78,7 @@ class SDBConnection(AWSQueryConnection):
         go through :py:func:`boto.connect_sdb`.
     """
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'sdb.amazonaws.com'
+    DefaultRegionEndpoint = 'sdb.us-east-1.amazonaws.com'
     APIVersion = '2009-04-15'
     ResponseError = SDBResponseError
 

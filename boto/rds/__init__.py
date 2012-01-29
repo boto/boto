@@ -77,7 +77,7 @@ def connect_to_region(region_name, **kw_params):
 class RDSConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'rds.amazonaws.com'
+    DefaultRegionEndpoint = 'rds.us-east-1.amazonaws.com'
     APIVersion = '2011-04-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,

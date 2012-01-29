@@ -33,7 +33,7 @@ class SQSConnection(AWSQueryConnection):
     A Connection to the SQS Service.
     """
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'queue.amazonaws.com'
+    DefaultRegionEndpoint = 'queue.us-east-1.amazonaws.com'
     APIVersion = '2011-10-01'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
