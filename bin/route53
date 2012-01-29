@@ -3,6 +3,34 @@
 #
 # route53 is similar to sdbadmin for Route53, it's a simple
 # console utility to perform the most frequent tasks with Route53
+#
+# Example usage.  Use route53 get after each command to see how the
+# zone changes.
+#
+# Add a non-weighted record, change its value, then delete.  Default TTL:
+#
+# route53 add_record ZPO9LGHZ43QB9 rr.example.com A 4.3.2.1
+# route53 change_record ZPO9LGHZ43QB9 rr.example.com A 9.8.7.6
+# route53 del_record ZPO9LGHZ43QB9 rr.example.com A 9.8.7.6
+#
+# Add a weighted record with two different weights.  Note that the TTL
+# must be specified as route53 uses positional parameters rather than
+# option flags:
+#
+# route53 add_record ZPO9LGHZ43QB9 wrr.example.com A 1.2.3.4 600 foo9 10
+# route53 add_record ZPO9LGHZ43QB9 wrr.example.com A 4.3.2.1 600 foo8 10
+#
+# route53 change_record ZPO9LGHZ43QB9 wrr.example.com A 9.9.9.9 600 foo8 10
+#
+# route53 del_record ZPO9LGHZ43QB9 wrr.example.com A 1.2.3.4 600 foo9 10
+# route53 del_record ZPO9LGHZ43QB9 wrr.example.com A 9.9.9.9 600 foo8 10
+#
+# Add a non-weighted alias, change its value, then delete.  Alaises inherit
+# their TTLs from the backing ELB:
+#
+# route53 add_alias ZPO9LGHZ43QB9 alias.example.com A Z3DZXE0Q79N41H lb-1218761514.us-east-1.elb.amazonaws.com.
+# route53 change_alias ZPO9LGHZ43QB9 alias.example.com. A Z3DZXE0Q79N41H lb2-1218761514.us-east-1.elb.amazonaws.com.
+# route53 delete_alias ZPO9LGHZ43QB9 alias.example.com. A Z3DZXE0Q79N41H lb2-1218761514.us-east-1.elb.amazonaws.com.
 
 def _print_zone_info(zoneinfo):
     print "="*80
