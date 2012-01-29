@@ -185,15 +185,18 @@ class Record(object):
         return self.XMLBody % params
 
     def to_print(self):
+        rr = ""
         if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
             # Show alias
-            return 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
-        elif self.identifier != None and self.weight != None:
-            return 'WRR %s, %s, %s' % (self.identifier,
-                    ",".join(self.resource_records), self.weight)
+            rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
         else:
             # Show resource record(s)
-            return ",".join(self.resource_records)
+            rr =  ",".join(self.resource_records)
+
+        if self.identifier != None and self.weight != None:
+            rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)
+
+        return rr
 
     def endElement(self, name, value, connection):
         if name == 'Name':
