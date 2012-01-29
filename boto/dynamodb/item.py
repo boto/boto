@@ -51,7 +51,7 @@ class Item(dict):
                                              
     @property
     def range_key(self):
-        return self[self._range_key_name]
+        return self.get(self._range_key_name)
                                              
     @property
     def hash_key_name(self):

@@ -75,6 +75,9 @@ class HmacKeys(object):
         if provider.access_key is None or provider.secret_key is None:
             raise boto.auth_handler.NotReadyToAuthenticate()
         self.host = host
+        self.update_provider(provider)
+
+    def update_provider(self, provider):
         self._provider = provider
         self._hmac = hmac.new(self._provider.secret_key, digestmod=sha)
         if sha256:
@@ -240,6 +243,10 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         :type req: :class`boto.connection.HTTPRequest`
         :param req: The HTTPRequest object.
         """
+        # This could be a retry.  Make sure the previous
+        # authorization header is removed first.
+        if 'X-Amzn-Authorization' in req.headers:
+            del req.headers['X-Amzn-Authorization']
         req.headers['X-Amz-Date'] = formatdate(usegmt=True)
         req.headers['X-Amz-Security-Token'] = self._provider.security_token
         string_to_sign, headers_to_sign = self.string_to_sign(req)
