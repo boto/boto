@@ -253,7 +253,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         batch_list = c.new_batch_list()
         batch_list.add_batch(table, [(item2_key, item2_range),
                                      (item3_key, item3_range)])
-        response = c.batch_get_item(batch_list)
+        response = batch_list.submit()
         assert len(response['Responses'][table.name]['Items']) == 2
         
         # Try to delete the item with the right Expected value

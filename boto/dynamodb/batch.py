@@ -49,6 +49,10 @@ class BatchList(list):
     :class:`boto.dynamodb.batch.Batch` objects.
     """
 
+    def __init__(self, layer2):
+        list.__init__(self)
+        self.layer2 = layer2
+
     def add_batch(self, table, keys, attributes_to_get=None):
         """
         Add a Batch to this BatchList.
@@ -71,6 +75,9 @@ class BatchList(list):
             be returned.  Otherwise, all attributes will be returned.
         """
         self.append(Batch(table, keys, attributes_to_get))
+
+    def submit(self):
+        return self.layer2.batch_get_item(self)
 
         
 

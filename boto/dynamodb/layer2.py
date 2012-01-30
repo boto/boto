@@ -229,7 +229,11 @@ class Layer2(object):
         return dynamodb_key
 
     def new_batch_list(self):
-        return BatchList()
+        """
+        Return a new, empty :class:`boto.dynamodb.batch.BatchList`
+        object.
+        """
+        return BatchList(self)
 
     def list_tables(self, limit=None, start_table=None):
         """
