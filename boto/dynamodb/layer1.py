@@ -273,7 +273,7 @@ class Layer1(AWSAuthConnection):
             )
         return response
         
-    def batch_get_item(self, request_items):
+    def batch_get_item(self, request_items, object_hook=None):
         """
         Return a set of attributes for a multiple items in
         multiple tables using their primary keys.
@@ -284,7 +284,8 @@ class Layer1(AWSAuthConnection):
         """
         data = {'RequestItems' : request_items}
         json_input = json.dumps(data)
-        return self.make_request('BatchGetItem', json_input)
+        return self.make_request('BatchGetItem', json_input,
+                                 object_hook=object_hook)
 
     def put_item(self, table_name, item,
                  expected=None, return_values=None):
@@ -459,7 +460,8 @@ class Layer1(AWSAuthConnection):
 
     def scan(self, table_name, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None):
+             count=False, exclusive_start_key=None,
+             object_hook=None):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -502,6 +504,6 @@ class Layer1(AWSAuthConnection):
         if exclusive_start_key:
             data['ExclusiveStartKey'] = exclusive_start_key
         json_input = json.dumps(data)
-        return self.make_request('Scan', json_input)
+        return self.make_request('Scan', json_input, object_hook=object_hook)
 
     

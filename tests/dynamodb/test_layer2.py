@@ -248,6 +248,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
             assert i in mixed_set
         for i in item4['StrSetAttr']:
             assert i in str_set
+
+        # Try a batch get
+        batch_list = c.new_batch_list()
+        batch_list.add_batch(table, [(item2_key, item2_range),
+                                     (item3_key, item3_range)])
+        response = c.batch_get_item(batch_list)
+        assert len(response['Responses'][table.name]['Items']) == 2
         
         # Try to delete the item with the right Expected value
         expected = {'Views': 0}

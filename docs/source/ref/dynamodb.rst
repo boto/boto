@@ -46,4 +46,11 @@ boto.dynamodb.item
    :members:
    :undoc-members:
 
+boto.dynamodb.batch
+-------------------
+
+.. automodule:: boto.dynamodb.batch
+   :members:
+   :undoc-members:
+
 

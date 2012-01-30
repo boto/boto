@@ -179,9 +179,10 @@ class Table(object):
             :class:`boto.dynamodb.item.Item`
         """
         return self.layer2.get_item(self, hash_key, range_key,
-                                    attributes_to_get, consistent_read, item_class)
-
+                                    attributes_to_get, consistent_read,
+                                    item_class)
     lookup = get_item
+    
     def has_item(self, hash_key, range_key=None, consistent_read=False):
         """
         Checks the table to see if the Item with the specified ``hash_key``
@@ -288,9 +289,10 @@ class Table(object):
              attributes_to_get=None, limit=None,
              count=False, exclusive_start_key=None,
              item_class=Item):
-        """Scan through this table, this is a very long
+        """
+        Scan through this table, this is a very long
         and expensive operation, and should be avoided if
-        at all possible
+        at all possible.
 
         :type scan_filter: dict
         :param scan_filter: A Python version of the
