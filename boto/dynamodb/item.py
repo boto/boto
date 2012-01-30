@@ -64,9 +64,9 @@ class Item(dict):
 
     def add_attribute(self, attr_name, attr_value):
         """
-        Add an attribute to an item in DynamoDB. Consult AWS Documentation
-        for semantics of ADD. The update action is not executed until you call
-        save().
+        Queue the addition of an attribute to an item in DynamoDB.
+        This will eventually result in an UpdateItem request being issued
+        with an update action of ADD when the save method is called.
 
         :type attr_name: str
         :param attr_name: Name of the attribute you want to alter.
@@ -76,6 +76,59 @@ class Item(dict):
         """
         self._updates[attr_name] = ("ADD", attr_value)
 
+    def delete_attribute(self, attr_name, attr_value=None):
+        """
+        Queue the deletion of an attribute from an item in DynamoDB.
+        This call will result in a UpdateItem request being issued
+        with update action of DELETE when the save method is called.
+
+        :type attr_name: str
+        :param attr_name: Name of the attribute you want to alter.
+
+        :type attr_value: set
+        :param attr_value: A set of values to be removed from the attribute.
+            This parameter is optional. If None, the whole attribute is
+            removed from the item.
+        """
+        self._updates[attr_name] = ("DELETE", attr_value)
+
+    def put_attribute(self, attr_name, attr_value):
+        """
+        Queue the putting of an attribute to an item in DynamoDB.
+        This call will result in an UpdateItem request being issued
+        with the update action of PUT when the save method is called.
+
+        :type attr_name: str
+        :param attr_name: Name of the attribute you want to alter.
+
+        :type attr_value: int|long|float|str|set
+        :param attr_value: New value of the attribute.
+        """
+        self._updates[attr_name] = ("PUT", attr_value)
+
+    def save(self, expected_values=None, return_values=None):
+        """
+        Commits pending updates to Amazon DynamoDB.
+
+        :type expected_values: dict
+        :param expected_values: A dictionary of name/value pairs that
+            you expect.  This dictionary should have name/value pairs
+            where the name is the name of the attribute and the value is
+            either the value you are expecting or False if you expect
+            the attribute not to exist.
+
+        :type return_values: str
+        :param return_values: Controls the return of attribute name/value pairs
+            before they were updated. Possible values are: None, 'ALL_OLD',
+            'UPDATED_OLD', 'ALL_NEW' or 'UPDATED_NEW'. If 'ALL_OLD' is
+            specified and the item is overwritten, the content of the old item
+            is returned. If 'ALL_NEW' is specified, then all the attributes of
+            the new version of the item are returned. If 'UPDATED_NEW' is
+            specified, the new versions of only the updated attributes are
+            returned.
+        """
+        self.table.layer2.update_item(self, expected_values, return_values)
+        
     def delete(self, expected_value=None, return_values=None):
         """
         Delete the item from DynamoDB.
@@ -95,22 +148,6 @@ class Item(dict):
             of the old item is returned.
         """
         self.table.layer2.delete_item(self, expected_value, return_values)
-
-    def delete_attribute(self, attr_name, attr_value=None):
-        """
-        Delete an attribute from an item in DynamoDB. Consult AWS Documentation
-        for semantics of DELETE. The update action is not executed until you call
-        save().
-
-        :type attr_name: str
-        :param attr_name: Name of the attribute you want to alter.
-
-        :type attr_value: set
-        :param attr_value: A set of values to be removed from the attribute.
-            This parameter is optional. If None, the whole attribute is
-            removed from the item.
-        """
-        self._updates[attr_name] = ("DELETE", attr_value)
 
     def put(self, expected_value=None, return_values=None):
         """
@@ -133,39 +170,3 @@ class Item(dict):
         """
         self.table.layer2.put_item(self, expected_value, return_values)
 
-    def put_attribute(self, attr_name, attr_value):
-        """
-        Put an attribute to an item in DynamoDB. Consult AWS Documentation
-        for semantics of PUT. The update action is not executed until you call
-        save().
-
-        :type attr_name: str
-        :param attr_name: Name of the attribute you want to alter.
-
-        :type attr_value: int|long|float|str|set
-        :param attr_value: New value of the attribute.
-        """
-        self._updates[attr_name] = ("PUT", attr_value)
-
-    def save(self, expected_values=None, return_values=None):
-        """
-        Commits pending updates to Amazon DynamoDB.
-
-        :type expected_values: dict
-        :param expected_values: A dictionary of name/value pairs that you expect.
-            This dictionary should have name/value pairs where the name
-            is the name of the attribute and the value is either the value
-            you are expecting or False if you expect the attribute not to
-            exist.
-
-        :type return_values: str
-        :param return_values: Controls the return of attribute name/value pairs
-            before they were updated. Possible values are: None, 'ALL_OLD',
-            'UPDATED_OLD', 'ALL_NEW' or 'UPDATED_NEW'. If 'ALL_OLD' is
-            specified and the item is overwritten, the content of the old item
-            is returned. If 'ALL_NEW' is specified, then all the attributes of
-            the new version of the item are returned. If 'UPDATED_NEW' is
-            specified, the new versions of only the updated attributes are
-            returned.
-        """
-        self.table.layer2.save_item(self, expected_values, return_values)

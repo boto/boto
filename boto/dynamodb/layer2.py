@@ -472,6 +472,46 @@ class Layer2(object):
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
             
+    def update_item(self, item, expected_value=None, return_values=None):
+        """
+        Commit pending item updates to Amazon DynamoDB.
+
+        :type item: :class:`boto.dynamodb.item.Item`
+        :param item: The Item to update in Amazon DynamoDB.  It is expected
+            that you would have called the add_attribute, put_attribute
+            and/or delete_attribute methods on this Item prior to calling
+            this method.  Those queued changes are what will be updated.
+
+        :type expected_values: dict
+        :param expected_values: A dictionary of name/value pairs that you
+            expect.  This dictionary should have name/value pairs where the
+            name is the name of the attribute and the value is either the
+            value you are expecting or False if you expect the attribute
+            not to exist.
+
+        :type return_values: str
+        :param return_values: Controls the return of attribute name/value pairs
+            before they were updated. Possible values are: None, 'ALL_OLD',
+            'UPDATED_OLD', 'ALL_NEW' or 'UPDATED_NEW'. If 'ALL_OLD' is
+            specified and the item is overwritten, the content of the old item
+            is returned. If 'ALL_NEW' is specified, then all the attributes of
+            the new version of the item are returned. If 'UPDATED_NEW' is
+            specified, the new versions of only the updated attributes are
+            returned.
+
+        """
+        expected_value = self.dynamize_expected_value(expected_value)
+        key = self.build_key_from_values(item.table.schema,
+                                         item.hash_key, item.range_key)
+        attr_updates = self.dynamize_attribute_updates(item._updates)
+
+        response = self.layer1.update_item(item.table.name, key,
+                                           attr_updates,
+                                           expected_value, return_values)
+        item._updates.clear()
+        if 'ConsumedCapacityUnits' in response:
+            item.consumed_units = response['ConsumedCapacityUnits']
+            
     def delete_item(self, item, expected_value=None, return_values=None):
         """
         Delete the item from Amazon DynamoDB.
@@ -558,7 +598,8 @@ class Layer2(object):
                 exclusive_start_key = response['LastEvaluatedKey']
             else:
                 break
-            response = self.layer1.query(table.name, self.dynamize_value(hash_key),
+            response = self.layer1.query(table.name,
+                                         self.dynamize_value(hash_key),
                                          rkc, attributes_to_get, limit,
                                          consistent_read, scan_index_forward,
                                          exclusive_start_key,
@@ -624,39 +665,3 @@ class Layer2(object):
                 for item in response['Items']:
                     yield item_class(table, attrs=item)
 
-    def save_item(self, item, expected_value=None, return_values=None):
-        """
-        Commit pending item updates to Amazon DynamoDB.
-
-        :type item: :class:`boto.dynamodb.item.Item`
-        :param item: The Item to update in Amazon DynamoDB.
-
-        :type expected_values: dict
-        :param expected_values: A dictionary of name/value pairs that you expect.
-            This dictionary should have name/value pairs where the name
-            is the name of the attribute and the value is either the value
-            you are expecting or False if you expect the attribute not to
-            exist.
-
-        :type return_values: str
-        :param return_values: Controls the return of attribute name/value pairs
-            before they were updated. Possible values are: None, 'ALL_OLD',
-            'UPDATED_OLD', 'ALL_NEW' or 'UPDATED_NEW'. If 'ALL_OLD' is
-            specified and the item is overwritten, the content of the old item
-            is returned. If 'ALL_NEW' is specified, then all the attributes of
-            the new version of the item are returned. If 'UPDATED_NEW' is
-            specified, the new versions of only the updated attributes are
-            returned.
-
-        """
-        expected_value = self.dynamize_expected_value(expected_value)
-        key = self.build_key_from_values(item.table.schema,
-                                         item.hash_key, item.range_key)
-        attr_updates = self.dynamize_attribute_updates(item._updates)
-
-        response = self.layer1.update_item(item.table.name, key,
-                                           attr_updates,
-                                           expected_value, return_values)
-        item._updates.clear()
-        if 'ConsumedCapacityUnits' in response:
-            item.consumed_units = response['ConsumedCapacityUnits']
