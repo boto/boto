@@ -150,13 +150,27 @@ class DynamoDBLayer2Test (unittest.TestCase):
             pass
 
 
-        # # Now update the existing object
-        # attribute_updates = {'Views': {'Value': {'N': '5'},
-        #                                'Action': 'PUT'},
-        #                      'Tags': {'Value': {'SS': ['foobar']},
-        #                               'Action': 'ADD'}}
-        # result = c.update_item(table_name, key=key1,
-        #                        attribute_updates=attribute_updates)
+        # Now update the existing object
+        item1.add_attribute('Replies', 2)
+
+        removed_attr = 'Public'
+        item1.delete_attribute(removed_attr)
+
+        removed_tag = item1_attrs['Tags'].copy().pop()
+        item1.delete_attribute('Tags', set([removed_tag]))
+
+        replies_by_set = set(['Adam', 'Arnie'])
+        item1.put_attribute('RepliesBy', replies_by_set)
+        item1.save()
+
+        # Check for correct updates
+        item1_updated = table.get_item(item1_key, item1_range,
+                                       consistent_read=True)
+        assert item1_updated['Replies'] == item1_attrs['Replies'] + 2
+        self.assertFalse(item1_updated.has_key(removed_attr))
+        self.assertTrue(removed_tag not in item1_updated['Tags'])
+        self.assertTrue(item1_updated.has_key('RepliesBy'))
+        self.assertTrue(item1_updated['RepliesBy'] == replies_by_set)
 
         # Put a few more items into the table
         item2_key = 'Amazon DynamoDB'
