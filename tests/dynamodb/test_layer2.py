@@ -249,11 +249,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for i in item4['StrSetAttr']:
             assert i in str_set
         
-        # Now delete the items
-        item1.delete()
+        # Try to delete the item with the right Expected value
+        expected = {'Views': 0}
+        item1.delete(expected_value=expected)
 
         self.assertFalse(table.has_item(item1_key, range_key=item1_range,
                                        consistent_read=True))
+        # Now delete the remaining items
         item2.delete()
         item3.delete()
         table2_item1.delete()

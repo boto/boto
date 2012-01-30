@@ -115,7 +115,8 @@ class Layer2(object):
                 elif attr_value is False:
                     attr_value = {'Exists': False}
                 else:
-                    attr_value = self.dynamize_value(expected_value[attr_name])
+                    val = self.dynamize_value(expected_value[attr_name])
+                    attr_value = {'Value': val}
                 d[attr_name] = attr_value
         return d
 
@@ -427,7 +428,8 @@ class Layer2(object):
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, limit=None, consistent_read=False,
-              scan_index_forward=True, exclusive_start_key=None, item_class=Item):
+              scan_index_forward=True, exclusive_start_key=None,
+              item_class=Item):
         """
         Perform a query on the table.
         
