@@ -48,7 +48,8 @@ you have your security group all setup. In this case we can use the keyword argu
 
 The main caveat with the above call is that it is possible to request an instance type that is not compatible with the 
 provided AMI (for example, the instance was created for a 64-bit instance and you choose a m1.small instance_type).
-For more details on the plethora of possible keyword parameters, be sure to check out boto's EC2 API documentation_
+For more details on the plethora of possible keyword parameters, be sure to check out boto's EC2 API documentation_.
+
 .. _documentation: http://boto.cloudhackers.com/en/latest/ref/ec2.html
 
 Stopping Instances
