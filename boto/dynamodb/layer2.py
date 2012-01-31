@@ -179,7 +179,7 @@ class Layer2(object):
             elif False not in map(is_str, val):
                 dynamodb_type = 'SS'
         else:
-            raise TypeError('Unsupported type "%s"' % val)
+            raise TypeError('Unsupported type "%s" for value "%s"' % (type(val), val))
         return dynamodb_type
 
     def dynamize_value(self, val):
