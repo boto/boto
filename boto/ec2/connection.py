@@ -36,7 +36,7 @@ from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
-from boto.ec2.volume import Volume
+from boto.ec2.volume import AttachmentSet, Volume
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
@@ -1293,7 +1293,7 @@ class EC2Connection(AWSQueryConnection):
         params = {'VolumeId': volume_id}
         return self.get_status('DeleteVolume', params, verb='POST')
 
-    def attach_volume(self, volume_id, instance_id, device):
+    def attach_volume(self, volume_id, instance_id, device = None, attach_type = None):
         """
         Attach an EBS volume to an EC2 instance.
 
@@ -1308,13 +1308,22 @@ class EC2Connection(AWSQueryConnection):
         :param device: The device on the instance through which the
                        volume will be exposted (e.g. /dev/sdh)
 
+        :type attach_type str
+        :param attach_type: Volume attachment type (generic|database)
+
         :rtype: bool
         :return: True if successful
         """
         params = {'InstanceId' : instance_id,
-                  'VolumeId' : volume_id,
-                  'Device' : device}
-        return self.get_status('AttachVolume', params, verb='POST')
+                  'VolumeId' : volume_id}
+
+        if device is not None:
+            params['Device'] = device
+
+        if attach_type is not None:
+            params['AttachType'] = attach_type
+
+        return self.get_object('AttachVolume', params, AttachmentSet, verb = 'POST')
 
     def detach_volume(self, volume_id, instance_id=None,
                       device=None, force=False):
