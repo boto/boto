@@ -127,7 +127,8 @@ class Item(dict):
             specified, the new versions of only the updated attributes are
             returned.
         """
-        self.table.layer2.update_item(self, expected_values, return_values)
+        return self.table.layer2.update_item(self, expected_values,
+                                             return_values)
         
     def delete(self, expected_value=None, return_values=None):
         """
@@ -147,7 +148,8 @@ class Item(dict):
             specified and the item is overwritten, the content
             of the old item is returned.
         """
-        self.table.layer2.delete_item(self, expected_value, return_values)
+        return self.table.layer2.delete_item(self, expected_value,
+                                             return_values)
 
     def put(self, expected_value=None, return_values=None):
         """
@@ -168,5 +170,5 @@ class Item(dict):
             specified and the item is overwritten, the content
             of the old item is returned.
         """
-        self.table.layer2.put_item(self, expected_value, return_values)
+        return self.table.layer2.put_item(self, expected_value, return_values)
 

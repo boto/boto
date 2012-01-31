@@ -149,7 +149,6 @@ class DynamoDBLayer2Test (unittest.TestCase):
         except c.layer1.ResponseError, e:
             pass
 
-
         # Now update the existing object
         item1.add_attribute('Replies', 2)
 
@@ -161,7 +160,9 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         replies_by_set = set(['Adam', 'Arnie'])
         item1.put_attribute('RepliesBy', replies_by_set)
-        item1.save()
+        retvals = item1.save(return_values='ALL_OLD')
+        # Need more tests here for variations on return_values
+        assert 'Attributes' in retvals
 
         # Check for correct updates
         item1_updated = table.get_item(item1_key, item1_range,
@@ -277,7 +278,11 @@ class DynamoDBLayer2Test (unittest.TestCase):
         self.assertFalse(table.has_item(item1_key, range_key=item1_range,
                                        consistent_read=True))
         # Now delete the remaining items
-        item2.delete()
+        ret_vals = item2.delete(return_values='ALL_OLD')
+        # some additional checks here would be useful
+        assert ret_vals['Attributes'][hash_key_name] == item2_key
+        assert ret_vals['Attributes'][range_key_name] == item2_range
+        
         item3.delete()
         table2_item1.delete()
 

@@ -290,7 +290,8 @@ class Layer1(AWSAuthConnection):
                                  object_hook=object_hook)
 
     def put_item(self, table_name, item,
-                 expected=None, return_values=None):
+                 expected=None, return_values=None,
+                 object_hook=None):
         """
         Create a new item or replace an old item with a new
         item (including all attributes).  If an item already
@@ -324,10 +325,12 @@ class Layer1(AWSAuthConnection):
         if return_values:
             data['ReturnValues'] = return_values
         json_input = json.dumps(data)
-        return self.make_request('PutItem', json_input)
+        return self.make_request('PutItem', json_input,
+                                 object_hook=object_hook)
 
     def update_item(self, table_name, key, attribute_updates,
-                    expected=None, return_values=None):
+                    expected=None, return_values=None,
+                    object_hook=None):
         """
         Delete an item and all of it's attributes by primary key.
         You can perform a conditional delete by specifying an
@@ -363,10 +366,12 @@ class Layer1(AWSAuthConnection):
         if return_values:
             data['ReturnValues'] = return_values
         json_input = json.dumps(data)
-        return self.make_request('UpdateItem', json_input)
+        return self.make_request('UpdateItem', json_input,
+                                 object_hook=object_hook)
 
     def delete_item(self, table_name, key,
-                    expected=None, return_values=None):
+                    expected=None, return_values=None,
+                    object_hook=None):
         """
         Delete an item and all of it's attributes by primary key.
         You can perform a conditional delete by specifying an
@@ -397,7 +402,8 @@ class Layer1(AWSAuthConnection):
         if return_values:
             data['ReturnValues'] = return_values
         json_input = json.dumps(data)
-        return self.make_request('DeleteItem', json_input)
+        return self.make_request('DeleteItem', json_input,
+                                 object_hook=object_hook)
 
     def query(self, table_name, hash_key_value, range_key_conditions=None,
               attributes_to_get=None, limit=None, consistent_read=False,

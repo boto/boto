@@ -468,9 +468,11 @@ class Layer2(object):
         expected_value = self.dynamize_expected_value(expected_value)
         response = self.layer1.put_item(item.table.name,
                                         self.dynamize_item(item),
-                                        expected_value, return_values)
+                                        expected_value, return_values,
+                                        object_hook=item_object_hook)
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
+        return response
             
     def update_item(self, item, expected_value=None, return_values=None):
         """
@@ -507,10 +509,12 @@ class Layer2(object):
 
         response = self.layer1.update_item(item.table.name, key,
                                            attr_updates,
-                                           expected_value, return_values)
+                                           expected_value, return_values,
+                                           object_hook=item_object_hook)
         item._updates.clear()
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
+        return response
             
     def delete_item(self, item, expected_value=None, return_values=None):
         """
@@ -525,12 +529,21 @@ class Layer2(object):
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to
             exist.
+            
+        :type return_values: str
+        :param return_values: Controls the return of attribute
+            name-value pairs before then were changed.  Possible
+            values are: None or 'ALL_OLD'. If 'ALL_OLD' is
+            specified and the item is overwritten, the content
+            of the old item is returned.
         """
         expected_value = self.dynamize_expected_value(expected_value)
         key = self.build_key_from_values(item.table.schema,
                                          item.hash_key, item.range_key)
-        response = self.layer1.delete_item(item.table.name, key,
-                                           expected=expected_value)
+        return self.layer1.delete_item(item.table.name, key,
+                                       expected=expected_value,
+                                       return_values=return_values,
+                                       object_hook=item_object_hook)
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, limit=None, consistent_read=False,
