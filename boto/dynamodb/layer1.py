@@ -124,11 +124,9 @@ class Layer1(AWSAuthConnection):
             boto.log.debug(response_body)
             json_response = json.loads(response_body)
             if self.ThruputError in json_response.get('__type'):
+                print 'Throughput Throttled'
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
-                # Sleep a fractional amount of time, which corresponds
-                # to 1 second for our last attempt, and zero time for
-                # our first retry.
-                next_sleep = (1.0/self.num_retries)*i
+                next_sleep = .1*i
                 i += 1
                 status = (msg, i, next_sleep)
             elif self.SessionExpiredError in json_response.get('__type'):
