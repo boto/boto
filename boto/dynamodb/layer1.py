@@ -112,6 +112,7 @@ class Layer1(AWSAuthConnection):
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
         response = self._mexe(http_request, sender=None,
+                              override_num_retries=10,
                               retry_handler=self._retry_handler)
         response_body = response.read()
         boto.log.debug(response_body)
@@ -126,7 +127,10 @@ class Layer1(AWSAuthConnection):
             if self.ThruputError in json_response.get('__type'):
                 print 'Throughput Throttled'
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
-                next_sleep = .1*i
+                if i == 0:
+                    next_sleep = 0
+                else:
+                    next_sleep = 0.05 * (2**i)
                 i += 1
                 status = (msg, i, next_sleep)
             elif self.SessionExpiredError in json_response.get('__type'):
