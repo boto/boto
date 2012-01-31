@@ -41,7 +41,7 @@ Creating a Bucket
 
 Once you have a connection established with S3, you will probably want to
 create a bucket.  A bucket is a container used to store key/value pairs
-in S3.  A bucket can hold un unlimited about of data so you could potentially
+in S3.  A bucket can hold an unlimited amount of data so you could potentially
 have just one bucket in S3 for all of your information.  Or, you could create
 separate buckets for different types of data.  You can figure all of that out
 later, first let's just create a bucket.  That can be accomplished like this:
