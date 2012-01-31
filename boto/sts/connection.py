@@ -24,6 +24,11 @@ from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from credentials import Credentials, FederationToken
 import boto
+import boto.utils
+import datetime
+import threading
+
+_session_token_cache = {}
 
 class STSConnection(AWSQueryConnection):
 
@@ -41,6 +46,7 @@ class STSConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint,
                                 connection_cls=STSConnection)
         self.region = region
+        self._mutex = threading.Semaphore()
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
@@ -51,19 +57,57 @@ class STSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['sign-v2']
 
-    def get_session_token(self, duration=None):
-        """
-        :type duration: int
-        :param duration: The number of seconds the credentials should
-                         remain valid.
+    def _check_token_cache(self, token_key, duration=None, window_seconds=60):
+        token = _session_token_cache.get(token_key, None)
+        if token:
+            now = datetime.datetime.utcnow()
+            expires = boto.utils.parse_ts(token.expiration)
+            delta = expires - now
+            if delta.total_seconds() < window_seconds:
+                msg = 'Cached session token %s is expired' % token_key
+                boto.log.debug(msg)
+                token = None
+        return token
 
-        """
+    def _get_session_token(self, duration=None):
         params = {}
         if duration:
             params['DurationSeconds'] = duration
         return self.get_object('GetSessionToken', params,
                                 Credentials, verb='POST')
-        
+
+    def get_session_token(self, duration=None, force_new=False):
+        """
+        Return a valid session token.  Because retrieving new tokens
+        from the Secure Token Service is a fairly heavyweight operation
+        this module caches previously retrieved tokens and returns
+        them when appropriate.  Each token is cached with a key
+        consisting of the region name of the STS endpoint
+        concatenated with the requesting user's access id.  If there
+        is a token in the cache meeting with this key, the session
+        expiration is checked to make sure it is still valid and if
+        so, the cached token is returned.  Otherwise, a new session
+        token is requested from STS and it is placed into the cache
+        and returned.
+
+        :type duration: int
+        :param duration: The number of seconds the credentials should
+            remain valid.
+
+        :type force_new: bool
+        :param force_new: If this parameter is True, a new session token
+            will be retrieved from the Secure Token Service regardless
+            of whether there is a valid cached token or not.
+        """
+        token_key = '%s:%s' % (self.region.name, self.provider.access_key)
+        token = self._check_token_cache(token_key, duration)
+        if force_new or not token:
+            boto.log.debug('fetching a new token for %s' % token_key)
+            self._mutex.acquire()
+            token = self._get_session_token(duration)
+            _session_token_cache[token_key] = token
+            self._mutex.release()
+        return token
         
     def get_federation_token(self, name, duration=None, policy=None):
         """
