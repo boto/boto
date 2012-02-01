@@ -36,7 +36,7 @@ from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
-from boto.ec2.volume import AttachmentSet, Volume, TierType
+from boto.ec2.volume import AttachmentSet, Volume, TierType, VolumeAttributes
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
@@ -732,6 +732,24 @@ class EC2Connection(AWSQueryConnection):
                              ResultSet, verb='POST')
         return (rs.status, rs.ownerId)
 
+    def snapshot_instance(self, instance_id, description = None):
+        """
+        Create an image from a stopped instance.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        :type description: string
+        :param description: The image description.
+        """
+
+        params = {'InstanceId' : instance_id}
+
+        if description is not None:
+            params['ImageDescription'] = description
+
+        return self.get_object('SnapshotInstance', params, PlainXmlDict, verb='POST')
+
     # InstanceAttribute methods
 
     def get_instance_attribute(self, instance_id, attribute):
@@ -1256,6 +1274,18 @@ class EC2Connection(AWSQueryConnection):
         """
         return self.get_list('DescribeTierTypes', {},
                              [('item', TierType)], verb='POST')
+
+    def get_volume_attributes(self, volume_id):
+        """
+        Get volume attributes.
+
+        :rtype: :class:`boto.ec2.volume.VolumeAttributes`
+        :return: The requested VolumeAttributes object
+        """
+        return self.get_object('DescribeVolumeAttribute',
+                               {'VolumeId': volume_id,
+                                'Attribute': 'tierType,tierName,replication'},
+                               VolumeAttributes, verb='POST')
 
     def get_all_volumes(self, volume_ids=None, filters=None):
         """

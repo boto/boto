@@ -105,3 +105,31 @@ class TaggedEC2Object(EC2Object):
         status = self.connection.delete_tags([self.id], tags)
         if key in self.tags:
             del self.tags[key]
+
+
+class PlainXmlDict(dict):
+    """
+    Generic class for parsing plain dictionaries (dictionaries without nested
+    dictionaries).
+    """
+
+    __dict_name = None
+    """Name of this dictionary."""
+
+    __bool_fields = None
+    """A list of all bool fields to convert."""
+
+    def __init__(self, parent = None, dict_name = None, bool_fields = []):
+        super(PlainXmlDict, self).__init__()
+        self.__dict_name = dict_name
+        self.__bool_fields = bool_fields
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name != self.__dict_name:
+            if name in self.__bool_fields:
+                self[name] = (value.lower() != "false")
+            else:
+                self[name] = value

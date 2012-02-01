@@ -23,7 +23,7 @@
 """
 Represents an EC2 Elastic Block Storage Volume
 """
-from boto.ec2.ec2object import EC2Object, TaggedEC2Object
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object, PlainXmlDict
 
 class TierType(EC2Object):
     def __init__(self, connection = None):
@@ -246,3 +246,20 @@ class AttachmentSet(object):
         else:
             setattr(self, name, value)
 
+class VolumeAttributes(PlainXmlDict):
+    """Contains all volume attributes."""
+
+    def __init__(self, parent = None):
+        super(VolumeAttributes, self).__init__(parent)
+
+
+    def startElement(self, name, attrs, connection):
+        if name in ("tierType", "tierName", "replication"):
+            return self.setdefault(name, PlainXmlDict(dict_name = name))
+        else:
+            return super(VolumeAttributes, self).startElement(name, attrs, connection)
+
+
+    def endElement(self, name, value, connection):
+        if name != "DescribeVolumeAttributeResponse":
+            super(VolumeAttributes, self).endElement(name, value, connection)
