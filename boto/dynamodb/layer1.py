@@ -49,6 +49,10 @@ class Layer1(AWSAuthConnection):
     of the JSON input as defined in the DynamoDB Developer's Guide.
     All responses are direct decoding of the JSON response bodies to
     Python data structures via the json or simplejson modules.
+
+    :ivar throughput_exceeded_events: An integer variable that
+        keeps a running total of the number of ThroughputExceeded
+        responses this connection has received from Amazon DynamoDB.
     """
     
     DefaultHost = 'dynamodb.us-east-1.amazonaws.com'
@@ -78,6 +82,7 @@ class Layer1(AWSAuthConnection):
         if not session_token:
             session_token = self._get_session_token()
         self.creds = session_token
+        self.throughput_exceeded_events = 0
         AWSAuthConnection.__init__(self, host,
                                    self.creds.access_key,
                                    self.creds.secret_key,
@@ -125,6 +130,7 @@ class Layer1(AWSAuthConnection):
             boto.log.debug(response_body)
             json_response = json.loads(response_body)
             if self.ThruputError in json_response.get('__type'):
+                self.throughput_exceeded_events += 1
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
                 if i == 0:
                     next_sleep = 0
