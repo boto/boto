@@ -669,7 +669,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('TerminateInstances', params,
                              [('item', Instance)], verb='POST')
 
-    def stop_instances(self, instance_ids=None, force=False):
+    def stop_instances(self, instance_ids=None, force=False, suspend=False):
         """
         Stop the instances specified
 
@@ -679,12 +679,17 @@ class EC2Connection(AWSQueryConnection):
         :type force: bool
         :param force: Forces the instance to stop
 
+        :type suspend: bool
+        :param suspend: Suspend instances instead of stopping
+
         :rtype: list
         :return: A list of the instances stopped
         """
         params = {}
         if force:
             params['Force'] = 'true'
+        if suspend:
+            params['Suspend'] = 'true'
         if instance_ids:
             self.build_list_params(params, instance_ids, 'InstanceId')
         return self.get_list('StopInstances', params,
