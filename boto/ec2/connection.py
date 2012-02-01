@@ -36,7 +36,7 @@ from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
-from boto.ec2.volume import AttachmentSet, Volume
+from boto.ec2.volume import AttachmentSet, Volume, TierType
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
@@ -1225,6 +1225,16 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('ReleaseAddress', params, verb='POST')
 
     # Volume methods
+
+    def get_all_tier_types(self):
+        """
+        Get all available tier types.
+
+        :rtype: list of :class:`boto.ec2.volume.TierType`
+        :return: The requested TierType objects
+        """
+        return self.get_list('DescribeTierTypes', {},
+                             [('item', TierType)], verb='POST')
 
     def get_all_volumes(self, volume_ids=None, filters=None):
         """

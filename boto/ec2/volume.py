@@ -23,7 +23,28 @@
 """
 Represents an EC2 Elastic Block Storage Volume
 """
-from boto.ec2.ec2object import TaggedEC2Object
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object
+
+class TierType(EC2Object):
+    def __init__(self, connection = None):
+        EC2Object.__init__(self, connection)
+        self.id = None
+        self.tier_name = None
+        self.replication = None
+        self.is_default = False
+
+    def __repr__(self):
+        return "Tier type {0}".format(self.id)
+
+    def endElement(self, name, value, connection):
+        if name == "id":
+            self.id = value
+        elif name == "tierName":
+            self.tier_name = value
+        elif name == "replication":
+            self.replication = (value.lower() != "false")
+        elif name == "isDefault":
+            self.is_default = (value.lower() != "false")
 
 class Volume(TaggedEC2Object):
     
