@@ -1416,12 +1416,13 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSnapshots', params,
                              [('item', Snapshot)], verb='POST')
 
-    def create_snapshot(self, volume_id, description=None):
+    def create_snapshot(self, source, description=None):
         """
         Create a snapshot of an existing EBS Volume.
 
-        :type volume_id: str
-        :param volume_id: The ID of the volume to be snapshot'ed
+        :type source: str
+        :param source: The ID of the volume or path to the file in S3 to be
+                          snapshot'ed.
 
         :type description: str
         :param description: A description of the snapshot.
@@ -1430,15 +1431,11 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        params = {'VolumeId' : volume_id}
+        params = {'VolumeId' : source}
         if description:
-            params['Description'] = description[0:255]
+            params['Description'] = description
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
-        volume = self.get_all_volumes([volume_id])[0]
-        volume_name = volume.tags.get('Name')
-        if volume_name:
-            snapshot.add_tag('Name', volume_name)
         return snapshot
 
     def delete_snapshot(self, snapshot_id):
