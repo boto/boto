@@ -389,7 +389,7 @@ class ConsoleOutput:
 
 class InstanceAttribute(dict):
 
-    ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
+    ValidValues = ['description', 'instanceType', 'kernel', 'ramdisk', 'userData',
                    'disableApiTermination', 'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',
                    'groupSet']
