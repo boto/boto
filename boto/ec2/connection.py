@@ -228,7 +228,8 @@ class EC2Connection(AWSQueryConnection):
 
     def register_image(self, name=None, description=None, image_location=None,
                        architecture=None, kernel_id=None, ramdisk_id=None,
-                       root_device_name=None, block_device_map=None):
+                       root_device_name=None, block_device_map=None,
+                       virtualization_type=None):
         """
         Register an image.
 
@@ -252,12 +253,15 @@ class EC2Connection(AWSQueryConnection):
                           the instances
 
         :type root_device_name: string
-        :param root_device_name: The root device name (e.g. /dev/sdh)
+        :param root_device_name: Comma-separated boot device order list (floppy,cdrom,disk).
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
                                  describing the EBS volumes associated
                                  with the Image.
+
+        :type virtualization_type: string
+        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
 
         :rtype: string
         :return: The new image id
@@ -279,6 +283,8 @@ class EC2Connection(AWSQueryConnection):
             params['RootDeviceName'] = root_device_name
         if block_device_map:
             block_device_map.build_list_params(params)
+        if virtualization_type:
+            params['VirtualizationType'] = virtualization_type
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
         return image_id
@@ -567,7 +573,7 @@ class EC2Connection(AWSQueryConnection):
         :param high_available: Turn on high availability option for the instances.
 
         :type root_device_name: string
-        :param root_device_name: Comma-separated boot device order (floppy,cdrom,disk).
+        :param root_device_name: Comma-separated boot device order list (floppy,cdrom,disk).
 
         :type public_addressing: bool
         :param public_addressing: Assign elastic IPs to the instances if available.
