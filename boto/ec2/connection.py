@@ -764,7 +764,7 @@ class EC2Connection(AWSQueryConnection):
                           Valid choices are:
 
                           * instanceType|kernel|ramdisk|userData|
-                          * disableApiTermination|
+                          * description|disableApiTermination|
                           * instanceInitiatedShutdownBehavior|
                           * rootDeviceName|blockDeviceMapping
 
