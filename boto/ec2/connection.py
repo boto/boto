@@ -462,7 +462,9 @@ class EC2Connection(AWSQueryConnection):
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
                       placement_group=None, client_token=None,
-                      security_group_ids=None):
+                      security_group_ids=None, high_available=None,
+                      root_device_name=None, public_addressing=None,
+                      virtualization_type=None, description=None):
         """
         Runs an image on EC2.
 
@@ -560,6 +562,21 @@ class EC2Connection(AWSQueryConnection):
         :type security_group_ids: list of strings
         :param security_group_ids: The ID of the VPC security groups with
                                    which to associate instances
+
+        :type high_available: bool
+        :param high_available: Turn on high availability option for the instances.
+
+        :type root_device_name: string
+        :param root_device_name: Comma-separated boot device order (floppy,cdrom,disk).
+
+        :type public_addressing: bool
+        :param public_addressing: Assign elastic IPs to the instances if available.
+
+        :type virtualization_type: string
+        :param virtualization_type: Instance virtualization type (kvm-virtio|kvm-legacy).
+
+        :type description: string
+        :param description: Instance description.
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
@@ -611,6 +628,16 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceInitiatedShutdownBehavior'] = val
         if client_token:
             params['ClientToken'] = client_token
+        if high_available is not None:
+            params['HighAvailable'] = 'true' if high_available else 'false'
+        if root_device_name:
+            params['RootDeviceName'] = root_device_name
+        if public_addressing is not None:
+            params['AddressingType'] = 'public' if public_addressing else 'private'
+        if virtualization_type:
+            params['VirtualizationType'] = virtualization_type
+        if description:
+            params['Description'] = description
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
