@@ -21,6 +21,7 @@
 #
 
 class BlockDeviceType(object):
+    """Describes a block device mapping element."""
 
     def __init__(self,
                  connection=None,
@@ -31,7 +32,11 @@ class BlockDeviceType(object):
                  status=None,
                  attach_time=None,
                  delete_on_termination=False,
-                 size=None):
+                 size=None,
+                 attach_time=None,
+                 tier_type=None,
+                 tier_name=None,
+                 replication=None):
         self.connection = connection
         self.ephemeral_name = ephemeral_name
         self.no_device = no_device
@@ -41,6 +46,10 @@ class BlockDeviceType(object):
         self.attach_time = attach_time
         self.delete_on_termination = delete_on_termination
         self.size = size
+        self.attach_type = attach_type
+        self.tier_type = tier_type
+        self.tier_name = tier_name
+        self.replication = replication
 
     def startElement(self, name, attrs, connection):
         pass
@@ -60,6 +69,14 @@ class BlockDeviceType(object):
             self.status = value
         elif name == 'attachTime':
             self.attach_time = value
+        elif name == "attachType":
+            self.attach_type = value
+        elif name == "tierType":
+            self.tier_type = value
+        elif name == "tierName":
+            self.tier_name = value
+        elif name == "replication":
+            self.replication = (value.lower() != "false")
         elif name == 'deleteOnTermination':
             if value == 'true':
                 self.delete_on_termination = True
@@ -68,10 +85,12 @@ class BlockDeviceType(object):
         else:
             setattr(self, name, value)
 
+
 # for backwards compatibility
 EBSBlockDeviceType = BlockDeviceType
 
 class BlockDeviceMapping(dict):
+    """Describes a block device mapping."""
 
     def __init__(self, connection=None):
         dict.__init__(self)
@@ -105,6 +124,14 @@ class BlockDeviceMapping(dict):
                     params['%s.Ebs.SnapshotId' % pre] = block_dev.snapshot_id
                 if block_dev.size:
                     params['%s.Ebs.VolumeSize' % pre] = block_dev.size
+                if block_dev.tier_type is not None:
+                    params['%s.Ebs.TierType' % pre] = block_dev.tier_type
+                if block_dev.tier_name is not None:
+                    params['%s.Ebs.TierName' % pre] = block_dev.tier_name
+                if block_dev.replication is not None:
+                    params['%s.Ebs.Replication' % pre] = block_dev.replication
+                if block_dev.attach_type:
+                    params['%s.Ebs.AttachType' % pre] = block_dev.attach_type
                 if block_dev.delete_on_termination:
                     params['%s.Ebs.DeleteOnTermination' % pre] = 'true'
                 else:
