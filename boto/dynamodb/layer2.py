@@ -450,8 +450,8 @@ class Layer2(object):
         :type item: :class:`boto.dynamodb.item.Item`
         :param item: The Item to write to Amazon DynamoDB.
         
-        :type expected: dict
-        :param expected: A dictionary of name/value pairs that you expect.
+        :type expected_value: dict
+        :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to
@@ -484,8 +484,8 @@ class Layer2(object):
             and/or delete_attribute methods on this Item prior to calling
             this method.  Those queued changes are what will be updated.
 
-        :type expected_values: dict
-        :param expected_values: A dictionary of name/value pairs that you
+        :type expected_value: dict
+        :param expected_value: A dictionary of name/value pairs that you
             expect.  This dictionary should have name/value pairs where the
             name is the name of the attribute and the value is either the
             value you are expecting or False if you expect the attribute
@@ -523,8 +523,8 @@ class Layer2(object):
         :type item: :class:`boto.dynamodb.item.Item`
         :param item: The Item to delete from Amazon DynamoDB.
         
-        :type expected: dict
-        :param expected: A dictionary of name/value pairs that you expect.
+        :type expected_value: dict
+        :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to

@@ -106,12 +106,12 @@ class Item(dict):
         """
         self._updates[attr_name] = ("PUT", attr_value)
 
-    def save(self, expected_values=None, return_values=None):
+    def save(self, expected_value=None, return_values=None):
         """
         Commits pending updates to Amazon DynamoDB.
 
-        :type expected_values: dict
-        :param expected_values: A dictionary of name/value pairs that
+        :type expected_value: dict
+        :param expected_value: A dictionary of name/value pairs that
             you expect.  This dictionary should have name/value pairs
             where the name is the name of the attribute and the value is
             either the value you are expecting or False if you expect
@@ -127,15 +127,15 @@ class Item(dict):
             specified, the new versions of only the updated attributes are
             returned.
         """
-        return self.table.layer2.update_item(self, expected_values,
+        return self.table.layer2.update_item(self, expected_value,
                                              return_values)
         
     def delete(self, expected_value=None, return_values=None):
         """
         Delete the item from DynamoDB.
 
-        :type expected: dict
-        :param expected: A dictionary of name/value pairs that you expect.
+        :type expected_value: dict
+        :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to
@@ -156,8 +156,8 @@ class Item(dict):
         Store a new item or completely replace an existing item
         in Amazon DynamoDB.
 
-        :type expected: dict
-        :param expected: A dictionary of name/value pairs that you expect.
+        :type expected_value: dict
+        :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to
