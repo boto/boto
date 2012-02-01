@@ -695,6 +695,22 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('StopInstances', params,
                              [('item', Instance)], verb='POST')
 
+    def suspend_instances(self, instance_ids):
+        """
+        Suspend the instances specified
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to suspend
+
+        :rtype: list
+        :return: A list of the instances suspended
+        """
+
+        params = {'Suspend': 'true'}
+        self.build_list_params(params, instance_ids, 'InstanceId')
+
+        return self.get_list('StopInstances', params, [('item', Instance)], verb='POST')
+
     def start_instances(self, instance_ids=None):
         """
         Start the instances specified
