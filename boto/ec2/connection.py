@@ -1256,7 +1256,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeVolumes', params,
                              [('item', Volume)], verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None):
+    def create_volume(self, size, zone, snapshot=None, tier_type=None):
         """
         Create a new EBS Volume.
 
@@ -1268,6 +1268,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
         :param snapshot: The snapshot from which the new Volume will be created.
+
+        :type tier_type: string
+        :param tier_type: Tier type ID on which the new Volume will be created.
         """
         if isinstance(zone, Zone):
             zone = zone.name
@@ -1278,6 +1281,8 @@ class EC2Connection(AWSQueryConnection):
             if isinstance(snapshot, Snapshot):
                 snapshot = snapshot.id
             params['SnapshotId'] = snapshot
+        if tier_type:
+            params['TierType'] = tier_type
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id):
