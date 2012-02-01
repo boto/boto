@@ -422,6 +422,13 @@ class EC2Connection(AWSQueryConnection):
                   'Attribute' : attribute}
         return self.get_status('ResetImageAttribute', params, verb='POST')
 
+    def modify_image_description(self, image_id, description):
+        """Change image's description."""
+        return self.get_status('ModifyImageAttribute',
+                               {'ImageId' : image_id,
+                                'Attribute' : 'description',
+                                'Value' : description }, verb='POST')
+
     # Instance methods
 
     def get_all_instances(self, instance_ids=None, filters=None):
@@ -832,6 +839,13 @@ class EC2Connection(AWSQueryConnection):
         params = {'InstanceId' : instance_id,
                   'Attribute' : attribute}
         return self.get_status('ResetInstanceAttribute', params, verb='POST')
+
+    def modify_instance_description(self, instance_id, description):
+        """Change instance's description."""
+        return self.get_status('ModifyInstanceAttribute',
+                               {'InstanceId' : instance_id,
+                                'Attribute' : 'description',
+                                'Value' : description}, verb='POST')
 
     # Spot Instances
 
@@ -1428,6 +1442,28 @@ class EC2Connection(AWSQueryConnection):
             params['Force'] = 'true'
         return self.get_status('DetachVolume', params, verb='POST')
 
+    def modify_volume_description(self, volume_id, description):
+        """Change volume's description."""
+        return self.get_status('ModifyVolumeAttribute',
+                               {'VolumeId' : volume_id,
+                                'Attribute' : 'description',
+                                'Value' : description}, verb = 'POST')
+
+    def modify_volume_size(self, volume_id, size):
+        """Change size of the volume."""
+        return self.get_status('ModifyVolumeAttribute',
+                               {'VolumeId' : volume_id,
+                                'Attribute' : 'size',
+                                'Value' : size}, verb = 'POST')
+
+    def modify_volume_tier(self, volume_id, tier_type):
+        """Change volume's tier."""
+
+        return self.get_status('ModifyVolumeAttribute',
+                               {'VolumeId':  volume_id,
+                                'Attribute': 'tierType',
+                                'Value' : tier_type.id if isinstance(tier_type, TierType) else tier_type}, verb = 'POST')
+
     # Snapshot methods
 
     def get_all_snapshots(self, snapshot_ids=None,
@@ -1712,6 +1748,13 @@ class EC2Connection(AWSQueryConnection):
         if groups:
             self.build_list_params(params, groups, 'UserGroup')
         return self.get_status('ModifySnapshotAttribute', params, verb='POST')
+
+    def modify_snapshot_description(self, snapshot_id, description):
+        """Change snapshot's description."""
+        return self.get_status('ModifySnapshotAttribute',
+                               {'SnapshotId' : snapshot_id,
+                                'Attribute' : 'description',
+                                'Value' : description}, verb='POST')
 
     def reset_snapshot_attribute(self, snapshot_id,
                                  attribute='createVolumePermission'):
