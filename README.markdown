@@ -1,6 +1,6 @@
 # boto
-boto 2.2.0
-31-Jan-2012
+boto 2.2.1
+01-Feb-2012
 
 ## Introduction
 
