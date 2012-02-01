@@ -676,9 +676,8 @@ class EC2Connection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.instance.ConsoleOutput`
         :return: The console output as a ConsoleOutput object
         """
-        params = {}
-        self.build_list_params(params, [instance_id], 'InstanceId')
-        return self.get_object('GetConsoleOutput', params,
+        return self.get_object('GetConsoleOutput',
+                               {'InstanceId':instance_id},
                                ConsoleOutput, verb='POST')
 
     def reboot_instances(self, instance_ids=None):
