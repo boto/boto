@@ -219,7 +219,7 @@ class Volume(TaggedEC2Object):
 
 class AttachmentSet(object):
     
-    def __init__(self):
+    def __init__(self, connection=None):
         self.id = None
         self.instance_id = None
         self.status = None

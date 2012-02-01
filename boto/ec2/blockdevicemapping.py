@@ -33,7 +33,7 @@ class BlockDeviceType(object):
                  attach_time=None,
                  delete_on_termination=False,
                  size=None,
-                 attach_time=None,
+                 attach_type=None,
                  tier_type=None,
                  tier_name=None,
                  replication=None):

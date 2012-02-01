@@ -31,6 +31,7 @@ from datetime import timedelta
 import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
+from boto.ec2.ec2object import PlainXmlDict
 from boto.ec2.image import Image, ImageAttribute
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
