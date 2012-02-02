@@ -278,7 +278,7 @@ class QuerySignatureHelper(HmacKeys):
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            http_request.body = qs + '&Signature=' + urllib.quote(signature)
+            http_request.body = qs + '&Signature=' + urllib.quote_plus(signature)
             http_request.headers['Content-Length'] = str(len(http_request.body))
         else:
             http_request.body = ''
@@ -286,7 +286,7 @@ class QuerySignatureHelper(HmacKeys):
             # already be there, we need to get rid of that and rebuild it
             http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs +
-                                 '&Signature=' + urllib.quote(signature))
+                                 '&Signature=' + urllib.quote_plus(signature))
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
     """Provides Signature V0 Signing"""
