@@ -41,7 +41,7 @@ from boto.ec2.volume import AttachmentSet, Volume, TierType, VolumeAttributes
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
-from boto.ec2.securitygroup import SecurityGroup
+from boto.ec2.securitygroup import ExtNetwork, SecurityGroup
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering
@@ -2306,6 +2306,32 @@ class EC2Connection(AWSQueryConnection):
             params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress',
                                params, verb='POST')
+
+    def attach_extnetwork(self, network_name, group_name):
+        """Attach an external network.
+
+        :type network_name: string
+        :param network_name: The name of the external network.
+
+        :type group_name: string
+        :param group_name: The name of the security group.
+        """
+        params = {'ExtNetName' : network_name,
+                  'GroupName': group_name}
+        return self.get_status('AttachExtNetwork', params, verb='POST')
+
+    def describe_extnetworks(self):
+        """Get all available external networks."""
+        return self.get_list('DescribeExtNetworks', {}, [( 'item', ExtNetwork )], verb='POST')
+
+    def detach_extnetwork(self, network_name):
+        """Detach an external network.
+
+        :type network_name: string
+        :param network_name: The name of the external network.
+        """
+        params = {'ExtNetName' : network_name}
+        return self.get_status('DetachExtNetwork', params, verb='POST')
 
     #
     # Regions

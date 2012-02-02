@@ -23,7 +23,7 @@
 """
 Represents an EC2 Security Group
 """
-from boto.ec2.ec2object import TaggedEC2Object
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 from boto.exception import BotoClientError
 
 class SecurityGroup(TaggedEC2Object):
@@ -305,3 +305,14 @@ class GroupOrCIDR(object):
         else:
             setattr(self, name, value)
 
+class ExtNetwork(EC2Object):
+    def __init__(self, connection = None):
+        EC2Object.__init__(self, connection)
+        self.extnet_name = None
+        self.state = None
+
+    def endElement(self, name, value, connection):
+        if name == "extNetName":
+            self.extnet_name = value
+        elif name == "state":
+            self.state = value
