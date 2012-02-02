@@ -70,6 +70,8 @@ class S3ConnectionTest (unittest.TestCase):
         assert s1 == file.read(), 'invalid URL %s' % url
         url = k.generate_url(3600, force_http=True, headers={'x-amz-x-token' : 'XYZ'})
         file = urllib.urlopen(url)
+        rh = {'response-content-disposition': 'attachment; filename="foo.txt"'}
+        url = k.generate_url(60, response_headers=rh)
         assert s1 == file.read(), 'invalid URL %s' % url
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data

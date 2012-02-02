@@ -197,33 +197,36 @@ class S3Connection(AWSAuthConnection):
                              conditions=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
-        This only returns the arguments required for the post form, not the actual form
-        This does not return the file input field which also needs to be added
+        This only returns the arguments required for the post form, not the
+        actual form.  This does not return the file input field which also
+        needs to be added
         
-        :param bucket_name: Bucket to submit to
         :type bucket_name: string 
+        :param bucket_name: Bucket to submit to
         
-        :param key:  Key name, optionally add ${filename} to the end to attach the submitted filename
         :type key: string
+        :param key:  Key name, optionally add ${filename} to the end to
+            attach the submitted filename
         
-        :param expires_in: Time (in seconds) before this expires, defaults to 6000
         :type expires_in: integer
+        :param expires_in: Time (in seconds) before this expires, defaults
+            to 6000
         
-        :param acl: ACL rule to use, if any
         :type acl: :class:`boto.s3.acl.ACL`
+        :param acl: ACL rule to use, if any
         
-        :param success_action_redirect: URL to redirect to on success
         :type success_action_redirect: string 
+        :param success_action_redirect: URL to redirect to on success
         
-        :param max_content_length: Maximum size for this file
         :type max_content_length: integer 
+        :param max_content_length: Maximum size for this file
         
         :type http_method: string
         :param http_method:  HTTP Method to use, "http" or "https"
         
-        
         :rtype: dict
-        :return: A dictionary containing field names/values as well as a url to POST to
+        :return: A dictionary containing field names/values as well as
+            a url to POST to
         
             .. code-block:: python
             
@@ -271,7 +274,8 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "policy", "value": policy_b64})
 
         # Add the AWS access key as the 'AWSAccessKeyId' field
-        fields.append({"name": "AWSAccessKeyId", "value": self.aws_access_key_id})
+        fields.append({"name": "AWSAccessKeyId",
+                       "value": self.aws_access_key_id})
 
         # Add signature for encoded policy document as the 'AWSAccessKeyId' field
         signature = self._auth_handler.sign_string(policy_b64)
@@ -279,7 +283,9 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "key", "value": key})
 
         # HTTPS protocol will be used if the secure HTTP option is enabled.
-        url = '%s://%s/' % (http_method, self.calling_format.build_host(self.server_name(), bucket_name))
+        url = '%s://%s/' % (http_method,
+                            self.calling_format.build_host(self.server_name(),
+                                                           bucket_name))
 
         return {"action": url, "fields": fields}
 
@@ -301,7 +307,8 @@ class S3Connection(AWSAuthConnection):
             response_hdrs = ["%s=%s" % (k, v) for k, v in
                              response_headers.items()]
             delimiter = '?' if '?' not in auth_path else '&'
-            auth_path = "%s%s%s" % (auth_path, delimiter, '&'.join(response_hdrs))
+            auth_path = "%s%s" % (auth_path, delimiter)
+            auth_path += '&'.join(response_hdrs)
         else:
             response_headers = {}
         c_string = boto.utils.canonical_string(method, auth_path, headers,
@@ -314,7 +321,7 @@ class S3Connection(AWSAuthConnection):
                                                    self.aws_access_key_id)
             # The response headers must also be GET parameters in the URL.
             headers.update(response_headers)
-            hdrs = [ '%s=%s'%(name, urllib.quote(val)) for name,val in headers.items() ]
+            hdrs = ['%s=%s'%(n, urllib.quote(v)) for n, v in headers.items()]
             q_str = '&'.join(hdrs)
             if q_str:
                 query_part += '&' + q_str
@@ -326,7 +333,8 @@ class S3Connection(AWSAuthConnection):
         else:
             protocol = self.protocol
             port = self.port
-        return self.calling_format.build_url_base(self, protocol, self.server_name(port),
+        return self.calling_format.build_url_base(self, protocol,
+                                                  self.server_name(port),
                                                   bucket, key) + query_part
 
     def get_all_buckets(self, headers=None):
@@ -385,7 +393,8 @@ class S3Connection(AWSAuthConnection):
         :param location: The location of the new bucket
         
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
+        :param policy: A canned ACL policy that will be applied to the
+            new key in S3.
              
         """
         check_lowercase_bucketname(bucket_name)
