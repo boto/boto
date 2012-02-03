@@ -22,7 +22,7 @@ Sections
 The following sections and options are currently recognized within the boto config file.
 
     Credentials
-    ~~~~~~~~~~~~
+    --------------
     The Credentials section is used to specify the AWS credentials used for all boto requests. The order of precedence for authentication credentials is:
 
     Credentials passed into Connection class constructor.
@@ -40,7 +40,7 @@ The following sections and options are currently recognized within the boto conf
     Please notice that quote characters are not used to either side of the '=' operator even when both your aws access key id and secret key are strings.
 
     Boto
-    ~~~~
+    ------
     The Boto section is used to specify options that control the operaton of boto itself. This section defines the following options:
 
         * debug
