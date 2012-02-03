@@ -21,45 +21,45 @@ Sections
 ----------------
 The following sections and options are currently recognized within the boto config file.
 
-    Credentials
-    --------------
-    The Credentials section is used to specify the AWS credentials used for all boto requests. The order of precedence for authentication credentials is:
+Credentials
+--------------
+The Credentials section is used to specify the AWS credentials used for all boto requests. The order of precedence for authentication credentials is:
 
-    Credentials passed into Connection class constructor.
-    Credentials specified by environment variables
-    Credentials specified as options in the config file.
-    This section defines the following options:
-    aws_access_key_id and aws_secret_access_key. The former being your aws key id and the latter being the secret key.
+Credentials passed into Connection class constructor.
+Credentials specified by environment variables
+Credentials specified as options in the config file.
+This section defines the following options:
+aws_access_key_id and aws_secret_access_key. The former being your aws key id and the latter being the secret key.
 
-    For example::
+For example::
 
-        [Credentials]
-        aws_access_key_id = <your access key>
-        aws_secret_access_key = <your secret key>
+    [Credentials]
+    aws_access_key_id = <your access key>
+    aws_secret_access_key = <your secret key>
+
+Please notice that quote characters are not used to either side of the '=' operator even when both your aws access key id and secret key are strings.
+
+Boto
+------
+The Boto section is used to specify options that control the operaton of boto itself. This section defines the following options:
+
+    * debug
+
+    Controls the level of debug messages that will be printed by the boto library. The following values are defined:
+            0 - no debug messages are printed
+            1 - basic debug messages from boto are printed
+            2 - all boto debugging messages plus request/response messages from httplib
+    * proxy:
+    The name of the proxy host to use for connecting to AWS.
+        
+    * proxy_port: The port number to use to connect to the proxy host.
     
-    Please notice that quote characters are not used to either side of the '=' operator even when both your aws access key id and secret key are strings.
-
-    Boto
-    ------
-    The Boto section is used to specify options that control the operaton of boto itself. This section defines the following options:
-
-        * debug
-
-        Controls the level of debug messages that will be printed by the boto library. The following values are defined:
-                0 - no debug messages are printed
-                1 - basic debug messages from boto are printed
-                2 - all boto debugging messages plus request/response messages from httplib
-        * proxy:
-        The name of the proxy host to use for connecting to AWS.
-            
-        * proxy_port: The port number to use to connect to the proxy host.
-        
-        * proxy_user: The user name to use when authenticating with proxy host.
-        
-        * proxy_pass: The password to use when authenticating with proxy host.
-        
-        * num_retries: The number of times to retry failed requests to an AWS server. If boto receives an error from AWS, 
-        it will attempt to recover and retry the request. The default number of retries is 5 but you can change the default with this option.
+    * proxy_user: The user name to use when authenticating with proxy host.
+    
+    * proxy_pass: The password to use when authenticating with proxy host.
+    
+    * num_retries: The number of times to retry failed requests to an AWS server. If boto receives an error from AWS, 
+    it will attempt to recover and retry the request. The default number of retries is 5 but you can change the default with this option.
     
 As an example::
 
