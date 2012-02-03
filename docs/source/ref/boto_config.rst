@@ -34,6 +34,8 @@ The following sections and options are currently recognized within the boto conf
         [Credentials]
         aws_access_key_id = <your access key>
         aws_secret_access_key = <your secret key>
+    
+    Please notice that quote characters are not used to either side of the '=' operator even when both your aws access key id and secret key are strings.
 
     Boto
     ~~~~
