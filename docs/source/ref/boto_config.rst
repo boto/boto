@@ -44,12 +44,13 @@ The Boto section is used to specify options that control the operaton of boto it
 
 * debug
 
-Controls the level of debug messages that will be printed by the boto library. The following values are defined:
+Controls the level of debug messages that will be printed by the boto library. The following values are defined::
+
         0 - no debug messages are printed
         1 - basic debug messages from boto are printed
         2 - all boto debugging messages plus request/response messages from httplib
-* proxy:
-The name of the proxy host to use for connecting to AWS.
+
+* proxy: The name of the proxy host to use for connecting to AWS.
 
 * proxy_port: The port number to use to connect to the proxy host.
 
