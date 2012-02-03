@@ -282,7 +282,9 @@ class Table(object):
         """
         return self.layer2.query(self, hash_key, range_key_condition,
                                  attributes_to_get=attributes_to_get,
-                                 consistent_read=consistent_read,
+                                 limit=limit, consistent_read=consistent_read,
+                                 scan_index_forward=scan_index_forward,
+                                 exclusive_start_key=exclusive_start_key,
                                  item_class=item_class)
 
     def scan(self, scan_filter=None,
