@@ -63,7 +63,7 @@ class STSConnection(AWSQueryConnection):
             now = datetime.datetime.utcnow()
             expires = boto.utils.parse_ts(token.expiration)
             delta = expires - now
-            if delta.total_seconds() < window_seconds:
+            if delta < datetime.timedelta(seconds=window_seconds):
                 msg = 'Cached session token %s is expired' % token_key
                 boto.log.debug(msg)
                 token = None
