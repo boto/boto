@@ -244,6 +244,7 @@ def get_ts(ts=None):
     return time.strftime(ISO8601, ts)
 
 def parse_ts(ts):
+    ts = ts.strip()
     try:
         dt = datetime.datetime.strptime(ts, ISO8601)
         return dt
