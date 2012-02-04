@@ -201,7 +201,7 @@ class AWSQueryRequest(object):
     def status(self):
         retval = None
         if self.http_response is not None:
-            retval = self.http_response.status
+            retval = self.http_response.status_code
         return retval
 
     @property
@@ -298,19 +298,19 @@ class AWSQueryRequest(object):
         self.http_response = conn.make_request(self.name(),
                                                self.request_params,
                                                verb=verb)
-        self.body = self.http_response.read()
+        self.body = self.http_response.response
         boto.log.debug(self.body)
-        if self.http_response.status == 200:
+        if self.http_response.status_code == 200:
             self.aws_response = boto.jsonresponse.Element(list_marker=self.list_markers,
                                                           item_marker=self.item_markers)
             h = boto.jsonresponse.XmlHandler(self.aws_response, self)
             h.parse(self.body)
             return self.aws_response
         else:
-            boto.log.error('%s %s' % (self.http_response.status,
+            boto.log.error('%s %s' % (self.http_response.status_code,
                                       self.http_response.reason))
             boto.log.error('%s' % self.body)
-            raise conn.ResponseError(self.http_response.status,
+            raise conn.ResponseError(self.http_response.status_code,
                                      self.http_response.reason,
                                      self.body)
 

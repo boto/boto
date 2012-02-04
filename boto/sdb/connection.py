@@ -491,15 +491,15 @@ class SDBConnection(AWSQueryConnection):
                 attribute_names = [attribute_names]
             self.build_list_params(params, attribute_names, 'AttributeName')
         response = self.make_request('GetAttributes', params)
-        body = response.read()
-        if response.status == 200:
-            if item == None:
+        body = response.content
+        if response.status_code == 200:
+            if item is None:
                 item = self.item_cls(domain, item_name)
             h = handler.XmlHandler(item, self)
             xml.sax.parseString(body, h)
             return item
         else:
-            raise SDBResponseError(response.status, response.reason, body)
+            raise SDBResponseError(response.status_code, response.reason, body)
 
     def delete_attributes(self, domain_or_name, item_name, attr_names=None,
                           expected_value=None):

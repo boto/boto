@@ -82,13 +82,13 @@ class GSConnection(S3Connection):
                     '</CreateBucketConfiguration>' % location)
         response = self.make_request('PUT', bucket_name, headers=headers,
                 data=data)
-        body = response.read()
-        if response.status == 409:
+        body = response.content
+        if response.status_code == 409:
             raise self.provider.storage_create_error(
-                response.status, response.reason, body)
-        if response.status == 200:
+                response.status_code, response.reason, body)
+        if response.status_code == 200:
             return self.bucket_class(self, bucket_name)
         else:
             raise self.provider.storage_response_error(
-                response.status, response.reason, body)
+                response.status_code, response.reason, body)
 

@@ -204,8 +204,8 @@ class MultiPartUpload(object):
         response = self.bucket.connection.make_request('GET', self.bucket.name,
                                                        self.key_name,
                                                        query_args=query_args)
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             h = handler.XmlHandler(self, self)
             xml.sax.parseString(body, h)
             return self._parts

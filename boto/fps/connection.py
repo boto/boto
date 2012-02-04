@@ -83,8 +83,8 @@ class FPSConnection(AWSQueryConnection):
         response = self.install_payment_instruction("MyRole=='Caller';",
                                                     token_type=token_type,
                                                     transaction_id=transaction_id)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if response.status_code == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
@@ -92,12 +92,12 @@ class FPSConnection(AWSQueryConnection):
             try:
                 boto.config.save_system_option("FPS", "caller_token",
                                                caller_token)
-            except(IOError):
+            except IOError:
                 boto.config.save_user_option("FPS", "caller_token",
                                              caller_token)
             return caller_token
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
 
     def install_recipient_instruction(self, token_type="Unrestricted",
                                       transaction_id=None):
@@ -109,8 +109,8 @@ class FPSConnection(AWSQueryConnection):
         response = self.install_payment_instruction("MyRole=='Recipient';",
                                                     token_type=token_type,
                                                     transaction_id=transaction_id)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if response.status_code == 200:
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
@@ -118,13 +118,13 @@ class FPSConnection(AWSQueryConnection):
             try:
                 boto.config.save_system_option("FPS", "recipient_token",
                                                recipient_token)
-            except(IOError):
+            except IOError:
                 boto.config.save_user_option("FPS", "recipient_token",
                                              recipient_token)
 
             return recipient_token
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
 
     def make_marketplace_registration_url(self, returnURL, pipelineName,
                                           maxFixedFee=0.0, maxVariableFee=0.0,
@@ -266,14 +266,14 @@ class FPSConnection(AWSQueryConnection):
             response = self.make_request("Reserve", params)
         else:
             response = self.make_request("Pay", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
     
     def get_transaction_status(self, transactionId):
         """
@@ -283,14 +283,14 @@ class FPSConnection(AWSQueryConnection):
         params['TransactionId'] = transactionId
     
         response = self.make_request("GetTransactionStatus", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
     
     def cancel(self, transactionId, description=None):
         """
@@ -302,14 +302,14 @@ class FPSConnection(AWSQueryConnection):
             params['description'] = description
         
         response = self.make_request("Cancel", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
     
     def settle(self, reserveTransactionId, transactionAmount=None):
         """
@@ -321,14 +321,14 @@ class FPSConnection(AWSQueryConnection):
             params['TransactionAmount'] = transactionAmount
         
         response = self.make_request("Settle", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
     
     def refund(self, callerReference, transactionId, refundAmount=None,
                callerDescription=None):
@@ -345,14 +345,14 @@ class FPSConnection(AWSQueryConnection):
             params['CallerDescription'] = callerDescription
         
         response = self.make_request("Refund", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
     
     def get_recipient_verification_status(self, recipientTokenId):
         """
@@ -362,14 +362,14 @@ class FPSConnection(AWSQueryConnection):
         params['RecipientTokenId'] = recipientTokenId
         
         response = self.make_request("GetRecipientVerificationStatus", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
     
     def get_token_by_caller_reference(self, callerReference):
         """
@@ -379,14 +379,14 @@ class FPSConnection(AWSQueryConnection):
         params['CallerReference'] = callerReference
         
         response = self.make_request("GetTokenByCaller", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
         
     def get_token_by_caller_token(self, tokenId):
         """
@@ -396,14 +396,14 @@ class FPSConnection(AWSQueryConnection):
         params['TokenId'] = tokenId
         
         response = self.make_request("GetTokenByCaller", params)
-        body = response.read()
-        if(response.status == 200):
+        body = response.content
+        if(response.status_code == 200):
             rs = ResultSet()
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise FPSResponseError(response.status, response.reason, body)
+            raise FPSResponseError(response.status_code, response.reason, body)
 
     def verify_signature(self, end_point_url, http_parameters):
         params = dict(
@@ -411,9 +411,9 @@ class FPSConnection(AWSQueryConnection):
             HttpParameters = http_parameters,
             )
         response = self.make_request("VerifySignature", params)
-        body = response.read()
-        if(response.status != 200):
-            raise FPSResponseError(response.status, response.reason, body)
+        body = response.content
+        if(response.status_code != 200):
+            raise FPSResponseError(response.status_code, response.reason, body)
         rs = ResultSet()
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)

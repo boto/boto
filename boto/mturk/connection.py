@@ -735,7 +735,7 @@ class MTurkConnection(AWSQueryConnection):
         """
         Helper to process the xml response from AWS
         """
-        body = response.read()
+        body = response.content
         #print body
         if '<Errors>' not in body:
             rs = ResultSet(marker_elems)
@@ -743,7 +743,7 @@ class MTurkConnection(AWSQueryConnection):
             xml.sax.parseString(body, h)
             return rs
         else:
-            raise MTurkRequestError(response.status, response.reason, body)
+            raise MTurkRequestError(response.status_code, response.reason, body)
 
     @staticmethod
     def get_keywords_as_string(keywords):

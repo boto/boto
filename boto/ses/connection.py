@@ -97,8 +97,8 @@ class SESConnection(AWSAuthConnection):
             headers=headers,
             data=urllib.urlencode(params)
         )
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             list_markers = ('VerifiedEmailAddresses', 'SendDataPoints')
             e = boto.jsonresponse.Element(list_marker=list_markers)
             h = boto.jsonresponse.XmlHandler(e, None)
@@ -115,7 +115,7 @@ class SESConnection(AWSAuthConnection):
         errors share the same HTTP response code, meaning we have to get really
         kludgey and do string searches to figure out what went wrong.
         """
-        boto.log.error('%s %s' % (response.status, response.reason))
+        boto.log.error('%s %s' % (response.status_code, response.reason))
         boto.log.error('%s' % body)
 
         if "Address blacklisted." in body:
@@ -149,7 +149,7 @@ class SESConnection(AWSAuthConnection):
             ExceptionToRaise = self.ResponseError
             exc_reason = response.reason
 
-        raise ExceptionToRaise(response.status, exc_reason, body)
+        raise ExceptionToRaise(response.status_code, exc_reason, body)
 
     def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text', reply_addresses=None,

@@ -108,7 +108,7 @@ class Key(object):
         base64md5 = base64.encodestring(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
-        return (md5_hexdigest, base64md5)
+        return md5_hexdigest, base64md5
 
     def handle_encryption_headers(self, resp):
         provider = self.bucket.connection.provider
@@ -125,10 +125,10 @@ class Key(object):
         # version of the Key.  In that case, we don't really want to
         # overwrite the version_id in this Key object.  Comprende?
         if self.version_id is None or force:
-            self.version_id = resp.getheader(provider.version_id, None)
-        self.source_version_id = resp.getheader(provider.copy_source_version_id,
+            self.version_id = resp.headers.get(provider.version_id, None)
+        self.source_version_id = resp.headers.get(provider.copy_source_version_id,
                                                 None)
-        if resp.getheader(provider.delete_marker, 'false') == 'true':
+        if resp.headers.get(provider.delete_marker, 'false') == 'true':
             self.delete_marker = True
         else:
             self.delete_marker = False
@@ -154,7 +154,7 @@ class Key(object):
                                  the stored object in the response.
                                  See http://goo.gl/EWOPb for details.
         """
-        if self.resp == None:
+        if self.resp is None:
             self.mode = 'r'
 
             provider = self.bucket.connection.provider
@@ -162,11 +162,11 @@ class Key(object):
                 'GET', self.bucket.name, self.name, headers,
                 query_args=query_args,
                 override_num_retries=override_num_retries)
-            if self.resp.status < 199 or self.resp.status > 299:
-                body = self.resp.read()
-                raise provider.storage_response_error(self.resp.status,
+            if self.resp.status_code < 199 or self.resp.status_code > 299:
+                body = self.resp.content
+                raise provider.storage_response_error(self.resp.status_code,
                                                       self.resp.reason, body)
-            response_headers = self.resp.msg
+            response_headers = self.resp.headers
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
             for name,value in response_headers.items():
@@ -221,8 +221,7 @@ class Key(object):
 
     closed = False
     def close(self):
-        if self.resp:
-            self.resp.read()
+        # TODO: This may not be necessary anymore with requests integrated.
         self.resp = None
         self.mode = None
         self.closed = True
@@ -238,7 +237,7 @@ class Key(object):
         All of the HTTP connection stuff is handled for you.
         """
         self.open_read()
-        data = self.resp.read(self.BufferSize)
+        data = self.resp.iter_content(chunk_size=self.BufferSize)
         if not data:
             self.close()
             raise StopIteration
@@ -546,22 +545,22 @@ class Key(object):
             if cb:
                 cb(total_bytes, self.size)
             response = http_conn.getresponse()
-            body = response.read()
+            body = response.content
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
-            if ((response.status == 500 or response.status == 503 or
-                    response.getheader('location')) and not chunked_transfer):
+            if ((response.status_code == 500 or response.status_code == 503 or
+                    response.headers.get('location')) and not chunked_transfer):
                 # we'll try again.
                 return response
-            elif response.status >= 200 and response.status <= 299:
-                self.etag = response.getheader('etag')
+            elif response.status_code >= 200 and response.status_code <= 299:
+                self.etag = response.headers.get('etag')
                 if self.etag != '"%s"'  % self.md5:
                     raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5')
                 return response
             else:
                 raise provider.storage_response_error(
-                    response.status, response.reason, body)
+                    response.status_code, response.reason, body)
 
         if not headers:
             headers = {}
@@ -586,7 +585,7 @@ class Key(object):
                 del headers['Content-Type']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
-            if self.content_type == None:
+            if self.content_type is None:
                 self.content_type = self.DefaultContentType
             headers['Content-Type'] = self.content_type
         else:

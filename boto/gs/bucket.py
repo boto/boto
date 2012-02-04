@@ -64,15 +64,15 @@ class Bucket(S3Bucket):
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args, 
                                                 headers=headers)
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             acl = ACL(self)
             h = handler.XmlHandler(acl, self)
             xml.sax.parseString(body, h)
             return acl
         else:
             raise self.connection.provider.storage_response_error(
-                response.status, response.reason, body)
+                response.status_code, response.reason, body)
 
     def get_acl(self, key_name='', headers=None, version_id=None):
         """returns a bucket's acl. We include a version_id argument
@@ -97,10 +97,10 @@ class Bucket(S3Bucket):
 
         response = self.connection.make_request('PUT', self.name, key_name,
                 headers=headers, query_args=query_args)
-        body = response.read()
-        if response.status != 200:
+        body = response.content
+        if response.status_code != 200:
             raise self.connection.provider.storage_response_error(
-                response.status, response.reason, body)
+                response.status_code, response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name='', headers=None, 
                        version_id=None):

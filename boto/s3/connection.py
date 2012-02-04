@@ -339,10 +339,10 @@ class S3Connection(AWSAuthConnection):
 
     def get_all_buckets(self, headers=None):
         response = self.make_request('GET', headers=headers)
-        body = response.read()
-        if response.status > 300:
+        body = response.content
+        if response.status_code > 300:
             raise self.provider.storage_response_error(
-                response.status, response.reason, body)
+                response.status_code, response.reason, body)
         rs = ResultSet([('Bucket', self.bucket_class)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
@@ -411,22 +411,22 @@ class S3Connection(AWSAuthConnection):
                     location + '</LocationConstraint></CreateBucketConstraint>'
         response = self.make_request('PUT', bucket_name, headers=headers,
                 data=data)
-        body = response.read()
-        if response.status == 409:
+        body = response.content
+        if response.status_code == 409:
             raise self.provider.storage_create_error(
-                response.status, response.reason, body)
-        if response.status == 200:
+                response.status_code, response.reason, body)
+        if response.status_code == 200:
             return self.bucket_class(self, bucket_name)
         else:
             raise self.provider.storage_response_error(
-                response.status, response.reason, body)
+                response.status_code, response.reason, body)
 
     def delete_bucket(self, bucket, headers=None):
         response = self.make_request('DELETE', bucket, headers=headers)
-        body = response.read()
-        if response.status != 204:
+        body = response.content
+        if response.status_code != 204:
             raise self.provider.storage_response_error(
-                response.status, response.reason, body)
+                response.status_code, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
             query_args=None, sender=None, override_num_retries=None):

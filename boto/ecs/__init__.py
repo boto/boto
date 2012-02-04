@@ -58,13 +58,13 @@ class ECSConnection(AWSQueryConnection):
         if page:
             params['ItemPage'] = page
         response = self.make_request(None, params, "/onca/xml")
-        body = response.read()
+        body = response.content
         boto.log.debug(body)
 
-        if response.status != 200:
-            boto.log.error('%s %s' % (response.status, response.reason))
+        if response.status_code != 200:
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
         if itemSet == None:
             rs = ItemSet(self, action, params, page)

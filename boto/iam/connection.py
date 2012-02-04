@@ -54,18 +54,18 @@ class IAMConnection(AWSQueryConnection):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
-        body = response.read()
+        body = response.content
         boto.log.debug(body)
-        if response.status == 200:
+        if response.status_code == 200:
             e = boto.jsonresponse.Element(list_marker=list_marker,
                                           pythonize_name=True)
             h = boto.jsonresponse.XmlHandler(e, parent)
             h.parse(body)
             return e
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     #
     # Group methods

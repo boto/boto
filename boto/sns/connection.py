@@ -66,13 +66,13 @@ class SNSConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         response = self.make_request('ListTopics', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def get_topic_attributes(self, topic):
         """
@@ -85,13 +85,13 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic}
         response = self.make_request('GetTopicAttributes', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def set_topic_attributes(self, topic, attr_name, attr_value):
         """
@@ -114,13 +114,13 @@ class SNSConnection(AWSQueryConnection):
                   'AttributeName' : attr_name,
                   'AttributeValue' : attr_value}
         response = self.make_request('SetTopicAttributes', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def add_permission(self, topic, label, account_ids, actions):
         """
@@ -148,13 +148,13 @@ class SNSConnection(AWSQueryConnection):
         self.build_list_params(params, account_ids, 'AWSAccountId')
         self.build_list_params(params, actions, 'ActionName')
         response = self.make_request('AddPermission', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def remove_permission(self, topic, label):
         """
@@ -172,13 +172,13 @@ class SNSConnection(AWSQueryConnection):
                   'TopicArn' : topic,
                   'Label' : label}
         response = self.make_request('RemovePermission', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def create_topic(self, topic):
         """
@@ -191,13 +191,13 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'Name' : topic}
         response = self.make_request('CreateTopic', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def delete_topic(self, topic):
         """
@@ -210,13 +210,13 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic}
         response = self.make_request('DeleteTopic', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
 
 
@@ -243,13 +243,13 @@ class SNSConnection(AWSQueryConnection):
         if subject:
             params['Subject'] = subject
         response = self.make_request('Publish', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def subscribe(self, topic, protocol, endpoint):
         """
@@ -278,13 +278,13 @@ class SNSConnection(AWSQueryConnection):
                   'Protocol' : protocol,
                   'Endpoint' : endpoint}
         response = self.make_request('Subscribe', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def subscribe_sqs_queue(self, topic, queue):
         """
@@ -353,13 +353,13 @@ class SNSConnection(AWSQueryConnection):
         if authenticate_on_unsubscribe:
             params['AuthenticateOnUnsubscribe'] = 'true'
         response = self.make_request('ConfirmSubscription', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def unsubscribe(self, subscription):
         """
@@ -373,13 +373,13 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'SubscriptionArn' : subscription}
         response = self.make_request('Unsubscribe', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def get_all_subscriptions(self, next_token=None):
         """
@@ -394,13 +394,13 @@ class SNSConnection(AWSQueryConnection):
         if next_token:
             params['NextToken'] = next_token
         response = self.make_request('ListSubscriptions', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         
     def get_all_subscriptions_by_topic(self, topic, next_token=None):
         """
@@ -421,11 +421,11 @@ class SNSConnection(AWSQueryConnection):
             params['NextToken'] = next_token
         response = self.make_request('ListSubscriptionsByTopic', params,
                                      '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
         

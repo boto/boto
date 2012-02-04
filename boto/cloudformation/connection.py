@@ -133,14 +133,14 @@ class CloudFormationConnection(AWSQueryConnection):
             params['TimeoutInMinutes'] = int(timeout_in_minutes)
 
         response = self.make_request('CreateStack', params, '/', 'POST')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             body = json.loads(body)
             return body['CreateStackResponse']['CreateStackResult']['StackId']
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def update_stack(self, stack_name, template_body=None, template_url=None,
             parameters=[], notification_arns=[], disable_rollback=False,
@@ -200,26 +200,26 @@ class CloudFormationConnection(AWSQueryConnection):
             params['TimeoutInMinutes'] = int(timeout_in_minutes)
 
         response = self.make_request('UpdateStack', params, '/', 'POST')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             body = json.loads(body)
             return body['UpdateStackResponse']['UpdateStackResult']['StackId']
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def delete_stack(self, stack_name_or_id):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
         # TODO: change this to get_status ?
         response = self.make_request('DeleteStack', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def describe_stack_events(self, stack_name_or_id=None, next_token=None):
         params = {}
@@ -235,13 +235,13 @@ class CloudFormationConnection(AWSQueryConnection):
                 'LogicalResourceId': logical_resource_id}
         response = self.make_request('DescribeStackResource', params,
                                      '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def describe_stack_resources(self, stack_name_or_id=None,
             logical_resource_id=None,
@@ -265,13 +265,13 @@ class CloudFormationConnection(AWSQueryConnection):
     def get_template(self, stack_name_or_id):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
         response = self.make_request('GetTemplate', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
+        body = response.content
+        if response.status_code == 200:
             return json.loads(body)
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s %s' % (response.status_code, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status_code, response.reason, body)
 
     def list_stack_resources(self, stack_name_or_id, next_token=None):
         params = {'StackName': stack_name_or_id}

@@ -110,23 +110,24 @@ class Layer1(AWSAuthConnection):
         """
         :raises: ``DynamoDBExpiredTokenError`` if the security token expires.
         """
-        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
-                                                  self.Version, action),
-                   'Content-Type' : 'application/x-amz-json-1.0',
-                   'Content-Length' : str(len(body))}
+        headers = {
+            'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName, self.Version, action),
+            'Content-Type' : 'application/x-amz-json-1.0',
+            'Content-Length' : str(len(body)),
+        }
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
-        response_body = response.read()
+        response_body = response.content
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
 
     def _retry_handler(self, response, i, next_sleep):
         status = None
-        if response.status == 400:
-            response_body = response.read()
+        if response.status_code == 400:
+            response_body = response.content
             boto.log.debug(response_body)
             json_response = json.loads(response_body)
             if self.ThruputError in json_response.get('__type'):
@@ -144,7 +145,7 @@ class Layer1(AWSAuthConnection):
                 self._update_provider()
                 status = (msg, i+self.num_retries-1, next_sleep)
             else:
-                raise self.ResponseError(response.status, response.reason,
+                raise self.ResponseError(response.status_code, response.reason,
                                          json_response)
         return status
 
