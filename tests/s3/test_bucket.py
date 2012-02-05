@@ -51,9 +51,8 @@ class S3BucketTest (unittest.TestCase):
         # last element will be "b" so no issue.
         rs = self.bucket.get_all_keys(max_keys=2)
         for element in rs:
-            pass
-        self.assertEqual(element.name, "b")
-        self.assertEqual(rs.next_marker, None)
+            self.assertEqual(element.name, "b")
+            self.assertEqual(rs.next_marker, None)
 
         # list using delimiter of first 2 keys will have
         # a NextMarker set (when truncated). As prefixes
@@ -61,13 +60,12 @@ class S3BucketTest (unittest.TestCase):
         # last element, but luckily we have next_marker.
         rs = self.bucket.get_all_keys(max_keys=2, delimiter="/")
         for element in rs:
-            pass
-        self.assertEqual(element.name, "a/")
-        self.assertEqual(rs.next_marker, "b")
+            self.assertEqual(element.name, "a/")
+            self.assertEqual(rs.next_marker, "b")
 
         # ensure bucket.list() still works by just
         # popping elements off the front of expected.
         rs = self.bucket.list()
         for element in rs:
             self.assertEqual(element.name, expected.pop(0))
-        self.assertEqual(expected, [])
+            self.assertEqual(expected, [])

@@ -410,11 +410,13 @@ class AWSAuthConnection(object):
         Google group by Larry Bates.  Thanks!
 
         """
+        boto.log.debug('--- Request Details ---')
         boto.log.debug('Method: %s' % request.method)
         boto.log.debug('Path: %s' % request.path)
         boto.log.debug('Data: %s' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
+        boto.log.debug('------------------------')
         response = None
         body = None
         e = None
@@ -463,6 +465,11 @@ class AWSAuthConnection(object):
                 )
                 status_reason = HTTP_REASON_CODES.get(response.status_code, 'Unknown')
                 setattr(response, 'reason', status_reason)
+
+                boto.log.debug('--- Response Details ---')
+                boto.log.debug('Status: %s' % response.status_code)
+                boto.log.debug('Headers: %s' % response.headers)
+                boto.log.debug('------------------------')
 
                 location = response.headers['location']
 
