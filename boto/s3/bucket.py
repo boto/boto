@@ -178,7 +178,7 @@ class Bucket(object):
             response.content
             k = self.key_class(self)
             provider = self.connection.provider
-            k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
+            k.metadata = boto.utils.get_aws_metadata(response.headers, provider)
             k.etag = response.headers.get('etag')
             k.content_type = response.headers.get('content-type')
             k.content_encoding = response.headers.get('content-encoding')

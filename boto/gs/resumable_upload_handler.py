@@ -234,7 +234,7 @@ class ResumableUploadHandler(object):
         if not got_valid_response:
             raise ResumableUploadException(
                 'Couldn\'t parse upload server state query response (%s)' %
-                str(resp.getheaders()), ResumableTransferDisposition.START_OVER)
+                str(resp.headers), ResumableTransferDisposition.START_OVER)
         if conn.debug >= 1:
             print 'Server has: Range: %d - %d.' % (server_start, server_end)
         return (server_start, server_end)

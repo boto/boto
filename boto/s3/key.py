@@ -113,7 +113,7 @@ class Key(object):
     def handle_encryption_headers(self, resp):
         provider = self.bucket.connection.provider
         if provider.server_side_encryption_header:
-            self.encrypted = resp.getheader(provider.server_side_encryption_header, None)
+            self.encrypted = resp.headers.get(provider.server_side_encryption_header, None)
         else:
             self.encrypted = None
 
@@ -257,7 +257,7 @@ class Key(object):
             the given chunk size.
         """
         self.open_read()
-        if size == 0:
+        if size is 0:
             data = self.resp.content
         else:
             data = self.resp.iter_content(chunk_size=size)
@@ -494,6 +494,7 @@ class Key(object):
         """
         provider = self.bucket.connection.provider
 
+        # TODO: Replace this with requests implementation, once it exists.
         def sender(http_conn, method, path, data, headers):
             http_conn.putrequest(method, path)
             for key in headers:
@@ -960,7 +961,7 @@ class Key(object):
         :type fp: file
         :param fp: File pointer to put the data into
 
-        :type headers: string
+        :type headers: dict
         :param: headers to send when retrieving the files
 
         :type cb: function
@@ -993,7 +994,7 @@ class Key(object):
         """
         if cb:
             if num_cb > 2:
-                cb_count = self.size / self.BufferSize / (num_cb-2)
+                cb_count = self.size / self.BufferSize / (num_cb - 2)
             elif num_cb < 0:
                 cb_count = -1
             else:
@@ -1022,7 +1023,7 @@ class Key(object):
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
-        for bytes in self:
+        for bytes in self.read(size=self.BufferSize):
             fp.write(bytes)
             if cb:
                 total_bytes += len(bytes)
@@ -1110,7 +1111,7 @@ class Key(object):
                                  the stored object in the response.
                                  See http://goo.gl/EWOPb for details.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
