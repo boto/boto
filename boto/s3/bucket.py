@@ -44,7 +44,6 @@ import xml.sax.saxutils
 import StringIO
 import urllib
 import re
-import base64
 from collections import defaultdict
 
 # as per http://goo.gl/BDuud (02/19/2011)
@@ -59,8 +58,8 @@ class S3WebsiteEndpointTranslate:
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
 
     @classmethod
-    def translate_region(self, reg):
-        return self.trans_region[reg]
+    def translate_region(cls, reg):
+        return cls.trans_region[reg]
 
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
@@ -169,7 +168,9 @@ class Bucket(object):
             query_args = 'versionId=%s' % version_id
         else:
             query_args = None
-        response = self.connection.make_request('HEAD', self.name, key_name,
+        response = self.connection.make_request('HEAD',
+                                                bucket=self.name,
+                                                key=key_name,
                                                 headers=headers,
                                                 query_args=query_args)
         # Allow any success status (2xx) - for example this lets us
@@ -267,8 +268,8 @@ class Bucket(object):
                         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
                         for more details.
                         
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
         
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
@@ -285,8 +286,8 @@ class Bucket(object):
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.
         
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
         
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
@@ -786,8 +787,8 @@ class Bucket(object):
         :type headers: dict
         :param headers: Additional HTTP headers to include in the request.
 
-        :type src_version_id: string
-        :param src_version_id: Optional. The version id of the key to operate
+        :type version_id: string
+        :param version_id: Optional. The version id of the key to operate
                                on. If not specified, operate on the newest
                                version.
         """
@@ -820,8 +821,8 @@ class Bucket(object):
         :type headers: dict
         :param headers: Additional HTTP headers to include in the request.
 
-        :type src_version_id: string
-        :param src_version_id: Optional. The version id of the key to operate
+        :type version_id: string
+        :param version_id: Optional. The version id of the key to operate
                                on. If not specified, operate on the newest
                                version.
 
@@ -1236,9 +1237,11 @@ class Bucket(object):
         bucket as a website.  This doesn't validate whether the bucket has
         been correctly configured as a website or not.
         """
-        l = [self.name]
-        l.append(S3WebsiteEndpointTranslate.translate_region(self.get_location()))
-        l.append('.'.join(self.connection.host.split('.')[-2:]))
+        l = [
+            self.name,
+            S3WebsiteEndpointTranslate.translate_region(self.get_location()),
+            '.'.join(self.connection.host.split('.')[-2:]),
+        ]
         return '.'.join(l)
 
     def get_policy(self, headers=None):

@@ -222,7 +222,7 @@ class ResumableDownloadHandler(object):
         :type fp: file
         :param fp: File pointer into which data should be downloaded
         
-        :type headers: string
+        :type headers: dict
         :param: headers to send when retrieving the files
         
         :type cb: function

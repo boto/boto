@@ -709,7 +709,7 @@ class Key(object):
             if provider.storage_class_header:
                 headers[provider.storage_class_header] = self.storage_class
 
-        if self.bucket != None:
+        if self.bucket is not None:
             if not replace:
                 k = self.bucket.lookup(self.name)
                 if k:
@@ -1101,7 +1101,7 @@ class Key(object):
         :param torrent: If True, returns the contents of a torrent
                         file as a string.
 
-        :type res_upload_handler: ResumableDownloadHandler
+        :type res_download_handler: ResumableDownloadHandler
         :param res_download_handler: If provided, this handler will
                                      perform the download.
 
@@ -1158,7 +1158,7 @@ class Key(object):
         :param torrent: If True, returns the contents of a torrent file
                         as a string.
 
-        :type res_upload_handler: ResumableDownloadHandler
+        :type res_download_handler: ResumableDownloadHandler
         :param res_download_handler: If provided, this handler will
                                      perform the download.
 
@@ -1175,7 +1175,7 @@ class Key(object):
                                   response_headers=response_headers)
         fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
-        if self.last_modified != None:
+        if self.last_modified is not None:
             try:
                 modified_tuple = rfc822.parsedate_tz(self.last_modified)
                 modified_stamp = int(rfc822.mktime_tz(modified_tuple))
@@ -1244,15 +1244,6 @@ class Key(object):
         :type email_address: string
         :param email_address: The email address associated with the AWS
                               account your are granting the permission to.
-
-        :type recursive: boolean
-        :param recursive: A boolean value to controls whether the command
-                          will apply the grant to all keys within the bucket
-                          or not.  The default value is False.  By passing a
-                          True value, the call will iterate through all keys
-                          in the bucket and apply the same grant to each key.
-                          CAUTION: If you have a lot of keys, this could take
-                          a long time!
         """
         policy = self.get_acl(headers=headers)
         policy.acl.add_email_grant(permission, email_address)
