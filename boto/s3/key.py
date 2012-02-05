@@ -162,6 +162,7 @@ class Key(object):
                 'GET', self.bucket.name, self.name, headers,
                 query_args=query_args,
                 override_num_retries=override_num_retries)
+
             if self.resp.status_code < 199 or self.resp.status_code > 299:
                 body = self.resp.content
                 raise provider.storage_response_error(self.resp.status_code,
@@ -169,7 +170,7 @@ class Key(object):
             response_headers = self.resp.headers
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
-            for name,value in response_headers.items():
+            for name, value in response_headers.items():
                 # To get correct size for Range GETs, use Content-Range
                 # header if one was returned. If not, use Content-Length
                 # header.
@@ -244,11 +245,22 @@ class Key(object):
         return data
 
     def read(self, size=0):
+        """
+        Reads either the entire contents of the key at once (by default),
+        or returns an iterator with the given chunk size.
+
+        :keyword int size: Chunk size for the iterator, if non-zero.
+
+        :rtype: bytes or iterator of bytes
+        :returns: If no ``size`` is specified, returns the entire contents
+            of the key. If ``size`` is specified, returns an iterator with
+            the given chunk size.
+        """
         self.open_read()
         if size == 0:
-            data = self.resp.read()
+            data = self.resp.content
         else:
-            data = self.resp.read(size)
+            data = self.resp.iter_content(chunk_size=size)
         if not data:
             self.close()
         return data
@@ -1001,8 +1013,10 @@ class Key(object):
         if version_id is None:
             version_id = self.version_id
         if version_id:
+            # TODO: Do we need to be assembling strings anymore with requests?
             query_args.append('versionId=%s' % version_id)
         if response_headers:
+            # TODO: Is this necessary with requests?
             for key in response_headers:
                 query_args.append('%s=%s' % (key, urllib.quote(response_headers[key])))
         query_args = '&'.join(query_args)
