@@ -47,7 +47,7 @@ class CloudFrontConnection(AWSAuthConnection):
                 True, port, proxy, proxy_port, debug=debug)
 
     def get_etag(self, response):
-        response_headers = response.msg
+        response_headers = response.headers
         for key in response_headers.keys():
             if key.lower() == 'etag':
                 return response_headers[key]
@@ -79,7 +79,7 @@ class CloudFrontConnection(AWSAuthConnection):
         if response.status_code >= 300:
             raise CloudFrontServerError(response.status_code, response.reason, body)
         d = dist_class(connection=self)
-        response_headers = response.msg
+        response_headers = response.headers
         for key in response_headers.keys():
             if key.lower() == 'etag':
                 d.etag = response_headers[key]
