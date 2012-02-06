@@ -229,7 +229,8 @@ class Table(object):
         return Item(self, hash_key, range_key, attrs)
 
     def query(self, hash_key, range_key_condition=None,
-              attributes_to_get=None, limit=None, consistent_read=False,
+              attributes_to_get=None, request_limit=None,
+              max_results=None, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
               item_class=Item):
         """
@@ -258,8 +259,20 @@ class Table(object):
             If supplied, only the specified attribute names will
             be returned.  Otherwise, all attributes will be returned.
 
-        :type limit: int
-        :param limit: The maximum number of items to return.
+        :type request_limit: int
+        :param request_limit: The maximum number of items to retrieve
+            from Amazon DynamoDB on each request.  You may want to set
+            a specific request_limit based on the provisioned throughput
+            of your table.  The default behavior is to retrieve as many
+            results as possible per request.
+
+        :type max_results: int
+        :param max_results: The maximum number of results that will
+            be retrieved from Amazon DynamoDB in total.  For example,
+            if you only wanted to see the first 100 results from the
+            query, regardless of how many were actually available, you
+            could set max_results to 100 and the generator returned
+            from the query method will only yeild 100 results max.
 
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
@@ -281,16 +294,14 @@ class Table(object):
             :class:`boto.dynamodb.item.Item`
         """
         return self.layer2.query(self, hash_key, range_key_condition,
-                                 attributes_to_get=attributes_to_get,
-                                 limit=limit, consistent_read=consistent_read,
-                                 scan_index_forward=scan_index_forward,
-                                 exclusive_start_key=exclusive_start_key,
+                                 attributes_to_get, request_limit,
+                                 max_results, consistent_read,
+                                 scan_index_forward, exclusive_start_key,
                                  item_class=item_class)
 
     def scan(self, scan_filter=None,
-             attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None,
-             item_class=Item):
+             attributes_to_get=None, request_limit=None, max_results=None,
+             count=False, exclusive_start_key=None, item_class=Item):
         """
         Scan through this table, this is a very long
         and expensive operation, and should be avoided if
@@ -305,8 +316,20 @@ class Table(object):
             If supplied, only the specified attribute names will
             be returned.  Otherwise, all attributes will be returned.
 
-        :type limit: int
-        :param limit: The maximum number of items to return.
+        :type request_limit: int
+        :param request_limit: The maximum number of items to retrieve
+            from Amazon DynamoDB on each request.  You may want to set
+            a specific request_limit based on the provisioned throughput
+            of your table.  The default behavior is to retrieve as many
+            results as possible per request.
+
+        :type max_results: int
+        :param max_results: The maximum number of results that will
+            be retrieved from Amazon DynamoDB in total.  For example,
+            if you only wanted to see the first 100 results from the
+            query, regardless of how many were actually available, you
+            could set max_results to 100 and the generator returned
+            from the query method will only yeild 100 results max.
 
         :type count: bool
         :param count: If True, Amazon DynamoDB returns a total
@@ -325,6 +348,6 @@ class Table(object):
 
         :rtype: generator
         """
-        return self.layer2.scan(self, scan_filter,
-            attributes_to_get, limit, count,
-            exclusive_start_key, item_class=item_class)
+        return self.layer2.scan(self, scan_filter, attributes_to_get,
+                                request_limit, max_results,
+                                exclusive_start_key, item_class=item_class)

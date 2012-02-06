@@ -560,7 +560,8 @@ class Layer2(object):
                                        object_hook=item_object_hook)
 
     def query(self, table, hash_key, range_key_condition=None,
-              attributes_to_get=None, limit=None, consistent_read=False,
+              attributes_to_get=None, request_limit=None,
+              max_results=None, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
               item_class=Item):
         """
@@ -592,8 +593,20 @@ class Layer2(object):
             If supplied, only the specified attribute names will
             be returned.  Otherwise, all attributes will be returned.
 
-        :type limit: int
-        :param limit: The maximum number of items to return.
+        :type request_limit: int
+        :param request_limit: The maximum number of items to retrieve
+            from Amazon DynamoDB on each request.  You may want to set
+            a specific request_limit based on the provisioned throughput
+            of your table.  The default behavior is to retrieve as many
+            results as possible per request.
+
+        :type max_results: int
+        :param max_results: The maximum number of results that will
+            be retrieved from Amazon DynamoDB in total.  For example,
+            if you only wanted to see the first 100 results from the
+            query, regardless of how many were actually available, you
+            could set max_results to 100 and the generator returned
+            from the query method will only yeild 100 results max.
 
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
@@ -618,6 +631,7 @@ class Layer2(object):
         """
         rkc = self.dynamize_range_key_condition(range_key_condition)
         response = True
+        n = 0
         while response:
             if response is True:
                 pass
@@ -628,17 +642,19 @@ class Layer2(object):
                 break
             response = self.layer1.query(table.name,
                                          self.dynamize_value(hash_key),
-                                         rkc, attributes_to_get, limit,
+                                         rkc, attributes_to_get, request_limit,
                                          consistent_read, scan_index_forward,
                                          exclusive_start_key,
                                          object_hook=item_object_hook)
             for item in response['Items']:
+                if max_results and n == max_results:
+                    break
                 yield item_class(table, attrs=item)
+                n += 1
     
     def scan(self, table, scan_filter=None,
-             attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None,
-             item_class=Item):
+             attributes_to_get=None, request_limit=None, max_results=None,
+             count=False, exclusive_start_key=None, item_class=Item):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -656,8 +672,20 @@ class Layer2(object):
             If supplied, only the specified attribute names will
             be returned.  Otherwise, all attributes will be returned.
 
-        :type limit: int
-        :param limit: The maximum number of items to return.
+        :type request_limit: int
+        :param request_limit: The maximum number of items to retrieve
+            from Amazon DynamoDB on each request.  You may want to set
+            a specific request_limit based on the provisioned throughput
+            of your table.  The default behavior is to retrieve as many
+            results as possible per request.
+
+        :type max_results: int
+        :param max_results: The maximum number of results that will
+            be retrieved from Amazon DynamoDB in total.  For example,
+            if you only wanted to see the first 100 results from the
+            query, regardless of how many were actually available, you
+            could set max_results to 100 and the generator returned
+            from the query method will only yeild 100 results max.
 
         :type count: bool
         :param count: If True, Amazon DynamoDB returns a total
@@ -677,6 +705,7 @@ class Layer2(object):
         :rtype: generator
         """
         response = True
+        n = 0
         while response:
             if response is True:
                 pass
@@ -686,10 +715,13 @@ class Layer2(object):
                 break
 
             response = self.layer1.scan(table.name, scan_filter,
-                                        attributes_to_get,limit,
+                                        attributes_to_get,request_limit,
                                         count, exclusive_start_key,
                                         object_hook=item_object_hook)
             if response:
                 for item in response['Items']:
+                    if max_results and n == max_results:
+                        break
                     yield item_class(table, attrs=item)
+                    n += 1
 
