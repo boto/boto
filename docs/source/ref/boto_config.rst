@@ -71,3 +71,12 @@ As an example::
     proxy_port = 8080
     proxy_user = foo
     proxy_pass = bar
+
+Precedence
+---------------
+Even if you have your boto config setup, you can also have credentials and options stored in environmental variables or you can explicitly pass them to method calls i.e.::
+
+	>>> boto.connect_ec2('<KEY_ID>','<SECRET_KEY>')
+
+In these cases where these options can be found in more than one place boto will first use the explicitly supplied arguments, if none found it will then look 
+for them amidst environment variables and if that fails it will use the ones in boto config.
