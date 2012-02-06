@@ -43,7 +43,6 @@ Handles basic connections to AWS
 """
 
 from __future__ import with_statement
-import base64
 import errno
 import httplib
 import os
@@ -53,7 +52,7 @@ import re
 import socket
 import sys
 import time
-import urllib, urlparse
+import urlparse
 import xml.sax
 
 import requests
