@@ -126,11 +126,6 @@ HTTP_REASON_CODES = {
     "505": "HTTP Version not supported",
 }
 
-try:
-    import threading
-except ImportError:
-    import dummy_threading as threading
-
 ON_APP_ENGINE = all(key in os.environ for key in (
     'USER_IS_ADMIN', 'CURRENT_VERSION_ID', 'APPLICATION_ID'))
 
