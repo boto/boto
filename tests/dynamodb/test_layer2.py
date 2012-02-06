@@ -270,6 +270,14 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                      (item3_key, item3_range)])
         response = batch_list.submit()
         assert len(response['Responses'][table.name]['Items']) == 2
+
+        # Try queries
+        results = table.query('Amazon DynamoDB',
+                              range_key_condition={'DynamoDB': 'BEGINS_WITH'})
+        n = 0
+        for item in results:
+            n += 1
+        assert n == 2
         
         # Try to delete the item with the right Expected value
         expected = {'Views': 0}

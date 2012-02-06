@@ -113,8 +113,8 @@ class Layer2(object):
                     raise TypeError(msg)
                 else:
                     avl = [self.dynamize_value(range_value)]
-            d['RangeKeyCondition'] = {'AttributeValueList': avl,
-                                      'ComparisonOperator': range_condition}
+            d = {'AttributeValueList': avl,
+                 'ComparisonOperator': range_condition}
         return d
 
     def dynamize_expected_value(self, expected_value):
@@ -135,6 +135,20 @@ class Layer2(object):
                     val = self.dynamize_value(expected_value[attr_name])
                     attr_value = {'Value': val}
                 d[attr_name] = attr_value
+        return d
+
+    def dynamize_last_evaluated_key(self, last_evaluated_key):
+        """
+        Convert a last_evaluated_key parameter into the data structure
+        required for Layer1.
+        """
+        d = None
+        if last_evaluated_key:
+            hash_key = last_evaluated_key['HashKeyElement']
+            d = {'HashKeyElement': self.dynamize_value(hash_key)}
+            if 'RangeKeyElement' in last_evaluated_key:
+                range_key = last_evaluated_key['RangeKeyElement']
+                d['RangeKeyElement'] = self.dynamize_value(range_key)
         return d
 
     def dynamize_request_items(self, batch_list):
@@ -608,7 +622,8 @@ class Layer2(object):
             if response is True:
                 pass
             elif response.has_key("LastEvaluatedKey"):
-                exclusive_start_key = response['LastEvaluatedKey']
+                lek = response['LastEvaluatedKey']
+                exclusive_start_key = self.dynamize_last_evaluated_key(lek)
             else:
                 break
             response = self.layer1.query(table.name,
