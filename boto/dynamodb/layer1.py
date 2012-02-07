@@ -337,9 +337,10 @@ class Layer1(AWSAuthConnection):
                     expected=None, return_values=None,
                     object_hook=None):
         """
-        Delete an item and all of it's attributes by primary key.
-        You can perform a conditional delete by specifying an
-        expected rule.
+        Edits an existing item's attributes. You can perform a conditional
+        update (insert a new attribute name-value pair if it doesn't exist,
+        or replace an existing name-value pair if it has certain expected
+        attribute values).
 
         :type table_name: str
         :param table_name: The name of the table to delete.
