@@ -25,15 +25,18 @@ class Listener(object):
     """
 
     def __init__(self, load_balancer=None, load_balancer_port=0,
-                 instance_port=0, protocol='', ssl_certificate_id=None):
+                 instance_port=0, protocol='', instance_protocol = '', 
+                 ssl_certificate_id=None):
         self.load_balancer = load_balancer
         self.load_balancer_port = load_balancer_port
         self.instance_port = instance_port
         self.protocol = protocol
+        self.instance_protocol = instance_protocol
         self.ssl_certificate_id = ssl_certificate_id
 
     def __repr__(self):
-        r = "(%d, %d, '%s'" % (self.load_balancer_port, self.instance_port, self.protocol)
+        r = "(%d, %d, '%s', '%s'" % (self.load_balancer_port, \
+        self.instance_port, self.protocol, self.instance_protocol)
         if self.ssl_certificate_id:
             r += ', %s' % (self.ssl_certificate_id)
         r += ')'
@@ -49,13 +52,16 @@ class Listener(object):
             self.instance_port = int(value)
         elif name == 'Protocol':
             self.protocol = value
+        elif name == 'InstanceProtocol':
+            self.instance_protocol = value
         elif name == 'SSLCertificateId':
             self.ssl_certificate_id = value
         else:
             setattr(self, name, value)
 
     def get_tuple(self):
-        return self.load_balancer_port, self.instance_port, self.protocol
+        return (self.load_balancer_port, self.instance_port, self.protocol,
+        self.instance_protocol, self.ssl_certificate_id)
 
     def __getitem__(self, key):
         if key == 0:

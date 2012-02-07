@@ -171,10 +171,14 @@ class LoadBalancer(object):
     def create_listeners(self, listeners):
         return self.connection.create_load_balancer_listeners(self.name, listeners)
 
-    def create_listener(self, inPort, outPort=None, proto="tcp"):
+    def create_listener(self, inPort, outPort=None, proto="tcp", instance_proto
+        = None, ssl_id = None):
         if outPort == None:
             outPort = inPort
-        return self.create_listeners([(inPort, outPort, proto)])
+        if instance_proto == None:
+            instance_proto = proto
+        return self.create_listeners([(inPort, outPort, proto, instance_proto,
+        ssl_id)])
 
     def delete_listeners(self, listeners):
         return self.connection.delete_load_balancer_listeners(self.name, listeners)
