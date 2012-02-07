@@ -735,6 +735,8 @@ class Bucket(object):
                     query_args='acl'):
         if version_id:
             query_args += '&versionId=%s' % version_id
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, key_name,
                                                 data=acl_str.encode('ISO-8859-1'),
                                                 query_args=query_args,
@@ -797,6 +799,8 @@ class Bucket(object):
         query_args = subresource
         if version_id:
             query_args += '&versionId=%s' % version_id
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, key_name,
                                                 data=value.encode('UTF-8'),
                                                 query_args=query_args,
@@ -954,6 +958,8 @@ class Bucket(object):
         if isinstance(target_bucket, Bucket):
             target_bucket = target_bucket.name
         body = self.BucketLoggingBody % (target_bucket, target_prefix)
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging', headers=headers)
         body = response.content
@@ -965,6 +971,8 @@ class Bucket(object):
         
     def disable_logging(self, headers=None):
         body = self.EmptyBucketLoggingBody
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging', headers=headers)
         body = response.content
@@ -1004,6 +1012,8 @@ class Bucket(object):
 
     def set_request_payment(self, payer='BucketOwner', headers=None):
         body = self.BucketPaymentBody % payer
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='requestPayment', headers=headers)
         body = response.content
@@ -1054,6 +1064,8 @@ class Bucket(object):
                 headers = {}
             provider = self.connection.provider
             headers[provider.mfa_header] = ' '.join(mfa_token)
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='versioning', headers=headers)
         body = response.content
@@ -1176,6 +1188,8 @@ class Bucket(object):
         else:
             error_frag = ''
         body = self.WebsiteBody % (suffix, error_frag)
+        headers = headers or {}
+        headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name, data=body,
                                                 query_args='website',
                                                 headers=headers)
@@ -1255,6 +1269,8 @@ class Bucket(object):
                 response.status_code, response.reason, body)
 
     def set_policy(self, policy, headers=None):
+        headers = headers or {}
+        headers['Content-Type'] = 'text/json'
         response = self.connection.make_request('PUT', self.name,
                                                 data=policy,
                                                 query_args='policy',

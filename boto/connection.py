@@ -458,6 +458,7 @@ class AWSAuthConnection(object):
                     #config={'verbose': sys.stderr},
                 )
                 boto.log.debug('Headers: %s' % response.request.headers)
+                boto.log.debug('Params: %s' % response.request.params)
                 boto.log.debug('Data: %s' % request.body)
 
                 status_reason = HTTP_REASON_CODES.get(response.status_code, 'Unknown')
