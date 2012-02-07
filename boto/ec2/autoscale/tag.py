@@ -34,12 +34,12 @@ class Tag(object):
     """
     
     def __init__(self, connection=None, key=None, value=None,
-                 propogate_at_launch=False, resource_id=None,
+                 propagate_at_launch=False, resource_id=None,
                  resource_type='auto-scaling-group'):
         self.connection = connection
         self.key = key
         self.value = value
-        self.propagate_at_launch = propogate_at_launch
+        self.propagate_at_launch = propagate_at_launch
         self.resource_id = resource_id
         self.resource_type = resource_type
 
@@ -78,4 +78,7 @@ class Tag(object):
             params[prefix+'PropagateAtLaunch'] = 'true'
         else:
             params[prefix+'PropagateAtLaunch'] = 'false'
+
+    def delete(self):
+        return self.connection.delete_tags([self])
         
