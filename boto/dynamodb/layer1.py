@@ -343,11 +343,11 @@ class Layer1(AWSAuthConnection):
         attribute values).
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table.
 
         :type key: dict
         :param key: A Python version of the Key data structure
-            defined by DynamoDB.
+            defined by DynamoDB which identifies the item to be updated.
 
         :type attribute_updates: dict
         :param attribute_updates: A Python version of the AttributeUpdates
