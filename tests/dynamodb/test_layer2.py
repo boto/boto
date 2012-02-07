@@ -219,12 +219,20 @@ class DynamoDBLayer2Test (unittest.TestCase):
             n += 1
         assert n == 2
 
-        # # Try a few scans
-        # result = c.scan(table_name,
-        #                 {'Tags': {'AttributeValueList':[{'S': 'table'}],
-        #                           'ComparisonOperator': 'CONTAINS'}})
-        # assert 'Count' in result
-        # assert result['Count'] == 2
+        items = table.query('Amazon DynamoDB',
+                             {'DynamoDB': 'BEGINS_WITH'},
+                            request_limit=1, max_results=1)
+        n = 0
+        for item in items:
+            n += 1
+        assert n == 1
+
+        # Try a few scans
+        items = table.scan()
+        n = 0
+        for item in items:
+            n += 1
+        assert n == 3
 
         # Test some integer and float attributes
         integer_value = 42
