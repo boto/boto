@@ -58,8 +58,7 @@ Controls the level of debug messages that will be printed by the boto library. T
 
 * proxy_pass: The password to use when authenticating with proxy host.
 
-* num_retries: The number of times to retry failed requests to an AWS server. If boto receives an error from AWS, 
-it will attempt to recover and retry the request. The default number of retries is 5 but you can change the default with this option.
+* num_retries: The number of times to retry failed requests to an AWS server. If boto receives an error from AWS, it will attempt to recover and retry the request. The default number of retries is 5 but you can change the default with this option.
 
 As an example::
 

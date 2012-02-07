@@ -11,7 +11,6 @@ API Reference
    cloudformation
    cloudfront
    contrib
-   boto_config
    dynamodb
    ec2
    ecs
