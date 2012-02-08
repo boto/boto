@@ -1245,6 +1245,10 @@ class Bucket(object):
         return '.'.join(l)
 
     def get_policy(self, headers=None):
+        """
+        Returns the JSON policy associated with the bucket.  The policy
+        is returned as an uninterpreted JSON string.
+        """
         response = self.connection.make_request('GET', self.name,
                 query_args='policy', headers=headers)
         body = response.content
@@ -1255,6 +1259,12 @@ class Bucket(object):
                 response.status_code, response.reason, body)
 
     def set_policy(self, policy, headers=None):
+        """
+        Add or replace the JSON policy associated with the bucket.
+
+        :type policy: str
+        :param policy: The JSON policy as a string.
+        """
         response = self.connection.make_request('PUT', self.name,
                                                 data=policy,
                                                 query_args='policy',

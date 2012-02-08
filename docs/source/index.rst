@@ -67,6 +67,7 @@ Currently Supported Services
 Additional Resources
 --------------------
 
+* :doc:`Boto Config Tutorial <boto_config_tut>`
 * `Boto Source Repository`_
 * `Boto Issue Tracker`_
 * `Boto Twitter`_

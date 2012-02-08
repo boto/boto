@@ -24,6 +24,7 @@ from boto.resultset import ResultSet
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.instance import Instance
+from boto.ec2.autoscale.tag import Tag
 
 class ProcessType(object):
     def __init__(self, connection=None):
@@ -163,6 +164,7 @@ class AutoScalingGroup(object):
         self.autoscaling_group_arn = None
         self.vpc_zone_identifier = vpc_zone_identifier
         self.instances = None
+        self.tags = None
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
@@ -174,9 +176,7 @@ class AutoScalingGroup(object):
     cooldown = property(_get_cooldown, _set_cooldown)
 
     def __repr__(self):
-        return 'AutoScaleGroup<%s>: min:%s, max:%s' % (self.name,
-                                                       self.min_size,
-                                                       self.max_size)
+        return 'AutoScaleGroup<%s>' % self.name
 
     def startElement(self, name, attrs, connection):
         if name == 'Instances':
@@ -192,6 +192,9 @@ class AutoScalingGroup(object):
         elif name == 'SuspendedProcesses':
             self.suspended_processes = ResultSet([('member', SuspendedProcess)])
             return self.suspended_processes
+        elif name == 'Tags':
+            self.tags = ResultSet([('member', Tag)])
+            return self.tags
         else:
             return
 
