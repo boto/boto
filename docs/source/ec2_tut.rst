@@ -19,8 +19,8 @@ There are two ways to do this in boto.  The first is::
 
 At this point the variable conn will point to an EC2Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
-method explicitely.  Alternatively, you can set the boto config environment
-variables and then call the constructor without any arguments, like this::
+method explicitely.  Alternatively, you can set the boto config environment variables
+and then call the constructor without any arguments, like this::
 
     >>> conn = EC2Connection()
 
@@ -64,7 +64,6 @@ check out boto's :doc:`EC2 API reference <ref/ec2>`.
 
 Stopping Instances
 ------------------
-
 Once you have your instances up and running, you might wish to shut them down
 if they're not in use. Please note that this will only de-allocate virtual
 hardware resources (as well as instance store drives), but won't destroy your
@@ -74,13 +73,12 @@ even if your instance is stopped. To do this, you can do so as follows::
     >>> conn.stop_instances(instance_ids=['instance-id-1','instance-id-2', ...])
 
 This will request a 'graceful' stop of each of the specified instances. If you
-wish to request the equivalent of unplugging your instance(s),
-simply add force=True keyword argument to the call above. Please note that stop
+wish to request the equivalent of unplugging your instance(s), simply add
+``force=True`` keyword argument to the call above. Please note that stop
 instance is not allowed with Spot instances.
 
 Terminating Instances
 ---------------------
-
 Once you are completely done with your instance and wish to surrender both
 virtual hardware, root EBS volume and all other underlying components
 you can request instance termination. To do so you can use the call bellow::

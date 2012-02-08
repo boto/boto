@@ -67,6 +67,7 @@ Currently Supported Services
 Additional Resources
 --------------------
 
+* :doc:`Boto Config Tutorial <boto_config_tut>`
 * `Boto Source Repository`_
 * `Boto Issue Tracker`_
 * `Boto Twitter`_
@@ -114,6 +115,7 @@ Additional Resources
    s3_tut
    ref/s3
    ref/mturk
+   boto_config_tut
    ref/index
    documentation
 
