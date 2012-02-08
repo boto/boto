@@ -19,13 +19,8 @@ There are two ways to do this in boto.  The first is::
 
 At this point the variable conn will point to an EC2Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
-<<<<<<< HEAD
-method explicitely.  Alternatively, you can set the boto config environment
-variables and then call the constructor without any arguments, like this::
-=======
 method explicitely.  Alternatively, you can set the boto config environment variables
 and then call the constructor without any arguments, like this::
->>>>>>> ed64b3aa2a2ad620dc15c87b4b9c5e282bb96dec
 
     >>> conn = EC2Connection()
 
@@ -39,7 +34,6 @@ In either case, conn will point to an EC2Connection object which we will
 use throughout the remainder of this tutorial.
 
 Launching Instances
-<<<<<<< HEAD
 -------------------
 
 Possibly, the most important and common task you'll use EC2 for is to launch,
@@ -69,13 +63,7 @@ For more details on the plethora of possible keyword parameters, be sure to
 check out boto's :doc:`EC2 API reference <ref/ec2>`.
 
 Stopping Instances
-=======
->>>>>>> ed64b3aa2a2ad620dc15c87b4b9c5e282bb96dec
 ------------------
-Possibly, the most important and common task you'll use EC2 for is to launch, stop and terminate instances.
-In its most primitive form, you can launch an instance as follows::
-
-<<<<<<< HEAD
 Once you have your instances up and running, you might wish to shut them down
 if they're not in use. Please note that this will only de-allocate virtual
 hardware resources (as well as instance store drives), but won't destroy your
@@ -85,54 +73,18 @@ even if your instance is stopped. To do this, you can do so as follows::
     >>> conn.stop_instances(instance_ids=['instance-id-1','instance-id-2', ...])
 
 This will request a 'graceful' stop of each of the specified instances. If you
-wish to request the equivalent of unplugging your instance(s),
-simply add force=True keyword argument to the call above. Please note that stop
+wish to request the equivalent of unplugging your instance(s), simply add
+``force=True`` keyword argument to the call above. Please note that stop
 instance is not allowed with Spot instances.
 
 Terminating Instances
 ---------------------
-
 Once you are completely done with your instance and wish to surrender both
 virtual hardware, root EBS volume and all other underlying components
-=======
-    >>> conn.run_instances('<ami-image-id>')
-    
-This will launch an instance in the specified region with the default parameters.
-
-Now, let's say that you already have a key pair, want a specific type of instance, and
-you have your security group all setup. In this case we can use the keyword arguments to accomplish that::
-
-    >>> conn.run_instances('<ami-image-id>',key_name='myKey', instance_type='c1.xlarge', security_groups=['public-facing'])
-
-The main caveat with the above call is that it is possible to request an instance type that is not compatible with the 
-provided AMI (for example, the instance was created for a 64-bit instance and you choose a m1.small instance_type).
-For more details on the plethora of possible keyword parameters, be sure to check out boto's EC2 API documentation_.
-
-.. _documentation: http://boto.cloudhackers.com/en/latest/ref/ec2.html
-
-Stopping Instances
-------------------
-Once you have your instances up and running, you might wish to shut them down if they're not in use. Please note that this will only de-allocate
-virtual hardware resources (as well as instance store drives), but won't destroy your EBS volumes -- this means you'll pay nominal provisioned EBS storage fees 
-even if your instance is stopped. To do this, you can do so as follows::
-
-    >>> conn.stop_instances(instance_ids=['instance-id-1','instance-id-2', ...])
-
-This will request a 'graceful' stop of each of the specified instances. If you wish to request the equivalent of unplugging your instance(s),
-simply add force=True keyword argument to the call above. Please note that stop instance is not allowed with Spot instances.
-
-Terminating Instances
----------------------
-Once you are completely done with your instance and wish to surrender both virtual hardware, root EBS volume and all other underlying components 
->>>>>>> ed64b3aa2a2ad620dc15c87b4b9c5e282bb96dec
 you can request instance termination. To do so you can use the call bellow::
 
     >>> conn.terminate_instances(instance_ids=['instance-id-1','instance-id-2', ...])
 
-<<<<<<< HEAD
 Please use with care since once you request termination for an instance there
 is no turning back.
-=======
-Please use with care since once you request termination for an instance there is not turning back.
->>>>>>> ed64b3aa2a2ad620dc15c87b4b9c5e282bb96dec
 
