@@ -23,10 +23,9 @@ To do so, the most straight forward way is the following::
     <boto.dynamodb.layer2.Layer2 object at 0x3fb3090>
 
 Bear in mind that if you have your credentials in boto config in your home
-directory, the two keyword arguments in the call above are not needed. Also
-important to note is that just as any other AWS service, DynamoDB is
-region-specific and as such you might want to specify which region to connect
-to, by default, it'll connect to the US-EAST-1 region.
+directory, the two keyword arguments in the call above are not needed. At this
+time, Amazon DynamoDB is available only in the US-EAST-1 region and the
+above command will automatically connect to that region.
 
 The :py:func:`boto.connect_dynamodb` functions returns a
 :py:class:`boto.dynamodb.layer2.Layer2` instance, which is a high-level API
@@ -225,7 +224,7 @@ Deleting Tables
 There are two easy ways to delete a table. Through your top-level
 :py:class:`Layer2 <boto.dynamodb.layer2.Layer2>` object::
 
-    >>> conn.delete_table('messages')
+    >>> conn.delete_table(table)
 
 Or by getting the table, then using
 :py:meth:`Table.delete <boto.dynamodb.table.Table.delete>`::
