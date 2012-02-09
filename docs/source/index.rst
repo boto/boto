@@ -115,6 +115,7 @@ Additional Resources
    s3_tut
    ref/s3
    ref/mturk
+   boto_config_tut
    ref/index
    documentation
 
