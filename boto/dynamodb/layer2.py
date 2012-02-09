@@ -51,6 +51,8 @@ def item_object_hook(dct):
     This hook will transform Amazon DynamoDB JSON responses to something
     that maps directly to native Python types.
     """
+    if len(dct.keys()) > 1:
+        return dct
     if 'S' in dct:
         return dct['S']
     if 'N' in dct:
