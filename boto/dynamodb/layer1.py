@@ -178,7 +178,7 @@ class Layer1(AWSAuthConnection):
         table was created.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table to describe.
         """
         data = {'TableName' : table_name}
         json_input = json.dumps(data)
@@ -193,7 +193,7 @@ class Layer1(AWSAuthConnection):
         table will be ACTIVE.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table to create.
         
         :type schema: dict
         :param schema: A Python version of the KeySchema data structure
@@ -217,7 +217,7 @@ class Layer1(AWSAuthConnection):
         Updates the provisioned throughput for a given table.
         
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table to update.
         
         :type provisioned_throughput: dict
         :param provisioned_throughput: A Python version of the
@@ -249,7 +249,7 @@ class Layer1(AWSAuthConnection):
         the supplied key.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table containing the item.
 
         :type key: dict
         :param key: A Python version of the Key data structure
@@ -306,7 +306,7 @@ class Layer1(AWSAuthConnection):
         expected rule.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table in which to put the item.
 
         :type item: dict
         :param item: A Python version of the Item data structure
@@ -384,7 +384,7 @@ class Layer1(AWSAuthConnection):
         expected rule.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table containing the item.
 
         :type key: dict
         :param key: A Python version of the Key data structure
@@ -421,7 +421,7 @@ class Layer1(AWSAuthConnection):
         which is passed as is to DynamoDB.
 
         :type table_name: str
-        :param table_name: The name of the table to delete.
+        :param table_name: The name of the table to query.
 
         :type hash_key_value: dict
         :param key: A DynamoDB-style HashKeyValue.
