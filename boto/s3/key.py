@@ -692,7 +692,8 @@ class Key(object):
 
     def set_contents_from_stream(self, fp, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None,
-                                 reduced_redundancy=False, query_args=None):
+                                 reduced_redundancy=False, query_args=None,
+                                 size=None):
         """
         Store an object using the name of the Key object as the key in
         cloud and the contents of the data stream pointed to by 'fp' as
@@ -738,6 +739,13 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+                      the file pointer (fp). This is useful when uploading
+                      a file in multiple parts where you are splitting the
+                      file up into different ranges to be uploaded. If not
+                      specified, the default behaviour is to read all bytes
+                      from the file pointer. Less bytes may be available.
         """
 
         provider = self.bucket.connection.provider
@@ -765,7 +773,7 @@ class Key(object):
                 if self.bucket.lookup(self.name):
                     return
             self.send_file(fp, headers, cb, num_cb, query_args,
-                                            chunked_transfer=True)
+                           chunked_transfer=True, size=size)
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
@@ -841,8 +849,7 @@ class Key(object):
                       from the file pointer. Less bytes may be available.
         """
         provider = self.bucket.connection.provider
-        if headers is None:
-            headers = {}
+        headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
         if encrypt_key:
