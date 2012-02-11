@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 import StringIO
+from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 
 class Key(S3Key):
@@ -165,6 +166,13 @@ class Key(S3Key):
                       file up into different ranges to be uploaded. If not
                       specified, the default behaviour is to read all bytes
                       from the file pointer. Less bytes may be available.
+                      Notes:
+                      1. The "size" parameter currently cannot be used when
+                         a resumable upload handler is given but is still
+                         useful for uploading part of a file as implemented
+                         by the parent class.
+                      2. At present Google Cloud Storage does not support
+                         multipart uploads.
 
         TODO: At some point we should refactor the Bucket and Key classes,
         to move functionality common to all providers into a parent class,
@@ -174,7 +182,7 @@ class Key(S3Key):
         provider = self.bucket.connection.provider
         if res_upload_handler and size:
             # could use size instead of file_length if provided but...
-            raise BotoClientError('Resumable Uploads with size not supported.')
+            raise BotoClientError('"size" param not supported for resumable uploads.')
         headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
