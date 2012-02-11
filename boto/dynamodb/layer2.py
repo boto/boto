@@ -96,7 +96,7 @@ class Layer2(object):
 
     def dynamize_range_key_condition(self, range_key_condition):
         """
-        Convert a range_key_condition parameter into the
+        Convert a layer2 range_key_condition parameter into the
         structure required by Layer1.
         """
         d = None
@@ -117,6 +117,34 @@ class Layer2(object):
                     avl = [self.dynamize_value(range_value)]
             d = {'AttributeValueList': avl,
                  'ComparisonOperator': range_condition}
+        return d
+
+    def dynamize_scan_filter(self, scan_filter):
+        """
+        Convert a layer2 scan_filter parameter into the
+        structure required by Layer1.
+        """
+        d = None
+        if scan_filter:
+            d = {}
+            for attr_name, op, value in scan_filter:
+                if op == 'BETWEEN':
+                    if isinstance(value, tuple):
+                        avl = [self.dynamize_value(v) for v in value]
+                    else:
+                        msg = 'BETWEEN condition requires a tuple value'
+                        raise TypeError(msg)
+                elif op == 'NULL' or op == 'NOT_NULL':
+                    avl = None
+                elif isinstance(value, tuple):
+                    msg = 'Tuple can only be supplied with BETWEEN condition'
+                    raise TypeError(msg)
+                else:
+                    avl = [self.dynamize_value(value)]
+            dd = {'ComparisonOperator': op}
+            if avl:
+                dd['AttributeValueList'] = avl
+            d[attr_name] = dd
         return d
 
     def dynamize_expected_value(self, expected_value):
@@ -658,16 +686,31 @@ class Layer2(object):
              attributes_to_get=None, request_limit=None, max_results=None,
              count=False, exclusive_start_key=None, item_class=Item):
         """
-        Perform a scan of DynamoDB.  This version is currently punting
-        and expecting you to provide a full and correct JSON body
-        which is passed as is to DynamoDB.
+        Perform a scan of DynamoDB.
 
-        :type table: Table
-        :param table: The table to scan from
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object that is being scanned.
 
-        :type scan_filter: dict
-        :param scan_filter: A Python version of the
-            ScanFilter data structure.
+        :type scan_filter: A list of tuples
+        :param scan_filter: A list of tuples where each tuple consists
+            of an attribute name, a comparison operator, and either
+            a scalar or tuple consisting of the values to compare
+            the attribute to.  Valid comparison operators are shown below
+            along with the expected number of values that should be supplied.
+
+             * EQ - equal (1)
+             * NE - not equal (1)
+             * LE - less than or equal (1)
+             * LT - less than (1)
+             * GE - greater than or equal (1)
+             * GT - greater than (1)
+             * NOT_NULL - attribute exists (0, use None)
+             * NULL - attribute does not exist (0, use None)
+             * CONTAINS - substring or value in list (1)
+             * NOT_CONTAINS - absence of substring or value in list (1)
+             * BEGINS_WITH - substring prefix (1)
+             * IN - exact match in list (N)
+             * BETWEEN - >= first value, <= second value (2)
 
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
@@ -706,6 +749,7 @@ class Layer2(object):
 
         :rtype: generator
         """
+        sf = self.dynamize_scan_filter(scan_filter)
         response = True
         n = 0
         while response:
@@ -716,7 +760,7 @@ class Layer2(object):
             else:
                 break
 
-            response = self.layer1.scan(table.name, scan_filter,
+            response = self.layer1.scan(table.name, sf,
                                         attributes_to_get,request_limit,
                                         count, exclusive_start_key,
                                         object_hook=item_object_hook)

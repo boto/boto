@@ -287,6 +287,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
             n += 1
         assert n == 2
         
+        # Try scans
+        results = table.scan([('Tags', 'CONTAINS', 'table')])
+        n = 0
+        for item in results:
+            n += 1
+        assert n == 2
+
         # Try to delete the item with the right Expected value
         expected = {'Views': 0}
         item1.delete(expected_value=expected)

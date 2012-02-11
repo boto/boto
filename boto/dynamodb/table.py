@@ -307,9 +307,26 @@ class Table(object):
         and expensive operation, and should be avoided if
         at all possible.
 
-        :type scan_filter: dict
-        :param scan_filter: A Python version of the
-            ScanFilter data structure.
+        :type scan_filter: A list of tuples
+        :param scan_filter: A list of tuples where each tuple consists
+            of an attribute name, a comparison operator, and either
+            a scalar or tuple consisting of the values to compare
+            the attribute to.  Valid comparison operators are shown below
+            along with the expected number of values that should be supplied.
+
+             * EQ - equal (1)
+             * NE - not equal (1)
+             * LE - less than or equal (1)
+             * LT - less than (1)
+             * GE - greater than or equal (1)
+             * GT - greater than (1)
+             * NOT_NULL - attribute exists (0, use None)
+             * NULL - attribute does not exist (0, use None)
+             * CONTAINS - substring or value in list (1)
+             * NOT_CONTAINS - absence of substring or value in list (1)
+             * BEGINS_WITH - substring prefix (1)
+             * IN - exact match in list (N)
+             * BETWEEN - >= first value, <= second value (2)
 
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
