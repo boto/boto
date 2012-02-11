@@ -211,7 +211,8 @@ class MultiPartUpload(object):
             return self._parts
 
     def upload_part_from_file(self, fp, part_num, headers=None, replace=True,
-                               cb=None, num_cb=10, policy=None, md5=None):
+                              cb=None, num_cb=10, policy=None, md5=None,
+                              size=None):
         """
         Upload another part of this MultiPart Upload.
         
@@ -230,7 +231,7 @@ class MultiPartUpload(object):
         key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,
                                    md5, reduced_redundancy=False,
-                                   query_args=query_args)
+                                   query_args=query_args, size=size)
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
                            start=None, end=None):
