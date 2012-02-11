@@ -702,34 +702,52 @@ def guess_mime_type(content, deftype):
             break
     return(rtype)
 
-def compute_md5(fp, buf_size=8192):
+def compute_md5(fp, buf_size=8192, size=None):
     """
     Compute MD5 hash on passed file and return results in a tuple of values.
 
     :type fp: file
     :param fp: File pointer to the file to MD5 hash.  The file pointer
-               will be reset to the beginning of the file before the
+               will be reset to its current location before the
                method returns.
 
     :type buf_size: integer
     :param buf_size: Number of bytes per read request.
 
+    :type size: int
+    :param size: (optional) The Maximum number of bytes to read from
+                 the file pointer (fp). This is useful when uploading
+                 a file in multiple parts where the file is being
+                 split inplace into different parts. Less bytes may
+                 be available.
+
     :rtype: tuple
     :return: A tuple containing the hex digest version of the MD5 hash
              as the first element, the base64 encoded version of the
-             plain digest as the second element and the file size as
+             plain digest as the second element and the data size as
              the third element.
     """
     m = md5()
-    fp.seek(0)
-    s = fp.read(buf_size)
+    spos = fp.tell()
+    if size and size < buf_size:
+        s = fp.read(size)
+    else:
+        s = fp.read(buf_size)
     while s:
         m.update(s)
-        s = fp.read(buf_size)
+        if size:
+            size -= len(s)
+            if size <= 0:
+                break
+        if size and size < buf_size:
+            s = fp.read(size)
+        else:
+            s = fp.read(buf_size)
     hex_md5 = m.hexdigest()
     base64md5 = base64.encodestring(m.digest())
     if base64md5[-1] == '\n':
         base64md5 = base64md5[0:-1]
-    file_size = fp.tell()
-    fp.seek(0)
-    return (hex_md5, base64md5, file_size)
+    # data_size based on bytes read.
+    data_size = fp.tell() - spos
+    fp.seek(spos)
+    return (hex_md5, base64md5, data_size)
