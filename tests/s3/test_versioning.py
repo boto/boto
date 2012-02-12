@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 
 """
-Some unit tests for the S3 Versioning and MfaDelete
+Some unit tests for the S3 Versioning.
 """
 
 import unittest
@@ -33,31 +33,30 @@ from boto.s3.deletemarker import DeleteMarker
 
 class S3VersionTest (unittest.TestCase):
 
+    def setUp(self):
+        self.conn = S3Connection()
+        self.bucket_name = 'version-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for k in self.bucket.list_versions():
+            self.bucket.delete_key(k.name, version_id=k.version_id)
+        self.bucket.delete()
+
     def test_1_versions(self):
-        print '--- running S3Version tests ---'
-        c = S3Connection()
-        # create a new, empty bucket
-        bucket_name = 'version-%d' % int(time.time())
-        bucket = c.create_bucket(bucket_name)
-        
-        # now try a get_bucket call and see if it's really there
-        bucket = c.get_bucket(bucket_name)
-        
-        # enable versions
-        d = bucket.get_versioning_status()
-        assert not d.has_key('Versioning')
-        bucket.configure_versioning(versioning=True)
-        time.sleep(15)
-        d = bucket.get_versioning_status()
-        assert d['Versioning'] == 'Enabled'
+        # check versioning off
+        d = self.bucket.get_versioning_status()
+        self.assertFalse(d.has_key('Versioning'))
+
+        # enable versioning
+        self.bucket.configure_versioning(versioning=True)
+        d = self.bucket.get_versioning_status()
+        self.assertEqual('Enabled', d['Versioning'])
         
         # create a new key in the versioned bucket
-        k = bucket.new_key()
-        k.name = 'foobar'
-        s1 = 'This is a test of s3 versioning'
-        s2 = 'This is the second test of s3 versioning'
+        k = self.bucket.new_key("foobar")
+        s1 = 'This is v1'
         k.set_contents_from_string(s1)
-        time.sleep(5)
         
         # remember the version id of this object
         v1 = k.version_id
@@ -65,109 +64,77 @@ class S3VersionTest (unittest.TestCase):
         # now get the contents from s3 
         o1 = k.get_contents_as_string()
         
-        # check to make sure content read from s3 is identical to original
-        assert o1 == s1
+        # check to make sure content read from k is identical to original
+        self.assertEqual(s1, o1)
         
         # now overwrite that same key with new data
+        s2 = 'This is v2'
         k.set_contents_from_string(s2)
         v2 = k.version_id
-        time.sleep(5)
         
-        # now retrieve the contents as a string and compare
-        s3 = k.get_contents_as_string(version_id=v2)
-        assert s3 == s2
+        # now retrieve latest contents as a string and compare
+        k2 = self.bucket.new_key("foobar")
+        o2 = k2.get_contents_as_string()
+        self.assertEqual(s2, o2)
+
+        # next retrieve explicit versions and compare
+        o1 = k.get_contents_as_string(version_id=v1)
+        o2 = k.get_contents_as_string(version_id=v2)
+        self.assertEqual(s1, o1)
+        self.assertEqual(s2, o2)
         
         # Now list all versions and compare to what we have
-        rs = bucket.get_all_versions()
-        assert rs[0].version_id == v2
-        assert rs[1].version_id == v1
+        rs = self.bucket.get_all_versions()
+        self.assertEqual(v2, rs[0].version_id)
+        self.assertEqual(v1, rs[1].version_id)
         
         # Now do a regular list command and make sure only the new key shows up
-        rs = bucket.get_all_keys()
-        assert len(rs) == 1
+        rs = self.bucket.get_all_keys()
+        self.assertEqual(1, len(rs))
         
         # Now do regular delete
-        bucket.delete_key('foobar')
-        time.sleep(5)
+        self.bucket.delete_key('foobar')
         
         # Now list versions and make sure old versions are there
-        # plus the DeleteMarker
-        rs = bucket.get_all_versions()
-        assert len(rs) == 3
-        assert isinstance(rs[0], DeleteMarker)
+        # plus the DeleteMarker which is latest.
+        rs = self.bucket.get_all_versions()
+        self.assertEqual(3, len(rs))
+        self.assertTrue(isinstance(rs[0], DeleteMarker))
         
         # Now delete v1 of the key
-        bucket.delete_key('foobar', version_id=v1)
-        time.sleep(5)
+        self.bucket.delete_key('foobar', version_id=v1)
         
         # Now list versions again and make sure v1 is not there
-        rs = bucket.get_all_versions()
+        rs = self.bucket.get_all_versions()
         versions = [k.version_id for k in rs]
-        assert v1 not in versions
-        assert v2 in versions
+        self.assertTrue(v1 not in versions)
+        self.assertTrue(v2 in versions)
         
-        # Now try to enable MfaDelete
-        mfa_sn = raw_input('MFA S/N: ')
-        mfa_code = raw_input('MFA Code: ')
-        bucket.configure_versioning(True, mfa_delete=True, mfa_token=(mfa_sn, mfa_code))
-        i = 0
-        for i in range(1,8):
-            time.sleep(2**i)
-            d = bucket.get_versioning_status()
-            if d['Versioning'] == 'Enabled' and d['MfaDelete'] == 'Enabled':
-                break
-        assert d['Versioning'] == 'Enabled'
-        assert d['MfaDelete'] == 'Enabled'
-        
-        # Now try to delete v2 without the MFA token
-        try:
-            bucket.delete_key('foobar', version_id=v2)
-        except S3ResponseError:
-            pass
-        
-        # Now try to delete v2 with the MFA token
-        mfa_code = raw_input('MFA Code: ')
-        bucket.delete_key('foobar', version_id=v2, mfa_token=(mfa_sn, mfa_code))
-
-        # Now disable MfaDelete on the bucket
-        mfa_code = raw_input('MFA Code: ')
-        bucket.configure_versioning(True, mfa_delete=False, mfa_token=(mfa_sn, mfa_code))
-
         # Now suspend Versioning on the bucket
-        bucket.configure_versioning(False)
+        self.bucket.configure_versioning(False)
+        d = self.bucket.get_versioning_status()
+        self.assertEqual('Suspended', d['Versioning'])
         
-        # now delete all keys and deletemarkers in bucket
-        for k in bucket.list_versions():
-            bucket.delete_key(k.name, version_id=k.version_id)
-
-        # now delete bucket
-        c.delete_bucket(bucket)
-        print '--- tests completed ---'
-
     def test_latest_version(self):
-        c = S3Connection()
-        bucket_name = 'version-%d' % int(time.time())
-        bucket = c.create_bucket(bucket_name)
-
-        bucket.configure_versioning(versioning=True)
+        self.bucket.configure_versioning(versioning=True)
         
         # add v1 of an object
         key_name = "key"
-        kv1 = bucket.new_key(key_name)
+        kv1 = self.bucket.new_key(key_name)
         kv1.set_contents_from_string("v1")
         
         # read list which should contain latest v1
-        listed_kv1 = iter(bucket.get_all_versions()).next()
+        listed_kv1 = iter(self.bucket.get_all_versions()).next()
         self.assertEqual(listed_kv1.name, key_name)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv1.is_latest, True)
 
         # add v2 of the object
-        kv2 = bucket.new_key(key_name)
+        kv2 = self.bucket.new_key(key_name)
         kv2.set_contents_from_string("v2")
 
         # read 2 versions, confirm v2 is latest
-        i = iter(bucket.get_all_versions())
+        i = iter(self.bucket.get_all_versions())
         listed_kv2 = i.next()
         listed_kv1 = i.next()
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
@@ -176,8 +143,8 @@ class S3VersionTest (unittest.TestCase):
         self.assertEqual(listed_kv1.is_latest, False)
 
         # delete key, which creates a delete marker as latest
-        bucket.delete_key(key_name)
-        i = iter(bucket.get_all_versions())
+        self.bucket.delete_key(key_name)
+        i = iter(self.bucket.get_all_versions())
         listed_kv3 = i.next()
         listed_kv2 = i.next()
         listed_kv1 = i.next()
@@ -187,8 +154,3 @@ class S3VersionTest (unittest.TestCase):
         self.assertEqual(listed_kv3.is_latest, True)
         self.assertEqual(listed_kv2.is_latest, False)
         self.assertEqual(listed_kv1.is_latest, False)
-
-        # cleanup
-        for k in bucket.list_versions():
-            bucket.delete_key(k.name, version_id=k.version_id)
-        c.delete_bucket(bucket)
