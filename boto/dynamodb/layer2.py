@@ -213,6 +213,7 @@ class Layer2(object):
         the corresponding Amazon DynamoDB type.  If the value passed in is
         not a supported type, raise a TypeError.
         """
+        dynamodb_type = None
         if is_num(val):
             dynamodb_type = 'N'
         elif is_str(val):
@@ -222,7 +223,7 @@ class Layer2(object):
                 dynamodb_type = 'NS'
             elif False not in map(is_str, val):
                 dynamodb_type = 'SS'
-        else:
+        if dynamodb_type is None:
             raise TypeError('Unsupported type "%s" for value "%s"' % (type(val), val))
         return dynamodb_type
 
