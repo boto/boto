@@ -280,7 +280,7 @@ class Layer2(object):
             msg = 'Hashkey must be of type: %s' % schema.hash_key_type
             raise TypeError(msg)
         dynamodb_key['HashKeyElement'] = dynamodb_value
-        if range_key:
+        if range_key is not None:
             dynamodb_value = self.dynamize_value(range_key)
             if dynamodb_value.keys()[0] != schema.range_key_type:
                 msg = 'RangeKey must be of type: %s' % schema.range_key_type
