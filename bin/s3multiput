@@ -256,7 +256,7 @@ def main():
             if not quiet:
                 print 'Getting list of existing keys to check against'
             keys = []
-            for key in b.list():
+            for key in b.list(get_key_name(path, prefix)):
                 keys.append(key.name)
         for root, dirs, files in os.walk(path):
             for ignore in ignore_dirs:
