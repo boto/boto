@@ -24,7 +24,7 @@ Currently Supported Services
 
 * **Database**
 
-  * :doc:`SimpleDB <simpledb_tut>`-- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
   * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
 
@@ -40,7 +40,7 @@ Currently Supported Services
 
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
-  * Simple Email Service (SES) -- (:doc:`API Reference <ref/ses>`)
+  * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
 
 * **Monitoring**
 
@@ -103,6 +103,7 @@ Additional Resources
    sqs_tut
    ref/sqs
    ref/sns
+   ses_tut
    ref/ses
    cloudwatch_tut
    ref/cloudwatch
