@@ -50,7 +50,7 @@ from sts.test_session_token import SessionTokenTest
 
 def usage():
     print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3mfa|s3nomfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
+    print "    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
     print "    -v   verbosity (0|1|2)"
 
 def main():
@@ -105,14 +105,6 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(CertValidationTest))
     elif testsuite == "s3mfa":
         tests.addTest(unittest.makeSuite(S3MFATest))
-    elif testsuite == "s3nomfa":
-        tests.addTest(unittest.makeSuite(S3ConnectionTest))
-        tests.addTest(unittest.makeSuite(S3BucketTest))
-        tests.addTest(unittest.makeSuite(S3KeyTest))
-        tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
-        tests.addTest(unittest.makeSuite(S3VersionTest))
-        tests.addTest(unittest.makeSuite(S3EncryptionTest))
-        tests.addTest(unittest.makeSuite(S3MultiDeleteTest))
     elif testsuite == "gs":
         tests.addTest(unittest.makeSuite(GSConnectionTest))
     elif testsuite == "sqs":
