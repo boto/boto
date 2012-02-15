@@ -223,7 +223,8 @@ To delete items, use the
 Deleting Tables
 ---------------
 
-.. warning:: deleting a table will permanently delete the table and all the data in it w/o prompt. Use with care.
+.. WARNING:: 
+  Deleting a table will **permanently** delete the table and all the data in it without prompt. Use with care.
 
 There are two easy ways to delete a table. Through your top-level
 :py:class:`Layer2 <boto.dynamodb.layer2.Layer2>` object::
