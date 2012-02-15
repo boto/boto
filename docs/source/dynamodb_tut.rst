@@ -226,7 +226,7 @@ Deleting Tables
 ---------------
 
 .. WARNING::
-  Deleting a table will also **permanently** delete all of its contents. Use carefully.
+  Deleting a table will also **permanently** delete all of its contents without prompt. Use carefully.
 
 There are two easy ways to delete a table. Through your top-level
 :py:class:`Layer2 <boto.dynamodb.layer2.Layer2>` object::
