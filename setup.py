@@ -75,6 +75,7 @@ setup(name = "boto",
                      "Intended Audience :: Developers",
                      "License :: OSI Approved :: MIT License",
                      "Operating System :: OS Independent",
-                     "Topic :: Internet"],
+                     "Topic :: Internet",
+                     "Programming Language :: Python :: 2.6"],
       **extra
       )
