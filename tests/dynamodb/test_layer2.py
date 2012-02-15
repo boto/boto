@@ -29,6 +29,8 @@ import time
 import uuid
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.layer2 import Layer2
+from boto.dynamodb.types import get_dynamodb_type
+from boto.dynamodb.condition import *
 
 class DynamoDBLayer2Test (unittest.TestCase):
 
@@ -55,9 +57,9 @@ class DynamoDBLayer2Test (unittest.TestCase):
         table = c.create_table(table_name, schema, read_units, write_units)
         assert table.name == table_name
         assert table.schema.hash_key_name == hash_key_name
-        assert table.schema.hash_key_type == c.get_dynamodb_type(hash_key_proto_value)
+        assert table.schema.hash_key_type == get_dynamodb_type(hash_key_proto_value)
         assert table.schema.range_key_name == range_key_name
-        assert table.schema.range_key_type == c.get_dynamodb_type(range_key_proto_value)
+        assert table.schema.range_key_type == get_dynamodb_type(range_key_proto_value)
         assert table.read_units == read_units
         assert table.write_units == write_units
 
@@ -212,15 +214,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
         table2_item1.put()
 
         # Try a few queries
-        items = table.query('Amazon DynamoDB',
-                             {'DynamoDB': 'BEGINS_WITH'})
+        items = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))
         n = 0
         for item in items:
             n += 1
         assert n == 2
 
-        items = table.query('Amazon DynamoDB',
-                             {'DynamoDB': 'BEGINS_WITH'},
+        items = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'),
                             request_limit=1, max_results=1)
         n = 0
         for item in items:
@@ -233,6 +233,12 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 3
+
+        items = table.scan({'Replies': GT(0)})
+        n = 0
+        for item in items:
+            n += 1
+        assert n == 1
 
         # Test some integer and float attributes
         integer_value = 42
@@ -280,15 +286,14 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert len(response['Responses'][table.name]['Items']) == 2
 
         # Try queries
-        results = table.query('Amazon DynamoDB',
-                              range_key_condition={'DynamoDB': 'BEGINS_WITH'})
+        results = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))
         n = 0
         for item in results:
             n += 1
         assert n == 2
         
         # Try scans
-        results = table.scan([('Tags', 'CONTAINS', 'table')])
+        results = table.scan({'Tags': CONTAINS('table')})
         n = 0
         for item in results:
             n += 1

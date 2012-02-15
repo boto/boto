@@ -26,24 +26,7 @@ from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList
-
-"""
-Some utility functions to deal with mapping Amazon DynamoDB types to
-Python types and vice-versa.
-"""
-
-def is_num(n):
-    return isinstance(n, (int, long, float, bool))
-
-def is_str(n):
-    return isinstance(n, basestring)
-
-def convert_num(s):
-    if '.' in s:
-        n = float(s)
-    else:
-        n = int(s)
-    return n
+from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
 
 def item_object_hook(dct):
     """
@@ -85,13 +68,13 @@ class Layer2(object):
                 d[attr_name] = {"Action": action}
             else:
                 d[attr_name] = {"Action": action,
-                                "Value": self.dynamize_value(value)}
+                                "Value": dynamize_value(value)}
         return d
 
     def dynamize_item(self, item):
         d = {}
         for attr_name in item:
-            d[attr_name] = self.dynamize_value(item[attr_name])
+            d[attr_name] = dynamize_value(item[attr_name])
         return d
 
     def dynamize_range_key_condition(self, range_key_condition):
@@ -99,25 +82,7 @@ class Layer2(object):
         Convert a layer2 range_key_condition parameter into the
         structure required by Layer1.
         """
-        d = None
-        if range_key_condition:
-            d = {}
-            for range_value in range_key_condition:
-                range_condition = range_key_condition[range_value]
-                if range_condition == 'BETWEEN':
-                    if isinstance(range_value, tuple):
-                        avl = [self.dynamize_value(v) for v in range_value]
-                    else:
-                        msg = 'BETWEEN condition requires a tuple value'
-                        raise TypeError(msg)
-                elif isinstance(range_value, tuple):
-                    msg = 'Tuple can only be supplied with BETWEEN condition'
-                    raise TypeError(msg)
-                else:
-                    avl = [self.dynamize_value(range_value)]
-            d = {'AttributeValueList': avl,
-                 'ComparisonOperator': range_condition}
-        return d
+        return range_key_condition.to_dict()
 
     def dynamize_scan_filter(self, scan_filter):
         """
@@ -127,24 +92,9 @@ class Layer2(object):
         d = None
         if scan_filter:
             d = {}
-            for attr_name, op, value in scan_filter:
-                if op == 'BETWEEN':
-                    if isinstance(value, tuple):
-                        avl = [self.dynamize_value(v) for v in value]
-                    else:
-                        msg = 'BETWEEN condition requires a tuple value'
-                        raise TypeError(msg)
-                elif op == 'NULL' or op == 'NOT_NULL':
-                    avl = None
-                elif isinstance(value, tuple):
-                    msg = 'Tuple can only be supplied with BETWEEN condition'
-                    raise TypeError(msg)
-                else:
-                    avl = [self.dynamize_value(value)]
-            dd = {'ComparisonOperator': op}
-            if avl:
-                dd['AttributeValueList'] = avl
-            d[attr_name] = dd
+            for attr_name in scan_filter:
+                condition = scan_filter[attr_name]
+                d[attr_name] = condition.to_dict()
         return d
 
     def dynamize_expected_value(self, expected_value):
@@ -162,7 +112,7 @@ class Layer2(object):
                 elif attr_value is False:
                     attr_value = {'Exists': False}
                 else:
-                    val = self.dynamize_value(expected_value[attr_name])
+                    val = dynamize_value(expected_value[attr_name])
                     attr_value = {'Value': val}
                 d[attr_name] = attr_value
         return d
@@ -175,10 +125,10 @@ class Layer2(object):
         d = None
         if last_evaluated_key:
             hash_key = last_evaluated_key['HashKeyElement']
-            d = {'HashKeyElement': self.dynamize_value(hash_key)}
+            d = {'HashKeyElement': dynamize_value(hash_key)}
             if 'RangeKeyElement' in last_evaluated_key:
                 range_key = last_evaluated_key['RangeKeyElement']
-                d['RangeKeyElement'] = self.dynamize_value(range_key)
+                d['RangeKeyElement'] = dynamize_value(range_key)
         return d
 
     def dynamize_request_items(self, batch_list):
@@ -207,54 +157,6 @@ class Layer2(object):
             d[batch.table.name] = batch_dict
         return d
 
-    def get_dynamodb_type(self, val):
-        """
-        Take a scalar Python value and return a string representing
-        the corresponding Amazon DynamoDB type.  If the value passed in is
-        not a supported type, raise a TypeError.
-        """
-        dynamodb_type = None
-        if is_num(val):
-            dynamodb_type = 'N'
-        elif is_str(val):
-            dynamodb_type = 'S'
-        elif isinstance(val, (set, frozenset)):
-            if False not in map(is_num, val):
-                dynamodb_type = 'NS'
-            elif False not in map(is_str, val):
-                dynamodb_type = 'SS'
-        if dynamodb_type is None:
-            raise TypeError('Unsupported type "%s" for value "%s"' % (type(val), val))
-        return dynamodb_type
-
-    def dynamize_value(self, val):
-        """
-        Take a scalar Python value and return a dict consisting
-        of the Amazon DynamoDB type specification and the value that
-        needs to be sent to Amazon DynamoDB.  If the type of the value
-        is not supported, raise a TypeError
-        """
-        def _str(val):
-            """
-            DynamoDB stores booleans as numbers. True is 1, False is 0.
-            This function converts Python booleans into DynamoDB friendly
-            representation.
-            """
-            if isinstance(val, bool):
-                return str(int(val))
-            return str(val)
-
-        dynamodb_type = self.get_dynamodb_type(val)
-        if dynamodb_type == 'N':
-            val = {dynamodb_type : _str(val)}
-        elif dynamodb_type == 'S':
-            val = {dynamodb_type : val}
-        elif dynamodb_type == 'NS':
-            val = {dynamodb_type : [ str(n) for n in val]}
-        elif dynamodb_type == 'SS':
-            val = {dynamodb_type : [ n for n in val]}
-        return val
-
     def build_key_from_values(self, schema, hash_key, range_key=None):
         """
         Build a Key structure to be used for accessing items
@@ -276,13 +178,13 @@ class Layer2(object):
             type defined in the schema.
         """
         dynamodb_key = {}
-        dynamodb_value = self.dynamize_value(hash_key)
+        dynamodb_value = dynamize_value(hash_key)
         if dynamodb_value.keys()[0] != schema.hash_key_type:
             msg = 'Hashkey must be of type: %s' % schema.hash_key_type
             raise TypeError(msg)
         dynamodb_key['HashKeyElement'] = dynamodb_value
         if range_key is not None:
-            dynamodb_value = self.dynamize_value(range_key)
+            dynamodb_value = dynamize_value(range_key)
             if dynamodb_value.keys()[0] != schema.range_key_type:
                 msg = 'RangeKey must be of type: %s' % schema.range_key_type
                 raise TypeError(msg)
@@ -417,13 +319,13 @@ class Layer2(object):
         schema = {}
         hash_key = {}
         hash_key['AttributeName'] = hash_key_name
-        hash_key_type = self.get_dynamodb_type(hash_key_proto_value)
+        hash_key_type = get_dynamodb_type(hash_key_proto_value)
         hash_key['AttributeType'] = hash_key_type
         schema['HashKeyElement'] = hash_key
         if range_key_name and range_key_proto_value is not None:
             range_key = {}
             range_key['AttributeName'] = range_key_name
-            range_key_type = self.get_dynamodb_type(range_key_proto_value)
+            range_key_type = get_dynamodb_type(range_key_proto_value)
             range_key['AttributeType'] = range_key_type
             schema['RangeKeyElement'] = range_key
         return Schema(schema)
@@ -606,18 +508,15 @@ class Layer2(object):
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key_condition: dict
-        :param range_key_condition: A dict where the key is either
-            a scalar value appropriate for the RangeKey in the schema
-            of the database or a tuple of such values.  The value 
-            associated with this key in the dict will be one of the
-            following conditions:
+        :type range_key_condition: :class:`boto.dynamodb.condition.Condition`
+        :param range_key_condition: A Condition object.
+            Condition object can be one of the following types:
 
-            'EQ'|'LE'|'LT'|'GE'|'GT'|'BEGINS_WITH'|'BETWEEN'
+            EQ|LE|LT|GE|GT|BEGINS_WITH|BETWEEN
 
-            The only condition which expects or will accept a tuple
-            of values is 'BETWEEN', otherwise a scalar value should
-            be used as the key in the dict.
+            The only condition which expects or will accept two
+            values is 'BETWEEN', otherwise a single value should
+            be passed to the Condition constructor.
         
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
@@ -660,7 +559,10 @@ class Layer2(object):
 
         :rtype: generator
         """
-        rkc = self.dynamize_range_key_condition(range_key_condition)
+        if range_key_condition:
+            rkc = self.dynamize_range_key_condition(range_key_condition)
+        else:
+            rkc = None
         response = True
         n = 0
         while response:
@@ -672,7 +574,7 @@ class Layer2(object):
             else:
                 break
             response = self.layer1.query(table.name,
-                                         self.dynamize_value(hash_key),
+                                         dynamize_value(hash_key),
                                          rkc, attributes_to_get, request_limit,
                                          consistent_read, scan_index_forward,
                                          exclusive_start_key,
@@ -692,12 +594,11 @@ class Layer2(object):
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object that is being scanned.
 
-        :type scan_filter: A list of tuples
-        :param scan_filter: A list of tuples where each tuple consists
-            of an attribute name, a comparison operator, and either
-            a scalar or tuple consisting of the values to compare
-            the attribute to.  Valid comparison operators are shown below
-            along with the expected number of values that should be supplied.
+        :type scan_filter: A dict
+        :param scan_filter: A dictionary where the key is the
+            attribute name and the value is a
+            :class:`boto.dynamodb.condition.Condition` object.
+            Valid Condition objects include:
 
              * EQ - equal (1)
              * NE - not equal (1)
