@@ -29,7 +29,9 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 import copy
 import boto
 import base64
+
 from boto.utils import compute_md5
+from boto.s3.prefix import Prefix
 
 try:
     from hashlib import md5
@@ -66,6 +68,12 @@ class MockKey(object):
         self.content_type = None
         self.last_modified = 'Wed, 06 Oct 2010 05:11:54 GMT'
         self.BufferSize = 8192
+
+    def __repr__(self):
+        if self.bucket:
+            return '<MockKey: %s,%s>' % (self.bucket.name, self.name)
+        else:
+            return '<MockKey: %s>' % self.name
 
     def get_contents_as_string(self, headers=NOT_IMPL,
                                cb=NOT_IMPL, num_cb=NOT_IMPL,
@@ -114,10 +122,10 @@ class MockKey(object):
         self.size = len(s)
         self._handle_headers(headers)
 
-    def set_contents_from_filename(self, filename, headers=None, replace=NOT_IMPL,
-                                   cb=NOT_IMPL, num_cb=NOT_IMPL,
-                                   policy=NOT_IMPL, md5=NOT_IMPL,
-                                   res_upload_handler=NOT_IMPL):
+    def set_contents_from_filename(self, filename, headers=None,
+                                   replace=NOT_IMPL, cb=NOT_IMPL,
+                                   num_cb=NOT_IMPL, policy=NOT_IMPL,
+                                   md5=NOT_IMPL, res_upload_handler=NOT_IMPL):
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
@@ -173,6 +181,9 @@ class MockBucket(object):
         self.subresources = {}
         self.connection = connection
         self.logging = False
+
+    def __repr__(self):
+        return 'MockBucket: %s' % self.name
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=NOT_IMPL, src_version_id=NOT_IMPL,
@@ -231,17 +242,29 @@ class MockBucket(object):
             return None
         return self.keys[key_name]
 
-    def list(self, prefix='', delimiter=NOT_IMPL, marker=NOT_IMPL,
+    def list(self, prefix='', delimiter='', marker=NOT_IMPL,
              headers=NOT_IMPL):
+        prefix = prefix or '' # Turn None into '' for prefix match.
         # Return list instead of using a generator so we don't get
         # 'dictionary changed size during iteration' error when performing
         # deletions while iterating (e.g., during test cleanup).
         result = []
+        key_name_set = set()
         for k in self.keys.itervalues():
-            if not prefix:
-                result.append(k)
-            elif k.name.startswith(prefix):
-                result.append(k)
+            if k.name.startswith(prefix):
+                k_name_past_prefix = k.name[len(prefix):]
+                if delimiter:
+                  pos = k_name_past_prefix.find(delimiter)
+                else:
+                  pos = -1
+                if (pos != -1):
+                    key_or_prefix = Prefix(
+                        bucket=self, name=k.name[:len(prefix)+pos+1])
+                else:
+                    key_or_prefix = MockKey(bucket=self, name=k.name)
+                if key_or_prefix.name not in key_name_set:
+                    key_name_set.add(key_or_prefix.name)
+                    result.append(key_or_prefix)
         return result
 
     def set_acl(self, acl_or_str, key_name='', headers=NOT_IMPL,
@@ -250,10 +273,10 @@ class MockBucket(object):
         # the get_acl call will just return that string name.
         if key_name:
             # Set ACL for the key.
-            self.acls[key_name] = acl_or_str
+            self.acls[key_name] = MockAcl(acl_or_str)
         else:
             # Set ACL for the bucket.
-            self.acls[self.name] = acl_or_str
+            self.acls[self.name] = MockAcl(acl_or_str)
 
     def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, headers=NOT_IMPL,
                     version_id=NOT_IMPL):
@@ -312,6 +335,8 @@ mock_connection = MockConnection()
 
 
 class MockBucketStorageUri(object):
+
+    delim = '/'
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL):
@@ -395,10 +420,28 @@ class MockBucketStorageUri(object):
         return True
 
     def names_container(self):
-        return not self.object_name
+        return bool(not self.object_name)
 
     def names_singleton(self):
-        return self.object_name
+        return bool(self.object_name)
+
+    def names_directory(self):
+        return False
+
+    def names_provider(self):
+        return bool(not self.bucket_name)
+
+    def names_bucket(self):
+        return self.names_container()
+
+    def names_file(self):
+        return False
+
+    def names_object(self):
+        return not self.names_container()
+
+    def is_stream(self):
+        return False
 
     def new_key(self, validate=NOT_IMPL, headers=NOT_IMPL):
         bucket = self.get_bucket()
