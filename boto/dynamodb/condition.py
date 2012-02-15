@@ -24,11 +24,17 @@
 from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
 
 class Condition(object):
+    """
+    Base class for conditions.  Doesn't do a darn thing but allows
+    is to test if something is a Condition instance or not.
+    """
 
     pass
 
 class ConditionNoArgs(Condition):
     """
+    Abstract class for Conditions that require no arguments, such
+    as NULL or NOT_NULL.
     """
     
     def __repr__(self):
@@ -39,6 +45,8 @@ class ConditionNoArgs(Condition):
 
 class ConditionOneArg(Condition):
     """
+    Abstract class for Conditions that require a single argument
+    such as EQ or NE.
     """
     
     def __init__(self, v1):
@@ -53,6 +61,8 @@ class ConditionOneArg(Condition):
 
 class ConditionTwoArgs(Condition):
     """
+    Abstract class for Conditions that require two arguments.
+    The only example of this currently is BETWEEN.
     """
     
     def __init__(self, v1, v2):
@@ -120,20 +130,8 @@ class BEGINS_WITH(ConditionOneArg):
     pass
     
 class BETWEEN(ConditionTwoArgs):
-    """
-    """
-    
-    def __init__(self, v1, v2):
-        Condition.__init__(self, v1)
-        self.v2 = v2
 
-    def __repr__(self):
-        return '%s(%s, %s)' % (self.__class__.__name__, self.v1, self.v2)
-
-    def to_dict(self):
-        values = (self.v1, self.v2)
-        return {'AttributeValueList': [dynamize_value(v) for v in values],
-                'ComparisonOperator': self.__class__.__name__}
+    pass
                 
         
 
