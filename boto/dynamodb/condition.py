@@ -71,6 +71,10 @@ class EQ(ConditionOneArg):
     
     pass
     
+class NE(ConditionOneArg):
+    
+    pass
+    
 class LE(ConditionOneArg):
     
     pass
