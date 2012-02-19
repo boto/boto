@@ -187,7 +187,8 @@ class MockBucket(object):
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=NOT_IMPL, src_version_id=NOT_IMPL,
-                 storage_class=NOT_IMPL, preserve_acl=NOT_IMPL):
+                 storage_class=NOT_IMPL, preserve_acl=NOT_IMPL,
+                 encrypt_key=NOT_IMPL, headers=NOT_IMPL, query_args=NOT_IMPL):
         new_key = self.new_key(key_name=new_key_name)
         src_key = mock_connection.get_bucket(
             src_bucket_name).get_key(src_key_name)
