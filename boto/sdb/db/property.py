@@ -375,6 +375,9 @@ class FloatProperty(Property):
         return value is None
 
 class DateTimeProperty(Property):
+    """This class handles both the datetime.datetime object
+    And the datetime.date objects. It can return either one,
+    depending on the value stored in the database"""
 
     data_type = datetime.datetime
     type_name = 'DateTime'
@@ -391,11 +394,11 @@ class DateTimeProperty(Property):
         return Property.default_value(self)
 
     def validate(self, value):
-        value = super(DateTimeProperty, self).validate(value)
         if value == None:
             return
-        if not isinstance(value, self.data_type):
-            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+        if isinstance(value, datetime.date):
+            return value
+        return super(DateTimeProperty, self).validate(value)
 
     def get_value_for_datastore(self, model_instance):
         if self.auto_now:
