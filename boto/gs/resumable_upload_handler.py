@@ -151,8 +151,8 @@ class ResumableUploadHandler(object):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
         self.tracker_uri = uri
         self.tracker_uri_host = parse_result.netloc
-        self.tracker_uri_path = '%s/?%s' % (parse_result.netloc,
-                                            parse_result.query)
+        self.tracker_uri_path = '%s?%s' % (
+            parse_result.path, parse_result.query)
         self.server_has_bytes = 0
 
     def get_tracker_uri(self):
