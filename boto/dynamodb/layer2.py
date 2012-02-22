@@ -282,7 +282,7 @@ class Layer2(object):
         response = self.layer1.update_table(table.name,
                                             {'ReadCapacityUnits': read_units,
                                              'WriteCapacityUnits': write_units})
-        table.update_from_response(response['TableDescription'])
+        table.update_from_response(response)
         
     def delete_table(self, table):
         """
