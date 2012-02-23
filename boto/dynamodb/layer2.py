@@ -198,24 +198,22 @@ class Layer2(object):
         """
         return BatchList(self)
 
-    def list_tables(self, limit=None, start_table=None):
+    def list_tables(self, limit=None):
         """
-        Return a list of the names of all Tables associated with the
+        Return a list of the names of all tables associated with the
         current account and region.
-        TODO - Layer2 should probably automatically handle pagination.
 
         :type limit: int
         :param limit: The maximum number of tables to return.
-
-        :type start_table: str
-        :param limit: The name of the table that starts the
-            list.  If you ran a previous list_tables and not
-            all results were returned, the response dict would
-            include a LastEvaluatedTableName attribute.  Use
-            that value here to continue the listing.
         """
-        result = self.layer1.list_tables(limit, start_table)
-        return result['TableNames']
+        tables = []
+        while True:
+            result = self.layer1.list_tables(limit)
+            tables.extend(result.get('TableNames', []))
+            start_table = result.get('LastEvaluatedTableName', None)
+            if not start_table:
+                break
+        return tables
 
     def describe_table(self, name):
         """

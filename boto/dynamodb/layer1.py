@@ -150,14 +150,19 @@ class Layer1(AWSAuthConnection):
 
     def list_tables(self, limit=None, start_table=None):
         """
-        Return a list of table names associated with the current account
-        and endpoint.
+        Returns a dictionary of results.  The dictionary contains
+        a **TableNames** key whose value is a list of the table names.
+        The dictionary could also contain a **LastEvaluatedTableName**
+        key whose value would be the last table name returned if
+        the complete list of table names was not returned.  This
+        value would then be passed as the ``start_table`` parameter on
+        a subsequent call to this method.
 
         :type limit: int
         :param limit: The maximum number of tables to return.
 
         :type start_table: str
-        :param limit: The name of the table that starts the
+        :param start_table: The name of the table that starts the
             list.  If you ran a previous list_tables and not
             all results were returned, the response dict would
             include a LastEvaluatedTableName attribute.  Use
