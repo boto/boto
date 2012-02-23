@@ -564,6 +564,8 @@ class Layer2(object):
         response = True
         n = 0
         while response:
+            if max_results and n == max_results:
+                break
             if response is True:
                 pass
             elif response.has_key("LastEvaluatedKey"):
