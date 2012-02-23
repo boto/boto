@@ -64,8 +64,11 @@ class StorageUri(object):
 
     def check_response(self, resp, level, uri):
         if resp is None:
-            raise InvalidUriError('Attempt to get %s for "%s" failed. This '
-                                  'probably indicates the URI is invalid' %
+            raise InvalidUriError('Attempt to get %s for "%s" failed.\nThis '
+                                  'can happen if the URI refers to a non-'
+                                  'existent object or if you meant to\noperate '
+                                  'on a directory (e.g., leaving off -R option '
+                                  'on gsutil cp, mv, or ls of a\nbucket)' %
                                   (level, uri))
 
     def connect(self, access_key_id=None, secret_access_key=None, **kwargs):
@@ -188,6 +191,8 @@ class BucketStorageUri(StorageUri):
     Callers should instantiate this class by calling boto.storage_uri().
     """
 
+    delim = '/'
+
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=0, connection_args=None, suppress_consec_slashes=True):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
@@ -237,7 +242,8 @@ class BucketStorageUri(StorageUri):
             raise InvalidUriError('clone_replace_name() on bucket-less URI %s' %
                                   self.uri)
         return BucketStorageUri(
-            self.scheme, self.bucket_name, new_name, self.debug,
+            self.scheme, bucket_name=self.bucket_name, object_name=new_name,
+            debug=self.debug,
             suppress_consec_slashes=self.suppress_consec_slashes)
 
     def get_acl(self, validate=True, headers=None, version_id=None):
@@ -295,8 +301,8 @@ class BucketStorageUri(StorageUri):
             bucket.add_group_email_grant(permission, email_address, recursive,
                                          headers)
         else:
-            raise InvalidUriError('add_group_email_grant() on bucket-less URI %s' %
-                                  self.uri)
+            raise InvalidUriError('add_group_email_grant() on bucket-less URI '
+                                  '%s' % self.uri)
 
     def add_email_grant(self, permission, email_address, recursive=False,
                         validate=True, headers=None):
@@ -332,21 +338,49 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(headers)
         return bucket.list_grants(headers)
 
-    def names_container(self):
-        """Returns True if this URI names a bucket (vs. an object).
-        """
-        return not self.object_name
-
-    def names_singleton(self):
-        """Returns True if this URI names an object (vs. a bucket).
-        """
-        return self.object_name
-
     def is_file_uri(self):
+        """Returns True if this URI names a file or directory."""
         return False
 
     def is_cloud_uri(self):
+        """Returns True if this URI names a bucket or object."""
         return True
+
+    def names_container(self):
+        """
+        Returns True if this URI names a directory or bucket. Will return
+        False for bucket subdirs; providing bucket subdir semantics needs to
+        be done by the caller (like gsutil does).
+        """
+        return bool(not self.object_name)
+
+    def names_singleton(self):
+        """Returns True if this URI names a file or object."""
+        return bool(self.object_name)
+
+    def names_directory(self):
+        """Returns True if this URI names a directory."""
+        return False
+
+    def names_provider(self):
+        """Returns True if this URI names a provider."""
+        return bool(not self.bucket_name)
+
+    def names_bucket(self):
+        """Returns True if this URI names a bucket."""
+        return self.names_container()
+
+    def names_file(self):
+        """Returns True if this URI names a file."""
+        return False
+
+    def names_object(self):
+        """Returns True if this URI names an object."""
+        return self.names_singleton()
+
+    def is_stream(self):
+        """Returns True if this URI represents input/output stream."""
+        return False
 
     def create_bucket(self, headers=None, location='', policy=None):
         if self.bucket_name is None:
@@ -452,6 +486,8 @@ class FileStorageUri(StorageUri):
     See file/README about how we map StorageUri operations onto a file system.
     """
 
+    delim = os.sep
+
     def __init__(self, object_name, debug, is_stream=False):
         """Instantiate a FileStorageUri from a path name.
 
@@ -481,34 +517,48 @@ class FileStorageUri(StorageUri):
         """
         return FileStorageUri(new_name, self.debug, self.stream)
 
-    def names_container(self):
-        """Returns True if this URI is not representing input/output stream
-        and names a directory.
-        """
-        if not self.stream:
-            return os.path.isdir(self.object_name)
-        else:
-            return False
-
-    def names_singleton(self):
-        """Returns True if this URI names a file or
-        if URI represents input/output stream.
-        """
-        if self.stream:
-            return True
-        else:
-            return os.path.isfile(self.object_name)
-
     def is_file_uri(self):
+        """Returns True if this URI names a file or directory."""
         return True
 
     def is_cloud_uri(self):
+        """Returns True if this URI names a bucket or object."""
+        return False
+
+    def names_container(self):
+        """Returns True if this URI names a directory or bucket."""
+        return self.names_directory()
+
+    def names_singleton(self):
+        """Returns True if this URI names a file (or stream) or object."""
+        return not self.names_container()
+
+    def names_directory(self):
+        """Returns True if this URI names a directory."""
+        if self.stream:
+            return False
+        return os.path.isdir(self.object_name)
+
+    def names_provider(self):
+        """Returns True if this URI names a provider."""
+        return False
+
+    def names_bucket(self):
+        """Returns True if this URI names a bucket."""
+        return False
+
+    def names_file(self):
+        """Returns True if this URI names a file."""
+        return self.names_singleton()
+
+    def names_object(self):
+        """Returns True if this URI names an object."""
         return False
 
     def is_stream(self):
-        """Retruns True if this URI represents input/output stream.
+        """Returns True if this URI represents input/output stream.
         """
-        return self.stream
+        return bool(self.stream)
 
     def close(self):
         """Closes the underlying file.

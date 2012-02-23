@@ -32,8 +32,10 @@ import getopt
 from sqs.test_connection import SQSConnectionTest
 from s3.test_connection import S3ConnectionTest
 from s3.test_versioning import S3VersionTest
+from s3.test_mfa import S3MFATest
 from s3.test_encryption import S3EncryptionTest
 from s3.test_bucket import S3BucketTest
+from s3.test_key import S3KeyTest
 from s3.test_multidelete import S3MultiDeleteTest
 from s3.test_multipart import S3MultiPartUploadTest
 from s3.test_gsconnection import GSConnectionTest
@@ -48,7 +50,7 @@ from sts.test_session_token import SessionTokenTest
 
 def usage():
     print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3ver|s3nover|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
+    print "    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
     print "    -v   verbosity (0|1|2)"
 
 def main():
@@ -93,21 +95,16 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     elif testsuite == "s3":
         tests.addTest(unittest.makeSuite(S3ConnectionTest))
+        tests.addTest(unittest.makeSuite(S3BucketTest))
+        tests.addTest(unittest.makeSuite(S3KeyTest))
+        tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
         tests.addTest(unittest.makeSuite(S3VersionTest))
         tests.addTest(unittest.makeSuite(S3EncryptionTest))
         tests.addTest(unittest.makeSuite(S3MultiDeleteTest))
-        tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
-        tests.addTest(unittest.makeSuite(S3BucketTest))
     elif testsuite == "ssl":
         tests.addTest(unittest.makeSuite(CertValidationTest))
-    elif testsuite == "s3ver":
-        tests.addTest(unittest.makeSuite(S3VersionTest))
-    elif testsuite == "s3nover":
-        tests.addTest(unittest.makeSuite(S3ConnectionTest))
-        tests.addTest(unittest.makeSuite(S3EncryptionTest))
-        tests.addTest(unittest.makeSuite(S3MultiDeleteTest))
-        tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
-        tests.addTest(unittest.makeSuite(S3BucketTest))
+    elif testsuite == "s3mfa":
+        tests.addTest(unittest.makeSuite(S3MFATest))
     elif testsuite == "gs":
         tests.addTest(unittest.makeSuite(GSConnectionTest))
     elif testsuite == "sqs":
