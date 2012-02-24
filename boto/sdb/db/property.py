@@ -78,7 +78,7 @@ class Property(object):
         if isinstance(value, basestring) or value == self.default_value():
             return
         if not isinstance(value, self.data_type):
-            raise TypeError, 'Validation Error, expecting %s, got %s' % (self.data_type, type(value))
+            raise TypeError, 'Validation Error, %s.%s expecting %s, got %s' % (self.model_class.__name__, self.name, self.data_type, type(value))
                                       
     def default_value(self):
         return self.default
