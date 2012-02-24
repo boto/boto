@@ -257,10 +257,10 @@ class SDBConverter(object):
     def encode_datetime(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
             return value
-        if isinstance(value, date):
-            return value.isoformat()
-        else:
+        if isinstance(value, datetime):
             return value.strftime(ISO8601)
+        else:
+            return value.isoformat()
 
     def decode_datetime(self, value):
         """Handles both Dates and DateTime objects"""
@@ -268,7 +268,11 @@ class SDBConverter(object):
             return value
         try:
             if "T" in value:
-                return datetime.strptime(value, ISO8601)
+                if "." in value:
+                    # Handle true "isoformat()" dates, which may have a microsecond on at the end of them
+                    return datetime.strptime(value.split(".")[0], "%Y-%m-%dT%H:%M:%S")
+                else:
+                    return datetime.strptime(value, ISO8601)
             else:
                 value = value.split("-")
                 return date(int(value[0]), int(value[1]), int(value[2]))
