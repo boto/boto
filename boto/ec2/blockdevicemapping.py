@@ -21,6 +21,9 @@
 #
 
 class BlockDeviceType(object):
+    """
+    Represents parameters for a block device.
+    """
 
     def __init__(self,
                  connection=None,
@@ -72,8 +75,22 @@ class BlockDeviceType(object):
 EBSBlockDeviceType = BlockDeviceType
 
 class BlockDeviceMapping(dict):
+    """
+    Represents a collection of BlockDeviceTypes when creating ec2 instances.
+
+    Example: 
+    dev_sda1 = BlockDeviceType()
+    dev_sda1.size = 100   # change root volume to 100GB instead of default for ami
+    bdm = BlockDeviceMapping()
+    bdm['/dev/sda1'] = dev_sda1
+    reservation = image.run(..., block_device_map=bdm, ...)
+    """
 
     def __init__(self, connection=None):
+        """
+        :type connection: :class:`boto.ec2.EC2Connection`
+        :param connection: Optional connection.
+        """
         dict.__init__(self)
         self.connection = connection
         self.current_name = None
