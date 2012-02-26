@@ -144,10 +144,7 @@ class ResumableUploadHandler(object):
         """
         parse_result = urlparse.urlparse(uri)
         if (parse_result.scheme.lower() not in ['http', 'https'] or
-            not parse_result.netloc or not parse_result.query):
-            raise InvalidUriError('Invalid tracker URI (%s)' % uri)
-        qdict = cgi.parse_qs(parse_result.query)
-        if not qdict or not 'upload_id' in qdict:
+            not parse_result.netloc):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
         self.tracker_uri = uri
         self.tracker_uri_host = parse_result.netloc
