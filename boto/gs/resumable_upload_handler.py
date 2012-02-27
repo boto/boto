@@ -505,6 +505,12 @@ class ResumableUploadHandler(object):
 
         if not headers:
             headers = {}
+        # If Content-Type header is present and set to None, remove it.
+        # This is gsutil's way of asking boto to refrain from auto-generating
+        # that header.
+        CT = 'Content-Type'
+        if CT in headers and not headers[CT]:
+          del headers[CT]
 
         fp.seek(0, os.SEEK_END)
         file_length = fp.tell()
