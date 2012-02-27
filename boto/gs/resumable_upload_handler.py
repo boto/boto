@@ -509,7 +509,7 @@ class ResumableUploadHandler(object):
         # This is gsutil's way of asking boto to refrain from auto-generating
         # that header.
         CT = 'Content-Type'
-        if CT in headers and not headers[CT]:
+        if CT in headers and headers[CT] is None:
           del headers[CT]
 
         fp.seek(0, os.SEEK_END)

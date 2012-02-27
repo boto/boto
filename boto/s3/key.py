@@ -632,11 +632,11 @@ class Key(object):
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type'] 
             # to None when calling this method.
-            if headers['Content-Type']:
-                self.content_type = headers['Content-Type']
-            else:
+            if headers['Content-Type'] is None:
                 # Delete null Content-Type value to skip sending that header.
                 del headers['Content-Type']
+            else:
+                self.content_type = headers['Content-Type']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
