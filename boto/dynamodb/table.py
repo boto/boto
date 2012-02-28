@@ -221,12 +221,33 @@ class Table(object):
             return False
         return True
 
-    def new_item(self, hash_key, range_key=None, attrs=None):
+    def new_item(self, hash_key, range_key=None, attrs=None,
+                 item_class=Item):
         """
         Return an new, unsaved Item which can later be PUT to
         Amazon DynamoDB.
+
+        :type hash_key: int|long|float|str|unicode
+        :param hash_key: The HashKey of the new item.  The
+            type of the value must match the type defined in the
+            schema for the table.
+        
+        :type range_key: int|long|float|str|unicode
+        :param range_key: The optional RangeKey of the new item.
+            The type of the value must match the type defined in the
+            schema for the table.
+
+        :type attrs: dict
+        :param attrs: A dictionary of key value pairs used to
+            populate the new item.
+            
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
+        
         """
-        return Item(self, hash_key, range_key, attrs)
+        return item_class(self, hash_key, range_key, attrs)
 
     def query(self, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
