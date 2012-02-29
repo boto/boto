@@ -24,9 +24,18 @@ Represents an EC2 Elastic Network Interface
 """
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.resultset import ResultSet
-from boto.ec2.instance import Group
+from boto.ec2.group import Group
 
 class Attachment(object):
+    """
+    :ivar id: The ID of the attachment.
+    :ivar instance_id: The ID of the instance.
+    :ivar device_index: The index of this device.
+    :ivar status: The status of the device.
+    :ivar attach_time: The time the device was attached.
+    :ivar delete_on_termination: Whether the device will be deleted
+        when the instance is terminated.
+    """
 
     def __init__(self):
         self.id = None
@@ -63,6 +72,24 @@ class Attachment(object):
             setattr(self, name, value)
 
 class NetworkInterface(TaggedEC2Object):
+    """
+    An Elastic Network Interface.
+
+    :ivar id: The ID of the ENI.
+    :ivar subnet_id: The ID of the VPC subnet.
+    :ivar vpc_id: The ID of the VPC.
+    :ivar description: The description.
+    :ivar owner_id: The ID of the owner of the ENI.
+    :ivar requester_managed: 
+    :ivar status: The interface's status (available|in-use).
+    :ivar mac_address: The MAC address of the interface.
+    :ivar private_ip_address: The IP address of the interface within
+        the subnet.
+    :ivar source_dest_check: Flag to indicate whether to validate
+        network traffic to or from this network interface.
+    :ivar groups: List of security groups associated with the interface.
+    :ivar attachment: The attachment object.
+    """
     
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)

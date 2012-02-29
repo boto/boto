@@ -41,6 +41,8 @@ from s3.test_multipart import S3MultiPartUploadTest
 from s3.test_gsconnection import GSConnectionTest
 from s3.test_https_cert_validation import CertValidationTest
 from ec2.test_connection import EC2ConnectionTest
+from ec2.elb.test_connection import ELBConnectionTest
+from ec2.cloudwatch.test_connection import CloudWatchConnectionTest
 from autoscale.test_connection import AutoscaleConnectionTest
 from sdb.test_connection import SDBConnectionTest
 from cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
@@ -111,6 +113,9 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == "ec2":
         tests.addTest(unittest.makeSuite(EC2ConnectionTest))
+        tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
+        tests.addTest(unittest.makeSuite(ELBConnectionTest))
+        tests.addTest(unittest.makeSuite(CloudWatchConnectionTest))
     elif testsuite == "autoscale":
         tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
     elif testsuite == "sdb":
