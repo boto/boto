@@ -55,8 +55,8 @@ class Layer1(AWSAuthConnection):
         responses this connection has received from Amazon DynamoDB.
     """
     
-    DefaultHost = 'dynamodb.us-east-1.amazonaws.com'
-    """The default DynamoDB API endpoint to connect to."""
+    DefaultRegionName = 'us-east-1'
+    """The default region name for DynamoDB API."""
 
     ServiceName = 'DynamoDB'
     """The name of the Service"""
@@ -74,16 +74,23 @@ class Layer1(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host=None, debug=0, session_token=None):
-        if not host:
-            host = self.DefaultHost
+                 host=None, debug=0, session_token=None, region=None):
+        if not region:
+            region_name = boto.config.get('DynamoDB', 'region',
+                                          self.DefaultRegionName)
+            for reg in boto.dynamodb.regions():
+                if reg.name == region_name:
+                    region = reg
+                    break
+
+        self.region = region
         self._passed_access_key = aws_access_key_id
         self._passed_secret_key = aws_secret_access_key
         if not session_token:
             session_token = self._get_session_token()
         self.creds = session_token
         self.throughput_exceeded_events = 0
-        AWSAuthConnection.__init__(self, host,
+        AWSAuthConnection.__init__(self, self.region.endpoint,
                                    self.creds.access_key,
                                    self.creds.secret_key,
                                    is_secure, port, proxy, proxy_port,
