@@ -312,7 +312,7 @@ class FreeTextAnswer(object):
         return self.template % vars()
 
 class FileUploadAnswer(object):
-    template = """<FileUploadAnswer><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes></FileUploadAnswer>"""
+    template = """<FileUploadAnswer><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes></FileUploadAnswer>"""
     
     def __init__(self, min_bytes, max_bytes):
         assert 0 <= min_bytes <= max_bytes <= 2*10**9
