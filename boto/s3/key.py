@@ -192,7 +192,7 @@ class Key(object):
                 elif name.lower() == 'cache-control':
                     self.cache_control = value
                 elif name.lower() == 'content-disposition':
-                    self.cache_control = value
+                    self.content_disposition = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
 
