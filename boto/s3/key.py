@@ -53,6 +53,7 @@ class Key(object):
         self.cache_control = None
         self.content_type = self.DefaultContentType
         self.content_encoding = None
+        self.content_disposition = None
         self.filename = None
         self.etag = None
         self.is_latest = False
@@ -190,6 +191,8 @@ class Key(object):
                     self.last_modified = value
                 elif name.lower() == 'cache-control':
                     self.cache_control = value
+                elif name.lower() == 'content-disposition':
+                    self.content_disposition = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
 
