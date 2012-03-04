@@ -658,7 +658,8 @@ class Layer2(object):
             if response is True:
                 pass
             elif response.has_key("LastEvaluatedKey"):
-                exclusive_start_key = response['LastEvaluatedKey']
+                last_evaluated_key = response['LastEvaluatedKey']
+                exclusive_start_key = self.dynamize_item(last_evaluated_key)
             else:
                 break
 
