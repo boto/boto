@@ -437,7 +437,8 @@ class Bucket(object):
         :return: The result from S3 listing the uploads requested
         
         """
-        return self._get_all([('Upload', MultiPartUpload)],
+        return self._get_all([('Upload', MultiPartUpload),
+                              ('CommonPrefixes', Prefix)],
                              'uploads', headers, **params)
 
     def new_key(self, key_name=None):
