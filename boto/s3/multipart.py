@@ -184,6 +184,8 @@ class MultiPartUpload(object):
                 self.is_truncated = True
             else:
                 self.is_truncated = False
+        elif name == 'Initiated':
+            self.initiated = value
         else:
             setattr(self, name, value)
 
