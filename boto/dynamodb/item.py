@@ -37,6 +37,7 @@ class Item(dict):
         self.table = table
         self._hash_key_name = self.table.schema.hash_key_name
         self._range_key_name = self.table.schema.range_key_name
+        self._updates = None
         if hash_key:
             self[self._hash_key_name] = hash_key
         if range_key:
@@ -172,3 +173,15 @@ class Item(dict):
         """
         return self.table.layer2.put_item(self, expected_value, return_values)
 
+    def __setitem__(self, key, value):
+        """Overrwrite the setter to instead update the _updates
+        method so this can act like a normal dict"""
+        if self._updates is not None:
+            self.put_attribute(key, value)
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        """Remove this key from the items"""
+        if self._updates is not None:
+            self.delete_attribute(key)
+        dict.__delitem__(self, key)
