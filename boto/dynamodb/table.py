@@ -387,5 +387,5 @@ class Table(object):
         :rtype: generator
         """
         return self.layer2.scan(self, scan_filter, attributes_to_get,
-                                request_limit, max_results,
+                                request_limit, max_results, count,
                                 exclusive_start_key, item_class=item_class)

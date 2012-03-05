@@ -561,6 +561,10 @@ class Layer2(object):
             rkc = self.dynamize_range_key_condition(range_key_condition)
         else:
             rkc = None
+        if exclusive_start_key:
+            esk = self.build_key_from_values(table.schema, *exclusive_start_key)
+        else:
+            esk = None
         response = True
         n = 0
         while response:
@@ -570,15 +574,14 @@ class Layer2(object):
                 pass
             elif response.has_key("LastEvaluatedKey"):
                 lek = response['LastEvaluatedKey']
-                exclusive_start_key = self.dynamize_last_evaluated_key(lek)
+                esk = self.dynamize_last_evaluated_key(lek)
             else:
                 break
             response = self.layer1.query(table.name,
                                          dynamize_value(hash_key),
                                          rkc, attributes_to_get, request_limit,
                                          consistent_read, scan_index_forward,
-                                         exclusive_start_key,
-                                         object_hook=item_object_hook)
+                                         esk, object_hook=item_object_hook)
             for item in response['Items']:
                 if max_results and n == max_results:
                     break
@@ -651,6 +654,10 @@ class Layer2(object):
 
         :rtype: generator
         """
+        if exclusive_start_key:
+            esk = self.build_key_from_values(table.schema, *exclusive_start_key)
+        else:
+            esk = None
         sf = self.dynamize_scan_filter(scan_filter)
         response = True
         n = 0
@@ -659,14 +666,15 @@ class Layer2(object):
                 pass
             elif response.has_key("LastEvaluatedKey"):
                 last_evaluated_key = response['LastEvaluatedKey']
-                exclusive_start_key = self.dynamize_item(last_evaluated_key)
+                esk = self.dynamize_item(last_evaluated_key)
             else:
                 break
-
+            print esk, count
             response = self.layer1.scan(table.name, sf,
-                                        attributes_to_get,request_limit,
-                                        count, exclusive_start_key,
+                                        attributes_to_get, request_limit,
+                                        count, esk,
                                         object_hook=item_object_hook)
+            print response
             if response:
                 for item in response['Items']:
                     if max_results and n == max_results:
