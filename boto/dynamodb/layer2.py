@@ -669,12 +669,10 @@ class Layer2(object):
                 esk = self.dynamize_item(last_evaluated_key)
             else:
                 break
-            print esk, count
             response = self.layer1.scan(table.name, sf,
                                         attributes_to_get, request_limit,
                                         count, esk,
                                         object_hook=item_object_hook)
-            print response
             if response:
                 for item in response['Items']:
                     if max_results and n == max_results:
