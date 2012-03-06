@@ -923,15 +923,15 @@ class EC2Connection(AWSQueryConnection):
                              [('item', SpotPriceHistory)], verb='POST')
 
     def request_spot_instances(self, price, image_id, count=1, type='one-time',
-                           valid_from=None, valid_until=None,
-                           launch_group=None, availability_zone_group=None,
-                           key_name=None, security_groups=None,
-                           user_data=None, addressing_type=None,
-                           instance_type='m1.small', placement=None,
-                           kernel_id=None, ramdisk_id=None,
-                           monitoring_enabled=False, subnet_id=None,
-                           placement_group=None,
-                           block_device_map=None):
+                               valid_from=None, valid_until=None,
+                               launch_group=None, availability_zone_group=None,
+                               key_name=None, security_groups=None,
+                               user_data=None, addressing_type=None,
+                               instance_type='m1.small', placement=None,
+                               kernel_id=None, ramdisk_id=None,
+                               monitoring_enabled=False, subnet_id=None,
+                               placement_group=None,
+                               block_device_map=None):
         """
         Request instances on the spot market at a particular price.
 
