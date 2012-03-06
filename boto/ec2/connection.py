@@ -1059,7 +1059,7 @@ class EC2Connection(AWSQueryConnection):
         if subnet_id:
             params['LaunchSpecification.SubnetId'] = subnet_id
         if placement_group:
-            params['Placement.GroupName'] = placement_group
+            params['LaunchSpecification.Placement.GroupName'] = placement_group
         if block_device_map:
             block_device_map.build_list_params(params, 'LaunchSpecification.')
         return self.get_list('RequestSpotInstances', params,
