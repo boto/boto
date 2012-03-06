@@ -932,139 +932,139 @@ class EC2Connection(AWSQueryConnection):
                            monitoring_enabled=False, subnet_id=None,
                            placement_group=None,
                            block_device_map=None):
-    """
-    Request instances on the spot market at a particular price.
+        """
+        Request instances on the spot market at a particular price.
 
-    :type price: str
-    :param price: The maximum price of your bid
+        :type price: str
+        :param price: The maximum price of your bid
 
-    :type image_id: string
-    :param image_id: The ID of the image to run
+        :type image_id: string
+        :param image_id: The ID of the image to run
 
-    :type count: int
-    :param count: The of instances to requested
+        :type count: int
+        :param count: The of instances to requested
 
-    :type type: str
-    :param type: Type of request. Can be 'one-time' or 'persistent'.
-                 Default is one-time.
+        :type type: str
+        :param type: Type of request. Can be 'one-time' or 'persistent'.
+                     Default is one-time.
 
-    :type valid_from: str
-    :param valid_from: Start date of the request. An ISO8601 time string.
+        :type valid_from: str
+        :param valid_from: Start date of the request. An ISO8601 time string.
 
-    :type valid_until: str
-    :param valid_until: End date of the request.  An ISO8601 time string.
+        :type valid_until: str
+        :param valid_until: End date of the request.  An ISO8601 time string.
 
-    :type launch_group: str
-    :param launch_group: If supplied, all requests will be fulfilled
-                         as a group.
+        :type launch_group: str
+        :param launch_group: If supplied, all requests will be fulfilled
+                             as a group.
 
-    :type availability_zone_group: str
-    :param availability_zone_group: If supplied, all requests will be
-                                    fulfilled within a single
-                                    availability zone.
+        :type availability_zone_group: str
+        :param availability_zone_group: If supplied, all requests will be
+                                        fulfilled within a single
+                                        availability zone.
 
-    :type key_name: string
-    :param key_name: The name of the key pair with which to launch instances
+        :type key_name: string
+        :param key_name: The name of the key pair with which to launch instances
 
-    :type security_groups: list of strings
-    :param security_groups: The names of the security groups with which to
-                            associate instances
+        :type security_groups: list of strings
+        :param security_groups: The names of the security groups with which to
+                                associate instances
 
-    :type user_data: string
-    :param user_data: The user data passed to the launched instances
+        :type user_data: string
+        :param user_data: The user data passed to the launched instances
 
-    :type instance_type: string
-    :param instance_type: The type of instance to run:
+        :type instance_type: string
+        :param instance_type: The type of instance to run:
 
-                          * m1.small
-                          * m1.large
-                          * m1.xlarge
-                          * c1.medium
-                          * c1.xlarge
-                          * m2.xlarge
-                          * m2.2xlarge
-                          * m2.4xlarge
-                          * cc1.4xlarge
-                          * t1.micro
+                              * m1.small
+                              * m1.large
+                              * m1.xlarge
+                              * c1.medium
+                              * c1.xlarge
+                              * m2.xlarge
+                              * m2.2xlarge
+                              * m2.4xlarge
+                              * cc1.4xlarge
+                              * t1.micro
 
-    :type placement: string
-    :param placement: The availability zone in which to launch the instances
+        :type placement: string
+        :param placement: The availability zone in which to launch the instances
 
-    :type kernel_id: string
-    :param kernel_id: The ID of the kernel with which to launch the
-                      instances
+        :type kernel_id: string
+        :param kernel_id: The ID of the kernel with which to launch the
+                          instances
 
-    :type ramdisk_id: string
-    :param ramdisk_id: The ID of the RAM disk with which to launch the
-                       instances
+        :type ramdisk_id: string
+        :param ramdisk_id: The ID of the RAM disk with which to launch the
+                           instances
 
-    :type monitoring_enabled: bool
-    :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
+        :type monitoring_enabled: bool
+        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
 
-    :type subnet_id: string
-    :param subnet_id: The subnet ID within which to launch the instances
-                      for VPC.
-    
-    :type placement_group: string
-    :param placement_group: If specified, this is the name of the placement
-                            group in which the instance(s) will be launched.
+        :type subnet_id: string
+        :param subnet_id: The subnet ID within which to launch the instances
+                          for VPC.
+        
+        :type placement_group: string
+        :param placement_group: If specified, this is the name of the placement
+                                group in which the instance(s) will be launched.
 
-    :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
-    :param block_device_map: A BlockDeviceMapping data structure
-                             describing the EBS volumes associated
-                             with the Image.
+        :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_map: A BlockDeviceMapping data structure
+                                 describing the EBS volumes associated
+                                 with the Image.
 
-    :rtype: Reservation
-    :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
-             associated with the request for machines
-    """
-    params = {'LaunchSpecification.ImageId':image_id,
-              'Type' : type,
-              'SpotPrice' : price}
-    if count:
-        params['InstanceCount'] = count
-    if valid_from:
-        params['ValidFrom'] = valid_from
-    if valid_until:
-        params['ValidUntil'] = valid_until
-    if launch_group:
-        params['LaunchGroup'] = launch_group
-    if availability_zone_group:
-        params['AvailabilityZoneGroup'] = availability_zone_group
-    if key_name:
-        params['LaunchSpecification.KeyName'] = key_name
-    if security_groups:
-        l = []
-        for group in security_groups:
-            if isinstance(group, SecurityGroup):
-                l.append(group.name)
-            else:
-                l.append(group)
-        self.build_list_params(params, l,
-                               'LaunchSpecification.SecurityGroup')
-    if user_data:
-        params['LaunchSpecification.UserData'] = base64.b64encode(user_data)
-    if addressing_type:
-        params['LaunchSpecification.AddressingType'] = addressing_type
-    if instance_type:
-        params['LaunchSpecification.InstanceType'] = instance_type
-    if placement:
-        params['LaunchSpecification.Placement.AvailabilityZone'] = placement
-    if kernel_id:
-        params['LaunchSpecification.KernelId'] = kernel_id
-    if ramdisk_id:
-        params['LaunchSpecification.RamdiskId'] = ramdisk_id
-    if monitoring_enabled:
-        params['LaunchSpecification.Monitoring.Enabled'] = 'true'
-    if subnet_id:
-        params['LaunchSpecification.SubnetId'] = subnet_id
-    if placement_group:
-        params['Placement.GroupName'] = placement_group
-    if block_device_map:
-        block_device_map.build_list_params(params, 'LaunchSpecification.')
-    return self.get_list('RequestSpotInstances', params,
-                         [('item', SpotInstanceRequest)],
-                         verb='POST')
+        :rtype: Reservation
+        :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
+                 associated with the request for machines
+        """
+        params = {'LaunchSpecification.ImageId':image_id,
+                  'Type' : type,
+                  'SpotPrice' : price}
+        if count:
+            params['InstanceCount'] = count
+        if valid_from:
+            params['ValidFrom'] = valid_from
+        if valid_until:
+            params['ValidUntil'] = valid_until
+        if launch_group:
+            params['LaunchGroup'] = launch_group
+        if availability_zone_group:
+            params['AvailabilityZoneGroup'] = availability_zone_group
+        if key_name:
+            params['LaunchSpecification.KeyName'] = key_name
+        if security_groups:
+            l = []
+            for group in security_groups:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.name)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l,
+                                   'LaunchSpecification.SecurityGroup')
+        if user_data:
+            params['LaunchSpecification.UserData'] = base64.b64encode(user_data)
+        if addressing_type:
+            params['LaunchSpecification.AddressingType'] = addressing_type
+        if instance_type:
+            params['LaunchSpecification.InstanceType'] = instance_type
+        if placement:
+            params['LaunchSpecification.Placement.AvailabilityZone'] = placement
+        if kernel_id:
+            params['LaunchSpecification.KernelId'] = kernel_id
+        if ramdisk_id:
+            params['LaunchSpecification.RamdiskId'] = ramdisk_id
+        if monitoring_enabled:
+            params['LaunchSpecification.Monitoring.Enabled'] = 'true'
+        if subnet_id:
+            params['LaunchSpecification.SubnetId'] = subnet_id
+        if placement_group:
+            params['Placement.GroupName'] = placement_group
+        if block_device_map:
+            block_device_map.build_list_params(params, 'LaunchSpecification.')
+        return self.get_list('RequestSpotInstances', params,
+                             [('item', SpotInstanceRequest)],
+                             verb='POST')
 
     def cancel_spot_instance_requests(self, request_ids):
         """
