@@ -930,6 +930,7 @@ class EC2Connection(AWSQueryConnection):
                                instance_type='m1.small', placement=None,
                                kernel_id=None, ramdisk_id=None,
                                monitoring_enabled=False, subnet_id=None,
+                               placement_group=None,
                                block_device_map=None):
         """
         Request instances on the spot market at a particular price.
@@ -1003,6 +1004,10 @@ class EC2Connection(AWSQueryConnection):
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances
                           for VPC.
+        
+        :type placement_group: string
+        :param placement_group: If specified, this is the name of the placement
+                                group in which the instance(s) will be launched.
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -1053,12 +1058,13 @@ class EC2Connection(AWSQueryConnection):
             params['LaunchSpecification.Monitoring.Enabled'] = 'true'
         if subnet_id:
             params['LaunchSpecification.SubnetId'] = subnet_id
+        if placement_group:
+            params['LaunchSpecification.Placement.GroupName'] = placement_group
         if block_device_map:
             block_device_map.build_list_params(params, 'LaunchSpecification.')
         return self.get_list('RequestSpotInstances', params,
                              [('item', SpotInstanceRequest)],
                              verb='POST')
-
 
     def cancel_spot_instance_requests(self, request_ids):
         """
