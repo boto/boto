@@ -46,6 +46,7 @@ import StringIO
 import time
 import logging.handlers
 import boto
+import boto.provider
 import tempfile
 import smtplib
 import datetime
