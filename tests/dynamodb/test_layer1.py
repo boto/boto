@@ -135,9 +135,9 @@ class DynamoDBLayer1Test (unittest.TestCase):
         # Try to delete the item with the wrong Expected value
         expected = {'Views': {'Value': {'N': '1'}}}
         try:
-            result = c.delete_item('table_name', key=key1, expected=expected)
+            result = c.delete_item(table_name, key=key1, expected=expected)
         except c.ResponseError, e:
-            pass
+            assert e.error_code == 'ConditionalCheckFailedException'
 
         # Now update the existing object
         attribute_updates = {'Views': {'Value': {'N': '5'},
