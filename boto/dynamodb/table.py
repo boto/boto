@@ -224,7 +224,7 @@ class Table(object):
     def new_item(self, hash_key, range_key=None, attrs=None,
                  item_class=Item):
         """
-        Return an new, unsaved Item which can later be PUT to
+        Return a new, unsaved Item which can later be PUT to
         Amazon DynamoDB.
 
         :type hash_key: int|long|float|str|unicode
@@ -249,6 +249,23 @@ class Table(object):
         """
         return item_class(self, hash_key, range_key, attrs)
 
+    def new_item_from_attrs(self, attrs):
+        """
+        Return a new, unsaved Item which can later be PUT to
+        Amazon DynamoDB. With this method, the hash and range keys
+        are pulled out of the attrs parameter based on the table
+        schema.
+
+        :type attrs: dict
+        :param attrs: A dictionary of key value pairs used to
+            populate the new item.
+        """
+        hash_key = attrs[self.schema.hash_key_name]
+        range_key = None
+        if self.schema.range_key_name:
+            range_key = attrs[self.schema.range_key_name]
+        return self.new_item(hash_key, range_key, attrs)
+        
     def query(self, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
               max_results=None, consistent_read=False,
