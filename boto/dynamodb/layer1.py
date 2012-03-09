@@ -135,8 +135,8 @@ class Layer1(AWSAuthConnection):
         if response.status == 400:
             response_body = response.read()
             boto.log.debug(response_body)
-            json_response = json.loads(response_body)
-            if self.ThruputError in json_response.get('__type'):
+            data = json.loads(response_body)
+            if self.ThruputError in data.get('__type'):
                 self.throughput_exceeded_events += 1
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
                 if i == 0:
@@ -145,14 +145,14 @@ class Layer1(AWSAuthConnection):
                     next_sleep = 0.05 * (2**i)
                 i += 1
                 status = (msg, i, next_sleep)
-            elif self.SessionExpiredError in json_response.get('__type'):
+            elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
                 self.creds = self._get_session_token()
                 self._update_provider()
                 status = (msg, i+self.num_retries-1, next_sleep)
             else:
                 raise self.ResponseError(response.status, response.reason,
-                                         json_response)
+                                         data)
         return status
 
     def list_tables(self, limit=None, start_table=None):

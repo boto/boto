@@ -140,7 +140,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         try:
             item1.delete(expected_value=expected)
         except c.layer1.ResponseError, e:
-            pass
+            assert e.error_code == 'ConditionalCheckFailedException'
         else:
             raise Exception("Expected Value condition failed")
 

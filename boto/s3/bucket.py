@@ -1130,7 +1130,7 @@ class Bucket(object):
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
-            lifecycle = Lifecycle(self)
+            lifecycle = Lifecycle()
             h = handler.XmlHandler(lifecycle, self)
             xml.sax.parseString(body, h)
             return lifecycle

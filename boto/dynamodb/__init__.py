@@ -37,6 +37,9 @@ def regions():
             RegionInfo(name='ap-northeast-1',
                        endpoint='dynamodb.ap-northeast-1.amazonaws.com',
                        connection_cls=boto.dynamodb.layer2.Layer2),
+            RegionInfo(name='eu-west-1',
+                       endpoint='dynamodb.eu-west-1.amazonaws.com',
+                       connection_cls=boto.dynamodb.layer2.Layer2),
             ]
 
 def connect_to_region(region_name, **kw_params):
