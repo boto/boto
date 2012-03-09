@@ -208,7 +208,7 @@ class EmrConnection(AWSQueryConnection):
                     bootstrap_actions=[],
                     instance_groups=None,
                     additional_info=None,
-                    ami_version="latest",
+                    ami_version=None,
                     api_params=None):
         """
         Runs a job flow
