@@ -27,7 +27,6 @@ import time
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
-from boto.provider import Provider
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
@@ -64,7 +63,10 @@ def assert_case_insensitive(f):
         return f(*args, **kwargs)
     return wrapper
 
-class _CallingFormat:
+class _CallingFormat(object):
+
+    def get_bucket_server(self, server, bucket):
+        return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
         url_base = '%s://' % protocol
@@ -79,12 +81,14 @@ class _CallingFormat:
             return self.get_bucket_server(server, bucket)
 
     def build_auth_path(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path = ''
         if bucket != '':
             path = '/' + bucket
         return path + '/%s' % urllib.quote(key)
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         return '/%s' % urllib.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
@@ -105,15 +109,26 @@ class OrdinaryCallingFormat(_CallingFormat):
         return server
 
     def build_path_base(self, bucket, key=''):
+        key = boto.utils.get_utf8_value(key)
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
         return path_base + urllib.quote(key)
 
+class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
+    
+    def build_url_base(self, connection, protocol, server, bucket, key=''):
+        url_base = '//'
+        url_base += self.build_host(server, bucket)
+        url_base += connection.get_path(self.build_path_base(bucket, key))
+        return url_base
+
 class Location:
     DEFAULT = '' # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
+    SAEast = 'sa-east-1'
+    APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
 
 class S3Connection(AWSAuthConnection):
@@ -125,25 +140,31 @@ class S3Connection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/', provider='aws',
-                 bucket_class=Bucket):
+                 calling_format=SubdomainCallingFormat(), path='/',
+                 provider='aws', bucket_class=Bucket, security_token=None,
+                 suppress_consec_slashes=True, anon=False):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
+        self.anon = anon
         AWSAuthConnection.__init__(self, host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
-                path=path, provider=provider)
+                path=path, provider=provider, security_token=security_token,
+                suppress_consec_slashes=suppress_consec_slashes)
 
     def _required_auth_capability(self):
-        return ['s3']
+        if self.anon:
+            return ['anon']
+        else:
+            return ['s3']
 
     def __iter__(self):
         for bucket in self.get_all_buckets():
             yield bucket
 
     def __contains__(self, bucket_name):
-       return not (self.lookup(bucket_name) is None)
+        return not (self.lookup(bucket_name) is None)
 
     def set_bucket_class(self, bucket_class):
         """
@@ -170,37 +191,42 @@ class S3Connection(AWSAuthConnection):
 
 
     def build_post_form_args(self, bucket_name, key, expires_in = 6000,
-                        acl = None, success_action_redirect = None, max_content_length = None,
-                        http_method = "http", fields=None, conditions=None):
+                             acl = None, success_action_redirect = None,
+                             max_content_length = None,
+                             http_method = "http", fields=None,
+                             conditions=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
-        This only returns the arguments required for the post form, not the actual form
-        This does not return the file input field which also needs to be added
+        This only returns the arguments required for the post form, not the
+        actual form.  This does not return the file input field which also
+        needs to be added
         
-        :param bucket_name: Bucket to submit to
         :type bucket_name: string 
+        :param bucket_name: Bucket to submit to
         
-        :param key:  Key name, optionally add ${filename} to the end to attach the submitted filename
         :type key: string
+        :param key:  Key name, optionally add ${filename} to the end to
+            attach the submitted filename
         
-        :param expires_in: Time (in seconds) before this expires, defaults to 6000
         :type expires_in: integer
+        :param expires_in: Time (in seconds) before this expires, defaults
+            to 6000
         
-        :param acl: ACL rule to use, if any
         :type acl: :class:`boto.s3.acl.ACL`
+        :param acl: ACL rule to use, if any
         
-        :param success_action_redirect: URL to redirect to on success
         :type success_action_redirect: string 
+        :param success_action_redirect: URL to redirect to on success
         
-        :param max_content_length: Maximum size for this file
         :type max_content_length: integer 
+        :param max_content_length: Maximum size for this file
         
         :type http_method: string
         :param http_method:  HTTP Method to use, "http" or "https"
         
-        
         :rtype: dict
-        :return: A dictionary containing field names/values as well as a url to POST to
+        :return: A dictionary containing field names/values as well as
+            a url to POST to
         
             .. code-block:: python
             
@@ -248,7 +274,8 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "policy", "value": policy_b64})
 
         # Add the AWS access key as the 'AWSAccessKeyId' field
-        fields.append({"name": "AWSAccessKeyId", "value": self.aws_access_key_id})
+        fields.append({"name": "AWSAccessKeyId",
+                       "value": self.aws_access_key_id})
 
         # Add signature for encoded policy document as the 'AWSAccessKeyId' field
         signature = self._auth_handler.sign_string(policy_b64)
@@ -256,18 +283,34 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "key", "value": key})
 
         # HTTPS protocol will be used if the secure HTTP option is enabled.
-        url = '%s://%s/' % (http_method, self.calling_format.build_host(self.server_name(), bucket_name))
+        url = '%s://%s/' % (http_method,
+                            self.calling_format.build_host(self.server_name(),
+                                                           bucket_name))
 
         return {"action": url, "fields": fields}
 
 
-    def generate_url(self, expires_in, method, bucket='', key='',
-                     headers=None, query_auth=True, force_http=False):
+    def generate_url(self, expires_in, method, bucket='', key='', headers=None,
+                     query_auth=True, force_http=False, response_headers=None,
+                     expires_in_absolute=False):
         if not headers:
             headers = {}
-        expires = int(time.time() + expires_in)
+        if expires_in_absolute:
+            expires = int(expires_in)
+        else:
+            expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
+        # Arguments to override response headers become part of the canonical
+        # string to be signed.
+        if response_headers:
+            response_hdrs = ["%s=%s" % (k, v) for k, v in
+                             response_headers.items()]
+            delimiter = '?' if '?' not in auth_path else '&'
+            auth_path = "%s%s" % (auth_path, delimiter)
+            auth_path += '&'.join(response_hdrs)
+        else:
+            response_headers = {}
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
@@ -276,7 +319,9 @@ class S3Connection(AWSAuthConnection):
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                                    self.aws_access_key_id)
-            hdrs = [ '%s=%s'%(name, urllib.quote(val)) for name,val in headers.items() ]
+            # The response headers must also be GET parameters in the URL.
+            headers.update(response_headers)
+            hdrs = ['%s=%s'%(n, urllib.quote(v)) for n, v in headers.items()]
             q_str = '&'.join(hdrs)
             if q_str:
                 query_part += '&' + q_str
@@ -288,7 +333,8 @@ class S3Connection(AWSAuthConnection):
         else:
             protocol = self.protocol
             port = self.port
-        return self.calling_format.build_url_base(self, protocol, self.server_name(port),
+        return self.calling_format.build_url_base(self, protocol,
+                                                  self.server_name(port),
                                                   bucket, key) + query_part
 
     def get_all_buckets(self, headers=None):
@@ -304,11 +350,13 @@ class S3Connection(AWSAuthConnection):
 
     def get_canonical_user_id(self, headers=None):
         """
-        Convenience method that returns the "CanonicalUserID" of the user who's credentials
-        are associated with the connection.  The only way to get this value is to do a GET
-        request on the service which returns all buckets associated with the account.  As part
-        of that response, the canonical userid is returned.  This method simply does all of
-        that and then returns just the user id.
+        Convenience method that returns the "CanonicalUserID" of the
+        user who's credentials are associated with the connection.
+        The only way to get this value is to do a GET request on the
+        service which returns all buckets associated with the account.
+        As part of that response, the canonical userid is returned.
+        This method simply does all of that and then returns just the
+        user id.
 
         :rtype: string
         :return: A string containing the canonical user id.
@@ -345,7 +393,8 @@ class S3Connection(AWSAuthConnection):
         :param location: The location of the new bucket
         
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
+        :param policy: A canned ACL policy that will be applied to the
+            new key in S3.
              
         """
         check_lowercase_bucketname(bucket_name)

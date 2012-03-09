@@ -21,6 +21,7 @@
 
 import xml.sax
 import threading
+import boto
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.sdb.domain import Domain, DomainMetaData
@@ -32,12 +33,10 @@ class ItemThread(threading.Thread):
     """
     A threaded :class:`Item <boto.sdb.item.Item>` retriever utility class. 
     Retrieved :class:`Item <boto.sdb.item.Item>` objects are stored in the
-    ``items`` instance variable after 
-    :py:meth:`run() <run>` is called. 
+    ``items`` instance variable after :py:meth:`run() <run>` is called.
     
-    .. tip:: 
-        The item retrieval will not start until the 
-        :func:`run() <boto.sdb.connection.ItemThread.run>` method is called.
+    .. tip:: The item retrieval will not start until
+        the :func:`run() <boto.sdb.connection.ItemThread.run>` method is called.
     """
     def __init__(self, name, domain_name, item_names):
         """
@@ -87,7 +86,7 @@ class SDBConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 converter=None):
+                 converter=None, security_token=None):
         """
         For any keywords that aren't documented, refer to the parent class,
         :py:class:`boto.connection.AWSAuthConnection`. You can avoid having
@@ -95,19 +94,30 @@ class SDBConnection(AWSQueryConnection):
         via :py:func:`boto.connect_sdb`.
     
         :type region: :class:`boto.sdb.regioninfo.SDBRegionInfo`
-        :keyword region: Explicitly specify a region. Defaults to ``us-east-1`` 
-            if not specified.
+        :keyword region: Explicitly specify a region. Defaults to ``us-east-1``
+            if not specified. You may also specify the region in your ``boto.cfg``:
+
+            .. code-block:: cfg
+
+                [SDB]
+                region = eu-west-1
+
         """
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName,
-                                   self.DefaultRegionEndpoint)
+            region_name = boto.config.get('SDB', 'region', self.DefaultRegionName)
+            for reg in boto.sdb.regions():
+                if reg.name == region_name:
+                    region = reg
+                    break
+
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path,
+                                    security_token=security_token)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item

@@ -28,14 +28,14 @@ from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
-from boto.exception import SDBPersistenceError
+from boto.exception import SDBPersistenceError, S3ResponseError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
 class TimeDecodeError(Exception):
     pass
 
-class SDBConverter:
+class SDBConverter(object):
     """
     Responsible for converting base Python types to format compatible with underlying
     database.  For SimpleDB, that means everything needs to be converted to a string
@@ -59,6 +59,7 @@ class SDBConverter:
                           date : (self.encode_date, self.decode_date),
                           time : (self.encode_time, self.decode_time),
                           Blob: (self.encode_blob, self.decode_blob),
+                          str: (self.encode_string, self.decode_string),
                       }
 
     def encode(self, item_type, value):
@@ -96,6 +97,7 @@ class SDBConverter:
         return self.encode_map(prop, values)
 
     def encode_map(self, prop, value):
+        import urllib
         if value == None:
             return None
         if not isinstance(value, dict):
@@ -107,7 +109,7 @@ class SDBConverter:
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
             if encoded_value != None:
-                new_value.append('%s:%s' % (key, encoded_value))
+                new_value.append('%s:%s' % (urllib.quote(key), encoded_value))
         return new_value
 
     def encode_prop(self, prop, value):
@@ -147,9 +149,11 @@ class SDBConverter:
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
+        import urllib
         key = value
         if ":" in value:
             key, value = value.split(':',1)
+            key = urllib.unquote(key)
         if Model in item_type.mro():
             value = item_type(id=value)
         else:
@@ -253,12 +257,26 @@ class SDBConverter:
     def encode_datetime(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
             return value
-        return value.strftime(ISO8601)
+        if isinstance(value, datetime):
+            return value.strftime(ISO8601)
+        else:
+            return value.isoformat()
 
     def decode_datetime(self, value):
+        """Handles both Dates and DateTime objects"""
+        if value is None:
+            return value
         try:
-            return datetime.strptime(value, ISO8601)
-        except:
+            if "T" in value:
+                if "." in value:
+                    # Handle true "isoformat()" dates, which may have a microsecond on at the end of them
+                    return datetime.strptime(value.split(".")[0], "%Y-%m-%dT%H:%M:%S")
+                else:
+                    return datetime.strptime(value, ISO8601)
+            else:
+                value = value.split("-")
+                return date(int(value[0]), int(value[1]), int(value[2]))
+        except Exception, e:
             return None
 
     def encode_date(self, value):
@@ -336,13 +354,36 @@ class SDBConverter:
         if match:
             s3 = self.manager.get_s3_connection()
             bucket = s3.get_bucket(match.group(1), validate=False)
-            key = bucket.get_key(match.group(2))
+            try:
+                key = bucket.get_key(match.group(2))
+            except S3ResponseError, e:
+                if e.reason != "Forbidden":
+                    raise
+                return None
         else:
             return None
         if key:
             return Blob(file=key, id="s3://%s/%s" % (key.bucket.name, key.name))
         else:
             return None
+
+    def encode_string(self, value):
+        """Convert ASCII, Latin-1 or UTF-8 to pure Unicode"""
+        if not isinstance(value, str): return value
+        try:
+            return unicode(value, 'utf-8')
+        except: # really, this should throw an exception.
+                # in the interest of not breaking current
+                # systems, however:
+            arr = []
+            for ch in value:
+                arr.append(unichr(ord(ch)))
+            return u"".join(arr)
+
+    def decode_string(self, value):
+        """Decoding a string is really nothing, just
+        return the value as-is"""
+        return value
 
 class SDBManager(object):
     
@@ -379,9 +420,15 @@ class SDBManager(object):
         return self._domain
 
     def _connect(self):
-        self._sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
-                                    aws_secret_access_key=self.db_passwd,
-                                    is_secure=self.enable_ssl)
+        args = dict(aws_access_key_id=self.db_user,
+                    aws_secret_access_key=self.db_passwd,
+                    is_secure=self.enable_ssl)
+        try:
+            region = [x for x in boto.sdb.regions() if x.endpoint == self.db_host][0]
+            args['region'] = region
+        except IndexError:
+            pass
+        self._sdb = boto.connect_sdb(**args)
         # This assumes that the domain has already been created
         # It's much more efficient to do it this way rather than
         # having this make a roundtrip each time to validate.
@@ -508,16 +555,26 @@ class SDBManager(object):
         """
         import types
         query_parts = []
+
         order_by_filtered = False
+
         if order_by:
             if order_by[0] == "-":
                 order_by_method = "DESC";
                 order_by = order_by[1:]
             else:
                 order_by_method = "ASC";
+
+        if select:
+            if order_by and order_by in select:
+                order_by_filtered = True
+            query_parts.append("(%s)" % select)
+
         if isinstance(filters, str) or isinstance(filters, unicode):
-            query = "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
-            if order_by != None:
+            query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
+            if order_by in ["__id__", "itemName()"]:
+                query += " ORDER BY itemName() %s" % order_by_method
+            elif order_by != None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)
             return query
 
@@ -559,13 +616,14 @@ class SDBManager(object):
         query_parts.append(type_query)
 
         order_by_query = ""
+
         if order_by:
             if not order_by_filtered:
                 query_parts.append("`%s` LIKE '%%'" % order_by)
-            order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
-
-        if select:
-            query_parts.append("(%s)" % select)
+            if order_by in ["__id__", "itemName()"]:
+                order_by_query = " ORDER BY itemName() %s" % order_by_method
+            else:
+                order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
 
         if len(query_parts) > 0:
             return "WHERE %s %s" % (" AND ".join(query_parts), order_by_query)
@@ -584,7 +642,7 @@ class SDBManager(object):
     def query_gql(self, query_string, *args, **kwds):
         raise NotImplementedError, "GQL queries not supported in SimpleDB"
 
-    def save_object(self, obj):
+    def save_object(self, obj, expected_value=None):
         if not obj.id:
             obj.id = str(uuid.uuid4())
 
@@ -610,7 +668,14 @@ class SDBManager(object):
                         raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
                     pass
-        self.domain.put_attributes(obj.id, attrs, replace=True)
+        # Convert the Expected value to SDB format
+        if expected_value:
+            prop = obj.find_property(expected_value[0])
+            v = expected_value[1]
+            if v is not None and not type(v) == bool:
+                v = self.encode_value(prop, v)
+            expected_value[1] = v
+        self.domain.put_attributes(obj.id, attrs, replace=True, expected_value=expected_value)
         if len(del_attrs) > 0:
             self.domain.delete_attributes(obj.id, del_attrs)
         return obj
@@ -619,6 +684,7 @@ class SDBManager(object):
         self.domain.delete_attributes(obj.id)
 
     def set_property(self, prop, obj, name, value):
+        setattr(obj, name, value)
         value = prop.get_value_for_datastore(obj)
         value = self.encode_value(prop, value)
         if prop.unique:

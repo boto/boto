@@ -3,7 +3,14 @@ import urlparse
 import boto
 import boto.connection
 import boto.jsonresponse
+import boto.exception
 import awsqueryrequest
+
+class NoCredentialsError(boto.exception.BotoClientError):
+
+    def __init__(self):
+        s = 'Unable to find credentials'
+        boto.exception.BotoClientError.__init__(self, s)
 
 class AWSQueryService(boto.connection.AWSQueryConnection):
 
@@ -14,24 +21,30 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
     Path = '/'
     Port = 443
     Provider = 'aws'
+    EnvURL = 'AWS_URL'
 
     Regions = []
 
     def __init__(self, **args):
         self.args = args
         self.check_for_credential_file()
-        self.check_for_euare_url()
+        self.check_for_env_url()
         if 'host' not in self.args:
-            region_name = self.args.get('region_name', self.Regions[0]['name'])
-            for region in self.Regions:
-                if region['name'] == region_name:
-                    self.args['host'] = region['endpoint']
+            if self.Regions:
+                region_name = self.args.get('region_name',
+                                            self.Regions[0]['name'])
+                for region in self.Regions:
+                    if region['name'] == region_name:
+                        self.args['host'] = region['endpoint']
         if 'path' not in self.args:
             self.args['path'] = self.Path
         if 'port' not in self.args:
             self.args['port'] = self.Port
-        boto.connection.AWSQueryConnection.__init__(self, **self.args)
-        self.aws_response = None
+        try:
+            boto.connection.AWSQueryConnection.__init__(self, **self.args)
+            self.aws_response = None
+        except boto.exception.NoAuthHandlerFound:
+            raise NoCredentialsError()
 
     def check_for_credential_file(self):
         """
@@ -52,21 +65,25 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
                 lines = fp.readlines()
                 fp.close()
                 for line in lines:
-                    name, value = line.split('=')
-                    if name.strip() == 'AWSAccessKeyId':
-                        if 'aws_access_key_id' not in self.args:
-                            self.args['aws_access_key_id'] = value.strip()
-                    elif name.strip() == 'AWSSecretKey':
-                        if 'aws_secret_access_key' not in self.args:
-                            self.args['aws_secret_access_key'] = value.strip()
+                    if line[0] != '#':
+                        if '=' in line:
+                            name, value = line.split('=', 1)
+                            if name.strip() == 'AWSAccessKeyId':
+                                if 'aws_access_key_id' not in self.args:
+                                    value = value.strip()
+                                    self.args['aws_access_key_id'] = value
+                            elif name.strip() == 'AWSSecretKey':
+                                if 'aws_secret_access_key' not in self.args:
+                                    value = value.strip()
+                                    self.args['aws_secret_access_key'] = value
             else:
                 print 'Warning: unable to read AWS_CREDENTIAL_FILE'
 
-    def check_for_euare_url(self):
+    def check_for_env_url(self):
         """
         First checks to see if a url argument was explicitly passed
         in.  If so, that will be used.  If not, it checks for the
-        existence of the EUARE_URL environment variable.
+        existence of the environment variable specified in ENV_URL.
         If this is set, it should contain a fully qualified URL to the
         service you want to use.
         Note that any values passed explicitly to the class constructor
@@ -75,9 +92,8 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         url = self.args.get('url', None)
         if url:
             del self.args['url']
-        # TODO: move EUARE_URL to class variable
-        if not url and 'EUARE_URL' in os.environ:
-            url = os.environ['EUARE_URL']
+        if not url and self.EnvURL in os.environ:
+            url = os.environ[self.EnvURL]
         if url:
             rslt = urlparse.urlparse(url)
             if 'is_secure' not in self.args:

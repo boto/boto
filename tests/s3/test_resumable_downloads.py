@@ -45,7 +45,16 @@ from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
-from tests.s3.cb_test_harnass import CallbackTestHarnass
+from cb_test_harnass import CallbackTestHarnass
+
+# We don't use the OAuth2 authentication plugin directly; importing it here
+# ensures that it's loaded and available by default.
+try:
+  from oauth2_plugin import oauth2_plugin
+except ImportError:
+  # Do nothing - if user doesn't have OAuth2 configured it doesn't matter;
+  # and if they do, the tests will fail (as they should in that case).
+  pass
 
 
 class ResumableDownloadTests(unittest.TestCase):
@@ -113,9 +122,9 @@ class ResumableDownloadTests(unittest.TestCase):
 
         # Create the test bucket.
         hostname = socket.gethostname().split('.')[0]
-        uri_base_str = 'gs://res_download_test_%s_%s_%s' % (
+        uri_base_str = 'gs://res-download-test-%s-%s-%s' % (
             hostname, os.getpid(), int(time.time()))
-        cls.src_bucket_uri = storage_uri('%s_dst' % uri_base_str)
+        cls.src_bucket_uri = storage_uri('%s-dst' % uri_base_str)
         cls.src_bucket_uri.create_bucket()
 
         # Create test source objects.
@@ -227,6 +236,22 @@ class ResumableDownloadTests(unittest.TestCase):
         """
         # Test one of the RETRYABLE_EXCEPTIONS.
         exception = ResumableDownloadHandler.RETRYABLE_EXCEPTIONS[0]
+        harnass = CallbackTestHarnass(exception=exception)
+        res_download_handler = ResumableDownloadHandler(num_retries=1)
+        self.small_src_key.get_contents_to_file(
+            self.dst_fp, cb=harnass.call,
+            res_download_handler=res_download_handler)
+        # Ensure downloaded object has correct content.
+        self.assertEqual(self.small_src_key_size,
+                         get_cur_file_size(self.dst_fp))
+        self.assertEqual(self.small_src_key_as_string,
+                         self.small_src_key.get_contents_as_string())
+
+    def test_broken_pipe_recovery(self):
+        """
+        Tests handling of a Broken Pipe (which interacts with an httplib bug)
+        """
+        exception = IOError(errno.EPIPE, "Broken pipe")
         harnass = CallbackTestHarnass(exception=exception)
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         self.small_src_key.get_contents_to_file(
@@ -353,88 +378,6 @@ class ResumableDownloadTests(unittest.TestCase):
         self.empty_src_key.get_contents_to_file(
             self.dst_fp, res_download_handler=res_download_handler)
         self.assertEqual(0, get_cur_file_size(self.dst_fp))
-
-    def test_download_with_object_size_change_between_starts(self):
-        """
-        Tests resumable download on an object that changes sizes between inital
-        download start and restart
-        """
-        harnass = CallbackTestHarnass(
-            fail_after_n_bytes=self.larger_src_key_size/2, num_times_to_fail=2)
-        # Set up first process' ResumableDownloadHandler not to do any
-        # retries (initial download request will establish expected size to
-        # download server).
-        res_download_handler = ResumableDownloadHandler(
-            tracker_file_name=self.tracker_file_name, num_retries=0)
-        try:
-            self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
-                res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # First abort (from harnass-forced failure) should be
-            # ABORT_CUR_PROCESS.
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
-            # Ensure a tracker file survived.
-            self.assertTrue(os.path.exists(self.tracker_file_name))
-        # Try it again, this time with different src key (simulating an
-        # object that changes sizes between downloads).
-        try:
-            self.small_src_key.get_contents_to_file(
-                self.dst_fp, res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # This abort should be a hard abort (object size changing during
-            # transfer).
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(
-                e.message.find('md5 signature doesn\'t match etag'), -1)
-
-    def test_download_with_file_content_change_during_download(self):
-        """
-        Tests resumable download on an object where the file content changes
-        without changing length while download in progress
-        """
-        harnass = CallbackTestHarnass(
-            fail_after_n_bytes=self.larger_src_key_size/2, num_times_to_fail=2)
-        # Set up first process' ResumableDownloadHandler not to do any
-        # retries (initial download request will establish expected size to
-        # download server).
-        res_download_handler = ResumableDownloadHandler(
-            tracker_file_name=self.tracker_file_name, num_retries=0)
-        dst_filename = self.dst_fp.name
-        try:
-            self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
-                res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # First abort (from harnass-forced failure) should be
-            # ABORT_CUR_PROCESS.
-            self.assertEqual(e.disposition,
-                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
-            # Ensure a tracker file survived.
-            self.assertTrue(os.path.exists(self.tracker_file_name))
-        # Before trying again change the first byte of the file fragment
-        # that was already downloaded.
-        orig_size = get_cur_file_size(self.dst_fp)
-        self.dst_fp.seek(0, os.SEEK_SET)
-        self.dst_fp.write('a')
-        # Ensure the file size didn't change.
-        self.assertEqual(orig_size, get_cur_file_size(self.dst_fp))
-        try:
-            self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
-                res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # This abort should be a hard abort (file content changing during
-            # transfer).
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(
-                e.message.find('md5 signature doesn\'t match etag'), -1)
-            # Ensure the bad data wasn't left around.
-            self.assertFalse(os.path.exists(dst_filename))
 
     def test_download_with_invalid_tracker_etag(self):
         """

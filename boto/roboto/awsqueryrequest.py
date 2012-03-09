@@ -24,6 +24,36 @@ import sys
 import os
 import boto
 import optparse
+import copy
+import boto.exception
+import boto.roboto.awsqueryservice
+
+import bdb
+import traceback
+try:
+    import epdb as debugger
+except ImportError:
+    import pdb as debugger
+
+def boto_except_hook(debugger_flag, debug_flag):
+    def excepthook(typ, value, tb):
+        if typ is bdb.BdbQuit:
+            sys.exit(1)
+        sys.excepthook = sys.__excepthook__
+
+        if debugger_flag and sys.stdout.isatty() and sys.stdin.isatty():
+            if debugger.__name__ == 'epdb':
+                debugger.post_mortem(tb, typ, value)
+            else:
+                debugger.post_mortem(tb)
+        elif debug_flag:
+            print traceback.print_tb(tb)
+            sys.exit(1)
+        else:
+            print value
+            sys.exit(1)
+
+    return excepthook
 
 class Line(object):
 
@@ -42,13 +72,25 @@ class Line(object):
             print self.line
             self.printed = True
 
-class RequiredParamError(Exception):
+class RequiredParamError(boto.exception.BotoClientError):
 
     def __init__(self, required):
         self.required = required
+        s = 'Required parameters are missing: %s' % self.required
+        boto.exception.BotoClientError.__init__(self, s)
 
-    def __str__(self):
-        return 'Required parameters are missing: %s' % self.required
+class EncoderError(boto.exception.BotoClientError):
+
+    def __init__(self, error_msg):
+        s = 'Error encoding value (%s)' % error_msg
+        boto.exception.BotoClientError.__init__(self, s)
+        
+class FilterError(boto.exception.BotoClientError):
+
+    def __init__(self, filters):
+        self.filters = filters
+        s = 'Unknown filters: %s' % self.filters
+        boto.exception.BotoClientError.__init__(self, s)
         
 class Encoder:
 
@@ -60,24 +102,25 @@ class Encoder:
             mthd = getattr(cls, 'encode_'+p.ptype)
             mthd(p, rp, v, label)
         except AttributeError:
-            raise 'Unknown type: %s' % p.ptype
+            raise EncoderError('Unknown type: %s' % p.ptype)
         
     @classmethod
     def encode_string(cls, p, rp, v, l):
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         rp[label] = v
 
     encode_file = encode_string
+    encode_enum = encode_string
 
     @classmethod
     def encode_integer(cls, p, rp, v, l):
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         rp[label] = '%d' % v
         
     @classmethod
@@ -85,7 +128,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         if v:
             v = 'true'
         else:
@@ -97,7 +140,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         rp[label] = v
         
     @classmethod
@@ -106,7 +149,7 @@ class Encoder:
         if l:
             label = l
         else:
-            label = boto.utils.awsify_name(p.name)
+            label = p.name
         label = label + '.%d'
         for i, value in enumerate(v):
             rp[label%(i+1)] = value
@@ -117,6 +160,7 @@ class AWSQueryRequest(object):
 
     Description = ''
     Params = []
+    Args = []
     Filters = []
     Response = {}
 
@@ -126,7 +170,8 @@ class AWSQueryRequest(object):
                   'enum' : 'choice',
                   'datetime' : 'string',
                   'dateTime' : 'string',
-                  'file' : 'string'}
+                  'file' : 'string',
+                  'boolean' : None}
 
     @classmethod
     def name(cls):
@@ -142,6 +187,7 @@ class AWSQueryRequest(object):
         self.list_markers = []
         self.item_markers = []
         self.request_params = {}
+        self.connection_args = None
 
     def __repr__(self):
         return self.name()
@@ -172,35 +218,68 @@ class AWSQueryRequest(object):
             retval = getattr(self.aws_response, 'requestId')
         return retval
 
-    def process_filters(self, args):
+    def process_filters(self):
+        filters = self.args.get('filters', [])
         filter_names = [f['name'] for f in self.Filters]
-        unknown_filters = [f for f in args if f not in filter_names]
+        unknown_filters = [f for f in filters if f not in filter_names]
         if unknown_filters:
-            raise ValueError, 'Unknown filters: %s' % unknown_filters
+            raise FilterError, 'Unknown filters: %s' % unknown_filters
         for i, filter in enumerate(self.Filters):
-            if filter['name'] in args:
-                self.request_params['Filter.%d.Name' % (i+1)] = filter['name']
-                for j, value in enumerate(boto.utils.mklist(args[filter['name']])):
+            name = filter['name']
+            if name in filters:
+                self.request_params['Filter.%d.Name' % (i+1)] = name
+                for j, value in enumerate(boto.utils.mklist(filters[name])):
                     Encoder.encode(filter, self.request_params, value,
                                    'Filter.%d.Value.%d' % (i+1,j+1))
 
-    def process_args(self):
-        required = [p.name for p in self.Params if not p.optional]
-        for param in self.Params:
+    def process_args(self, **args):
+        """
+        Responsible for walking through Params defined for the request and:
+
+        * Matching them with keyword parameters passed to the request
+          constructor or via the command line.
+        * Checking to see if all required parameters have been specified
+          and raising an exception, if not.
+        * Encoding each value into the set of request parameters that will
+          be sent in the request to the AWS service.
+        """
+        self.args.update(args)
+        self.connection_args = copy.copy(self.args)
+        if 'debug' in self.args and self.args['debug'] >= 2:
+            boto.set_stream_logger(self.name())
+        required = [p.name for p in self.Params+self.Args if not p.optional]
+        for param in self.Params+self.Args:
             if param.long_name:
                 python_name = param.long_name.replace('-', '_')
             else:
                 python_name = boto.utils.pythonize_name(param.name, '_')
+            value = None
             if python_name in self.args:
                 value = self.args[python_name]
-                if value is not None:
-                    if param.name in required:
-                        required.remove(param.name)
-                    Encoder.encode(param, self.request_params,
-                                   self.args[python_name])
-                del self.args[python_name]
+            if value is None:
+                value = param.default
+            if value is not None:
+                if param.name in required:
+                    required.remove(param.name)
+                if param.request_param:
+                    if param.encoder:
+                        param.encoder(param, self.request_params, value)
+                    else:
+                        Encoder.encode(param, self.request_params, value)
+            if python_name in self.args:
+                del self.connection_args[python_name]
         if required:
-            raise RequiredParamError(required)
+            l = []
+            for p in self.Params+self.Args:
+                if p.name in required:
+                    if p.short_name and p.long_name:
+                        l.append('(%s, %s)' % (p.optparse_short_name,
+                                               p.optparse_long_name))
+                    elif p.short_name:
+                        l.append('(%s)' % p.optparse_short_name)
+                    else:
+                        l.append('(%s)' % p.optparse_long_name)
+            raise RequiredParamError(','.join(l))
         boto.log.debug('request_params: %s' % self.request_params)
         self.process_markers(self.Response)
 
@@ -208,17 +287,17 @@ class AWSQueryRequest(object):
         if fmt and fmt['type'] == 'object':
             for prop in fmt['properties']:
                 self.process_markers(prop, fmt['name'])
-        elif fmt['type'] == 'array':
+        elif fmt and fmt['type'] == 'array':
             self.list_markers.append(prev_name)
             self.item_markers.append(fmt['name'])
         
-    def send(self, verb='GET'):
-        if 'debug' in self.args and self.args['debug'] >= 2:
-            boto.set_stream_logger(self.name())
-        conn = self.get_connection(**self.args)
+    def send(self, verb='GET', **args):
+        self.process_args(**args)
+        self.process_filters()
+        conn = self.get_connection(**self.connection_args)
         self.http_response = conn.make_request(self.name(),
                                                self.request_params,
-                                               conn.path, verb)
+                                               verb=verb)
         self.body = self.http_response.read()
         boto.log.debug(self.body)
         if self.http_response.status == 200:
@@ -240,6 +319,9 @@ class AWSQueryRequest(object):
         # add standard options that all commands get
         group.add_option('-D', '--debug', action='store_true',
                          help='Turn on all debugging output')
+        group.add_option('--debugger', action='store_true',
+                         default=False,
+                         help='Enable interactive debugger on error')
         group.add_option('-U', '--url', action='store',
                          help='Override service URL with value provided')
         group.add_option('--region', action='store',
@@ -248,6 +330,8 @@ class AWSQueryRequest(object):
                          help='Override access key value')
         group.add_option('-S', '--secret-key', action='store',
                          help='Override secret key value')
+        group.add_option('--version', action='store_true',
+                         help='Display version string')
         if self.Filters:
             self.group.add_option('--help-filters', action='store_true',
                                    help='Display list of available filters')
@@ -272,75 +356,114 @@ class AWSQueryRequest(object):
             self.args['aws_access_key_id'] = options.access_key_id
         if options.secret_key:
             self.args['aws_secret_access_key'] = options.secret_key
+        if options.version:
+            # TODO - Where should the version # come from?
+            print 'version x.xx'
+            exit(0)
+        sys.excepthook = boto_except_hook(options.debugger,
+                                          options.debug)
 
+    def get_usage(self):
+        s = 'usage: %prog [options] '
+        l = [ a.long_name for a in self.Args ]
+        s += ' '.join(l)
+        for a in self.Args:
+            if a.doc:
+                s += '\n\n\t%s - %s' % (a.long_name, a.doc)
+        return s
+    
     def build_cli_parser(self):
-        self.parser = optparse.OptionParser()
+        self.parser = optparse.OptionParser(description=self.Description,
+                                            usage=self.get_usage())
         self.add_standard_options()
         for param in self.Params:
-            if param.long_name:
-                ptype = None
-                if param.ptype in self.CLITypeMap:
-                    ptype = self.CLITypeMap[param.ptype]
-                    action = 'store'
-                elif param.ptype == 'boolean':
-                    action = 'store_true'
-                    ptype = None
-                elif param.ptype == 'array':
-                    if len(param.items) == 1:
-                        ptype = param.items[0]['type']
-                        action = 'append'
-                if ptype or action == 'store_true':
-                    if param.short_name:
-                        self.parser.add_option(param.optparse_short_name,
-                                               param.optparse_long_name,
-                                               action=action, type=ptype,
-                                               help=param.doc)
-                    elif param.long_name:
-                        self.parser.add_option(param.optparse_long_name,
-                                               action=action, type=ptype,
-                                               help=param.doc)
+            ptype = action = choices = None
+            if param.ptype in self.CLITypeMap:
+                ptype = self.CLITypeMap[param.ptype]
+                action = 'store'
+            if param.ptype == 'boolean':
+                action = 'store_true'
+            elif param.ptype == 'array':
+                if len(param.items) == 1:
+                    ptype = param.items[0]['type']
+                    action = 'append'
+            elif param.cardinality != 1:
+                action = 'append'
+            if ptype or action == 'store_true':
+                if param.short_name:
+                    self.parser.add_option(param.optparse_short_name,
+                                           param.optparse_long_name,
+                                           action=action, type=ptype,
+                                           choices=param.choices,
+                                           help=param.doc)
+                elif param.long_name:
+                    self.parser.add_option(param.optparse_long_name,
+                                           action=action, type=ptype,
+                                           choices=param.choices,
+                                           help=param.doc)
 
-    def do_cli(self, cli_args=None):
+    def do_cli(self):
         if not self.parser:
             self.build_cli_parser()
-        self.cli_options, self.cli_args = self.parser.parse_args(cli_args)
+        self.cli_options, self.cli_args = self.parser.parse_args()
         d = {}
         self.process_standard_options(self.cli_options, self.cli_args, d)
         for param in self.Params:
             if param.long_name:
                 p_name = param.long_name.replace('-', '_')
-                value = getattr(self.cli_options, p_name)
             else:
                 p_name = boto.utils.pythonize_name(param.name)
-                value = args
+            value = getattr(self.cli_options, p_name)
             if param.ptype == 'file' and value:
-                path = os.path.expanduser(value)
-                path = os.path.expandvars(path)
-                if os.path.isfile(path):
-                    fp = open(path)
-                    value = fp.read()
-                    print value
-                    fp.close()
+                if value == '-':
+                    value = sys.stdin.read()
                 else:
-                    self.parser.error('Unable to read file: %s' % path)
-                d[p_name] = value
+                    path = os.path.expanduser(value)
+                    path = os.path.expandvars(path)
+                    if os.path.isfile(path):
+                        fp = open(path)
+                        value = fp.read()
+                        fp.close()
+                    else:
+                        self.parser.error('Unable to read file: %s' % path)
+            d[p_name] = value
+        for arg in self.Args:
+            if arg.long_name:
+                p_name = arg.long_name.replace('-', '_')
+            else:
+                p_name = boto.utils.pythonize_name(arg.name)
+            value = None
+            if arg.cardinality == 1:
+                if len(self.cli_args) >= 1:
+                    value = self.cli_args[0]
+            else:
+                value = self.cli_args
+            d[p_name] = value
         self.args.update(d)
-        try:
-            self.process_args()
-        except RequiredParamError as e:
-            print e
-            sys.exit(1)
         if hasattr(self.cli_options, 'filter') and self.cli_options.filter:
             d = {}
             for filter in self.cli_options.filter:
                 name, value = filter.split('=')
                 d[name] = value
-            self.process_filters(d)
+            if 'filters' in self.args:
+                self.args['filters'].update(d)
+            else:
+                self.args['filters'] = d
         try:
-            response = self.send()
+            response = self.main()
             self.cli_formatter(response)
-        except self.get_connection().ResponseError as err:
+        except RequiredParamError, e:
+            print e
+            sys.exit(1)
+        except self.ServiceClass.ResponseError, err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
+            sys.exit(1)
+        except boto.roboto.awsqueryservice.NoCredentialsError, err:
+            print 'Unable to find credentials.'
+            sys.exit(1)
+        except Exception, e:
+            print e
+            sys.exit(1)
 
     def _generic_cli_formatter(self, fmt, data, label=''):
         if fmt['type'] == 'object':
@@ -375,6 +498,7 @@ class AWSQueryRequest(object):
         :type data: dict
         :param data: The data returned by AWS.
         """
-        self._generic_cli_formatter(self.Response, data)
+        if data:
+            self._generic_cli_formatter(self.Response, data)
 
 

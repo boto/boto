@@ -65,7 +65,7 @@ class ByteTranslatingCallbackHandler(object):
 
     def call(self, total_bytes_uploaded, total_size):
         self.proxied_cb(self.download_start_point + total_bytes_uploaded,
-                        self.download_start_point + total_size)
+                        total_size)
 
 
 def get_cur_file_size(fp, position_to_eof=False):
@@ -212,27 +212,6 @@ class ResumableDownloadHandler(object):
                      override_num_retries=0)
         fp.flush()
 
-    def _check_final_md5(self, key, file_name):
-        """
-        Checks that etag from server agrees with md5 computed after the
-        download completes. This is important, since the download could
-        have spanned a number of hours and multiple processes (e.g.,
-        gsutil runs), and the user could change some of the file and not
-        realize they have inconsistent data.
-        """
-        fp = open(file_name, 'r')
-        if key.bucket.connection.debug >= 1:
-            print 'Checking md5 against etag.'
-        hex_md5 = key.compute_md5(fp)[0]
-        if hex_md5 != key.etag.strip('"\''):
-            file_name = fp.name
-            fp.close()
-            os.unlink(file_name)
-            raise ResumableDownloadException(
-                'File changed during download: md5 signature doesn\'t match '
-                'etag (incorrect downloaded file deleted)',
-                ResumableTransferDisposition.ABORT)
-
     def get_file(self, key, fp, headers, cb=None, num_cb=10, torrent=False,
                  version_id=None):
         """
@@ -287,13 +266,23 @@ class ResumableDownloadHandler(object):
                                                  torrent, version_id)
                 # Download succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
-                self._check_final_md5(key, fp.name)
+                # Previously, check_final_md5() was called here to validate 
+                # downloaded file's checksum, however, to be consistent with
+                # non-resumable downloads, this call was removed. Checksum
+                # validation of file contents should be done by the caller.
                 if debug >= 1:
                     print 'Resumable download complete.'
                 return
             except self.RETRYABLE_EXCEPTIONS, e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
+                if isinstance(e, IOError) and e.errno == errno.EPIPE:
+                    # Broken pipe error causes httplib to immediately
+                    # close the socket (http://bugs.python.org/issue5542),
+                    # so we need to close and reopen the key before resuming
+                    # the download.
+                    key.get_file(fp, headers, cb, num_cb, torrent, version_id,
+                                 override_num_retries=0)
             except ResumableDownloadException, e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
@@ -329,7 +318,14 @@ class ResumableDownloadHandler(object):
 
             # Close the key, in case a previous download died partway
             # through and left data in the underlying key HTTP buffer.
-            key.close()
+            # Do this within a try/except block in case the connection is
+            # closed (since key.close() attempts to do a final read, in which
+            # case this read attempt would get an IncompleteRead exception,
+            # which we can safely ignore.
+            try:
+                key.close()
+            except httplib.IncompleteRead:
+                pass
 
             sleep_time_secs = 2**progress_less_iterations
             if debug >= 1:

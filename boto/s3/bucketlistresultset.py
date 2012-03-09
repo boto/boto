@@ -31,7 +31,7 @@ def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None):
         for k in rs:
             yield k
         if k:
-            marker = k.name
+            marker = rs.next_marker or k.name
         more_results= rs.is_truncated
         
 class BucketListResultSet:
@@ -52,7 +52,8 @@ class BucketListResultSet:
 
     def __iter__(self):
         return bucket_lister(self.bucket, prefix=self.prefix,
-                             delimiter=self.delimiter, marker=self.marker, headers=self.headers)
+                             delimiter=self.delimiter, marker=self.marker,
+                             headers=self.headers)
 
 def versioned_bucket_lister(bucket, prefix='', delimiter='',
                             key_marker='', version_id_marker='', headers=None):
@@ -64,7 +65,8 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
     while more_results:
         rs = bucket.get_all_versions(prefix=prefix, key_marker=key_marker,
                                      version_id_marker=version_id_marker,
-                                     delimiter=delimiter, headers=headers)
+                                     delimiter=delimiter, headers=headers,
+                                     max_keys=999)
         for k in rs:
             yield k
         key_marker = rs.next_key_marker

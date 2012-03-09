@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
+import os
+import boto
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo']
 autoclass_content="both"
@@ -9,7 +10,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 project = u'boto'
 copyright = u'2009,2010, Mitch Garnaat'
-version = '2.0'
+version = boto.__version__
 exclude_trees = []
 pygments_style = 'sphinx'
 html_theme = 'boto_theme'
@@ -28,4 +29,4 @@ try:
 except Exception, e:
     print e
 
-html_title = "boto v%s (r%s)" % (version, release)
+html_title = "boto v%s" % version

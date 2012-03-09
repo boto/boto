@@ -22,7 +22,8 @@
 class Question(object):
     template = "<Question>%(items)s</Question>"
     
-    def __init__(self, identifier, content, answer_spec, is_required=False, display_name=None):
+    def __init__(self, identifier, content, answer_spec,
+                 is_required=False, display_name=None):
         # copy all of the parameters into object attributes
         self.__dict__.update(vars())
         del self.self
@@ -176,27 +177,31 @@ class QuestionForm(ValidatingXML, list):
     """
     From the AMT API docs:
     
-    The top-most element of the QuestionForm data structure is a QuestionForm element. This
-    element contains optional Overview elements and one or more Question elements. There can be
-    any number of these two element types listed in any order. The following example structure has an
-    Overview element and a Question element followed by a second Overview element and Question
-    element--all within the same QuestionForm.
+    The top-most element of the QuestionForm data structure is a
+    QuestionForm element. This element contains optional Overview
+    elements and one or more Question elements. There can be any
+    number of these two element types listed in any order. The
+    following example structure has an Overview element and a
+    Question element followed by a second Overview element and
+    Question element--all within the same QuestionForm.
     
-    <QuestionForm xmlns="[the QuestionForm schema URL]">
-        <Overview>
+    ::
+    
+        <QuestionForm xmlns="[the QuestionForm schema URL]">
+            <Overview>
+                [...]
+            </Overview>
+            <Question>
+                [...]
+            </Question>
+            <Overview>
+                [...]
+            </Overview>
+            <Question>
+                [...]
+            </Question>
             [...]
-        </Overview>
-        <Question>
-            [...]
-        </Question>
-        <Overview>
-            [...]
-        </Overview>
-        <Question>
-            [...]
-        </Question>
-        [...]
-    </QuestionForm>
+        </QuestionForm>
     
     QuestionForm is implemented as a list, so to construct a
     QuestionForm, simply append Questions and Overviews (with at least
@@ -291,13 +296,14 @@ class FreeTextAnswer(object):
 
     def __init__(self, default=None, constraints=None, num_lines=None):
         self.default = default
-        if constraints is None: constraints = Constraints()
-        self.constraints = Constraints(constraints)
+        if constraints is None:
+            self.constraints = Constraints()
+        else:
+            self.constraints = Constraints(constraints)
         self.num_lines = num_lines
     
     def get_as_xml(self):
-        constraints = Constraints()
-        items = [constraints]
+        items = [self.constraints]
         if self.default:
             items.append(SimpleField('DefaultText', self.default))
         if self.num_lines:
@@ -306,7 +312,7 @@ class FreeTextAnswer(object):
         return self.template % vars()
 
 class FileUploadAnswer(object):
-    template = """<FileUploadAnswer><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes></FileUploadAnswer>"""
+    template = """<FileUploadAnswer><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes></FileUploadAnswer>"""
     
     def __init__(self, min_bytes, max_bytes):
         assert 0 <= min_bytes <= max_bytes <= 2*10**9

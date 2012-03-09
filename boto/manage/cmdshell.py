@@ -72,20 +72,27 @@ class SSHClient(object):
                 retry += 1
         print 'Could not establish SSH connection'
 
+    def open_sftp(self):
+        return self._ssh_client.open_sftp()
+
     def get_file(self, src, dst):
-        sftp_client = self._ssh_client.open_sftp()
+        sftp_client = self.open_sftp()
         sftp_client.get(src, dst)
 
     def put_file(self, src, dst):
-        sftp_client = self._ssh_client.open_sftp()
+        sftp_client = self.open_sftp()
         sftp_client.put(src, dst)
 
-    def listdir(self, path):
-        sftp_client = self._ssh_client.open_sftp()
-        return sftp_client.listdir(path)
+    def open(self, filename, mode='r', bufsize=-1):
+        """
+        Open a file on the remote system and return a file-like object.
+        """
+        sftp_client = self.open_sftp()
+        return sftp_client.open(filename, mode, bufsize)
 
-    def open_sftp(self):
-        return self._ssh_client.open_sftp()
+    def listdir(self, path):
+        sftp_client = self.open_sftp()
+        return sftp_client.listdir(path)
 
     def isdir(self, path):
         status = self.run('[ -d %s ] || echo "FALSE"' % path)
@@ -100,24 +107,43 @@ class SSHClient(object):
         return 1
 
     def shell(self):
+        """
+        Start an interactive shell session on the remote host.
+        """
         channel = self._ssh_client.invoke_shell()
         interactive_shell(channel)
 
     def run(self, command):
-        boto.log.info('running:%s on %s' % (command, self.server.instance_id))
-        log_fp = StringIO.StringIO()
+        """
+        Execute a command on the remote host.  Return a tuple containing
+        an integer status and a two strings, the first containing stdout
+        and the second containing stderr from the command.
+        """
+        boto.log.debug('running:%s on %s' % (command, self.server.instance_id))
         status = 0
         try:
             t = self._ssh_client.exec_command(command)
         except paramiko.SSHException:
             status = 1
-        log_fp.write(t[1].read())
-        log_fp.write(t[2].read())
+        std_out = t[1].read()
+        std_err = t[2].read()
         t[0].close()
         t[1].close()
         t[2].close()
-        boto.log.info('output: %s' % log_fp.getvalue())
-        return (status, log_fp.getvalue())
+        boto.log.debug('stdout: %s' % std_out)
+        boto.log.debug('stderr: %s' % std_err)
+        return (status, std_out, std_err)
+
+    def run_pty(self, command):
+        """
+        Execute a command on the remote host with a pseudo-terminal.
+        Returns a string containing the output of the command.
+        """
+        boto.log.debug('running:%s on %s' % (command, self.server.instance_id))
+        channel = self._ssh_client.get_transport().open_session()
+        channel.get_pty()
+        channel.exec_command(command)
+        return channel.recv(1024)
 
     def close(self):
         transport = self._ssh_client.get_transport()
@@ -166,9 +192,50 @@ class LocalClient(object):
     def close(self):
         pass
 
+class FakeServer(object):
+    """
+    A little class to fake out SSHClient (which is expecting a
+    :class`boto.manage.server.Server` instance.  This allows us
+    to 
+    """
+    def __init__(self, instance, ssh_key_file):
+        self.instance = instance
+        self.ssh_key_file = ssh_key_file
+        self.hostname = instance.dns_name
+        self.instance_id = self.instance.id
+        
 def start(server):
     instance_id = boto.config.get('Instance', 'instance-id', None)
     if instance_id == server.instance_id:
         return LocalClient(server)
     else:
         return SSHClient(server)
+
+def sshclient_from_instance(instance, ssh_key_file,
+                            host_key_file='~/.ssh/known_hosts',
+                            user_name='root', ssh_pwd=None):
+    """
+    Create and return an SSHClient object given an
+    instance object.
+
+    :type instance: :class`boto.ec2.instance.Instance` object
+    :param instance: The instance object.
+
+    :type ssh_key_file: str
+    :param ssh_key_file: A path to the private key file used
+                         to log into instance.
+
+    :type host_key_file: str
+    :param host_key_file: A path to the known_hosts file used
+                          by the SSH client.
+                          Defaults to ~/.ssh/known_hosts
+    :type user_name: str
+    :param user_name: The username to use when logging into
+                      the instance.  Defaults to root.
+
+    :type ssh_pwd: str
+    :param ssh_pwd: The passphrase, if any, associated with
+                    private key.
+    """
+    s = FakeServer(instance, ssh_key_file)
+    return SSHClient(s, host_key_file, user_name, ssh_pwd)

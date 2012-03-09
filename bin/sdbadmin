@@ -27,6 +27,15 @@ import boto
 import time
 from boto import sdb
 
+# Allow support for JSON
+try:
+    import simplejson as json
+except:
+    try:
+        import json
+    except:
+        json = False
+
 def choice_input(options, default=None, title=None):
     """
     Choice input
@@ -50,11 +59,17 @@ def confirm(message="Are you sure?"):
     return choice and len(choice) > 0 and choice[0].lower() == "y"
 
 
-def dump_db(domain, file_name):
+def dump_db(domain, file_name, use_json=False):
     """
     Dump SDB domain to file
     """
-    doc = domain.to_xml(open(file_name, "w"))
+    f = open(file_name, "w")
+    if use_json:
+        for item in domain:
+            data = {"name": item.name, "attributes": item}
+            print >> f, json.dumps(data)
+    else:
+        doc = domain.to_xml(f)
 
 def empty_db(domain):
     """
@@ -63,7 +78,7 @@ def empty_db(domain):
     for item in domain:
         item.delete()
 
-def load_db(domain, file):
+def load_db(domain, file, use_json=False):
     """
     Load a domain from a file, this doesn't overwrite any existing
     data in the file so if you want to do a full recovery and restore
@@ -72,7 +87,16 @@ def load_db(domain, file):
     :param domain: The SDB Domain object to load to
     :param file: The File to load the DB from
     """
-    domain.from_xml(file)
+    if use_json:
+        for line in file.readlines():
+            if line:
+                data = json.loads(line)
+                item = domain.new_item(data['name'])
+                item.update(data['attributes'])
+                item.save()
+                
+    else:
+        domain.from_xml(file)
 
 def create_db(domain_name, region_name):
     """Create a new DB
@@ -95,6 +119,8 @@ if __name__ == "__main__":
     parser.add_option("-c", "--create", help="Create domain", dest="create", default=False, action="store_true")
 
     parser.add_option("-a", "--all-domains", help="Operate on all domains", action="store_true", default=False, dest="all_domains")
+    if json:
+        parser.add_option("-j", "--use-json", help="Load/Store as JSON instead of XML", action="store_true", default=False, dest="json")
     parser.add_option("-d", "--domain", help="Do functions on domain (may be more then one)", action="append", dest="domains")
     parser.add_option("-f", "--file", help="Input/Output file we're operating on", dest="file_name")
     parser.add_option("-r", "--region", help="Region (e.g. us-east-1[default] or eu-west-1)", default="us-east-1", dest="region_name")
@@ -152,7 +178,7 @@ if __name__ == "__main__":
                 file_name = options.file_name
             else:
                 file_name = "%s.db" % domain.name
-            dump_db(domain, file_name)
+            dump_db(domain, file_name, options.json)
 
     if options.load:
         for domain in domains:
@@ -161,7 +187,7 @@ if __name__ == "__main__":
                 file_name = options.file_name
             else:
                 file_name = "%s.db" % domain.name
-            load_db(domain, open(file_name, "rb"))
+            load_db(domain, open(file_name, "rb"), options.json)
 
 
     total_time = round(time.time() - stime, 2)

@@ -37,6 +37,8 @@ if __name__ == "__main__":
     parser.add_option("-t", "--to", help="Optional to address to send to (default from your boto.cfg)", action="store", default=None, dest="to")
     parser.add_option("-s", "--subject", help="Optional Subject to send this report as", action="store", default="Report", dest="subject")
     parser.add_option("-f", "--file", help="Optionally, read from a file instead of STDIN", action="store", default=None, dest="file")
+    parser.add_option("--html", help="HTML Format the email", action="store_true", default=False, dest="html")
+    parser.add_option("--no-instance-id", help="If set, don't append the instance id", action="store_false", default=True, dest="append_instance_id")
 
     (options, args) = parser.parse_args()
     if options.file:
@@ -44,4 +46,7 @@ if __name__ == "__main__":
     else:
         body = sys.stdin.read()
 
-    notify(options.subject, body=body, to_string=options.to)
+    if options.html:
+        notify(options.subject, html_body=body, to_string=options.to, append_instance_id=options.append_instance_id)
+    else:
+        notify(options.subject, body=body, to_string=options.to, append_instance_id=options.append_instance_id)

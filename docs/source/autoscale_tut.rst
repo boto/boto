@@ -42,12 +42,12 @@ Like EC2 the Autoscale service has a different endpoint for each region. By
 default the US endpoint is used. To choose a specific region, instantiate the
 AutoScaleConnection object with that region's endpoint.
 
->>> ec2 = boto.connect_autoscale(host='eu-west-1.autoscaling.amazonaws.com')
+>>> ec2 = boto.connect_autoscale(host='autoscaling.eu-west-1.amazonaws.com')
 
 Alternatively, edit your boto.cfg with the default Autoscale endpoint to use::
 
     [Boto]
-    autoscale_endpoint = eu-west-1.autoscaling.amazonaws.com
+    autoscale_endpoint = autoscaling.eu-west-1.amazonaws.com
 
 Getting Existing AutoScale Groups
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

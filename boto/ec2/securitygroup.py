@@ -1,4 +1,5 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2011, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,34 +23,45 @@
 """
 Represents an EC2 Security Group
 """
-from boto.ec2.ec2object import EC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 from boto.exception import BotoClientError
 
-class SecurityGroup(EC2Object):
+class SecurityGroup(TaggedEC2Object):
     
     def __init__(self, connection=None, owner_id=None,
-                 name=None, description=None):
-        EC2Object.__init__(self, connection)
+                 name=None, description=None, id=None):
+        TaggedEC2Object.__init__(self, connection)
+        self.id = id
         self.owner_id = owner_id
         self.name = name
         self.description = description
-        self.rules = []
+        self.vpc_id = None
+        self.rules = IPPermissionsList()
+        self.rules_egress = IPPermissionsList()
 
     def __repr__(self):
         return 'SecurityGroup:%s' % self.name
 
     def startElement(self, name, attrs, connection):
-        if name == 'item':
-            self.rules.append(IPPermissions(self))
-            return self.rules[-1]
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
+        if name == 'ipPermissions':
+            return self.rules
+        elif name == 'ipPermissionsEgress':
+            return self.rules_egress
         else:
             return None
 
     def endElement(self, name, value, connection):
         if name == 'ownerId':
             self.owner_id = value
+        elif name == 'groupId':
+            self.id = value
         elif name == 'groupName':
             self.name = value
+        elif name == 'vpcId':
+            self.vpc_id = value
         elif name == 'groupDescription':
             self.description = value
         elif name == 'ipRanges':
@@ -128,12 +140,13 @@ class SecurityGroup(EC2Object):
         :type to_port: int
         :param to_port: The ending port number you are enabling
 
-        :type to_port: string
-        :param to_port: The CIDR block you are providing access to.
+        :type cidr_ip: string
+        :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
                          :class:`boto.ec2.securitygroup.GroupOrCIDR`
+        :param src_group: The Security Group you are granting access to.
                          
         :rtype: bool
         :return: True if successful.
@@ -202,26 +215,46 @@ class SecurityGroup(EC2Object):
         sg = rconn.create_security_group(name or self.name, self.description)
         source_groups = []
         for rule in self.rules:
-            grant = rule.grants[0]
-            if grant.name:
-                if grant.name not in source_groups:
-                    source_groups.append(grant.name)
-                    sg.authorize(None, None, None, None, grant)
-            else:
-                sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
-                             grant.cidr_ip)
+            for grant in rule.grants:
+                if grant.name:
+                    if grant.name not in source_groups:
+                        source_groups.append(grant.name)
+                        sg.authorize(None, None, None, None, grant)
+                else:
+                    sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
+                                 grant.cidr_ip)
         return sg
 
     def instances(self):
+        """
+        Find all of the current instances that are running within this
+        security group.
+
+        :rtype: list of :class:`boto.ec2.instance.Instance`
+        :return: A list of Instance objects
+        """
+        # It would be more efficient to do this with filters now
+        # but not all services that implement EC2 API support filters.
         instances = []
         rs = self.connection.get_all_instances()
         for reservation in rs:
-            uses_group = [g.id for g in reservation.groups if g.id == self.name]
+            uses_group = [g.name for g in reservation.groups if g.name == self.name]
             if uses_group:
                 instances.extend(reservation.instances)
         return instances
 
-class IPPermissions:
+class IPPermissionsList(list):
+    
+    def startElement(self, name, attrs, connection):
+        if name == 'item':
+            self.append(IPPermissions(self))
+            return self[-1]
+        return None
+
+    def endElement(self, name, value, connection):
+        pass
+            
+class IPPermissions(object):
 
     def __init__(self, parent=None):
         self.parent = parent
@@ -258,7 +291,7 @@ class IPPermissions:
         self.grants.append(grant)
         return grant
 
-class GroupOrCIDR:
+class GroupOrCIDR(object):
 
     def __init__(self, parent=None):
         self.owner_id = None

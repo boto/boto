@@ -1,5 +1,6 @@
 # Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
+# Copyright (c) 2011, Nexenta Systems Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,16 +22,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import boto
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
 import boto.plugin
 import os, re, sys
 import logging
 import logging.config
+import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.0b5'
+__version__ = '2.2.2-dev'
 Version = __version__ # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
@@ -109,10 +110,10 @@ def connect_s3(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
 def connect_gs(gs_access_key_id=None, gs_secret_access_key=None, **kwargs):
     """
     @type gs_access_key_id: string
-    @param gs_access_key_id: Your Google Storage Access Key ID
+    @param gs_access_key_id: Your Google Cloud Storage Access Key ID
 
     @type gs_secret_access_key: string
-    @param gs_secret_access_key: Your Google Storage Secret Access Key
+    @param gs_secret_access_key: Your Google Cloud Storage Secret Access Key
 
     @rtype: L{GSConnection<boto.gs.connection.GSConnection>}
     @return: A connection to Google's Storage service
@@ -264,10 +265,10 @@ def connect_emr(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
-   
+
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
-   
+
     :rtype: :class:`boto.emr.EmrConnection`
     :return: A connection to Elastic mapreduce
     """
@@ -317,7 +318,21 @@ def connect_route53(aws_access_key_id=None, aws_secret_access_key=None, **kwargs
     from boto.route53 import Route53Connection
     return Route53Connection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
-def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
+def connect_cloudformation(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudformation.CloudFormationConnection`
+    :return: A connection to Amazon's CloudFormation Service
+    """
+    from boto.cloudformation import CloudFormationConnection
+    return CloudFormationConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+def connect_euca(host=None, aws_access_key_id=None, aws_secret_access_key=None,
                  port=8773, path='/services/Eucalyptus', is_secure=False,
                  **kwargs):
     """
@@ -325,7 +340,7 @@ def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
 
     :type host: string
     :param host: the host name or ip address of the Eucalyptus server
-    
+
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
 
@@ -338,12 +353,58 @@ def connect_euca(host, aws_access_key_id=None, aws_secret_access_key=None,
     from boto.ec2 import EC2Connection
     from boto.ec2.regioninfo import RegionInfo
 
+    # Check for values in boto config, if not supplied as args
+    if not aws_access_key_id:
+        aws_access_key_id = config.get('Credentials',
+                                       'euca_access_key_id',
+                                       None)
+    if not aws_secret_access_key:
+        aws_secret_access_key = config.get('Credentials',
+                                           'euca_secret_access_key',
+                                           None)
+    if not host:
+        host = config.get('Boto', 'eucalyptus_host', None)
+
     reg = RegionInfo(name='eucalyptus', endpoint=host)
     return EC2Connection(aws_access_key_id, aws_secret_access_key,
                          region=reg, port=port, path=path,
                          is_secure=is_secure, **kwargs)
 
-def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
+def connect_ec2_endpoint(url, aws_access_key_id=None, aws_secret_access_key=None, 
+                         **kwargs):
+    """
+    Connect to an EC2 Api endpoint.  Additional arguments are passed
+    through to connect_ec2.
+
+    :type url: string
+    :param url: A url for the ec2 api endpoint to connect to
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ec2.connection.EC2Connection`
+    :return: A connection to Eucalyptus server
+    """
+    from boto.ec2.regioninfo import RegionInfo
+
+    purl = urlparse.urlparse(url)
+    kwargs['port'] = purl.port
+    kwargs['host'] = purl.hostname
+    kwargs['path'] = purl.path
+    if not 'is_secure' in kwargs:
+        kwargs['is_secure'] = (purl.scheme == "https")
+
+    kwargs['region'] = RegionInfo(name = purl.hostname,
+        endpoint = purl.hostname)
+    kwargs['aws_access_key_id']=aws_access_key_id
+    kwargs['aws_secret_access_key']=aws_secret_access_key
+
+    return(connect_ec2(**kwargs))
+
+def connect_walrus(host=None, aws_access_key_id=None, aws_secret_access_key=None,
                    port=8773, path='/services/Walrus', is_secure=False,
                    **kwargs):
     """
@@ -351,7 +412,7 @@ def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
 
     :type host: string
     :param host: the host name or ip address of the Walrus server
-    
+
     :type aws_access_key_id: string
     :param aws_access_key_id: Your AWS Access Key ID
 
@@ -364,6 +425,18 @@ def connect_walrus(host, aws_access_key_id=None, aws_secret_access_key=None,
     from boto.s3.connection import S3Connection
     from boto.s3.connection import OrdinaryCallingFormat
 
+    # Check for values in boto config, if not supplied as args
+    if not aws_access_key_id:
+        aws_access_key_id = config.get('Credentials',
+                                       'euca_access_key_id',
+                                       None)
+    if not aws_secret_access_key:
+        aws_secret_access_key = config.get('Credentials',
+                                           'euca_secret_access_key',
+                                           None)
+    if not host:
+        host = config.get('Boto', 'walrus_host', None)
+        
     return S3Connection(aws_access_key_id, aws_secret_access_key,
                         host=host, port=port, path=path,
                         calling_format=OrdinaryCallingFormat(),
@@ -383,6 +456,20 @@ def connect_ses(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     from boto.ses import SESConnection
     return SESConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
 
+def connect_sts(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.sts.STSConnection`
+    :return: A connection to Amazon's STS
+    """
+    from boto.sts import STSConnection
+    return STSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
 def connect_ia(ia_access_key_id=None, ia_secret_access_key=None,
                is_secure=False, **kwargs):
     """
@@ -394,9 +481,10 @@ def connect_ia(ia_access_key_id=None, ia_secret_access_key=None,
                              section called "ia_access_key_id"
 
     :type ia_secret_access_key: string
-    :param ia_secret_access_key: Your IA Secret Access Key.  This will also look in your
-                                 boto config file for an entry in the Credentials
-                                 section called "ia_secret_access_key"
+    :param ia_secret_access_key: Your IA Secret Access Key.  This will also
+                                 look in your boto config file for an entry
+                                 in the Credentials section called
+                                 "ia_secret_access_key"
 
     :rtype: :class:`boto.s3.connection.S3Connection`
     :return: A connection to the Internet Archive
@@ -413,6 +501,22 @@ def connect_ia(ia_access_key_id=None, ia_secret_access_key=None,
                         host='s3.us.archive.org',
                         calling_format=OrdinaryCallingFormat(),
                         is_secure=is_secure, **kwargs)
+
+def connect_dynamodb(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.dynamodb.layer2.Layer2`
+    :return: A connection to the Layer2 interface for DynamoDB.
+    """
+    from boto.dynamodb.layer2 import Layer2
+    return Layer2(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 def check_extensions(module_name, module_path):
     """
@@ -452,7 +556,8 @@ def lookup(service, name):
     return obj
 
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
-                bucket_storage_uri_class=BucketStorageUri):
+                bucket_storage_uri_class=BucketStorageUri,
+                suppress_consec_slashes=True):
     """
     Instantiate a StorageUri from a URI string.
 
@@ -466,6 +571,8 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     :param validate: whether to check for bucket name validity.
     :type bucket_storage_uri_class: BucketStorageUri interface.
     :param bucket_storage_uri_class: Allows mocking for unit tests.
+    :param suppress_consec_slashes: If provided, controls whether
+        consecutive slashes will be suppressed in key paths.
 
     We allow validate to be disabled to allow caller
     to implement bucket-level wildcarding (outside the boto library;
@@ -506,7 +613,10 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     if scheme == 'file':
         # For file URIs we have no bucket name, and use the complete path
         # (minus 'file://') as the object name.
-        return FileStorageUri(path, debug)
+        is_stream = False
+        if path == '-':
+            is_stream = True
+        return FileStorageUri(path, debug, is_stream)
     else:
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]
@@ -524,7 +634,9 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
         object_name = ''
         if len(path_parts) > 1:
             object_name = path_parts[1]
-        return bucket_storage_uri_class(scheme, bucket_name, object_name, debug)
+        return bucket_storage_uri_class(
+            scheme, bucket_name, object_name, debug,
+            suppress_consec_slashes=suppress_consec_slashes)
 
 def storage_uri_for_key(key):
     """Returns a StorageUri for the given key.

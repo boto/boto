@@ -41,7 +41,7 @@ class MTurkConnection(AWSQueryConnection):
     APIVersion = '2008-08-02'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=None, debug=0,
                  https_connection_factory=None):
@@ -228,8 +228,9 @@ class MTurkConnection(AWSQueryConnection):
         Change the HIT type of an existing HIT. Note that the reward associated
         with the new HIT type must match the reward of the current HIT type in
         order for the operation to be valid.
-        \thit_id is a string
-        \thit_type is a string
+        
+        :type hit_id: str
+        :type hit_type: str
         """
         params = {'HITId' : hit_id,
                   'HITTypeId': hit_type}
@@ -515,9 +516,9 @@ class MTurkConnection(AWSQueryConnection):
         """
         Send a text message to workers.
         """
-        params = {'WorkerId' : worker_ids,
-                  'Subject' : subject,
+        params = {'Subject' : subject,
                   'MessageText': message_text}
+        self.build_list_params(params, worker_ids, 'WorkerId')
 
         return self._process_request('NotifyWorkers', params)
 
@@ -559,8 +560,8 @@ class MTurkConnection(AWSQueryConnection):
 
         test_duration: the number of seconds a worker has to complete the test.
 
-        auto_granted: if True, requests for the Qualification are granted immediately.
-          Can't coexist with a test.
+        auto_granted: if True, requests for the Qualification are granted
+           immediately.  Can't coexist with a test.
 
         auto_granted_value: auto_granted qualifications are given this value.
 
@@ -571,7 +572,7 @@ class MTurkConnection(AWSQueryConnection):
                   'QualificationTypeStatus' : status,
                   }
         if retry_delay is not None:
-            params['RetryDelay'] = retry_delay
+            params['RetryDelayInSeconds'] = retry_delay
 
         if test is not None:
             assert(isinstance(test, QuestionForm))
@@ -579,7 +580,7 @@ class MTurkConnection(AWSQueryConnection):
             params['Test'] = test.get_as_xml()
 
         if test_duration is not None:
-            params['TestDuration'] = test_duration
+            params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
             if isinstance(answer_key, basestring):
@@ -589,7 +590,7 @@ class MTurkConnection(AWSQueryConnection):
                 # Eventually someone will write an AnswerKey class.
 
         if auto_granted:
-            assert(test is False)
+            assert(test is None)
             params['AutoGranted'] = True
             params['AutoGrantedValue'] = auto_granted_value
 
@@ -628,14 +629,14 @@ class MTurkConnection(AWSQueryConnection):
             params['QualificationTypeStatus'] = status
 
         if retry_delay is not None:
-            params['RetryDelay'] = retry_delay
+            params['RetryDelayInSeconds'] = retry_delay
 
         if test is not None:
             assert(isinstance(test, QuestionForm))
             params['Test'] = test.get_as_xml()
 
         if test_duration is not None:
-            params['TestDuration'] = test_duration
+            params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
             if isinstance(answer_key, basestring):
@@ -671,7 +672,7 @@ class MTurkConnection(AWSQueryConnection):
                   'MustBeRequestable' : must_be_requestable,
                   'MustBeOwnedByCaller' : must_be_owned_by_caller}
         return self._process_request('SearchQualificationTypes', params,
-                                     [('QualificationType', QualificationType),])
+                    [('QualificationType', QualificationType),])
 
     def get_qualification_requests(self, qualification_type_id,
                                    sort_by='Expiration',
@@ -684,7 +685,7 @@ class MTurkConnection(AWSQueryConnection):
                   'PageSize' : page_size,
                   'PageNumber' : page_number}
         return self._process_request('GetQualificationRequests', params,
-                                     [('QualificationRequest', QualificationRequest),])
+                    [('QualificationRequest', QualificationRequest),])
 
     def grant_qualification(self, qualification_request_id, integer_value=1):
         """TODO: Document."""
@@ -705,8 +706,23 @@ class MTurkConnection(AWSQueryConnection):
         params = {'QualificationTypeId' : qualification_type_id,
                   'WorkerId' : worker_id,
                   'IntegerValue' : value,
-                  'SendNotification' : send_notification, }
+                  'SendNotification' : send_notification}
         return self._process_request('AssignQualification', params)
+
+    def get_qualification_score(self, qualification_type_id, worker_id):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id}
+        return self._process_request('GetQualificationScore', params,
+                    [('Qualification', Qualification),])
+
+    def update_qualification_score(self, qualification_type_id, worker_id,
+                                   value):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id,
+                  'IntegerValue' : value}
+        return self._process_request('UpdateQualificationScore', params)
 
     def _process_request(self, request_type, params, marker_elems=None):
         """
@@ -804,6 +820,17 @@ class HIT(BaseAutoResultElement):
     # are we there yet?
     expired = property(_has_expired)
 
+class Qualification(BaseAutoResultElement):
+    """
+    Class to extract an Qualification structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide such as
+    QualificationTypeId, IntegerValue. Does not seem to contain GrantTime.
+    """
+    
+    pass
+
 class QualificationType(BaseAutoResultElement):
     """
     Class to extract an QualificationType structure from a response (used in
@@ -881,7 +908,5 @@ class QuestionFormAnswer(BaseAutoResultElement):
     def endElement(self, name, value, connection):
         if name == 'QuestionIdentifier':
             self.qid = value
-        elif name in ['FreeText', 'SelectionIdentifier'] and self.qid:
-            self.fields.append((self.qid,value))
-        elif name == 'Answer':
-            self.qid = None
+        elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
+            self.fields.append( value )

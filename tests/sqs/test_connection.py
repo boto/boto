@@ -43,7 +43,8 @@ class SQSConnectionTest (unittest.TestCase):
     
         # try illegal name
         try:
-            queue = c.create_queue('bad_queue_name')
+            queue = c.create_queue('bad*queue*name')
+            self.fail('queue name should have been bad')
         except SQSError:
             pass
         

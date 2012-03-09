@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
@@ -25,48 +25,56 @@
 
 try:
     from setuptools import setup
+    extra = dict(test_suite="tests.test.suite", include_package_data=True)
 except ImportError:
     from distutils.core import setup
+    extra = {}
 
 import sys
 
-from boto import Version
+from boto import __version__
 
-install_requires = []
-maj, min, micro, rel, serial = sys.version_info
-if (maj, min) == (2, 4):
-    # boto needs hashlib module which is not in py2.4
-    install_requires.append("hashlib")
+if sys.version_info <= (2, 4):
+    error = "ERROR: boto requires Python Version 2.5 or above...exiting."
+    print >> sys.stderr, error
+    sys.exit(1)
 
 setup(name = "boto",
-      version = Version,
+      version = __version__,
       description = "Amazon Web Services Library",
-      long_description="Python interface to Amazon's Web Services.",
+      long_description = "Python interface to Amazon's Web Services.",
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
       scripts = ["bin/sdbadmin", "bin/elbadmin", "bin/cfadmin",
                  "bin/s3put", "bin/fetch_file", "bin/launch_instance",
                  "bin/list_instances", "bin/taskadmin", "bin/kill_instance",
                  "bin/bundle_image", "bin/pyami_sendmail", "bin/lss3",
-                 "bin/cq", "bin/route53"],
-      install_requires=install_requires,
-      url = "http://code.google.com/p/boto/",
-      packages = [ 'boto', 'boto.sqs', 'boto.s3', 'boto.gs', 'boto.file',
-                   'boto.ec2', 'boto.ec2.cloudwatch', 'boto.ec2.autoscale',
-                   'boto.ec2.elb', 'boto.sdb', 'boto.sdb.persist',
-                   'boto.sdb.db', 'boto.sdb.db.manager', 'boto.mturk',
-                   'boto.pyami', 'boto.mashups', 'boto.contrib', 'boto.manage',
-                   'boto.services', 'boto.cloudfront', 'boto.roboto',
-                   'boto.rds', 'boto.vpc', 'boto.fps', 'boto.emr', 'boto.sns',
-                   'boto.ecs', 'boto.iam', 'boto.route53', 'boto.ses',
-                   'tests', 'tests.devpay', 'tests.ec2', 'tests.sdb',
-                   'tests.sqs', 'tests.s3'],
-      license = 'MIT',
-      platforms = 'Posix; MacOS X; Windows',
-      classifiers = [ 'Development Status :: 5 - Production/Stable',
-                      'Intended Audience :: Developers',
-                      'License :: OSI Approved :: MIT License',
-                      'Operating System :: OS Independent',
-                      'Topic :: Internet',
-                      ],
+                 "bin/cq", "bin/route53", "bin/s3multiput", "bin/cwutil",
+                 "bin/instance_events", "bin/asadmin"],
+      url = "https://github.com/boto/boto/",
+      packages = ["boto", "boto.sqs", "boto.s3", "boto.gs", "boto.file",
+                  "boto.ec2", "boto.ec2.cloudwatch", "boto.ec2.autoscale",
+                  "boto.ec2.elb", "boto.sdb", "boto.cacerts",
+                  "boto.sdb.db", "boto.sdb.db.manager",
+                  "boto.mturk", "boto.pyami",
+                  "boto.pyami.installers", "boto.pyami.installers.ubuntu",
+                  "boto.mashups", "boto.contrib", "boto.manage",
+                  "boto.services", "boto.cloudfront",
+                  "boto.roboto", "boto.rds", "boto.vpc", "boto.fps",
+                  "boto.fps", "boto.emr", "boto.emr", "boto.sns",
+                  "boto.ecs", "boto.iam", "boto.route53", "boto.ses",
+                  "boto.cloudformation", "boto.sts", "boto.dynamodb"],
+      package_data = {"boto.cacerts": ["cacerts.txt"]},
+      license = "MIT",
+      platforms = "Posix; MacOS X; Windows",
+      classifiers = ["Development Status :: 5 - Production/Stable",
+                     "Intended Audience :: Developers",
+                     "License :: OSI Approved :: MIT License",
+                     "Operating System :: OS Independent",
+                     "Topic :: Internet",
+                     "Programming Language :: Python :: 2",
+                     "Programming Language :: Python :: 2.5",
+                     "Programming Language :: Python :: 2.6",
+                     "Programming Language :: Python :: 2.7"],
+      **extra
       )

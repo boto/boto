@@ -20,15 +20,13 @@
 # IN THE SOFTWARE.
 
 from boto.connection import AWSQueryConnection
-from boto.sdb.regioninfo import SDBRegionInfo
+from boto.regioninfo import RegionInfo
 import boto
 import uuid
 try:
-    import json
-except ImportError:
     import simplejson as json
-
-#boto.set_stream_logger('sns')
+except ImportError:
+    import json
 
 class SNSConnection(AWSQueryConnection):
 
@@ -39,13 +37,20 @@ class SNSConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/', converter=None):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None):
         if not region:
-            region = SDBRegionInfo(self, self.DefaultRegionName, self.DefaultRegionEndpoint)
+            region = RegionInfo(self, self.DefaultRegionName,
+                                self.DefaultRegionEndpoint,
+                                connection_cls=SNSConnection)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id, aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                    self.region.endpoint, debug, https_connection_factory, path)
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path,
+                                    security_token=security_token)
 
     def _required_auth_capability(self):
         return ['sns']
@@ -80,6 +85,35 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic}
         response = self.make_request('GetTopicAttributes', params, '/', 'GET')
+        body = response.read()
+        if response.status == 200:
+            return json.loads(body)
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+        
+    def set_topic_attributes(self, topic, attr_name, attr_value):
+        """
+        Get attributes of a Topic
+
+        :type topic: string
+        :param topic: The ARN of the topic.
+
+        :type attr_name: string
+        :param attr_name: The name of the attribute you want to set.
+                          Only a subset of the topic's attributes are mutable.
+                          Valid values: Policy | DisplayName
+
+        :type attr_value: string
+        :param attr_value: The new value for the attribute.
+
+        """
+        params = {'ContentType' : 'JSON',
+                  'TopicArn' : topic,
+                  'AttributeName' : attr_name,
+                  'AttributeValue' : attr_value}
+        response = self.make_request('SetTopicAttributes', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)
@@ -238,8 +272,6 @@ class SNSConnection(AWSQueryConnection):
                          * For https, this would be a URL beginning with https
                          * For sqs, this would be the ARN of an SQS Queue
 
-        :rtype: :class:`boto.sdb.domain.Domain` object
-        :return: The newly created domain
         """
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic,
@@ -387,7 +419,8 @@ class SNSConnection(AWSQueryConnection):
                   'TopicArn' : topic}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptions', params, '/', 'GET')
+        response = self.make_request('ListSubscriptionsByTopic', params,
+                                     '/', 'GET')
         body = response.read()
         if response.status == 200:
             return json.loads(body)

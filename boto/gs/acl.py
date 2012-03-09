@@ -42,7 +42,7 @@ USER_BY_EMAIL = 'UserByEmail'
 USER_BY_ID = 'UserById'
 
 
-CannedACLStrings = ['private', 'public-read',
+CannedACLStrings = ['private', 'public-read', 'project-private',
                     'public-read-write', 'authenticated-read',
                     'bucket-owner-read', 'bucket-owner-full-control']
 
@@ -54,12 +54,16 @@ class ACL:
         self.parent = parent
         self.entries = []
 
+    @property
+    def acl(self):
+        return self
+
     def __repr__(self):
         # Owner is optional in GS ACLs.
         if hasattr(self, 'owner'):
-            entries_repr = ['']
-        else:
             entries_repr = ['Owner:%s' % self.owner.__repr__()]
+        else:
+            entries_repr = ['']
         acl_entries = self.entries
         if acl_entries:
             for e in acl_entries.entry_list:
@@ -169,7 +173,22 @@ class Entry:
 
     def startElement(self, name, attrs, connection):
         if name == SCOPE:
-            if not TYPE in attrs:
+            # The following if statement used to look like this: 
+            #   if not TYPE in attrs:
+            # which caused problems because older versions of the 
+            # AttributesImpl class in the xml.sax library neglected to include 
+            # a __contains__() method (which Python calls to implement the 
+            # 'in' operator). So when you use the in operator, like the if
+            # statement above, Python invokes the __getiter__() method with
+            # index 0, which raises an exception. More recent versions of 
+            # xml.sax include the __contains__() method, rendering the in 
+            # operator functional. The work-around here is to formulate the
+            # if statement as below, which is the legal way to query 
+            # AttributesImpl for containment (and is also how the added
+            # __contains__() method works). At one time gsutil disallowed
+            # xmlplus-based parsers, until this more specific problem was 
+            # determined.
+            if not attrs.has_key(TYPE):
                 raise InvalidAclError('Missing "%s" in "%s" part of ACL' %
                                       (TYPE, SCOPE))
             self.scope = Scope(self, attrs[TYPE])

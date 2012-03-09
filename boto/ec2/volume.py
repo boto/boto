@@ -84,7 +84,9 @@ class Volume(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_volumes([self.id])
+        # Check the resultset since Eucalyptus ignores the volumeId param
+        unfiltered_rs = self.connection.get_all_volumes([self.id])
+        rs = [ x for x in unfiltered_rs if x.id == self.id ]
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
@@ -110,7 +112,7 @@ class Volume(TaggedEC2Object):
 
         :type device: str
         :param device: The device on the instance through which the
-                       volume will be exposted (e.g. /dev/sdh)
+                       volume will be exposed (e.g. /dev/sdh)
 
         :rtype: bool
         :return: True if successful
@@ -147,9 +149,9 @@ class Volume(TaggedEC2Object):
 
         :type description: str
         :param description: A description of the snapshot.  Limited to 256 characters.
-        
-        :rtype: bool
-        :return: True if successful
+
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         return self.connection.create_snapshot(self.id, description)
 
