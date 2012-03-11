@@ -23,4 +23,4 @@
 
 # this is here for backward compatibility
 # originally, the Route53Connection class was defined here
-from connection import Route53Connection
+from .connection import Route53Connection

@@ -5,7 +5,7 @@ import datetime
 from boto.mturk.question import (
 	Question, QuestionContent, AnswerSpecification, FreeTextAnswer,
 )
-from _init_environment import SetHostMTurkConnection
+from ._init_environment import SetHostMTurkConnection
 
 class MTurkCommon(unittest.TestCase):
 	def setUp(self):

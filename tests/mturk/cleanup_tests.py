@@ -1,6 +1,6 @@
 import itertools
 
-from _init_environment import SetHostMTurkConnection
+from ._init_environment import SetHostMTurkConnection
 
 def description_filter(substring):
 	return lambda hit: substring in hit.Title

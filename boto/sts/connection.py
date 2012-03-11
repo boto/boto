@@ -22,7 +22,7 @@
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from credentials import Credentials, FederationToken
+from .credentials import Credentials, FederationToken
 import boto
 import boto.utils
 import datetime
