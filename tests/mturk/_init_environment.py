@@ -7,7 +7,7 @@ external_url = 'http://www.example.com/'
 
 try:
 	local = os.path.join(os.path.dirname(__file__), 'local.py')
-	execfile(local)
+	exec(compile(open(local).read(), local, 'exec'))
 except:
 	pass
 

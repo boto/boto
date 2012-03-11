@@ -116,7 +116,7 @@ class Credentials(object):
         fp = open(file_path, 'wb')
         json.dump(self.to_dict(), fp)
         fp.close()
-        os.chmod(file_path, 0600)
+        os.chmod(file_path, 0o600)
 
     def is_expired(self, time_offset_seconds=0):
         """
