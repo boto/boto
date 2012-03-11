@@ -589,7 +589,7 @@ class SDBManager(object):
                 property = cls.find_property(name)
                 if name == order_by:
                     order_by_filtered = True
-                if types.TypeType(value) == types.ListType:
+                if types.TypeType(value) == list:
                     filter_parts_sub = []
                     for val in value:
                         val = self.encode_value(property, val)
