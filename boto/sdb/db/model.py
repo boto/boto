@@ -163,7 +163,7 @@ class Model(object):
                 # so if it fails we just revert to it's default value
                 try:
                     setattr(self, key, kw[key])
-                except Exception, e:
+                except Exception as e:
                     boto.log.exception(e)
 
     def __repr__(self):

@@ -85,7 +85,7 @@ class BotoServerError(Exception):
             try:
                 h = handler.XmlHandler(self, self)
                 xml.sax.parseString(self.body, h)
-            except (TypeError, xml.sax.SAXParseException), pe:
+            except (TypeError, xml.sax.SAXParseException) as pe:
                 # Remove unparsable message body so we don't include garbage
                 # in exception. But first, save self.body in self.error_message
                 # because occasionally we get error messages from Eucalyptus

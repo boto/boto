@@ -136,7 +136,7 @@ class DynamoDBLayer1Test (unittest.TestCase):
         expected = {'Views': {'Value': {'N': '1'}}}
         try:
             result = c.delete_item(table_name, key=key1, expected=expected)
-        except c.ResponseError, e:
+        except c.ResponseError as e:
             assert e.error_code == 'ConditionalCheckFailedException'
 
         # Now update the existing object

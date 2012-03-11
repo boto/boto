@@ -246,7 +246,7 @@ class PGManager(object):
             try:
                 self.connection.commit()
                 
-            except psycopg2.ProgrammingError, err:
+            except psycopg2.ProgrammingError as err:
                 self.connection.rollback()
                 raise err
 

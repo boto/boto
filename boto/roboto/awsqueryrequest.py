@@ -452,16 +452,16 @@ class AWSQueryRequest(object):
         try:
             response = self.main()
             self.cli_formatter(response)
-        except RequiredParamError, e:
+        except RequiredParamError as e:
             print e
             sys.exit(1)
-        except self.ServiceClass.ResponseError, err:
+        except self.ServiceClass.ResponseError as err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
             sys.exit(1)
-        except boto.roboto.awsqueryservice.NoCredentialsError, err:
+        except boto.roboto.awsqueryservice.NoCredentialsError as err:
             print 'Unable to find credentials.'
             sys.exit(1)
-        except Exception, e:
+        except Exception as e:
             print e
             sys.exit(1)
 

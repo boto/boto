@@ -176,7 +176,7 @@ def retry_url(url, retry_on_404=True, num_retries=10):
             req = urllib2.Request(url)
             resp = urllib2.urlopen(req)
             return resp.read()
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             # in 2.6 you use getcode(), in 2.5 and earlier you use code
             if hasattr(e, 'getcode'):
                 code = e.getcode()

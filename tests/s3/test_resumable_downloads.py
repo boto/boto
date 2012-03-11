@@ -69,7 +69,7 @@ class ResumableDownloadTests(unittest.TestCase):
     def resilient_close(key):
         try:
             key.close()
-        except StorageResponseError, e:
+        except StorageResponseError as e:
             pass
 
     @classmethod
@@ -217,7 +217,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             # We'll get a ResumableDownloadException at this point because
             # of CallbackTestHarnass (above). Check that the tracker file was
             # created correctly.
@@ -275,7 +275,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected OSError')
-        except OSError, e:
+        except OSError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -328,7 +328,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
@@ -433,7 +433,7 @@ class ResumableDownloadTests(unittest.TestCase):
             os.chmod(self.tmp_dir, 0)
             res_download_handler = ResumableDownloadHandler(
                 tracker_file_name=self.tracker_file_name)
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Couldn\'t write URI tracker file'), -1)
