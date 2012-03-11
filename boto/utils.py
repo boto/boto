@@ -98,13 +98,13 @@ def canonical_string(method, path, headers, expires=None,
             interesting_headers[lk] = headers[key].strip()
 
     # these keys get empty strings if they don't exist
-    if not interesting_headers.has_key('content-type'):
+    if 'content-type' not in interesting_headers:
         interesting_headers['content-type'] = ''
-    if not interesting_headers.has_key('content-md5'):
+    if 'content-md5' not in interesting_headers:
         interesting_headers['content-md5'] = ''
 
     # just in case someone used this.  it's not necessary in this lib.
-    if interesting_headers.has_key(provider.date_header):
+    if provider.date_header in interesting_headers:
         interesting_headers['date'] = ''
 
     # if you're using expires for query string auth, then it trumps date

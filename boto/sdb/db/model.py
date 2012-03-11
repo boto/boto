@@ -154,7 +154,7 @@ class Model(object):
                 setattr(self, prop.name, prop.default_value())
             except ValueError:
                 pass
-        if kw.has_key('manager'):
+        if 'manager' in kw:
             self._manager = kw['manager']
         self.id = id
         for key in kw:

@@ -127,7 +127,7 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         headers = http_request.headers
         method = http_request.method
         auth_path = http_request.auth_path
-        if not headers.has_key('Date'):
+        if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
 
         if self._provider.security_token:
@@ -156,7 +156,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
-        if not headers.has_key('Date'):
+        if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])
@@ -176,7 +176,7 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
         
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
-        if not headers.has_key('Date'):
+        if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])

@@ -46,7 +46,7 @@ class S3VersionTest (unittest.TestCase):
     def test_1_versions(self):
         # check versioning off
         d = self.bucket.get_versioning_status()
-        self.assertFalse(d.has_key('Versioning'))
+        self.assertFalse('Versioning' in d)
 
         # enable versioning
         self.bucket.configure_versioning(versioning=True)
