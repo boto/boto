@@ -173,7 +173,7 @@ class LocalClient(object):
         return os.path.exists(path)
 
     def shell(self):
-        raise NotImplementedError, 'shell not supported with LocalClient'
+        raise NotImplementedError('shell not supported with LocalClient')
 
     def run(self):
         boto.log.info('running:%s' % self.command)
