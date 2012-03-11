@@ -132,7 +132,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # make sure the put() succeeds
         try:
             item1.put()
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             raise Exception("Item put failed: %s" % e)
 
         # Try to get an item that does not exist.
@@ -168,7 +168,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         expected = {'Views': 1}
         try:
             item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             assert e.error_code == 'ConditionalCheckFailedException'
         else:
             raise Exception("Expected Value condition failed")
@@ -177,7 +177,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         expected = {'FooBar': True}
         try:
             item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             pass
 
         # Now update the existing object

@@ -771,7 +771,7 @@ class AWSAuthConnection(object):
                     connection = self.get_http_connection(request.host,
                                                           scheme == 'https')
                     continue
-            except self.http_exceptions, e:
+            except self.http_exceptions as e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
                         boto.log.debug(

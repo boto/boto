@@ -128,7 +128,7 @@ class EBSInstaller(Installer):
             try:
                 ec2.attach_volume(self.volume_id, self.instance_id, self.device)
                 attempt_attach = False
-            except EC2ResponseError, e:
+            except EC2ResponseError as e:
                 if e.error_code != 'IncorrectState':
                     # if there's an EC2ResonseError with the code set to IncorrectState, delay a bit for ec2 
                     # to realize the instance is running, then try again. Otherwise, raise the error:
