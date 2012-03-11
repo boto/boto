@@ -373,7 +373,7 @@ class XMLManager(object):
             for property in properties:
                 if property.name == name:
                     found = True
-                    if types.TypeType(value) == types.ListType:
+                    if types.TypeType(value) == list:
                         filter_parts = []
                         for val in value:
                             val = self.encode_value(property, val)

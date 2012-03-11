@@ -23,7 +23,6 @@
 """
 Represents a connection to the EMR service
 """
-import types
 
 import boto
 import boto.utils
@@ -135,7 +134,7 @@ class EmrConnection(AWSQueryConnection):
         :type steps: list(boto.emr.Step)
         :param steps: A list of steps to add to the job
         """
-        if type(steps) != types.ListType:
+        if type(steps) != list:
             steps = [steps]
         params = {}
         params['JobFlowId'] = jobflow_id
@@ -158,7 +157,7 @@ class EmrConnection(AWSQueryConnection):
         :type instance_groups: list(boto.emr.InstanceGroup)
         :param instance_groups: A list of instance groups to add to the job
         """
-        if type(instance_groups) != types.ListType:
+        if type(instance_groups) != list:
             instance_groups = [instance_groups]
         params = {}
         params['JobFlowId'] = jobflow_id
@@ -179,9 +178,9 @@ class EmrConnection(AWSQueryConnection):
         :type new_sizes: list(int)
         :param new_sizes: A list of the new sizes for each instance group
         """
-        if type(instance_group_ids) != types.ListType:
+        if type(instance_group_ids) != list:
             instance_group_ids = [instance_group_ids]
-        if type(new_sizes) != types.ListType:
+        if type(new_sizes) != list:
             new_sizes = [new_sizes]
 
         instance_groups = zip(instance_group_ids, new_sizes)
@@ -399,7 +398,7 @@ class EmrConnection(AWSQueryConnection):
         return step_params
 
     def _build_bootstrap_action_list(self, bootstrap_actions):
-        if type(bootstrap_actions) != types.ListType:
+        if type(bootstrap_actions) != list:
             bootstrap_actions = [bootstrap_actions]
 
         params = {}
@@ -409,7 +408,7 @@ class EmrConnection(AWSQueryConnection):
         return params
 
     def _build_step_list(self, steps):
-        if type(steps) != types.ListType:
+        if type(steps) != list:
             steps = [steps]
 
         params = {}
@@ -475,7 +474,7 @@ class EmrConnection(AWSQueryConnection):
         a comparable dict for use in making a RunJobFlow or AddInstanceGroups
         request.
         """
-        if type(instance_groups) != types.ListType:
+        if type(instance_groups) != list:
             instance_groups = [instance_groups]
 
         params = {}
