@@ -49,7 +49,6 @@ class ItemThread(threading.Thread):
         :ivar list items: A list of items retrieved. Starts as empty list.
         """
         threading.Thread.__init__(self, name=name)
-        #print 'starting %s with %d items' % (name, len(item_names))
         self.domain_name = domain_name
         self.conn = SDBConnection()
         self.item_names = item_names
@@ -139,8 +138,7 @@ class SDBConnection(AWSQueryConnection):
 
     def _build_name_value_list(self, params, attributes, replace=False,
                               label='Attribute'):
-        keys = attributes.keys()
-        keys.sort()
+        keys = sorted(attributes)
         i = 1
         for key in keys:
             value = attributes[key]
@@ -233,9 +231,9 @@ class SDBConnection(AWSQueryConnection):
             requests made on this specific connection instance. It is by
             no means an account-wide estimate.
         """
-        print 'Total Usage: %f compute seconds' % self.box_usage
+        print('Total Usage: %f compute seconds' % self.box_usage)
         cost = self.box_usage * 0.14
-        print 'Approximate Cost: $%f' % cost
+        print('Approximate Cost: $%f' % cost)
 
     def get_domain(self, domain_name, validate=True):
         """

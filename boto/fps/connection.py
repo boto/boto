@@ -24,7 +24,6 @@ import urllib
 import xml.sax
 import uuid
 import boto
-import boto.utils
 from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
@@ -150,7 +149,7 @@ class FPSConnection(AWSQueryConnection):
             params['callerReference'] = str(uuid.uuid4())
 
         parts = ''
-        for k in sorted(params.keys()):
+        for k in sorted(params):
             parts += "&%s=%s" % (k, urllib.quote(params[k], '~'))
 
         canonical = '\n'.join(['GET',
@@ -162,7 +161,7 @@ class FPSConnection(AWSQueryConnection):
         params["signature"] = signature
 
         urlsuffix = ''
-        for k in sorted(params.keys()):
+        for k in sorted(params):
             urlsuffix += "&%s=%s" % (k, urllib.quote(params[k], '~'))
         urlsuffix = urlsuffix[1:] # strip the first &
         
@@ -195,7 +194,7 @@ class FPSConnection(AWSQueryConnection):
             params['callerReference'] = str(uuid.uuid4())
 
         parts = ''
-        for k in sorted(params.keys()):
+        for k in sorted(params):
             parts += "&%s=%s" % (k, urllib.quote(params[k], '~'))
 
         canonical = '\n'.join(['GET',
@@ -207,7 +206,7 @@ class FPSConnection(AWSQueryConnection):
         params["signature"] = signature
 
         urlsuffix = ''
-        for k in sorted(params.keys()):
+        for k in sorted(params):
             urlsuffix += "&%s=%s" % (k, urllib.quote(params[k], '~'))
         urlsuffix = urlsuffix[1:] # strip the first &
         

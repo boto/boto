@@ -202,7 +202,7 @@ class XMLManager(object):
         self.auth_header = None
         if self.db_user:
             import base64
-            base64string = base64.encodestring('%s:%s' % (self.db_user, self.db_passwd))[:-1]
+            base64string = base64.encodebytes('%s:%s' % (self.db_user, self.db_passwd))[:-1]
             authheader =  "Basic %s" % base64string
             self.auth_header = authheader
 

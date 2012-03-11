@@ -31,11 +31,12 @@ from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError, DynamoDBItemError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.types import get_dynamodb_type
 from boto.dynamodb.condition import *
+import boto.compat as compat
 
 class DynamoDBLayer2Test (unittest.TestCase):
 
     def test_layer2_basic(self):
-        print '--- running Amazon DynamoDB Layer2 tests ---'
+        print('--- running Amazon DynamoDB Layer2 tests ---')
         c = Layer2()
 
         # First create a schema for the table
@@ -146,7 +147,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert item1_copy.range_key == item1.range_key
         for attr_name in item1_copy:
             val = item1_copy[attr_name]
-            if isinstance(val, (int, long, float, basestring)):
+            if isinstance(val, (compat.integer_types, float,
+                                compat.string_types)):
                 assert val == item1[attr_name]
 
         # Try retrieving only select attributes
@@ -349,4 +351,4 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert table.status == 'DELETING'
         assert table2.status == 'DELETING'
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')

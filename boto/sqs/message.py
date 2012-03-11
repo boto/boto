@@ -64,9 +64,9 @@ in the format in which it would be stored in SQS.
 """
 
 import base64
-import StringIO
 from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
+import boto.compat as compat
 
 class RawMessage:
     """
@@ -179,7 +179,7 @@ class MHMessage(Message):
     def decode(self, value):
         try:
             msg = {}
-            fp = StringIO.StringIO(value)
+            fp = compat.StringIO(value)
             line = fp.readline()
             while line:
                 delim = line.find(':')

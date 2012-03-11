@@ -32,7 +32,6 @@ import random
 import re
 import shutil
 import socket
-import StringIO
 import sys
 import tempfile
 import time
@@ -45,6 +44,7 @@ from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
+import boto.compat as compat
 from .cb_test_harnass import CallbackTestHarnass
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
@@ -108,7 +108,7 @@ class ResumableDownloadTests(unittest.TestCase):
         string_data = ''.join(buf)
         uri = cls.src_bucket_uri.clone_replace_name(obj_name)
         key = uri.new_key(validate=False)
-        key.set_contents_from_file(StringIO.StringIO(string_data))
+        key.set_contents_from_file(compat.StringIO(string_data))
         # Set debug on key's connection after creating data, so only the test
         # runs will show HTTP output (if called passed debug>0).
         key.bucket.connection.debug = debug
@@ -177,8 +177,8 @@ class ResumableDownloadTests(unittest.TestCase):
                 cls.src_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
-                print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.src_bucket_uri.uri)
+                print('Test bucket (%s) not yet deleted, still trying' % (
+                    cls.src_bucket_uri.uri))
                 time.sleep(2)
         shutil.rmtree(cls.tmp_dir)
         cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
@@ -465,11 +465,11 @@ if __name__ == '__main__':
     # don't assume the user has Python 2.7 (which supports classmethods
     # that do it, with camelCase versions of these names).
     try:
-        print 'Setting up %s...' % test_class.get_suite_description()
+        print('Setting up %s...' % test_class.get_suite_description())
         test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
+        print('Running %s...' % test_class.get_suite_description())
         unittest.TextTestRunner(verbosity=2).run(suite)
     finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
+        print('Cleaning up after %s...' % test_class.get_suite_description())
         test_class.tear_down_class()
-        print ''
+        print('')

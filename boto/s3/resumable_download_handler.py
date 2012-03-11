@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 
 import errno
-import httplib
 import os
 import re
 import socket
@@ -88,7 +87,7 @@ class ResumableDownloadHandler(object):
 
     ETAG_REGEX = '([a-z0-9]{32})\n'
 
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (compat.httplib.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     def __init__(self, tracker_file_name=None, num_retries=None):
@@ -189,17 +188,17 @@ class ResumableDownloadHandler(object):
                    key.size), ResumableTransferDisposition.ABORT)
             elif cur_file_size == key.size:
                 if key.bucket.connection.debug >= 1:
-                    print 'Download complete.'
+                    print('Download complete.')
                 return
             if key.bucket.connection.debug >= 1:
-                print 'Resuming download.'
+                print('Resuming download.')
             headers = headers.copy()
             headers['Range'] = 'bytes=%d-%d' % (cur_file_size, key.size - 1)
             cb = ByteTranslatingCallbackHandler(cb, cur_file_size).call
             self.download_start_point = cur_file_size
         else:
             if key.bucket.connection.debug >= 1:
-                print 'Starting new resumable download.'
+                print('Starting new resumable download.')
             self._save_tracker_info(key)
             self.download_start_point = 0
             # Truncate the file, in case a new resumable download is being
@@ -271,7 +270,7 @@ class ResumableDownloadHandler(object):
                 # non-resumable downloads, this call was removed. Checksum
                 # validation of file contents should be done by the caller.
                 if debug >= 1:
-                    print 'Resumable download complete.'
+                    print('Resumable download complete.')
                 return
             except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
@@ -324,7 +323,7 @@ class ResumableDownloadHandler(object):
             # which we can safely ignore.
             try:
                 key.close()
-            except httplib.IncompleteRead:
+            except compat.httplib.IncompleteRead:
                 pass
 
             sleep_time_secs = 2**progress_less_iterations

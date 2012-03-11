@@ -235,7 +235,7 @@ class MockBucket(object):
         del self.keys[key_name]
 
     def get_all_keys(self, headers=NOT_IMPL):
-        return self.keys.itervalues()
+        return iter(self.keys.values())
 
     def get_key(self, key_name, headers=NOT_IMPL, version_id=NOT_IMPL):
         # Emulate behavior of boto when get_key called with non-existent key.
@@ -251,7 +251,7 @@ class MockBucket(object):
         # deletions while iterating (e.g., during test cleanup).
         result = []
         key_name_set = set()
-        for k in self.keys.itervalues():
+        for k in self.keys.values():
             if k.name.startswith(prefix):
                 k_name_past_prefix = k.name[len(prefix):]
                 if delimiter:
@@ -328,7 +328,7 @@ class MockConnection(object):
         return self.buckets[bucket_name]
 
     def get_all_buckets(self, headers=NOT_IMPL):
-        return self.buckets.itervalues()
+        return iter(self.buckets.values())
 
 
 # We only mock a single provider/connection.

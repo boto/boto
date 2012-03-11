@@ -27,15 +27,15 @@ Some unit tests for the S3Connection
 import unittest
 import time
 import os
-import urllib
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
 from boto.exception import S3PermissionsError, S3ResponseError
+import boto.compat as compat
 
 class S3ConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        print '--- running S3Connection tests ---'
+        print('--- running S3Connection tests ---')
         c = S3Connection()
         # create a new, empty bucket
         bucket_name = 'test-%d' % int(time.time())
@@ -63,13 +63,13 @@ class S3ConnectionTest (unittest.TestCase):
         fp.close()
         # test generated URLs
         url = k.generate_url(3600)
-        file = urllib.urlopen(url)
+        file = compat.urlopen(url)
         assert s1 == file.read(), 'invalid URL %s' % url
         url = k.generate_url(3600, force_http=True)
-        file = urllib.urlopen(url)
+        file = compat.urlopen(url)
         assert s1 == file.read(), 'invalid URL %s' % url
         url = k.generate_url(3600, force_http=True, headers={'x-amz-x-token' : 'XYZ'})
-        file = urllib.urlopen(url)
+        file = compat.urlopen(url)
         rh = {'response-content-disposition': 'attachment; filename="foo.txt"'}
         url = k.generate_url(60, response_headers=rh)
         assert s1 == file.read(), 'invalid URL %s' % url
@@ -119,7 +119,7 @@ class S3ConnectionTest (unittest.TestCase):
         mdval2 = 'This is the second metadata value'
         k.set_metadata(mdkey2, mdval2)
         # try a unicode metadata value
-        mdval3 = u'föö'
+        mdval3 = 'föö'
         mdkey3 = 'meta3'
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
@@ -189,7 +189,7 @@ class S3ConnectionTest (unittest.TestCase):
         # now delete bucket
         time.sleep(5)
         c.delete_bucket(bucket)
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 
     def test_basic_anon(self):
         auth_con = S3Connection()
@@ -201,7 +201,7 @@ class S3ConnectionTest (unittest.TestCase):
         anon_con = S3Connection(anon=True)
         anon_bucket = Bucket(anon_con, bucket_name)
         try:
-            iter(anon_bucket.list()).next()
+            next(iter(anon_bucket.list()))
             self.fail("anon bucket list should fail")
         except S3ResponseError:
             pass
@@ -209,7 +209,7 @@ class S3ConnectionTest (unittest.TestCase):
         # give bucket anon user access and anon read again
         auth_bucket.set_acl('public-read')
         try:
-            iter(anon_bucket.list()).next()
+            next(iter(anon_bucket.list()))
             self.fail("not expecting contents")
         except S3ResponseError:
             self.fail("we should have public-read access.")

@@ -23,8 +23,7 @@
 import mimetypes
 import os
 import re
-import rfc822
-import StringIO
+import email
 import base64
 import math
 import urllib
@@ -33,11 +32,7 @@ from boto.exception import BotoClientError
 from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
-from boto.utils import compute_md5
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+import boto.compat as compat
 
 
 class Key(object):
@@ -107,7 +102,7 @@ class Key(object):
         """
         import binascii
         digest = binascii.unhexlify(md5_hexdigest)
-        base64md5 = base64.encodestring(digest)
+        base64md5 = base64.b64encode(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
@@ -523,7 +518,7 @@ class Key(object):
             http_conn.endheaders()
             if chunked_transfer and not self.base64md5:
                 # MD5 for the stream has to be calculated on the fly.
-                m = md5()
+                m = compat.md5()
             else:
                 m = None
 
@@ -682,7 +677,7 @@ class Key(object):
                  as the first element and the base64 encoded version of the
                  plain digest as the second element.
         """
-        tup = compute_md5(fp, size=size)
+        tup = boto.utils.compute_md5(fp, size=size)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and data size.
         # The internal implementation of compute_md5() needs to return the 
         # data size but we don't want to return that value to the external
@@ -1060,9 +1055,9 @@ class Key(object):
                             will be stored in an encrypted form while
                             at rest in S3.
         """
-        if isinstance(s, unicode):
+        if isinstance(s, compat.text_type):
             s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        fp = compat.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
@@ -1118,7 +1113,7 @@ class Key(object):
             query_args.append('torrent')
             m = None
         else:
-            m = md5()
+            m = compat.md5()
         # If a version_id is passed in, use that.  If not, check to see
         # if the Key object has an explicit version_id and, if so, use that.
         # Otherwise, don't pass a version_id query param.
@@ -1313,8 +1308,8 @@ class Key(object):
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
             try:
-                modified_tuple = rfc822.parsedate_tz(self.last_modified)
-                modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+                modified_tuple = email.utils.parsedate_tz(self.last_modified)
+                modified_stamp = int(email.utils.mktime_tz(modified_tuple))
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception: pass
 
@@ -1360,7 +1355,7 @@ class Key(object):
         :rtype: string
         :returns: The contents of the file as a string
         """
-        fp = StringIO.StringIO()
+        fp = compat.StringIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
                                   version_id=version_id,
                                   response_headers=response_headers)

@@ -45,19 +45,17 @@ Handles basic connections to AWS
 from __future__ import with_statement
 import base64
 import errno
-import httplib
 import os
-import Queue
 import random
 import re
 import socket
 import sys
 import time
-import urllib, urlparse
 import xml.sax
 
 from . import auth
 from . import auth_handler
+from . import compat
 import boto
 import boto.utils
 import boto.handler
@@ -82,9 +80,6 @@ try:
     import threading
 except ImportError:
     import dummy_threading as threading
-
-ON_APP_ENGINE = all(key in os.environ for key in (
-    'USER_IS_ADMIN', 'CURRENT_VERSION_ID', 'APPLICATION_ID'))
 
 PORTS_BY_SECURITY = { True: 443, False: 80 }
 
@@ -168,7 +163,7 @@ class HostConnectionPool(object):
         This is ugly, reading a private instance variable, but the
         state we care about isn't available in any public methods.
         """
-        if ON_APP_ENGINE:
+        if compat.on_appengine():
             # Google App Engine implementation of HTTPConnection doesn't contain
             # _HTTPConnection__response attribute. Moreover, it's not possible
             # to determine if given connection is ready. Reusing connections
@@ -350,8 +345,9 @@ class HTTPRequest(object):
     def authorize(self, connection, **kwargs):
         for key in self.headers:
             val = self.headers[key]
-            if isinstance(val, unicode):
-                self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
+            if isinstance(val, compat.text_type):
+                self.headers[key] = compat.quote_plus(val.encode('utf-8'),
+                                                      safe='/')
 
         connection._auth_handler.add_auth(self, **kwargs)
 
@@ -429,7 +425,7 @@ class AWSAuthConnection(object):
                 'Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
-        self.http_exceptions = (httplib.HTTPException, socket.error,
+        self.http_exceptions = (compat.httplib.HTTPException, socket.error,
                                 socket.gaierror)
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
@@ -450,7 +446,7 @@ class AWSAuthConnection(object):
             self.protocol = 'http'
         self.host = host
         self.path = path
-        if isinstance(debug, (int, long)):
+        if isinstance(debug, compat.integer_types):
             self.debug = debug
         else:
             self.debug = config.getint('Boto', 'debug', 0)
@@ -547,8 +543,7 @@ class AWSAuthConnection(object):
             # did the same when calculating the V2 signature.  In 2.6
             # (and higher!)
             # it no longer does that.  Hence, this kludge.
-            if ((ON_APP_ENGINE and sys.version[:3] == '2.5') or
-                    sys.version[:3] in ('2.6', '2.7')) and port == 443:
+            if compat.httplib_ssl_hack(port):
                 signature_host = self.host
             else:
                 signature_host = '%s:%d' % (self.host, port)
@@ -583,8 +578,7 @@ class AWSAuthConnection(object):
                 self.proxy_pass = config.get_value('Boto', 'proxy_pass', None)
 
         if not self.proxy_port and self.proxy:
-            print "http_proxy environment variable does not specify " \
-                "a port, using default"
+            boto.log.warning('http_proxy env variable does not specify a port')
             self.proxy_port = self.port
         self.use_proxy = (self.proxy != None)
 
@@ -613,12 +607,12 @@ class AWSAuthConnection(object):
                         host, ca_certs=self.ca_certificates_file,
                         **self.http_connection_kwargs)
             else:
-                connection = httplib.HTTPSConnection(host,
+                connection = compat.httplib.HTTPSConnection(host,
                         **self.http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
                     self.http_connection_kwargs)
-            connection = httplib.HTTPConnection(host,
+            connection = compat.httplib.HTTPConnection(host,
                     **self.http_connection_kwargs)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
@@ -646,7 +640,7 @@ class AWSAuthConnection(object):
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
         sock.sendall("\r\n")
-        resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
+        resp = compat.httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
         if resp.status != 200:
@@ -659,7 +653,7 @@ class AWSAuthConnection(object):
         # We can safely close the response, it duped the original socket
         resp.close()
 
-        h = httplib.HTTPConnection(host)
+        h = compat.httplib.HTTPConnection(host)
 
         if self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
             boto.log.debug("wrapping ssl socket for proxied connection; "
@@ -678,11 +672,11 @@ class AWSAuthConnection(object):
                         hostname, cert, 'hostname mismatch')
         else:
             # Fallback for old Python without ssl.wrap_socket
-            if hasattr(httplib, 'ssl'):
-                sslSock = httplib.ssl.SSLSocket(sock)
+            if hasattr(compat.httplib, 'ssl'):
+                sslSock = compat.httplib.ssl.SSLSocket(sock)
             else:
                 sslSock = socket.ssl(sock, None, None)
-                sslSock = httplib.FakeSocket(sock, sslSock)
+                sslSock = compat.httplib.FakeSocket(sock, sslSock)
 
         # This is a bit unclean
         h.sock = sslSock
@@ -693,7 +687,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
+        auth = base64.encodebytes(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     def _mexe(self, request, sender=None, override_num_retries=None,
@@ -762,7 +756,7 @@ class AWSAuthConnection(object):
                     return response
                 else:
                     scheme, request.host, request.path, \
-                        params, query, fragment = urlparse.urlparse(location)
+                        params, query, fragment = compat.urlparse.urlparse(location)
                     if query:
                         request.path += '?' + query
                     msg = 'Redirecting: %s' % scheme + '://'

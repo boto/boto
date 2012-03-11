@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-import boto.utils
 import urllib
 from boto.connection import AWSQueryConnection
 from boto.rds.dbinstance import DBInstance

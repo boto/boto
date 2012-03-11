@@ -19,6 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto.compat as compat
+
+
 class ParameterGroup(dict):
 
     def __init__(self, connection=None):
@@ -133,7 +136,7 @@ class Parameter(object):
             d[prefix+'ApplyMethod'] = self.apply_method
 
     def _set_string_value(self, value):
-        if not isinstance(value, str) or isinstance(value, unicode):
+        if not isinstance(value, compat.string_types):
             raise ValueError('value must be of type str')
         if self.allowed_values:
             choices = self.allowed_values.split(',')
@@ -142,21 +145,7 @@ class Parameter(object):
         self._value = value
 
     def _set_integer_value(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
-            value = int(value)
-        if isinstance(value, int) or isinstance(value, long):
-            if self.allowed_values:
-                min, max = self.allowed_values.split('-')
-                if value < int(min) or value > int(max):
-                    raise ValueError('range is %s' % self.allowed_values)
-            self._value = value
-        else:
-            raise ValueError('value must be integer')
-
-    def _set_boolean_value(self, value):
-        if isinstance(value, bool):
-            self._value = value
-        elif isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, compat.string_types):
             if value.lower() == 'true':
                 self._value = True
             else:

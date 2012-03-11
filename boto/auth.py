@@ -1,5 +1,6 @@
 # Copyright 2010 Google Inc.
-# Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # Copyright (c) 2011, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +35,7 @@ import boto.plugin
 import boto.utils
 import hmac
 import sys
-import urllib
+import boto.compat as compat
 from email.utils import formatdate
 
 from boto.auth_handler import AuthHandler
@@ -79,10 +80,10 @@ class HmacKeys(object):
 
     def update_provider(self, provider):
         self._provider = provider
-        self._hmac = hmac.new(self._provider.secret_key, digestmod=sha)
+        sk = self._provider.secret_key.encode('utf-8')
+        self._hmac = hmac.new(sk, digestmod=sha)
         if sha256:
-            self._hmac_256 = hmac.new(self._provider.secret_key,
-                                      digestmod=sha256)
+            self._hmac_256 = hmac.new(sk, digestmod=sha256)
         else:
             self._hmac_256 = None
 
@@ -97,8 +98,10 @@ class HmacKeys(object):
             hmac = self._hmac_256.copy()
         else:
             hmac = self._hmac.copy()
+        if not isinstance(string_to_sign, compat.binary_type):
+            string_to_sign = string_to_sign.encode('utf-8')
         hmac.update(string_to_sign)
-        return base64.encodestring(hmac.digest()).strip()
+        return base64.b64encode(hmac.digest()).strip().decode('utf-8')
 
 class AnonAuthHandler(AuthHandler, HmacKeys):
     """
@@ -252,6 +255,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
         string_to_sign, headers_to_sign = self.string_to_sign(req)
         boto.log.debug('StringToSign:\n%s' % string_to_sign)
+        string_to_sign = string_to_sign.encode('utf-8')
         hash_value = sha256(string_to_sign).digest()
         b64_hmac = self.sign_string(hash_value)
         s = "AWS3 AWSAccessKeyId=%s," % self._provider.access_key
@@ -279,7 +283,7 @@ class QuerySignatureHelper(HmacKeys):
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            http_request.body = qs + '&Signature=' + urllib.quote_plus(signature)
+            http_request.body = qs + '&Signature=' + compat.quote_plus(signature)
             http_request.headers['Content-Length'] = str(len(http_request.body))
         else:
             http_request.body = ''
@@ -287,7 +291,7 @@ class QuerySignatureHelper(HmacKeys):
             # already be there, we need to get rid of that and rebuild it
             http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs +
-                                 '&Signature=' + urllib.quote_plus(signature))
+                                 '&Signature=' + compat.quote_plus(signature))
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
     """Provides Signature V0 Signing"""
@@ -299,13 +303,13 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         boto.log.debug('using _calc_signature_0')
         hmac = self._hmac.copy()
         s = params['Action'] + params['Timestamp']
+        s = s.encode('utf-8')
         hmac.update(s)
-        keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys = sorted(params, key = str.lower)
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + compat.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -320,14 +324,15 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
         hmac = self._hmac.copy()
-        keys = params.keys()
-        keys.sort(cmp = lambda x, y: cmp(x.lower(), y.lower()))
+        keys = sorted(params, key = str.lower)
         pairs = []
         for key in keys:
+            key = key.encode('utf-8')
             hmac.update(key)
             val = boto.utils.get_utf8_value(params[key])
+            val = val.encode('utf-8')
             hmac.update(val)
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + compat.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -349,17 +354,17 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
             params['SignatureMethod'] = 'HmacSHA1'
         if self._provider.security_token:
             params['SecurityToken'] = self._provider.security_token
-        keys = params.keys()
-        keys.sort()
+        keys = sorted(params)
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(urllib.quote(key, safe='') + '=' +
-                         urllib.quote(val, safe='-_~'))
+            pairs.append(compat.quote(key, safe='') + '=' +
+                         compat.quote(val, safe='-_~'))
         qs = '&'.join(pairs)
         boto.log.debug('query string: %s' % qs)
         string_to_sign += qs
         boto.log.debug('string_to_sign: %s' % string_to_sign)
+        string_to_sign = string_to_sign.encode('utf-8')
         hmac.update(string_to_sign)
         b64 = base64.b64encode(hmac.digest())
         boto.log.debug('len(b64)=%d' % len(b64))

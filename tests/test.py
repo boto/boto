@@ -29,31 +29,31 @@ import sys
 import unittest
 import getopt
 
-from .sqs.test_connection import SQSConnectionTest
-from .s3.test_connection import S3ConnectionTest
-from .s3.test_versioning import S3VersionTest
-from .s3.test_mfa import S3MFATest
-from .s3.test_encryption import S3EncryptionTest
-from .s3.test_bucket import S3BucketTest
-from .s3.test_key import S3KeyTest
-from .s3.test_multidelete import S3MultiDeleteTest
-from .s3.test_multipart import S3MultiPartUploadTest
-from .s3.test_gsconnection import GSConnectionTest
-from .s3.test_https_cert_validation import CertValidationTest
-from .ec2.test_connection import EC2ConnectionTest
-from .ec2.elb.test_connection import ELBConnectionTest
-from .ec2.cloudwatch.test_connection import CloudWatchConnectionTest
-from .autoscale.test_connection import AutoscaleConnectionTest
-from .sdb.test_connection import SDBConnectionTest
-from .cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
-from .dynamodb.test_layer1 import DynamoDBLayer1Test
-from .dynamodb.test_layer2 import DynamoDBLayer2Test
-from .sts.test_session_token import SessionTokenTest
+from sqs.test_connection import SQSConnectionTest
+from s3.test_connection import S3ConnectionTest
+from s3.test_versioning import S3VersionTest
+from s3.test_mfa import S3MFATest
+from s3.test_encryption import S3EncryptionTest
+from s3.test_bucket import S3BucketTest
+from s3.test_key import S3KeyTest
+from s3.test_multidelete import S3MultiDeleteTest
+from s3.test_multipart import S3MultiPartUploadTest
+from s3.test_gsconnection import GSConnectionTest
+from s3.test_https_cert_validation import CertValidationTest
+from ec2.test_connection import EC2ConnectionTest
+from ec2.elb.test_connection import ELBConnectionTest
+from ec2.cloudwatch.test_connection import CloudWatchConnectionTest
+from autoscale.test_connection import AutoscaleConnectionTest
+from sdb.test_connection import SDBConnectionTest
+from cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
+from dynamodb.test_layer1 import DynamoDBLayer1Test
+from dynamodb.test_layer2 import DynamoDBLayer2Test
+from sts.test_session_token import SessionTokenTest
 
 def usage():
-    print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
-    print "    -v   verbosity (0|1|2)"
+    print("test.py  [-t testsuite] [-v verbosity]")
+    print("    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)")
+    print("    -v   verbosity (0|1|2)")
 
 def main():
     try:

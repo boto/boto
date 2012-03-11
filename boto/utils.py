@@ -38,11 +38,8 @@
 Some handy utility functions used by several classes.
 """
 
-import urllib
-import urllib2
 import imp
 import subprocess
-import StringIO
 import time
 import logging.handlers
 import boto
@@ -50,17 +47,9 @@ import boto.provider
 import tempfile
 import smtplib
 import datetime
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
-from email import Encoders
 import gzip
 import base64
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+from . import compat
 
 
 try:
@@ -83,7 +72,7 @@ def unquote_v(nv):
     if len(nv) == 1:
         return nv
     else:
-        return (nv[0], urllib.unquote(nv[1]))
+        return (nv[0], compat.unquote(nv[1]))
 
 # generates the aws canonical string for the given parameters
 def canonical_string(method, path, headers, expires=None,
@@ -112,8 +101,7 @@ def canonical_string(method, path, headers, expires=None,
     if expires:
         interesting_headers['date'] = str(expires)
 
-    sorted_header_keys = interesting_headers.keys()
-    sorted_header_keys.sort()
+    sorted_header_keys = sorted(interesting_headers)
 
     buf = "%s\n" % method
     for key in sorted_header_keys:
@@ -162,7 +150,7 @@ def get_aws_metadata(headers, provider=None):
     metadata = {}
     for hkey in headers.keys():
         if hkey.lower().startswith(metadata_prefix):
-            val = urllib.unquote_plus(headers[hkey])
+            val = compat.unquote_plus(headers[hkey])
             try:
                 metadata[hkey[len(metadata_prefix):]] = unicode(val, 'utf-8')
             except UnicodeDecodeError:
@@ -173,10 +161,10 @@ def get_aws_metadata(headers, provider=None):
 def retry_url(url, retry_on_404=True, num_retries=10):
     for i in range(0, num_retries):
         try:
-            req = urllib2.Request(url)
-            resp = urllib2.urlopen(req)
+            req = compat.Request(url)
+            resp = compat.urlopen(req)
             return resp.read()
-        except urllib2.HTTPError as e:
+        except compat.HTTPError as e:
             # in 2.6 you use getcode(), in 2.5 and earlier you use code
             if hasattr(e, 'getcode'):
                 code = e.getcode()
@@ -275,7 +263,7 @@ def update_dme(username, password, dme_id, ip_address):
     """
     dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
-    s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
+    s = compat.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
 
 def fetch_file(uri, file=None, username=None, password=None):
@@ -297,12 +285,12 @@ def fetch_file(uri, file=None, username=None, password=None):
             key.get_contents_to_file(file)
         else:
             if username and password:
-                passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                passman = compat.HTTPPasswordMgrWithDefaultRealm()
                 passman.add_password(None, uri, username, password)
-                authhandler = urllib2.HTTPBasicAuthHandler(passman)
-                opener = urllib2.build_opener(authhandler)
-                urllib2.install_opener(opener)
-            s = urllib2.urlopen(uri)
+                authhandler = compat.HTTPBasicAuthHandler(passman)
+                opener = compat.build_opener(authhandler)
+                compat.install_opener(opener)
+            s = compat.urlopen(uri)
             file.write(s.read())
         file.seek(0)
     except:
@@ -316,7 +304,7 @@ class ShellCommand(object):
     def __init__(self, command, wait=True, fail_fast=False, cwd = None):
         self.exit_code = 0
         self.command = command
-        self.log_fp = StringIO.StringIO()
+        self.log_fp = compat.StringIO()
         self.wait = wait
         self.fail_fast = fail_fast
         self.run(cwd = cwd)
@@ -397,7 +385,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
                             self.fromaddr,
                             ','.join(self.toaddrs),
                             self.getSubject(record),
-                            formatdate(), msg)
+                            compat.formatdate(), msg)
             smtp.sendmail(self.fromaddr, self.toaddrs, msg)
             smtp.quit()
         except (KeyboardInterrupt, SystemExit):
@@ -564,20 +552,20 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=None,
     if to_string:
         try:
             from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
-            msg = MIMEMultipart()
+            msg = compat.MIMEMultipart()
             msg['From'] = from_string
             msg['Reply-To'] = from_string
             msg['To'] = to_string
-            msg['Date'] = formatdate(localtime=True)
+            msg['Date'] = compat.formatdate(localtime=True)
             msg['Subject'] = subject
         
             if body:
-                msg.attach(MIMEText(body))
+                msg.attach(compat.MIMEText(body))
 
             if html_body:
-                part = MIMEBase('text', 'html')
+                part = compat.MIMEBase('text', 'html')
                 part.set_payload(html_body)
-                Encoders.encode_base64(part)
+                compat.Encoders.encode_base64(part)
                 msg.attach(part)
 
             for part in attachments:
@@ -606,9 +594,9 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=None,
             boto.log.exception('notify failed')
 
 def get_utf8_value(value):
-    if not isinstance(value, str) and not isinstance(value, unicode):
+    if not isinstance(value, compat.string_types) and not isinstance(value, compat.text_type):
         value = str(value)
-    if isinstance(value, unicode):
+    if isinstance(value, compat.text_type):
         return value.encode('utf-8')
     else:
         return value
@@ -650,23 +638,23 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     :return: Final mime multipart
     :rtype: str:
     """
-    wrapper = MIMEMultipart()
+    wrapper = compat.MIMEMultipart()
     for name,con in content:
         definite_type = guess_mime_type(con, deftype)
         maintype, subtype = definite_type.split('/', 1)
         if maintype == 'text':
-            mime_con = MIMEText(con, _subtype=subtype)
+            mime_con = compat.MIMEText(con, _subtype=subtype)
         else:
-            mime_con = MIMEBase(maintype, subtype)
+            mime_con = compat.MIMEBase(maintype, subtype)
             mime_con.set_payload(con)
             # Encode the payload using Base64
-            Encoders.encode_base64(mime_con)
+            compat.Encoders.encode_base64(mime_con)
         mime_con.add_header('Content-Disposition', 'attachment', filename=name)
         wrapper.attach(mime_con)
     rcontent = wrapper.as_string()
 
     if compress:
-        buf = StringIO.StringIO()
+        buf = compat.StringIO()
         gz = gzip.GzipFile(mode='wb', fileobj=buf)
         try:
             gz.write(rcontent)
@@ -728,7 +716,7 @@ def compute_md5(fp, buf_size=8192, size=None):
              plain digest as the second element and the data size as
              the third element.
     """
-    m = md5()
+    m = compat.md5()
     spos = fp.tell()
     if size and size < buf_size:
         s = fp.read(size)
@@ -745,7 +733,7 @@ def compute_md5(fp, buf_size=8192, size=None):
         else:
             s = fp.read(buf_size)
     hex_md5 = m.hexdigest()
-    base64md5 = base64.encodestring(m.digest())
+    base64md5 = base64.b64encode(m.digest())
     if base64md5[-1] == '\n':
         base64md5 = base64md5[0:-1]
     # data_size based on bytes read.

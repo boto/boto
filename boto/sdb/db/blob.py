@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto.compat as compat
+
 
 class Blob(object):
     """Blob object"""
@@ -29,7 +31,7 @@ class Blob(object):
 
     @property
     def file(self):
-        from StringIO import StringIO
+        from compat.StringIO import StringIO
         if self._file:
             f = self._file
         else:

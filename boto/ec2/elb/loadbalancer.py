@@ -26,6 +26,7 @@ from boto.ec2.elb.policies import Policies
 from boto.ec2.elb.securitygroup import SecurityGroup
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
+import boto.compat as compat
 
 class LoadBalancer(object):
     """
@@ -137,7 +138,7 @@ class LoadBalancer(object):
         :param zones: The name of the zone(s) to add.
 
         """
-        if isinstance(zones, str) or isinstance(zones, unicode):
+        if isinstance(zones, compat.string_types):
             zones = [zones]
         new_zones = self.connection.enable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
@@ -150,7 +151,7 @@ class LoadBalancer(object):
         :param zones: The name of the zone(s) to add.
 
         """
-        if isinstance(zones, str) or isinstance(zones, unicode):
+        if isinstance(zones, compat.string_types):
             zones = [zones]
         new_zones = self.connection.disable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
@@ -165,7 +166,7 @@ class LoadBalancer(object):
             to add to this load balancer.
 
         """
-        if isinstance(instances, str) or isinstance(instances, unicode):
+        if isinstance(instances, compat.string_types):
             instances = [instances]
         new_instances = self.connection.register_instances(self.name, instances)
         self.instances = new_instances
@@ -179,7 +180,7 @@ class LoadBalancer(object):
             to remove from this load balancer.
 
         """
-        if isinstance(instances, str) or isinstance(instances, unicode):
+        if isinstance(instances, string_types):
             instances = [instances]
         new_instances = self.connection.deregister_instances(self.name, instances)
         self.instances = new_instances
@@ -259,7 +260,7 @@ class LoadBalancer(object):
         :param subnets: The name of the subnet(s) to add.
 
         """
-        if isinstance(subnets, str) or isinstance(subnets, unicode):
+        if isinstance(subnets, compat.string_types):
             subnets = [subnets]
         new_subnets = self.connection.attach_lb_to_subnets(self.name, subnets)
         self.subnets = new_subnets
@@ -272,7 +273,7 @@ class LoadBalancer(object):
         :param subnets: The name of the subnet(s) to detach.
 
         """
-        if isinstance(subnets, str) or isinstance(subnets, unicode):
+        if isinstance(subnets, compat.string_types):
             subnets = [subnets]
         new_subnets = self.connection.detach_lb_to_subnets(self.name, subnets)
         self.subnets = new_subnets
@@ -287,8 +288,7 @@ class LoadBalancer(object):
         :param security_groups: The name of the security group(s) to add.
 
         """
-        if isinstance(security_groups, str) or \
-              isinstance(security_groups, unicode):
+        if isinstance(security_groups, compat.string_types):
             security_groups = [security_groups]
         new_sgs = self.connection.apply_security_groups_to_lb(
                                          self.name, security_groups)

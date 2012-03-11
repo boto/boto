@@ -31,6 +31,7 @@ from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
 from boto.mturk.question import QuestionForm, ExternalQuestion
+import boto.compat as compat
 
 class MTurkRequestError(EC2ResponseError):
     "Error for MTurk Requests"
@@ -756,7 +757,7 @@ class MTurkConnection(AWSQueryConnection):
             keywords = ', '.join(keywords)
         if type(keywords) is str:
             final_keywords = keywords
-        elif type(keywords) is unicode:
+        elif type(keywords) is compat.text_type:
             final_keywords = keywords.encode('utf-8')
         elif keywords is None:
             final_keywords = ""

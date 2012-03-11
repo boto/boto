@@ -131,9 +131,9 @@ class AutoScaleConnection(AWSQueryConnection):
         # different from EC2 list params
         for i in xrange(1, len(items)+1):
             if isinstance(items[i-1], dict):
-                for k, v in items[i-1].iteritems():
+                for k, v in items[i-1].items():
                     if isinstance(v, dict):
-                        for kk, vv in v.iteritems():
+                        for kk, vv in v.items():
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v

@@ -137,6 +137,7 @@ class Layer1(AWSAuthConnection):
             self.instrumentation['times'].append(time.time() - start)
             self.instrumentation['ids'].append(self.request_id)
         response_body = response.read()
+        response_body = response_body.decode('utf-8')
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
 

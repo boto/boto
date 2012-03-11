@@ -23,8 +23,8 @@
 Represents an SQS Queue
 """
 
-import urlparse
 from boto.sqs.message import Message
+import boto.compat as compat
 
 
 class Queue:
@@ -40,7 +40,7 @@ class Queue:
 
     def _id(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2]
+            val = compat.urlparse.urlparse(self.url)[2]
         else:
             val = self.url
         return val
@@ -48,7 +48,7 @@ class Queue:
 
     def _name(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2].split('/')[2]
+            val = compat.urlparse.urlparse(self.url)[2].split('/')[2]
         else:
             val = self.url
         return  val
@@ -398,7 +398,7 @@ class Queue:
                 m = Message(self, body)
                 self.write(m)
                 n += 1
-                print 'writing message %d' % n
+                print('writing message %d' % n)
                 body = ''
             else:
                 body = body + l

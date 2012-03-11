@@ -32,7 +32,6 @@ import random
 import re
 import shutil
 import socket
-import StringIO
 import sys
 import tempfile
 import time
@@ -45,6 +44,7 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
+import boto.compat as compat
 from .cb_test_harnass import CallbackTestHarnass
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
@@ -100,7 +100,7 @@ class ResumableUploadTests(unittest.TestCase):
         for i in range(size):
             buf.append(str(random.randint(0, 9)))
         file_as_string = ''.join(buf)
-        return (file_as_string, StringIO.StringIO(file_as_string))
+        return (file_as_string, compat.StringIO(file_as_string))
 
     @classmethod
     def get_dst_bucket_uri(cls, debug):
@@ -192,8 +192,8 @@ class ResumableUploadTests(unittest.TestCase):
                 cls.dst_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
-                print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.dst_bucket_uri.uri)
+                print('Test bucket (%s) not yet deleted, still trying' % (
+                    cls.dst_bucket_uri.uri))
                 time.sleep(2)
         shutil.rmtree(cls.tmp_dir)
         cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
@@ -613,11 +613,11 @@ if __name__ == '__main__':
     # don't assume the user has Python 2.7 (which supports classmethods
     # that do it, with camelCase versions of these names).
     try:
-        print 'Setting up %s...' % test_class.get_suite_description()
+        print('Setting up %s...' % test_class.get_suite_description())
         test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
+        print('Running %s...' % test_class.get_suite_description())
         unittest.TextTestRunner(verbosity=2).run(suite)
     finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
+        print('Cleaning up after %s...' % test_class.get_suite_description())
         test_class.tear_down_class()
-        print ''
+        print('')

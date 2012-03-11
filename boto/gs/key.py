@@ -20,9 +20,9 @@
 # IN THE SOFTWARE.
 
 import os
-import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
+import boto.compat as compat
 
 class Key(S3Key):
 
@@ -348,9 +348,9 @@ class Key(S3Key):
                     param, if present, will be used as the MD5 values
                     of the file.  Otherwise, the checksum will be computed.
         """
-        if isinstance(s, unicode):
+        if isinstance(s, compat.text_type):
             s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        fp = compat.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5)
         fp.close()

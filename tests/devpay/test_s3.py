@@ -27,7 +27,7 @@ Some unit tests for the S3Connection
 
 import time
 import os
-import urllib
+import boto.compat as compat
 
 from boto.s3.connection import S3Connection
 from boto.exception import S3PermissionsError
@@ -37,7 +37,7 @@ from boto.exception import S3PermissionsError
 AMAZON_USER_TOKEN = '{UserToken}...your token here...'
 DEVPAY_HEADERS = { 'x-amz-security-token': AMAZON_USER_TOKEN }
 
-print '--- running S3Connection tests (DevPay) ---'
+print('--- running S3Connection tests (DevPay) ---')
 c = S3Connection()
 # create a new, empty bucket
 bucket_name = 'test-%d' % int(time.time())
@@ -66,10 +66,10 @@ assert s1 == fp.read(), 'corrupted file'
 fp.close()
 # test generated URLs
 url = k.generate_url(3600, headers=DEVPAY_HEADERS)
-file = urllib.urlopen(url)
+file = compat.urlopen(url)
 assert s1 == file.read(), 'invalid URL %s' % url
 url = k.generate_url(3600, force_http=True, headers=DEVPAY_HEADERS)
-file = urllib.urlopen(url)
+file = compat.urlopen(url)
 assert s1 == file.read(), 'invalid URL %s' % url
 bucket.delete_key(k, headers=DEVPAY_HEADERS)
 # test a few variations on get_all_keys - first load some data
@@ -174,4 +174,4 @@ for k in all:
 
 c.delete_bucket(bucket, headers=DEVPAY_HEADERS)
 
-print '--- tests completed ---'
+print('--- tests completed ---')

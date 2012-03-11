@@ -34,8 +34,8 @@ Some unit tests for the S3 MultiPartUpload
 
 import unittest
 import time
-import StringIO
 from boto.s3.connection import S3Connection
+import boto.compat as compat
 
 class S3MultiPartUploadTest (unittest.TestCase):
 
@@ -50,14 +50,14 @@ class S3MultiPartUploadTest (unittest.TestCase):
         self.bucket.delete()
 
     def test_abort(self):
-        key_name = u"テスト"
+        key_name = "テスト"
         mpu = self.bucket.initiate_multipart_upload(key_name)
         mpu.cancel_upload()
 
     def test_complete_ascii(self):
         key_name = "test"
         mpu = self.bucket.initiate_multipart_upload(key_name)
-        fp = StringIO.StringIO("small file")
+        fp = compat.StringIO("small file")
         mpu.upload_part_from_file(fp, part_num=1)
         fp.close()
         cmpu = mpu.complete_upload()
@@ -65,9 +65,9 @@ class S3MultiPartUploadTest (unittest.TestCase):
         self.assertNotEqual(cmpu.etag, None)
 
     def test_complete_japanese(self):
-        key_name = u"テスト"
+        key_name = "テスト"
         mpu = self.bucket.initiate_multipart_upload(key_name)
-        fp = StringIO.StringIO("small file")
+        fp = compat.StringIO("small file")
         mpu.upload_part_from_file(fp, part_num=1)
         fp.close()
         cmpu = mpu.complete_upload()
@@ -81,18 +81,18 @@ class S3MultiPartUploadTest (unittest.TestCase):
         self.assertNotEqual(cmpu.etag, None)
 
     def test_list_japanese(self):
-        key_name = u"テスト"
+        key_name = "テスト"
         mpu = self.bucket.initiate_multipart_upload(key_name)
         rs = self.bucket.list_multipart_uploads()
         # New bucket, so only one upload expected
-        lmpu = iter(rs).next()
+        lmpu = next(iter(rs))
         self.assertEqual(lmpu.id, mpu.id)
         self.assertEqual(lmpu.key_name, key_name)
         # Abort using the one returned in the list
         lmpu.cancel_upload()
 
     def test_list_multipart_uploads(self):
-        key_name = u"テスト"
+        key_name = "テスト"
         mpus = []
         mpus.append(self.bucket.initiate_multipart_upload(key_name))
         mpus.append(self.bucket.initiate_multipart_upload(key_name))
@@ -107,7 +107,7 @@ class S3MultiPartUploadTest (unittest.TestCase):
     def test_four_part_file(self):
         key_name = "k"
         contents = "01234567890123456789"
-        sfp = StringIO.StringIO(contents)
+        sfp = compat.StringIO(contents)
 
         # upload 20 bytes in 4 parts of 5 bytes each
         mpu = self.bucket.initiate_multipart_upload(key_name)

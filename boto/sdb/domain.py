@@ -23,6 +23,8 @@
 Represents an SDB Domain
 """
 from boto.sdb.queryresultset import SelectResultSet
+import boto.compat as compat
+
 
 class Domain:
 
@@ -229,40 +231,40 @@ class Domain:
     def delete_item(self, item):
         self.delete_attributes(item.name)
 
-    def to_xml(self, f=None):
-        """Get this domain as an XML DOM Document
-        :param f: Optional File to dump directly to
-        :type f: File or Stream
+    # def to_xml(self, f=None):
+    #     """Get this domain as an XML DOM Document
+    #     :param f: Optional File to dump directly to
+    #     :type f: File or Stream
 
-        :return: File object where the XML has been dumped to
-        :rtype: file
-        """
-        if not f:
-            from tempfile import TemporaryFile
-            f = TemporaryFile()
-        print >> f, '<?xml version="1.0" encoding="UTF-8"?>'
-        print >> f, '<Domain id="%s">' % self.name
-        for item in self:
-            print >> f, '\t<Item id="%s">' % item.name
-            for k in item:
-                print >> f, '\t\t<attribute id="%s">' % k
-                values = item[k]
-                if not isinstance(values, list):
-                    values = [values]
-                for value in values:
-                    print >> f, '\t\t\t<value><![CDATA[',
-                    if isinstance(value, unicode):
-                        value = value.encode('utf-8', 'replace')
-                    else:
-                        value = unicode(value, errors='replace').encode('utf-8', 'replace')
-                    f.write(value)
-                    print >> f, ']]></value>'
-                print >> f, '\t\t</attribute>'
-            print >> f, '\t</Item>'
-        print >> f, '</Domain>'
-        f.flush()
-        f.seek(0)
-        return f
+    #     :return: File object where the XML has been dumped to
+    #     :rtype: file
+    #     """
+    #     if not f:
+    #         from tempfile import TemporaryFile
+    #         f = TemporaryFile()
+    #     print >> f, '<?xml version="1.0" encoding="UTF-8"?>'
+    #     print >> f, '<Domain id="%s">' % self.name
+    #     for item in self:
+    #         print >> f, '\t<Item id="%s">' % item.name
+    #         for k in item:
+    #             print >> f, '\t\t<attribute id="%s">' % k
+    #             values = item[k]
+    #             if not isinstance(values, list):
+    #                 values = [values]
+    #             for value in values:
+    #                 print >> f, '\t\t\t<value><![CDATA[',
+    #                 if isinstance(value, compat.text_types):
+    #                     value = value.encode('utf-8', 'replace')
+    #                 else:
+    #                     value = unicode(value, errors='replace').encode('utf-8', 'replace')
+    #                 f.write(value)
+    #                 print >> f, ']]></value>'
+    #             print >> f, '\t\t</attribute>'
+    #         print >> f, '\t</Item>'
+    #     print >> f, '</Domain>'
+    #     f.flush()
+    #     f.seek(0)
+    #     return f
 
 
     def from_xml(self, doc):
@@ -370,8 +372,8 @@ class UploaderThread(Thread):
         try:
             self.db.batch_put_attributes(self.items)
         except:
-            print "Exception using batch put, trying regular put instead"
+            print("Exception using batch put, trying regular put instead")
             for item_name in self.items:
                 self.db.put_attributes(item_name, self.items[item_name])
-        print ".",
+        print(".",)
         sys.stdout.flush()

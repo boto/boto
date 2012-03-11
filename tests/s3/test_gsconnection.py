@@ -41,7 +41,7 @@ class GSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
         """basic regression test for Google Cloud Storage"""
-        print '--- running GSConnection tests ---'
+        print('--- running GSConnection tests ---')
         c = GSConnection()
         # create a new, empty bucket
         bucket_name = 'test-%d' % int(time.time())
@@ -122,7 +122,7 @@ class GSConnectionTest (unittest.TestCase):
         k.set_metadata(mdkey2, mdval2)
         # try a unicode metadata value
 
-        mdval3 = u'föö'
+        mdval3 = 'föö'
         mdkey3 = 'meta3'
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
@@ -340,4 +340,4 @@ class GSConnectionTest (unittest.TestCase):
         # delete bucket
         uri.delete_bucket()
         
-        print '--- tests completed ---'
+        print('--- tests completed ---')

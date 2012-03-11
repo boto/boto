@@ -2757,8 +2757,7 @@ class EC2Connection(AWSQueryConnection):
     # Tag methods
 
     def build_tag_param_list(self, params, tags):
-        keys = tags.keys()
-        keys.sort()
+        keys = sorted(tags)
         i = 1
         for key in keys:
             value = tags[key]

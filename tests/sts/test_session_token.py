@@ -34,7 +34,7 @@ from boto.s3.connection import S3Connection
 class SessionTokenTest (unittest.TestCase):
 
     def test_session_token(self):
-        print '--- running Session Token tests ---'
+        print('--- running Session Token tests ---')
         c = STSConnection()
 
         # Create a session token
@@ -61,5 +61,5 @@ class SessionTokenTest (unittest.TestCase):
                           security_token=token.session_token)
         buckets = s3.get_all_buckets()
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 

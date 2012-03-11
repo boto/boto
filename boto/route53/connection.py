@@ -24,12 +24,12 @@
 import xml.sax
 import time
 import uuid
-import urllib
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
+import boto.compat as compat
 from . import exception
 from . import hostedzone
 
@@ -67,9 +67,9 @@ class Route53Connection(AWSAuthConnection):
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
-            for key, val in params.iteritems():
+            for key, val in params.items():
                 if val is None: continue
-                pairs.append(key + '=' + urllib.quote(str(val)))
+                pairs.append(key + '=' + compat.quote(str(val)))
             path += '?' + '&'.join(pairs)
         return AWSAuthConnection.make_request(self, action, path, headers, data)
 

@@ -32,9 +32,10 @@ from boto.sdb.db.property import StringProperty, IntegerProperty, BooleanPropert
 from boto.manage import propget
 from boto.ec2.zone import Zone
 from boto.ec2.keypair import KeyPair
-import os, time, StringIO
+import os, time
 from contextlib import closing
 from boto.exception import EC2ResponseError
+import boto.compat as compat
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
                  'c1.medium', 'c1.xlarge',
@@ -49,7 +50,7 @@ class Bundler(object):
         self.ssh_client = SSHClient(server, uname=uname)
 
     def copy_x509(self, key_file, cert_file):
-        print '\tcopying cert and pk over to /mnt directory on server'
+        print('\tcopying cert and pk over to /mnt directory on server')
         self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
         self.remote_key_file = '/mnt/%s' % name
@@ -57,7 +58,7 @@ class Bundler(object):
         path, name = os.path.split(cert_file)
         self.remote_cert_file = '/mnt/%s' % name
         self.ssh_client.put_file(cert_file, self.remote_cert_file)
-        print '...complete!'
+        print('...complete!')
 
     def bundle_image(self, prefix, size, ssh_key):
         command = ""
@@ -103,7 +104,7 @@ class Bundler(object):
             ssh_key = self.server.get_ssh_key_file()
         self.copy_x509(key_file, cert_file)
         if not fp:
-            fp = StringIO.StringIO()
+            fp = compat.StringIO()
         fp.write('sudo mv %s /mnt/boto.cfg; ' % BotoConfigPath)
         fp.write('mv ~/.ssh/authorized_keys /mnt/authorized_keys; ')
         if clear_history:
@@ -115,13 +116,13 @@ class Bundler(object):
         fp.write('sudo mv /mnt/boto.cfg %s; ' % BotoConfigPath)
         fp.write('mv /mnt/authorized_keys ~/.ssh/authorized_keys')
         command = fp.getvalue()
-        print 'running the following command on the remote server:'
-        print command
+        print('running the following command on the remote server:')
+        print(command)
         t = self.ssh_client.run(command)
-        print '\t%s' % t[0]
-        print '\t%s' % t[1]
-        print '...complete!'
-        print 'registering image...'
+        print('\t%s' % t[0])
+        print('\t%s' % t[1])
+        print('...complete!')
+        print('registering image...')
         self.image_id = self.server.ec2.register_image(name=prefix, image_location='%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
@@ -137,7 +138,7 @@ class CommandLineGetter(object):
     
     def get_region(self, params):
         region = params.get('region', None)
-        if isinstance(region, str) or isinstance(region, unicode):
+        if isinstance(region, compat.string_types):
             region = boto.ec2.get_region(region)
             params['region'] = region
         if not region:
@@ -189,7 +190,7 @@ class CommandLineGetter(object):
 
     def get_group(self, params):
         group = params.get('group', None)
-        if isinstance(group, str) or isinstance(group, unicode):
+        if isinstance(group, compat.string_types):
             group_list = self.ec2.get_all_security_groups()
             for g in group_list:
                 if g.name == group:
@@ -202,7 +203,7 @@ class CommandLineGetter(object):
 
     def get_key(self, params):
         keypair = params.get('keypair', None)
-        if isinstance(keypair, str) or isinstance(keypair, unicode):
+        if isinstance(keypair, compat.string_types):
             key_list = self.ec2.get_all_key_pairs()
             for k in key_list:
                 if k.name == keypair:
@@ -305,7 +306,7 @@ class Server(Model):
         # deal with possibly passed in logical volume:
         if logical_volume != None:
            cfg.set('EBS', 'logical_volume_name', logical_volume.name) 
-        cfg_fp = StringIO.StringIO()
+        cfg_fp = compat.StringIO()
         cfg.write(cfg_fp)
         # deal with the possibility that zone and/or keypair are strings read from the config file:
         if isinstance(zone, Zone):
@@ -325,14 +326,14 @@ class Server(Model):
         instances = reservation.instances
         if elastic_ip != None and instances.__len__() > 0:
             instance = instances[0]
-            print 'Waiting for instance to start so we can set its elastic IP address...'
+            print('Waiting for instance to start so we can set its elastic IP address...')
             # Sometimes we get a message from ec2 that says that the instance does not exist.
             # Hopefully the following delay will giv eec2 enough time to get to a stable state:
             time.sleep(5) 
             while instance.update() != 'running':
                 time.sleep(1)
             instance.use_ip(elastic_ip)
-            print 'set the elastic IP of the first instance to %s' % elastic_ip
+            print('set the elastic IP of the first instance to %s' % elastic_ip)
         for instance in instances:
             s = cls()
             s.ec2 = ec2

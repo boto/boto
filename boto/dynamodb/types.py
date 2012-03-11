@@ -24,14 +24,15 @@
 Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
+import boto.compat as compat
 
 
 def is_num(n):
-    return isinstance(n, (int, long, float, bool))
+    return isinstance(n, (compat.integer_types, float, bool))
 
 
 def is_str(n):
-    return isinstance(n, basestring)
+    return isinstance(n, compat.string_types)
 
 
 def convert_num(s):
