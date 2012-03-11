@@ -101,7 +101,7 @@ class SDBConverter(object):
         if value == None:
             return None
         if not isinstance(value, dict):
-            raise ValueError, 'Expected a dict value, got %s' % type(value)
+            raise ValueError('Expected a dict value, got %s' % type(value))
         new_value = []
         for key in value:
             item_type = getattr(prop, "item_type")
@@ -640,7 +640,7 @@ class SDBManager(object):
         return decendents
 
     def query_gql(self, query_string, *args, **kwds):
-        raise NotImplementedError, "GQL queries not supported in SimpleDB"
+        raise NotImplementedError("GQL queries not supported in SimpleDB")
 
     def save_object(self, obj, expected_value=None):
         if not obj.id:
@@ -706,7 +706,7 @@ class SDBManager(object):
             value = prop.make_value_from_datastore(value)
             setattr(obj, prop.name, value)
             return value
-        raise AttributeError, '%s not found' % name
+        raise AttributeError('%s not found' % name)
 
     def set_key_value(self, obj, name, value):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)

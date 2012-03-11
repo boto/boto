@@ -171,7 +171,7 @@ class Sequence(object):
             self.timestamp = new_val['timestamp']
         except SDBResponseError, e:
             if e.status == 409:
-                raise ValueError, "Sequence out of sync"
+                raise ValueError("Sequence out of sync")
             else:
                 raise
 

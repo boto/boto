@@ -105,7 +105,7 @@ class PGConverter:
         try:
             return self.manager.get_object_from_id(value)
         except:
-            raise ValueError, 'Unable to convert %s to Object' % value
+            raise ValueError('Unable to convert %s to Object' % value)
 
 class PGManager(object):
 
@@ -296,9 +296,9 @@ class PGManager(object):
             row = self.cursor.fetchone()
             return self._object_from_row(row, self.cursor.description)
         elif self.cursor.rowcount == 0:
-            raise KeyError, 'Object not found'
+            raise KeyError('Object not found')
         else:
-            raise LookupError, 'Multiple Objects Found'
+            raise LookupError('Multiple Objects Found')
 
     def query(self, cls, filters, limit=None, order_by=None):
         parts = []
@@ -333,7 +333,7 @@ class PGManager(object):
                 if prop.name == name:
                     v = self.decode_value(prop, rs[0])
                     return v
-        raise AttributeError, '%s not found' % name
+        raise AttributeError('%s not found' % name)
 
     def set_property(self, prop, obj, name, value):
         pass
