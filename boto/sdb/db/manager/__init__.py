@@ -72,18 +72,18 @@ def get_manager(cls):
     elif hasattr(cls.__bases__[0], "_manager"):
         return cls.__bases__[0]._manager
     if db_type == 'SimpleDB':
-        from sdbmanager import SDBManager
+        from .sdbmanager import SDBManager
         return SDBManager(cls, db_name, db_user, db_passwd,
                           db_host, db_port, db_table, sql_dir, enable_ssl)
     elif db_type == 'PostgreSQL':
-        from pgmanager import PGManager
+        from .pgmanager import PGManager
         if db_table:
             return PGManager(cls, db_name, db_user, db_passwd,
                              db_host, db_port, db_table, sql_dir, enable_ssl)
         else:
             return None
     elif db_type == 'XML':
-        from xmlmanager import XMLManager
+        from .xmlmanager import XMLManager
         return XMLManager(cls, db_name, db_user, db_passwd,
                           db_host, db_port, db_table, sql_dir, enable_ssl)
     else:

@@ -56,8 +56,8 @@ import time
 import urllib, urlparse
 import xml.sax
 
-import auth
-import auth_handler
+from . import auth
+from . import auth_handler
 import boto
 import boto.utils
 import boto.handler

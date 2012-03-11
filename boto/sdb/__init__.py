@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 #
 
-from regioninfo import SDBRegionInfo
+from .regioninfo import SDBRegionInfo
 
 def regions():
     """

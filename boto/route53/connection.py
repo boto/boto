@@ -30,8 +30,8 @@ from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
-import exception
-import hostedzone
+from . import exception
+from . import hostedzone
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
