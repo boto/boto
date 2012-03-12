@@ -290,7 +290,7 @@ class MetricAlarm(object):
         self.ok_actions.append(action_arn)
 
     def delete(self):
-        self.connection.delete_alarms([self])
+        self.connection.delete_alarms([self.name])
 
 class AlarmHistoryItem(object):
     def __init__(self, connection=None):
