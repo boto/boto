@@ -24,6 +24,13 @@ RECORD_TYPES = ['A', 'AAAA', 'TXT', 'CNAME', 'MX', 'PTR', 'SRV', 'SPF']
 
 from boto.resultset import ResultSet
 class ResourceRecordSets(ResultSet):
+    """
+    A list of resource records.
+
+    :ivar hosted_zone_id: The ID of the hosted zone.
+    :ivar comment: A comment that will be stored with the change.
+    :ivar changes: A list of changes.
+    """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
     <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2011-05-05/">
@@ -37,7 +44,6 @@ class ResourceRecordSets(ResultSet):
         <Action>%(action)s</Action>
         %(record)s
     </Change>"""
-
 
     def __init__(self, connection=None, hosted_zone_id=None, comment=None):
         self.connection = connection
@@ -54,7 +60,52 @@ class ResourceRecordSets(ResultSet):
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
             weight=None):
-        """Add a change request"""
+        """
+        Add a change request to the set.
+
+        :type action: str
+        :param action: The action to perform ('CREATE'|'DELETE')
+
+        :type name: str
+        :param name: The name of the domain you want to perform the action on.
+
+        :type type: str
+        :param type: The DNS record type.  Valid values are:
+
+            * A
+            * AAAA
+            * CNAME
+            * MX
+            * NS
+            * PTR
+            * SOA
+            * SPF
+            * SRV
+            * TXT
+
+        :type ttl: int
+        :param ttl: The resource record cache time to live (TTL), in seconds.
+
+        :type alias_hosted_zone_id: str
+        :param alias_dns_name: *Alias resource record sets only* The value
+            of the hosted zone ID, CanonicalHostedZoneNameId, for
+            the LoadBalancer.
+
+        :type alias_dns_name: str
+        :param alias_hosted_zone_id: *Alias resource record sets only*
+            Information about the domain to which you are redirecting traffic.
+
+        :type identifier: str
+        :param identifier: *Weighted resource record sets only* An
+            identifier that differentiates among multiple resource
+            record sets that have the same combination of DNS name and type.
+
+        :type weight: int
+        :param weight: *Weighted resource record sets only* Among resource
+            record sets that have the same combination of DNS name and type,
+            a value that determines what portion of traffic for the current
+            resource record set is routed to the associated location
+        """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
