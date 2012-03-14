@@ -25,6 +25,7 @@ from boto.exception import InvalidAclError
 ACCESS_CONTROL_LIST = 'AccessControlList'
 ALL_AUTHENTICATED_USERS = 'AllAuthenticatedUsers'
 ALL_USERS = 'AllUsers'
+DISPLAY_NAME = 'DisplayName'
 DOMAIN = 'Domain'
 EMAIL_ADDRESS = 'EmailAddress'
 ENTRY = 'Entry'
@@ -223,10 +224,10 @@ class Scope:
         ALL_AUTHENTICATED_USERS : [],
         ALL_USERS : [],
         GROUP_BY_DOMAIN : [DOMAIN],
-        GROUP_BY_EMAIL : [EMAIL_ADDRESS, NAME],
-        GROUP_BY_ID : [ID, NAME],
-        USER_BY_EMAIL : [EMAIL_ADDRESS, NAME],
-        USER_BY_ID : [ID, NAME]
+        GROUP_BY_EMAIL : [DISPLAY_NAME, EMAIL_ADDRESS, NAME],
+        GROUP_BY_ID : [DISPLAY_NAME, ID, NAME],
+        USER_BY_EMAIL : [DISPLAY_NAME, EMAIL_ADDRESS, NAME],
+        USER_BY_ID : [DISPLAY_NAME, ID, NAME]
     }
 
     def __init__(self, parent, type=None, id=None, name=None,
