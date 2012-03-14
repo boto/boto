@@ -52,6 +52,7 @@ from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
 from boto.ec2.instancestatus import InstanceStatusSet
+from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
 from boto.exception import EC2ResponseError
 
@@ -59,7 +60,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2011-12-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-03-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -1313,6 +1314,48 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_list('DescribeVolumes', params,
                              [('item', Volume)], verb='POST')
+
+    def get_all_volume_status(self, volume_ids=None,
+                              max_results=None, next_token=None,
+                              filters=None):
+        """
+        Retrieve the status of one or more volumes.
+
+        :type volume_ids: list
+        :param volume_ids: A list of strings of volume IDs
+
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+
+        :type next_token: str
+        :param next_token: A string specifying the next paginated set
+            of results to return.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+            the results returned.  Filters are provided
+            in the form of a dictionary consisting of
+            filter names as the key and filter values
+            as the value.  The set of allowable filter
+            names/values is dependent on the request
+            being performed.  Check the EC2 API guide
+            for details.
+
+        :rtype: list
+        :return: A list of volume status.
+        """
+        params = {}
+        if volume_ids:
+            self.build_list_params(params, volume_ids, 'VolumeId')
+        if max_results:
+            params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_object('DescribeVolumeStatus', params,
+                               VolumeStatusSet, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None):
         """

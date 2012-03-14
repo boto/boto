@@ -21,29 +21,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class Details(dict):
-    """
-    A dict object that contains name/value pairs which provide
-    more detailed information about the status of the system
-    or the instance.
-    """
+from boto.ec2.instancestatus import Status, Details
 
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'name':
-            self._name = value
-        elif name == 'status':
-            self[self._name] = value
-        else:
-            setattr(self, name, value)
-    
 class Event(object):
     """
     A status event for an instance.
 
-    :ivar code: A string indicating the event type.
+    :ivar type: The type of the event.
+    :ivar id: The ID of the event.
     :ivar description: A string describing the reason for the event.
     :ivar not_before: A datestring describing the earliest time for
         the event.
@@ -51,57 +36,31 @@ class Event(object):
         the event.
     """
 
-    def __init__(self, code=None, description=None,
+    def __init__(self, type=None, id=None, description=None,
                  not_before=None, not_after=None):
-        self.code = code
+        self.type = type
+        self.id = id
         self.description = description
         self.not_before = not_before
         self.not_after = not_after
         
     def __repr__(self):
-        return 'Event:%s' % self.code
+        return 'Event:%s' % self.type
 
     def startElement(self, name, attrs, connection):
         return None
 
     def endElement(self, name, value, connection):
-        if name == 'code':
-            self.code = value
+        if name == 'eventType':
+            self.type = value
+        elif name == 'eventId':
+            self.id = value
         elif name == 'description':
             self.description = value
         elif name == 'notBefore':
             self.not_before = value
         elif name == 'notAfter':
             self.not_after = value
-        else:
-            setattr(self, name, value)
-
-class Status(object):
-    """
-    A generic Status object used for system status and instance status.
-
-    :ivar status: A string indicating overall status.
-    :ivar details: A dict containing name-value pairs which provide
-        more details about the current status.
-    """
-
-    def __init__(self, status=None, details=None):
-        self.status = status
-        if not details:
-            details = Details()
-        self.details = details
-        
-    def __repr__(self):
-        return 'Status:%s' % self.status
-
-    def startElement(self, name, attrs, connection):
-        if name == 'details':
-            return self.details
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'status':
-            self.status = value
         else:
             setattr(self, name, value)
 
@@ -118,67 +77,101 @@ class EventSet(list):
     def endElement(self, name, value, connection):
         setattr(self, name, value)
 
-class InstanceStatus(object):
+class Action(object):
     """
-    Represents an EC2 Instance status as reported by
-    DescribeInstanceStatus request.
+    An action for an instance.
 
-    :ivar id: The instance identifier.
-    :ivar zone: The availability zone of the instance.
-    :ivar events: A list of events relevant to the instance.
-    :ivar state_code: An integer representing the current state
-        of the instance.
-    :ivar state_name: A string describing the current state
-        of the instance.
-    :ivar system_status: A Status object that reports impaired
-        functionality that stems from issues related to the systems
-        that support an instance, such as such as hardware failures
-        and network connectivity problems.
-    :ivar instance_status: A Status object that reports impaired
+    :ivar code: The code for the type of the action.
+    :ivar id: The ID of the event.
+    :ivar type: The type of the event.
+    :ivar description: A description of the action.
+    """
+
+    def __init__(self, code=None, id=None, description=None, type=None):
+        self.code = code
+        self.id = id
+        self.type = type
+        self.description = description
+        
+    def __repr__(self):
+        return 'Action:%s' % self.code
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'eventType':
+            self.type = value
+        elif name == 'eventId':
+            self.id = value
+        elif name == 'description':
+            self.description = value
+        elif name == 'code':
+            self.code = value
+        else:
+            setattr(self, name, value)
+
+class ActionSet(list):
+    
+    def startElement(self, name, attrs, connection):
+        if name == 'item':
+            action = Action()
+            self.append(action)
+            return action
+        else:
+            return None
+
+    def endElement(self, name, value, connection):
+        setattr(self, name, value)
+
+class VolumeStatus(object):
+    """
+    Represents an EC2 Volume status as reported by
+    DescribeVolumeStatus request.
+
+    :ivar id: The volume identifier.
+    :ivar zone: The availability zone of the volume
+    :ivar volume_status: A Status object that reports impaired
         functionality that arises from problems internal to the instance.
+    :ivar events: A list of events relevant to the instance.
+    :ivar actions: A list of events relevant to the instance.
     """
     
-    def __init__(self, id=None, zone=None, events=None,
-                 state_code=None, state_name=None):
+    def __init__(self, id=None, zone=None):
         self.id = id
         self.zone = zone
-        self.events = events
-        self.state_code = state_code
-        self.state_name = state_name
-        self.system_status = Status()
-        self.instance_status = Status()
+        self.volume_status = Status()
+        self.events = None
+        self.actions = None
 
     def __repr__(self):
-        return 'InstanceStatus:%s' % self.id
+        return 'VolumeStatus:%s' % self.id
 
     def startElement(self, name, attrs, connection):
         if name == 'eventsSet':
             self.events = EventSet()
             return self.events
-        elif name == 'systemStatus':
-            return self.system_status
-        elif name == 'instanceStatus':
-            return self.instance_status
+        elif name == 'actionsSet':
+            self.actions = ActionSet()
+            return self.actions
+        elif name == 'volumeStatus':
+            return self.volume_status
         else:
             return None
 
     def endElement(self, name, value, connection):
-        if name == 'instanceId':
+        if name == 'volumeId':
             self.id = value
         elif name == 'availabilityZone':
             self.zone = value
-        elif name == 'code':
-            self.state_code = int(value)
-        elif name == 'name':
-            self.state_name = value
         else:
             setattr(self, name, value)
 
-class InstanceStatusSet(list):
+class VolumeStatusSet(list):
     """
     A list object that contains the results of a call to
-    DescribeInstanceStatus request.  Each element of the
-    list will be an InstanceStatus object.
+    DescribeVolumeStatus request.  Each element of the
+    list will be an VolumeStatus object.
 
     :ivar next_token: If the response was truncated by
         the EC2 service, the next_token attribute of the
@@ -194,7 +187,7 @@ class InstanceStatusSet(list):
     
     def startElement(self, name, attrs, connection):
         if name == 'item':
-            status = InstanceStatus()
+            status = VolumeStatus()
             self.append(status)
             return status
         else:
