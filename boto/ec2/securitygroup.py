@@ -166,13 +166,12 @@ class SecurityGroup(TaggedEC2Object):
                                                           to_port,
                                                           cidr_ip)
         if status:
-            if type(cidr_ip) == list:
-                for single_cidr_ip in cidr_ip:
-                    self.add_rule(ip_protocol, from_port, to_port, src_group_name,
-                                  src_group_owner_id, single_cidr_ip)
-            else:
+            if type(cidr_ip) != list:
+                cidr_ip = [cidr_ip]
+            for single_cidr_ip in cidr_ip:
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
-                              src_group_owner_id, cidr_ip)
+                              src_group_owner_id, single_cidr_ip)
+
         return status
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
