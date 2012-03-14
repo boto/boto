@@ -36,7 +36,7 @@ from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
-from boto.ec2.volume import Volume
+from boto.ec2.volume import Volume, VolumeAttribute
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
@@ -1356,6 +1356,59 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_object('DescribeVolumeStatus', params,
                                VolumeStatusSet, verb='POST')
+
+    def enable_volume_io(self, volume_id):
+        """
+        Enables I/O operations for a volume that had I/O operations
+        disabled because the data on the volume was potentially inconsistent.
+
+        :type volume_id: str
+        :param volume_id: The ID of the volume.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VolumeId': volume_id}
+        return self.get_status('EnableVolumeIO', params, verb='POST')
+
+    def get_volume_attribute(self, volume_id,
+                             attribute='autoEnableIO'):
+        """
+        Describes attribute of the volume.
+
+        :type volume_id: str
+        :param volume_id: The ID of the volume.
+
+        :type attribute: str
+        :param attribute: The requested attribute.  Valid values are:
+
+            * autoEnableIO
+
+        :rtype: list of :class:`boto.ec2.volume.VolumeAttribute`
+        :return: The requested Volume attribute
+        """
+        params = {'VolumeId': volume_id, 'Attribute' : attribute}
+        return self.get_object('DescribeVolumeAttribute', params,
+                               VolumeAttribute, verb='POST')
+
+    def modify_volume_attribute(self, volume_id, attribute, new_value):
+        """
+        Changes an attribute of an Volume.
+
+        :type volume_id: string
+        :param volume_id: The volume id you wish to change
+
+        :type attribute: string
+        :param attribute: The attribute you wish to change.  Valid values are:
+            AutoEnableIO.
+
+        :type new_value: string
+        :param new_value: The new value of the attribute.
+        """
+        params = {'VolumeId': volume_id}
+        if attribute == 'AutoEnableIO':
+            params['AutoEnableIO.Value'] = new_value
+        return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None):
         """
