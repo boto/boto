@@ -465,7 +465,7 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
-    
+
     def get_all_instance_status(self, instance_ids=None,
                                 max_results=None, next_token=None,
                                 filters=None):
@@ -1005,7 +1005,7 @@ class EC2Connection(AWSQueryConnection):
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances
                           for VPC.
-        
+
         :type placement_group: string
         :param placement_group: If specified, this is the name of the placement
                                 group in which the instance(s) will be launched.
@@ -2106,7 +2106,7 @@ class EC2Connection(AWSQueryConnection):
         :type to_port: int
         :param to_port: The ending port number you are enabling
 
-        :type cidr_ip: string
+        :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://goo.gl/Yj5QC
 
@@ -2153,7 +2153,12 @@ class EC2Connection(AWSQueryConnection):
         if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
+            if type(cidr_ip) == list:
+                for i, single_cidr_ip in enumerate(cidr_ip):
+                    params['IpPermissions.1.IpRanges.%d.CidrIp' % (i+1)] = \
+                        single_cidr_ip
+            else:
+                params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
 
         return self.get_status('AuthorizeSecurityGroupIngress',
                                params, verb='POST')
@@ -2342,7 +2347,7 @@ class EC2Connection(AWSQueryConnection):
         Remove an existing egress rule from an existing VPC security group.
         You need to pass in an ip_protocol, from_port and to_port range only
         if the protocol you are using is port-based. You also need to pass in either
-        a src_group_id or cidr_ip. 
+        a src_group_id or cidr_ip.
 
         :type group_name: string
         :param group_id:  The name of the security group you are removing
@@ -2367,7 +2372,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-       
+
         params = {}
         if group_id:
             params['GroupId'] = group_id
@@ -2943,4 +2948,3 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'NetworkInterfaceId' : network_interface_id}
         return self.get_status('DeleteNetworkInterface', params, verb='POST')
-
