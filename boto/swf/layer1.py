@@ -59,7 +59,7 @@ class Layer1(AWSAuthConnection):
         if not region:
             region_name = boto.config.get('SWF', 'region',
                                           self.DefaultRegionName)
-            for reg in boto.dynamodb.regions():
+            for reg in boto.swf.regions():
                 if reg.name == region_name:
                     region = reg
                     break

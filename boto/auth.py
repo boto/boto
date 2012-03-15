@@ -215,9 +215,6 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        print '====='
-        print headers_to_sign
-        print '====='
         l = ['%s:%s'%(n.lower().strip(),
                       headers_to_sign[n].strip()) for n in headers_to_sign]
         l.sort()
