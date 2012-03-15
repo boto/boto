@@ -31,5 +31,6 @@ API Reference
    sns
    sqs
    sts
+   swf
    vpc
  
