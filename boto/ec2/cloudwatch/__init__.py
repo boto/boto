@@ -83,7 +83,7 @@ class CloudWatchConnection(AWSQueryConnection):
                                         'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto',
                                             'cloudwatch_region_endpoint',
-                                            'monitoring.amazonaws.com')
+                                            'monitoring.us-east-1.amazonaws.com')
 
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
