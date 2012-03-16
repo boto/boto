@@ -94,7 +94,8 @@ class MTurkConnection(AWSQueryConnection):
         if qual_req is not None:
             params.update(qual_req.get_as_params())
 
-        return self._process_request('RegisterHITType', params)
+        return self._process_request('RegisterHITType', params, [('HITTypeId', HITTypeId)])
+
 
     def set_email_notification(self, hit_type, email, event_types=None):
         """
@@ -819,6 +820,13 @@ class HIT(BaseAutoResultElement):
 
     # are we there yet?
     expired = property(_has_expired)
+
+class HITTypeId(BaseAutoResultElement):
+    """
+    Class to extract an HITTypeId structure from a response 
+    """
+
+    pass
 
 class Qualification(BaseAutoResultElement):
     """
