@@ -20,9 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import base64
-import hmac
-import hashlib
 import urllib
 import xml.sax
 import uuid
@@ -32,10 +29,11 @@ from boto import handler
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.exception import FPSResponseError
+from boto.fps.response import FPSResponse
 
 class FPSConnection(AWSQueryConnection):
 
-    APIVersion = '2007-01-08'
+    APIVersion = '2010-08-28'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -218,7 +216,7 @@ class FPSConnection(AWSQueryConnection):
         return final
 
     def pay(self, transactionAmount, senderTokenId,
-            recipientTokenId=None, callerTokenId=None,
+            recipientTokenId=None,
             chargeFeeTo="Recipient",
             callerReference=None, senderReference=None, recipientReference=None,
             senderDescription=None, recipientDescription=None,
@@ -230,20 +228,16 @@ class FPSConnection(AWSQueryConnection):
         """
         params = {}
         params['SenderTokenId'] = senderTokenId
-        # this is for 2008-09-17 specification
-        params['TransactionAmount.Amount'] = str(transactionAmount)
+        # this is for 2010-08-28 specification
+        params['TransactionAmount.Value'] = str(transactionAmount)
         params['TransactionAmount.CurrencyCode'] = "USD"
-        #params['TransactionAmount'] = str(transactionAmount)
         params['ChargeFeeTo'] = chargeFeeTo
-        
-        params['RecipientTokenId'] = (
-            recipientTokenId if recipientTokenId is not None
-            else boto.config.get("FPS", "recipient_token")
-            )
-        params['CallerTokenId'] = (
-            callerTokenId if callerTokenId is not None
-            else boto.config.get("FPS", "caller_token")
-            )
+
+        if recipientTokenId:
+            params['RecipientTokenId'] = (
+                recipientTokenId if recipientTokenId is not None
+                else boto.config.get("FPS", "recipient_token")
+                )
         if(transactionDate != None):
             params['TransactionDate'] = transactionDate
         if(senderReference != None):
@@ -263,12 +257,13 @@ class FPSConnection(AWSQueryConnection):
         params['CallerReference'] = callerReference
         
         if reserve:
-            response = self.make_request("Reserve", params)
+            action = "Reserve"
         else:
-            response = self.make_request("Pay", params)
+            action = "Pay"
+        response = self.make_request(action, params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("%sResponse" %action, FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -285,7 +280,7 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request("GetTransactionStatus", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("GetTransactionStatusResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -297,14 +292,14 @@ class FPSConnection(AWSQueryConnection):
         Cancels a reserved or pending transaction.
         """
         params = {}
-        params['transactionId'] = transactionId
+        params['TransactionId'] = transactionId
         if(description != None):
             params['description'] = description
         
         response = self.make_request("Cancel", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("CancelResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -318,12 +313,13 @@ class FPSConnection(AWSQueryConnection):
         params = {}
         params['ReserveTransactionId'] = reserveTransactionId
         if(transactionAmount != None):
-            params['TransactionAmount'] = transactionAmount
+            params['TransactionAmount.Value'] = transactionAmount
+            params['TransactionAmount.CurrencyCode'] = "USD"
         
         response = self.make_request("Settle", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("SettleResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -340,14 +336,15 @@ class FPSConnection(AWSQueryConnection):
         params['CallerReference'] = callerReference
         params['TransactionId'] = transactionId
         if(refundAmount != None):
-            params['RefundAmount'] = refundAmount
+            params['RefundAmount.Value'] = refundAmount
+            params['RefundAmount.CurrencyCode'] = "USD"
         if(callerDescription != None):
             params['CallerDescription'] = callerDescription
         
         response = self.make_request("Refund", params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet()
+            rs = ResultSet([("RefundResponse", FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
@@ -387,7 +384,7 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-        
+
     def get_token_by_caller_token(self, tokenId):
         """
         Returns details about the token specified by 'TokenId'.
@@ -414,7 +411,7 @@ class FPSConnection(AWSQueryConnection):
         body = response.read()
         if(response.status != 200):
             raise FPSResponseError(response.status, response.reason, body)
-        rs = ResultSet()
+        rs = ResultSet([("VerifySignatureResponse", FPSResponse)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
