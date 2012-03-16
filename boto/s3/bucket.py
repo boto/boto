@@ -37,6 +37,7 @@ from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 from boto.s3.lifecycle import Lifecycle
+from boto.s3.bucketlogging import BucketLogging
 import boto.jsonresponse
 import boto.utils
 import xml.sax
@@ -65,18 +66,6 @@ class S3WebsiteEndpointTranslate:
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
 
 class Bucket(object):
-
-    BucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
-       <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-         <LoggingEnabled>
-           <TargetBucket>%s</TargetBucket>
-           <TargetPrefix>%s</TargetPrefix>
-         </LoggingEnabled>
-       </BucketLoggingStatus>"""
-    
-    EmptyBucketLoggingBody = """<?xml version="1.0" encoding="UTF-8"?>
-       <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-       </BucketLoggingStatus>"""
 
     LoggingGroup = 'http://acs.amazonaws.com/groups/s3/LogDelivery'
 
@@ -950,10 +939,20 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def enable_logging(self, target_bucket, target_prefix='', headers=None):
-        if isinstance(target_bucket, Bucket):
-            target_bucket = target_bucket.name
-        body = self.BucketLoggingBody % (target_bucket, target_prefix)
+    def set_xml_logging(self, logging_str, headers=None):
+        """
+        Set logging on a bucket directly to the given xml string.
+
+        :type logging_str: unicode string
+        :param logging_str: The XML for the bucketloggingstatus which will be set.
+                            The string will be converted to utf-8 before it is sent.
+                            Usually, you will obtain this XML from the BucketLogging
+                            object.
+
+        :rtype: bool
+        :return: True if ok or raises an exception.
+        """
+        body = logging_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging', headers=headers)
         body = response.read()
@@ -963,28 +962,63 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
         
+    def enable_logging(self, target_bucket, target_prefix='', grants=None, headers=None):
+        """
+        Enable logging on a bucket.
+
+        :type target_bucket: bucket or string
+        :param target_bucket: The bucket to log to.
+
+        :type target_prefix: string
+        :param target_prefix: The prefix which should be prepended to the 
+                              generated log files written to the target_bucket.
+
+        :type grants: list of Grant objects
+        :param grants: A list of extra permissions which will be granted on
+                       the log files which are created.
+
+        :rtype: bool
+        :return: True if ok or raises an exception.
+        """
+        if isinstance(target_bucket, Bucket):
+            target_bucket = target_bucket.name
+        blogging = BucketLogging(target=target_bucket, prefix=target_prefix, grants=grants)
+        return self.set_xml_logging(blogging.to_xml(), headers=headers)
+ 
     def disable_logging(self, headers=None):
-        body = self.EmptyBucketLoggingBody
-        response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='logging', headers=headers)
-        body = response.read()
-        if response.status == 200:
-            return True
-        else:
-            raise self.connection.provider.storage_response_error(
-                response.status, response.reason, body)
+        """
+        Disable logging on a bucket.
+
+        :rtype: bool
+        :return: True if ok or raises an exception.
+        """
+        blogging = BucketLogging()
+        return self.set_xml_logging(blogging.to_xml(), headers=headers)
 
     def get_logging_status(self, headers=None):
+        """
+        Get the logging status for this bucket.
+
+        :rtype: :class:`boto.s3.bucketlogging.BucketLogging`
+        :return: A BucketLogging object for this bucket.
+        """
         response = self.connection.make_request('GET', self.name,
                 query_args='logging', headers=headers)
         body = response.read()
         if response.status == 200:
-            return body
+            blogging = BucketLogging()
+            h = handler.XmlHandler(blogging, self)
+            xml.sax.parseString(body, h)
+            return blogging
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
     def set_as_logging_target(self, headers=None):
+        """
+        Setup the current bucket as a logging target by granting the necessary
+        permissions to the LogDelivery group to write log files to this bucket.
+        """
         policy = self.get_acl(headers=headers)
         g1 = Grant(permission='WRITE', type='Group', uri=self.LoggingGroup)
         g2 = Grant(permission='READ_ACP', type='Group', uri=self.LoggingGroup)
