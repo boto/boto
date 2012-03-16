@@ -38,9 +38,9 @@ class Item(dict):
         self._hash_key_name = self.table.schema.hash_key_name
         self._range_key_name = self.table.schema.range_key_name
         self._updates = None
-        if hash_key:
+        if hash_key is not None:
             self[self._hash_key_name] = hash_key
-        if range_key:
+        if range_key is not None:
             self[self._range_key_name] = range_key
         if attrs:
             self.update(attrs)
