@@ -459,7 +459,6 @@ class ELBConnection(AWSQueryConnection):
             self.build_list_params(params, policies, 'PolicyNames.member.%d')
         else:
             params["PolicyNames"] = ""
-        self.build_list_params(params, policies, 'PolicyNames.member.%d')
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
 
     def apply_security_groups_to_lb(self, name, security_groups):
