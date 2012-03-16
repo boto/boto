@@ -11,7 +11,7 @@ from hit_persistence import *
 
 doctest_suite = doctest.DocFileSuite(
 	*glob('*.doctest'),
-	optionflags=doctest.REPORT_ONLY_FIRST_FAILURE
+	**{'optionflags': doctest.REPORT_ONLY_FIRST_FAILURE}
 	)
 
 class Program(unittest.TestProgram):

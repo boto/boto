@@ -1,6 +1,9 @@
 
 import unittest
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 from textwrap import dedent
 from boto.cloudfront.distribution import Distribution
 
