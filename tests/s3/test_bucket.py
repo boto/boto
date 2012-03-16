@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
 # All rights reserved.
 #
@@ -26,7 +28,10 @@ Some unit tests for the S3 Bucket
 
 import unittest
 import time
+
 from boto.s3.connection import S3Connection
+from boto.s3.bucketlogging import BucketLogging
+from boto.s3.acl import Grant
 
 class S3BucketTest (unittest.TestCase):
 
@@ -71,3 +76,31 @@ class S3BucketTest (unittest.TestCase):
         for element in rs:
             self.assertEqual(element.name, expected.pop(0))
         self.assertEqual(expected, [])
+
+    def test_logging(self):
+        # use self.bucket as the target bucket so that teardown
+        # will delete any log files that make it into the bucket
+        # automatically and all we have to do is delete the 
+        # source bucket.
+        sb_name = "src-" + self.bucket_name 
+        sb = self.conn.create_bucket(sb_name)
+        # grant log write perms to target bucket using canned-acl
+        self.bucket.set_acl("log-delivery-write")
+        target_bucket = self.bucket_name
+        target_prefix = u"jp/ログ/"
+        # Check existing status is disabled
+        bls = sb.get_logging_status()
+        self.assertEqual(bls.target, None)
+        # Create a logging status and grant auth users READ PERM
+        authuri = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+        authr = Grant(permission="READ", type="Group", uri=authuri)
+        sb.enable_logging(target_bucket, target_prefix=target_prefix, grants=[authr])
+        # Check the status and confirm its set.
+        bls = sb.get_logging_status()
+        self.assertEqual(bls.target, target_bucket)
+        self.assertEqual(bls.prefix, target_prefix)
+        self.assertEqual(len(bls.grants), 1)
+        self.assertEqual(bls.grants[0].type, "Group")
+        self.assertEqual(bls.grants[0].uri, authuri)
+        # finally delete the src bucket
+        sb.delete()
