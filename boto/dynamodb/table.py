@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -60,23 +60,23 @@ class Table(object):
     @property
     def name(self):
         return self._dict['TableName']
-    
+
     @property
     def create_time(self):
         return self._dict['CreationDateTime']
-    
+
     @property
     def status(self):
         return self._dict['TableStatus']
-    
+
     @property
     def item_count(self):
-        return self._dict['ItemCount']
-    
+        return self._dict.get('ItemCount', 0)
+
     @property
     def size_bytes(self):
-        return self._dict['TableSizeBytes']
-    
+        return self._dict.get('TableSizeBytes', 0)
+
     @property
     def schema(self):
         return self._schema
@@ -84,11 +84,11 @@ class Table(object):
     @property
     def read_units(self):
         return self._dict['ProvisionedThroughput']['ReadCapacityUnits']
-    
+
     @property
     def write_units(self):
         return self._dict['ProvisionedThroughput']['WriteCapacityUnits']
-    
+
     def update_from_response(self, response):
         """
         Update the state of the Table object based on the response
@@ -134,12 +134,12 @@ class Table(object):
 
         :type read_units: int
         :param read_units: The new value for ReadCapacityUnits.
-        
+
         :type write_units: int
         :param write_units: The new value for WriteCapacityUnits.
         """
         self.layer2.update_throughput(self, read_units, write_units)
-        
+
     def delete(self):
         """
         Delete this table and all items in it.  After calling this
@@ -157,12 +157,12 @@ class Table(object):
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
-        
+
         :type range_key: int|long|float|str|unicode
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
-            
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -182,7 +182,7 @@ class Table(object):
                                     attributes_to_get, consistent_read,
                                     item_class)
     lookup = get_item
-    
+
     def has_item(self, hash_key, range_key=None, consistent_read=False):
         """
         Checks the table to see if the Item with the specified ``hash_key``
@@ -256,7 +256,7 @@ class Table(object):
         :param hash_key: The HashKey of the new item.  The
             type of the value must match the type defined in the
             schema for the table.
-        
+
         :type range_key: int|long|float|str|unicode
         :param range_key: The optional RangeKey of the new item.
             The type of the value must match the type defined in the
@@ -265,12 +265,12 @@ class Table(object):
         :type attrs: dict
         :param attrs: A dictionary of key value pairs used to
             populate the new item.
-            
+
         :type item_class: Class
         :param item_class: Allows you to override the class used
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
-        
+
         """
         return item_class(self, hash_key, range_key, attrs)
 
@@ -281,7 +281,7 @@ class Table(object):
               item_class=Item):
         """
         Perform a query on the table.
-        
+
         :type hash_key: int|long|float|str|unicode
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
@@ -290,7 +290,7 @@ class Table(object):
         :type range_key_condition: dict
         :param range_key_condition: A dict where the key is either
             a scalar value appropriate for the RangeKey in the schema
-            of the database or a tuple of such values.  The value 
+            of the database or a tuple of such values.  The value
             associated with this key in the dict will be one of the
             following conditions:
 
@@ -299,7 +299,7 @@ class Table(object):
             The only condition which expects or will accept a tuple
             of values is 'BETWEEN', otherwise a scalar value should
             be used as the key in the dict.
-        
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
