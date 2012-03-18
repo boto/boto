@@ -27,7 +27,7 @@ Tests for Layer2 of Amazon DynamoDB
 import unittest
 import time
 import uuid
-from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
+from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError, DynamoDBItemError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.types import get_dynamodb_type
 from boto.dynamodb.condition import *
@@ -98,6 +98,33 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Public': True,
             'Tags': set(['index', 'primarykey', 'table']),
             'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
+
+        # Test a few corner cases with new_item
+        # First, try not supplying a hash_key
+        self.assertRaises(DynamoDBItemError,
+                          table.new_item, None, item1_range, item1_attrs)
+        
+        # Try supplying a hash but no range
+        self.assertRaises(DynamoDBItemError,
+                          table.new_item, item1_key, None, item1_attrs)
+        
+        # Try supplying a hash_key as an arg and as an item in attrs
+        item1_attrs[hash_key_name] = 'foo'
+        foobar_item = table.new_item(item1_key, item1_range, item1_attrs)
+        assert foobar_item.hash_key == item1_key
+
+        # Try supplying a range_key as an arg and as an item in attrs
+        item1_attrs[range_key_name] = 'bar'
+        foobar_item = table.new_item(item1_key, item1_range, item1_attrs)
+        assert foobar_item.range_key == item1_range
+
+        # Try supplying hash and range key in attrs dict
+        foobar_item = table.new_item(attrs=item1_attrs)
+        assert foobar_item.hash_key == 'foo'
+        assert foobar_item.range_key == 'bar'
+
+        del item1_attrs[hash_key_name]
+        del item1_attrs[range_key_name]
 
         item1 = table.new_item(item1_key, item1_range, item1_attrs)
         # make sure the put() succeeds

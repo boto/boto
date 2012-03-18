@@ -10,10 +10,17 @@ class DynamoDBExpiredTokenError(BotoServerError):
     """
     pass
 
-
 class DynamoDBKeyNotFoundError(BotoClientError):
     """
     Raised when attempting to retrieve or interact with an item whose key
     can't be found.
     """
     pass
+
+class DynamoDBItemError(BotoClientError):
+    """
+    Raised when invalid parameters are passed when creating a
+    new Item in DynamoDB.
+    """
+    pass
+

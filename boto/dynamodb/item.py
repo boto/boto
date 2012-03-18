@@ -21,6 +21,8 @@
 # IN THE SOFTWARE.
 #
 
+from boto.dynamodb.exceptions import DynamoDBItemError
+
 class Item(dict):
     """
     An item in Amazon DynamoDB.
@@ -35,15 +37,23 @@ class Item(dict):
 
     def __init__(self, table, hash_key=None, range_key=None, attrs=None):
         self.table = table
+        self._updates = None
         self._hash_key_name = self.table.schema.hash_key_name
         self._range_key_name = self.table.schema.range_key_name
-        self._updates = None
-        if hash_key is not None:
-            self[self._hash_key_name] = hash_key
-        if range_key is not None:
+        hash_key = hash_key or attrs.get(self._hash_key_name, None)
+        if hash_key is None:
+            raise DynamoDBItemError('You must supply a hash_key')
+        if self._range_key_name:
+            range_key = range_key or attrs.get(self._range_key_name, None)
+            if range_key is None:
+                raise DynamoDBItemError('You must supply a range_key')
+        self[self._hash_key_name] = hash_key
+        if self._range_key_name:
             self[self._range_key_name] = range_key
         if attrs:
-            self.update(attrs)
+            for key, value in attrs.items():
+                if key != self._hash_key_name and key != self._range_key_name:
+                    self[key] = value
         self.consumed_units = 0
         self._updates = {}
 
