@@ -36,8 +36,9 @@ Currently Supported Services
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
 
-* **Messaging**
+* **Application Services**
 
+  * Simple Workflow Service (SWF) -- (:doc:`API Reference <ref/swf>`)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)

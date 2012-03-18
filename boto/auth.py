@@ -248,7 +248,8 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         if 'X-Amzn-Authorization' in req.headers:
             del req.headers['X-Amzn-Authorization']
         req.headers['X-Amz-Date'] = formatdate(usegmt=True)
-        req.headers['X-Amz-Security-Token'] = self._provider.security_token
+        if self._provider.security_token:
+            req.headers['X-Amz-Security-Token'] = self._provider.security_token
         string_to_sign, headers_to_sign = self.string_to_sign(req)
         boto.log.debug('StringToSign:\n%s' % string_to_sign)
         hash_value = sha256(string_to_sign).digest()
