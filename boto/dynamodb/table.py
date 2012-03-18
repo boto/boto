@@ -71,11 +71,11 @@ class Table(object):
     
     @property
     def item_count(self):
-        return self._dict['ItemCount']
+        return self._dict.get('ItemCount', 0)
     
     @property
     def size_bytes(self):
-        return self._dict['TableSizeBytes']
+        return self._dict.get('TableSizeBytes', 0)
     
     @property
     def schema(self):
@@ -290,7 +290,7 @@ class Table(object):
         :type range_key_condition: dict
         :param range_key_condition: A dict where the key is either
             a scalar value appropriate for the RangeKey in the schema
-            of the database or a tuple of such values.  The value 
+            of the database or a tuple of such values.  The value
             associated with this key in the dict will be one of the
             following conditions:
 
