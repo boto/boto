@@ -62,6 +62,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert table.schema.range_key_type == get_dynamodb_type(range_key_proto_value)
         assert table.read_units == read_units
         assert table.write_units == write_units
+        assert table.item_count == 0
+        assert table.size_bytes == 0
 
         # Create the second table
         table2_name = 'test-%d' % (index + 1)

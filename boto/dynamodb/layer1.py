@@ -90,6 +90,9 @@ class Layer1(AWSAuthConnection):
             session_token = self._get_session_token()
         self.creds = session_token
         self.throughput_exceeded_events = 0
+        self.request_id = None
+        self.instrumentation = {'times': [], 'ids': []}
+        self.do_instrumentation = False
         AWSAuthConnection.__init__(self, self.region.endpoint,
                                    self.creds.access_key,
                                    self.creds.secret_key,
@@ -123,9 +126,14 @@ class Layer1(AWSAuthConnection):
                    'Content-Length' : str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
+        start = time.time()
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
+        self.request_id = response.getheader('x-amzn-RequestId')
+        if self.do_instrumentation:
+            self.instrumentation['times'].append(time.time() - start)
+            self.instrumentation['ids'].append(self.request_id)
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
