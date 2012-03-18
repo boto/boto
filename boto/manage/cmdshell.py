@@ -143,7 +143,7 @@ class SSHClient(object):
         channel = self._ssh_client.get_transport().open_session()
         channel.get_pty()
         channel.exec_command(command)
-        return channel.recv(1024)
+        return channel
 
     def close(self):
         transport = self._ssh_client.get_transport()

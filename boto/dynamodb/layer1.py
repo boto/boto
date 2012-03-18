@@ -126,7 +126,8 @@ class Layer1(AWSAuthConnection):
                    'Content-Length' : str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
-        start = time.time()
+        if self.do_instrumentation:
+            start = time.time()
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
