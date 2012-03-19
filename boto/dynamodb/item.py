@@ -40,13 +40,15 @@ class Item(dict):
         self._updates = None
         self._hash_key_name = self.table.schema.hash_key_name
         self._range_key_name = self.table.schema.range_key_name
-        hash_key = hash_key or attrs.get(self._hash_key_name, None)
         if hash_key is None:
-            raise DynamoDBItemError('You must supply a hash_key')
+            if attrs.get(self._hash_key_name) is None:
+                raise DynamoDBItemError('You must supply a hash_key')
+            hash_key = attrs[self._hash_key_name]
         if self._range_key_name:
-            range_key = range_key or attrs.get(self._range_key_name, None)
             if range_key is None:
-                raise DynamoDBItemError('You must supply a range_key')
+                if attrs.get(self._range_key_name) is None:
+                    raise DynamoDBItemError('You must supply a range_key')
+                range_key = attrs[self._range_key_name]
         self[self._hash_key_name] = hash_key
         if self._range_key_name:
             self[self._range_key_name] = range_key
