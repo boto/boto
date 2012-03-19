@@ -781,11 +781,12 @@ class Key(object):
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                reduced_redundancy=False, query_args=None,
-                               encrypt_key=False, size=None):
+                               encrypt_key=False, size=None, rewind=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
-        contents.
+        contents. The data is read from 'fp' from its current position until
+        'size' bytes have been read or EOF.
 
         :type fp: file
         :param fp: the file whose contents to upload
@@ -850,6 +851,15 @@ class Key(object):
                       file up into different ranges to be uploaded. If not
                       specified, the default behaviour is to read all bytes
                       from the file pointer. Less bytes may be available.
+
+        :type rewind: bool
+        :param rewind: (optional) If True, the file pointer (fp) will be 
+                       rewound to the start before any bytes are read from
+                       it. The default behaviour is False which reads from
+                       the current position of the file pointer (fp).
+
+        :rtype: int
+        :return: The number of bytes written to the key.
         """
         provider = self.bucket.connection.provider
         headers = headers or {}
@@ -857,6 +867,23 @@ class Key(object):
             headers[provider.acl_header] = policy
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
+
+        if rewind:
+            # caller requests reading from beginning of fp.
+            fp.seek(0, os.SEEK_SET)
+        else:
+            spos = fp.tell()
+            fp.seek(0, os.SEEK_END)
+            if fp.tell() == spos:
+                fp.seek(0, os.SEEK_SET)
+                if fp.tell() != spos:
+                    # Raise an exception as this is likely a programming error
+                    # whereby there is data before the fp but nothing after it.
+                    fp.seek(spos)
+                    raise AttributeError(
+                     'fp is at EOF. Use rewind option or seek() to data start.')
+            # seek back to the correct position.
+            fp.seek(spos)
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
@@ -903,6 +930,8 @@ class Key(object):
             self.send_file(fp, headers=headers, cb=cb, num_cb=num_cb,
                            query_args=query_args, chunked_transfer=chunked_transfer,
                            size=size)
+            # return number of bytes written.
+            return self.size
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,

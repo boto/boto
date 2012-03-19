@@ -45,6 +45,36 @@ class S3KeyTest (unittest.TestCase):
             key.delete()
         self.bucket.delete()
 
+    def test_set_contents_from_file_dataloss(self):
+        # Create an empty stringio and write to it.
+        content = "abcde"
+        sfp = StringIO.StringIO()
+        sfp.write(content)
+        # Try set_contents_from_file() without rewinding sfp
+        k = self.bucket.new_key("k")
+        try:
+            k.set_contents_from_file(sfp)
+            self.fail("forgot to rewind so should fail.")
+        except AttributeError:
+            pass
+        # call with rewind and check if we wrote 5 bytes
+        k.set_contents_from_file(sfp, rewind=True)
+        self.assertEqual(k.size, 5)
+        # check actual contents by getting it.
+        kn = self.bucket.new_key("k")
+        ks = kn.get_contents_as_string()
+        self.assertEqual(ks, content)
+
+        # finally, try with a 0 length string
+        sfp = StringIO.StringIO()
+        k = self.bucket.new_key("k")
+        k.set_contents_from_file(sfp)
+        self.assertEqual(k.size, 0)
+        # check actual contents by getting it.
+        kn = self.bucket.new_key("k")
+        ks = kn.get_contents_as_string()
+        self.assertEqual(ks, "")
+        
     def test_set_contents_as_file(self):
         content="01234567890123456789"
         sfp = StringIO.StringIO(content)
