@@ -305,7 +305,7 @@ class S3Connection(AWSAuthConnection):
         # Arguments to override response headers become part of the canonical
         # string to be signed.
         if response_headers:
-            response_hdrs = ["%s=%s" % (k, v) for k, v in
+            response_hdrs = ["%s=%s" % (k, urllib.quote(v)) for k, v in
                              response_headers.items()]
             delimiter = '?' if '?' not in auth_path else '&'
             auth_path = "%s%s" % (auth_path, delimiter)
