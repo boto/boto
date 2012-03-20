@@ -1,8 +1,12 @@
-# boto
+####
+boto
+####
 boto 2.3.0
 18-Mar-2012
 
-## Introduction
+************
+Introduction
+************
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
@@ -18,7 +22,7 @@ At the moment, boto supports:
  * Elastic Load Balancer (ELB)
  * Virtual Private Cloud (VPC)
  * Elastic Map Reduce (EMR)
- * Relational Data Service (RDS) 
+ * Relational Data Service (RDS)
  * Simple Notification Server (SNS)
  * Google Storage
  * Identity and Access Management (IAM)
@@ -40,23 +44,26 @@ and on Windows.  Boto requires no additional libraries or packages
 other than those that are distributed with Python.  Efforts are made
 to keep boto compatible with Python 2.5.x but no guarantees are made.
 
-## Finding Out More About Boto
+***************************
+Finding Out More About Boto
+***************************
 
-The main source code repository for boto can be found on
-[github.com](http://github.com/boto/boto)
+The main source code repository for boto can be found on `github.com`_
 
-[Online documentation](http://docs.pythonboto.org/) is also
-available.  The online documentation includes full API documentation
-as well as Getting Started Guides for many of the boto modules.
+`Online documentation`_ is also available. The online documentation includes
+full API documentation as well as Getting Started Guides for many of the boto
+modules.
 
-Boto releases can be found on the [Python Cheese Shop](http://pypi.python.org/).
+Boto releases can be found on the `Python Cheese Shop`_.
 
-Join our `IRC channel`_ (#boto on FreeNode).
-    IRC channel: http://webchat.freenode.net/?channels=boto
+Join our IRC channel `#boto` on FreeNode.
+Webchat IRC channel: http://webchat.freenode.net/?channels=boto
 
-## Getting Started with Boto
+*************************
+Getting Started with Boto
+*************************
 
-Your credentials can be passed into the methods that create 
+Your credentials can be passed into the methods that create
 connections.  Alternatively, boto will check for the existance of the
 following environment variables to ascertain your credentials:
 
@@ -64,10 +71,14 @@ AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
 Credentials and other boto-related settings can also be stored in a
-boto config file.  See
-[this](http://code.google.com/p/boto/wiki/BotoConfig) for details.
+boto config file.  See `this`_ for details.
 
 Copyright (c) 2006-2012 Mitch Garnaat <mitch@garnaat.com>
 Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 All rights reserved.
+
+.. _github.com: http://github.com/boto/boto
+.. _Online documentation: http://docs.pythonboto.org
+.. _Python Cheese Shop: http://pypi.python.org
+.. _this: http://code.google.com/p/boto/wiki/BotoConfig
