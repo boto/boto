@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import os
 import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
@@ -111,7 +112,7 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None, size=None):
+                               res_upload_handler=None, size=None, rewind=False):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -175,6 +176,15 @@ class Key(S3Key):
                 2. At present Google Cloud Storage does not support
                    multipart uploads.
 
+        :type rewind: bool
+        :param rewind: (optional) If True, the file pointer (fp) will be 
+                       rewound to the start before any bytes are read from
+                       it. The default behaviour is False which reads from
+                       the current position of the file pointer (fp).
+
+        :rtype: int
+        :return: The number of bytes written to the key.
+
         TODO: At some point we should refactor the Bucket and Key classes,
         to move functionality common to all providers into a parent class,
         and provider-specific functionality into subclasses (rather than
@@ -187,6 +197,24 @@ class Key(S3Key):
         headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
+
+        if rewind:
+            # caller requests reading from beginning of fp.
+            fp.seek(0, os.SEEK_SET)
+        else:
+            spos = fp.tell()
+            fp.seek(0, os.SEEK_END)
+            if fp.tell() == spos:
+                fp.seek(0, os.SEEK_SET)
+                if fp.tell() != spos:
+                    # Raise an exception as this is likely a programming error
+                    # whereby there is data before the fp but nothing after it.
+                    fp.seek(spos)
+                    raise AttributeError(
+                     'fp is at EOF. Use rewind option or seek() to data start.')
+            # seek back to the correct position.
+            fp.seek(spos)
+
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:

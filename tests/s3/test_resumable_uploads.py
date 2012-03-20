@@ -202,8 +202,15 @@ class ResumableUploadTests(unittest.TestCase):
         """
         Tests that non-resumable uploads work
         """
-        self.small_src_file.seek(0)
-        self.dst_key.set_contents_from_file(self.small_src_file)
+        # Seek to end incase its the first test.
+        self.small_src_file.seek(0, os.SEEK_END)
+        try:
+            self.dst_key.set_contents_from_file(self.small_src_file)
+            self.fail("should fail as need to rewind the filepointer")
+        except AttributeError:
+            pass
+        # Now try calling with a proper rewind.
+        self.dst_key.set_contents_from_file(self.small_src_file, rewind=True)
         self.assertEqual(self.small_src_file_size, self.dst_key.size)
         self.assertEqual(self.small_src_file_as_string,
                          self.dst_key.get_contents_as_string())
