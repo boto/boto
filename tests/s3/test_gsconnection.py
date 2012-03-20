@@ -31,7 +31,10 @@ import unittest
 import time
 import os
 import re
+import xml
 from boto.gs.connection import GSConnection
+from boto.gs.cors import Cors
+from boto import handler
 from boto import storage_uri
 
 class GSConnectionTest (unittest.TestCase):
@@ -289,6 +292,51 @@ class GSConnectionTest (unittest.TestCase):
         uri.set_def_acl('private')
         acl = uri.get_def_acl()
         assert acl.to_xml() == '<AccessControlList></AccessControlList>'
+        # delete bucket
+        uri.delete_bucket()
+
+    def test_4_cors_xml(self):
+        """test setting and getting of CORS XML documents"""
+        # regexp for matching project-private default object ACL
+        cors_empty = '<CorsConfig></CorsConfig>'
+        cors_doc = ('<CorsConfig><Cors><Origins><Origin>origin1.example.com'
+                    '</Origin><Origin>origin2.example.com</Origin></Origins>'
+                    '<Methods><Method>GET</Method><Method>PUT</Method>'
+                    '<Method>POST</Method></Methods><ResponseHeaders>'
+                    '<ResponseHeader>foo</ResponseHeader>'
+                    '<ResponseHeader>bar</ResponseHeader></ResponseHeaders>'
+                    '</Cors></CorsConfig>')
+        c = GSConnection()
+        # create a new bucket
+        bucket_name = 'test-%d' % int(time.time())
+        bucket = c.create_bucket(bucket_name)
+        # now call get_bucket to see if it's really there
+        bucket = c.get_bucket(bucket_name)
+        # get new bucket cors and make sure it's empty
+        cors = re.sub(r'\s', '', bucket.get_cors().to_xml())
+        assert cors == cors_empty
+        # set cors document on new bucket
+        bucket.set_cors(cors_doc)
+        cors = re.sub(r'\s', '', bucket.get_cors().to_xml())
+        assert cors == cors_doc
+        # delete bucket
+        c.delete_bucket(bucket)
+
+        # repeat cors tests using boto's storage_uri interface
+        # create a new bucket
+        bucket_name = 'test-%d' % int(time.time())
+        uri = storage_uri('gs://' + bucket_name)
+        uri.create_bucket()
+        # get new bucket cors and make sure it's empty
+        cors = re.sub(r'\s', '', uri.get_cors().to_xml())
+        assert cors == cors_empty
+        # set cors document on new bucket
+        cors_obj = Cors()
+        h = handler.XmlHandler(cors_obj, None)
+        xml.sax.parseString(cors_doc, h)
+        uri.set_cors(cors_obj)
+        cors = re.sub(r'\s', '', uri.get_cors().to_xml())
+        assert cors == cors_doc
         # delete bucket
         uri.delete_bucket()
         
