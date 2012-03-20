@@ -11,27 +11,27 @@ Introduction
 Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
 
- * Simple Storage Service (S3)
- * SimpleQueue Service (SQS)
- * Elastic Compute Cloud (EC2)
- * Mechanical Turk
- * SimpleDB
- * CloudFront
- * CloudWatch
- * AutoScale
- * Elastic Load Balancer (ELB)
- * Virtual Private Cloud (VPC)
- * Elastic Map Reduce (EMR)
- * Relational Data Service (RDS)
- * Simple Notification Server (SNS)
- * Google Storage
- * Identity and Access Management (IAM)
- * Route53 DNS Service (route53)
- * Simple Email Service (SES)
- * Flexible Payment Service (FPS)
- * CloudFormation
- * Amazon DynamoDB
- * Amazon SimpleWorkflow
+* Simple Storage Service (S3)
+* SimpleQueue Service (SQS)
+* Elastic Compute Cloud (EC2)
+* Mechanical Turk
+* SimpleDB
+* CloudFront
+* CloudWatch
+* AutoScale
+* Elastic Load Balancer (ELB)
+* Virtual Private Cloud (VPC)
+* Elastic Map Reduce (EMR)
+* Relational Data Service (RDS)
+* Simple Notification Server (SNS)
+* Google Storage
+* Identity and Access Management (IAM)
+* Route53 DNS Service (route53)
+* Simple Email Service (SES)
+* Flexible Payment Service (FPS)
+* CloudFormation
+* Amazon DynamoDB
+* Amazon SimpleWorkflow
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
@@ -67,8 +67,9 @@ Your credentials can be passed into the methods that create
 connections.  Alternatively, boto will check for the existance of the
 following environment variables to ascertain your credentials:
 
-AWS_ACCESS_KEY_ID - Your AWS Access Key ID
-AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
+**AWS_ACCESS_KEY_ID** - Your AWS Access Key ID
+
+**AWS_SECRET_ACCESS_KEY** - Your AWS Secret Access Key
 
 Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
