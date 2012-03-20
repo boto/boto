@@ -81,5 +81,5 @@ All rights reserved.
 
 .. _github.com: http://github.com/boto/boto
 .. _Online documentation: http://docs.pythonboto.org
-.. _Python Cheese Shop: http://pypi.python.org
+.. _Python Cheese Shop: http://pypi.python.org/pypi/boto
 .. _this: http://code.google.com/p/boto/wiki/BotoConfig
