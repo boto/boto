@@ -132,7 +132,7 @@ class Layer1(AWSAuthConnection):
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
         self.request_id = response.getheader('x-amzn-RequestId')
-        boto.log.debug('RequestId: %s' self.request_id)
+        boto.log.debug('RequestId: %s' % self.request_id)
         if self.do_instrumentation:
             self.instrumentation['times'].append(time.time() - start)
             self.instrumentation['ids'].append(self.request_id)
