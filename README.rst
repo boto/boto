@@ -48,7 +48,8 @@ to keep boto compatible with Python 2.5.x but no guarantees are made.
 Finding Out More About Boto
 ***************************
 
-The main source code repository for boto can be found on `github.com`_
+The main source code repository for boto can be found on `github.com`_.
+The boto project uses the `gitflow`_ model for branching.
 
 `Online documentation`_ is also available. The online documentation includes
 full API documentation as well as Getting Started Guides for many of the boto
@@ -83,3 +84,4 @@ All rights reserved.
 .. _Online documentation: http://docs.pythonboto.org
 .. _Python Cheese Shop: http://pypi.python.org/pypi/boto
 .. _this: http://code.google.com/p/boto/wiki/BotoConfig
+.. _gitflow: http://nvie.com/posts/a-successful-git-branching-model/
