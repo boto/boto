@@ -48,10 +48,10 @@ class Route53Connection(AWSAuthConnection):
     DefaultHost = 'route53.amazonaws.com'
     """The default Route53 API endpoint to connect to."""
 
-    Version = '2011-05-05'
+    Version = '2012-02-29'
     """Route53 API version."""
 
-    XMLNameSpace = 'https://route53.amazonaws.com/doc/2011-05-05/'
+    XMLNameSpace = 'https://route53.amazonaws.com/doc/2012-02-29/'
     """XML schema for this Route53 API version."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
