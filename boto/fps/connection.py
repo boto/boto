@@ -218,6 +218,7 @@ class FPSConnection(AWSQueryConnection):
     def pay(self, transactionAmount, senderTokenId,
             recipientTokenId=None,
             chargeFeeTo="Recipient",
+            marketplaceFixedFee=None, marketplaceVariableFee=None,
             callerReference=None, senderReference=None, recipientReference=None,
             senderDescription=None, recipientDescription=None,
             callerDescription=None, metadata=None,
@@ -238,6 +239,10 @@ class FPSConnection(AWSQueryConnection):
                 recipientTokenId if recipientTokenId is not None
                 else boto.config.get("FPS", "recipient_token")
                 )
+        if(marketplaceFixedFee != None):
+            params['MarketplaceFixedFee'] = marketplaceFixedFee
+        if(marketplaceVariableFee != None):
+            params['MarketplaceVariableFee'] = marketplaceVariableFee
         if(transactionDate != None):
             params['TransactionDate'] = transactionDate
         if(senderReference != None):
