@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,13 +25,17 @@ service from AWS.
 """
 from boto.ec2.connection import EC2Connection
 
+InstanceTypes = ['t1.micro', 'm1.small', 'm1.medium', 'm1.large', 'm1.xlarge',
+                'c1.medium', 'c1.xlarge', 'm2.xlarge', 'm2.2xlarge',
+                'm2.4xlarge', 'cc1.4xlarge', 'cc2.8xlarge', 'cg1.4xlarge']
+
 def regions(**kw_params):
     """
     Get all available regions for the EC2 service.
     You may pass any of the arguments accepted by the EC2Connection
     object's constructor as keyword arguments and they will be
     passed along to the EC2Connection object.
-        
+
     :rtype: list
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
@@ -40,14 +44,14 @@ def regions(**kw_params):
 
 def connect_to_region(region_name, **kw_params):
     """
-    Given a valid region name, return a 
+    Given a valid region name, return a
     :class:`boto.ec2.connection.EC2Connection`.
     Any additional parameters after the region_name are passed on to
     the connect method of the region object.
 
     :type: str
     :param region_name: The name of the region to connect to.
-    
+
     :rtype: :class:`boto.ec2.connection.EC2Connection` or ``None``
     :return: A connection to the given region, or None if an invalid region
              name is given
@@ -56,7 +60,7 @@ def connect_to_region(region_name, **kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
     return None
-    
+
 def get_region(region_name, **kw_params):
     """
     Find and return a :class:`boto.ec2.regioninfo.RegionInfo` object
@@ -73,4 +77,4 @@ def get_region(region_name, **kw_params):
         if region.name == region_name:
             return region
     return None
-    
+

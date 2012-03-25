@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -30,11 +30,10 @@ from boto.mashups.iobject import IObject
 from boto.pyami.config import Config
 from boto.sdb.persist import get_domain, set_domain
 import time, StringIO
-
-InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
+from boto.ec2 import InstanceTypes
 
 class Item(IObject):
-    
+
     def __init__(self):
         self.region = None
         self.name = None
@@ -84,7 +83,7 @@ class Item(IObject):
         else:
             l = [(z, z.name, z.state) for z in self.ec2.get_all_zones()]
             self.zone = self.choose_from_list(l, prompt='Choose Availability Zone')
-            
+
     def set_ami(self, ami=None):
         if ami:
             self.ami = ami
@@ -172,7 +171,7 @@ class Order(IObject):
 
     def display(self):
         print 'This Order consists of the following items'
-        print 
+        print
         print 'QTY\tNAME\tTYPE\nAMI\t\tGroups\t\t\tKeyPair'
         for item in self.items:
             print '%s\t%s\t%s\t%s\t%s\t%s' % (item.quantity, item.name, item.instance_type,
@@ -206,6 +205,6 @@ class Order(IObject):
             return s[0]
         else:
             return s
-        
 
-    
+
+
