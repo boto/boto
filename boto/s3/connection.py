@@ -408,8 +408,8 @@ class S3Connection(AWSAuthConnection):
         if location == Location.DEFAULT:
             data = ''
         else:
-            data = '<CreateBucketConstraint><LocationConstraint>' + \
-                    location + '</LocationConstraint></CreateBucketConstraint>'
+            data = '<CreateBucketConfiguration><LocationConstraint>' + \
+                    location + '</LocationConstraint></CreateBucketConfiguration>'
         response = self.make_request('PUT', bucket_name, headers=headers,
                 data=data)
         body = response.read()
