@@ -15,11 +15,12 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+
 
 class Batch(object):
     """
@@ -32,7 +33,7 @@ class Batch(object):
         the schema for the table contains only a HashKey, each element
         in the list should be a scalar value of the appropriate type
         for the table schema.
-        
+
     :ivar attributes_to_get: A list of attribute names.
         If supplied, only the specified attribute names will
         be returned.  Otherwise, all attributes will be returned.
@@ -42,7 +43,8 @@ class Batch(object):
         self.table = table
         self.keys = keys
         self.attributes_to_get = attributes_to_get
-        
+
+
 class BatchList(list):
     """
     A subclass of a list object that contains a collection of
@@ -56,7 +58,7 @@ class BatchList(list):
     def add_batch(self, table, keys, attributes_to_get=None):
         """
         Add a Batch to this BatchList.
-        
+
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object in which the items are contained.
 
@@ -68,7 +70,7 @@ class BatchList(list):
             the schema for the table contains only a HashKey, each element
             in the list should be a scalar value of the appropriate type
             for the table schema.
-        
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -78,6 +80,3 @@ class BatchList(list):
 
     def submit(self):
         return self.layer2.batch_get_item(self)
-
-        
-

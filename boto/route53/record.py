@@ -59,7 +59,7 @@ class ResourceRecordSets(ResultSet):
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None):
+            weight=None, region=None):
         """
         Add a change request to the set.
 
@@ -96,8 +96,8 @@ class ResourceRecordSets(ResultSet):
             Information about the domain to which you are redirecting traffic.
 
         :type identifier: str
-        :param identifier: *Weighted resource record sets only* An
-            identifier that differentiates among multiple resource
+        :param identifier: *Weighted and latency-based resource record sets
+            only* An identifier that differentiates among multiple resource
             record sets that have the same combination of DNS name and type.
 
         :type weight: int
@@ -105,11 +105,17 @@ class ResourceRecordSets(ResultSet):
             record sets that have the same combination of DNS name and type,
             a value that determines what portion of traffic for the current
             resource record set is routed to the associated location
+
+        :type region: str
+        :param region: *Latency-based resource record sets only* Among resource
+            record sets that have the same combination of DNS name and type,
+            a value that determines which region this should be associated with
+            for the latency-based routing
         """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight)
+                weight=weight, region=None)
         self.changes.append([action, change])
         return change
 
@@ -169,6 +175,11 @@ class Record(object):
         <Weight>%(weight)s</Weight>
     """
 
+    RRRBody = """
+        <SetIdentifier>%(identifier)s</SetIdentifier>
+        <Region>%(region)s</Region>
+    """
+
     ResourceRecordsBody = """
         <TTL>%(ttl)s</TTL>
         <ResourceRecords>
@@ -188,7 +199,7 @@ class Record(object):
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None):
+            weight=None, region=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -199,6 +210,7 @@ class Record(object):
         self.alias_dns_name = alias_dns_name
         self.identifier = identifier
         self.weight = weight
+        self.region = region
 
     def add_value(self, value):
         """Add a resource record value"""
@@ -227,6 +239,10 @@ class Record(object):
         if self.identifier != None and self.weight != None:
             weight = self.WRRBody % {"identifier": self.identifier, "weight":
                     self.weight}
+        elif self.identifier != None and self.region != None:
+            weight = self.RRRBody % {"identifier": self.identifier, "region":
+                    self.region}
+        
         params = {
             "name": self.name,
             "type": self.type,
@@ -266,6 +282,8 @@ class Record(object):
             self.identifier = value
         elif name == 'Weight':
             self.weight = value
+        elif name == 'Region':
+            self.region = value
 
     def startElement(self, name, attrs, connection):
         return None

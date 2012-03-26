@@ -393,6 +393,13 @@ class InvalidAclError(Exception):
         Exception.__init__(self, message)
         self.message = message
 
+class InvalidCorsError(Exception):
+    """Exception raised when CORS XML is invalid."""
+
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
+
 class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass

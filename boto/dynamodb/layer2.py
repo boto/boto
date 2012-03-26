@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -27,6 +27,7 @@ from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList
 from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
+
 
 def item_object_hook(dct):
     """
@@ -45,6 +46,7 @@ def item_object_hook(dct):
     if 'NS' in dct:
         return set(map(convert_num, dct['NS']))
     return dct
+
 
 class Layer2(object):
 
@@ -239,23 +241,24 @@ class Layer2(object):
         return Table(self,  response)
 
     lookup = get_table
+
     def create_table(self, name, schema, read_units, write_units):
         """
         Create a new Amazon DynamoDB table.
-        
+
         :type name: str
         :param name: The name of the desired table.
 
         :type schema: :class:`boto.dynamodb.schema.Schema`
         :param schema: The Schema object that defines the schema used
             by this table.
-            
+
         :type read_units: int
         :param read_units: The value for ReadCapacityUnits.
-        
+
         :type write_units: int
         :param write_units: The value for WriteCapacityUnits.
-        
+
         :rtype: :class:`boto.dynamodb.table.Table`
         :return: A Table object representing the new Amazon DynamoDB table.
         """
@@ -270,10 +273,10 @@ class Layer2(object):
 
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object whose throughput is being updated.
-        
+
         :type read_units: int
         :param read_units: The new value for ReadCapacityUnits.
-        
+
         :type write_units: int
         :param write_units: The new value for WriteCapacityUnits.
         """
@@ -281,7 +284,7 @@ class Layer2(object):
                                             {'ReadCapacityUnits': read_units,
                                              'WriteCapacityUnits': write_units})
         table.update_from_response(response)
-        
+
     def delete_table(self, table):
         """
         Delete this table and all items in it.  After calling this
@@ -304,7 +307,7 @@ class Layer2(object):
         :type hash_key_proto_value: int|long|float|str|unicode
         :param hash_key_proto_value: A sample or prototype of the type
             of value you want to use for the HashKey.
-            
+
         :type range_key_name: str
         :param range_key_name: The name of the RangeKey for the schema.
             This parameter is optional.
@@ -336,17 +339,17 @@ class Layer2(object):
 
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object from which the item is retrieved.
-        
+
         :type hash_key: int|long|float|str|unicode
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
-        
+
         :type range_key: int|long|float|str|unicode
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
-            
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -394,7 +397,7 @@ class Layer2(object):
 
         :type item: :class:`boto.dynamodb.item.Item`
         :param item: The Item to write to Amazon DynamoDB.
-        
+
         :type expected_value: dict
         :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
@@ -408,7 +411,6 @@ class Layer2(object):
             values are: None or 'ALL_OLD'. If 'ALL_OLD' is
             specified and the item is overwritten, the content
             of the old item is returned.
-            
         """
         expected_value = self.dynamize_expected_value(expected_value)
         response = self.layer1.put_item(item.table.name,
@@ -418,7 +420,7 @@ class Layer2(object):
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return response
-            
+
     def update_item(self, item, expected_value=None, return_values=None):
         """
         Commit pending item updates to Amazon DynamoDB.
@@ -460,21 +462,21 @@ class Layer2(object):
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return response
-            
+
     def delete_item(self, item, expected_value=None, return_values=None):
         """
         Delete the item from Amazon DynamoDB.
 
         :type item: :class:`boto.dynamodb.item.Item`
         :param item: The Item to delete from Amazon DynamoDB.
-        
+
         :type expected_value: dict
         :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to
             exist.
-            
+
         :type return_values: str
         :param return_values: Controls the return of attribute
             name-value pairs before then were changed.  Possible
@@ -497,10 +499,10 @@ class Layer2(object):
               item_class=Item):
         """
         Perform a query on the table.
-        
+
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object that is being queried.
-        
+
         :type hash_key: int|long|float|str|unicode
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
@@ -515,7 +517,7 @@ class Layer2(object):
             The only condition which expects or will accept two
             values is 'BETWEEN', otherwise a single value should
             be passed to the Condition constructor.
-        
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -572,7 +574,7 @@ class Layer2(object):
                 break
             if response is True:
                 pass
-            elif response.has_key("LastEvaluatedKey"):
+            elif 'LastEvaluatedKey' in response:
                 lek = response['LastEvaluatedKey']
                 esk = self.dynamize_last_evaluated_key(lek)
             else:
@@ -587,7 +589,7 @@ class Layer2(object):
                     break
                 yield item_class(table, attrs=item)
                 n += 1
-    
+
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, request_limit=None, max_results=None,
              count=False, exclusive_start_key=None, item_class=Item):
@@ -664,7 +666,7 @@ class Layer2(object):
         while response:
             if response is True:
                 pass
-            elif response.has_key("LastEvaluatedKey"):
+            elif 'LastEvaluatedKey' in response:
                 last_evaluated_key = response['LastEvaluatedKey']
                 esk = self.dynamize_item(last_evaluated_key)
             else:
@@ -679,4 +681,3 @@ class Layer2(object):
                         break
                     yield item_class(table, attrs=item)
                     n += 1
-

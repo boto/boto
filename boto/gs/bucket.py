@@ -24,14 +24,16 @@ from boto import handler
 from boto.exception import InvalidAclError
 from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
+from boto.gs.cors import Cors
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 import xml.sax
 
-# constants for default object ACL and standard acl in http query args 
+# constants for http query args 
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
+CORS_ARG = 'cors'
 
 class Bucket(S3Bucket):
 
@@ -121,6 +123,34 @@ class Bucket(S3Bucket):
         """sets or changes a bucket's default object"""
         return self.set_xml_acl(acl_str, key_name, headers, 
                                 query_args=DEF_OBJ_ACL)
+
+    def get_cors(self, headers=None):
+        """returns a bucket's CORS XML"""
+        response = self.connection.make_request('GET', self.name,
+                                                query_args=CORS_ARG, 
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            # Success - parse XML and return Cors object.
+            cors = Cors()
+            h = handler.XmlHandler(cors, self)
+            xml.sax.parseString(body, h)
+            return cors
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def set_cors(self, cors, headers=None):
+        """sets or changes a bucket's CORS XML."""
+        cors_xml = cors.encode('ISO-8859-1')
+        response = self.connection.make_request('PUT', self.name,
+                                                data=cors_xml,
+                                                query_args=CORS_ARG,
+                                                headers=headers)
+        body = response.read()
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.
