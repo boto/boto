@@ -34,12 +34,12 @@ import boto.exception
 import boto.plugin
 import boto.utils
 import hmac
-import sys
 import boto.compat as compat
 from email.utils import formatdate
 
 from boto.auth_handler import AuthHandler
-from boto.exception import BotoClientError
+
+
 class HmacKeys(object):
     """Key based Auth handler helper."""
 
@@ -74,29 +74,33 @@ class HmacKeys(object):
         hmac.update(string_to_sign)
         return base64.b64encode(hmac.digest()).strip().decode('utf-8')
 
+
 class AnonAuthHandler(AuthHandler, HmacKeys):
     """
     Implements Anonymous requests.
     """
-    
+
     capability = ['anon']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
-        
+
     def add_auth(self, http_request, **kwargs):
         pass
 
+
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
-    """    Implements the HMAC request signing used by S3 and GS."""
-    
+    """
+    Implements the HMAC request signing used by S3 and GS.
+    """
+
     capability = ['hmac-v1', 's3']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
-        
+
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         method = http_request.method
@@ -117,17 +121,18 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
                                     (auth_hdr,
                                      self._provider.access_key, b64_hmac))
 
+
 class HmacAuthV2Handler(AuthHandler, HmacKeys):
     """
     Implements the simplified HMAC authorization used by CloudFront.
     """
     capability = ['hmac-v2', 'cloudfront']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
-        
+
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if 'Date' not in headers:
@@ -138,16 +143,17 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
                                      self._provider.access_key, b64_hmac))
-        
+
+
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """Implements the new Version 3 HMAC authorization used by Route53."""
-    
+
     capability = ['hmac-v3', 'route53', 'ses']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
-        
+
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if 'Date' not in headers:
@@ -158,13 +164,14 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
         s += "Algorithm=%s,Signature=%s" % (self.algorithm(), b64_hmac)
         headers['X-Amzn-Authorization'] = s
 
+
 class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
     """
     Implements the new Version 3 HMAC authorization used by DynamoDB.
     """
-    
+
     capability = ['hmac-v3-http']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
@@ -175,7 +182,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         in the StringToSign.
         """
         headers_to_sign = {}
-        headers_to_sign = {'Host' : self.host}
+        headers_to_sign = {'Host': self.host}
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
@@ -189,11 +196,11 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = ['%s:%s'%(n.lower().strip(),
-                      headers_to_sign[n].strip()) for n in headers_to_sign]
+        l = ['%s:%s' % (n.lower().strip(),
+                        headers_to_sign[n].strip()) for n in headers_to_sign]
         l.sort()
         return '\n'.join(l)
-        
+
     def string_to_sign(self, http_request):
         """
         Return the canonical StringToSign as well as a dict
@@ -209,7 +216,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
                                     '',
                                     http_request.body])
         return string_to_sign, headers_to_sign
-        
+
     def add_auth(self, req, **kwargs):
         """
         Add AWS3 authentication to a request.
@@ -235,6 +242,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         s += "Signature=%s" % b64_hmac
         req.headers['X-Amzn-Authorization'] = s
 
+
 class QuerySignatureHelper(HmacKeys):
     """
     Helper for Query signature based Auth handler.
@@ -253,9 +261,12 @@ class QuerySignatureHelper(HmacKeys):
             http_request.auth_path, http_request.host)
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
-            headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            http_request.body = qs + '&Signature=' + compat.quote_plus(signature)
-            http_request.headers['Content-Length'] = str(len(http_request.body))
+            ct = 'application/x-www-form-urlencoded; charset=UTF-8'
+            headers['Content-Type'] = ct
+            http_request.body = qs + '&Signature='
+            http_request.body += compat.quote_plus(signature)
+            cl = str(len(http_request.body))
+            http_request.headers['Content-Length'] = cl
         else:
             http_request.body = ''
             # if this is a retried request, the qs from the previous try will
@@ -263,6 +274,7 @@ class QuerySignatureHelper(HmacKeys):
             http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs +
                                  '&Signature=' + compat.quote_plus(signature))
+
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
     """Provides Signature V0 Signing"""
@@ -276,13 +288,14 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         s = params['Action'] + params['Timestamp']
         s = s.encode('utf-8')
         hmac.update(s)
-        keys = sorted(params, key = str.lower)
+        keys = sorted(params, key=str.lower)
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
             pairs.append(key + '=' + compat.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
+
 
 class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     """
@@ -295,7 +308,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
         hmac = self._hmac.copy()
-        keys = sorted(params, key = str.lower)
+        keys = sorted(params, key=str.lower)
         pairs = []
         for key in keys:
             key = key.encode('utf-8')
@@ -306,6 +319,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
             pairs.append(key + '=' + compat.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
+
 
 class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
     """Provides Query Signature V2 Authentication."""
@@ -352,7 +366,7 @@ def get_auth_handler(host, config, provider, requested_capability=None):
     :type host: string
     :param host: The name of the host
 
-    :type config: 
+    :type config:
     :param config:
 
     :type provider:
@@ -367,19 +381,18 @@ def get_auth_handler(host, config, provider, requested_capability=None):
     """
     ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
-    total_handlers = len(auth_handlers)
     for handler in auth_handlers:
         try:
             ready_handlers.append(handler(host, config, provider))
         except boto.auth_handler.NotReadyToAuthenticate:
             pass
- 
+
     if not ready_handlers:
         checked_handlers = auth_handlers
         names = [handler.__name__ for handler in checked_handlers]
         raise boto.exception.NoAuthHandlerFound(
               'No handler was ready to authenticate. %d handlers were checked.'
-              ' %s ' 
+              ' %s '
               'Check your credentials' % (len(names), str(names)))
 
     if len(ready_handlers) > 1:
@@ -390,7 +403,7 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         # on the wrong account.
         names = [handler.__class__.__name__ for handler in ready_handlers]
         raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
-               '%d AuthHandlers %s ready to authenticate for requested_capability '
+               '%d handlers %s ready to authenticate for requested_capability '
                '%s, only 1 expected. This happens if you import multiple '
                'pluging.Plugin implementations that declare support for the '
                'requested_capability.' % (len(names), str(names),
