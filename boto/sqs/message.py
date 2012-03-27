@@ -150,6 +150,8 @@ class Message(RawMessage):
     """
     
     def encode(self, value):
+        if isinstance(value, compat.text_type):
+            value = value.encode('utf-8')
         return base64.b64encode(value)
 
     def decode(self, value):
