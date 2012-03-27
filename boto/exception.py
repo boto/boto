@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -45,9 +45,11 @@ class BotoClientError(Exception):
     def __str__(self):
         return 'BotoClientError: %s' % self.reason
 
+
 class SDBPersistenceError(Exception):
 
     pass
+
 
 class StoragePermissionsError(BotoClientError):
     """
@@ -55,17 +57,20 @@ class StoragePermissionsError(BotoClientError):
     """
     pass
 
+
 class S3PermissionsError(StoragePermissionsError):
     """
     Permissions error when accessing a bucket or key on S3.
     """
     pass
 
+
 class GSPermissionsError(StoragePermissionsError):
     """
     Permissions error when accessing a bucket or key on GS.
     """
     pass
+
 
 class BotoServerError(Exception):
 
@@ -85,7 +90,7 @@ class BotoServerError(Exception):
             try:
                 h = handler.XmlHandler(self, self)
                 xml.sax.parseString(self.body, h)
-            except (TypeError, xml.sax.SAXParseException) as pe:
+            except (TypeError, xml.sax.SAXParseException):
                 # Remove unparsable message body so we don't include garbage
                 # in exception. But first, save self.body in self.error_message
                 # because occasionally we get error messages from Eucalyptus
@@ -128,6 +133,7 @@ class BotoServerError(Exception):
         self.error_message = None
         self.box_usage = None
 
+
 class ConsoleOutput:
 
     def __init__(self, parent=None):
@@ -148,6 +154,7 @@ class ConsoleOutput:
         else:
             setattr(self, name, value)
 
+
 class StorageCreateError(BotoServerError):
     """
     Error creating a bucket or key on a storage service.
@@ -162,11 +169,13 @@ class StorageCreateError(BotoServerError):
         else:
             return BotoServerError.endElement(self, name, value, connection)
 
+
 class S3CreateError(StorageCreateError):
     """
     Error creating a bucket or key on S3.
     """
     pass
+
 
 class GSCreateError(StorageCreateError):
     """
@@ -174,11 +183,13 @@ class GSCreateError(StorageCreateError):
     """
     pass
 
+
 class StorageCopyError(BotoServerError):
     """
     Error copying a key on a storage service.
     """
     pass
+
 
 class S3CopyError(StorageCopyError):
     """
@@ -186,11 +197,13 @@ class S3CopyError(StorageCopyError):
     """
     pass
 
+
 class GSCopyError(StorageCopyError):
     """
     Error copying a key on GS.
     """
     pass
+
 
 class SQSError(BotoServerError):
     """
@@ -217,6 +230,7 @@ class SQSError(BotoServerError):
         for p in ('detail', 'type'):
             setattr(self, p, None)
 
+
 class SQSDecodeError(BotoClientError):
     """
     Error when decoding an SQS message.
@@ -230,6 +244,7 @@ class SQSDecodeError(BotoClientError):
 
     def __str__(self):
         return 'SQSDecodeError: %s' % self.reason
+
 
 class StorageResponseError(BotoServerError):
     """
@@ -253,17 +268,20 @@ class StorageResponseError(BotoServerError):
         for p in ('resource'):
             setattr(self, p, None)
 
+
 class S3ResponseError(StorageResponseError):
     """
     Error in response from S3.
     """
     pass
 
+
 class GSResponseError(StorageResponseError):
     """
     Error in response from GS.
     """
     pass
+
 
 class EC2ResponseError(BotoServerError):
     """
@@ -274,8 +292,8 @@ class EC2ResponseError(BotoServerError):
         self.errors = None
         self._errorResultSet = []
         BotoServerError.__init__(self, status, reason, body)
-        self.errors = [ (e.error_code, e.error_message) \
-                for e in self._errorResultSet ]
+        self.errors = [(e.error_code, e.error_message) \
+                for e in self._errorResultSet]
         if len(self.errors):
             self.error_code, self.error_message = self.errors[0]
 
@@ -290,13 +308,14 @@ class EC2ResponseError(BotoServerError):
         if name == 'RequestID':
             self.request_id = value
         else:
-            return None # don't call subclass here
+            return None  # don't call subclass here
 
     def _cleanupParsedProperties(self):
         BotoServerError._cleanupParsedProperties(self)
         self._errorResultSet = []
         for p in ('errors'):
             setattr(self, p, None)
+
 
 class DynamoDBResponseError(BotoServerError):
     """
@@ -322,11 +341,13 @@ class DynamoDBResponseError(BotoServerError):
             if self.error_code:
                 self.error_code = self.error_code.split('#')[-1]
 
+
 class EmrResponseError(BotoServerError):
     """
     Error in response from EMR
     """
     pass
+
 
 class _EC2Error:
 
@@ -346,11 +367,13 @@ class _EC2Error:
         else:
             return None
 
+
 class SDBResponseError(BotoServerError):
     """
     Error in responses from SDB.
     """
     pass
+
 
 class AWSConnectionError(BotoClientError):
     """
@@ -358,11 +381,13 @@ class AWSConnectionError(BotoClientError):
     """
     pass
 
+
 class StorageDataError(BotoClientError):
     """
     Error receiving data from a storage service.
     """
     pass
+
 
 class S3DataError(StorageDataError):
     """
@@ -370,14 +395,17 @@ class S3DataError(StorageDataError):
     """
     pass
 
+
 class GSDataError(StorageDataError):
     """
     Error receiving data from GS.
     """
     pass
 
+
 class FPSResponseError(BotoServerError):
     pass
+
 
 class InvalidUriError(Exception):
     """Exception raised when URI is invalid."""
@@ -386,12 +414,14 @@ class InvalidUriError(Exception):
         Exception.__init__(self, message)
         self.message = message
 
+
 class InvalidAclError(Exception):
     """Exception raised when ACL XML is invalid."""
 
     def __init__(self, message):
         Exception.__init__(self, message)
         self.message = message
+
 
 class InvalidCorsError(Exception):
     """Exception raised when CORS XML is invalid."""
@@ -400,9 +430,11 @@ class InvalidCorsError(Exception):
         Exception.__init__(self, message)
         self.message = message
 
+
 class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass
+
 
 class TooManyAuthHandlerReadyToAuthenticate(Exception):
     """Is raised when there are more than one auth handler ready.
@@ -414,6 +446,7 @@ class TooManyAuthHandlerReadyToAuthenticate(Exception):
     depends on the order they were checked.
     """
     pass
+
 
 # Enum class for resumable upload failure disposition.
 class ResumableTransferDisposition(object):
@@ -432,12 +465,13 @@ class ResumableTransferDisposition(object):
     ABORT_CUR_PROCESS = 'ABORT_CUR_PROCESS'
 
     # ABORT means the resumable transfer failed in a way that it does not
-    # make sense to continue in the current process, and further that the 
+    # make sense to continue in the current process, and further that the
     # current tracker ID should not be preserved (in a tracker file if one
     # was specified at resumable upload start time). If the user tries again
     # later (e.g., a separate run of gsutil) it will get a new resumable
     # upload ID.
     ABORT = 'ABORT'
+
 
 class ResumableUploadException(Exception):
     """
@@ -454,6 +488,7 @@ class ResumableUploadException(Exception):
     def __repr__(self):
         return 'ResumableUploadException("%s", %s)' % (
             self.message, self.disposition)
+
 
 class ResumableDownloadException(Exception):
     """
