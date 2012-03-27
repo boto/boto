@@ -22,10 +22,7 @@
 from boto.sqs.message import MHMessage
 from boto.exception import SQSDecodeError
 import base64
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import boto.compat as compat
 
 class JSONMessage(MHMessage):
     """
@@ -35,11 +32,11 @@ class JSONMessage(MHMessage):
     def decode(self, value):
         try:
             value = base64.b64decode(value)
-            value = json.loads(value)
+            value = compat.json.loads(value)
         except:
             raise SQSDecodeError('Unable to decode message', self)
         return value
 
     def encode(self, value):
-        value = json.dumps(value)
+        value = compat.json.dumps(value)
         return base64.b64encode(value)

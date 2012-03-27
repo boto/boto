@@ -20,10 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import StringIO, os, re
+import os, re
 import warnings
-import ConfigParser
 import boto
+import boto.compat as compat
 
 # If running in Google App Engine there is no "user" and
 # os.path.expanduser() will fail. Attempt to detect this case and use a
@@ -55,10 +55,10 @@ elif 'BOTO_PATH' in os.environ:
         BotoConfigLocations.append(expanduser(path))
 
 
-class Config(ConfigParser.SafeConfigParser):
+class Config(compat.configparser.SafeConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
+        compat.configparser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
                                                       'debug' : '0'})
         if do_load:
             if path:
@@ -76,7 +76,7 @@ class Config(ConfigParser.SafeConfigParser):
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
-        c_data = StringIO.StringIO()
+        c_data = compat.StringIO()
         c_data.write("[Credentials]\n")
         for line in open(path, "r").readlines():
             c_data.write(line.replace("AWSAccessKeyId", "aws_access_key_id").replace("AWSSecretKey", "aws_secret_access_key"))
@@ -99,7 +99,7 @@ class Config(ConfigParser.SafeConfigParser):
         Replace any previous value.  If the path doesn't exist, create it.
         Also add the option the the in-memory config.
         """
-        config = ConfigParser.SafeConfigParser()
+        config = compat.configparser.SafeConfigParser()
         config.read(path)
         if not config.has_section(section):
             config.add_section(section)
@@ -143,21 +143,21 @@ class Config(ConfigParser.SafeConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            val = ConfigParser.SafeConfigParser.get(self, section, name)
+            val = compat.configparser.SafeConfigParser.get(self, section, name)
         except:
             val = default
         return val
     
     def getint(self, section, name, default=0):
         try:
-            val = ConfigParser.SafeConfigParser.getint(self, section, name)
+            val = compat.configparser.SafeConfigParser.getint(self, section, name)
         except:
             val = int(default)
         return val
     
     def getfloat(self, section, name, default=0.0):
         try:
-            val = ConfigParser.SafeConfigParser.getfloat(self, section, name)
+            val = compat.configparser.SafeConfigParser.getfloat(self, section, name)
         except:
             val = float(default)
         return val
@@ -180,13 +180,13 @@ class Config(ConfigParser.SafeConfigParser):
             self.set(section, name, 'false')
     
     def dump(self):
-        s = StringIO.StringIO()
+        s = compat.StringIO()
         self.write(s)
-        print s.getvalue()
+        print(s.getvalue())
 
     def dump_safe(self, fp=None):
         if not fp:
-            fp = StringIO.StringIO()
+            fp = compat.StringIO()
         for section in self.sections():
             fp.write('[%s]\n' % section)
             for option in self.options(section):
@@ -196,11 +196,6 @@ class Config(ConfigParser.SafeConfigParser):
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
     
     def dump_to_sdb(self, domain_name, item_name):
-        try:
-            import simplejson as json
-        except ImportError:
-            import json
-
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         if not domain:
@@ -211,22 +206,17 @@ class Config(ConfigParser.SafeConfigParser):
             d = {}
             for option in self.options(section):
                 d[option] = self.get(section, option)
-            item[section] = json.dumps(d)
+            item[section] = compat.json.dumps(d)
         item.save()
 
     def load_from_sdb(self, domain_name, item_name):
-        try:
-            import json
-        except ImportError:
-            import simplejson as json
-
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         item = domain.get_item(item_name)
         for section in item.keys():
             if not self.has_section(section):
                 self.add_section(section)
-            d = json.loads(item[section])
+            d = compat.json.loads(item[section])
             for attr_name in d.keys():
                 attr_value = d[attr_name]
                 if attr_value == None:

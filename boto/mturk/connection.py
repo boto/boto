@@ -31,6 +31,7 @@ from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
 from boto.mturk.question import QuestionForm, ExternalQuestion
+import boto.compat as compat
 
 class MTurkRequestError(EC2ResponseError):
     "Error for MTurk Requests"
@@ -265,7 +266,7 @@ class MTurkConnection(AWSQueryConnection):
         records, return the page numbers to be retrieved.
         """
         pages = total_records/page_size+bool(total_records%page_size)
-        return range(1, pages+1)
+        return list(range(1, pages+1))
 
 
     def get_all_hits(self):
@@ -280,7 +281,7 @@ class MTurkConnection(AWSQueryConnection):
         page_size = 100
         search_rs = self.search_hits(page_size=page_size)
         total_records = int(search_rs.TotalNumResults)
-        get_page_hits = lambda(page): self.search_hits(page_size=page_size, page_number=page)
+        get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
         page_nums = self._get_pages(page_size, total_records)
         hit_sets = itertools.imap(get_page_hits, page_nums)
         return itertools.chain.from_iterable(hit_sets)
@@ -756,7 +757,7 @@ class MTurkConnection(AWSQueryConnection):
             keywords = ', '.join(keywords)
         if type(keywords) is str:
             final_keywords = keywords
-        elif type(keywords) is unicode:
+        elif type(keywords) is compat.text_type:
             final_keywords = keywords.encode('utf-8')
         elif keywords is None:
             final_keywords = ""

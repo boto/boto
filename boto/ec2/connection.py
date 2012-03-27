@@ -1852,7 +1852,7 @@ class EC2Connection(AWSQueryConnection):
         """
         try:
             return self.get_all_key_pairs(keynames=[keyname])[0]
-        except self.ResponseError, e:
+        except self.ResponseError as e:
             if e.code == 'InvalidKeyPair.NotFound':
                 return None
             else:
@@ -2757,8 +2757,7 @@ class EC2Connection(AWSQueryConnection):
     # Tag methods
 
     def build_tag_param_list(self, params, tags):
-        keys = tags.keys()
-        keys.sort()
+        keys = sorted(tags)
         i = 1
         for key in keys:
             value = tags[key]

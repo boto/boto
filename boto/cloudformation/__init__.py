@@ -22,4 +22,4 @@
 
 # this is here for backward compatibility
 # originally, the SNSConnection class was defined here
-from connection import CloudFormationConnection
+from .connection import CloudFormationConnection

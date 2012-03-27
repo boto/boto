@@ -24,10 +24,10 @@ import boto
 import os
 import time
 import shutil
-import StringIO
 import paramiko
 import socket
 import subprocess
+import boto.compat as compat
 
 
 class SSHClient(object):
@@ -54,23 +54,24 @@ class SSHClient(object):
                                          username=self.uname,
                                          pkey=self._pkey)
                 return
-            except socket.error, (value,message):
+            except socket.error as err:
+                (value, message) = err.args
                 if value == 61 or value == 111:
-                    print 'SSH Connection refused, will retry in 5 seconds'
+                    print('SSH Connection refused, will retry in 5 seconds')
                     time.sleep(5)
                     retry += 1
                 else:
                     raise
             except paramiko.BadHostKeyException:
-                print "%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname
-                print 'Edit that file to remove the entry and then hit return to try again'
+                print("%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname)
+                print('Edit that file to remove the entry and then hit return to try again')
                 raw_input('Hit Enter when ready')
                 retry += 1
             except EOFError:
-                print 'Unexpected Error from SSH Connection, retry in 5 seconds'
+                print('Unexpected Error from SSH Connection, retry in 5 seconds')
                 time.sleep(5)
                 retry += 1
-        print 'Could not establish SSH connection'
+        print('Could not establish SSH connection')
 
     def open_sftp(self):
         return self._ssh_client.open_sftp()
@@ -173,11 +174,11 @@ class LocalClient(object):
         return os.path.exists(path)
 
     def shell(self):
-        raise NotImplementedError, 'shell not supported with LocalClient'
+        raise NotImplementedError('shell not supported with LocalClient')
 
     def run(self):
         boto.log.info('running:%s' % self.command)
-        log_fp = StringIO.StringIO()
+        log_fp = compat.StringIO()
         process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while process.poll() == None:

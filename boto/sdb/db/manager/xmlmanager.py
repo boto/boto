@@ -202,7 +202,7 @@ class XMLManager(object):
         self.auth_header = None
         if self.db_user:
             import base64
-            base64string = base64.encodestring('%s:%s' % (self.db_user, self.db_passwd))[:-1]
+            base64string = base64.encodebytes('%s:%s' % (self.db_user, self.db_passwd))[:-1]
             authheader =  "Basic %s" % base64string
             self.auth_header = authheader
 
@@ -373,7 +373,7 @@ class XMLManager(object):
             for property in properties:
                 if property.name == name:
                     found = True
-                    if types.TypeType(value) == types.ListType:
+                    if types.TypeType(value) == list:
                         filter_parts = []
                         for val in value:
                             val = self.encode_value(property, val)
@@ -395,7 +395,7 @@ class XMLManager(object):
         return ' intersection '.join(parts)
 
     def query_gql(self, query_string, *args, **kwds):
-        raise NotImplementedError, "GQL queries not supported in XML"
+        raise NotImplementedError("GQL queries not supported in XML")
 
     def save_list(self, doc, items, prop_node):
         items_node = doc.createElement('items')
@@ -495,7 +495,7 @@ class XMLManager(object):
 
     def get_key_value(self, obj, name):
         a = self.domain.get_attributes(obj.id, name)
-        if a.has_key(name):
+        if name in a:
             return a[name]
         else:
             return None

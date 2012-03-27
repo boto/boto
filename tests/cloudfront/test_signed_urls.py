@@ -6,6 +6,7 @@ except ImportError:
     import json
 from textwrap import dedent
 from boto.cloudfront.distribution import Distribution
+import boto.compat as compat
 
 class CloudfrontSignedUrlsTest(unittest.TestCase):
     def setUp(self):
@@ -103,7 +104,7 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
                     "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
                     "t9w2EOwi6sIIqrg_")
-        unicode_policy = unicode(self.canned_policy)
+        unicode_policy = compat.unicode(self.canned_policy)
         sig = self.dist._sign_string(unicode_policy, private_key_string=self.pk_str)
         encoded_sig = self.dist._url_base64_encode(sig)
         self.assertEqual(expected, encoded_sig)
@@ -141,16 +142,16 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         policy = self.dist._canned_policy(url, expires)
         policy = json.loads(policy)
 
-        self.assertEqual(1, len(policy.keys()))
+        self.assertEqual(1, len(list(policy.keys())))
         statements = policy["Statement"]
         self.assertEqual(1, len(statements))
         statement = statements[0]
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(1, len(list(condition.keys())))
         date_less_than = condition["DateLessThan"]
-        self.assertEqual(1, len(date_less_than.keys()))
+        self.assertEqual(1, len(list(date_less_than.keys())))
         aws_epoch_time = date_less_than["AWS:EpochTime"]
         self.assertEqual(expires, aws_epoch_time)
         
@@ -164,16 +165,16 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         policy = self.dist._custom_policy(url, expires=expires)
         policy = json.loads(policy)
 
-        self.assertEqual(1, len(policy.keys()))
+        self.assertEqual(1, len(list(policy.keys())))
         statements = policy["Statement"]
         self.assertEqual(1, len(statements))
         statement = statements[0]
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(1, len(list(condition.keys())))
         date_less_than = condition["DateLessThan"]
-        self.assertEqual(1, len(date_less_than.keys()))
+        self.assertEqual(1, len(list(date_less_than.keys())))
         aws_epoch_time = date_less_than["AWS:EpochTime"]
         self.assertEqual(expires, aws_epoch_time)
 
@@ -187,16 +188,16 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         policy = self.dist._custom_policy(url, valid_after=valid_after)
         policy = json.loads(policy)
 
-        self.assertEqual(1, len(policy.keys()))
+        self.assertEqual(1, len(list(policy.keys())))
         statements = policy["Statement"]
         self.assertEqual(1, len(statements))
         statement = statements[0]
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(1, len(list(condition.keys())))
         date_greater_than = condition["DateGreaterThan"]
-        self.assertEqual(1, len(date_greater_than.keys()))
+        self.assertEqual(1, len(list(date_greater_than.keys())))
         aws_epoch_time = date_greater_than["AWS:EpochTime"]
         self.assertEqual(valid_after, aws_epoch_time)
 
@@ -210,16 +211,16 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         policy = self.dist._custom_policy(url, ip_address=ip_range)
         policy = json.loads(policy)
 
-        self.assertEqual(1, len(policy.keys()))
+        self.assertEqual(1, len(list(policy.keys())))
         statements = policy["Statement"]
         self.assertEqual(1, len(statements))
         statement = statements[0]
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(1, len(list(condition.keys())))
         ip_address = condition["IpAddress"]
-        self.assertEqual(1, len(ip_address.keys()))
+        self.assertEqual(1, len(list(ip_address.keys())))
         source_ip = ip_address["AWS:SourceIp"]
         self.assertEqual("%s/32" % ip_range, source_ip)
 
@@ -233,16 +234,16 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         policy = self.dist._custom_policy(url, ip_address=ip_range)
         policy = json.loads(policy)
 
-        self.assertEqual(1, len(policy.keys()))
+        self.assertEqual(1, len(list(policy.keys())))
         statements = policy["Statement"]
         self.assertEqual(1, len(statements))
         statement = statements[0]
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(1, len(list(condition.keys())))
         ip_address = condition["IpAddress"]
-        self.assertEqual(1, len(ip_address.keys()))
+        self.assertEqual(1, len(list(ip_address.keys())))
         source_ip = ip_address["AWS:SourceIp"]
         self.assertEqual(ip_range, source_ip)
 
@@ -260,27 +261,27 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                                           ip_address=ip_range)
         policy = json.loads(policy)
 
-        self.assertEqual(1, len(policy.keys()))
+        self.assertEqual(1, len(list(policy.keys())))
         statements = policy["Statement"]
         self.assertEqual(1, len(statements))
         statement = statements[0]
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(3, len(condition.keys()))
+        self.assertEqual(3, len(list(condition.keys())))
         #check expires condition
         date_less_than = condition["DateLessThan"]
-        self.assertEqual(1, len(date_less_than.keys()))
+        self.assertEqual(1, len(list(date_less_than.keys())))
         aws_epoch_time = date_less_than["AWS:EpochTime"]
         self.assertEqual(expires, aws_epoch_time)
         #check valid_after condition
         date_greater_than = condition["DateGreaterThan"]
-        self.assertEqual(1, len(date_greater_than.keys()))
+        self.assertEqual(1, len(list(date_greater_than.keys())))
         aws_epoch_time = date_greater_than["AWS:EpochTime"]
         self.assertEqual(valid_after, aws_epoch_time)
         #check source ip address condition
         ip_address = condition["IpAddress"]
-        self.assertEqual(1, len(ip_address.keys()))
+        self.assertEqual(1, len(list(ip_address.keys())))
         source_ip = ip_address["AWS:SourceIp"]
         self.assertEqual(ip_range, source_ip)
 

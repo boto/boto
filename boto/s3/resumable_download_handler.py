@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 
 import errno
-import httplib
 import os
 import re
 import socket
@@ -88,7 +87,7 @@ class ResumableDownloadHandler(object):
 
     ETAG_REGEX = '([a-z0-9]{32})\n'
 
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (compat.httplib.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     def __init__(self, tracker_file_name=None, num_retries=None):
@@ -130,7 +129,7 @@ class ResumableDownloadHandler(object):
             else:
                 print('Couldn\'t read etag in tracker file (%s). Restarting '
                       'download from scratch.' % self.tracker_file_name)
-        except IOError, e:
+        except IOError as e:
             # Ignore non-existent file (happens first time a download
             # is attempted on an object), but warn user for other errors.
             if e.errno != errno.ENOENT:
@@ -151,7 +150,7 @@ class ResumableDownloadHandler(object):
         try:
             f = open(self.tracker_file_name, 'w')
             f.write('%s\n' % self.etag_value_for_current_download)
-        except IOError, e:
+        except IOError as e:
             raise ResumableDownloadException(
                 'Couldn\'t write tracker file (%s): %s.\nThis can happen'
                 'if you\'re using an incorrectly configured download tool\n'
@@ -189,17 +188,17 @@ class ResumableDownloadHandler(object):
                    key.size), ResumableTransferDisposition.ABORT)
             elif cur_file_size == key.size:
                 if key.bucket.connection.debug >= 1:
-                    print 'Download complete.'
+                    print('Download complete.')
                 return
             if key.bucket.connection.debug >= 1:
-                print 'Resuming download.'
+                print('Resuming download.')
             headers = headers.copy()
             headers['Range'] = 'bytes=%d-%d' % (cur_file_size, key.size - 1)
             cb = ByteTranslatingCallbackHandler(cb, cur_file_size).call
             self.download_start_point = cur_file_size
         else:
             if key.bucket.connection.debug >= 1:
-                print 'Starting new resumable download.'
+                print('Starting new resumable download.')
             self._save_tracker_info(key)
             self.download_start_point = 0
             # Truncate the file, in case a new resumable download is being
@@ -271,9 +270,9 @@ class ResumableDownloadHandler(object):
                 # non-resumable downloads, this call was removed. Checksum
                 # validation of file contents should be done by the caller.
                 if debug >= 1:
-                    print 'Resumable download complete.'
+                    print('Resumable download complete.')
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
@@ -283,7 +282,7 @@ class ResumableDownloadHandler(object):
                     # the download.
                     key.get_file(fp, headers, cb, num_cb, torrent, version_id,
                                  override_num_retries=0)
-            except ResumableDownloadException, e:
+            except ResumableDownloadException as e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
@@ -324,7 +323,7 @@ class ResumableDownloadHandler(object):
             # which we can safely ignore.
             try:
                 key.close()
-            except httplib.IncompleteRead:
+            except compat.httplib.IncompleteRead:
                 pass
 
             sleep_time_secs = 2**progress_less_iterations

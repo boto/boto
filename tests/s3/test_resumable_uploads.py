@@ -32,7 +32,6 @@ import random
 import re
 import shutil
 import socket
-import StringIO
 import sys
 import tempfile
 import time
@@ -45,7 +44,8 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
-from cb_test_harnass import CallbackTestHarnass
+import boto.compat as compat
+from .cb_test_harnass import CallbackTestHarnass
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
 # ensures that it's loaded and available by default.
@@ -100,7 +100,7 @@ class ResumableUploadTests(unittest.TestCase):
         for i in range(size):
             buf.append(str(random.randint(0, 9)))
         file_as_string = ''.join(buf)
-        return (file_as_string, StringIO.StringIO(file_as_string))
+        return (file_as_string, compat.StringIO(file_as_string))
 
     @classmethod
     def get_dst_bucket_uri(cls, debug):
@@ -192,8 +192,8 @@ class ResumableUploadTests(unittest.TestCase):
                 cls.dst_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
-                print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.dst_bucket_uri.uri)
+                print('Test bucket (%s) not yet deleted, still trying' % (
+                    cls.dst_bucket_uri.uri))
                 time.sleep(2)
         shutil.rmtree(cls.tmp_dir)
         cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
@@ -240,7 +240,7 @@ class ResumableUploadTests(unittest.TestCase):
                 self.small_src_file, cb=harnass.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             # We'll get a ResumableUploadException at this point because
             # of CallbackTestHarnass (above). Check that the tracker file was
             # created correctly.
@@ -299,7 +299,7 @@ class ResumableUploadTests(unittest.TestCase):
                 self.small_src_file, cb=harnass.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected OSError')
-        except OSError, e:
+        except OSError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -353,7 +353,7 @@ class ResumableUploadTests(unittest.TestCase):
                 self.larger_src_file, cb=harnass.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
@@ -449,7 +449,7 @@ class ResumableUploadTests(unittest.TestCase):
                 self.larger_src_file, cb=harnass.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             # First abort (from harnass-forced failure) should be
             # ABORT_CUR_PROCESS.
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
@@ -465,7 +465,7 @@ class ResumableUploadTests(unittest.TestCase):
             self.dst_key.set_contents_from_file(
                 self.largest_src_file, res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             # This abort should be a hard abort (file size changing during
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
@@ -487,7 +487,7 @@ class ResumableUploadTests(unittest.TestCase):
                 test_file, cb=harnass.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('File changed during upload'), -1)
@@ -511,7 +511,7 @@ class ResumableUploadTests(unittest.TestCase):
                 test_file, cb=harnass.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             # Ensure the file size didn't change.
             test_file.seek(0, os.SEEK_END)
@@ -522,7 +522,7 @@ class ResumableUploadTests(unittest.TestCase):
             try:
               self.dst_key_uri.get_key()
               self.fail('Did not get expected InvalidUriError')
-            except InvalidUriError, e:
+            except InvalidUriError as e:
               pass
 
     def test_upload_with_content_length_header_set(self):
@@ -538,7 +538,7 @@ class ResumableUploadTests(unittest.TestCase):
                 self.small_src_file, res_upload_handler=res_upload_handler,
                 headers={'Content-Length' : self.small_src_file_size})
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Attempt to specify Content-Length header'), -1)
@@ -585,7 +585,7 @@ class ResumableUploadTests(unittest.TestCase):
             os.chmod(self.tmp_dir, 0)
             res_upload_handler = ResumableUploadHandler(
                 tracker_file_name=self.tracker_file_name)
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Couldn\'t write URI tracker file'), -1)
@@ -613,11 +613,11 @@ if __name__ == '__main__':
     # don't assume the user has Python 2.7 (which supports classmethods
     # that do it, with camelCase versions of these names).
     try:
-        print 'Setting up %s...' % test_class.get_suite_description()
+        print('Setting up %s...' % test_class.get_suite_description())
         test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
+        print('Running %s...' % test_class.get_suite_description())
         unittest.TextTestRunner(verbosity=2).run(suite)
     finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
+        print('Cleaning up after %s...' % test_class.get_suite_description())
         test_class.tear_down_class()
-        print ''
+        print('')

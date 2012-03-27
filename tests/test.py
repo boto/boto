@@ -51,9 +51,9 @@ from dynamodb.test_layer2 import DynamoDBLayer2Test
 from sts.test_session_token import SessionTokenTest
 
 def usage():
-    print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
-    print "    -v   verbosity (0|1|2)"
+    print("test.py  [-t testsuite] [-v verbosity]")
+    print("    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)")
+    print("    -v   verbosity (0|1|2)")
 
 def main():
     try:

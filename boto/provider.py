@@ -33,6 +33,7 @@ from boto.gs.acl import ACL
 from boto.gs.acl import CannedACLStrings as CannedGSACLStrings
 from boto.s3.acl import CannedACLStrings as CannedS3ACLStrings
 from boto.s3.acl import Policy
+import boto.compat as compat
 
 HEADER_PREFIX_KEY = 'header_prefix'
 METADATA_PREFIX_KEY = 'metadata_prefix'
@@ -176,21 +177,17 @@ class Provider(object):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
             self.access_key = access_key
-        elif os.environ.has_key(access_key_name.upper()):
+        elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
 
         if secret_key is not None:
             self.secret_key = secret_key
-        elif os.environ.has_key(secret_key_name.upper()):
+        elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
-        if isinstance(self.secret_key, unicode):
-            # the secret key must be bytes and not unicode to work
-            #  properly with hmac.new (see http://bugs.python.org/issue5285)
-            self.secret_key = str(self.secret_key)
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]

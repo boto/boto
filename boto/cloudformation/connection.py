@@ -19,17 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-try:
-    import simplejson as json
-except:
-    import json
-
 import boto
 from boto.cloudformation.stack import Stack, StackSummary, StackEvent
 from boto.cloudformation.stack import StackResource, StackResourceSummary
 from boto.cloudformation.template import Template
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
+import boto.compat as compat
+
 
 class CloudFormationConnection(AWSQueryConnection):
 
@@ -135,7 +132,7 @@ class CloudFormationConnection(AWSQueryConnection):
         response = self.make_request('CreateStack', params, '/', 'POST')
         body = response.read()
         if response.status == 200:
-            body = json.loads(body)
+            body = compat.json.loads(body)
             return body['CreateStackResponse']['CreateStackResult']['StackId']
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
@@ -202,7 +199,7 @@ class CloudFormationConnection(AWSQueryConnection):
         response = self.make_request('UpdateStack', params, '/', 'POST')
         body = response.read()
         if response.status == 200:
-            body = json.loads(body)
+            body = compat.json.loads(body)
             return body['UpdateStackResponse']['UpdateStackResult']['StackId']
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
@@ -215,7 +212,7 @@ class CloudFormationConnection(AWSQueryConnection):
         response = self.make_request('DeleteStack', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -237,7 +234,7 @@ class CloudFormationConnection(AWSQueryConnection):
                                      '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -267,7 +264,7 @@ class CloudFormationConnection(AWSQueryConnection):
         response = self.make_request('GetTemplate', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)

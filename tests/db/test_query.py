@@ -148,5 +148,5 @@ class TestQuerying(object):
         """Test with a "like" expression"""
         query = SimpleModel.all()
         query.filter("strs like", "%oo%")
-        print query.get_query()
+        print(query.get_query())
         assert(query.count() == 1)

@@ -34,7 +34,7 @@ from boto.exception import SQSError
 class SQSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
-        print '--- running SQSConnection tests ---'
+        print('--- running SQSConnection tests ---')
         c = SQSConnection()
         rs = c.get_all_queues()
         num_queues = 0
@@ -66,14 +66,14 @@ class SQSConnectionTest (unittest.TestCase):
 
         # now try to get queue attributes
         a = q.get_attributes()
-        assert a.has_key('ApproximateNumberOfMessages')
-        assert a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' in a
+        assert 'VisibilityTimeout' in a
         a = q.get_attributes('ApproximateNumberOfMessages')
-        assert a.has_key('ApproximateNumberOfMessages')
-        assert not a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' in a
+        assert 'VisibilityTimeout' not in a
         a = q.get_attributes('VisibilityTimeout')
-        assert not a.has_key('ApproximateNumberOfMessages')
-        assert a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' not in a
+        assert 'VisibilityTimeout' in a
 
         # now change the visibility timeout
         timeout = 45
@@ -132,5 +132,5 @@ class SQSConnectionTest (unittest.TestCase):
         # now delete that queue and messages
         c.delete_queue(queue, True)
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
     

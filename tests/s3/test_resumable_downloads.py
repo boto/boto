@@ -32,7 +32,6 @@ import random
 import re
 import shutil
 import socket
-import StringIO
 import sys
 import tempfile
 import time
@@ -45,7 +44,8 @@ from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
-from cb_test_harnass import CallbackTestHarnass
+import boto.compat as compat
+from .cb_test_harnass import CallbackTestHarnass
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
 # ensures that it's loaded and available by default.
@@ -69,7 +69,7 @@ class ResumableDownloadTests(unittest.TestCase):
     def resilient_close(key):
         try:
             key.close()
-        except StorageResponseError, e:
+        except StorageResponseError as e:
             pass
 
     @classmethod
@@ -108,7 +108,7 @@ class ResumableDownloadTests(unittest.TestCase):
         string_data = ''.join(buf)
         uri = cls.src_bucket_uri.clone_replace_name(obj_name)
         key = uri.new_key(validate=False)
-        key.set_contents_from_file(StringIO.StringIO(string_data))
+        key.set_contents_from_file(compat.StringIO(string_data))
         # Set debug on key's connection after creating data, so only the test
         # runs will show HTTP output (if called passed debug>0).
         key.bucket.connection.debug = debug
@@ -177,8 +177,8 @@ class ResumableDownloadTests(unittest.TestCase):
                 cls.src_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
-                print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.src_bucket_uri.uri)
+                print('Test bucket (%s) not yet deleted, still trying' % (
+                    cls.src_bucket_uri.uri))
                 time.sleep(2)
         shutil.rmtree(cls.tmp_dir)
         cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
@@ -217,7 +217,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             # We'll get a ResumableDownloadException at this point because
             # of CallbackTestHarnass (above). Check that the tracker file was
             # created correctly.
@@ -275,7 +275,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected OSError')
-        except OSError, e:
+        except OSError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -328,7 +328,7 @@ class ResumableDownloadTests(unittest.TestCase):
                 self.dst_fp, cb=harnass.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
@@ -433,7 +433,7 @@ class ResumableDownloadTests(unittest.TestCase):
             os.chmod(self.tmp_dir, 0)
             res_download_handler = ResumableDownloadHandler(
                 tracker_file_name=self.tracker_file_name)
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Couldn\'t write URI tracker file'), -1)
@@ -465,11 +465,11 @@ if __name__ == '__main__':
     # don't assume the user has Python 2.7 (which supports classmethods
     # that do it, with camelCase versions of these names).
     try:
-        print 'Setting up %s...' % test_class.get_suite_description()
+        print('Setting up %s...' % test_class.get_suite_description())
         test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
+        print('Running %s...' % test_class.get_suite_description())
         unittest.TextTestRunner(verbosity=2).run(suite)
     finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
+        print('Cleaning up after %s...' % test_class.get_suite_description())
         test_class.tear_down_class()
-        print ''
+        print('')

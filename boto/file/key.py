@@ -22,8 +22,9 @@
 
 # File representation of key, for use with "file://" URIs.
 
-import os, shutil, StringIO
+import os, shutil
 import sys
+import boto.compat as compat
 
 class Key(object):
 
@@ -151,7 +152,7 @@ class Key(object):
         :returns: The contents of the file as a string
         """
 
-        fp = StringIO.StringIO()
+        fp = compat.StringIO()
         self.get_contents_to_file(fp)
         return fp.getvalue()
 

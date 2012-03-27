@@ -31,11 +31,12 @@ from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError, DynamoDBItemError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.types import get_dynamodb_type
 from boto.dynamodb.condition import *
+import boto.compat as compat
 
 class DynamoDBLayer2Test (unittest.TestCase):
 
     def test_layer2_basic(self):
-        print '--- running Amazon DynamoDB Layer2 tests ---'
+        print('--- running Amazon DynamoDB Layer2 tests ---')
         c = Layer2()
 
         # First create a schema for the table
@@ -132,7 +133,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # make sure the put() succeeds
         try:
             item1.put()
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             raise Exception("Item put failed: %s" % e)
 
         # Try to get an item that does not exist.
@@ -146,7 +147,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert item1_copy.range_key == item1.range_key
         for attr_name in item1_copy:
             val = item1_copy[attr_name]
-            if isinstance(val, (int, long, float, basestring)):
+            if isinstance(val, (compat.integer_types, float,
+                                compat.string_types)):
                 assert val == item1[attr_name]
 
         # Try retrieving only select attributes
@@ -168,7 +170,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         expected = {'Views': 1}
         try:
             item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             assert e.error_code == 'ConditionalCheckFailedException'
         else:
             raise Exception("Expected Value condition failed")
@@ -177,7 +179,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         expected = {'FooBar': True}
         try:
             item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             pass
 
         # Now update the existing object
@@ -199,9 +201,9 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item1_updated = table.get_item(item1_key, item1_range,
                                        consistent_read=True)
         assert item1_updated['Replies'] == item1_attrs['Replies'] + 2
-        self.assertFalse(item1_updated.has_key(removed_attr))
+        self.assertFalse(removed_attr in item1_updated)
         self.assertTrue(removed_tag not in item1_updated['Tags'])
-        self.assertTrue(item1_updated.has_key('RepliesBy'))
+        self.assertTrue('RepliesBy' in item1_updated)
         self.assertTrue(item1_updated['RepliesBy'] == replies_by_set)
 
         # Put a few more items into the table
@@ -349,4 +351,4 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert table.status == 'DELETING'
         assert table2.status == 'DELETING'
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')

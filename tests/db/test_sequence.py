@@ -60,11 +60,11 @@ class TestDBHandler(object):
         s = Sequence()
         self.sequences.append(s)
         assert(s.val == 0)
-        assert(s.next() == 1)
-        assert(s.next() == 2)
+        assert(next(s) == 1)
+        assert(next(s) == 2)
         s2 = Sequence(s.id)
         assert(s2.val == 2)
-        assert(s.next() == 3)
+        assert(next(s) == 3)
         assert(s.val == 3)
         assert(s2.val == 3)
 
@@ -73,7 +73,7 @@ class TestDBHandler(object):
         s = Sequence(fnc=increment_string)
         self.sequences.append(s)
         assert(s.val == "A")
-        assert(s.next() == "B")
+        assert(next(s) == "B")
 
     def test_fib(self):
         """Test the fibonacci sequence generator"""
@@ -93,7 +93,7 @@ class TestDBHandler(object):
         assert(s.val == 1)
         # Just check the first few numbers in the sequence
         for v in [1,2,3,5,8,13,21,34,55,89,144]:
-            assert(s.next() == v)
+            assert(next(s) == v)
             assert(s.val == v)
             assert(s2.val == v) # it shouldn't matter which reference we use since it's garunteed to be consistent
 
@@ -103,7 +103,7 @@ class TestDBHandler(object):
         s = Sequence(fnc=increment_string)
         self.sequences.append(s)
         assert(s.val == "A")
-        assert(s.next() == "B")
+        assert(next(s) == "B")
         s.val = "Z"
         assert(s.val == "Z")
-        assert(s.next() == "AA")
+        assert(next(s) == "AA")

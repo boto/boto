@@ -91,7 +91,7 @@ class TestLists(object):
         t.put()
         self.objs.append(t)
         time.sleep(3)
-        print SimpleListModel.all().filter("strs !=", "Fizzle").get_query()
+        print(SimpleListModel.all().filter("strs !=", "Fizzle").get_query())
         for tt in SimpleListModel.all().filter("strs !=", "Fizzle"):
-            print tt.strs
+            print(tt.strs)
             assert("Fizzle" not in tt.strs)

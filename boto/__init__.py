@@ -29,8 +29,8 @@ import boto.plugin
 import os, re, sys
 import logging
 import logging.config
-import urlparse
 from boto.exception import InvalidUriError
+import boto.compat as compat
 
 __version__ = '2.3.0'
 Version = __version__ # for backware compatibility
@@ -391,7 +391,7 @@ def connect_ec2_endpoint(url, aws_access_key_id=None, aws_secret_access_key=None
     """
     from boto.ec2.regioninfo import RegionInfo
 
-    purl = urlparse.urlparse(url)
+    purl = compat.urlparse(url)
     kwargs['port'] = purl.port
     kwargs['host'] = purl.hostname
     kwargs['path'] = purl.path

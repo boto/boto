@@ -30,6 +30,7 @@ import time
 from boto.s3.connection import S3Connection
 from boto.exception import S3ResponseError
 from boto.s3.deletemarker import DeleteMarker
+import boto.compat as compat
 
 class S3MFATest (unittest.TestCase):
 
@@ -45,8 +46,8 @@ class S3MFATest (unittest.TestCase):
 
     def test_mfadel(self):
         # Enable Versioning with MfaDelete
-        mfa_sn = raw_input('MFA S/N: ')
-        mfa_code = raw_input('MFA Code: ')
+        mfa_sn = compat.raw_input('MFA S/N: ')
+        mfa_code = compat.raw_input('MFA Code: ')
         self.bucket.configure_versioning(True, mfa_delete=True, mfa_token=(mfa_sn, mfa_code))
 
         # Check enabling mfa worked.
@@ -73,11 +74,11 @@ class S3MFATest (unittest.TestCase):
             pass
 
         # Now try delete again with the MFA token
-        mfa_code = raw_input('MFA Code: ')
+        mfa_code = compat.raw_input('MFA Code: ')
         self.bucket.delete_key('foobar', version_id=v1, mfa_token=(mfa_sn, mfa_code))
 
         # Next suspend versioning and disable MfaDelete on the bucket
-        mfa_code = raw_input('MFA Code: ')
+        mfa_code = compat.raw_input('MFA Code: ')
         self.bucket.configure_versioning(False, mfa_delete=False, mfa_token=(mfa_sn, mfa_code))
 
         # Lastly, check disabling mfa worked.

@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from boto.mturk.test.support import unittest
 
 sel_args = ('localhost', 4444, '*chrome', 'https://workersandbox.mturk.com')
@@ -6,7 +6,7 @@ sel_args = ('localhost', 4444, '*chrome', 'https://workersandbox.mturk.com')
 class SeleniumFailed(object):
 	def __init__(self, message):
 		self.message = message
-	def __nonzero__(self):
+	def __bool__(self):
 		return False
 
 def has_selenium():
@@ -17,7 +17,7 @@ def has_selenium():
 		# a little trick to see if the server is responding
 		try:
 			sel.do_command('shutdown', '')
-		except Exception, e:
+		except Exception as e:
 			if not 'Server Exception' in str(e):
 				raise
 		result = True

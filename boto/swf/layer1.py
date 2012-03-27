@@ -26,12 +26,8 @@ import boto
 from boto.connection import AWSAuthConnection
 from boto.provider import Provider
 from boto.exception import DynamoDBResponseError
-
+import boto.compat as compat
 import time
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 #
 # To get full debug output, uncomment the following line and set the
@@ -88,7 +84,7 @@ class Layer1(AWSAuthConnection):
         response_body = response.read()
         boto.log.debug(response_body)
         if response_body:
-            return json.loads(response_body, object_hook=object_hook)
+            return compat.json.loads(response_body, object_hook=object_hook)
         else:
             return None
 
@@ -125,7 +121,7 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain, 'taskList': {'name': task_list}}
         if identity:
             data['identity'] = identity
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('PollForActivityTask', json_input)
 
     def respond_activity_task_completed(self, task_token, result=None):
@@ -146,7 +142,7 @@ class Layer1(AWSAuthConnection):
         data = {'taskToken': task_token}
         if result:
             data['result'] = result
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RespondActivityTaskCompleted', json_input)
 
     def respond_activity_task_failed(self, task_token,
@@ -172,7 +168,7 @@ class Layer1(AWSAuthConnection):
             data['details'] = details
         if reason:
             data['reason'] = reason
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RespondActivityTaskFailed', json_input)
 
     def respond_activity_task_canceled(self, task_token, details=None):
@@ -193,7 +189,7 @@ class Layer1(AWSAuthConnection):
         data = {'taskToken': task_token}
         if details:
             data['details'] = details
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RespondActivityTaskCanceled', json_input)
 
     def record_activity_task_heartbeat(self, task_token, details=None):
@@ -220,7 +216,7 @@ class Layer1(AWSAuthConnection):
         data = {'taskToken': task_token}
         if details:
             data['details'] = details
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RecordActivityTaskHeartbeat', json_input)
 
     # Actions related to Deciders
@@ -278,7 +274,7 @@ class Layer1(AWSAuthConnection):
             data['nextPageToken'] = next_page_token
         if reverse_order:
             data['reverseOrder'] = 'true'
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('PollForDecisionTask', json_input)
 
     def respond_decision_task_completed(self, task_token,
@@ -309,7 +305,7 @@ class Layer1(AWSAuthConnection):
             data['decisions'] = decisions
         if execution_context:
             data['executionContext'] = execution_context
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RespondDecisionTaskCompleted', json_input)
 
     def request_cancel_workflow_execution(self, domain, workflow_id,
@@ -338,7 +334,7 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain, 'workflowId': workflow_id}
         if run_id:
             data['runId'] = run_id
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RequestCancelWorkflowExecution', json_input)
 
     def start_workflow_execution(self, domain, workflow_id,
@@ -437,7 +433,7 @@ class Layer1(AWSAuthConnection):
             data['tagList'] = tag_list
         if task_start_to_close_timeout:
             data['taskStartToCloseTimeout'] = task_start_to_close_timeout
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('StartWorkflowExecution', json_input)
 
     def signal_workflow_execution(self, domain, signal_name, workflow_id,
@@ -476,7 +472,7 @@ class Layer1(AWSAuthConnection):
             data['input'] = input
         if run_id:
             data['runId'] = run_id
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('SignalWorkflowExecution', json_input)
 
     def terminate_workflow_execution(self, domain, workflow_id,
@@ -538,7 +534,7 @@ class Layer1(AWSAuthConnection):
             data['reason'] = reason
         if run_id:
             data['runId'] = run_id
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('TerminateWorkflowExecution', json_input)
 
 # Actions related to Administration
@@ -625,7 +621,7 @@ class Layer1(AWSAuthConnection):
             data['defaultTaskStartToCloseTimeout'] = default_task_start_to_close_timeout
         if description:
             data['description'] = description
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RegisterActivityType', json_input)
 
     def deprecate_activity_type(self, domain, activity_name, activity_version):
@@ -650,7 +646,7 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain}
         data['activityType'] = {'name': activity_name,
                                 'version': activity_version}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DeprecateActivityType', json_input)
 
 ## Workflow Management
@@ -732,7 +728,7 @@ class Layer1(AWSAuthConnection):
             data['defaultTaskStartToCloseTimeout'] = default_task_start_to_close_timeout
         if description:
             data['description'] = description
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RegisterWorkflowType', json_input)
 
     def deprecate_workflow_type(self, domain, workflow_name, workflow_version):
@@ -759,7 +755,7 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain}
         data['workflowType'] = {'name': workflow_name,
                                 'version': workflow_version}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DeprecateWorkflowType', json_input)
 
 ## Domain Management
@@ -793,7 +789,7 @@ class Layer1(AWSAuthConnection):
                 'workflowExecutionRetentionPeriodInDays': workflow_execution_retention_period_in_days}
         if description:
             data['description'] = description
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('RegisterDomain', json_input)
 
     def deprecate_domain(self, name):
@@ -813,7 +809,7 @@ class Layer1(AWSAuthConnection):
             OperationNotPermittedFault
         """
         data = {'name': name}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DeprecateDomain', json_input)
 
 # Visibility Actions
@@ -878,7 +874,7 @@ class Layer1(AWSAuthConnection):
             data['nextPageToken'] = next_page_token
         if reverse_order:
             data['reverseOrder'] = 'true'
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('ListActivityTypes', json_input)
 
     def describe_activity_type(self, domain, activity_name, activity_version):
@@ -902,7 +898,7 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain}
         data['activityType'] = {'name': activity_name,
                                 'version': activity_version}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DescribeActivityType', json_input)
 
 ## Workflow Visibility
@@ -958,7 +954,7 @@ class Layer1(AWSAuthConnection):
             data['nextPageToken'] = next_page_token
         if reverse_order:
             data['reverseOrder'] = 'true'
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('ListWorkflowTypes', json_input)
 
     def describe_workflow_type(self, domain, workflow_name, workflow_version):
@@ -983,7 +979,7 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain}
         data['workflowType'] = {'name': workflow_name,
                                 'version': workflow_version}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DescribeWorkflowType', json_input)
 
 ## Workflow Execution Visibility
@@ -1009,7 +1005,7 @@ class Layer1(AWSAuthConnection):
         """
         data = {'domain': domain}
         data['execution'] = {'runId': run_id, 'workflowId': workflow_id}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DescribeWorkflowExecution', json_input)
 
     def get_workflow_execution_history(self, domain, run_id, workflow_id,
@@ -1063,7 +1059,7 @@ class Layer1(AWSAuthConnection):
             data['nextPageToken'] = next_page_token
         if reverse_order:
             data['reverseOrder'] = 'true'
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('GetWorkflowExecutionHistory', json_input)
 
     def count_open_workflow_executions(self, domain, latest_date, oldest_date,
@@ -1116,7 +1112,7 @@ class Layer1(AWSAuthConnection):
             data['executionFilter'] = {'workflowId': workflow_id}
         if tag:
             data['tagFilter'] = {'tag': tag}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('CountOpenWorkflowExecutions', json_input)
 
     def list_open_workflow_executions(self, domain, name, oldest_date, tag, workflow_id, latest_date=None, maximum_page_size=None, next_page_token=None, reverse_order=None, version=None):
@@ -1166,7 +1162,7 @@ class Layer1(AWSAuthConnection):
             data['reverseOrder'] = 'true'
         if version:
             data['version'] = version
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('ListOpenWorkflowExecutions', json_input)
 
     def count_closed_workflow_executions(self, domain,
@@ -1254,7 +1250,7 @@ class Layer1(AWSAuthConnection):
         if workflow_name and workflow_version:
             data['typeFilter'] = {'name': workflow_name,
                                   'version': workflow_version}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('CountClosedWorkflowExecutions', json_input)
 
     def list_closed_workflow_executions(self, domain,
@@ -1369,7 +1365,7 @@ class Layer1(AWSAuthConnection):
             data['nextPageToken'] = next_page_token
         if reverse_order:
             data['reverseOrder'] = 'true'
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('ListClosedWorkflowExecutions', json_input)
 
 ## Domain Visibility
@@ -1416,7 +1412,7 @@ class Layer1(AWSAuthConnection):
             data['nextPageToken'] = next_page_token
         if reverse_order:
             data['reverseOrder'] = 'true'
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('ListDomains', json_input)
 
     def describe_domain(self, name):
@@ -1430,7 +1426,7 @@ class Layer1(AWSAuthConnection):
         :raises: UnknownResourceFault, OperationNotPermittedFault
         """
         data = {'name': name}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DescribeDomain', json_input)
 
 ## Task List Visibility
@@ -1452,7 +1448,7 @@ class Layer1(AWSAuthConnection):
         :raises: #UnknownResourceFault, #OperationNotPermittedFault
         """
         data = {'domain': domain, 'taskList': {'name': task_list}}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('CountPendingDecisionTasks', json_input)
 
     def count_pending_activity_tasks(self, domain, task_list):
@@ -1472,7 +1468,7 @@ class Layer1(AWSAuthConnection):
         :raises: UnknownResourceFault, OperationNotPermittedFault
         """
         data = {'domain': domain, 'taskList': {'name': task_list}}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('CountPendingActivityTasks', json_input)
 
 

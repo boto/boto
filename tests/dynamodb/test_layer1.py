@@ -35,7 +35,7 @@ json_doc = """{"access_key": "ASIAIV7R2NUUJ6SB7GKQ", "secret_key": "eIfijGxJlejH
 class DynamoDBLayer1Test (unittest.TestCase):
 
     def test_layer1_basic(self):
-        print '--- running DynamoDB Layer1 tests ---'
+        print('--- running DynamoDB Layer1 tests ---')
 
         # Create a Layer1 connection with an expired set of
         # credentials to test the automatic renewal of tokens
@@ -136,7 +136,7 @@ class DynamoDBLayer1Test (unittest.TestCase):
         expected = {'Views': {'Value': {'N': '1'}}}
         try:
             result = c.delete_item(table_name, key=key1, expected=expected)
-        except c.ResponseError, e:
+        except c.ResponseError as e:
             assert e.error_code == 'ConditionalCheckFailedException'
 
         # Now update the existing object
@@ -205,5 +205,5 @@ class DynamoDBLayer1Test (unittest.TestCase):
         result = c.delete_table(table_name)
         assert result['TableDescription']['TableStatus'] == 'DELETING'
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 

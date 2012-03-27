@@ -38,11 +38,11 @@ from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.bucketlogging import BucketLogging
+import boto.compat as compat
 import boto.jsonresponse
 import boto.utils
 import xml.sax
 import xml.sax.saxutils
-import StringIO
 import urllib
 import re
 import base64
@@ -291,7 +291,7 @@ class Bucket(object):
             k = k.replace('_', '-')
             if  k == 'maxkeys':
                 k = 'max-keys'
-            if isinstance(v, unicode):
+            if isinstance(v, compat.text_type):
                 v = v.encode('utf-8')
             if v is not None and v != '':
                 l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
@@ -484,10 +484,10 @@ class Bucket(object):
         query_args = 'delete'
         def delete_keys2(hdrs):
             hdrs = hdrs or {}
-            data = u"""<?xml version="1.0" encoding="UTF-8"?>"""
-            data += u"<Delete>"
+            data = """<?xml version="1.0" encoding="UTF-8"?>"""
+            data += "<Delete>"
             if quiet:
-                data += u"<Quiet>true</Quiet>"
+                data += "<Quiet>true</Quiet>"
             count = 0
             while count < 1000:
                 try:
@@ -515,15 +515,15 @@ class Bucket(object):
                     continue
                 count += 1
                 #key_name = key_name.decode('utf-8')
-                data += u"<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
+                data += "<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
                 if version_id:
-                    data += u"<VersionId>%s</VersionId>" % version_id
-                data += u"</Object>"
-            data += u"</Delete>"
+                    data += "<VersionId>%s</VersionId>" % version_id
+                data += "</Object>"
+            data += "</Delete>"
             if count <= 0:
                 return False # no more
             data = data.encode('utf-8')
-            fp = StringIO.StringIO(data)
+            fp = compat.StringIO(data)
             md5 = boto.utils.compute_md5(fp)
             hdrs['Content-MD5'] = md5[1]
             hdrs['Content-Type'] = 'text/xml'
@@ -1134,7 +1134,7 @@ class Bucket(object):
         :param lifecycle_config: The lifecycle configuration you want
             to configure for this bucket.
         """
-        fp = StringIO.StringIO(lifecycle_config.to_xml())
+        fp = compat.StringIO(lifecycle_config.to_xml())
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}

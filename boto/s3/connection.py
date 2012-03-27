@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-import urllib, base64
+import base64
 import time
 import boto.utils
 from boto.connection import AWSAuthConnection
@@ -31,6 +31,7 @@ from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError
+import boto.compat as compat
 
 def check_lowercase_bucketname(n):
     """
@@ -85,11 +86,11 @@ class _CallingFormat(object):
         path = ''
         if bucket != '':
             path = '/' + bucket
-        return path + '/%s' % urllib.quote(key)
+        return path + '/%s' % compat.quote(key)
 
     def build_path_base(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
-        return '/%s' % urllib.quote(key)
+        return '/%s' % compat.quote(key)
 
 class SubdomainCallingFormat(_CallingFormat):
 
@@ -113,7 +114,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
-        return path_base + urllib.quote(key)
+        return path_base + compat.quote(key)
 
 class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
     
@@ -315,14 +316,14 @@ class S3Connection(AWSAuthConnection):
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
-        encoded_canonical = urllib.quote_plus(b64_hmac)
+        encoded_canonical = compat.quote_plus(b64_hmac)
         self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                                    self.aws_access_key_id)
             # The response headers must also be GET parameters in the URL.
             headers.update(response_headers)
-            hdrs = ['%s=%s'%(n, urllib.quote(v)) for n, v in headers.items()]
+            hdrs = ['%s=%s'%(n, compat.quote(v)) for n, v in headers.items()]
             q_str = '&'.join(hdrs)
             if q_str:
                 query_part += '&' + q_str

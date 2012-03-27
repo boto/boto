@@ -24,11 +24,7 @@ from datetime import datetime
 from boto.resultset import ResultSet
 from boto.ec2.cloudwatch.listelement import ListElement
 from boto.ec2.cloudwatch.dimension import Dimension
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import boto.compat as compat
 
 
 class MetricAlarms(list):
@@ -61,7 +57,7 @@ class MetricAlarm(object):
                     '<'     :   'LessThanThreshold',
                     '<='    :   'LessThanOrEqualToThreshold',
                }
-    _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.iteritems())
+    _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.items())
 
     def __init__(self, connection=None, name=None, metric=None,
                  namespace=None, statistic=None, comparison=None,
@@ -306,7 +302,7 @@ class AlarmHistoryItem(object):
         if name == 'AlarmName':
             self.name = value
         elif name == 'HistoryData':
-            self.data = json.loads(value)
+            self.data = compat.json.loads(value)
         elif name == 'HistoryItemType':
             self.tem_type = value
         elif name == 'HistorySummary':

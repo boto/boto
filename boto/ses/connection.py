@@ -29,6 +29,7 @@ import boto.jsonresponse
 import urllib
 import base64
 from boto.ses import exceptions as ses_exceptions
+import boto.compat as compat
 
 
 class SESConnection(AWSAuthConnection):
@@ -88,7 +89,7 @@ class SESConnection(AWSAuthConnection):
         params['Action'] = action
 
         for k, v in params.items():
-            if isinstance(v, unicode):  # UTF-8 encode only if it's Unicode
+            if isinstance(v, compat.text_types):  # UTF-8 encode only if it's Unicode
                 params[k] = v.encode('utf-8')
 
         response = super(SESConnection, self).make_request(

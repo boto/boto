@@ -23,7 +23,6 @@
 High-level abstraction of an EC2 server
 """
 import boto
-import boto.utils
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config, BotoConfigPath
 from boto.mashups.interactive import interactive_shell

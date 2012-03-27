@@ -26,12 +26,9 @@ from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
+import boto.compat as compat
 
 import time
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 #
 # To get full debug output, uncomment the following line and set the
@@ -137,15 +134,16 @@ class Layer1(AWSAuthConnection):
             self.instrumentation['times'].append(time.time() - start)
             self.instrumentation['ids'].append(self.request_id)
         response_body = response.read()
+        response_body = response_body.decode('utf-8')
         boto.log.debug(response_body)
-        return json.loads(response_body, object_hook=object_hook)
+        return compat.json.loads(response_body, object_hook=object_hook)
 
     def _retry_handler(self, response, i, next_sleep):
         status = None
         if response.status == 400:
             response_body = response.read()
             boto.log.debug(response_body)
-            data = json.loads(response_body)
+            data = compat.json.loads(response_body)
             if self.ThruputError in data.get('__type'):
                 self.throughput_exceeded_events += 1
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
@@ -190,7 +188,7 @@ class Layer1(AWSAuthConnection):
             data['Limit'] = limit
         if start_table:
             data['ExclusiveStartTableName'] = start_table
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('ListTables', json_input)
 
     def describe_table(self, table_name):
@@ -203,7 +201,7 @@ class Layer1(AWSAuthConnection):
         :param table_name: The name of the table to describe.
         """
         data = {'TableName': table_name}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DescribeTable', json_input)
 
     def create_table(self, table_name, schema, provisioned_throughput):
@@ -229,7 +227,7 @@ class Layer1(AWSAuthConnection):
         data = {'TableName': table_name,
                 'KeySchema': schema,
                 'ProvisionedThroughput': provisioned_throughput}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         response_dict = self.make_request('CreateTable', json_input)
         return response_dict
 
@@ -247,7 +245,7 @@ class Layer1(AWSAuthConnection):
         """
         data = {'TableName': table_name,
                 'ProvisionedThroughput': provisioned_throughput}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('UpdateTable', json_input)
 
     def delete_table(self, table_name):
@@ -260,7 +258,7 @@ class Layer1(AWSAuthConnection):
         :param table_name: The name of the table to delete.
         """
         data = {'TableName': table_name}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DeleteTable', json_input)
 
     def get_item(self, table_name, key, attributes_to_get=None,
@@ -292,7 +290,7 @@ class Layer1(AWSAuthConnection):
             data['AttributesToGet'] = attributes_to_get
         if consistent_read:
             data['ConsistentRead'] = True
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         response = self.make_request('GetItem', json_input,
                                      object_hook=object_hook)
         if 'Item' not in response:
@@ -311,7 +309,7 @@ class Layer1(AWSAuthConnection):
             data structure defined by DynamoDB.
         """
         data = {'RequestItems': request_items}
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('BatchGetItem', json_input,
                                  object_hook=object_hook)
 
@@ -350,7 +348,7 @@ class Layer1(AWSAuthConnection):
             data['Expected'] = expected
         if return_values:
             data['ReturnValues'] = return_values
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('PutItem', json_input,
                                  object_hook=object_hook)
 
@@ -392,7 +390,7 @@ class Layer1(AWSAuthConnection):
             data['Expected'] = expected
         if return_values:
             data['ReturnValues'] = return_values
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('UpdateItem', json_input,
                                  object_hook=object_hook)
 
@@ -428,7 +426,7 @@ class Layer1(AWSAuthConnection):
             data['Expected'] = expected
         if return_values:
             data['ReturnValues'] = return_values
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('DeleteItem', json_input,
                                  object_hook=object_hook)
 
@@ -489,7 +487,7 @@ class Layer1(AWSAuthConnection):
             data['ScanIndexForward'] = False
         if exclusive_start_key:
             data['ExclusiveStartKey'] = exclusive_start_key
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('Query', json_input,
                                  object_hook=object_hook)
 
@@ -538,5 +536,5 @@ class Layer1(AWSAuthConnection):
             data['Count'] = True
         if exclusive_start_key:
             data['ExclusiveStartKey'] = exclusive_start_key
-        json_input = json.dumps(data)
+        json_input = compat.json.dumps(data)
         return self.make_request('Scan', json_input, object_hook=object_hook)

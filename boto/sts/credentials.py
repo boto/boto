@@ -23,10 +23,8 @@
 import boto.utils
 import os
 import datetime
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import boto.compat as compat
+
 
 class Credentials(object):
     """
@@ -54,7 +52,7 @@ class Credentials(object):
         :param json_doc: A string containing a JSON document with a
             previously saved Credentials object.
         """
-        d = json.loads(json_doc)
+        d = compat.json.loads(json_doc)
         token = cls()
         token.__dict__.update(d)
         return token
@@ -114,9 +112,9 @@ class Credentials(object):
             of the file will be set to readable/writable by owner only.
         """
         fp = open(file_path, 'wb')
-        json.dump(self.to_dict(), fp)
+        compat.json.dump(self.to_dict(), fp)
         fp.close()
-        os.chmod(file_path, 0600)
+        os.chmod(file_path, 0o600)
 
     def is_expired(self, time_offset_seconds=0):
         """

@@ -85,7 +85,7 @@ class S3MultiDeleteTest (unittest.TestCase):
         self.assertEqual(len(result.errors), 1)
 
     def test_delete_kanji(self):
-        result = self.bucket.delete_keys([u"漢字", Key(name=u"日本語")])
+        result = self.bucket.delete_keys(["漢字", Key(name="日本語")])
         self.assertEqual(len(result.deleted), 2)
         self.assertEqual(len(result.errors), 0)
 
@@ -95,7 +95,7 @@ class S3MultiDeleteTest (unittest.TestCase):
         self.assertEqual(len(result.errors), 0)
 
     def test_delete_kanji_by_list(self):
-        for key_name in [u"漢字", u"日本語", u"テスト"]:
+        for key_name in ["漢字", "日本語", "テスト"]:
             key = self.bucket.new_key(key_name)
             key.set_contents_from_string('this is a test')
         result = self.bucket.delete_keys(self.bucket.list())

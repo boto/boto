@@ -64,9 +64,9 @@ in the format in which it would be stored in SQS.
 """
 
 import base64
-import StringIO
 from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
+import boto.compat as compat
 
 class RawMessage:
     """
@@ -150,6 +150,8 @@ class Message(RawMessage):
     """
     
     def encode(self, value):
+        if isinstance(value, compat.text_type):
+            value = value.encode('utf-8')
         return base64.b64encode(value)
 
     def decode(self, value):
@@ -179,7 +181,7 @@ class MHMessage(Message):
     def decode(self, value):
         try:
             msg = {}
-            fp = StringIO.StringIO(value)
+            fp = compat.StringIO(value)
             line = fp.readline()
             while line:
                 delim = line.find(':')
@@ -198,7 +200,7 @@ class MHMessage(Message):
         return s
 
     def __getitem__(self, key):
-        if self._body.has_key(key):
+        if key in self._body:
             return self._body[key]
         else:
             raise KeyError(key)
@@ -217,7 +219,7 @@ class MHMessage(Message):
         return self._body.items()
 
     def has_key(self, key):
-        return self._body.has_key(key)
+        return key in self._body
 
     def update(self, d):
         self._body.update(d)

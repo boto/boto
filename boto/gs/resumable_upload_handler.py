@@ -21,19 +21,18 @@
 
 import cgi
 import errno
-import httplib
 import os
 import random
 import re
 import socket
 import time
-import urlparse
 import boto
 from boto import config
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
+import boto.compat as compat
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -55,7 +54,7 @@ save the state needed to allow retrying later, in a separate process
 class ResumableUploadHandler(object):
 
     BUFFER_SIZE = 8192
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (compat.httplib.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     # (start, end) response indicating server has nothing (upload protocol uses
@@ -95,7 +94,7 @@ class ResumableUploadHandler(object):
             f = open(self.tracker_file_name, 'r')
             uri = f.readline().strip()
             self._set_tracker_uri(uri)
-        except IOError, e:
+        except IOError as e:
             # Ignore non-existent file (happens first time an upload
             # is attempted on a file), but warn user for other errors.
             if e.errno != errno.ENOENT:
@@ -103,7 +102,7 @@ class ResumableUploadHandler(object):
                 print('Couldn\'t read URI tracker file (%s): %s. Restarting '
                       'upload from scratch.' %
                       (self.tracker_file_name, e.strerror))
-        except InvalidUriError, e:
+        except InvalidUriError as e:
             # Warn user, but proceed (will restart because
             # self.tracker_uri == None).
             print('Invalid tracker URI (%s) found in URI tracker file '
@@ -123,7 +122,7 @@ class ResumableUploadHandler(object):
         try:
             f = open(self.tracker_file_name, 'w')
             f.write(self.tracker_uri)
-        except IOError, e:
+        except IOError as e:
             raise ResumableUploadException(
                 'Couldn\'t write URI tracker file (%s): %s.\nThis can happen'
                 'if you\'re using an incorrectly configured upload tool\n'
@@ -142,7 +141,7 @@ class ResumableUploadHandler(object):
 
         Raises InvalidUriError if URI is syntactically invalid.
         """
-        parse_result = urlparse.urlparse(uri)
+        parse_result = compat.urlparse.urlparse(uri)
         if (parse_result.scheme.lower() not in ['http', 'https'] or
             not parse_result.netloc):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
@@ -233,7 +232,7 @@ class ResumableUploadHandler(object):
                 'Couldn\'t parse upload server state query response (%s)' %
                 str(resp.getheaders()), ResumableTransferDisposition.START_OVER)
         if conn.debug >= 1:
-            print 'Server has: Range: %d - %d.' % (server_start, server_end)
+            print('Server has: Range: %d - %d.' % (server_start, server_end))
         return (server_start, server_end)
 
     def _start_new_resumable_upload(self, key, headers=None):
@@ -244,7 +243,7 @@ class ResumableUploadHandler(object):
         """
         conn = key.bucket.connection
         if conn.debug >= 1:
-            print 'Starting new resumable upload.'
+            print('Starting new resumable upload.')
         self.server_has_bytes = 0
 
         # Start a new resumable upload by sending a POST request with an
@@ -393,10 +392,10 @@ class ResumableUploadHandler(object):
                 self.server_has_bytes = server_start
                 key=key
                 if conn.debug >= 1:
-                    print 'Resuming transfer.'
-            except ResumableUploadException, e:
+                    print('Resuming transfer.')
+            except ResumableUploadException as e:
                 if conn.debug >= 1:
-                    print 'Unable to resume transfer (%s).' % e.message
+                    print('Unable to resume transfer (%s).' % e.message)
                 self._start_new_resumable_upload(key, headers)
         else:
             self._start_new_resumable_upload(key, headers)
@@ -457,7 +456,7 @@ class ResumableUploadHandler(object):
         change some of the file and not realize they have inconsistent data.
         """
         if key.bucket.connection.debug >= 1:
-            print 'Checking md5 against etag.'
+            print('Checking md5 against etag.')
         if key.md5 != etag.strip('"\''):
             # Call key.open_read() before attempting to delete the
             # (incorrect-content) key, so we perform that request on a
@@ -532,9 +531,9 @@ class ResumableUploadHandler(object):
                 self._remove_tracker_file()
                 self._check_final_md5(key, etag)
                 if debug >= 1:
-                    print 'Resumable upload complete.'
+                    print('Resumable upload complete.')
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
@@ -544,7 +543,7 @@ class ResumableUploadHandler(object):
                     # the upload (which will cause a new connection to be
                     # opened the next time an HTTP request is sent).
                     key.bucket.connection.connection.close()
-            except ResumableUploadException, e:
+            except ResumableUploadException as e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
@@ -581,7 +580,7 @@ class ResumableUploadHandler(object):
             # Use binary exponential backoff to desynchronize client requests
             sleep_time_secs = random.random() * (2**progress_less_iterations)
             if debug >= 1:
-                print ('Got retryable failure (%d progress-less in a row).\n'
-                       'Sleeping %3.1f seconds before re-trying' %
-                       (progress_less_iterations, sleep_time_secs))
+                print('Got retryable failure (%d progress-less in a row).\n'
+                      'Sleeping %3.1f seconds before re-trying' %
+                      (progress_less_iterations, sleep_time_secs))
             time.sleep(sleep_time_secs)

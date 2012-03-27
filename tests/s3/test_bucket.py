@@ -87,7 +87,7 @@ class S3BucketTest (unittest.TestCase):
         # grant log write perms to target bucket using canned-acl
         self.bucket.set_acl("log-delivery-write")
         target_bucket = self.bucket_name
-        target_prefix = u"jp/ログ/"
+        target_prefix = "jp/ログ/"
         # Check existing status is disabled
         bls = sb.get_logging_status()
         self.assertEqual(bls.target, None)

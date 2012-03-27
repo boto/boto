@@ -22,7 +22,7 @@
 
 import xml.sax
 import cgi
-from StringIO import StringIO
+import boto.compat as compat
 
 class ResponseGroup(xml.sax.ContentHandler):
     """A Generic "Response Group", which can
@@ -35,7 +35,7 @@ class ResponseGroup(xml.sax.ContentHandler):
         self._nodename = nodename
         self._nodepath = []
         self._curobj = None
-        self._xml = StringIO()
+        self._xml = compat.StringIO()
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.__dict__)
