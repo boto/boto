@@ -19,14 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class ResultSet(list):
     """
     The ResultSet is used to pass results back from the Amazon services
     to the client. It is light wrapper around Python's :py:class:`list` class,
-    with some additional methods for parsing XML results from AWS. 
-    Because I don't really want any dependencies on external libraries, 
-    I'm using the standard SAX parser that comes with Python. The good news is 
-    that it's quite fast and efficient but it makes some things rather 
+    with some additional methods for parsing XML results from AWS.
+    Because I don't really want any dependencies on external libraries,
+    I'm using the standard SAX parser that comes with Python. The good news is
+    that it's quite fast and efficient but it makes some things rather
     difficult.
 
     You can pass in, as the marker_elem parameter, a list of tuples.
@@ -114,6 +115,7 @@ class ResultSet(list):
         else:
             setattr(self, name, value)
 
+
 class BooleanResult(object):
 
     def __init__(self, marker_elem=None):
@@ -154,4 +156,3 @@ class BooleanResult(object):
             self.request_id = value
         else:
             setattr(self, name, value)
-

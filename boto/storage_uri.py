@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import boto
 import os
 from boto.exception import BotoClientError
 from boto.exception import InvalidUriError
@@ -64,12 +63,12 @@ class StorageUri(object):
 
     def check_response(self, resp, level, uri):
         if resp is None:
-            raise InvalidUriError('Attempt to get %s for "%s" failed.\nThis '
-                                  'can happen if the URI refers to a non-'
-                                  'existent object or if you meant to\noperate '
-                                  'on a directory (e.g., leaving off -R option '
-                                  'on gsutil cp, mv, or ls of a\nbucket)' %
-                                  (level, uri))
+            raise InvalidUriError('Attempt to get %s for "%s" failed.\n'
+                                  'This can happen if the URI refers to'
+                                  'a non-existent object or if you meant to\n'
+                                  'operate on a directory (e.g., leaving off'
+                                  '-R option on gsutil cp, mv, or ls of a\n'
+                                  'bucket)' % (level, uri))
 
     def connect(self, access_key_id=None, secret_access_key=None, **kwargs):
         """
@@ -239,8 +238,9 @@ class BucketStorageUri(StorageUri):
         @param new_name: new object name
         """
         if not self.bucket_name:
-            raise InvalidUriError('clone_replace_name() on bucket-less URI %s' %
-                                  self.uri)
+            msg = 'clone_replace_name() on bucket-less URI %s' % self.uri
+            raise InvalidUriError(msg)
+
         return BucketStorageUri(
             self.scheme, bucket_name=self.bucket_name, object_name=new_name,
             debug=self.debug,
@@ -303,12 +303,12 @@ class BucketStorageUri(StorageUri):
     def add_group_email_grant(self, permission, email_address, recursive=False,
                               validate=True, headers=None):
         if self.scheme != 'gs':
-              raise ValueError('add_group_email_grant() not supported for %s '
-                               'URIs.' % self.scheme)
+            raise ValueError('add_group_email_grant() not supported for %s '
+                             'URIs.' % self.scheme)
         if self.object_name:
             if recursive:
-              raise ValueError('add_group_email_grant() on key-ful URI cannot '
-                               'specify recursive=True')
+                raise ValueError('add_group_email_grant() on key-ful URI '
+                                 'cannot specify recursive=True')
             key = self.get_key(validate, headers)
             self.check_response(key, 'key', self.uri)
             key.add_group_email_grant(permission, email_address, headers)
@@ -452,8 +452,10 @@ class BucketStorageUri(StorageUri):
 
     def set_def_canned_acl(self, acl_str, validate=True, headers=None,
                        version_id=None):
-        """sets or updates a bucket's default object acl to a predefined 
-           (canned) value"""
+        """
+        Sets or updates a bucket's default object acl to a predefined
+        (canned) value.
+        """
         if not self.object_name:
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
                                   self.uri)
@@ -491,7 +493,6 @@ class BucketStorageUri(StorageUri):
                 'disable_logging on bucket-less URI (%s)' % self.uri)
         bucket = self.get_bucket(validate, headers)
         bucket.disable_logging(headers=headers)
-
 
 
 class FileStorageUri(StorageUri):
