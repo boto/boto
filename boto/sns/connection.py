@@ -23,10 +23,8 @@ from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 import boto
 import uuid
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import boto.compat as compat
+
 
 class SNSConnection(AWSQueryConnection):
 
@@ -68,7 +66,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('ListTopics', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -87,7 +85,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('GetTopicAttributes', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -116,7 +114,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('SetTopicAttributes', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -150,7 +148,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('AddPermission', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -174,7 +172,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('RemovePermission', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -193,7 +191,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('CreateTopic', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -212,7 +210,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('DeleteTopic', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -245,7 +243,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('Publish', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -280,7 +278,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('Subscribe', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -325,7 +323,7 @@ class SNSConnection(AWSQueryConnection):
                      'Sid' : str(uuid.uuid4()),
                      'Condition' : {'StringLike' : {'aws:SourceArn' : topic}}}
         policy['Statement'].append(statement)
-        queue.set_attribute('Policy', json.dumps(policy))
+        queue.set_attribute('Policy', compat.json.dumps(policy))
         return resp
 
     def confirm_subscription(self, topic, token,
@@ -355,7 +353,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('ConfirmSubscription', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -375,7 +373,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('Unsubscribe', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -396,7 +394,7 @@ class SNSConnection(AWSQueryConnection):
         response = self.make_request('ListSubscriptions', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -423,7 +421,7 @@ class SNSConnection(AWSQueryConnection):
                                      '/', 'GET')
         body = response.read()
         if response.status == 200:
-            return json.loads(body)
+            return compat.json.loads(body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)

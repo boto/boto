@@ -109,6 +109,40 @@ except ImportError:
     from email.utils import formatdate
     from email import Encoders
 
+#
+# the following is necessary because of the incompatibilities
+# between Python 2.4, 2.5, and 2.6 as well as the fact that some
+# people running 2.4 have installed hashlib as a separate module
+# this fix was provided by boto user mccormix.
+# see: http://code.google.com/p/boto/issues/detail?id=172
+# for more details.
+#
+try:
+    from hashlib import sha1 as sha
+    from hashlib import sha256 as sha256
+
+    if sys.version[:3] == "2.4":
+        # we are using an hmac that expects a .new() method.
+        class Faker:
+            def __init__(self, which):
+                self.which = which
+                self.digest_size = self.which().digest_size
+
+            def new(self, *args, **kwargs):
+                return self.which(*args, **kwargs)
+
+        sha = Faker(sha)
+        sha256 = Faker(sha256)
+
+except ImportError:
+    import sha
+    sha256 = None
+
+try:
+    import simplejson as json
+except:
+    import json
+
 
 def on_appengine():
     return all(key in os.environ for key in ('USER_IS_ADMIN',

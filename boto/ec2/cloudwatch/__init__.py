@@ -23,10 +23,6 @@
 This module provides an interface to the Elastic Compute Cloud (EC2)
 CloudWatch service from AWS.
 """
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
@@ -34,6 +30,8 @@ from boto.ec2.cloudwatch.alarm import MetricAlarm, MetricAlarms, AlarmHistoryIte
 from boto.ec2.cloudwatch.datapoint import Datapoint
 from boto.regioninfo import RegionInfo
 import boto
+import boto.compat as compat
+
 
 RegionData = {
     'us-east-1' : 'monitoring.us-east-1.amazonaws.com',
@@ -553,7 +551,7 @@ class CloudWatchConnection(AWSQueryConnection):
                   'StateReason' : state_reason,
                   'StateValue' : state_value}
         if state_reason_data:
-            params['StateReasonData'] = json.dumps(state_reason_data)
+            params['StateReasonData'] = compat.json.dumps(state_reason_data)
 
         return self.get_status('SetAlarmState', params)
 
