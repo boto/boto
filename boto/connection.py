@@ -54,7 +54,6 @@ import time
 import xml.sax
 
 from . import auth
-from . import auth_handler
 from . import compat
 import boto
 import boto.utils
@@ -62,7 +61,7 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.exception import BotoClientError, BotoServerError
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -81,10 +80,12 @@ try:
 except ImportError:
     import dummy_threading as threading
 
-PORTS_BY_SECURITY = { True: 443, False: 80 }
+PORTS_BY_SECURITY = {True: 443, False: 80}
 
 DEFAULT_CA_CERTS_FILE = os.path.join(
-        os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
+        os.path.dirname(os.path.abspath(boto.cacerts.__file__ )),
+        "cacerts.txt")
+
 
 class HostConnectionPool(object):
 
@@ -122,7 +123,7 @@ class HostConnectionPool(object):
         ready to be returned by get().
         """
         return len(self.queue)
-    
+
     def put(self, conn):
         """
         Adds a connection to the pool, along with the time it was
@@ -164,10 +165,11 @@ class HostConnectionPool(object):
         state we care about isn't available in any public methods.
         """
         if compat.on_appengine():
-            # Google App Engine implementation of HTTPConnection doesn't contain
-            # _HTTPConnection__response attribute. Moreover, it's not possible
-            # to determine if given connection is ready. Reusing connections
-            # simply doesn't make sense with App Engine urlfetch service.
+            # The Google App Engine implementation of HTTPConnection
+            # doesn't contain _HTTPConnection__response attribute.
+            # Moreover, it's not possible to determine if given connection
+            # is ready. Reusing connections simply doesn't make sense
+            # with App Engine urlfetch service.
             return False
         else:
             response = getattr(conn, '_HTTPConnection__response', None)
@@ -191,6 +193,7 @@ class HostConnectionPool(object):
         now = time.time()
         return return_time + ConnectionPool.STALE_DURATION < now
 
+
 class ConnectionPool(object):
 
     """
@@ -204,7 +207,7 @@ class ConnectionPool(object):
     #
     # The amout of time between calls to clean.
     #
-    
+
     CLEAN_INTERVAL = 5.0
 
     #
@@ -265,7 +268,7 @@ class ConnectionPool(object):
         get rid of empty pools.  Pools clean themselves every time a
         connection is fetched; this cleaning takes care of pools that
         aren't being used any more, so nothing is being gotten from
-        them. 
+        them.
         """
         with self.mutex:
             now = time.time()
@@ -278,6 +281,7 @@ class ConnectionPool(object):
                 for host in to_remove:
                     del self.host_to_pool[host]
                 self.last_clean_time = now
+
 
 class HTTPRequest(object):
 
@@ -296,26 +300,26 @@ class HTTPRequest(object):
 
         :type port: int
         :param port: port on which the request is being sent. Zero means unset,
-                     in which case default port will be chosen.
+            in which case default port will be chosen.
 
         :type path: string
         :param path: URL path that is being accessed.
 
         :type auth_path: string
         :param path: The part of the URL path used when creating the
-                     authentication string.
+            authentication string.
 
         :type params: dict
-        :param params: HTTP url query parameters, with key as name of the param,
-                       and value as value of param.
+        :param params: HTTP url query parameters, with key as name of
+            the param, and value as value of param.
 
         :type headers: dict
         :param headers: HTTP headers, with key as name of the header and value
-                        as value of header.
+            as value of header.
 
         :type body: string
         :param body: Body of the HTTP request. If not present, will be None or
-                     empty string ('').
+            empty string ('').
         """
         self.method = method
         self.protocol = protocol
@@ -359,8 +363,11 @@ class HTTPRequest(object):
                     self.headers['Transfer-Encoding'] != 'chunked':
                 self.headers['Content-Length'] = str(len(self.body))
 
+
 class AWSAuthConnection(object):
-    def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
+
+    def __init__(self, host, aws_access_key_id=None,
+                 aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, path='/',
@@ -382,9 +389,8 @@ class AWSAuthConnection(object):
 
         :type https_connection_factory: list or tuple
         :param https_connection_factory: A pair of an HTTP connection
-                                         factory and the exceptions to catch.
-                                         The factory should have a similar
-                                         interface to L{httplib.HTTPSConnection}.
+            factory and the exceptions to catch.  The factory should
+            have a similar interface to L{httplib.HTTPSConnection}.
 
         :param str proxy: Address/hostname for a proxy server
 
@@ -504,10 +510,14 @@ class AWSAuthConnection(object):
     secret_key = aws_secret_access_key
 
     def get_path(self, path='/'):
-        # The default behavior is to suppress consecutive slashes for reasons
-        # discussed at
-        # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
-        # You can override that behavior with the suppress_consec_slashes param.
+        """
+        The default behavior is to suppress consecutive slashes for reasons
+        discussed at:
+
+        https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
+
+        You can override that behavior with the suppress_consec_slashes param.
+        """
         if not self.suppress_consec_slashes:
             return self.path + re.sub('^/*', "", path)
         pos = path.find('?')
@@ -640,7 +650,8 @@ class AWSAuthConnection(object):
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
         sock.sendall("\r\n")
-        resp = compat.httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
+        resp = compat.httplib.HTTPResponse(sock, strict=True,
+                                           debuglevel=self.debug)
         resp.begin()
 
         if resp.status != 200:
@@ -648,7 +659,8 @@ class AWSAuthConnection(object):
             # been generated by the socket library
             raise socket.error(-71,
                                "Error talking to HTTP proxy %s:%s: %s (%s)" %
-                               (self.proxy, self.proxy_port, resp.status, resp.reason))
+                               (self.proxy, self.proxy_port,
+                                resp.status, resp.reason))
 
         # We can safely close the response, it duped the original socket
         resp.close()
@@ -710,7 +722,8 @@ class AWSAuthConnection(object):
         body = None
         e = None
         if override_num_retries is None:
-            num_retries = config.getint('Boto', 'num_retries', self.num_retries)
+            num_retries = config.getint('Boto', 'num_retries',
+                                        self.num_retries)
         else:
             num_retries = override_num_retries
         i = 0
@@ -755,8 +768,11 @@ class AWSAuthConnection(object):
                                              connection)
                     return response
                 else:
-                    scheme, request.host, request.path, \
-                        params, query, fragment = compat.urlparse.urlparse(location)
+                    t = compat.urlparse.urlparse(location)
+                    scheme = t[0]
+                    request.host = t[1]
+                    request.path = t[2]
+                    query = t[4]
                     if query:
                         request.path += '?' + query
                     msg = 'Redirecting: %s' % scheme + '://'
@@ -768,9 +784,10 @@ class AWSAuthConnection(object):
             except self.http_exceptions as e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
-                        boto.log.debug(
-                            'encountered unretryable %s exception, re-raising' %
-                            e.__class__.__name__)
+                        msg = 'encountered unretryable'
+                        msg += '%s exception, '  % e.__class__.__name__
+                        msg += 're-raising'
+                        boto.log.debug(msg)
                         raise e
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
@@ -817,17 +834,21 @@ class AWSAuthConnection(object):
 
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None):
-        """Makes a request to the server, with stock multiple-retry logic."""
+        """
+        Makes a request to the server, with stock multiple-retry logic.
+        """
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     {}, headers, data, host)
         return self._mexe(http_request, sender, override_num_retries)
 
     def close(self):
-        """(Optional) Close any open HTTP connections.  This is non-destructive,
-        and making a new request will open a connection again."""
-
+        """
+        (Optional) Close any open HTTP connections.  This is non-destructive,
+        and making a new request will open a connection again.
+        """
         boto.log.debug('closing all HTTP connections')
         self._connection = None  # compat field
+
 
 class AWSQueryConnection(AWSAuthConnection):
 
