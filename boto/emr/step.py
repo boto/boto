@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class Step(object):
     """
     Jobflow Step base class
@@ -105,26 +106,40 @@ class StreamingStep(Step):
 
         :type name: str
         :param name: The name of the step
+
         :type mapper: str
         :param mapper: The mapper URI
+
         :type reducer: str
         :param reducer: The reducer URI
+
         :type combiner: str
-        :param combiner: The combiner URI. Only works for Hadoop 0.20 and later!
+        :param combiner: The combiner URI. Only works for Hadoop 0.20
+            and later!
+
         :type action_on_failure: str
-        :param action_on_failure: An action, defined in the EMR docs to take on failure.
+        :param action_on_failure: An action, defined in the EMR docs
+            to take on failure.
+
         :type cache_files: list(str)
         :param cache_files: A list of cache files to be bundled with the job
+
         :type cache_archives: list(str)
-        :param cache_archives: A list of jar archives to be bundled with the job
+        :param cache_archives: A list of jar archives to be bundled with
+            the job.
+
         :type step_args: list(str)
         :param step_args: A list of arguments to pass to the step
+
         :type input: str or a list of str
         :param input: The input uri
+
         :type output: str
         :param output: The output uri
+
         :type jar: str
-        :param jar: The hadoop streaming jar. This can be either a local path on the master node, or an s3:// URI.
+        :param jar: The hadoop streaming jar. This can be either a
+            local path on the master node, or an s3:// URI.
         """
         self.name = name
         self.mapper = mapper
@@ -180,7 +195,7 @@ class StreamingStep(Step):
                 args.extend(('-cacheFile', cache_file))
 
         if self.cache_archives:
-           for cache_archive in self.cache_archives:
+            for cache_archive in self.cache_archives:
                 args.extend(('-cacheArchive', cache_archive))
 
         return args

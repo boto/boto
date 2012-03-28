@@ -23,8 +23,3 @@
 This module provies an interface to the Elastic MapReduce (EMR)
 service from AWS.
 """
-from .connection import EmrConnection
-from .step import Step, StreamingStep, JarStep
-from .bootstrap_action import BootstrapAction
-
-

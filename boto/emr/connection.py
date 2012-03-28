@@ -27,11 +27,12 @@ Represents a connection to the EMR service
 import boto
 import boto.utils
 from boto.ec2.regioninfo import RegionInfo
-from boto.emr.emrobject import JobFlow, RunJobFlowResponse
-from boto.emr.emrobject import AddInstanceGroupsResponse, ModifyInstanceGroupsResponse
-from boto.emr.step import JarStep
+from .emrobject import JobFlow, RunJobFlowResponse
+from .emrobject import AddInstanceGroupsResponse, ModifyInstanceGroupsResponse
+from .step import JarStep
 from boto.connection import AWSQueryConnection
 from boto.exception import EmrResponseError
+
 
 class EmrConnection(AWSQueryConnection):
 
@@ -153,7 +154,7 @@ class EmrConnection(AWSQueryConnection):
         :type jobflow_id: str
         :param jobflow_id: The id of the jobflow which will take the
             new instance groups
-            
+
         :type instance_groups: list(boto.emr.InstanceGroup)
         :param instance_groups: A list of instance groups to add to the job
         """
@@ -174,7 +175,7 @@ class EmrConnection(AWSQueryConnection):
         :type instance_group_ids: list(str)
         :param instance_group_ids: A list of the ID's of the instance
             groups to be modified
-            
+
         :type new_sizes: list(int)
         :param new_sizes: A list of the new sizes for each instance group
         """
@@ -190,8 +191,8 @@ class EmrConnection(AWSQueryConnection):
             # could be wrong - the example amazon gives uses
             # InstanceRequestCount, while the api documentation
             # says InstanceCount
-            params['InstanceGroups.member.%d.InstanceGroupId' % (k+1) ] = ig[0]
-            params['InstanceGroups.member.%d.InstanceCount' % (k+1) ] = ig[1]
+            params['InstanceGroups.member.%d.InstanceGroupId' % (k + 1)] = ig[0]
+            params['InstanceGroups.member.%d.InstanceCount' % (k + 1)] = ig[1]
 
         return self.get_object('ModifyInstanceGroups', params,
                                ModifyInstanceGroupsResponse, verb='POST')
@@ -213,59 +214,59 @@ class EmrConnection(AWSQueryConnection):
         Runs a job flow
         :type name: str
         :param name: Name of the job flow
-        
+
         :type log_uri: str
         :param log_uri: URI of the S3 bucket to place logs
-        
+
         :type ec2_keyname: str
         :param ec2_keyname: EC2 key used for the instances
-        
+
         :type availability_zone: str
         :param availability_zone: EC2 availability zone of the cluster
-        
+
         :type master_instance_type: str
         :param master_instance_type: EC2 instance type of the master
-        
+
         :type slave_instance_type: str
         :param slave_instance_type: EC2 instance type of the slave nodes
-        
+
         :type num_instances: int
         :param num_instances: Number of instances in the Hadoop cluster
-        
+
         :type action_on_failure: str
         :param action_on_failure: Action to take if a step terminates
-        
+
         :type keep_alive: bool
         :param keep_alive: Denotes whether the cluster should stay
             alive upon completion
-            
+
         :type enable_debugging: bool
         :param enable_debugging: Denotes whether AWS console debugging
             should be enabled.
 
         :type hadoop_version: str
         :param hadoop_version: Version of Hadoop to use. This no longer
-        defaults to '0.20' and now uses the AMI default. 
+            defaults to '0.20' and now uses the AMI default.
 
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job
-        
+
         :type bootstrap_actions: list(boto.emr.BootstrapAction)
         :param bootstrap_actions: List of bootstrap actions that run
             before Hadoop starts.
-            
+
         :type instance_groups: list(boto.emr.InstanceGroup)
         :param instance_groups: Optional list of instance groups to
             use when creating this job.
             NB: When provided, this argument supersedes num_instances
             and master/slave_instance_type.
-                
+
         :type ami_version: str
         :param ami_version: Amazon Machine Image (AMI) version to use
             for instances. Values accepted by EMR are '1.0', '2.0', and
             'latest'; EMR currently defaults to '1.0' if you don't set
             'ami_version'.
-            
+
         :type additional_info: JSON str
         :param additional_info: A JSON string for selecting additional features
 
@@ -304,7 +305,7 @@ class EmrConnection(AWSQueryConnection):
                                                         num_instances)
             params.update(instance_params)
         else:
-            # Instance group args (for spot instances or a heterogenous cluster)
+            # Instance group args for spot instances or a heterogenous cluster
             list_args = self._build_instance_group_list_args(instance_groups)
             instance_params = dict(
                 ('Instances.%s' % k, v) for k, v in list_args.items()
@@ -353,7 +354,7 @@ class EmrConnection(AWSQueryConnection):
 
         :type jobflow_ids: list or str
         :param jobflow_ids: A list of job flow IDs
-        
+
         :type termination_protection_status: bool
         :param termination_protection_status: Termination protection status
         """
@@ -364,7 +365,6 @@ class EmrConnection(AWSQueryConnection):
         self.build_list_params(params, [jobflow_id], 'JobFlowIds.member')
 
         return self.get_status('SetTerminationProtection', params, verb='POST')
-
 
     def _build_bootstrap_action_args(self, bootstrap_action):
         bootstrap_action_params = {}
@@ -377,7 +377,8 @@ class EmrConnection(AWSQueryConnection):
 
         args = bootstrap_action.args()
         if args:
-            self.build_list_params(bootstrap_action_params, args, 'ScriptBootstrapAction.Args.member')
+            self.build_list_params(bootstrap_action_params, args,
+                                   'ScriptBootstrapAction.Args.member')
 
         return bootstrap_action_params
 
@@ -392,7 +393,8 @@ class EmrConnection(AWSQueryConnection):
 
         args = step.args()
         if args:
-            self.build_list_params(step_params, args, 'HadoopJarStep.Args.member')
+            self.build_list_params(step_params, args,
+                                   'HadoopJarStep.Args.member')
 
         step_params['Name'] = step.name
         return step_params
@@ -414,7 +416,7 @@ class EmrConnection(AWSQueryConnection):
         params = {}
         for i, step in enumerate(steps):
             for key, value in step.items():
-                params['Steps.member.%s.%s' % (i+1, key)] = value
+                params['Steps.member.%s.%s' % (i + 1, key)] = value
         return params
 
     def _build_instance_common_args(self, ec2_keyname, availability_zone,
@@ -425,7 +427,7 @@ class EmrConnection(AWSQueryConnection):
         use in making a RunJobFlow request.
         """
         params = {
-            'Instances.KeepJobFlowAliveWhenNoSteps' : str(keep_alive).lower(),
+            'Instances.KeepJobFlowAliveWhenNoSteps': str(keep_alive).lower(),
         }
 
         if hadoop_version:
@@ -438,16 +440,17 @@ class EmrConnection(AWSQueryConnection):
         return params
 
     def _build_instance_count_and_type_args(self, master_instance_type,
-                                            slave_instance_type, num_instances):
+                                            slave_instance_type,
+                                            num_instances):
         """
         Takes a master instance type (string), a slave instance type
         (string), and a number of instances. Returns a comparable dict
         for use in making a RunJobFlow request.
         """
         params = {
-            'Instances.MasterInstanceType' : master_instance_type,
-            'Instances.SlaveInstanceType' : slave_instance_type,
-            'Instances.InstanceCount' : num_instances,
+            'Instances.MasterInstanceType': master_instance_type,
+            'Instances.SlaveInstanceType': slave_instance_type,
+            'Instances.InstanceCount': num_instances,
             }
         return params
 
@@ -458,11 +461,11 @@ class EmrConnection(AWSQueryConnection):
         RunJobFlow or AddInstanceGroups requests.
         """
         params = {
-            'InstanceCount' : instance_group.num_instances,
-            'InstanceRole' : instance_group.role,
-            'InstanceType' : instance_group.type,
-            'Name' : instance_group.name,
-            'Market' : instance_group.market
+            'InstanceCount': instance_group.num_instances,
+            'InstanceRole': instance_group.role,
+            'InstanceType': instance_group.type,
+            'Name': instance_group.name,
+            'Market': instance_group.market
         }
         if instance_group.market == 'SPOT':
             params['BidPrice'] = instance_group.bidprice
@@ -481,5 +484,5 @@ class EmrConnection(AWSQueryConnection):
         for i, instance_group in enumerate(instance_groups):
             ig_dict = self._build_instance_group_args(instance_group)
             for key, value in ig_dict.items():
-                params['InstanceGroups.member.%d.%s' % (i+1, key)] = value
+                params['InstanceGroups.member.%d.%s' % (i + 1, key)] = value
         return params

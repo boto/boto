@@ -24,19 +24,20 @@ from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 import boto.compat as compat
 
+
 class Key(S3Key):
 
     def add_email_grant(self, permission, email_address):
         """
-        Convenience method that provides a quick way to add an email grant to a
-        key. This method retrieves the current ACL, creates a new grant based on
-        the parameters passed in, adds that grant to the ACL and then PUT's the
-        new ACL back to GS.
+        Convenience method that provides a quick way to add an email
+        grant to a key. This method retrieves the current ACL, creates
+        a new grant based on the parameters passed in, adds that grant
+        to the ACL and then PUT's the new ACL back to GS.
 
         :type permission: string
         :param permission: The permission being granted. Should be one of:
             READ|FULL_CONTROL
-            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+            See http://goo.gl/8TMF8
             for more details on permissions.
 
         :type email_address: string
@@ -57,7 +58,7 @@ class Key(S3Key):
         :type permission: string
         :param permission: The permission being granted. Should be one of:
             READ|FULL_CONTROL
-            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+            See http://goo.gl/pKHtA
             for more details on permissions.
 
         :type user_id: string
@@ -78,7 +79,7 @@ class Key(S3Key):
         :type permission: string
         :param permission: The permission being granted. Should be one of:
             READ|FULL_CONTROL
-            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+            See http://goo.gl/nfAYD
             for more details on permissions.
 
         :type email_address: string
@@ -99,7 +100,7 @@ class Key(S3Key):
         :type permission: string
         :param permission: The permission being granted. Should be one of:
             READ|FULL_CONTROL
-            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
+            See http://goo.gl/3bQ89
             for more details on permissions.
 
         :type group_id: string
@@ -112,7 +113,8 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None, size=None, rewind=False):
+                               res_upload_handler=None, size=None,
+                               rewind=False):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -122,7 +124,8 @@ class Key(S3Key):
         :param fp: the file whose contents are to be uploaded
 
         :type headers: dict
-        :param headers: additional HTTP headers to be sent with the PUT request.
+        :param headers: additional HTTP headers to be sent with the
+            PUT request.
 
         :type replace: bool
         :param replace: If this parameter is False, the method will first check
@@ -139,9 +142,9 @@ class Key(S3Key):
 
         :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the cb
-            parameter, this parameter determines the granularity of the callback
-            by defining the maximum number of times the callback will be called
-            during the file transfer.
+            parameter, this parameter determines the granularity of the
+            callback by defining the maximum number of times the callback
+            will be called during the file transfer.
 
         :type policy: :class:`boto.gs.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the new key
@@ -152,9 +155,9 @@ class Key(S3Key):
             the plain checksum as the second element. This is the same format
             returned by the compute_md5 method.
         :param md5: If you need to compute the MD5 for any reason prior to
-            upload, it's silly to have to do it twice so this param, if present,
-            will be used as the MD5 values of the file. Otherwise, the checksum
-            will be computed.
+            upload, it's silly to have to do it twice so this param,
+            if present, will be used as the MD5 values of the file.
+            Otherwise, the checksum will be computed.
 
         :type res_upload_handler: ResumableUploadHandler
         :param res_upload_handler: If provided, this handler will perform the
@@ -177,7 +180,7 @@ class Key(S3Key):
                    multipart uploads.
 
         :type rewind: bool
-        :param rewind: (optional) If True, the file pointer (fp) will be 
+        :param rewind: (optional) If True, the file pointer (fp) will be
                        rewound to the start before any bytes are read from
                        it. The default behaviour is False which reads from
                        the current position of the file pointer (fp).
@@ -262,7 +265,8 @@ class Key(S3Key):
         :param filename: The name of the file that you want to put onto GS
 
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to GS.
+        :param headers: Additional headers to pass along with the
+            request to GS.
 
         :type replace: bool
         :param replace: If True, replaces the contents of the file if it
@@ -290,9 +294,9 @@ class Key(S3Key):
             the plain checksum as the second element. This is the same format
             returned by the compute_md5 method.
         :param md5: If you need to compute the MD5 for any reason prior to
-            upload, it's silly to have to do it twice so this param, if present,
-            will be used as the MD5 values of the file. Otherwise, the checksum
-            will be computed.
+            upload, it's silly to have to do it twice so this param,
+            if present, will be used as the MD5 values of the file.
+            Otherwise, the checksum will be computed.
 
         :type res_upload_handler: ResumableUploadHandler
         :param res_upload_handler: If provided, this handler will perform the

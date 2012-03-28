@@ -14,12 +14,11 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import boto
 from boto import handler
 from boto.exception import InvalidAclError
 from boto.gs.acl import ACL, CannedACLStrings
@@ -30,10 +29,11 @@ from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 import xml.sax
 
-# constants for http query args 
+# constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
+
 
 class Bucket(S3Bucket):
 
@@ -41,10 +41,12 @@ class Bucket(S3Bucket):
         super(Bucket, self).__init__(connection, name, key_class)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
-        """sets or changes a bucket's acl. We include a version_id argument
-           to support a polymorphic interface for callers, however, 
-           version_id is not relevant for Google Cloud Storage buckets 
-           and is therefore ignored here.""" 
+        """
+        Sets or changes a bucket's acl. We include a version_id argument
+        to support a polymorphic interface for callers, however,
+        version_id is not relevant for Google Cloud Storage buckets
+        and is therefore ignored here.
+        """
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -53,18 +55,21 @@ class Bucket(S3Bucket):
             self.set_canned_acl(acl_or_str, key_name, headers=headers)
 
     def set_def_acl(self, acl_or_str, key_name='', headers=None):
-        """sets or changes a bucket's default object acl"""
+        """
+        Sets or changes a bucket's default object acl.
+        """
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
-            self.set_def_xml_acl(acl_or_str.to_xml(), key_name, headers=headers)
+            self.set_def_xml_acl(acl_or_str.to_xml(), key_name,
+                                 headers=headers)
         else:
             self.set_def_canned_acl(acl_or_str, key_name, headers=headers)
 
     def get_acl_helper(self, key_name, headers, query_args):
         """provides common functionality for get_acl() and get_def_acl()"""
         response = self.connection.make_request('GET', self.name, key_name,
-                                                query_args=query_args, 
+                                                query_args=query_args,
                                                 headers=headers)
         body = response.read()
         if response.status == 200:
@@ -77,25 +82,31 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def get_acl(self, key_name='', headers=None, version_id=None):
-        """returns a bucket's acl. We include a version_id argument
-           to support a polymorphic interface for callers, however, 
-           version_id is not relevant for Google Cloud Storage buckets 
-           and is therefore ignored here.""" 
+        """
+        Returns a bucket's acl. We include a version_id argument
+        to support a polymorphic interface for callers, however,
+        version_id is not relevant for Google Cloud Storage buckets
+        and is therefore ignored here.
+        """
         return self.get_acl_helper(key_name, headers, STANDARD_ACL)
 
     def get_def_acl(self, key_name='', headers=None):
-        """returns a bucket's default object acl""" 
+        """
+        Returns a bucket's default object acl.
+        """
         return self.get_acl_helper(key_name, headers, DEF_OBJ_ACL)
 
     def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
-        """provides common functionality for set_canned_acl() and 
-           set_def_canned_acl()"""
+        """
+        Provides common functionality for set_canned_acl() and
+        set_def_canned_acl().
+        """
         assert acl_str in CannedACLStrings
 
         if headers:
             headers[self.connection.provider.acl_header] = acl_str
         else:
-            headers={self.connection.provider.acl_header: acl_str}
+            headers = {self.connection.provider.acl_header: acl_str}
 
         response = self.connection.make_request('PUT', self.name, key_name,
                 headers=headers, query_args=query_args)
@@ -104,30 +115,38 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name='', headers=None, 
+    def set_canned_acl(self, acl_str, key_name='', headers=None,
                        version_id=None):
-        """sets or changes a bucket's acl to a predefined (canned) value. 
-           We include a version_id argument to support a polymorphic 
-           interface for callers, however, version_id is not relevant for 
-           Google Cloud Storage buckets and is therefore ignored here.""" 
-        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+        """
+        Sets or changes a bucket's acl to a predefined (canned) value.
+        We include a version_id argument to support a polymorphic
+        interface for callers, however, version_id is not relevant for
+        Google Cloud Storage buckets and is therefore ignored here.
+        """
+        return self.set_canned_acl_helper(acl_str, key_name, headers,
                                           STANDARD_ACL)
 
     def set_def_canned_acl(self, acl_str, key_name='', headers=None):
-        """sets or changes a bucket's default object acl to a predefined 
-           (canned) value"""
-        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+        """
+        Sets or changes a bucket's default object acl to a predefined
+        (canned) value.
+        """
+        return self.set_canned_acl_helper(acl_str, key_name, headers,
                                           query_args=DEF_OBJ_ACL)
 
     def set_def_xml_acl(self, acl_str, key_name='', headers=None):
-        """sets or changes a bucket's default object"""
-        return self.set_xml_acl(acl_str, key_name, headers, 
+        """
+        Sets or changes a bucket's default object.
+        """
+        return self.set_xml_acl(acl_str, key_name, headers,
                                 query_args=DEF_OBJ_ACL)
 
     def get_cors(self, headers=None):
-        """returns a bucket's CORS XML"""
+        """
+        Returns a bucket's CORS XML.
+        """
         response = self.connection.make_request('GET', self.name,
-                                                query_args=CORS_ARG, 
+                                                query_args=CORS_ARG,
                                                 headers=headers)
         body = response.read()
         if response.status == 200:
@@ -141,7 +160,9 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def set_cors(self, cors, headers=None):
-        """sets or changes a bucket's CORS XML."""
+        """
+        Sets or changes a bucket's CORS XML.
+        """
         cors_xml = cors.encode('ISO-8859-1')
         response = self.connection.make_request('PUT', self.name,
                                                 data=cors_xml,
@@ -161,15 +182,15 @@ class Bucket(S3Bucket):
         to a bucket. This method retrieves the current ACL, creates a new
         grant based on the parameters passed in, adds that grant to the ACL
         and then PUT's the new ACL back to GS.
-        
+
         :type permission: string
         :param permission: The permission being granted. Should be one of:
                            (READ, WRITE, FULL_CONTROL).
-        
+
         :type email_address: string
         :param email_address: The email address associated with the GS
                               account your are granting the permission to.
-        
+
         :type recursive: boolean
         :param recursive: A boolean value to controls whether the call
                           will apply the grant to all keys within the bucket
@@ -191,28 +212,30 @@ class Bucket(S3Bucket):
 
     # Method with same signature as boto.s3.bucket.Bucket.add_user_grant(),
     # to allow polymorphic treatment at application layer.
-    def add_user_grant(self, permission, user_id, recursive=False, headers=None):
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       headers=None):
         """
-        Convenience method that provides a quick way to add a canonical user grant to a bucket.
-        This method retrieves the current ACL, creates a new grant based on the parameters
-        passed in, adds that grant to the ACL and then PUTs the new ACL back to GS.
-        
+        Convenience method that provides a quick way to add a canonical
+        user grant to a bucket.  This method retrieves the current ACL,
+        creates a new grant based on the parameters passed in, adds that
+        grant to the ACL and then PUTs the new ACL back to GS.
+
         :type permission: string
         :param permission:  The permission being granted.  Should be one of:
                             (READ|WRITE|FULL_CONTROL)
-        
+
         :type user_id: string
-        :param user_id:     The canonical user id associated with the GS account you are granting
-                            the permission to.
-                            
+        :param user_id: The canonical user id associated with the GS
+            account you are granting the permission to.
+
         :type recursive: bool
         :param recursive: A boolean value to controls whether the call
-                          will apply the grant to all keys within the bucket
-                          or not.  The default value is False.  By passing a
-                          True value, the call will iterate through all keys
-                          in the bucket and apply the same grant to each key.
-                          CAUTION: If you have a lot of keys, this could take
-                          a long time!
+            will apply the grant to all keys within the bucket
+            or not.  The default value is False.  By passing a
+            True value, the call will iterate through all keys
+            in the bucket and apply the same grant to each key.
+            CAUTION: If you have a lot of keys, this could take
+            a long time!
         """
         if permission not in GSPermissions:
             raise self.connection.provider.storage_permissions_error(
@@ -224,19 +247,18 @@ class Bucket(S3Bucket):
             for key in self:
                 key.add_user_grant(permission, user_id, headers=headers)
 
-    def add_group_email_grant(self, permission, email_address, recursive=False,
-                              headers=None):
+    def add_group_email_grant(self, permission, email_address,
+                              recursive=False, headers=None):
         """
         Convenience method that provides a quick way to add an email group
-        grant to a bucket. This method retrieves the current ACL, creates a new
-        grant based on the parameters passed in, adds that grant to the ACL and
-        then PUT's the new ACL back to GS.
+        grant to a bucket. This method retrieves the current ACL, creates
+        a new grant based on the parameters passed in, adds that grant to
+        the ACL and then PUT's the new ACL back to GS.
 
         :type permission: string
         :param permission: The permission being granted. Should be one of:
             READ|WRITE|FULL_CONTROL
-            See http://code.google.com/apis/storage/docs/developer-guide.html#authorization
-            for more details on permissions.
+            See http://goo.gl/cPwh2 for more details on permissions.
 
         :type email_address: string
         :param email_address: The email address associated with the Google
@@ -244,12 +266,12 @@ class Bucket(S3Bucket):
 
         :type recursive: bool
         :param recursive: A boolean value to controls whether the call
-                          will apply the grant to all keys within the bucket
-                          or not.  The default value is False.  By passing a
-                          True value, the call will iterate through all keys
-                          in the bucket and apply the same grant to each key.
-                          CAUTION: If you have a lot of keys, this could take
-                          a long time!
+            will apply the grant to all keys within the bucket
+            or not.  The default value is False.  By passing a
+            True value, the call will iterate through all keys
+            in the bucket and apply the same grant to each key.
+            CAUTION: If you have a lot of keys, this could take
+            a long time!
         """
         if permission not in GSPermissions:
             raise self.connection.provider.storage_permissions_error(

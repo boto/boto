@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class BootstrapAction(object):
     def __init__(self, name, path, bootstrap_action_args):
         self.name = name

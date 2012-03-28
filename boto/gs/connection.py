@@ -14,19 +14,21 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.gs.bucket import Bucket            
+from boto.gs.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
 from boto.s3.connection import check_lowercase_bucketname
 
+
 class Location:
-    DEFAULT = '' # US
+    DEFAULT = ''  # US
     EU = 'EU'
+
 
 class GSConnection(S3Connection):
 
@@ -56,16 +58,17 @@ class GSConnection(S3Connection):
 
         :type bucket_name: string
         :param bucket_name: The name of the new bucket
-        
+
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to AWS.
+        :param headers: Additional headers to pass along with the
+            request to AWS.
 
         :type location: :class:`boto.gs.connection.Location`
         :param location: The location of the new bucket
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key in S3.
-             
+        :param policy: A canned ACL policy that will be applied to the
+            new key in S3.
         """
         check_lowercase_bucketname(bucket_name)
 
@@ -73,7 +76,7 @@ class GSConnection(S3Connection):
             if headers:
                 headers[self.provider.acl_header] = policy
             else:
-                headers = {self.provider.acl_header : policy}
+                headers = {self.provider.acl_header: policy}
         if not location:
             data = ''
         else:
@@ -91,4 +94,3 @@ class GSConnection(S3Connection):
         else:
             raise self.provider.storage_response_error(
                 response.status, response.reason, body)
-

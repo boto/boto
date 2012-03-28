@@ -19,9 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-# File representation of connection, for use with "file://" URIs.
+"""
+File representation of connection, for use with "file://" URIs.
+"""
 
 from .bucket import Bucket
+
 
 class FileConnection(object):
 

@@ -22,16 +22,19 @@
 
 # File representation of key, for use with "file://" URIs.
 
-import os, shutil
+import os
+import shutil
 import sys
+from boto.exception import BotoClientError
 import boto.compat as compat
+
 
 class Key(object):
 
     KEY_STREAM_READABLE = 0x01
     KEY_STREAM_WRITABLE = 0x02
-    KEY_STREAM          = (KEY_STREAM_READABLE | KEY_STREAM_WRITABLE)
-    KEY_REGULAR_FILE    = 0x00
+    KEY_STREAM = (KEY_STREAM_READABLE | KEY_STREAM_WRITABLE)
+    KEY_REGULAR_FILE = 0x00
 
     def __init__(self, bucket, name, fp=None, key_type=KEY_REGULAR_FILE):
         self.bucket = bucket

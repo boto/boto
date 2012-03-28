@@ -27,6 +27,7 @@ from .key import Key
 from boto.file.simpleresultset import SimpleResultSet
 from boto.s3.bucketlistresultset import BucketListResultSet
 
+
 class Bucket(object):
     def __init__(self, name, contained_key):
         """Instantiate an anonymous file-based Bucket around a single key.
@@ -81,7 +82,8 @@ class Bucket(object):
         :param version_id: Unused in this subclass.
 
         :type stream_type: integer
-        :param stream_type: Type of the Key - Regular File or input/output Stream
+        :param stream_type: Type of the Key - Regular File or input/output
+            Stream
 
         :rtype: :class:`boto.file.key.Key`
         :returns: A Key object from this bucket.

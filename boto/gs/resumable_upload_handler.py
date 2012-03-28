@@ -19,14 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import cgi
 import errno
 import os
 import random
 import re
 import socket
 import time
-import boto
 from boto import config
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
@@ -54,8 +52,8 @@ save the state needed to allow retrying later, in a separate process
 class ResumableUploadHandler(object):
 
     BUFFER_SIZE = 8192
-    RETRYABLE_EXCEPTIONS = (compat.httplib.HTTPException, IOError, socket.error,
-                            socket.gaierror)
+    RETRYABLE_EXCEPTIONS = (compat.httplib.HTTPException, IOError,
+                            socket.error, socket.gaierror)
 
     # (start, end) response indicating server has nothing (upload protocol uses
     # inclusive numbering).
@@ -68,10 +66,10 @@ class ResumableUploadHandler(object):
         :type tracker_file_name: string
         :param tracker_file_name: optional file name to save tracker URI.
             If supplied and the current process fails the upload, it can be
-            retried in a new process. If called with an existing file containing
-            a valid tracker URI, we'll resume the upload from this URI; else
-            we'll start a new resumable upload (and write the URI to this
-            tracker file).
+            retried in a new process. If called with an existing file
+            containing a valid tracker URI, we'll resume the upload from
+            this URI; else we'll start a new resumable upload (and write
+            the URI to this tracker file).
 
         :type num_retries: int
         :param num_retries: the number of times we'll re-try a resumable upload
@@ -230,7 +228,8 @@ class ResumableUploadHandler(object):
         if not got_valid_response:
             raise ResumableUploadException(
                 'Couldn\'t parse upload server state query response (%s)' %
-                str(resp.getheaders()), ResumableTransferDisposition.START_OVER)
+                str(resp.getheaders()),
+                ResumableTransferDisposition.START_OVER)
         if conn.debug >= 1:
             print('Server has: Range: %d - %d.' % (server_start, server_end))
         return (server_start, server_end)
@@ -306,7 +305,7 @@ class ResumableUploadHandler(object):
         buf = fp.read(self.BUFFER_SIZE)
         if cb:
             if num_cb > 2:
-                cb_count = file_length / self.BUFFER_SIZE / (num_cb-2)
+                cb_count = file_length / self.BUFFER_SIZE / (num_cb - 2)
             elif num_cb < 0:
                 cb_count = -1
             else:
@@ -390,7 +389,7 @@ class ResumableUploadHandler(object):
                 (server_start, server_end) = (
                     self._query_server_pos(conn, file_length))
                 self.server_has_bytes = server_start
-                key=key
+                key = key
                 if conn.debug >= 1:
                     print('Resuming transfer.')
             except ResumableUploadException as e:
@@ -420,10 +419,10 @@ class ResumableUploadHandler(object):
         fp.seek(total_bytes_uploaded)
         conn = key.bucket.connection
 
-        # Get a new HTTP connection (vs conn.get_http_connection(), which reuses
-        # pool connections) because httplib requires a new HTTP connection per
-        # transaction. (Without this, calling http_conn.getresponse() would get
-        # "ResponseNotReady".)
+        # Get a new HTTP connection (vs conn.get_http_connection(),
+        # which reuses pool connections) because httplib requires a
+        # new HTTP connection per transaction. (Without this, calling
+        # http_conn.getresponse() would get "ResponseNotReady".)
         http_conn = conn.new_http_connection(self.tracker_uri_host,
                                              conn.is_secure)
         http_conn.set_debuglevel(conn.debug)
@@ -467,39 +466,42 @@ class ResumableUploadHandler(object):
             key.close()
             key.delete()
             raise ResumableUploadException(
-                'File changed during upload: md5 signature doesn\'t match etag '
-                '(incorrect uploaded object deleted)',
+                'File changed during upload: md5 signature doesn\'t match '
+                'etag (incorrect uploaded object deleted)',
                 ResumableTransferDisposition.ABORT)
 
     def send_file(self, key, fp, headers, cb=None, num_cb=10):
         """
         Upload a file to a key into a bucket on GS, using GS resumable upload
         protocol.
-        
+
         :type key: :class:`boto.s3.key.Key` or subclass
         :param key: The Key object to which data is to be uploaded
-        
+
         :type fp: file-like object
         :param fp: The file pointer to upload
-        
+
         :type headers: dict
         :param headers: The headers to pass along with the PUT request
-        
+
         :type cb: function
-        :param cb: a callback function that will be called to report progress on
-            the upload.  The callback should accept two integer parameters, the
-            first representing the number of bytes that have been successfully
-            transmitted to GS, and the second representing the total number of
-            bytes that need to be transmitted.
-                    
+        :param cb: a callback function that will be
+            called to report progress on the upload.  The callback should
+            accept two integer parameters, the first representing the
+            number of bytes that have been successfully transmitted to GS,
+            and the second representing the total number of bytes that
+            need to be transmitted.
+
         :type num_cb: int
-        :param num_cb: (optional) If a callback is specified with the cb
-            parameter, this parameter determines the granularity of the callback
-            by defining the maximum number of times the callback will be called
-            during the file transfer. Providing a negative integer will cause
-            your callback to be called with each buffer read.
-             
-        Raises ResumableUploadException if a problem occurs during the transfer.
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter, this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file
+            transfer. Providing a negative integer will cause your
+            callback to be called with each buffer read.
+
+        Raises ResumableUploadException if a problem occurs during
+        the transfer.
         """
 
         if not headers:
@@ -509,7 +511,7 @@ class ResumableUploadHandler(object):
         # that header.
         CT = 'Content-Type'
         if CT in headers and headers[CT] is None:
-          del headers[CT]
+            del headers[CT]
 
         fp.seek(0, os.SEEK_END)
         file_length = fp.tell()
@@ -578,7 +580,7 @@ class ResumableUploadHandler(object):
                     ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
             # Use binary exponential backoff to desynchronize client requests
-            sleep_time_secs = random.random() * (2**progress_less_iterations)
+            sleep_time_secs = random.random() * (2 ** progress_less_iterations)
             if debug >= 1:
                 print('Got retryable failure (%d progress-less in a row).\n'
                       'Sleeping %3.1f seconds before re-trying' %
