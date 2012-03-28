@@ -14,23 +14,20 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 import uuid
 import base64
-try:
-    import simplejson as json
-except ImportError:
-    import json
-from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
 from boto.cloudfront.signers import ActiveTrustedSigners, TrustedSigners
 from boto.cloudfront.logging import LoggingInfo
 from boto.cloudfront.origin import S3Origin, CustomOrigin
 from boto.s3.acl import ACL
+import boto.compat as compat
+
 
 class DistributionConfig:
 
@@ -39,35 +36,36 @@ class DistributionConfig:
                  trusted_signers=None, default_root_object=None,
                  logging=None):
         """
+        :type origin: :class:`boto.cloudfront.origin.S3Origin` or
+                      :class:`boto.cloudfront.origin.CustomOrigin`
         :param origin: Origin information to associate with the
                        distribution.  If your distribution will use
                        an Amazon S3 origin, then this should be an
                        S3Origin object. If your distribution will use
                        a custom origin (non Amazon S3), then this
                        should be a CustomOrigin object.
-        :type origin: :class:`boto.cloudfront.origin.S3Origin` or
-                      :class:`boto.cloudfront.origin.CustomOrigin`
 
+        :type enabled: bool
         :param enabled: Whether the distribution is enabled to accept
                         end user requests for content.
-        :type enabled: bool
-        
+
+        :type enabled: str
         :param caller_reference: A unique number that ensures the
                                  request can't be replayed.  If no
                                  caller_reference is provided, boto
                                  will generate a type 4 UUID for use
                                  as the caller reference.
-        :type enabled: str
-        
+
+        :type enabled: array of str
         :param cnames: A CNAME alias you want to associate with this
                        distribution. You can have up to 10 CNAME aliases
                        per distribution.
-        :type enabled: array of str
-        
+
+        :type comment: str
         :param comment: Any comments you want to include about the
                         distribution.
-        :type comment: str
-        
+
+        :type trusted_signers: :class`boto.cloudfront.signers.TrustedSigners`
         :param trusted_signers: Specifies any AWS accounts you want to
                                 permit to create signed URLs for private
                                 content. If you want the distribution to
@@ -75,20 +73,18 @@ class DistributionConfig:
                                 TrustedSigners object; if you want the
                                 distribution to use basic URLs, leave
                                 this None.
-        :type trusted_signers: :class`boto.cloudfront.signers.TrustedSigners`
-        
+
+        :type comment: str
         :param default_root_object: Designates a default root object.
                                     Only include a DefaultRootObject value
                                     if you are going to assign a default
                                     root object for the distribution.
-        :type comment: str
 
+        :type logging: :class`boto.cloudfront.logging.LoggingInfo`
         :param logging: Controls whether access logs are written for the
                         distribution. If you want to turn on access logs,
                         this should contain a LoggingInfo object; otherwise
                         it should contain None.
-        :type logging: :class`boto.cloudfront.logging.LoggingInfo`
-        
         """
         self.connection = connection
         self.origin = origin
@@ -173,6 +169,7 @@ class DistributionConfig:
         else:
             setattr(self, name, value)
 
+
 class StreamingDistributionConfig(DistributionConfig):
 
     def __init__(self, connection=None, origin='', enabled=False,
@@ -184,6 +181,7 @@ class StreamingDistributionConfig(DistributionConfig):
                                     cnames=cnames, comment=comment,
                                     trusted_signers=trusted_signers,
                                     logging=logging)
+
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
         s += '<StreamingDistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
@@ -215,6 +213,7 @@ class StreamingDistributionConfig(DistributionConfig):
             s += '</Logging>\n'
         s += '</StreamingDistributionConfig>\n'
         return s
+
 
 class DistributionSummary:
 
@@ -276,11 +275,13 @@ class DistributionSummary:
     def get_distribution(self):
         return self.connection.get_distribution_info(self.id)
 
+
 class StreamingDistributionSummary(DistributionSummary):
 
     def get_distribution(self):
         return self.connection.get_streaming_distribution_info(self.id)
-    
+
+
 class Distribution:
 
     def __init__(self, connection=None, config=None, domain_name='',
@@ -348,7 +349,8 @@ class Distribution:
 
         """
         new_config = DistributionConfig(self.connection, self.config.origin,
-                                        self.config.enabled, self.config.caller_reference,
+                                        self.config.enabled,
+                                        self.config.caller_reference,
                                         self.config.cnames, self.config.comment,
                                         self.config.trusted_signers,
                                         self.config.default_root_object)
@@ -358,7 +360,8 @@ class Distribution:
             new_config.cnames = cnames
         if comment != None:
             new_config.comment = comment
-        self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
+        self.etag = self.connection.set_distribution_config(self.id, self.etag,
+                                                            new_config)
         self.config = new_config
         self._object_class = Object
 
@@ -402,11 +405,11 @@ class Distribution:
             return self._bucket
         else:
             raise NotImplementedError('Unable to get_objects on CustomOrigin')
-    
+
     def get_objects(self):
         """
         Return a list of all content objects in this distribution.
-        
+
         :rtype: list of :class:`boto.cloudfront.object.Object`
         :return: The content objects
         """
@@ -503,8 +506,8 @@ class Distribution:
                           ip_address=None, policy_url=None,
                           private_key_file=None, private_key_string=None):
         """
-        Creates a signed CloudFront URL that is only valid within the specified
-        parameters.
+        Creates a signed CloudFront URL that is only valid within the
+        specified parameters.
 
         :type url: str
         :param url: The URL of the protected object.
@@ -516,8 +519,8 @@ class Distribution:
 
         :type expire_time: int
         :param expire_time: The expiry time of the URL. If provided, the URL
-            will expire after the time has passed. If not provided the URL will
-            never expire. Format is a unix epoch.
+            will expire after the time has passed. If not provided the URL
+            will never expire. Format is a unix epoch.
             Use time.time() + duration_in_sec.
 
         :type valid_after_time: int
@@ -599,7 +602,8 @@ class Distribution:
             encoded_policy = self._url_base64_encode(policy)
             params["Policy"] = encoded_policy
         #sign the policy
-        signature = self._sign_string(policy, private_key_file, private_key_string)
+        signature = self._sign_string(policy, private_key_file,
+                                      private_key_string)
         #now base64 encode the signature (URL safe as well)
         encoded_signature = self._url_base64_encode(signature)
         params["Signature"] = encoded_signature
@@ -617,7 +621,8 @@ class Distribution:
         return policy
 
     @staticmethod
-    def _custom_policy(resource, expires=None, valid_after=None, ip_address=None):
+    def _custom_policy(resource, expires=None, valid_after=None,
+                       ip_address=None):
         """
         Creates a custom policy string based on the supplied parameters.
         """
@@ -633,7 +638,7 @@ class Distribution:
         policy = {"Statement": [{
                      "Resource": resource,
                      "Condition": condition}]}
-        return json.dumps(policy, separators=(",", ":"))
+        return compat.json.dumps(policy, separators=(",", ":"))
 
     @staticmethod
     def _sign_string(message, private_key_file=None, private_key_string=None):
@@ -677,6 +682,7 @@ class Distribution:
         msg_base64 = msg_base64.replace('=', '_')
         msg_base64 = msg_base64.replace('/', '~')
         return msg_base64
+
 
 class StreamingDistribution(Distribution):
 
@@ -741,5 +747,3 @@ class StreamingDistribution(Distribution):
 
     def delete(self):
         self.connection.delete_streaming_distribution(self.id, self.etag)
-            
-        

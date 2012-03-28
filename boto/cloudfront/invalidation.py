@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -22,12 +22,14 @@
 import uuid
 import urllib
 
+
 class InvalidationBatch(object):
     """A simple invalidation request.
-        :see: http://docs.amazonwebservices.com/AmazonCloudFront/2010-08-01/APIReference/index.html?InvalidationBatchDatatype.html
+        :see: http://goo.gl/fICmz
     """
 
-    def __init__(self, paths=None, connection=None, distribution=None, caller_reference=''):
+    def __init__(self, paths=None, connection=None, distribution=None,
+                 caller_reference=''):
         """Create a new invalidation request:
             :paths: An array of paths to invalidate
         """
@@ -62,7 +64,10 @@ class InvalidationBatch(object):
         self.paths[k] = v
 
     def escape(self, p):
-        """Escape a path, make sure it begins with a slash and contains no invalid characters"""
+        """
+        Escape a path, make sure it begins with a slash and contains
+        no invalid characters
+        """
         if not p[0] == "/":
             p = "/%s" % p
         return urllib.quote(p)
