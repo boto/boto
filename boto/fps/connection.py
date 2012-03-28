@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,gg33
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -29,6 +29,7 @@ from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.exception import FPSResponseError
 from boto.fps.response import FPSResponse
+
 
 class FPSConnection(AWSQueryConnection):
 
@@ -44,7 +45,7 @@ class FPSConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass, host, debug,
                                     https_connection_factory, path)
-    
+
     def _required_auth_capability(self):
         return ['fps']
 
@@ -53,10 +54,10 @@ class FPSConnection(AWSQueryConnection):
                                     transaction_id=None):
         """
         InstallPaymentInstruction
-        instruction: The PaymentInstruction to send, for example: 
-        
+        instruction: The PaymentInstruction to send, for example:
+
             MyRole=='Caller' orSay 'Roles do not match';
-        
+
         token_type: Defaults to "Unrestricted"
         transaction_id: Defaults to a new ID
         """
@@ -69,7 +70,7 @@ class FPSConnection(AWSQueryConnection):
         params['CallerReference'] = transaction_id
         response = self.make_request("InstallPaymentInstruction", params)
         return response
-    
+
     def install_caller_instruction(self, token_type="Unrestricted",
                                    transaction_id=None):
         """
@@ -125,7 +126,7 @@ class FPSConnection(AWSQueryConnection):
 
     def make_marketplace_registration_url(self, returnURL, pipelineName,
                                           maxFixedFee=0.0, maxVariableFee=0.0,
-                                          recipientPaysFee=True, **params):  
+                                          recipientPaysFee=True, **params):
         """
         Generate the URL with the signature required for signing up a recipient
         """
@@ -163,12 +164,11 @@ class FPSConnection(AWSQueryConnection):
         urlsuffix = ''
         for k in sorted(params):
             urlsuffix += "&%s=%s" % (k, urllib.quote(params[k], '~'))
-        urlsuffix = urlsuffix[1:] # strip the first &
-        
+        urlsuffix = urlsuffix[1:]  # strip the first &
+
         fmt = "https://%(endpoint_host)s%(base)s?%(urlsuffix)s"
         final = fmt % vars()
         return final
-
 
     def make_url(self, returnURL, paymentReason, pipelineName,
                  transactionAmount, **params):
@@ -189,7 +189,7 @@ class FPSConnection(AWSQueryConnection):
         params['transactionAmount'] = transactionAmount
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
-        
+
         if('callerReference' not in params):
             params['callerReference'] = str(uuid.uuid4())
 
@@ -208,8 +208,8 @@ class FPSConnection(AWSQueryConnection):
         urlsuffix = ''
         for k in sorted(params):
             urlsuffix += "&%s=%s" % (k, urllib.quote(params[k], '~'))
-        urlsuffix = urlsuffix[1:] # strip the first &
-        
+        urlsuffix = urlsuffix[1:]  # strip the first &
+
         fmt = "https://%(endpoint_host)s%(base)s?%(urlsuffix)s"
         final = fmt % vars()
         return final
@@ -218,9 +218,9 @@ class FPSConnection(AWSQueryConnection):
             recipientTokenId=None,
             chargeFeeTo="Recipient",
             marketplaceFixedFee=None, marketplaceVariableFee=None,
-            callerReference=None, senderReference=None, recipientReference=None,
-            senderDescription=None, recipientDescription=None,
-            callerDescription=None, metadata=None,
+            callerReference=None, senderReference=None,
+            recipientReference=None, senderDescription=None,
+            recipientDescription=None, callerDescription=None, metadata=None,
             transactionDate=None, reserve=False):
         """
         Make a payment transaction. You must specify the amount.
@@ -259,7 +259,7 @@ class FPSConnection(AWSQueryConnection):
         if(callerReference == None):
             callerReference = uuid.uuid4()
         params['CallerReference'] = callerReference
-        
+
         if reserve:
             action = "Reserve"
         else:
@@ -267,20 +267,20 @@ class FPSConnection(AWSQueryConnection):
         response = self.make_request(action, params)
         body = response.read()
         if(response.status == 200):
-            rs = ResultSet([("%sResponse" %action, FPSResponse)])
+            rs = ResultSet([("%sResponse" % action, FPSResponse)])
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-    
+
     def get_transaction_status(self, transactionId):
         """
         Returns the status of a given transaction.
         """
         params = {}
         params['TransactionId'] = transactionId
-    
+
         response = self.make_request("GetTransactionStatus", params)
         body = response.read()
         if(response.status == 200):
@@ -290,7 +290,7 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-    
+
     def cancel(self, transactionId, description=None):
         """
         Cancels a reserved or pending transaction.
@@ -299,7 +299,7 @@ class FPSConnection(AWSQueryConnection):
         params['TransactionId'] = transactionId
         if(description != None):
             params['description'] = description
-        
+
         response = self.make_request("Cancel", params)
         body = response.read()
         if(response.status == 200):
@@ -309,7 +309,7 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-    
+
     def settle(self, reserveTransactionId, transactionAmount=None):
         """
         Charges for a reserved payment.
@@ -319,7 +319,7 @@ class FPSConnection(AWSQueryConnection):
         if(transactionAmount != None):
             params['TransactionAmount.Value'] = transactionAmount
             params['TransactionAmount.CurrencyCode'] = "USD"
-        
+
         response = self.make_request("Settle", params)
         body = response.read()
         if(response.status == 200):
@@ -329,7 +329,7 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-    
+
     def refund(self, callerReference, transactionId, refundAmount=None,
                callerDescription=None):
         """
@@ -344,7 +344,7 @@ class FPSConnection(AWSQueryConnection):
             params['RefundAmount.CurrencyCode'] = "USD"
         if(callerDescription != None):
             params['CallerDescription'] = callerDescription
-        
+
         response = self.make_request("Refund", params)
         body = response.read()
         if(response.status == 200):
@@ -354,14 +354,15 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-    
+
     def get_recipient_verification_status(self, recipientTokenId):
         """
-        Test that the intended recipient has a verified Amazon Payments account.
+        Test that the intended recipient has a verified Amazon
+        Payments account.
         """
-        params ={}
+        params = {}
         params['RecipientTokenId'] = recipientTokenId
-        
+
         response = self.make_request("GetRecipientVerificationStatus", params)
         body = response.read()
         if(response.status == 200):
@@ -371,14 +372,14 @@ class FPSConnection(AWSQueryConnection):
             return rs
         else:
             raise FPSResponseError(response.status, response.reason, body)
-    
+
     def get_token_by_caller_reference(self, callerReference):
         """
         Returns details about the token specified by 'CallerReference'.
         """
-        params ={}
+        params = {}
         params['CallerReference'] = callerReference
-        
+
         response = self.make_request("GetTokenByCaller", params)
         body = response.read()
         if(response.status == 200):
@@ -393,9 +394,9 @@ class FPSConnection(AWSQueryConnection):
         """
         Returns details about the token specified by 'TokenId'.
         """
-        params ={}
+        params = {}
         params['TokenId'] = tokenId
-        
+
         response = self.make_request("GetTokenByCaller", params)
         body = response.read()
         if(response.status == 200):
@@ -407,10 +408,8 @@ class FPSConnection(AWSQueryConnection):
             raise FPSResponseError(response.status, response.reason, body)
 
     def verify_signature(self, end_point_url, http_parameters):
-        params = dict(
-            UrlEndPoint = end_point_url,
-            HttpParameters = http_parameters,
-            )
+        params = {'UrlEndPoint': end_point_url,
+                  'HttpParameters': http_parameters}
         response = self.make_request("VerifySignature", params)
         body = response.read()
         if(response.status != 200):

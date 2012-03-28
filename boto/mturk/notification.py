@@ -25,12 +25,9 @@ implementations of the Mechanical Turk Notification API.
 """
 
 import hmac
-try:
-    from hashlib import sha1 as sha
-except ImportError:
-    import sha
 import base64
 import re
+import boto.compat as compat
 
 class NotificationMessage:
 
@@ -45,18 +42,20 @@ class NotificationMessage:
 
     def __init__(self, d):
         """
-        Constructor; expects parameter d to be a dict of string parameters from a REST transport notification message
+        Constructor; expects parameter d to be a dict of string
+        parameters from a REST transport notification message
         """
-        self.signature = d['Signature'] # vH6ZbE0NhkF/hfNyxz2OgmzXYKs=
-        self.timestamp = d['Timestamp'] # 2006-05-23T23:22:30Z
-        self.version = d['Version'] # 2006-05-05
+        self.signature = d['Signature']  # vH6ZbE0NhkF/hfNyxz2OgmzXYKs=
+        self.timestamp = d['Timestamp']  # 2006-05-23T23:22:30Z
+        self.version = d['Version']  # 2006-05-05
         assert d['method'] == NotificationMessage.OPERATION_NAME, "Method should be '%s'" % NotificationMessage.OPERATION_NAME
 
         # Build Events
         self.events = []
         events_dict = {}
         if 'Event' in d:
-            # TurboGears surprised me by 'doing the right thing' and making { 'Event': { '1': { 'EventType': ... } } } etc.
+            # TurboGears surprised me by 'doing the right thing'
+            # and making { 'Event': { '1': { 'EventType': ... } } } etc.
             events_dict = d['Event']
         else:
             for k in d:
@@ -83,10 +82,11 @@ class NotificationMessage:
         verification_input = NotificationMessage.SERVICE_NAME
         verification_input += NotificationMessage.OPERATION_NAME
         verification_input += self.timestamp
-        h = hmac.new(key=secret_key, digestmod=sha)
+        h = hmac.new(key=secret_key, digestmod=compat.sha)
         h.update(verification_input)
         signature_calc = base64.b64encode(h.digest())
         return self.signature == signature_calc
+
 
 class Event:
     def __init__(self, d):

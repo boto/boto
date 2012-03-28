@@ -15,12 +15,13 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import os, re
+import os
+import re
 import warnings
 import boto
 import boto.compat as compat
@@ -29,11 +30,11 @@ import boto.compat as compat
 # os.path.expanduser() will fail. Attempt to detect this case and use a
 # no-op expanduser function in this case.
 try:
-  os.path.expanduser('~')
-  expanduser = os.path.expanduser
+    os.path.expanduser('~')
+    expanduser = os.path.expanduser
 except (AttributeError, ImportError):
-  # This is probably running on App Engine.
-  expanduser = (lambda x: x)
+    # This is probably running on App Engine.
+    expanduser = (lambda x: x)
 
 # By default we use two locations for the boto configurations,
 # /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
@@ -42,7 +43,7 @@ BotoConfigLocations = [BotoConfigPath]
 UserConfigPath = os.path.join(expanduser('~'), '.boto')
 BotoConfigLocations.append(UserConfigPath)
 
-# If there's a BOTO_CONFIG variable set, we load ONLY 
+# If there's a BOTO_CONFIG variable set, we load ONLY
 # that variable
 if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
@@ -58,8 +59,9 @@ elif 'BOTO_PATH' in os.environ:
 class Config(compat.configparser.SafeConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        compat.configparser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
-                                                      'debug' : '0'})
+        d = {'working_dir': '/mnt/pyami',
+             'debug': '0'}
+        compat.configparser.SafeConfigParser.__init__(self, d)
         if do_load:
             if path:
                 self.load_from_path(path)
@@ -72,7 +74,8 @@ class Config(compat.configparser.SafeConfigParser):
                 try:
                     self.load_credential_file(full_path)
                 except IOError:
-                    warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
+                    msg = 'Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path
+                    warnings.warn(msg)
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
@@ -95,9 +98,10 @@ class Config(compat.configparser.SafeConfigParser):
 
     def save_option(self, path, section, option, value):
         """
-        Write the specified Section.Option to the config file specified by path.
-        Replace any previous value.  If the path doesn't exist, create it.
-        Also add the option the the in-memory config.
+        Write the specified Section.Option to the config file
+        specified by path.  Replace any previous value.  If the path
+        doesn't exist, create it.  Also add the option the the
+        in-memory config.
         """
         config = compat.configparser.SafeConfigParser()
         config.read(path)
@@ -147,17 +151,21 @@ class Config(compat.configparser.SafeConfigParser):
         except:
             val = default
         return val
-    
+
     def getint(self, section, name, default=0):
         try:
-            val = compat.configparser.SafeConfigParser.getint(self, section, name)
+            val = compat.configparser.SafeConfigParser.getint(self,
+                                                              section,
+                                                              name)
         except:
             val = int(default)
         return val
-    
+
     def getfloat(self, section, name, default=0.0):
         try:
-            val = compat.configparser.SafeConfigParser.getfloat(self, section, name)
+            val = compat.configparser.SafeConfigParser.getfloat(self,
+                                                                section,
+                                                                name)
         except:
             val = float(default)
         return val
@@ -172,13 +180,13 @@ class Config(compat.configparser.SafeConfigParser):
         else:
             val = default
         return val
-    
+
     def setbool(self, section, name, value):
         if value:
             self.set(section, name, 'true')
         else:
             self.set(section, name, 'false')
-    
+
     def dump(self):
         s = compat.StringIO()
         self.write(s)
@@ -194,7 +202,7 @@ class Config(compat.configparser.SafeConfigParser):
                     fp.write('%s = xxxxxxxxxxxxxxxxxx\n' % option)
                 else:
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
-    
+
     def dump_to_sdb(self, domain_name, item_name):
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
