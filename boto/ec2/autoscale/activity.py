@@ -51,12 +51,15 @@ class Activity(object):
             self.group_name = value
         elif name == 'StartTime':
             try:
-                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+                self.start_time = datetime.strptime(value,
+                                                    '%Y-%m-%dT%H:%M:%S.%fZ')
             except ValueError:
-                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+                self.start_time = datetime.strptime(value,
+                                                    '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'EndTime':
             try:
-                self.end_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+                self.end_time = datetime.strptime(value,
+                                                  '%Y-%m-%dT%H:%M:%S.%fZ')
             except ValueError:
                 self.end_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'Progress':
@@ -71,4 +74,3 @@ class Activity(object):
             self.status_code = value
         else:
             setattr(self, name, value)
-

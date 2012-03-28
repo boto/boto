@@ -52,10 +52,10 @@ class MetricAlarm(object):
     INSUFFICIENT_DATA = 'INSUFFICIENT_DATA'
 
     _cmp_map = {
-                    '>='    :   'GreaterThanOrEqualToThreshold',
-                    '>'     :   'GreaterThanThreshold',
-                    '<'     :   'LessThanThreshold',
-                    '<='    :   'LessThanOrEqualToThreshold',
+                    '>=': 'GreaterThanOrEqualToThreshold',
+                    '>': 'GreaterThanThreshold',
+                    '<': 'LessThanThreshold',
+                    '<=': 'LessThanOrEqualToThreshold',
                }
     _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.items())
 
@@ -115,17 +115,18 @@ class MetricAlarm(object):
         :type dimensions: list of dicts
         :param description: Dimensions of alarm, such as:
                             [{'InstanceId':['i-0123456,i-0123457']}]
-        
+
         :type alarm_actions: list of strs
         :param alarm_actions: A list of the ARNs of the actions to take in
                               ALARM state
-        
+
         :type insufficient_data_actions: list of strs
         :param insufficient_data_actions: A list of the ARNs of the actions to
                                           take in INSUFFICIENT_DATA state
-        
+
         :type ok_actions: list of strs
-        :param ok_actions: A list of the ARNs of the actions to take in OK state
+        :param ok_actions: A list of the ARNs of the actions to take in
+            OK state
         """
         self.name = name
         self.connection = connection
@@ -236,8 +237,9 @@ class MetricAlarm(object):
     def disable_actions(self):
         return self.connection.disable_alarm_actions([self.name])
 
-    def describe_history(self, start_date=None, end_date=None, max_records=None,
-                         history_item_type=None, next_token=None):
+    def describe_history(self, start_date=None, end_date=None,
+                         max_records=None, history_item_type=None,
+                         next_token=None):
         return self.connection.describe_alarm_history(self.name, start_date,
                                                       end_date, max_records,
                                                       history_item_type,
@@ -245,15 +247,15 @@ class MetricAlarm(object):
 
     def add_alarm_action(self, action_arn=None):
         """
-        Adds an alarm action, represented as an SNS topic, to this alarm. 
+        Adds an alarm action, represented as an SNS topic, to this alarm.
         What do do when alarm is triggered.
 
         :type action_arn: str
-        :param action_arn: SNS topics to which notification should be 
+        :param action_arn: SNS topics to which notification should be
                            sent if the alarm goes to state ALARM.
         """
         if not action_arn:
-            return # Raise exception instead?
+            return  # Raise exception instead?
         self.actions_enabled = 'true'
         self.alarm_actions.append(action_arn)
 
@@ -263,21 +265,21 @@ class MetricAlarm(object):
         this alarm. What to do when the insufficient_data state is reached.
 
         :type action_arn: str
-        :param action_arn: SNS topics to which notification should be 
+        :param action_arn: SNS topics to which notification should be
                            sent if the alarm goes to state INSUFFICIENT_DATA.
         """
         if not action_arn:
             return
         self.actions_enabled = 'true'
         self.insufficient_data_actions.append(action_arn)
-    
+
     def add_ok_action(self, action_arn=None):
         """
         Adds an ok action, represented as an SNS topic, to this alarm. What
         to do when the ok state is reached.
 
         :type action_arn: str
-        :param action_arn: SNS topics to which notification should be 
+        :param action_arn: SNS topics to which notification should be
                            sent if the alarm goes to state INSUFFICIENT_DATA.
         """
         if not action_arn:
@@ -288,12 +290,14 @@ class MetricAlarm(object):
     def delete(self):
         self.connection.delete_alarms([self.name])
 
+
 class AlarmHistoryItem(object):
     def __init__(self, connection=None):
         self.connection = connection
 
     def __repr__(self):
-        return 'AlarmHistory:%s[%s at %s]' % (self.name, self.summary, self.timestamp)
+        return 'AlarmHistory:%s[%s at %s]' % (self.name, self.summary,
+                                              self.timestamp)
 
     def startElement(self, name, attrs, connection):
         pass
@@ -309,4 +313,3 @@ class AlarmHistoryItem(object):
             self.summary = value
         elif name == 'Timestamp':
             self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-

@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -33,6 +33,7 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.group import Group
 import base64
 
+
 class Reservation(EC2Object):
     """
     Represents a Reservation response object.
@@ -44,7 +45,7 @@ class Reservation(EC2Object):
     :ivar instances: A list of Instance objects launched in this
                      Reservation.
     """
-    
+
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.id = None
@@ -76,7 +77,8 @@ class Reservation(EC2Object):
     def stop_all(self):
         for instance in self.instances:
             instance.stop()
-            
+
+
 class Instance(TaggedEC2Object):
     """
     Represents an instance.
@@ -116,7 +118,7 @@ class Instance(TaggedEC2Object):
     :ivar interfaces: List of Elastic Network Interfaces associated with
         this instance.
     """
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -307,7 +309,7 @@ class Instance(TaggedEC2Object):
 
         :type force: bool
         :param force: Forces the instance to stop
-        
+
         :rtype: list
         :return: A list of the instances stopped
         """
@@ -404,6 +406,7 @@ class Instance(TaggedEC2Object):
         """
         return self.connection.reset_instance_attribute(self.id, attribute)
 
+
 class ConsoleOutput:
 
     def __init__(self, parent=None):
@@ -425,10 +428,12 @@ class ConsoleOutput:
         else:
             setattr(self, name, value)
 
+
 class InstanceAttribute(dict):
 
     ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
-                   'disableApiTermination', 'instanceInitiatedShutdownBehavior',
+                   'disableApiTermination',
+                   'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',
                    'groupSet']
 
@@ -458,6 +463,7 @@ class InstanceAttribute(dict):
         elif name in self.ValidValues:
             self[name] = self._current_value
 
+
 class SubParse(dict):
 
     def __init__(self, section, parent=None):
@@ -470,4 +476,3 @@ class SubParse(dict):
     def endElement(self, name, value, connection):
         if name != self.section:
             self[name] = value
-            

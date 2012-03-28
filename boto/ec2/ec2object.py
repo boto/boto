@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -24,6 +24,7 @@
 Represents an EC2 Object
 """
 from boto.ec2.tag import TagSet
+
 
 class EC2Object(object):
 
@@ -40,7 +41,7 @@ class EC2Object(object):
     def endElement(self, name, value, connection):
         setattr(self, name, value)
 
-    
+
 class TaggedEC2Object(EC2Object):
     """
     Any EC2 resource that can be tagged should be represented
@@ -76,7 +77,7 @@ class TaggedEC2Object(EC2Object):
                       If you want only the tag name and no value, the
                       value should be the empty string.
         """
-        status = self.connection.create_tags([self.id], {key : value})
+        status = self.connection.create_tags([self.id], {key: value})
         if self.tags is None:
             self.tags = TagSet()
         self.tags[key] = value
@@ -99,7 +100,7 @@ class TaggedEC2Object(EC2Object):
                       a value of '' and a value of None.
         """
         if value:
-            tags = {key : value}
+            tags = {key: value}
         else:
             tags = [key]
         status = self.connection.delete_tags([self.id], tags)

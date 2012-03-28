@@ -15,13 +15,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
+
 
 class ProductCodes(list):
 
@@ -31,12 +32,13 @@ class ProductCodes(list):
     def endElement(self, name, value, connection):
         if name == 'productCode':
             self.append(value)
-    
+
+
 class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
     """
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -84,7 +86,7 @@ class Image(TaggedEC2Object):
         elif name == 'imageState':
             self.state = value
         elif name == 'imageOwnerId':
-            self.ownerId = value # for backwards compatibility
+            self.ownerId = value  # for backwards compatibility
             self.owner_id = value
         elif name == 'isPublic':
             if value == 'false':
@@ -93,8 +95,8 @@ class Image(TaggedEC2Object):
                 self.is_public = True
             else:
                 raise Exception(
-                    'Unexpected value of isPublic %s for image %s'%(
-                        value, 
+                    'Unexpected value of isPublic %s for image %s' % (
+                        value,
                         self.id
                     )
                 )
@@ -151,7 +153,7 @@ class Image(TaggedEC2Object):
             raise ValueError('%s is not a valid Image ID' % self.id)
         return self.state
 
-    def run(self, min_count=1, max_count=1, key_name=None, 
+    def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
             kernel_id=None, ramdisk_id=None,
@@ -163,46 +165,53 @@ class Image(TaggedEC2Object):
             placement_group=None, security_group_ids=None):
         """
         Runs this instance.
-        
+
         :type min_count: int
         :param min_count: The minimum number of instances to start
-        
+
         :type max_count: int
         :param max_count: The maximum number of instances to start
-        
+
         :type key_name: string
         :param key_name: The name of the keypair to run this instance with.
-        
-        :type security_groups: 
+
+        :type security_groups:
         :param security_groups:
-        
-        :type user_data: 
+
+        :type user_data:
         :param user_data:
-        
-        :type addressing_type: 
+
+        :type addressing_type:
         :param daddressing_type:
-        
+
         :type instance_type: string
-        :param instance_type: The type of instance to run.  Current choices are:
-                              m1.small | m1.large | m1.xlarge | c1.medium |
-                              c1.xlarge | m2.xlarge | m2.2xlarge |
-                              m2.4xlarge | cc1.4xlarge
-        
+        :param instance_type: The type of instance to run.
+            Current choices are:
+
+            m1.small | m1.large | m1.xlarge | c1.medium |
+            c1.xlarge | m2.xlarge | m2.2xlarge |
+            m2.4xlarge | cc1.4xlarge
+
         :type placement: string
-        :param placement: The availability zone in which to launch the instances
+        :param placement: The availability zone in which to launch
+            the instances
 
         :type kernel_id: string
-        :param kernel_id: The ID of the kernel with which to launch the instances
-        
+        :param kernel_id: The ID of the kernel with which to launch
+            the instances
+
         :type ramdisk_id: string
-        :param ramdisk_id: The ID of the RAM disk with which to launch the instances
-        
+        :param ramdisk_id: The ID of the RAM disk with which to launch
+            the instances
+
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
-        
+        :param monitoring_enabled: Enable CloudWatch monitoring on
+            the instance.
+
         :type subnet_id: string
-        :param subnet_id: The subnet ID within which to launch the instances for VPC.
-        
+        :param subnet_id: The subnet ID within which to launch the
+            instances for VPC.
+
         :type private_ip_address: string
         :param private_ip_address: If you're using VPC, you can optionally use
                                    this parameter to assign the instance a
@@ -220,19 +229,22 @@ class Image(TaggedEC2Object):
                                         via the API.
 
         :type instance_initiated_shutdown_behavior: string
-        :param instance_initiated_shutdown_behavior: Specifies whether the instance
-                                                     stops or terminates on instance-initiated
-                                                     shutdown. Valid values are:
-                                                     stop | terminate
+        :param instance_initiated_shutdown_behavior: Specifies whether the
+            instance stops or terminates on instance-initiated
+            shutdown. Valid values are:
+
+            * stop
+            * terminate
 
         :type placement_group: string
-        :param placement_group: If specified, this is the name of the placement
-                                group in which the instance(s) will be launched.
+        :param placement_group: If specified, this is the name of the
+            placement group in which the instance(s) will be launched.
 
         :rtype: Reservation
-        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        :return: The :class:`boto.ec2.instance.Reservation` associated
+            with the request for machines
 
-        :type security_group_ids: 
+        :type security_group_ids:
         :param security_group_ids:
         """
 
@@ -242,9 +254,11 @@ class Image(TaggedEC2Object):
                                              instance_type, placement,
                                              kernel_id, ramdisk_id,
                                              monitoring_enabled, subnet_id,
-                                             block_device_map, disable_api_termination,
+                                             block_device_map,
+                                             disable_api_termination,
                                              instance_initiated_shutdown_behavior,
-                                             private_ip_address, placement_group, 
+                                             private_ip_address,
+                                             placement_group,
                                              security_group_ids=security_group_ids)
 
     def deregister(self, delete_snapshot=False):
@@ -274,12 +288,13 @@ class Image(TaggedEC2Object):
                                                      'launchPermission')
 
     def get_kernel(self):
-        img_attrs =self.connection.get_image_attribute(self.id, 'kernel')
+        img_attrs = self.connection.get_image_attribute(self.id, 'kernel')
         return img_attrs.kernel
 
     def get_ramdisk(self):
         img_attrs = self.connection.get_image_attribute(self.id, 'ramdisk')
         return img_attrs.ramdisk
+
 
 class ImageAttribute:
 

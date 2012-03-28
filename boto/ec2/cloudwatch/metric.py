@@ -23,6 +23,7 @@
 from boto.ec2.cloudwatch.alarm import MetricAlarm
 from boto.ec2.cloudwatch.dimension import Dimension
 
+
 class Metric(object):
 
     Statistics = ['Minimum', 'Maximum', 'Sum', 'Average', 'SampleCount']
@@ -92,6 +93,3 @@ class Metric(object):
                                                           statistic,
                                                           dimensions,
                                                           unit)
-
-
-    

@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,10 +25,11 @@ Represents an EC2 Elastic Block Store Snapshot
 """
 from boto.ec2.ec2object import TaggedEC2Object
 
+
 class Snapshot(TaggedEC2Object):
-    
+
     AttrName = 'createVolumePermission'
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -85,7 +86,7 @@ class Snapshot(TaggedEC2Object):
         elif validate:
             raise ValueError('%s is not a valid Snapshot ID' % self.id)
         return self.progress
-    
+
     def delete(self):
         return self.connection.delete_snapshot(self.id)
 
@@ -110,6 +111,7 @@ class Snapshot(TaggedEC2Object):
     def reset_permissions(self):
         return self.connection.reset_snapshot_attribute(self.id,
                                                         self.AttrName)
+
 
 class SnapshotAttribute:
 
@@ -137,6 +139,3 @@ class SnapshotAttribute:
             self.snapshot_id = value
         else:
             setattr(self, name, value)
-
-
-            

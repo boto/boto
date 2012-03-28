@@ -32,13 +32,14 @@ from boto.regioninfo import RegionInfo
 import boto
 
 RegionData = {
-    'us-east-1' : 'elasticloadbalancing.us-east-1.amazonaws.com',
-    'us-west-1' : 'elasticloadbalancing.us-west-1.amazonaws.com',
-    'us-west-2' : 'elasticloadbalancing.us-west-2.amazonaws.com',
-    'sa-east-1' : 'elasticloadbalancing.sa-east-1.amazonaws.com',
-    'eu-west-1' : 'elasticloadbalancing.eu-west-1.amazonaws.com',
-    'ap-northeast-1' : 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1' : 'elasticloadbalancing.ap-southeast-1.amazonaws.com'}
+    'us-east-1': 'elasticloadbalancing.us-east-1.amazonaws.com',
+    'us-west-1': 'elasticloadbalancing.us-west-1.amazonaws.com',
+    'us-west-2': 'elasticloadbalancing.us-west-2.amazonaws.com',
+    'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',
+    'eu-west-1': 'elasticloadbalancing.eu-west-1.amazonaws.com',
+    'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
+    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com'}
+
 
 def regions():
     """
@@ -55,6 +56,7 @@ def regions():
         regions.append(region)
     return regions
 
+
 def connect_to_region(region_name, **kw_params):
     """
     Given a valid region name, return a
@@ -70,6 +72,7 @@ def connect_to_region(region_name, **kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
     return None
+
 
 class ELBConnection(AWSQueryConnection):
 
@@ -152,24 +155,26 @@ class ELBConnection(AWSQueryConnection):
                           and must be specified when doing HTTPS.
 
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
-        :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
+        :return: The newly created
+            :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
-        params = {'LoadBalancerName' : name}
+        params = {'LoadBalancerName': name}
         for index, listener in enumerate(listeners):
             i = index + 1
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
             params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if listener[2]=='HTTPS':
+            if listener[2] == 'HTTPS':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         if zones:
-            self.build_list_params(params, zones, 'AvailabilityZones.member.%d')
+            self.build_list_params(params, zones,
+                                   'AvailabilityZones.member.%d')
 
         if subnets:
             self.build_list_params(params, subnets, 'Subnets.member.%d')
 
         if security_groups:
-            self.build_list_params(params, security_groups, 
+            self.build_list_params(params, security_groups,
                                     'SecurityGroups.member.%d')
 
         load_balancer = self.get_object('CreateLoadBalancer',
@@ -183,33 +188,32 @@ class ELBConnection(AWSQueryConnection):
 
     def create_load_balancer_listeners(self, name, listeners):
         """
-        Creates a Listener (or group of listeners) for an existing Load Balancer
+        Creates a Listener (or group of listeners) for an existing
+        Load Balancer
 
         :type name: string
         :param name: The name of the load balancer to create the listeners for
 
         :type listeners: List of tuples
         :param listeners: Each tuple contains three values,
-                          (LoadBalancerPortNumber, InstancePortNumber, Protocol,
-                          [SSLCertificateId])
-                          where LoadBalancerPortNumber and InstancePortNumber are
-                          integer values between 1 and 65535, Protocol is a
-                          string containing either 'TCP', 'HTTP' or 'HTTPS';
-                          SSLCertificateID is the ARN of a AWS AIM certificate,
-                          and must be specified when doing HTTPS.
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol,
+            [SSLCertificateId]) where LoadBalancerPortNumber and
+            InstancePortNumber are integer values between 1 and 65535,
+            Protocol is a string containing either 'TCP', 'HTTP' or
+            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            certificate, and must be specified when doing HTTPS.
 
         :return: The status of the request
         """
-        params = {'LoadBalancerName' : name}
+        params = {'LoadBalancerName': name}
         for index, listener in enumerate(listeners):
             i = index + 1
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
             params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if listener[2]=='HTTPS':
+            if listener[2] == 'HTTPS':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         return self.get_status('CreateLoadBalancerListeners', params)
-
 
     def delete_load_balancer(self, name):
         """
@@ -233,7 +237,7 @@ class ELBConnection(AWSQueryConnection):
 
         :return: The status of the request
         """
-        params = {'LoadBalancerName' : name}
+        params = {'LoadBalancerName': name}
         for index, port in enumerate(ports):
             params['LoadBalancerPorts.member.%d' % (index + 1)] = port
         return self.get_status('DeleteLoadBalancerListeners', params)
@@ -255,7 +259,7 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of zones for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : load_balancer_name}
+        params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, zones_to_add,
                                'AvailabilityZones.member.%d')
         return self.get_list('EnableAvailabilityZonesForLoadBalancer',
@@ -279,7 +283,7 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of zones for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : load_balancer_name}
+        params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, zones_to_remove,
                                'AvailabilityZones.member.%d')
         return self.get_list('DisableAvailabilityZonesForLoadBalancer',
@@ -299,7 +303,7 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of instances for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : load_balancer_name}
+        params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, instances,
                                'Instances.member.%d.InstanceId')
         return self.get_list('RegisterInstancesWithLoadBalancer',
@@ -319,7 +323,7 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of instances for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : load_balancer_name}
+        params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, instances,
                                'Instances.member.%d.InstanceId')
         return self.get_list('DeregisterInstancesFromLoadBalancer',
@@ -341,7 +345,7 @@ class ELBConnection(AWSQueryConnection):
         :return: list of state info for instances in this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : load_balancer_name}
+        params = {'LoadBalancerName': load_balancer_name}
         if instances:
             self.build_list_params(params, instances,
                                    'Instances.member.%d.InstanceId')
@@ -362,12 +366,12 @@ class ELBConnection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.elb.healthcheck.HealthCheck`
         :return: The updated :class:`boto.ec2.elb.healthcheck.HealthCheck`
         """
-        params = {'LoadBalancerName' : name,
-                  'HealthCheck.Timeout' : health_check.timeout,
-                  'HealthCheck.Target' : health_check.target,
-                  'HealthCheck.Interval' : health_check.interval,
-                  'HealthCheck.UnhealthyThreshold' : health_check.unhealthy_threshold,
-                  'HealthCheck.HealthyThreshold' : health_check.healthy_threshold}
+        params = {'LoadBalancerName': name,
+                  'HealthCheck.Timeout': health_check.timeout,
+                  'HealthCheck.Target': health_check.target,
+                  'HealthCheck.Interval': health_check.interval,
+                  'HealthCheck.UnhealthyThreshold': health_check.unhealthy_threshold,
+                  'HealthCheck.HealthyThreshold': health_check.healthy_threshold}
         return self.get_object('ConfigureHealthCheck', params, HealthCheck)
 
     def set_lb_listener_SSL_certificate(self, lb_name, lb_port,
@@ -378,9 +382,9 @@ class ELBConnection(AWSQueryConnection):
         that was used on the same LoadBalancer and port.
         """
         params = {
-                    'LoadBalancerName'          :   lb_name,
-                    'LoadBalancerPort'          :   lb_port,
-                    'SSLCertificateId'          :   ssl_certificate_id,
+                    'LoadBalancerName': lb_name,
+                    'LoadBalancerPort': lb_port,
+                    'SSLCertificateId': ssl_certificate_id,
                  }
         return self.get_status('SetLoadBalancerListenerSSLCertificate', params)
 
@@ -401,9 +405,9 @@ class ELBConnection(AWSQueryConnection):
         stops being sticky until a new application cookie is issued.
         """
         params = {
-                    'CookieName'        :   name,
-                    'LoadBalancerName'  :   lb_name,
-                    'PolicyName'        :   policy_name,
+                    'CookieName': name,
+                    'LoadBalancerName': lb_name,
+                    'PolicyName': policy_name,
                  }
         return self.get_status('CreateAppCookieStickinessPolicy', params)
 
@@ -428,9 +432,9 @@ class ELBConnection(AWSQueryConnection):
         configuration.
         """
         params = {
-                    'CookieExpirationPeriod'    :   cookie_expiration_period,
-                    'LoadBalancerName'          :   lb_name,
-                    'PolicyName'                :   policy_name,
+                    'CookieExpirationPeriod': cookie_expiration_period,
+                    'LoadBalancerName': lb_name,
+                    'PolicyName': policy_name,
                  }
         return self.get_status('CreateLBCookieStickinessPolicy', params)
 
@@ -440,8 +444,8 @@ class ELBConnection(AWSQueryConnection):
         be enabled for any listeners.
         """
         params = {
-                    'LoadBalancerName'          : lb_name,
-                    'PolicyName'                : policy_name,
+                    'LoadBalancerName': lb_name,
+                    'PolicyName': policy_name,
                  }
         return self.get_status('DeleteLoadBalancerPolicy', params)
 
@@ -452,8 +456,8 @@ class ELBConnection(AWSQueryConnection):
         with a listener.
         """
         params = {
-                    'LoadBalancerName'          : lb_name,
-                    'LoadBalancerPort'          : lb_port,
+                    'LoadBalancerName': lb_name,
+                    'LoadBalancerPort': lb_port,
                  }
         self.build_list_params(params, policies, 'PolicyNames.member.%d')
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
@@ -461,7 +465,7 @@ class ELBConnection(AWSQueryConnection):
     def apply_security_groups_to_lb(self, name, security_groups):
         """
         Applies security groups to the load balancer.
-        Applying security groups that are already registered with the 
+        Applying security groups that are already registered with the
         Load Balancer has no effect.
 
         :type name: string
@@ -474,17 +478,17 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of security groups for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : name}
-        self.build_list_params(params, security_groups, 
+        params = {'LoadBalancerName': name}
+        self.build_list_params(params, security_groups,
                                'SecurityGroups.member.%d')
-        return self.get_list('ApplySecurityGroupsToLoadBalancer', 
+        return self.get_list('ApplySecurityGroupsToLoadBalancer',
                              params,
                              None)
 
     def attach_lb_to_subnets(self, name, subnets):
         """
         Attaches load balancer to one or more subnets.
-        Attaching subnets that are already registered with the 
+        Attaching subnets that are already registered with the
         Load Balancer has no effect.
 
         :type name: string
@@ -497,10 +501,10 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of subnets for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : name}
-        self.build_list_params(params, subnets, 
+        params = {'LoadBalancerName': name}
+        self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('AttachLoadBalancerToSubnets', 
+        return self.get_list('AttachLoadBalancerToSubnets',
                              params,
                              None)
 
@@ -518,11 +522,9 @@ class ELBConnection(AWSQueryConnection):
         :return: An updated list of subnets for this Load Balancer.
 
         """
-        params = {'LoadBalancerName' : name}
-        self.build_list_params(params, subnets, 
+        params = {'LoadBalancerName': name}
+        self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('DettachLoadBalancerFromSubnets', 
+        return self.get_list('DettachLoadBalancerFromSubnets',
                              params,
                              None)
- 
-

@@ -16,10 +16,11 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
 
 class Details(dict):
     """
@@ -38,7 +39,8 @@ class Details(dict):
             self[self._name] = value
         else:
             setattr(self, name, value)
-    
+
+
 class Event(object):
     """
     A status event for an instance.
@@ -57,7 +59,7 @@ class Event(object):
         self.description = description
         self.not_before = not_before
         self.not_after = not_after
-        
+
     def __repr__(self):
         return 'Event:%s' % self.code
 
@@ -76,6 +78,7 @@ class Event(object):
         else:
             setattr(self, name, value)
 
+
 class Status(object):
     """
     A generic Status object used for system status and instance status.
@@ -90,7 +93,7 @@ class Status(object):
         if not details:
             details = Details()
         self.details = details
-        
+
     def __repr__(self):
         return 'Status:%s' % self.status
 
@@ -105,8 +108,9 @@ class Status(object):
         else:
             setattr(self, name, value)
 
+
 class EventSet(list):
-    
+
     def startElement(self, name, attrs, connection):
         if name == 'item':
             event = Event()
@@ -117,6 +121,7 @@ class EventSet(list):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
+
 
 class InstanceStatus(object):
     """
@@ -137,7 +142,7 @@ class InstanceStatus(object):
     :ivar instance_status: A Status object that reports impaired
         functionality that arises from problems internal to the instance.
     """
-    
+
     def __init__(self, id=None, zone=None, events=None,
                  state_code=None, state_name=None):
         self.id = id
@@ -174,6 +179,7 @@ class InstanceStatus(object):
         else:
             setattr(self, name, value)
 
+
 class InstanceStatusSet(list):
     """
     A list object that contains the results of a call to
@@ -191,7 +197,7 @@ class InstanceStatusSet(list):
         list.__init__(self)
         self.connection = connection
         self.next_token = None
-    
+
     def startElement(self, name, attrs, connection):
         if name == 'item':
             status = InstanceStatus()
@@ -204,4 +210,3 @@ class InstanceStatusSet(list):
         if name == 'NextToken':
             self.next_token = value
         setattr(self, name, value)
-

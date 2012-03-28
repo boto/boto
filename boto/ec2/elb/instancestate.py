@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class InstanceState(object):
     """
     Represents the state of an EC2 Load Balancer Instance
@@ -60,6 +61,3 @@ class InstanceState(object):
             self.reason_code = value
         else:
             setattr(self, name, value)
-
-
-

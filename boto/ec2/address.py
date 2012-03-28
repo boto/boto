@@ -25,6 +25,7 @@ Represents an EC2 Elastic IP Address
 
 from boto.ec2.ec2object import EC2Object
 
+
 class Address(EC2Object):
 
     def __init__(self, connection=None, public_ip=None, instance_id=None):
@@ -63,5 +64,3 @@ class Address(EC2Object):
 
     def disassociate(self):
         return self.connection.disassociate_address(self.public_ip)
-
-

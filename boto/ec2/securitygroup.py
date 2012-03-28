@@ -26,6 +26,7 @@ Represents an EC2 Security Group
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.exception import BotoClientError
 
+
 class SecurityGroup(TaggedEC2Object):
 
     def __init__(self, connection=None, owner_id=None,
@@ -73,7 +74,7 @@ class SecurityGroup(TaggedEC2Object):
                 self.status = True
             else:
                 raise Exception(
-                    'Unexpected value of status %s for group %s'%(
+                    'Unexpected value of status %s for group %s' % (
                         value,
                         self.name
                     )
@@ -142,10 +143,10 @@ class SecurityGroup(TaggedEC2Object):
 
         :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
-                        See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
+            See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
-                         :class:`boto.ec2.securitygroup.GroupOrCIDR`
+            :class:`boto.ec2.securitygroup.GroupOrCIDR`
         :param src_group: The Security Group you are granting access to.
 
         :rtype: bool
@@ -177,7 +178,7 @@ class SecurityGroup(TaggedEC2Object):
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
                cidr_ip=None, src_group=None):
         if src_group:
-            cidr_ip=None
+            cidr_ip = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
         else:
@@ -225,8 +226,8 @@ class SecurityGroup(TaggedEC2Object):
                         source_groups.append(grant.name)
                         sg.authorize(None, None, None, None, grant)
                 else:
-                    sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
-                                 grant.cidr_ip)
+                    sg.authorize(rule.ip_protocol, rule.from_port,
+                                 rule.to_port, grant.cidr_ip)
         return sg
 
     def instances(self):
@@ -247,6 +248,7 @@ class SecurityGroup(TaggedEC2Object):
                 instances.extend(reservation.instances)
         return instances
 
+
 class IPPermissionsList(list):
 
     def startElement(self, name, attrs, connection):
@@ -257,6 +259,7 @@ class IPPermissionsList(list):
 
     def endElement(self, name, value, connection):
         pass
+
 
 class IPPermissions(object):
 
@@ -294,6 +297,7 @@ class IPPermissions(object):
         grant.cidr_ip = cidr_ip
         self.grants.append(grant)
         return grant
+
 
 class GroupOrCIDR(object):
 

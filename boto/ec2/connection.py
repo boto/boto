@@ -58,6 +58,7 @@ from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
 
+
 class EC2Connection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'ec2_version', '2012-03-01')
@@ -118,7 +119,7 @@ class EC2Connection(AWSQueryConnection):
                 value = [value]
             j = 1
             for v in value:
-                params['Filter.%d.Value.%d' % (i,j)] = v
+                params['Filter.%d.Value.%d' % (i, j)] = v
                 j += 1
             i += 1
 
@@ -183,7 +184,7 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, kernel_ids, 'ImageId')
         if owners:
             self.build_list_params(params, owners, 'Owner')
-        filter = {'image-type' : 'kernel'}
+        filter = {'image-type': 'kernel'}
         self.build_filter_params(params, filter)
         return self.get_list('DescribeImages', params,
                              [('item', Image)], verb='POST')
@@ -207,7 +208,7 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, ramdisk_ids, 'ImageId')
         if owners:
             self.build_list_params(params, owners, 'Owner')
-        filter = {'image-type' : 'ramdisk'}
+        filter = {'image-type': 'ramdisk'}
         self.build_filter_params(params, filter)
         return self.get_list('DescribeImages', params,
                              [('item', Image)], verb='POST')
@@ -224,7 +225,7 @@ class EC2Connection(AWSQueryConnection):
         """
         try:
             return self.get_all_images(image_ids=[image_id])[0]
-        except IndexError: # None of those images available
+        except IndexError:  # None of those images available
             return None
 
     def register_image(self, name=None, description=None, image_location=None,
@@ -308,7 +309,7 @@ class EC2Connection(AWSQueryConnection):
                     break
 
         result = self.get_status('DeregisterImage',
-                                 {'ImageId':image_id}, verb='POST')
+                                 {'ImageId': image_id}, verb='POST')
         if result and snapshot_id:
             return result and self.delete_snapshot(snapshot_id)
         return result
@@ -339,8 +340,8 @@ class EC2Connection(AWSQueryConnection):
         :rtype: string
         :return: The new image id
         """
-        params = {'InstanceId' : instance_id,
-                  'Name' : name}
+        params = {'InstanceId': instance_id,
+                  'Name': name}
         if description:
             params['Description'] = description
         if no_reboot:
@@ -368,8 +369,8 @@ class EC2Connection(AWSQueryConnection):
         :return: An ImageAttribute object representing the value of the
                  attribute requested
         """
-        params = {'ImageId' : image_id,
-                  'Attribute' : attribute}
+        params = {'ImageId': image_id,
+                  'Attribute': attribute}
         return self.get_object('DescribeImageAttribute', params,
                                ImageAttribute, verb='POST')
 
@@ -400,9 +401,9 @@ class EC2Connection(AWSQueryConnection):
                               product code can be associated with an AMI. Once
                               set, the product code cannot be changed or reset.
         """
-        params = {'ImageId' : image_id,
-                  'Attribute' : attribute,
-                  'OperationType' : operation}
+        params = {'ImageId': image_id,
+                  'Attribute': attribute,
+                  'OperationType': operation}
         if user_ids:
             self.build_list_params(params, user_ids, 'UserId')
         if groups:
@@ -424,8 +425,8 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
-        params = {'ImageId' : image_id,
-                  'Attribute' : attribute}
+        params = {'ImageId': image_id,
+                  'Attribute': attribute}
         return self.get_status('ResetImageAttribute', params, verb='POST')
 
     # Instance methods
@@ -533,7 +534,8 @@ class EC2Connection(AWSQueryConnection):
         :param max_count: The maximum number of instances to launch
 
         :type key_name: string
-        :param key_name: The name of the key pair with which to launch instances
+        :param key_name: The name of the key pair with which to launch
+            instances
 
         :type security_groups: list of strings
         :param security_groups: The names of the security groups with which to
@@ -557,7 +559,8 @@ class EC2Connection(AWSQueryConnection):
                               * t1.micro
 
         :type placement: string
-        :param placement: The availability zone in which to launch the instances
+        :param placement: The availability zone in which to launch the
+            instances
 
         :type kernel_id: string
         :param kernel_id: The ID of the kernel with which to launch the
@@ -568,7 +571,8 @@ class EC2Connection(AWSQueryConnection):
                            instances
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
+        :param monitoring_enabled: Enable CloudWatch monitoring on the
+            instance.
 
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances
@@ -603,7 +607,8 @@ class EC2Connection(AWSQueryConnection):
 
         :type placement_group: string
         :param placement_group: If specified, this is the name of the placement
-                                group in which the instance(s) will be launched.
+                                group in which the instance(s) will be
+                                launched.
 
         :type client_token: string
         :param client_token: Unique, case-sensitive identifier you provide
@@ -618,8 +623,8 @@ class EC2Connection(AWSQueryConnection):
         :param security_group_ids: The ID of the VPC security groups with
                                    which to associate instances
         """
-        params = {'ImageId':image_id,
-                  'MinCount':min_count,
+        params = {'ImageId': image_id,
+                  'MinCount': min_count,
                   'MaxCount': max_count}
         if key_name:
             params['KeyName'] = key_name
@@ -668,7 +673,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceInitiatedShutdownBehavior'] = val
         if client_token:
             params['ClientToken'] = client_token
-        return self.get_object('RunInstances', params, Reservation, verb='POST')
+        return self.get_object('RunInstances', params, Reservation,
+                               verb='POST')
 
     def terminate_instances(self, instance_ids=None):
         """
@@ -751,8 +757,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('RebootInstances', params)
 
     def confirm_product_instance(self, product_code, instance_id):
-        params = {'ProductCode' : product_code,
-                  'InstanceId' : instance_id}
+        params = {'ProductCode': product_code,
+                  'InstanceId': instance_id}
         rs = self.get_object('ConfirmProductInstance', params,
                              ResultSet, verb='POST')
         return (rs.status, rs.ownerId)
@@ -779,7 +785,7 @@ class EC2Connection(AWSQueryConnection):
         :return: An InstanceAttribute object representing the value of the
                  attribute requested
         """
-        params = {'InstanceId' : instance_id}
+        params = {'InstanceId': instance_id}
         if attribute:
             params['Attribute'] = attribute
         return self.get_object('DescribeInstanceAttribute', params,
@@ -817,9 +823,9 @@ class EC2Connection(AWSQueryConnection):
                     value = 'true'
                 else:
                     value = 'false'
-        params = {'InstanceId' : instance_id,
-                  'Attribute' : attribute,
-                  'Value' : value}
+        params = {'InstanceId': instance_id,
+                  'Attribute': attribute,
+                  'Value': value}
         return self.get_status('ModifyInstanceAttribute', params, verb='POST')
 
     def reset_instance_attribute(self, instance_id, attribute):
@@ -836,8 +842,8 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
-        params = {'InstanceId' : instance_id,
-                  'Attribute' : attribute}
+        params = {'InstanceId': instance_id,
+                  'Attribute': attribute}
         return self.get_status('ResetInstanceAttribute', params, verb='POST')
 
     # Spot Instances
@@ -866,7 +872,8 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
         if request_ids:
-            self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
+            self.build_list_params(params, request_ids,
+                                   'SpotInstanceRequestId')
         if filters:
             if 'launch.group-id' in filters:
                 lgid = filters.get('launch.group-id')
@@ -965,7 +972,8 @@ class EC2Connection(AWSQueryConnection):
                                         availability zone.
 
         :type key_name: string
-        :param key_name: The name of the key pair with which to launch instances
+        :param key_name: The name of the key pair with which to
+            launch instances
 
         :type security_groups: list of strings
         :param security_groups: The names of the security groups with which to
@@ -989,7 +997,8 @@ class EC2Connection(AWSQueryConnection):
                               * t1.micro
 
         :type placement: string
-        :param placement: The availability zone in which to launch the instances
+        :param placement: The availability zone in which to launch
+            the instances
 
         :type kernel_id: string
         :param kernel_id: The ID of the kernel with which to launch the
@@ -1000,7 +1009,8 @@ class EC2Connection(AWSQueryConnection):
                            instances
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
+        :param monitoring_enabled: Enable CloudWatch monitoring on
+            the instance.
 
         :type subnet_id: string
         :param subnet_id: The subnet ID within which to launch the instances
@@ -1008,7 +1018,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type placement_group: string
         :param placement_group: If specified, this is the name of the placement
-                                group in which the instance(s) will be launched.
+            group in which the instance(s) will be launched.
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -1019,9 +1029,9 @@ class EC2Connection(AWSQueryConnection):
         :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
                  associated with the request for machines
         """
-        params = {'LaunchSpecification.ImageId':image_id,
-                  'Type' : type,
-                  'SpotPrice' : price}
+        params = {'LaunchSpecification.ImageId': image_id,
+                  'Type': type,
+                  'SpotPrice': price}
         if count:
             params['InstanceCount'] = count
         if valid_from:
@@ -1079,7 +1089,8 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
         if request_ids:
-            self.build_list_params(params, request_ids, 'SpotInstanceRequestId')
+            self.build_list_params(params, request_ids,
+                                   'SpotInstanceRequestId')
         return self.get_list('CancelSpotInstanceRequests', params,
                              [('item', Instance)], verb='POST')
 
@@ -1111,7 +1122,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.spotdatafeedsubscription.SpotDatafeedSubscription`
         :return: The datafeed subscription object or None
         """
-        params = {'Bucket' : bucket}
+        params = {'Bucket': bucket}
         if prefix:
             params['Prefix'] = prefix
         return self.get_object('CreateSpotDatafeedSubscription',
@@ -1162,7 +1173,8 @@ class EC2Connection(AWSQueryConnection):
 
     # Address methods
 
-    def get_all_addresses(self, addresses=None, filters=None, allocation_ids=None):
+    def get_all_addresses(self, addresses=None, filters=None,
+                          allocation_ids=None):
         """
         Get all EIP's associated with the current credentials.
 
@@ -1182,9 +1194,9 @@ class EC2Connection(AWSQueryConnection):
                         for details.
 
         :type allocation_ids: list
-        :param allocation_ids: Optional list of allocation IDs.  If this list is
-                           present, only the Addresses associated with the given
-                           allocation IDs will be returned.
+        :param allocation_ids: Optional list of allocation IDs.  If this
+            list is present, only the Addresses associated with the given
+            allocation IDs will be returned.
 
         :rtype: list of :class:`boto.ec2.address.Address`
         :return: The requested Address objects
@@ -1196,7 +1208,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, allocation_ids, 'AllocationId')
         if filters:
             self.build_filter_params(params, filters)
-        return self.get_list('DescribeAddresses', params, [('item', Address)], verb='POST')
+        return self.get_list('DescribeAddresses', params,
+                             [('item', Address)], verb='POST')
 
     def allocate_address(self, domain=None):
         """
@@ -1212,7 +1225,8 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_object('AllocateAddress', params, Address, verb='POST')
 
-    def associate_address(self, instance_id, public_ip=None, allocation_id=None):
+    def associate_address(self, instance_id, public_ip=None,
+                          allocation_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1230,7 +1244,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        params = { 'InstanceId' : instance_id }
+        params = {'InstanceId': instance_id}
 
         if public_ip is not None:
             params['PublicIp'] = public_ip
@@ -1387,7 +1401,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list of :class:`boto.ec2.volume.VolumeAttribute`
         :return: The requested Volume attribute
         """
-        params = {'VolumeId': volume_id, 'Attribute' : attribute}
+        params = {'VolumeId': volume_id, 'Attribute': attribute}
         return self.get_object('DescribeVolumeAttribute', params,
                                VolumeAttribute, verb='POST')
 
@@ -1421,11 +1435,12 @@ class EC2Connection(AWSQueryConnection):
         :param zone: The availability zone in which the Volume will be created.
 
         :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
-        :param snapshot: The snapshot from which the new Volume will be created.
+        :param snapshot: The snapshot from which the new Volume will
+            be created.
         """
         if isinstance(zone, Zone):
             zone = zone.name
-        params = {'AvailabilityZone' : zone}
+        params = {'AvailabilityZone': zone}
         if size:
             params['Size'] = size
         if snapshot:
@@ -1465,9 +1480,9 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        params = {'InstanceId' : instance_id,
-                  'VolumeId' : volume_id,
-                  'Device' : device}
+        params = {'InstanceId': instance_id,
+                  'VolumeId': volume_id,
+                  'Device': device}
         return self.get_status('AttachVolume', params, verb='POST')
 
     def detach_volume(self, volume_id, instance_id=None,
@@ -1487,18 +1502,19 @@ class EC2Connection(AWSQueryConnection):
                        volume is exposted (e.g. /dev/sdh)
 
         :type force: bool
-        :param force: Forces detachment if the previous detachment attempt did
-                      not occur cleanly.  This option can lead to data loss or
-                      a corrupted file system. Use this option only as a last
-                      resort to detach a volume from a failed instance. The
-                      instance will not have an opportunity to flush file system
-                      caches nor file system meta data. If you use this option,
-                      you must perform file system check and repair procedures.
+        :param force: Forces detachment if the previous detachment
+            attempt did not occur cleanly.  This option can lead to
+            data loss or a corrupted file system. Use this option only
+            as a last resort to detach a volume from a failed
+            instance. The instance will not have an opportunity to
+            flush file system caches nor file system meta data. If you
+            use this option, you must perform file system check and
+            repair procedures.
 
         :rtype: bool
         :return: True if successful
         """
-        params = {'VolumeId' : volume_id}
+        params = {'VolumeId': volume_id}
         if instance_id:
             params['InstanceId'] = instance_id
         if device:
@@ -1521,16 +1537,16 @@ class EC2Connection(AWSQueryConnection):
                              these snapshot ids will be returned.
 
         :type owner: str
-        :param owner: If present, only the snapshots owned by the specified user
-                      will be returned.  Valid values are:
+        :param owner: If present, only the snapshots owned by the
+            specified user will be returned.  Valid values are:
 
-                      * self
-                      * amazon
-                      * AWS Account ID
+            * self
+            * amazon
+            * AWS Account ID
 
         :type restorable_by: str
-        :param restorable_by: If present, only the snapshots that are restorable
-                              by the specified account id will be returned.
+        :param restorable_by: If present, only the snapshots that
+            are restorable by the specified account id will be returned.
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -1571,7 +1587,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        params = {'VolumeId' : volume_id}
+        params = {'VolumeId': volume_id}
         if description:
             params['Description'] = description[0:255]
         snapshot = self.get_object('CreateSnapshot', params,
@@ -1586,8 +1602,8 @@ class EC2Connection(AWSQueryConnection):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params, verb='POST')
 
-    def trim_snapshots(self, hourly_backups = 8, daily_backups = 7,
-                       weekly_backups = 4):
+    def trim_snapshots(self, hourly_backups=8, daily_backups=7,
+                       weekly_backups=4):
         """
         Trim excess snapshots, based on when they were taken. More current
         snapshots are retained, with the number retained decreasing as you
@@ -1631,7 +1647,7 @@ class EC2Connection(AWSQueryConnection):
         now = datetime.utcnow()
         last_hour = datetime(now.year, now.month, now.day, now.hour)
         last_midnight = datetime(now.year, now.month, now.day)
-        last_sunday = datetime(now.year, now.month, now.day) - timedelta(days = (now.weekday() + 1) % 7)
+        last_sunday = datetime(now.year, now.month, now.day) - timedelta(days=(now.weekday() + 1) % 7)
         start_of_month = datetime(now.year, now.month, 1)
 
         target_backup_times = []
@@ -1640,15 +1656,15 @@ class EC2Connection(AWSQueryConnection):
         oldest_snapshot_date = datetime(2007, 1, 1)
 
         for hour in range(0, hourly_backups):
-            target_backup_times.append(last_hour - timedelta(hours = hour))
+            target_backup_times.append(last_hour - timedelta(hours=hour))
 
         for day in range(0, daily_backups):
-            target_backup_times.append(last_midnight - timedelta(days = day))
+            target_backup_times.append(last_midnight - timedelta(days=day))
 
         for week in range(0, weekly_backups):
-            target_backup_times.append(last_sunday - timedelta(weeks = week))
+            target_backup_times.append(last_sunday - timedelta(weeks=week))
 
-        one_day = timedelta(days = 1)
+        one_day = timedelta(days=1)
         while start_of_month > oldest_snapshot_date:
             # append the start of the month to the list of
             # snapshot dates to save:
@@ -1674,8 +1690,8 @@ class EC2Connection(AWSQueryConnection):
 
         # get all the snapshots, sort them by date and time, and
         # organize them into one array for each volume:
-        all_snapshots = self.get_all_snapshots(owner = 'self')
-        all_snapshots.sort(cmp = lambda x, y: cmp(x.start_time, y.start_time))
+        all_snapshots = self.get_all_snapshots(owner='self')
+        all_snapshots.sort(cmp=lambda x, y: cmp(x.start_time, y.start_time))
         snaps_for_each_volume = {}
         for snap in all_snapshots:
             # the snapshot name and the volume name are the same.
@@ -1695,7 +1711,7 @@ class EC2Connection(AWSQueryConnection):
         # time period and deleting the rest:
         for volume_name in snaps_for_each_volume:
             snaps = snaps_for_each_volume[volume_name]
-            snaps = snaps[:-1] # never delete the newest snapshot
+            snaps = snaps[:-1]  # never delete the newest snapshot
             time_period_number = 0
             snap_found_for_this_time_period = False
             for snap in snaps:
@@ -1733,7 +1749,6 @@ class EC2Connection(AWSQueryConnection):
                         time_period_number += 1
                         snap_found_for_this_time_period = False
 
-
     def get_snapshot_attribute(self, snapshot_id,
                                attribute='createVolumePermission'):
         """
@@ -1751,7 +1766,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list of :class:`boto.ec2.snapshotattribute.SnapshotAttribute`
         :return: The requested Snapshot attribute
         """
-        params = {'Attribute' : attribute}
+        params = {'Attribute': attribute}
         if snapshot_id:
             params['SnapshotId'] = snapshot_id
         return self.get_object('DescribeSnapshotAttribute', params,
@@ -1782,9 +1797,9 @@ class EC2Connection(AWSQueryConnection):
                        value at this time is 'all'.
 
         """
-        params = {'SnapshotId' : snapshot_id,
-                  'Attribute' : attribute,
-                  'OperationType' : operation}
+        params = {'SnapshotId': snapshot_id,
+                  'Attribute': attribute,
+                  'OperationType': operation}
         if user_ids:
             self.build_list_params(params, user_ids, 'UserId')
         if groups:
@@ -1805,8 +1820,8 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
-        params = {'SnapshotId' : snapshot_id,
-                  'Attribute' : attribute}
+        params = {'SnapshotId': snapshot_id,
+                  'Attribute': attribute}
         return self.get_status('ResetSnapshotAttribute', params, verb='POST')
 
     # Keypair methods
@@ -1872,7 +1887,7 @@ class EC2Connection(AWSQueryConnection):
                  The material attribute of the new KeyPair object
                  will contain the the unencrypted PEM encoded RSA private key.
         """
-        params = {'KeyName':key_name}
+        params = {'KeyName': key_name}
         return self.get_object('CreateKeyPair', params, KeyPair, verb='POST')
 
     def delete_key_pair(self, key_name):
@@ -1882,7 +1897,7 @@ class EC2Connection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the keypair to delete
         """
-        params = {'KeyName':key_name}
+        params = {'KeyName': key_name}
         return self.get_status('DeleteKeyPair', params, verb='POST')
 
     def import_key_pair(self, key_name, public_key_material):
@@ -1918,8 +1933,8 @@ class EC2Connection(AWSQueryConnection):
                  will contain the the unencrypted PEM encoded RSA private key.
         """
         public_key_material = base64.b64encode(public_key_material)
-        params = {'KeyName' : key_name,
-                  'PublicKeyMaterial' : public_key_material}
+        params = {'KeyName': key_name,
+                  'PublicKeyMaterial': public_key_material}
         return self.get_object('ImportKeyPair', params, KeyPair, verb='POST')
 
     # SecurityGroup methods
@@ -2057,7 +2072,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'GroupName':group_name}
+        params = {'GroupName': group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
         if src_security_group_owner_id:
@@ -2075,7 +2090,8 @@ class EC2Connection(AWSQueryConnection):
     def authorize_security_group(self, group_name=None,
                                  src_security_group_name=None,
                                  src_security_group_owner_id=None,
-                                 ip_protocol=None, from_port=None, to_port=None,
+                                 ip_protocol=None,
+                                 from_port=None, to_port=None,
                                  cidr_ip=None, group_id=None,
                                  src_security_group_group_id=None):
         """
@@ -2156,7 +2172,7 @@ class EC2Connection(AWSQueryConnection):
             if type(cidr_ip) != list:
                 cidr_ip = [cidr_ip]
             for i, single_cidr_ip in enumerate(cidr_ip):
-                params['IpPermissions.1.IpRanges.%d.CidrIp' % (i+1)] = \
+                params['IpPermissions.1.IpRanges.%d.CidrIp' % (i + 1)] = \
                     single_cidr_ip
 
         return self.get_status('AuthorizeSecurityGroupIngress',
@@ -2250,7 +2266,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'GroupName':group_name}
+        params = {'GroupName': group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
         if src_security_group_owner_id:
@@ -2265,7 +2281,8 @@ class EC2Connection(AWSQueryConnection):
             params['CidrIp'] = cidr_ip
         return self.get_status('RevokeSecurityGroupIngress', params)
 
-    def revoke_security_group(self, group_name=None, src_security_group_name=None,
+    def revoke_security_group(self, group_name=None,
+                              src_security_group_name=None,
                               src_security_group_owner_id=None,
                               ip_protocol=None, from_port=None, to_port=None,
                               cidr_ip=None, group_id=None,
@@ -2343,10 +2360,11 @@ class EC2Connection(AWSQueryConnection):
                                      src_group_id=None,
                                      cidr_ip=None):
         """
-        Remove an existing egress rule from an existing VPC security group.
-        You need to pass in an ip_protocol, from_port and to_port range only
-        if the protocol you are using is port-based. You also need to pass in either
-        a src_group_id or cidr_ip.
+        Remove an existing egress rule from an existing VPC security
+        group.  You need to pass in an ip_protocol, from_port and
+        to_port range only if the protocol you are using is
+        port-based. You also need to pass in either a src_group_id or
+        cidr_ip.
 
         :type group_name: string
         :param group_id:  The name of the security group you are removing
@@ -2362,7 +2380,8 @@ class EC2Connection(AWSQueryConnection):
         :param to_port: The ending port number you are disabling
 
         :type src_group_id: src_group_id
-        :param src_group_id: The source security group you are revoking access to.
+        :param src_group_id: The source security group you are
+            revoking access to.
 
         :type cidr_ip: string
         :param cidr_ip: The CIDR block you are revoking access to.
@@ -2417,7 +2436,7 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, region_names, 'RegionName')
         if filters:
             self.build_filter_params(params, filters)
-        regions =  self.get_list('DescribeRegions', params,
+        regions = self.get_list('DescribeRegions', params,
                                  [('item', RegionInfo)], verb='POST')
         for region in regions:
             region.connection_cls = EC2Connection
@@ -2462,7 +2481,8 @@ class EC2Connection(AWSQueryConnection):
                         for details.
 
         :rtype: list
-        :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`
+        :return: A list of
+            :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`
         """
         params = {}
         if reserved_instances_id:
@@ -2533,8 +2553,8 @@ class EC2Connection(AWSQueryConnection):
         :return: The newly created Reserved Instance
         """
         params = {
-            'ReservedInstancesOfferingId' : reserved_instances_offering_id,
-            'InstanceCount' : instance_count}
+            'ReservedInstancesOfferingId': reserved_instances_offering_id,
+            'InstanceCount': instance_count}
         return self.get_object('PurchaseReservedInstancesOffering', params,
                                ReservedInstance, verb='POST')
 
@@ -2624,10 +2644,10 @@ class EC2Connection(AWSQueryConnection):
                                  user's image into Amazon S3.
         """
 
-        params = {'InstanceId' : instance_id,
-                  'Storage.S3.Bucket' : s3_bucket,
-                  'Storage.S3.Prefix' : s3_prefix,
-                  'Storage.S3.UploadPolicy' : s3_upload_policy}
+        params = {'InstanceId': instance_id,
+                  'Storage.S3.Bucket': s3_bucket,
+                  'Storage.S3.Prefix': s3_prefix,
+                  'Storage.S3.UploadPolicy': s3_upload_policy}
         s3auth = boto.auth.get_auth_handler(None, boto.config,
                                             self.provider, ['s3'])
         params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
@@ -2673,7 +2693,7 @@ class EC2Connection(AWSQueryConnection):
         :param bundle_id: The identifier of the bundle task to cancel.
         """
 
-        params = {'BundleId' : bundle_id}
+        params = {'BundleId': bundle_id}
         return self.get_object('CancelBundleTask', params,
                                BundleInstanceTask, verb='POST')
 
@@ -2686,7 +2706,7 @@ class EC2Connection(AWSQueryConnection):
                             password for.
         """
 
-        params = {'InstanceId' : instance_id}
+        params = {'InstanceId': instance_id}
         rs = self.get_object('GetPasswordData', params, ResultSet, verb='POST')
         return rs.passwordData
 
@@ -2740,7 +2760,8 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        params = {'GroupName':name, 'Strategy':strategy}
+        params = {'GroupName': name,
+                  'Strategy': strategy}
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
         return group
 
@@ -2751,7 +2772,7 @@ class EC2Connection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the keypair to delete
         """
-        params = {'GroupName':name}
+        params = {'GroupName': name}
         return self.get_status('DeletePlacementGroup', params, verb='POST')
 
     # Tag methods
@@ -2761,9 +2782,9 @@ class EC2Connection(AWSQueryConnection):
         i = 1
         for key in keys:
             value = tags[key]
-            params['Tag.%d.Key'%i] = key
+            params['Tag.%d.Key' % i] = key
             if value is not None:
-                params['Tag.%d.Value'%i] = value
+                params['Tag.%d.Value' % i] = value
             i += 1
 
     def get_all_tags(self, filters=None):
@@ -2883,7 +2904,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.networkinterface.NetworkInterface`
         :return: The newly created network interface.
         """
-        params = {'SubnetId' : subnet_id}
+        params = {'SubnetId': subnet_id}
         if private_ip_address:
             params['PrivateIpAddress'] = private_ip_address
         if description:
@@ -2915,9 +2936,9 @@ class EC2Connection(AWSQueryConnection):
         :param device_index: The index of the device for the network
             interface attachment on the instance.
         """
-        params = {'NetworkInterfaceId' : network_interface_id,
-                  'InstanceId' : instance_id,
-                  'Deviceindex' : device_index}
+        params = {'NetworkInterfaceId': network_interface_id,
+                  'InstanceId': instance_id,
+                  'Deviceindex': device_index}
         return self.get_status('AttachNetworkInterface', params, verb='POST')
 
     def detach_network_interface(self, network_interface_id, force=False):
@@ -2931,7 +2952,7 @@ class EC2Connection(AWSQueryConnection):
         :param force: Set to true to force a detachment.
 
         """
-        params = {'NetworkInterfaceId' : network_interface_id}
+        params = {'NetworkInterfaceId': network_interface_id}
         if force:
             params['Force'] = 'true'
         return self.get_status('DetachNetworkInterface', params, verb='POST')
@@ -2944,5 +2965,5 @@ class EC2Connection(AWSQueryConnection):
         :param network_interface_id: The ID of the network interface to delete.
 
         """
-        params = {'NetworkInterfaceId' : network_interface_id}
+        params = {'NetworkInterfaceId': network_interface_id}
         return self.get_status('DeleteNetworkInterface', params, verb='POST')

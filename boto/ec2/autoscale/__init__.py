@@ -34,7 +34,8 @@ from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup, ProcessType
 from boto.ec2.autoscale.activity import Activity
-from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes, ScalingPolicy
+from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes
+from boto.ec2.autoscale.policy import ScalingPolicy
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
@@ -47,6 +48,7 @@ RegionData = {
     'eu-west-1': 'autoscaling.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com'}
+
 
 def regions():
     """
@@ -62,6 +64,7 @@ def regions():
                             connection_cls=AutoScaleConnection)
         regions.append(region)
     return regions
+
 
 def connect_to_region(region_name, **kw_params):
     """
@@ -79,11 +82,12 @@ def connect_to_region(region_name, **kw_params):
             return region.connect(**kw_params)
     return None
 
+
 class AutoScaleConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'autoscale_version', '2011-01-01')
     DefaultRegionEndpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                             'autoscaling.amazonaws.com')
-    DefaultRegionName =  boto.config.get('Boto', 'autoscale_region_name',
+    DefaultRegionName = boto.config.get('Boto', 'autoscale_region_name',
                                          'us-east-1')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -129,16 +133,16 @@ class AutoScaleConnection(AWSQueryConnection):
             ['us-east-1b',...]
         """
         # different from EC2 list params
-        for i in xrange(1, len(items)+1):
-            if isinstance(items[i-1], dict):
-                for k, v in items[i-1].items():
+        for i in xrange(1, len(items) + 1):
+            if isinstance(items[i - 1], dict):
+                for k, v in items[i - 1].items():
                     if isinstance(v, dict):
                         for kk, vv in v.items():
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v
-            elif isinstance(items[i-1], basestring):
-                params['%s.member.%d' % (label, i)] = items[i-1]
+            elif isinstance(items[i - 1], basestring):
+                params['%s.member.%d' % (label, i)] = items[i - 1]
 
     def _update_group(self, op, as_group):
         params = {'AutoScalingGroupName': as_group.name,
@@ -189,7 +193,8 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Creates a new Launch Configuration.
 
-        :type launch_config: :class:`boto.ec2.autoscale.launchconfig.LaunchConfiguration`
+        :type launch_config:
+            :class:`boto.ec2.autoscale.launchconfig.LaunchConfiguration`
         :param launch_config: LaunchConfiguration object.
         """
         params = {'ImageId': launch_config.image_id,
@@ -333,7 +338,7 @@ class AutoScaleConnection(AWSQueryConnection):
         name = autoscale_group
         if isinstance(autoscale_group, AutoScalingGroup):
             name = autoscale_group.name
-        params = {'AutoScalingGroupName' : name}
+        params = {'AutoScalingGroupName': name}
         if max_records:
             params['MaxRecords'] = max_records
         if next_token:
@@ -488,12 +493,13 @@ class AutoScaleConnection(AWSQueryConnection):
         :param as_group: The auto scaling group to suspend processes on.
 
         :type scaling_processes: list
-        :param scaling_processes: Processes you want to suspend. If omitted, all
-            processes will be suspended.
+        :param scaling_processes: Processes you want to suspend. If
+            omitted, all processes will be suspended.
         """
         params = {'AutoScalingGroupName': as_group}
         if scaling_processes:
-            self.build_list_params(params, scaling_processes, 'ScalingProcesses')
+            self.build_list_params(params, scaling_processes,
+                                   'ScalingProcesses')
         return self.get_status('SuspendProcesses', params)
 
     def resume_processes(self, as_group, scaling_processes=None):
@@ -510,7 +516,8 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {'AutoScalingGroupName': as_group}
 
         if scaling_processes:
-            self.build_list_params(params, scaling_processes, 'ScalingProcesses')
+            self.build_list_params(params, scaling_processes,
+                                   'ScalingProcesses')
         return self.get_status('ResumeProcesses', params)
 
     def create_scheduled_group_action(self, as_group, name, time,
@@ -646,8 +653,10 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Lists the Auto Scaling group tags.
 
-        This action supports pagination by returning a token if there are more
-        pages to retrieve. To get the next page, call this action again with             the returned token as the NextToken parameter.
+        This action supports pagination by returning a token if there
+        are more pages to retrieve. To get the next page, call this
+        action again with the returned token as the NextToken
+        parameter.
 
         :type filters: dict
         :param filters: The value of the filter type used to identify
@@ -677,7 +686,7 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         params = {}
         for i, tag in enumerate(tags):
-            tag.build_params(params, i+1)
+            tag.build_params(params, i + 1)
         return self.get_status('CreateOrUpdateTags', params, verb='POST')
 
     def delete_tags(self, tags):
@@ -689,7 +698,5 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         params = {}
         for i, tag in enumerate(tags):
-            tag.build_params(params, i+1)
+            tag.build_params(params, i + 1)
         return self.get_status('DeleteTags', params, verb='POST')
-
-    

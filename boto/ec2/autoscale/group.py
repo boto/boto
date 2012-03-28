@@ -26,6 +26,7 @@ from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.tag import Tag
 
+
 class ProcessType(object):
     def __init__(self, connection=None):
         self.connection = connection
@@ -86,7 +87,8 @@ class AutoScalingGroup(object):
                  load_balancers=None, default_cooldown=None,
                  health_check_type=None, health_check_period=None,
                  placement_group=None, vpc_zone_identifier=None,
-                 desired_capacity=None, min_size=None, max_size=None, **kwargs):
+                 desired_capacity=None, min_size=None, max_size=None,
+                 **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -136,11 +138,11 @@ class AutoScalingGroup(object):
         :type vpc_zone_identifier: str
         :param vpc_zone_identifier: The subnet identifier of the Virtual
             Private Cloud.
-            
+
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
-        self.name = name or kwargs.get('group_name')   # backwards compatibility
+        self.name = name or kwargs.get('group_name')   # b/w compatibility
         self.connection = connection
         self.min_size = int(min_size) if min_size is not None else None
         self.max_size = int(max_size) if max_size is not None else None
@@ -169,10 +171,10 @@ class AutoScalingGroup(object):
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
         return self.default_cooldown
-    
+
     def _set_cooldown(self, val):
         self.default_cooldown = val
-        
+
     cooldown = property(_get_cooldown, _set_cooldown)
 
     def __repr__(self):
@@ -190,7 +192,8 @@ class AutoScalingGroup(object):
             self.enabled_metrics = ResultSet([('member', EnabledMetric)])
             return self.enabled_metrics
         elif name == 'SuspendedProcesses':
-            self.suspended_processes = ResultSet([('member', SuspendedProcess)])
+            self.suspended_processes = ResultSet([('member',
+                                                   SuspendedProcess)])
             return self.suspended_processes
         elif name == 'Tags':
             self.tags = ResultSet([('member', Tag)])
@@ -233,8 +236,8 @@ class AutoScalingGroup(object):
         """
         Set the desired capacity for the group.
         """
-        params = {'AutoScalingGroupName' : self.name,
-                  'DesiredCapacity'      : capacity}
+        params = {'AutoScalingGroupName': self.name,
+                  'DesiredCapacity': capacity}
         req = self.connection.get_object('SetDesiredCapacity', params,
                                          Request)
         self.connection.last_request = req
@@ -261,7 +264,8 @@ class AutoScalingGroup(object):
         Delete this auto-scaling group if no instances attached or no
         scaling activities in progress.
         """
-        return self.connection.delete_auto_scaling_group(self.name, force_delete)
+        return self.connection.delete_auto_scaling_group(self.name,
+                                                         force_delete)
 
     def get_activities(self, activity_ids=None, max_records=50):
         """
@@ -303,4 +307,3 @@ class AutoScalingGroupMetric(object):
             self.granularity = value
         else:
             setattr(self, name, value)
-

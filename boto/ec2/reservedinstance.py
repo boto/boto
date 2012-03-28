@@ -14,15 +14,16 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 from boto.ec2.ec2object import EC2Object
 
+
 class ReservedInstancesOffering(EC2Object):
-    
+
     def __init__(self, connection=None, id=None, instance_type=None,
                  availability_zone=None, duration=None, fixed_price=None,
                  usage_price=None, description=None):
@@ -62,6 +63,7 @@ class ReservedInstancesOffering(EC2Object):
     def purchase(self, instance_count=1):
         return self.connection.purchase_reserved_instance_offering(self.id, instance_count)
 
+
 class ReservedInstance(ReservedInstancesOffering):
 
     def __init__(self, connection=None, id=None, instance_type=None,
@@ -69,8 +71,9 @@ class ReservedInstance(ReservedInstancesOffering):
                  usage_price=None, description=None,
                  instance_count=None, state=None):
         ReservedInstancesOffering.__init__(self, connection, id, instance_type,
-                                           availability_zone, duration, fixed_price,
-                                           usage_price, description)
+                                           availability_zone, duration,
+                                           fixed_price, usage_price,
+                                           description)
         self.instance_count = instance_count
         self.state = state
 

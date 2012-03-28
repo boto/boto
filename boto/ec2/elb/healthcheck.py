@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class HealthCheck(object):
     """
     Represents an EC2 Access Point Health Check. See
@@ -70,18 +71,17 @@ class HealthCheck(object):
         load balancer, this method applies this instance's health check
         values to the load balancer it is attached to.
 
-        .. note:: This method will not do anything if the :py:attr:`access_point`
-            attribute isn't set, as is the case with a newly instantiated
-            HealthCheck instance.
+        .. note:: This method will not do anything if the
+            :py:attr:`access_point` attribute isn't set, as is
+            the case with a newly instantiated HealthCheck instance.
         """
         if not self.access_point:
             return
 
-        new_hc = self.connection.configure_health_check(self.access_point, self)
+        new_hc = self.connection.configure_health_check(self.access_point,
+                                                        self)
         self.interval = new_hc.interval
         self.target = new_hc.target
         self.healthy_threshold = new_hc.healthy_threshold
         self.unhealthy_threshold = new_hc.unhealthy_threshold
         self.timeout = new_hc.timeout
-
-

@@ -28,6 +28,7 @@ from boto.resultset import ResultSet
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
 from boto.ec2.group import Group
 
+
 class GroupList(list):
 
     def startElement(self, name, attrs, connection):
@@ -36,9 +37,10 @@ class GroupList(list):
     def endElement(self, name, value, connection):
         if name == 'groupId':
             self.append(value)
-            
+
+
 class LaunchSpecification(EC2Object):
-    
+
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.key_name = None
@@ -92,5 +94,3 @@ class LaunchSpecification(EC2Object):
                 self._in_monitoring_element = False
         else:
             setattr(self, name, value)
-
-

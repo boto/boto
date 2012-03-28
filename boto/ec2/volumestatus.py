@@ -16,12 +16,13 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 from boto.ec2.instancestatus import Status, Details
+
 
 class Event(object):
     """
@@ -43,7 +44,7 @@ class Event(object):
         self.description = description
         self.not_before = not_before
         self.not_after = not_after
-        
+
     def __repr__(self):
         return 'Event:%s' % self.type
 
@@ -64,8 +65,9 @@ class Event(object):
         else:
             setattr(self, name, value)
 
+
 class EventSet(list):
-    
+
     def startElement(self, name, attrs, connection):
         if name == 'item':
             event = Event()
@@ -76,6 +78,7 @@ class EventSet(list):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
+
 
 class Action(object):
     """
@@ -92,7 +95,7 @@ class Action(object):
         self.id = id
         self.type = type
         self.description = description
-        
+
     def __repr__(self):
         return 'Action:%s' % self.code
 
@@ -111,8 +114,9 @@ class Action(object):
         else:
             setattr(self, name, value)
 
+
 class ActionSet(list):
-    
+
     def startElement(self, name, attrs, connection):
         if name == 'item':
             action = Action()
@@ -123,6 +127,7 @@ class ActionSet(list):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
+
 
 class VolumeStatus(object):
     """
@@ -136,7 +141,7 @@ class VolumeStatus(object):
     :ivar events: A list of events relevant to the instance.
     :ivar actions: A list of events relevant to the instance.
     """
-    
+
     def __init__(self, id=None, zone=None):
         self.id = id
         self.zone = zone
@@ -167,6 +172,7 @@ class VolumeStatus(object):
         else:
             setattr(self, name, value)
 
+
 class VolumeStatusSet(list):
     """
     A list object that contains the results of a call to
@@ -184,7 +190,7 @@ class VolumeStatusSet(list):
         list.__init__(self)
         self.connection = connection
         self.next_token = None
-    
+
     def startElement(self, name, attrs, connection):
         if name == 'item':
             status = VolumeStatus()
@@ -197,4 +203,3 @@ class VolumeStatusSet(list):
         if name == 'NextToken':
             self.next_token = value
         setattr(self, name, value)
-

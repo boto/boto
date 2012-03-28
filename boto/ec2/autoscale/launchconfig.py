@@ -26,6 +26,8 @@ import boto.utils
 import base64
 
 # this should use the corresponding object from boto.ec2
+
+
 class Ebs(object):
     def __init__(self, connection=None, snapshot_id=None, volume_size=None):
         self.connection = connection
@@ -83,6 +85,7 @@ class BlockDeviceMapping(object):
             self.device_name = value
         elif name == 'VirtualName':
             self.virtual_name = value
+
 
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
@@ -187,4 +190,3 @@ class LaunchConfiguration(object):
     def delete(self):
         """ Delete this launch configuration. """
         return self.connection.delete_launch_configuration(self.name)
-

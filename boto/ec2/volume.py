@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,8 +25,9 @@ Represents an EC2 Elastic Block Storage Volume
 """
 from boto.ec2.ec2object import TaggedEC2Object
 
+
 class Volume(TaggedEC2Object):
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -86,7 +87,7 @@ class Volume(TaggedEC2Object):
         """
         # Check the resultset since Eucalyptus ignores the volumeId param
         unfiltered_rs = self.connection.get_all_volumes([self.id])
-        rs = [ x for x in unfiltered_rs if x.id == self.id ]
+        rs = [x for x in unfiltered_rs if x.id == self.id]
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
@@ -125,12 +126,12 @@ class Volume(TaggedEC2Object):
 
         :type force: bool
         :param force: Forces detachment if the previous detachment attempt did
-                      not occur cleanly.  This option can lead to data loss or
-                      a corrupted file system. Use this option only as a last
-                      resort to detach a volume from a failed instance. The
-                      instance will not have an opportunity to flush file system
-                      caches nor file system meta data. If you use this option,
-                      you must perform file system check and repair procedures.
+           not occur cleanly.  This option can lead to data loss or
+           a corrupted file system. Use this option only as a last
+           resort to detach a volume from a failed instance. The
+           instance will not have an opportunity to flush file system
+           caches nor file system meta data. If you use this option,
+           you must perform file system check and repair procedures.
 
         :rtype: bool
         :return: True if successful
@@ -141,14 +142,16 @@ class Volume(TaggedEC2Object):
         device = None
         if self.attach_data:
             device = self.attach_data.device
-        return self.connection.detach_volume(self.id, instance_id, device, force)
+        return self.connection.detach_volume(self.id, instance_id,
+                                             device, force)
 
     def create_snapshot(self, description=None):
         """
         Create a snapshot of this EBS Volume.
 
         :type description: str
-        :param description: A description of the snapshot.  Limited to 256 characters.
+        :param description: A description of the snapshot.  Limited to
+            256 characters.
 
         :rtype: :class:`boto.ec2.snapshot.Snapshot`
         :return: The created Snapshot object
@@ -178,17 +181,20 @@ class Volume(TaggedEC2Object):
         those for this volume.
 
         :type owner: str
-        :param owner: If present, only the snapshots owned by the specified user
-                      will be returned.  Valid values are:
-                      self | amazon | AWS Account ID
+        :param owner: If present, only the snapshots owned by the
+            specified user will be returned.  Valid values are:
+            
+            * self
+            * amazon
+            * AWS Account ID
 
         :type restorable_by: str
-        :param restorable_by: If present, only the snapshots that are restorable
-                              by the specified account id will be returned.
+        :param restorable_by: If present, only the snapshots that are
+            restorable by the specified account id will be returned.
 
         :rtype: list of L{boto.ec2.snapshot.Snapshot}
         :return: The requested Snapshot objects
-        
+
         """
         rs = self.connection.get_all_snapshots(owner=owner,
                                                restorable_by=restorable_by)
@@ -198,8 +204,9 @@ class Volume(TaggedEC2Object):
                 mine.append(snap)
         return mine
 
+
 class AttachmentSet(object):
-    
+
     def __init__(self):
         self.id = None
         self.instance_id = None
@@ -212,7 +219,7 @@ class AttachmentSet(object):
 
     def startElement(self, name, attrs, connection):
         pass
-    
+
     def endElement(self, name, value, connection):
         if name == 'volumeId':
             self.id = value
@@ -226,6 +233,7 @@ class AttachmentSet(object):
             self.device = value
         else:
             setattr(self, name, value)
+
 
 class VolumeAttribute:
 
@@ -249,5 +257,3 @@ class VolumeAttribute:
             self.id = value
         else:
             setattr(self, name, value)
-
-            

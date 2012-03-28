@@ -25,10 +25,11 @@ Represents an EC2 Spot Instance Datafeed Subscription
 from boto.ec2.ec2object import EC2Object
 from boto.ec2.spotinstancerequest import SpotInstanceStateFault
 
+
 class SpotDatafeedSubscription(EC2Object):
-    
+
     def __init__(self, connection=None, owner_id=None,
-                 bucket=None, prefix=None, state=None,fault=None):
+                 bucket=None, prefix=None, state=None, fault=None):
         EC2Object.__init__(self, connection)
         self.owner_id = owner_id
         self.bucket = bucket
@@ -45,7 +46,7 @@ class SpotDatafeedSubscription(EC2Object):
             return self.fault
         else:
             return None
-        
+
     def endElement(self, name, value, connection):
         if name == 'ownerId':
             self.owner_id = value
@@ -60,4 +61,3 @@ class SpotDatafeedSubscription(EC2Object):
 
     def delete(self):
         return self.connection.delete_spot_datafeed_subscription()
-
