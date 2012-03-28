@@ -197,7 +197,7 @@ class EmrConnection(AWSQueryConnection):
         return self.get_object('ModifyInstanceGroups', params,
                                ModifyInstanceGroupsResponse, verb='POST')
 
-    def run_jobflow(self, name, log_uri, ec2_keyname=None,
+    def run_jobflow(self, name, log_uri=None, ec2_keyname=None,
                     availability_zone=None,
                     master_instance_type='m1.small',
                     slave_instance_type='m1.small', num_instances=1,
@@ -282,8 +282,9 @@ class EmrConnection(AWSQueryConnection):
         params = {}
         if action_on_failure:
             params['ActionOnFailure'] = action_on_failure
+        if log_uri:
+            params['LogUri'] = log_uri
         params['Name'] = name
-        params['LogUri'] = log_uri
 
         # Common instance args
         common_params = self._build_instance_common_args(ec2_keyname,
