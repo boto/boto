@@ -14,12 +14,13 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 import base64
+
 
 class Item(dict):
     """
@@ -27,21 +28,23 @@ class Item(dict):
     SimpleDB item. An item in SDB is similar to a row in a relational
     database. Items belong to a :py:class:`Domain <boto.sdb.domain.Domain>`,
     which is similar to a table in a relational database.
-    
+
     The keys on instances of this object correspond to attributes that are
-    stored on the SDB item. 
-    
-    .. tip:: While it is possible to instantiate this class directly, you may
-        want to use the convenience methods on :py:class:`boto.sdb.domain.Domain`
-        for that purpose. For example, :py:meth:`boto.sdb.domain.Domain.get_item`.
+    stored on the SDB item.
+
+    .. tip:: While it is possible to instantiate this class directly,
+        you may want to use the convenience methods on
+        :py:class:`boto.sdb.domain.Domain`
+        for that purpose. For example,
+        :py:meth:`boto.sdb.domain.Domain.get_item`.
     """
     def __init__(self, domain, name='', active=False):
         """
         :type domain: :py:class:`boto.sdb.domain.Domain`
         :param domain: The domain that this item belongs to.
-        
+
         :param str name: The name of this item. This name will be used when
-            querying for items using methods like 
+            querying for items using methods like
             :py:meth:`boto.sdb.domain.Domain.get_item`
         """
         dict.__init__(self)
@@ -102,8 +105,8 @@ class Item(dict):
     def load(self):
         """
         Loads or re-loads this item's attributes from SDB.
-        
-        .. warning:: 
+
+        .. warning::
             If you have changed attribute values on an Item instance,
             this method will over-write the values if they are different in
             SDB. For any local attributes that don't yet exist in SDB,
@@ -114,7 +117,7 @@ class Item(dict):
     def save(self, replace=True):
         """
         Saves this item to SDB.
-        
+
         :param bool replace: If ``True``, delete any attributes on the remote
             SDB item that have a ``None`` value on this object.
         """
@@ -134,11 +137,11 @@ class Item(dict):
         attribute that has yet to be set, it will simply create an attribute
         named ``key`` with your given ``value`` as its value. If you are
         adding a value to an existing attribute, this method will convert the
-        attribute to a list (if it isn't already) and append your new value 
+        attribute to a list (if it isn't already) and append your new value
         to said list.
-        
+
         For clarification, consider the following interactive session:
-        
+
         .. code-block:: python
 
             >>> item = some_domain.get_item('some_item')
@@ -150,9 +153,9 @@ class Item(dict):
             >>> item.add_value('some_attr', 2)
             >>> item['some_attr']
             [1, 2]
-        
+
         :param str key: The attribute to add a value to.
-        :param object value: The value to set or append to the attribute. 
+        :param object value: The value to set or append to the attribute.
         """
         if key in self:
             # We already have this key on the item.
@@ -170,12 +173,8 @@ class Item(dict):
     def delete(self):
         """
         Deletes this item in SDB.
-        
+
         .. note:: This local Python object remains in its current state
             after deletion, this only deletes the remote item in SDB.
         """
         self.domain.delete_item(self)
-
-        
-        
-

@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,6 +25,7 @@ Represents a Vpn Gateway
 
 from boto.ec2.ec2object import TaggedEC2Object
 
+
 class Attachment(object):
 
     def __init__(self, connection=None):
@@ -33,7 +34,7 @@ class Attachment(object):
 
     def startElement(self, name, attrs, connection):
         pass
-    
+
     def endElement(self, name, value, connection):
         if name == 'vpcId':
             self.vpc_id = value
@@ -41,7 +42,8 @@ class Attachment(object):
             self.state = value
         else:
             setattr(self, name, value)
-            
+
+
 class VpnGateway(TaggedEC2Object):
 
     def __init__(self, connection=None):
@@ -63,7 +65,7 @@ class VpnGateway(TaggedEC2Object):
             att = Attachment()
             self.attachments.append(att)
             return att
-    
+
     def endElement(self, name, value, connection):
         if name == 'vpnGatewayId':
             self.id = value
@@ -80,4 +82,3 @@ class VpnGateway(TaggedEC2Object):
 
     def attach(self, vpc_id):
         return self.connection.attach_vpn_gateway(self.id, vpc_id)
-

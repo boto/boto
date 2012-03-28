@@ -89,7 +89,7 @@ class SESConnection(AWSAuthConnection):
         params['Action'] = action
 
         for k, v in params.items():
-            if isinstance(v, compat.text_types):  # UTF-8 encode only if it's Unicode
+            if isinstance(v, compat.text_types):  # encode only if it's Unicode
                 params[k] = v.encode('utf-8')
 
         response = super(SESConnection, self).make_request(
@@ -152,7 +152,8 @@ class SESConnection(AWSAuthConnection):
 
         raise ExceptionToRaise(response.status, exc_reason, body)
 
-    def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
+    def send_email(self, source, subject, body,
+                   to_addresses, cc_addresses=None,
                    bcc_addresses=None, format='text', reply_addresses=None,
                    return_path=None, text_body=None, html_body=None):
         """Composes an email message based on input data, and then immediately
@@ -191,9 +192,9 @@ class SESConnection(AWSAuthConnection):
         :param return_path: The email address to which bounce notifications are
                             to be forwarded. If the message cannot be delivered
                             to the recipient, then an error message will be
-                            returned from the recipient's ISP; this message will
-                            then be forwarded to the email address specified by
-                            the ReturnPath parameter.
+                            returned from the recipient's ISP; this message
+                            will then be forwarded to the email address
+                            specified by the ReturnPath parameter.
 
         :type text_body: string
         :param text_body: The text body to send with this email.
@@ -226,7 +227,7 @@ class SESConnection(AWSAuthConnection):
         if text_body is not None:
             params['Message.Body.Text.Data'] = text_body
 
-        if(format not in ("text","html")):
+        if(format not in ("text", "html")):
             raise ValueError("'format' argument must be 'text' or 'html'")
 
         if(not (html_body or text_body)):
@@ -267,7 +268,8 @@ class SESConnection(AWSAuthConnection):
         :param raw_message: The raw text of the message. The client is
           responsible for ensuring the following:
 
-          - Message must contain a header and a body, separated by a blank line.
+          - Message must contain a header and a body, separated by
+            a blank line.
           - All required header fields must be present.
           - Each part of a multipart MIME message must be formatted properly.
           - MIME content types must be among those supported by Amazon SES.

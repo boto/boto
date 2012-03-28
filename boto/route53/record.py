@@ -23,6 +23,8 @@
 RECORD_TYPES = ['A', 'AAAA', 'TXT', 'CNAME', 'MX', 'PTR', 'SRV', 'SPF']
 
 from boto.resultset import ResultSet
+
+
 class ResourceRecordSets(ResultSet):
     """
     A list of resource records.
@@ -159,7 +161,6 @@ class ResourceRecordSets(ResultSet):
                 results = None
 
 
-
 class Record(object):
     """An individual ResourceRecordSet"""
 
@@ -195,8 +196,6 @@ class Record(object):
         <DNSName>%s</DNSName>
     </AliasTarget>"""
 
-
-
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
             weight=None, region=None):
@@ -225,7 +224,8 @@ class Record(object):
         """Spit this resource record set out as XML"""
         if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
             # Use alias
-            body = self.AliasBody % (self.alias_hosted_zone_id, self.alias_dns_name)
+            body = self.AliasBody % (self.alias_hosted_zone_id,
+                                     self.alias_dns_name)
         else:
             # Use resource record(s)
             records = ""
@@ -241,8 +241,8 @@ class Record(object):
                     self.weight}
         elif self.identifier != None and self.region != None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
-                    self.region}
-        
+                                         self.region}
+
         params = {
             "name": self.name,
             "type": self.type,
@@ -258,7 +258,7 @@ class Record(object):
             rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
         else:
             # Show resource record(s)
-            rr =  ",".join(self.resource_records)
+            rr = ",".join(self.resource_records)
 
         if self.identifier != None and self.weight != None:
             rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)

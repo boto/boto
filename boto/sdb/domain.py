@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -23,7 +23,6 @@
 Represents an SDB Domain
 """
 from boto.sdb.queryresultset import SelectResultSet
-import boto.compat as compat
 
 
 class Domain:
@@ -59,32 +58,33 @@ class Domain:
         Store attributes for a given item.
 
         :type item_name: string
-        :param item_name: The name of the item whose attributes are being stored.
+        :param item_name: The name of the item whose attributes are being
+            stored.
 
         :type attribute_names: dict or dict-like object
         :param attribute_names: The name/value pairs to store as attributes
 
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-            of a single attribute name and expected value. The list can be 
+            of a single attribute name and expected value. The list can be
             of the form:
 
              * ['name', 'value']
 
-            In which case the call will first verify that the attribute 
-            "name" of this item has a value of "value".  If it does, the delete
-            will proceed, otherwise a ConditionalCheckFailed error will be 
-            returned. The list can also be of the form:
-            
+            In which case the call will first verify that the attribute
+            "name" of this item has a value of "value".  If it does, the
+            delete will proceed, otherwise a ConditionalCheckFailed error
+            will be returned. The list can also be of the form:
+
              * ['name', True|False]
-            
-            which will simply check for the existence (True) or non-existence 
+
+            which will simply check for the existence (True) or non-existence
             (False) of the attribute.
 
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
-                        existing values or will be added as addition values.
-                        Defaults to True.
+            existing values or will be added as addition values.
+            Defaults to True.
 
         :rtype: bool
         :return: True if successful
@@ -97,16 +97,16 @@ class Domain:
         Store attributes for multiple items.
 
         :type items: dict or dict-like object
-        :param items: A dictionary-like object.  The keys of the dictionary are
-                      the item names and the values are themselves dictionaries
-                      of attribute names/values, exactly the same as the
-                      attribute_names parameter of the scalar put_attributes
-                      call.
+        :param items: A dictionary-like object.  The keys of the
+            dictionary are the item names and the values are
+            themselves dictionaries of attribute names/values, exactly
+            the same as the attribute_names parameter of the scalar
+            put_attributes call.
 
         :type replace: bool
         :param replace: Whether the attribute values passed in will replace
-                        existing values or will be added as addition values.
-                        Defaults to True.
+            existing values or will be added as addition values.
+            Defaults to True.
 
         :rtype: bool
         :return: True if successful
@@ -119,15 +119,17 @@ class Domain:
         Retrieve attributes for a given item.
 
         :type item_name: string
-        :param item_name: The name of the item whose attributes are being retrieved.
+        :param item_name: The name of the item whose attributes are
+            being retrieved.
 
         :type attribute_names: string or list of strings
-        :param attribute_names: An attribute name or list of attribute names.  This
-                                parameter is optional.  If not supplied, all attributes
-                                will be retrieved for the item.
+        :param attribute_names: An attribute name or list of attribute
+            names.  This parameter is optional.  If not supplied, all
+            attributes will be retrieved for the item.
 
         :rtype: :class:`boto.sdb.item.Item`
-        :return: An Item mapping type containing the requested attribute name/values
+        :return: An Item mapping type containing the requested attribute
+            name/values
         """
         return self.connection.get_attributes(self, item_name, attribute_name,
                                               consistent_read, item)
@@ -138,30 +140,32 @@ class Domain:
         Delete attributes from a given item.
 
         :type item_name: string
-        :param item_name: The name of the item whose attributes are being deleted.
+        :param item_name: The name of the item whose attributes are
+            being deleted.
 
         :type attributes: dict, list or :class:`boto.sdb.item.Item`
-        :param attributes: Either a list containing attribute names which will cause
-                           all values associated with that attribute name to be deleted or
-                           a dict or Item containing the attribute names and keys and list
-                           of values to delete as the value.  If no value is supplied,
-                           all attribute name/values for the item will be deleted.
-                           
+        :param attributes: Either a list containing attribute names
+            which will cause all values associated with that attribute
+            name to be deleted or a dict or Item containing the
+            attribute names and keys and list of values to delete as
+            the value.  If no value is supplied, all attribute
+            name/values for the item will be deleted.
+
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-            of a single attribute name and expected value. The list can be of 
+            of a single attribute name and expected value. The list can be of
             the form:
 
              * ['name', 'value']
 
             In which case the call will first verify that the attribute "name"
             of this item has a value of "value".  If it does, the delete
-            will proceed, otherwise a ConditionalCheckFailed error will be 
+            will proceed, otherwise a ConditionalCheckFailed error will be
             returned. The list can also be of the form:
 
              * ['name', True|False]
 
-            which will simply check for the existence (True) or 
+            which will simply check for the existence (True) or
             non-existence (False) of the attribute.
 
         :rtype: bool
@@ -173,10 +177,10 @@ class Domain:
     def batch_delete_attributes(self, items):
         """
         Delete multiple items in this domain.
-        
+
         :type items: dict or dict-like object
-        :param items: A dictionary-like object.  The keys of the dictionary are
-            the item names and the values are either:
+        :param items: A dictionary-like object.  The keys of the dictionary
+            are the item names and the values are either:
 
                 * dictionaries of attribute names/values, exactly the
                   same as the attribute_names parameter of the scalar
@@ -184,39 +188,42 @@ class Domain:
                   will only be deleted if they match the name/value
                   pairs passed in.
                 * None which means that all attributes associated
-                  with the item should be deleted.  
+                  with the item should be deleted.
 
         :rtype: bool
         :return: True if successful
         """
         return self.connection.batch_delete_attributes(self, items)
 
-    def select(self, query='', next_token=None, consistent_read=False, max_items=None):
+    def select(self, query='', next_token=None, consistent_read=False,
+               max_items=None):
         """
-        Returns a set of Attributes for item names within domain_name that match the query.
-        The query must be expressed in using the SELECT style syntax rather than the
-        original SimpleDB query language.
+        Returns a set of Attributes for item names within domain_name
+        that match the query.  The query must be expressed in using
+        the SELECT style syntax rather than the original SimpleDB
+        query language.
 
         :type query: string
         :param query: The SimpleDB query to be performed.
 
         :rtype: iter
-        :return: An iterator containing the results.  This is actually a generator
-                 function that will iterate across all search results, not just the
-                 first page.
+        :return: An iterator containing the results.  This is actually
+            a generator function that will iterate across all search
+            results, not just the first page.
         """
-        return SelectResultSet(self, query, max_items=max_items, next_token=next_token,
+        return SelectResultSet(self, query, max_items=max_items,
+                               next_token=next_token,
                                consistent_read=consistent_read)
 
     def get_item(self, item_name, consistent_read=False):
         """
         Retrieves an item from the domain, along with all of its attributes.
-        
+
         :param string item_name: The name of the item to retrieve.
         :rtype: :class:`boto.sdb.item.Item` or ``None``
-        :keyword bool consistent_read: When set to true, ensures that the most 
+        :keyword bool consistent_read: When set to true, ensures that the most
                                        recent data is returned.
-        :return: The requested item, or ``None`` if there was no match found 
+        :return: The requested item, or ``None`` if there was no match found
         """
         item = self.get_attributes(item_name, consistent_read=consistent_read)
         if item:
@@ -266,7 +273,6 @@ class Domain:
     #     f.seek(0)
     #     return f
 
-
     def from_xml(self, doc):
         """Load this domain based on an XML document"""
         import xml.sax
@@ -315,6 +321,8 @@ class DomainMetaData:
 
 import sys
 from xml.sax.handler import ContentHandler
+
+
 class DomainDumpParser(ContentHandler):
     """
     SAX parser for a domain that has been dumped
@@ -360,6 +368,8 @@ class DomainDumpParser(ContentHandler):
             self.uploader.start()
 
 from threading import Thread
+
+
 class UploaderThread(Thread):
     """Uploader Thread"""
 

@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -22,51 +22,62 @@
 """
 SQS Message
 
-A Message represents the data stored in an SQS queue.  The rules for what is allowed within an SQS
-Message are here:
+A Message represents the data stored in an SQS queue.  The rules for
+what is allowed within an SQS Message are here:
 
     http://docs.amazonwebservices.com/AWSSimpleQueueService/2008-01-01/SQSDeveloperGuide/Query_QuerySendMessage.html
 
-So, at it's simplest level a Message just needs to allow a developer to store bytes in it and get the bytes
-back out.  However, to allow messages to have richer semantics, the Message class must support the 
+So, at it's simplest level a Message just needs to allow a developer
+to store bytes in it and get the bytes back out.  However, to allow
+messages to have richer semantics, the Message class must support the
 following interfaces:
 
-The constructor for the Message class must accept a keyword parameter "queue" which is an instance of a
-boto Queue object and represents the queue that the message will be stored in.  The default value for
-this parameter is None.
+The constructor for the Message class must accept a keyword parameter
+"queue" which is an instance of a boto Queue object and represents the
+queue that the message will be stored in.  The default value for this
+parameter is None.
 
-The constructor for the Message class must accept a keyword parameter "body" which represents the
-content or body of the message.  The format of this parameter will depend on the behavior of the
-particular Message subclass.  For example, if the Message subclass provides dictionary-like behavior to the
-user the body passed to the constructor should be a dict-like object that can be used to populate
+The constructor for the Message class must accept a keyword parameter
+"body" which represents the content or body of the message.  The
+format of this parameter will depend on the behavior of the particular
+Message subclass.  For example, if the Message subclass provides
+dictionary-like behavior to the user the body passed to the
+constructor should be a dict-like object that can be used to populate
 the initial state of the message.
 
-The Message class must provide an encode method that accepts a value of the same type as the body
-parameter of the constructor and returns a string of characters that are able to be stored in an
-SQS message body (see rules above).
+The Message class must provide an encode method that accepts a value
+of the same type as the body parameter of the constructor and returns
+a string of characters that are able to be stored in an SQS message
+body (see rules above).
 
-The Message class must provide a decode method that accepts a string of characters that can be
-stored (and probably were stored!) in an SQS message and return an object of a type that is consistent
-with the "body" parameter accepted on the class constructor.
+The Message class must provide a decode method that accepts a string
+of characters that can be stored (and probably were stored!) in an SQS
+message and return an object of a type that is consistent with the
+"body" parameter accepted on the class constructor.
 
-The Message class must provide a __len__ method that will return the size of the encoded message
-that would be stored in SQS based on the current state of the Message object.
+The Message class must provide a __len__ method that will return the
+size of the encoded message that would be stored in SQS based on the
+current state of the Message object.
 
-The Message class must provide a get_body method that will return the body of the message in the
-same format accepted in the constructor of the class.
+The Message class must provide a get_body method that will return the
+body of the message in the same format accepted in the constructor of
+the class.
 
-The Message class must provide a set_body method that accepts a message body in the same format
-accepted by the constructor of the class.  This method should alter to the internal state of the
-Message object to reflect the state represented in the message body parameter.
+The Message class must provide a set_body method that accepts a
+message body in the same format accepted by the constructor of the
+class.  This method should alter to the internal state of the Message
+object to reflect the state represented in the message body parameter.
 
-The Message class must provide a get_body_encoded method that returns the current body of the message
-in the format in which it would be stored in SQS.
+The Message class must provide a get_body_encoded method that returns
+the current body of the message in the format in which it would be
+stored in SQS.
 """
 
 import base64
 from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
 import boto.compat as compat
+
 
 class RawMessage:
     """
@@ -75,7 +86,7 @@ class RawMessage:
     will be written to SQS and whatever is returned from SQS is stored
     directly into the body of the message.
     """
-    
+
     def __init__(self, queue=None, body=''):
         self.queue = queue
         self.set_body(body)
@@ -111,19 +122,20 @@ class RawMessage:
     def decode(self, value):
         """Transform seralized byte array into any object."""
         return value
- 
+
     def set_body(self, body):
         """Override the current body for this object, using decoded format."""
         self._body = body
 
     def get_body(self):
         return self._body
-    
+
     def get_body_encoded(self):
         """
-        This method is really a semi-private method used by the Queue.write
-        method when writing the contents of the message to SQS.
-        You probably shouldn't need to call this method in the normal course of events.
+        This method is really a semi-private method used by the
+        Queue.write method when writing the contents of the message to
+        SQS.  You probably shouldn't need to call this method in the
+        normal course of events.
         """
         return self.encode(self.get_body())
 
@@ -136,7 +148,8 @@ class RawMessage:
             self.queue.connection.change_message_visibility(self.queue,
                                                             self.receipt_handle,
                                                             visibility_timeout)
-    
+
+
 class Message(RawMessage):
     """
     The default Message class used for SQS queues.  This class automatically
@@ -148,7 +161,7 @@ class Message(RawMessage):
     for details on why this is a good idea.  The encode/decode is meant to
     be transparent to the end-user.
     """
-    
+
     def encode(self, value):
         if isinstance(value, compat.text_type):
             value = value.encode('utf-8')
@@ -160,6 +173,7 @@ class Message(RawMessage):
         except:
             raise SQSDecodeError('Unable to decode message', self)
         return value
+
 
 class MHMessage(Message):
     """
@@ -186,7 +200,7 @@ class MHMessage(Message):
             while line:
                 delim = line.find(':')
                 key = line[0:delim]
-                value = line[delim+1:].strip()
+                value = line[delim + 1:].strip()
                 msg[key.strip()] = value.strip()
                 line = fp.readline()
         except:
@@ -228,6 +242,7 @@ class MHMessage(Message):
     def get(self, key, default=None):
         return self._body.get(key, default)
 
+
 class EncodedMHMessage(MHMessage):
     """
     The EncodedMHMessage class provides a message that provides RFC821-like
@@ -235,9 +250,9 @@ class EncodedMHMessage(MHMessage):
 
     HeaderName: HeaderValue
 
-    This variation encodes/decodes the body of the message in base64 automatically.
-    The message instance can be treated like a mapping object,
-    i.e. m['HeaderName'] would return 'HeaderValue'.
+    This variation encodes/decodes the body of the message in base64
+    automatically.  The message instance can be treated like a mapping
+    object, i.e. m['HeaderName'] would return 'HeaderValue'.
     """
 
     def decode(self, value):
@@ -250,4 +265,3 @@ class EncodedMHMessage(MHMessage):
     def encode(self, value):
         value = MHMessage.encode(self, value)
         return base64.b64encode(value)
-    

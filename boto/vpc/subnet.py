@@ -25,6 +25,7 @@ Represents a Subnet
 
 from boto.ec2.ec2object import TaggedEC2Object
 
+
 class Subnet(TaggedEC2Object):
 
     def __init__(self, connection=None):
@@ -54,4 +55,3 @@ class Subnet(TaggedEC2Object):
             self.availability_zone = value
         else:
             setattr(self, name, value)
-

@@ -3,6 +3,7 @@ Various exceptions that are specific to the SES module.
 """
 from boto.exception import BotoServerError
 
+
 class SESAddressNotVerifiedError(BotoServerError):
     """
     Raised when a "Reply-To" address has not been validated in SES yet.

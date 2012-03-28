@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -29,6 +29,7 @@ import datetime
 import threading
 
 _session_token_cache = {}
+
 
 class STSConnection(AWSQueryConnection):
 
@@ -108,13 +109,13 @@ class STSConnection(AWSQueryConnection):
             _session_token_cache[token_key] = token
             self._mutex.release()
         return token
-        
+
     def get_federation_token(self, name, duration=None, policy=None):
         """
         :type name: str
         :param name: The name of the Federated user associated with
                      the credentials.
-                     
+
         :type duration: int
         :param duration: The number of seconds the credentials should
                          remain valid.
@@ -123,12 +124,10 @@ class STSConnection(AWSQueryConnection):
         :param policy: A JSON policy to associate with these credentials.
 
         """
-        params = {'Name' : name}
+        params = {'Name': name}
         if duration:
             params['DurationSeconds'] = duration
         if policy:
             params['Policy'] = policy
         return self.get_object('GetFederationToken', params,
                                 FederationToken, verb='POST')
-        
-        

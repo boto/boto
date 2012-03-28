@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -34,7 +34,8 @@ import time
 # value of Debug to be 2
 #
 #boto.set_stream_logger('dynamodb')
-Debug=0
+Debug = 0
+
 
 class Layer1(AWSAuthConnection):
     """
@@ -46,7 +47,7 @@ class Layer1(AWSAuthConnection):
 
     ServiceName = 'com.amazonaws.swf.service.model.SimpleWorkflowService'
     """The name of the Service"""
-    
+
     ResponseError = DynamoDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -89,7 +90,7 @@ class Layer1(AWSAuthConnection):
             return None
 
     # Actions related to Activities
-        
+
     def poll_for_activity_task(self, domain, task_list, identity=None):
         """
         Used by workers to get an ActivityTask from the specified
@@ -388,7 +389,7 @@ class Layer1(AWSAuthConnection):
                  when it receives an execution history with this event.
              * ABANDON: no action will be taken. The child executions
                  will continue to run.
-                 
+
         :type execution_start_to_close_timeout: string
         :param execution_start_to_close_timeout: The total duration for
             this workflow execution. This overrides the
@@ -501,14 +502,14 @@ class Layer1(AWSAuthConnection):
             starting the execution. The supported child policies are:
 
             * TERMINATE: the child executions will be terminated.
-            
+
             * REQUEST_CANCEL: a request to cancel will be attempted
               for each child execution by recording a
               WorkflowExecutionCancelRequested event in its
               history. It is up to the decider to take appropriate
               actions when it receives an execution history with this
               event.
-            
+
             * ABANDON: no action will be taken. The child executions
               will continue to run.
 
@@ -608,7 +609,7 @@ class Layer1(AWSAuthConnection):
         :raises: TypeAlreadyExistsFault, LimitExceededFault,
             UnknownResourceFault, OperationNotPermittedFault
         """
-        data = {'domain': domain, 'name': name,'version': version}
+        data = {'domain': domain, 'name': name, 'version': version}
         if task_list:
             data['taskList'] = {'name': task_list}
         if default_task_heartbeat_timeout:
@@ -675,7 +676,7 @@ class Layer1(AWSAuthConnection):
             Action or StartChildWorkflowExecution Decision.
 
         :type default_child_policy: string
-        
+
         :param default_child_policy: If set, specifies the default
             policy to use for the child workflow executions when a
             workflow execution of this type is terminated, by calling the
@@ -686,14 +687,14 @@ class Layer1(AWSAuthConnection):
             child policies are:
 
             * TERMINATE: the child executions will be terminated.
-            
+
             * REQUEST_CANCEL: a request to cancel will be attempted
               for each child execution by recording a
               WorkflowExecutionCancelRequested event in its
               history. It is up to the decider to take appropriate
               actions when it receives an execution history with this
               event.
-            
+
             * ABANDON: no action will be taken. The child executions
               will continue to run.no docs
 
@@ -770,7 +771,7 @@ class Layer1(AWSAuthConnection):
         :param name: Name of the domain to register. The name must be unique.
 
         :type workflow_execution_retention_period_in_days: string
-        
+
         :param workflow_execution_retention_period_in_days: Specifies
             the duration *in days* for which the record (including the
             history) of workflow executions in this domain should be kept
@@ -855,9 +856,9 @@ class Layer1(AWSAuthConnection):
             NextResultToken was returned, the results have more than one
             page. To get the next page of results, repeat the call with
             the nextPageToken and keep all other arguments unchanged.
-        
+
         :type reverse_order: boolean
-        
+
         :param reverse_order: When set to true, returns the results in
             reverse order. By default the results are returned in
             ascending alphabetical order of the name of the activity
@@ -1115,7 +1116,11 @@ class Layer1(AWSAuthConnection):
         json_input = compat.json.dumps(data)
         return self.make_request('CountOpenWorkflowExecutions', json_input)
 
-    def list_open_workflow_executions(self, domain, name, oldest_date, tag, workflow_id, latest_date=None, maximum_page_size=None, next_page_token=None, reverse_order=None, version=None):
+    def list_open_workflow_executions(self, domain, name, oldest_date,
+                                      tag, workflow_id, latest_date=None,
+                                      maximum_page_size=None,
+                                      next_page_token=None,
+                                      reverse_order=None, version=None):
         """
         No documentation supplied.
 
@@ -1151,7 +1156,9 @@ class Layer1(AWSAuthConnection):
 
         :raises: #UnknownResourceFault, #OperationNotPermittedFault
         """
-        data = {'domain': domain, 'name': name, 'oldestDate': oldest_date, 'tag': tag, 'workflowId': workflow_id}
+        data = {'domain': domain, 'name': name,
+                'oldestDate': oldest_date, 'tag': tag,
+                'workflowId': workflow_id}
         if latest_date:
             data['latestDate'] = latest_date
         if maximum_page_size:
@@ -1470,7 +1477,3 @@ class Layer1(AWSAuthConnection):
         data = {'domain': domain, 'taskList': {'name': task_list}}
         json_input = compat.json.dumps(data)
         return self.make_request('CountPendingActivityTasks', json_input)
-
-
-
-

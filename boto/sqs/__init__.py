@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -22,10 +22,11 @@
 
 from .regioninfo import SQSRegionInfo
 
+
 def regions():
     """
     Get all available regions for the SQS service.
-        
+
     :rtype: list
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
@@ -44,6 +45,7 @@ def regions():
             SQSRegionInfo(name='ap-southeast-1',
                           endpoint='sqs.ap-southeast-1.amazonaws.com')
             ]
+
 
 def connect_to_region(region_name, **kw_params):
     for region in regions():

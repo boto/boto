@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -23,6 +23,7 @@
 """
 A set of results returned by SendMessageBatch.
 """
+
 
 class ResultEntry(dict):
     """
@@ -61,7 +62,8 @@ class ResultEntry(dict):
             self['error_code'] = value
         elif name == 'Message':
             self['error_message'] = value
-    
+
+
 class BatchResults(object):
     """
     A container for the results of a send_message_batch request.
@@ -72,7 +74,7 @@ class BatchResults(object):
     :ivar errors: A list of unsuccessful results.  Each item in the
         list will be an instance of :class:`ResultEntry`.
     """
-    
+
     def __init__(self, parent):
         self.parent = parent
         self.results = []
@@ -91,5 +93,3 @@ class BatchResults(object):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
-
-        

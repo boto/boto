@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -136,7 +136,8 @@ class Credentials(object):
         ts = boto.utils.parse_ts(self.expiration)
         delta = ts - now
         return delta.total_seconds() <= 0
-    
+
+
 class FederationToken(object):
     """
     :ivar credentials: A Credentials object containing the credentials.
@@ -171,4 +172,3 @@ class FederationToken(object):
             self.request_id = value
         else:
             pass
-        

@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -67,9 +67,10 @@ class Queue:
 
     def set_message_class(self, message_class):
         """
-        Set the message class that should be used when instantiating messages read
-        from the queue.  By default, the class boto.sqs.message.Message is used but
-        this can be overriden with any class that behaves like a message.
+        Set the message class that should be used when instantiating
+        messages read from the queue.  By default, the class
+        boto.sqs.message.Message is used but this can be overriden
+        with any class that behaves like a message.
 
         :type message_class: Message-like class
         :param message_class:  The new Message class
@@ -98,7 +99,7 @@ class Queue:
     def set_attribute(self, attribute, value):
         """
         Set a new value for an attribute of the Queue.
-        
+
         :type attribute: String
         :param attribute: The name of the attribute you want to set.  The
                            only valid value at this time is: VisibilityTimeout
@@ -115,7 +116,7 @@ class Queue:
     def get_timeout(self):
         """
         Get the visibility timeout for the queue.
-        
+
         :rtype: int
         :return: The number of seconds as an integer.
         """
@@ -139,15 +140,16 @@ class Queue:
         Add a permission to a queue.
 
         :type label: str or unicode
-        :param label: A unique identification of the permission you are setting.
-                      Maximum of 80 characters ``[0-9a-zA-Z_-]``
+        :param label: A unique identification of the permission you
+        are setting.  Maximum of 80 characters ``[0-9a-zA-Z_-]``
                       Example, AliceSendMessage
 
         :type aws_account_id: str or unicode
-        :param principal_id: The AWS account number of the principal who will be given
-                             permission.  The principal must have an AWS account, but
-                             does not need to be signed up for Amazon SQS. For information
-                             about locating the AWS account identification.
+        :param principal_id: The AWS account number of the principal
+            who will be given permission.  The principal must have an
+            AWS account, but does not need to be signed up for Amazon
+            SQS. For information about locating the AWS account
+            identification.
 
         :type action_name: str or unicode
         :param action_name: The action.  Valid choices are:
@@ -158,14 +160,16 @@ class Queue:
         :return: True if successful, False otherwise.
 
         """
-        return self.connection.add_permission(self, label, aws_account_id, action_name)
+        return self.connection.add_permission(self, label, aws_account_id,
+                                              action_name)
 
     def remove_permission(self, label):
         """
         Remove a permission from a queue.
 
         :type label: str or unicode
-        :param label: The unique label associated with the permission being removed.
+        :param label: The unique label associated with the permission
+            being removed.
 
         :rtype: bool
         :return: True if successful, False otherwise.
@@ -175,7 +179,7 @@ class Queue:
     def read(self, visibility_timeout=None):
         """
         Read a single message from the queue.
-        
+
         :type visibility_timeout: int
         :param visibility_timeout: The timeout for this message in seconds
 
@@ -198,7 +202,9 @@ class Queue:
         :rtype: :class:`boto.sqs.message.Message`
         :return: The :class:`boto.sqs.message.Message` object that was written.
         """
-        new_msg = self.connection.send_message(self, message.get_body_encoded(), delay_seconds)
+        new_msg = self.connection.send_message(self,
+                                               message.get_body_encoded(),
+                                               delay_seconds)
         message.id = new_msg.id
         message.md5 = new_msg.md5
         return message
@@ -224,25 +230,30 @@ class Queue:
         Get a variable number of messages.
 
         :type num_messages: int
-        :param num_messages: The maximum number of messages to read from the queue.
-        
+        :param num_messages: The maximum number of messages to read
+            from the queue.
+
         :type visibility_timeout: int
         :param visibility_timeout: The VisibilityTimeout for the messages read.
 
         :type attributes: str
-        :param attributes: The name of additional attribute to return with response
-                           or All if you want all attributes.  The default is to
-                           return no additional attributes.  Valid values:
-                           All
-                           SenderId
-                           SentTimestamp
-                           ApproximateReceiveCount
-                           ApproximateFirstReceiveTimestamp
-                           
+
+        :param attributes: The name of additional attribute to return
+            with response or All if you want all attributes.  The
+            default is to return no additional attributes.  Valid
+            values:
+
+            * All
+            * SenderId
+            * SentTimestamp
+            * ApproximateReceiveCount
+            * ApproximateFirstReceiveTimestamp
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
         """
-        return self.connection.receive_message(self, number_messages=num_messages,
+        return self.connection.receive_message(self,
+                                               number_messages=num_messages,
                                                visibility_timeout=visibility_timeout,
                                                attributes=attributes)
 
@@ -356,9 +367,9 @@ class Queue:
         """
         Read all messages from the queue and persist them to S3.
         Messages are stored in the S3 bucket using a naming scheme of::
-        
+
             <queue_id>/<message_id>
-        
+
         Messages are deleted from the queue after being saved to S3.
         Returns the number of messages saved.
         """
@@ -389,7 +400,9 @@ class Queue:
         return n
 
     def load_from_file(self, fp, sep='\n'):
-        """Utility function to load messages from a file-like object to a queue"""
+        """
+        Utility function to load messages from a file-like object to a queue
+        """
         n = 0
         body = ''
         l = fp.readline()
@@ -406,7 +419,9 @@ class Queue:
         return n
 
     def load_from_filename(self, file_name, sep='\n'):
-        """Utility function to load messages from a local filename to a queue"""
+        """
+        Utility function to load messages from a local filename to a queue
+        """
         fp = open(file_name, 'rb')
         n = self.load_from_file(fp, sep)
         fp.close()
@@ -414,4 +429,3 @@ class Queue:
 
     # for backward compatibility
     load = load_from_filename
-
