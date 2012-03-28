@@ -24,6 +24,7 @@ Represents an DBSecurityGroup
 """
 from boto.ec2.securitygroup import SecurityGroup
 
+
 class DBSecurityGroup(object):
 
     def __init__(self, connection=None, owner_id=None,
@@ -116,6 +117,7 @@ class DBSecurityGroup(object):
         return self.connection.revoke_dbsecurity_group(
             self.name, cidr_ip=cidr_ip)
 
+
 class IPRange(object):
 
     def __init__(self, parent=None):
@@ -137,6 +139,7 @@ class IPRange(object):
         else:
             setattr(self, name, value)
 
+
 class EC2SecurityGroup(object):
 
     def __init__(self, parent=None):
@@ -157,4 +160,3 @@ class EC2SecurityGroup(object):
             self.owner_id = value
         else:
             setattr(self, name, value)
-

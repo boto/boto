@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -31,7 +31,7 @@ class ParameterGroup(dict):
         self.description = None
         self.engine = None
         self._current_param = None
-        
+
     def __repr__(self):
         return 'ParameterGroup:%s' % self.name
 
@@ -63,7 +63,7 @@ class ParameterGroup(dict):
     def get_params(self):
         pg = self.connection.get_all_dbparameters(self.name)
         self.update(pg)
-    
+
     def add_param(self, name, value, apply_method):
         param = Parameter()
         param.name = name
@@ -71,18 +71,19 @@ class ParameterGroup(dict):
         param.apply_method = apply_method
         self.params.append(param)
 
+
 class Parameter(object):
     """
     Represents a RDS Parameter
     """
 
-    ValidTypes = {'integer' : int,
-                  'string' : str,
-                  'boolean' : bool}
+    ValidTypes = {'integer': int,
+                  'string': str,
+                  'boolean': bool}
     ValidSources = ['user', 'system', 'engine-default']
     ValidApplyTypes = ['static', 'dynamic']
     ValidApplyMethods = ['immediate', 'pending-reboot']
-    
+
     def __init__(self, group=None, name=None):
         self.group = group
         self.name = name
@@ -129,11 +130,11 @@ class Parameter(object):
     def merge(self, d, i):
         prefix = 'Parameters.member.%d.' % i
         if self.name:
-            d[prefix+'ParameterName'] = self.name
+            d[prefix + 'ParameterName'] = self.name
         if self._value:
-            d[prefix+'ParameterValue'] = self._value
+            d[prefix + 'ParameterValue'] = self._value
         if self.apply_type:
-            d[prefix+'ApplyMethod'] = self.apply_method
+            d[prefix + 'ApplyMethod'] = self.apply_method
 
     def _set_string_value(self, value):
         if not isinstance(value, compat.string_types):
@@ -152,7 +153,7 @@ class Parameter(object):
                 self._value = False
         else:
             raise ValueError('value must be boolean')
-        
+
     def set_value(self, value):
         if self.type == 'string':
             self._set_string_value(value)
@@ -187,4 +188,3 @@ class Parameter(object):
         else:
             self.apply_method = 'pending-reboot'
         self.group.connection.modify_parameter_group(self.group.name, [self])
-
