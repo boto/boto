@@ -1,6 +1,29 @@
-from datetime import datetime
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
+from datetime import datetime
 from boto.resultset import ResultSet
+
 
 class Stack:
     def __init__(self, connection=None):
@@ -91,6 +114,7 @@ class Stack:
     def get_template(self):
         return self.connection.get_template(stack_name_or_id=self.stack_id)
 
+
 class StackSummary:
     def __init__(self, connection=None):
         self.connection = connection
@@ -122,6 +146,7 @@ class StackSummary:
         else:
             setattr(self, name, value)
 
+
 class Parameter:
     def __init__(self, connection=None):
         self.connection = None
@@ -141,6 +166,7 @@ class Parameter:
 
     def __repr__(self):
         return "Parameter:\"%s\"=\"%s\"" % (self.key, self.value)
+
 
 class Output:
     def __init__(self, connection=None):
@@ -164,6 +190,7 @@ class Output:
 
     def __repr__(self):
         return "Output:\"%s\"=\"%s\"" % (self.key, self.value)
+
 
 class StackResource:
     def __init__(self, connection=None):
@@ -207,6 +234,7 @@ class StackResource:
         return "StackResource:%s (%s)" % (self.logical_resource_id,
                 self.resource_type)
 
+
 class StackResourceSummary:
     def __init__(self, connection=None):
         self.connection = connection
@@ -241,9 +269,12 @@ class StackResourceSummary:
         return "StackResourceSummary:%s (%s)" % (self.logical_resource_id,
                 self.resource_type)
 
+
 class StackEvent:
+
     valid_states = ("CREATE_IN_PROGRESS", "CREATE_FAILED", "CREATE_COMPLETE",
             "DELETE_IN_PROGRESS", "DELETE_FAILED", "DELETE_COMPLETE")
+
     def __init__(self, connection=None):
         self.connection = connection
         self.event_id = None

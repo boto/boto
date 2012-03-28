@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -118,11 +118,11 @@ class CloudFormationConnection(AWSQueryConnection):
                 " specified, only TemplateBody will be honored by the API")
         if len(parameters) > 0:
             for i, (key, value) in enumerate(parameters):
-                params['Parameters.member.%d.ParameterKey' % (i+1)] = key
-                params['Parameters.member.%d.ParameterValue' % (i+1)] = value
+                params['Parameters.member.%d.ParameterKey' % (i + 1)] = key
+                params['Parameters.member.%d.ParameterValue' % (i + 1)] = value
         if capabilities:
             for i, value in enumerate(capabilities):
-                params['Capabilities.member.%d' % (i+1)] = value
+                params['Capabilities.member.%d' % (i + 1)] = value
         if len(notification_arns) > 0:
             self.build_list_params(params, notification_arns,
                                    "NotificationARNs.member")
@@ -188,8 +188,8 @@ class CloudFormationConnection(AWSQueryConnection):
                 " specified, only TemplateBody will be honored by the API")
         if len(parameters) > 0:
             for i, (key, value) in enumerate(parameters):
-                params['Parameters.member.%d.ParameterKey' % (i+1)] = key
-                params['Parameters.member.%d.ParameterValue' % (i+1)] = value
+                params['Parameters.member.%d.ParameterKey' % (i + 1)] = key
+                params['Parameters.member.%d.ParameterValue' % (i + 1)] = value
         if len(notification_arns) > 0:
             self.build_list_params(params, notification_arns,
                                    "NotificationARNs.member")
