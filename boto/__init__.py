@@ -23,8 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.pyami.config import Config, BotoConfigLocations
-from boto.storage_uri import BucketStorageUri, FileStorageUri
+from .config import Config, BotoConfigLocations
+from .storage_uri import BucketStorageUri, FileStorageUri
 import boto.plugin
 import os, re, sys
 import logging

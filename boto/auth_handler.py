@@ -42,7 +42,7 @@ class AuthHandler(Plugin):
         :type host: string
         :param host: The host to which the request is being sent.
 
-        :type config: boto.pyami.Config
+        :type config: boto.Config
         :param config: Boto configuration.
 
         :type provider: boto.provider.Provider

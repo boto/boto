@@ -74,7 +74,7 @@ class StorageUri(object):
         """
         Opens a connection to appropriate provider, depending on provider
         portion of URI. Requires Credentials defined in boto config file (see
-        boto/pyami/config.py).
+        boto/config.py).
         @type storage_uri: StorageUri
         @param storage_uri: StorageUri specifying a bucket or a bucket+object
         @rtype: L{AWSAuthConnection<boto.gs.connection.AWSAuthConnection>}
