@@ -142,6 +142,7 @@ class Layer1(AWSAuthConnection):
         status = None
         if response.status == 400:
             response_body = response.read()
+            response_body = response_body.decode('utf-8')
             boto.log.debug(response_body)
             data = compat.json.loads(response_body)
             if self.ThruputError in data.get('__type'):
