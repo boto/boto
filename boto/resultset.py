@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.s3.user import User
+
 class ResultSet(list):
     """
     The ResultSet is used to pass results back from the Amazon services
@@ -63,6 +65,12 @@ class ResultSet(list):
                 obj = t[1](connection)
                 self.append(obj)
                 return obj
+        if name == 'Owner':
+            # Makes owner available for get_service and
+            # perhaps other lists where not handled by
+            # another element.
+            self.owner = User()
+            return self.owner
         return None
 
     def to_boolean(self, value, true_value='true'):
