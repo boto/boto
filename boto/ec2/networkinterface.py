@@ -111,6 +111,9 @@ class NetworkInterface(TaggedEC2Object):
         return 'NetworkInterface:%s' % self.id
 
     def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
         if name == 'groupSet':
             self.groups = ResultSet([('item', Group)])
             return self.groups
