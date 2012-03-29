@@ -565,6 +565,11 @@ class Bucket(object):
                           This value is required anytime you are
                           deleting versioned objects from a bucket
                           that has the MFADelete option on the bucket.
+
+        :rtype: :class:`boto.s3.key.Key` or subclass
+        :returns: A key object holding information on what was deleted.
+                  The Caller can see if a delete_marker was created or
+                  removed and what version_id the delete created or removed.
         """
         provider = self.connection.provider
         if version_id:
@@ -582,6 +587,12 @@ class Bucket(object):
         if response.status != 204:
             raise provider.storage_response_error(response.status,
                                                   response.reason, body)
+        else:
+            # return a key object with information on what was deleted.
+            k = self.key_class(self)
+            k.name = key_name
+            k.handle_version_headers(response)
+            return k
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
