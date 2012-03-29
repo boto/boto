@@ -44,6 +44,16 @@ and on Windows.  Boto requires no additional libraries or packages
 other than those that are distributed with Python.  Efforts are made
 to keep boto compatible with Python 2.5.x but no guarantees are made.
 
+*********************************
+Special Note for Python 3.x Users
+*********************************
+
+If you are interested in trying out boto with Python 3.x, check out the
+`neo`_ branch.  This is under active development and the goal is a version
+of boto that works in Python 2.6, 2.7, and 3.x.  Not everything is working
+just yet but many things are and it's worth a look if you are an active
+Python 3.x user.
+
 ***************************
 Finding Out More About Boto
 ***************************
@@ -85,3 +95,4 @@ All rights reserved.
 .. _Python Cheese Shop: http://pypi.python.org/pypi/boto
 .. _this: http://code.google.com/p/boto/wiki/BotoConfig
 .. _gitflow: http://nvie.com/posts/a-successful-git-branching-model/
+.. _neo: https://github.com/boto/boto/tree/neo
