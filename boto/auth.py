@@ -47,32 +47,45 @@ class HmacKeys(object):
         if provider.access_key is None or provider.secret_key is None:
             raise boto.auth_handler.NotReadyToAuthenticate()
         self.host = host
+        self.config = config
         self.update_provider(provider)
 
     def update_provider(self, provider):
+        """
+        Update the HMAC's for the authenticator based on new
+        credentials in the provider.
+        """
         self._provider = provider
-        sk = self._provider.secret_key.encode('utf-8')
-        self._hmac = hmac.new(sk, digestmod=compat.sha)
+        sec_key = self._provider.secret_key.encode('utf-8')
+        self._hmac = hmac.new(sec_key, digestmod=compat.sha)
         if compat.sha256:
-            self._hmac_256 = hmac.new(sk, digestmod=compat.sha256)
+            self._hmac_256 = hmac.new(sec_key, digestmod=compat.sha256)
         else:
             self._hmac_256 = None
 
     def algorithm(self):
+        """
+        Determine which HMAC algorithm we are using and return
+        an appropriate string.
+        """
         if self._hmac_256:
             return 'HmacSHA256'
         else:
             return 'HmacSHA1'
 
     def sign_string(self, string_to_sign):
+        """
+        Sign the passed-in string using HMAC and return a base64-encoded
+        version.
+        """
         if self._hmac_256:
-            hmac = self._hmac_256.copy()
+            local_hmac = self._hmac_256.copy()
         else:
-            hmac = self._hmac.copy()
+            local_hmac = self._hmac.copy()
         if not isinstance(string_to_sign, compat.binary_type):
             string_to_sign = string_to_sign.encode('utf-8')
-        hmac.update(string_to_sign)
-        return base64.b64encode(hmac.digest()).strip().decode('utf-8')
+        local_hmac.update(string_to_sign)
+        return base64.b64encode(local_hmac.digest()).strip().decode('utf-8')
 
 
 class AnonAuthHandler(AuthHandler, HmacKeys):
@@ -160,9 +173,9 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
             headers['Date'] = formatdate(usegmt=True)
 
         b64_hmac = self.sign_string(headers['Date'])
-        s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._provider.access_key
-        s += "Algorithm=%s,Signature=%s" % (self.algorithm(), b64_hmac)
-        headers['X-Amzn-Authorization'] = s
+        val = "AWS3-HTTPS AWSAccessKeyId=%s," % self._provider.access_key
+        val += "Algorithm=%s,Signature=%s" % (self.algorithm(), b64_hmac)
+        headers['X-Amzn-Authorization'] = val
 
 
 class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
@@ -196,10 +209,10 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = ['%s:%s' % (n.lower().strip(),
+        head_lst = ['%s:%s' % (n.lower().strip(),
                         headers_to_sign[n].strip()) for n in headers_to_sign]
-        l.sort()
-        return '\n'.join(l)
+        head_lst.sort()
+        return '\n'.join(head_lst)
 
     def string_to_sign(self, http_request):
         """
@@ -236,11 +249,11 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         string_to_sign = string_to_sign.encode('utf-8')
         hash_value = compat.sha256(string_to_sign).digest()
         b64_hmac = self.sign_string(hash_value)
-        s = "AWS3 AWSAccessKeyId=%s," % self._provider.access_key
-        s += "Algorithm=%s," % self.algorithm()
-        s += "SignedHeaders=%s," % ';'.join(headers_to_sign)
-        s += "Signature=%s" % b64_hmac
-        req.headers['X-Amzn-Authorization'] = s
+        sig_hdr = "AWS3 AWSAccessKeyId=%s," % self._provider.access_key
+        sig_hdr += "Algorithm=%s," % self.algorithm()
+        sig_hdr += "SignedHeaders=%s," % ';'.join(headers_to_sign)
+        sig_hdr += "Signature=%s" % b64_hmac
+        req.headers['X-Amzn-Authorization'] = sig_hdr
 
 
 class QuerySignatureHelper(HmacKeys):
@@ -284,17 +297,17 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_0')
-        hmac = self._hmac.copy()
+        local_hmac = self._hmac.copy()
         s = params['Action'] + params['Timestamp']
         s = s.encode('utf-8')
-        hmac.update(s)
+        local_hmac.update(s)
         keys = sorted(params, key=str.lower)
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
             pairs.append(key + '=' + compat.quote(val))
         qs = '&'.join(pairs)
-        return (qs, base64.b64encode(hmac.digest()))
+        return (qs, base64.b64encode(local_hmac.digest()))
 
 
 class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
@@ -307,18 +320,18 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
-        hmac = self._hmac.copy()
+        local_hmac = self._hmac.copy()
         keys = sorted(params, key=str.lower)
         pairs = []
         for key in keys:
             key = key.encode('utf-8')
-            hmac.update(key)
+            local_hmac.update(key)
             val = boto.utils.get_utf8_value(params[key])
             val = val.encode('utf-8')
-            hmac.update(val)
+            local_hmac.update(val)
             pairs.append(key + '=' + compat.quote(val))
         qs = '&'.join(pairs)
-        return (qs, base64.b64encode(hmac.digest()))
+        return (qs, base64.b64encode(local_hmac.digest()))
 
 
 class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
@@ -332,10 +345,10 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         boto.log.debug('using _calc_signature_2')
         string_to_sign = '%s\n%s\n%s\n' % (verb, server_name.lower(), path)
         if self._hmac_256:
-            hmac = self._hmac_256.copy()
+            local_hmac = self._hmac_256.copy()
             params['SignatureMethod'] = 'HmacSHA256'
         else:
-            hmac = self._hmac.copy()
+            local_hmac = self._hmac.copy()
             params['SignatureMethod'] = 'HmacSHA1'
         if self._provider.security_token:
             params['SecurityToken'] = self._provider.security_token
@@ -350,8 +363,8 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         string_to_sign += qs
         boto.log.debug('string_to_sign: %s' % string_to_sign)
         string_to_sign = string_to_sign.encode('utf-8')
-        hmac.update(string_to_sign)
-        b64 = base64.b64encode(hmac.digest())
+        local_hmac.update(string_to_sign)
+        b64 = base64.b64encode(local_hmac.digest())
         boto.log.debug('len(b64)=%d' % len(b64))
         boto.log.debug('base64 encoded digest: %s' % b64)
         return (qs, b64)

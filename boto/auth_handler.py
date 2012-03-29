@@ -52,7 +52,6 @@ class AuthHandler(Plugin):
             NotReadyToAuthenticate: if this handler is not willing to
                 authenticate for the given provider and config.
         """
-        pass
 
     def add_auth(self, http_request):
         """

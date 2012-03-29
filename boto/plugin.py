@@ -70,12 +70,12 @@ def _import_module(filename):
     (path, name) = os.path.split(filename)
     (name, ext) = os.path.splitext(name)
 
-    (file, filename, data) = imp.find_module(name, [path])
+    (fp, filename, data) = imp.find_module(name, [path])
     try:
-        return imp.load_module(name, file, filename, data)
+        return imp.load_module(name, fp, filename, data)
     finally:
-        if file:
-            file.close()
+        if fp:
+            fp.close()
 
 _plugin_loaded = False
 
@@ -89,5 +89,5 @@ def load_plugins(config):
     if not config.has_option('Plugin', 'plugin_directory'):
         return
     directory = config.get('Plugin', 'plugin_directory')
-    for file in glob.glob(os.path.join(directory, '*.py')):
-        _import_module(file)
+    for file_name in glob.glob(os.path.join(directory, '*.py')):
+        _import_module(file_name)
