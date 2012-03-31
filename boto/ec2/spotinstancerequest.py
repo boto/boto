@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -26,6 +26,7 @@ Represents an EC2 Spot Instance Request
 
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.ec2.launchspecification import LaunchSpecification
+
 
 class SpotInstanceStateFault(object):
 
@@ -46,8 +47,9 @@ class SpotInstanceStateFault(object):
             self.message = value
         setattr(self, name, value)
 
+
 class SpotInstanceRequest(TaggedEC2Object):
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -58,6 +60,7 @@ class SpotInstanceRequest(TaggedEC2Object):
         self.valid_from = None
         self.valid_until = None
         self.launch_group = None
+        self.launched_availability_zone = None
         self.product_description = None
         self.availability_zone_group = None
         self.create_time = None
@@ -89,8 +92,6 @@ class SpotInstanceRequest(TaggedEC2Object):
             self.type = value
         elif name == 'state':
             self.state = value
-        elif name == 'productDescription':
-            self.product_description = value
         elif name == 'validFrom':
             self.valid_from = value
         elif name == 'validUntil':
@@ -99,15 +100,16 @@ class SpotInstanceRequest(TaggedEC2Object):
             self.launch_group = value
         elif name == 'availabilityZoneGroup':
             self.availability_zone_group = value
-        elif name == 'createTime':
-            self.create_time = value
+        elif name == 'launchedAvailabilityZone':
+            self.launched_availability_zone = value
         elif name == 'instanceId':
             self.instance_id = value
+        elif name == 'createTime':
+            self.create_time = value
+        elif name == 'productDescription':
+            self.product_description = value
         else:
             setattr(self, name, value)
 
     def cancel(self):
         self.connection.cancel_spot_instance_requests([self.id])
-
-
-    
