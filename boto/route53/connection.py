@@ -133,8 +133,9 @@ class Route53Connection(AWSAuthConnection):
         """
         Get detailed information about a particular Hosted Zone.
 
-        :type hosted_zone_id: str
-        :param hosted_zone_id: The unique identifier for the Hosted Zone
+        :type hosted_zone_name: str
+        :param hosted_zone_name: The fully qualified domain name for the Hosted
+        Zone
 
         """
         if hosted_zone_name[-1] != '.':
