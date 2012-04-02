@@ -129,6 +129,22 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
+    def get_hosted_zone_by_name(self, hosted_zone_name):
+        """
+        Get detailed information about a particular Hosted Zone.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The unique identifier for the Hosted Zone
+
+        """
+        if hosted_zone_name[-1] != '.':
+            hosted_zone_name += '.'
+        all_hosted_zones = self.get_all_hosted_zones()
+        for zone in all_hosted_zones['ListHostedZonesResponse']['HostedZones']:
+            #check that they gave us the FQDN for their zone
+            if zone['Name'] == hosted_zone_name:
+                return self.get_hosted_zone(zone['Id'].split('/')[-1])
+
     def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
