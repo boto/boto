@@ -65,32 +65,7 @@ class ResumableUploadTests(unittest.TestCase):
     def get_suite_description(self):
         return 'Resumable upload test suite'
 
-    def setUp(self):
-        """
-        Creates dst_key needed by all tests.
-
-        This method's namingCase is required by the unittest framework.
-        """
-        self.dst_key = self.dst_key_uri.new_key(validate=False)
-
-    def tearDown(self):
-        """
-        Deletes any objects or files created by last test run.
-
-        This method's namingCase is required by the unittest framework.
-        """
-        try:
-            self.dst_key_uri.delete_key()
-        except GSResponseError:
-            # Ignore possible not-found error.
-            pass
-        # Recursively delete dst dir and then re-create it, so in effect we
-        # remove all dirs and files under that directory.
-        shutil.rmtree(self.tmp_dir)
-        os.mkdir(self.tmp_dir)
-
-    @staticmethod
-    def build_test_input_file(size):
+    def build_test_input_file(self, size):
         buf = []
         # I manually construct the random data here instead of calling
         # os.urandom() because I want to constrain the range of data (in
@@ -102,101 +77,105 @@ class ResumableUploadTests(unittest.TestCase):
         file_as_string = ''.join(buf)
         return (file_as_string, StringIO.StringIO(file_as_string))
 
-    @classmethod
-    def get_dst_bucket_uri(cls, debug):
+    def get_dst_bucket_uri(self):
         """A unique bucket to test."""
         hostname = socket.gethostname().split('.')[0]
         uri_base_str = 'gs://res-upload-test-%s-%s-%s' % (
             hostname, os.getpid(), int(time.time()))
-        return boto.storage_uri('%s-dst' % uri_base_str, debug=debug)
+        return boto.storage_uri('%s-dst' % uri_base_str)
 
-    @classmethod
-    def get_dst_key_uri(cls):
+    def get_dst_key_uri(self):
         """A key to test."""
-        return cls.dst_bucket_uri.clone_replace_name('obj')
+        return self.dst_bucket_uri.clone_replace_name('obj')
 
-    @classmethod
-    def get_staged_host(cls):
+    def get_staged_host(self):
         """URL of an existing bucket."""
         return 'pub.commondatastorage.googleapis.com'
 
-    @classmethod
-    def get_invalid_upload_id(cls):
+    def get_invalid_upload_id(self):
         return (
             'http://%s/?upload_id='
             'AyzB2Uo74W4EYxyi5dp_-r68jz8rtbvshsv4TX7srJVkJ57CxTY5Dw2' % (
-                cls.get_staged_host()))
+                self.get_staged_host()))
 
-    @classmethod
-    def set_up_class(cls, debug):
+    def setUp(self):
         """
-        Initializes test suite.
+        Creates dst bucket and data needed by each test.
         """
-
         # Use a designated tmpdir prefix to make it easy to find the end of
         # the tmp path.
-        cls.tmpdir_prefix = 'tmp_resumable_upload_test'
+        self.tmpdir_prefix = 'tmp_resumable_upload_test'
 
         # Create test source file data.
-        cls.empty_src_file_size = 0
-        (cls.empty_src_file_as_string, cls.empty_src_file) = (
-            cls.build_test_input_file(cls.empty_src_file_size))
-        cls.small_src_file_size = 2 * 1024  # 2 KB.
-        (cls.small_src_file_as_string, cls.small_src_file) = (
-            cls.build_test_input_file(cls.small_src_file_size))
-        cls.larger_src_file_size = 500 * 1024  # 500 KB.
-        (cls.larger_src_file_as_string, cls.larger_src_file) = (
-            cls.build_test_input_file(cls.larger_src_file_size))
-        cls.largest_src_file_size = 1024 * 1024  # 1 MB.
-        (cls.largest_src_file_as_string, cls.largest_src_file) = (
-            cls.build_test_input_file(cls.largest_src_file_size))
+        self.empty_src_file_size = 0
+        (self.empty_src_file_as_string, self.empty_src_file) = (
+            self.build_test_input_file(self.empty_src_file_size))
+        self.small_src_file_size = 2 * 1024  # 2 KB.
+        (self.small_src_file_as_string, self.small_src_file) = (
+            self.build_test_input_file(self.small_src_file_size))
+        self.larger_src_file_size = 500 * 1024  # 500 KB.
+        (self.larger_src_file_as_string, self.larger_src_file) = (
+            self.build_test_input_file(self.larger_src_file_size))
+        self.largest_src_file_size = 1024 * 1024  # 1 MB.
+        (self.largest_src_file_as_string, self.largest_src_file) = (
+            self.build_test_input_file(self.largest_src_file_size))
 
         # Create temp dir.
-        cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
+        self.tmp_dir = tempfile.mkdtemp(prefix=self.tmpdir_prefix)
 
         # Create the test bucket.
-        cls.dst_bucket_uri = cls.get_dst_bucket_uri(debug)
-        cls.dst_bucket_uri.create_bucket()
-        cls.dst_key_uri = cls.get_dst_key_uri()
+        self.dst_bucket_uri = self.get_dst_bucket_uri()
+        self.dst_bucket_uri.create_bucket()
+        self.dst_key_uri = self.get_dst_key_uri()
 
-        cls.tracker_file_name = '%s%suri_tracker' % (cls.tmp_dir, os.sep)
+        self.tracker_file_name = '%s%suri_tracker' % (self.tmp_dir, os.sep)
 
-        cls.syntactically_invalid_tracker_file_name = (
-            '%s%ssynt_invalid_uri_tracker' % (cls.tmp_dir, os.sep))
-        f = open(cls.syntactically_invalid_tracker_file_name, 'w')
+        self.syntactically_invalid_tracker_file_name = (
+            '%s%ssynt_invalid_uri_tracker' % (self.tmp_dir, os.sep))
+        f = open(self.syntactically_invalid_tracker_file_name, 'w')
         f.write('ftp://example.com')
         f.close()
 
-        cls.invalid_upload_id = cls.get_invalid_upload_id()
-        cls.invalid_upload_id_tracker_file_name = (
-            '%s%sinvalid_upload_id_tracker' % (cls.tmp_dir, os.sep))
-        f = open(cls.invalid_upload_id_tracker_file_name, 'w')
-        f.write(cls.invalid_upload_id)
+        self.invalid_upload_id = self.get_invalid_upload_id()
+        self.invalid_upload_id_tracker_file_name = (
+            '%s%sinvalid_upload_id_tracker' % (self.tmp_dir, os.sep))
+        f = open(self.invalid_upload_id_tracker_file_name, 'w')
+        f.write(self.invalid_upload_id)
         f.close()
 
-        cls.created_test_data = True
+        self.dst_key = self.dst_key_uri.new_key(validate=False)
+        self.created_test_data = True
 
-    @classmethod
-    def tear_down_class(cls):
+    def tearDown(self):
         """
-        Deletes bucket and tmp dir created by set_up_class.
+        Deletes any objects, files, and bucket from each test run.
         """
-        if not hasattr(cls, 'created_test_data'):
+        if not hasattr(self, 'created_test_data'):
             return
+
+        shutil.rmtree(self.tmp_dir)
 
         # Retry (for up to 2 minutes) the bucket gets deleted (it may not
         # the first time round, due to eventual consistency of bucket delete
-        # operations).
+        # operations). We also retry key deletions because if the key fails
+        # to be deleted on the first attempt, it will stop us from deleting
+        # the bucket.
         for i in range(60):
             try:
-                cls.dst_bucket_uri.delete_bucket()
+                self.dst_key_uri.delete_key()
+            except GSResponseError, e:
+                # Ignore errors attempting to delete the key, because not all
+                # tests will write to the dst key.
+                pass
+            try:
+                self.dst_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
                 print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.dst_bucket_uri.uri)
+                    self.dst_bucket_uri.uri)
                 time.sleep(2)
-        shutil.rmtree(cls.tmp_dir)
-        cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        self.tmp_dir = tempfile.mkdtemp(prefix=self.tmpdir_prefix)
 
     def test_non_resumable_upload(self):
         """
@@ -592,32 +571,3 @@ class ResumableUploadTests(unittest.TestCase):
         finally:
             # Restore original protection of dir where tracker_file lives.
             os.chmod(self.tmp_dir, save_mod)
-
-if __name__ == '__main__':
-    if sys.version_info[:3] < (2, 5, 1):
-        sys.exit('These tests must be run on at least Python 2.5.1\n')
-
-    # Use -d to see more HTTP protocol detail during tests.
-    debug = 0
-    opts, args = getopt.getopt(sys.argv[1:], 'd', ['debug'])
-    for o, a in opts:
-      if o in ('-d', '--debug'):
-        debug = 2
-
-    test_loader = unittest.TestLoader()
-    test_loader.testMethodPrefix = 'test_'
-    suite = test_loader.loadTestsFromTestCase(ResumableUploadTests)
-    # Seems like there should be a cleaner way to find the test_class.
-    test_class = suite.__getattribute__('_tests')[0]
-    # We call set_up_class() and tear_down_class() ourselves because we
-    # don't assume the user has Python 2.7 (which supports classmethods
-    # that do it, with camelCase versions of these names).
-    try:
-        print 'Setting up %s...' % test_class.get_suite_description()
-        test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
-        unittest.TextTestRunner(verbosity=2).run(suite)
-    finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
-        test_class.tear_down_class()
-        print ''

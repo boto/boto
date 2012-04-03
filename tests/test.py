@@ -40,6 +40,8 @@ from s3.test_multidelete import S3MultiDeleteTest
 from s3.test_multipart import S3MultiPartUploadTest
 from s3.test_gsconnection import GSConnectionTest
 from s3.test_https_cert_validation import CertValidationTest
+from s3.test_resumable_downloads import ResumableDownloadTests
+from s3.test_resumable_uploads import ResumableUploadTests
 from ec2.test_connection import EC2ConnectionTest
 from ec2.elb.test_connection import ELBConnectionTest
 from ec2.cloudwatch.test_connection import CloudWatchConnectionTest
@@ -109,6 +111,8 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(S3MFATest))
     elif testsuite == "gs":
         tests.addTest(unittest.makeSuite(GSConnectionTest))
+        tests.addTest(unittest.makeSuite(ResumableDownloadTests))
+        tests.addTest(unittest.makeSuite(ResumableUploadTests))
     elif testsuite == "sqs":
         tests.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == "ec2":
