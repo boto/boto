@@ -78,6 +78,7 @@ class Layer1(AWSAuthConnection):
         :raises: ``DynamoDBExpiredTokenError`` if the security token expires.
         """
         headers = {'X-Amz-Target': '%s.%s' % (self.ServiceName, action),
+                   'Host': self.region.endpoint,
                    'Content-Type': 'application/json; charset=UTF-8',
                    'Content-Encoding': 'amz-1.0',
                    'Content-Length': str(len(body))}
