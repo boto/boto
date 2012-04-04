@@ -656,7 +656,7 @@ class Layer1(AWSAuthConnection):
 
 ## Workflow Management
 
-    def register_workflow_type(self, domain, name, task_list=None,
+    def register_workflow_type(self, domain, name, version, task_list=None,
                                default_child_policy=None,
                                default_execution_start_to_close_timeout=None,
                                default_task_start_to_close_timeout=None,
@@ -671,6 +671,9 @@ class Layer1(AWSAuthConnection):
 
         :type name: string
         :param name: The name of the workflow type.
+
+        :type version: string
+        :param version: The version of the workflow type.
 
         :type task_list: list of name, version of tasks
         :param name: If set, specifies the default task list to use
@@ -722,7 +725,7 @@ class Layer1(AWSAuthConnection):
         :raises: TypeAlreadyExistsFault, LimitExceededFault,
             UnknownResourceFault, OperationNotPermittedFault
         """
-        data = {'domain': domain, 'name': name}
+        data = {'domain': domain, 'name': name, 'version': version} 
         if task_list:
             data['defaultTaskList'] = {'name': task_list}
         if default_child_policy:
