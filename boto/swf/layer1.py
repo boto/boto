@@ -725,7 +725,7 @@ class Layer1(AWSAuthConnection):
         :raises: TypeAlreadyExistsFault, LimitExceededFault,
             UnknownResourceFault, OperationNotPermittedFault
         """
-        data = {'domain': domain, 'name': name, 'version': version} 
+        data = {'domain': domain, 'name': name, 'version': version}
         if task_list:
             data['defaultTaskList'] = {'name': task_list}
         if default_child_policy:
