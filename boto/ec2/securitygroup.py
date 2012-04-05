@@ -85,7 +85,7 @@ class SecurityGroup(TaggedEC2Object):
         return self.connection.delete_security_group(self.name)
 
     def add_rule(self, ip_protocol, from_port, to_port,
-                 src_group_name, src_group_owner_id, cidr_ip):
+                 src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
         """
         Add a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -96,10 +96,10 @@ class SecurityGroup(TaggedEC2Object):
         rule.from_port = from_port
         rule.to_port = to_port
         self.rules.append(rule)
-        rule.add_grant(src_group_name, src_group_owner_id, cidr_ip)
+        rule.add_grant(src_group_name, src_group_owner_id, cidr_ip, src_group_group_id)
 
     def remove_rule(self, ip_protocol, from_port, to_port,
-                    src_group_name, src_group_owner_id, cidr_ip):
+                    src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
         """
         Remove a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -113,7 +113,7 @@ class SecurityGroup(TaggedEC2Object):
                         target_rule = rule
                         target_grant = None
                         for grant in rule.grants:
-                            if grant.name == src_group_name:
+                            if grant.name == src_group_name or grant.group_id == src_group_group_id:
                                 if grant.owner_id == src_group_owner_id:
                                     if grant.cidr_ip == cidr_ip:
                                         target_grant = grant
@@ -155,22 +155,26 @@ class SecurityGroup(TaggedEC2Object):
             cidr_ip = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
+            src_group_group_id = src_group.group_id
         else:
             src_group_name = None
             src_group_owner_id = None
+            src_group_group_id = None
         status = self.connection.authorize_security_group(self.name,
                                                           src_group_name,
                                                           src_group_owner_id,
                                                           ip_protocol,
                                                           from_port,
                                                           to_port,
-                                                          cidr_ip)
+                                                          cidr_ip,
+                                                          None,
+                                                          src_group_group_id)
         if status:
             if type(cidr_ip) != list:
                 cidr_ip = [cidr_ip]
             for single_cidr_ip in cidr_ip:
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
-                              src_group_owner_id, single_cidr_ip)
+                              src_group_owner_id, single_cidr_ip, src_group_group_id)
 
         return status
 
@@ -180,19 +184,23 @@ class SecurityGroup(TaggedEC2Object):
             cidr_ip=None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
+            src_group_group_id = src_group.group_id
         else:
             src_group_name = None
             src_group_owner_id = None
+            src_group_group_id = None
         status = self.connection.revoke_security_group(self.name,
                                                        src_group_name,
                                                        src_group_owner_id,
                                                        ip_protocol,
                                                        from_port,
                                                        to_port,
-                                                       cidr_ip)
+                                                       cidr_ip
+                                                       None,
+                                                       src_group_group_id)
         if status:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
-                             src_group_owner_id, cidr_ip)
+                             src_group_owner_id, cidr_ip, src_group_group_id)
         return status
 
     def copy_to_region(self, region, name=None):
@@ -220,9 +228,10 @@ class SecurityGroup(TaggedEC2Object):
         source_groups = []
         for rule in self.rules:
             for grant in rule.grants:
-                if grant.name:
-                    if grant.name not in source_groups:
-                        source_groups.append(grant.name)
+                grant_nom = grant.name or grant.group_id
+                if grant_nom:
+                    if grant_nom not in source_groups:
+                        source_groups.append(grant_nom)
                         sg.authorize(None, None, None, None, grant)
                 else:
                     sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
@@ -287,9 +296,10 @@ class IPPermissions(object):
         else:
             setattr(self, name, value)
 
-    def add_grant(self, name=None, owner_id=None, cidr_ip=None):
+    def add_grant(self, name=None, owner_id=None, cidr_ip=None, group_id=None):
         grant = GroupOrCIDR(self)
         grant.owner_id = owner_id
+        grant.group_id = group_id
         grant.name = name
         grant.cidr_ip = cidr_ip
         self.grants.append(grant)
@@ -299,6 +309,7 @@ class GroupOrCIDR(object):
 
     def __init__(self, parent=None):
         self.owner_id = None
+        self.group_id = None
         self.name = None
         self.cidr_ip = None
 
@@ -306,7 +317,7 @@ class GroupOrCIDR(object):
         if self.cidr_ip:
             return '%s' % self.cidr_ip
         else:
-            return '%s-%s' % (self.name, self.owner_id)
+            return '%s-%s' % (self.name or self.group_id, self.owner_id)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -314,6 +325,8 @@ class GroupOrCIDR(object):
     def endElement(self, name, value, connection):
         if name == 'userId':
             self.owner_id = value
+        elif name == 'groupId':
+            self.group_id = value
         elif name == 'groupName':
             self.name = value
         if name == 'cidrIp':
