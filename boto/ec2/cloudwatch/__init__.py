@@ -139,7 +139,7 @@ class CloudWatchConnection(AWSQueryConnection):
 
     def build_put_params(self, params, name, value=None, timestamp=None, 
                         unit=None, dimensions=None, statistics=None):
-        args = (name, value, unit, dimensions, statistics)
+        args = (name, value, unit, dimensions, statistics, timestamp)
         length = max(map(lambda a: len(a) if isinstance(a, list) else 1, args))
 
         def aslist(a):
@@ -149,11 +149,11 @@ class CloudWatchConnection(AWSQueryConnection):
                 return a
             return [a] * length
 
-        for index, (n, v, u, d, s) in enumerate(zip(*map(aslist, args))):
+        for index, (n, v, u, d, s, t) in enumerate(zip(*map(aslist, args))):
             metric_data = {'MetricName': n}
 
             if timestamp:
-                metric_data['Timestamp'] = timestamp.isoformat()
+                metric_data['Timestamp'] = t.isoformat()
             
             if unit:
                 metric_data['Unit'] = u
