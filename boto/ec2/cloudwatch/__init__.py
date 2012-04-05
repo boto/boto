@@ -320,7 +320,7 @@ class CloudWatchConnection(AWSQueryConnection):
         self.build_put_params(params, name, value=value, timestamp=timestamp,
             unit=unit, dimensions=dimensions, statistics=statistics)
 
-        return self.get_status('PutMetricData', params)
+        return self.get_status('PutMetricData', params, verb="POST")
 
 
     def describe_alarms(self, action_prefix=None, alarm_name_prefix=None,
