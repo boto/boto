@@ -195,7 +195,7 @@ class SecurityGroup(TaggedEC2Object):
                                                        ip_protocol,
                                                        from_port,
                                                        to_port,
-                                                       cidr_ip
+                                                       cidr_ip,
                                                        None,
                                                        src_group_group_id)
         if status:
