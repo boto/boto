@@ -160,7 +160,7 @@ class Image(TaggedEC2Object):
             disable_api_termination=False,
             instance_initiated_shutdown_behavior=None,
             private_ip_address=None,
-            placement_group=None, security_group_ids=None):
+            placement_group=None, security_group_ids=None, tenancy='default'):
         """
         Runs this instance.
         
@@ -234,6 +234,14 @@ class Image(TaggedEC2Object):
 
         :type security_group_ids: 
         :param security_group_ids:
+
+        :type tenancy: string
+        :param tenancy: Specifies the tenancy for the launched instance. Please note, to use
+                        dedicated tenancy you MUST specify a VPC subnet_id as well.
+                        Valid values are:
+
+                        * default
+                        * dedicated
         """
 
         return self.connection.run_instances(self.id, min_count, max_count,
@@ -245,7 +253,8 @@ class Image(TaggedEC2Object):
                                              block_device_map, disable_api_termination,
                                              instance_initiated_shutdown_behavior,
                                              private_ip_address, placement_group, 
-                                             security_group_ids=security_group_ids)
+                                             security_group_ids=security_group_ids,
+                                             tenancy=tenancy)
 
     def deregister(self, delete_snapshot=False):
         return self.connection.deregister_image(self.id, delete_snapshot)

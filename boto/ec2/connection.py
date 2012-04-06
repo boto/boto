@@ -519,7 +519,7 @@ class EC2Connection(AWSQueryConnection):
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
                       placement_group=None, client_token=None,
-                      security_group_ids=None):
+                      security_group_ids=None, tenancy='default'):
         """
         Runs an image on EC2.
 
@@ -617,6 +617,14 @@ class EC2Connection(AWSQueryConnection):
         :type security_group_ids: list of strings
         :param security_group_ids: The ID of the VPC security groups with
                                    which to associate instances
+
+        :type tenancy: string
+        :param tenancy: Specifies the tenancy for the launched instance. Please note, to use
+                        dedicated tenancy you MUST specify a VPC subnet_id as well.
+                        Valid values are:
+
+                        * default
+                        * dedicated
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
@@ -668,6 +676,11 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceInitiatedShutdownBehavior'] = val
         if client_token:
             params['ClientToken'] = client_token
+        if tenancy:
+            if tenancy == 'dedicated':
+                if subnet_id:
+                    params['Placement.Tenancy'] = tenancy
+
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
