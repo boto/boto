@@ -676,7 +676,7 @@ class EC2Connection(AWSQueryConnection):
         if client_token:
             params['ClientToken'] = client_token
 	if tenancy:
-            params['Tenancy'] = tenancy
+            params['Placement.Tenancy'] = tenancy
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
