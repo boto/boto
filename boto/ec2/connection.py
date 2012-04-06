@@ -619,7 +619,8 @@ class EC2Connection(AWSQueryConnection):
                                    which to associate instances
 
         :type tenancy: string
-        :param tenancy: Specifies the tenancy for the launched instance. 
+        :param tenancy: Specifies the tenancy for the launched instance. Please note, to use
+                        dedicated tenancy you MUST specify a VPC subnet_id as well.
                         Valid values are:
 
                         * default
@@ -675,8 +676,11 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceInitiatedShutdownBehavior'] = val
         if client_token:
             params['ClientToken'] = client_token
-	if tenancy:
-            params['Placement.Tenancy'] = tenancy
+        if tenancy:
+            if tenancy == 'dedicated':
+                if subnet_id:
+                    params['Placement.Tenancy'] = tenancy
+
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):

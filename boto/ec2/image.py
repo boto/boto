@@ -236,7 +236,8 @@ class Image(TaggedEC2Object):
         :param security_group_ids:
 
         :type tenancy: string
-        :param tenancy: Specifies the tenancy for the launched instance.
+        :param tenancy: Specifies the tenancy for the launched instance. Please note, to use
+                        dedicated tenancy you MUST specify a VPC subnet_id as well.
                         Valid values are:
 
                         * default
