@@ -169,7 +169,7 @@ class ELBConnection(AWSQueryConnection):
             self.build_list_params(params, subnets, 'Subnets.member.%d')
 
         if security_groups:
-            self.build_list_params(params, security_groups, 
+            self.build_list_params(params, security_groups,
                                     'SecurityGroups.member.%d')
 
         load_balancer = self.get_object('CreateLoadBalancer',
@@ -194,9 +194,9 @@ class ELBConnection(AWSQueryConnection):
                           [SSLCertificateId])
                           where LoadBalancerPortNumber and InstancePortNumber are
                           integer values between 1 and 65535, Protocol is a
-                          string containing either 'TCP', 'HTTP' or 'HTTPS';
+                          string containing either 'TCP', 'HTTP', 'HTTPS', or 'SSL';
                           SSLCertificateID is the ARN of a AWS AIM certificate,
-                          and must be specified when doing HTTPS.
+                          and must be specified when doing HTTPS or SSL.
 
         :return: The status of the request
         """
@@ -206,7 +206,7 @@ class ELBConnection(AWSQueryConnection):
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
             params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if listener[2]=='HTTPS':
+            if listener[2] == 'HTTPS' or listener[2] == 'SSL':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         return self.get_status('CreateLoadBalancerListeners', params)
 
@@ -461,7 +461,7 @@ class ELBConnection(AWSQueryConnection):
     def apply_security_groups_to_lb(self, name, security_groups):
         """
         Applies security groups to the load balancer.
-        Applying security groups that are already registered with the 
+        Applying security groups that are already registered with the
         Load Balancer has no effect.
 
         :type name: string
@@ -475,16 +475,16 @@ class ELBConnection(AWSQueryConnection):
 
         """
         params = {'LoadBalancerName' : name}
-        self.build_list_params(params, security_groups, 
+        self.build_list_params(params, security_groups,
                                'SecurityGroups.member.%d')
-        return self.get_list('ApplySecurityGroupsToLoadBalancer', 
+        return self.get_list('ApplySecurityGroupsToLoadBalancer',
                              params,
                              None)
 
     def attach_lb_to_subnets(self, name, subnets):
         """
         Attaches load balancer to one or more subnets.
-        Attaching subnets that are already registered with the 
+        Attaching subnets that are already registered with the
         Load Balancer has no effect.
 
         :type name: string
@@ -498,9 +498,9 @@ class ELBConnection(AWSQueryConnection):
 
         """
         params = {'LoadBalancerName' : name}
-        self.build_list_params(params, subnets, 
+        self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('AttachLoadBalancerToSubnets', 
+        return self.get_list('AttachLoadBalancerToSubnets',
                              params,
                              None)
 
@@ -519,10 +519,8 @@ class ELBConnection(AWSQueryConnection):
 
         """
         params = {'LoadBalancerName' : name}
-        self.build_list_params(params, subnets, 
+        self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('DettachLoadBalancerFromSubnets', 
+        return self.get_list('DettachLoadBalancerFromSubnets',
                              params,
                              None)
- 
-
