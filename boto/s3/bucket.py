@@ -117,6 +117,8 @@ class Bucket(object):
             self.name = value
         elif name == 'CreationDate':
             self.creation_date = value
+        elif name == 'IsOwn':
+            self.is_own = value
         else:
             setattr(self, name, value)
 
