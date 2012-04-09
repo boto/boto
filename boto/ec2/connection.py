@@ -1212,7 +1212,7 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_object('AllocateAddress', params, Address, verb='POST')
 
-    def associate_address(self, instance_id, public_ip=None, allocation_id=None):
+    def associate_address(self, instance_id=None, public_ip=None, allocation_id=None, network_interface_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1227,10 +1227,17 @@ class EC2Connection(AWSQueryConnection):
         :type allocation_id: string
         :param allocation_id: The allocation ID for a VPC-based elastic IP.
 
+        :type network_interface_id: string
+        : param network_interface_id: The network interface ID to which elastic IP is to be assigned to
+
         :rtype: bool
         :return: True if successful
         """
-        params = { 'InstanceId' : instance_id }
+        params = {}
+        if instance_id is not None:
+                params['InstanceId'] = instance_id
+        elif network_interface_id is not None:
+                params['NetworkInterfaceId'] = network_interface_id
 
         if public_ip is not None:
             params['PublicIp'] = public_ip
