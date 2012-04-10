@@ -349,6 +349,11 @@ class Key(object):
             pass
         elif name == 'VersionId':
             self.version_id = value
+        elif name == 'IsPublic':
+            if value == 'true':
+                self.is_public = True
+            else:
+                self.is_public = False
         else:
             setattr(self, name, value)
 
