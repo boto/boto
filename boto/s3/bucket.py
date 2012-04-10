@@ -1427,6 +1427,14 @@ class Bucket(object):
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)
+            # Use a dummy key to parse various response headers
+            # for versioning, encryption info and then explicitly
+            # set the completed MPU object values from key.
+            k = self.key_class(self)
+            k.handle_version_headers(response)
+            k.handle_encryption_headers(response)
+            resp.version_id = k.version_id
+            resp.encrypted = k.encrypted
             return resp
         else:
             raise self.connection.provider.storage_response_error(

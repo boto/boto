@@ -35,6 +35,8 @@ class CompleteMultiPartUpload(object):
                      is contained
      * key_name - The name of the new, completed key
      * etag - The MD5 hash of the completed, combined upload
+     * version_id - The version_id of the completed upload
+     * encrypted - The value of the encryption header
     """
 
     def __init__(self, bucket=None):
@@ -43,6 +45,8 @@ class CompleteMultiPartUpload(object):
         self.bucket_name = None
         self.key_name = None
         self.etag = None
+        self.version_id = None
+        self.encrypted = None
 
     def __repr__(self):
         return '<CompleteMultiPartUpload: %s.%s>' % (self.bucket_name,
