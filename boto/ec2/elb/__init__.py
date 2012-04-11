@@ -157,10 +157,11 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName' : name}
         for index, listener in enumerate(listeners):
             i = index + 1
+            protocol = listener[2].upper()
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if listener[2]=='HTTPS':
+            params['Listeners.member.%d.Protocol' % i] = protocol
+            if protocol == 'HTTPS' or protocol == 'SSL':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         if zones:
             self.build_list_params(params, zones, 'AvailabilityZones.member.%d')
@@ -203,10 +204,11 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName' : name}
         for index, listener in enumerate(listeners):
             i = index + 1
+            protocol = listener[2].upper()
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if listener[2] == 'HTTPS' or listener[2] == 'SSL':
+            params['Listeners.member.%d.Protocol' % i] = protocol
+            if protocol == 'HTTPS' or protocol == 'SSL':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         return self.get_status('CreateLoadBalancerListeners', params)
 
