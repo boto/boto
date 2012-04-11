@@ -171,6 +171,7 @@ class Bucket(object):
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
+            k.content_disposition = response.getheader('content-disposition')
             k.last_modified = response.getheader('last-modified')
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
