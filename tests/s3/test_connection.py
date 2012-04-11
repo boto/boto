@@ -72,6 +72,12 @@ class S3ConnectionTest (unittest.TestCase):
         file = urllib.urlopen(url)
         rh = {'response-content-disposition': 'attachment; filename="foo.txt"'}
         url = k.generate_url(60, response_headers=rh)
+        file = urllib.urlopen(url)
+        assert s1 == file.read(), 'invalid URL %s' % url
+        #test whether amperands and to-be-escaped characters work in header filename
+        rh = {'response-content-disposition': 'attachment; filename="foo&z%20ar&ar&zar&bar.txt"'}
+        url = k.generate_url(60, response_headers=rh)
+        file = urllib.urlopen(url)
         assert s1 == file.read(), 'invalid URL %s' % url
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
