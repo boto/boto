@@ -2915,7 +2915,7 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'NetworkInterfaceId' : network_interface_id,
                   'InstanceId' : instance_id,
-                  'Deviceindex' : device_index}
+                  'DeviceIndex' : device_index}
         return self.get_status('AttachNetworkInterface', params, verb='POST')
 
     def detach_network_interface(self, network_interface_id, force=False):
