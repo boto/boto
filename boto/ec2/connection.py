@@ -2116,11 +2116,10 @@ class EC2Connection(AWSQueryConnection):
                          can be used instead of group_name for EC2
                          security groups.
 
-        :type group_id: string
-        :param group_id: ID of the EC2 or VPC source security group.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
+        :type src_security_group_group_id: string
+        :param src_security_group_group_id: The ID of the security group
+                                            you are granting access to.
+                                            Can be used instead of src_security_group_name
 
         :rtype: bool
         :return: True if successful.
@@ -2235,18 +2234,6 @@ class EC2Connection(AWSQueryConnection):
         :param to_port: The CIDR block you are revoking access to.
                         http://goo.gl/Yj5QC
 
-        :type group_id: string
-        :param group_id: ID of the EC2 or VPC security group to modify.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
-
-        :type group_id: string
-        :param group_id: ID of the EC2 or VPC source security group.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
-
         :rtype: bool
         :return: True if successful.
         """
@@ -2301,6 +2288,17 @@ class EC2Connection(AWSQueryConnection):
         :type cidr_ip: string
         :param cidr_ip: The CIDR block you are revoking access to.
                         See http://goo.gl/Yj5QC
+
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC security group to modify.
+                         This is required for VPC security groups and
+                         can be used instead of group_name for EC2
+                         security groups.
+
+        :type src_security_group_group_id: string
+        :param src_security_group_group_id: The ID of the security group
+                                            for which you are revoking access.
+                                            Can be used instead of src_security_group_name
 
         :rtype: bool
         :return: True if successful.
