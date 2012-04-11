@@ -1335,7 +1335,8 @@ class Bucket(object):
 
     def initiate_multipart_upload(self, key_name, headers=None,
                                   reduced_redundancy=False,
-                                  metadata=None, encrypt_key=False):
+                                  metadata=None, encrypt_key=False,
+                                  policy=None):
         """
         Start a multipart upload operation.
 
@@ -1366,11 +1367,16 @@ class Bucket(object):
                             be encrypted on the server-side by S3 and
                             will be stored in an encrypted form while
                             at rest in S3.
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+                       new key (once completed) in S3.
         """
         query_args = 'uploads'
         provider = self.connection.provider
-        if headers is None:
-            headers = {}
+        headers = headers or {}
+        if policy:
+            headers[provider.acl_header] = policy
         if reduced_redundancy:
             storage_class_header = provider.storage_class_header
             if storage_class_header:
@@ -1422,6 +1428,14 @@ class Bucket(object):
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)
+            # Use a dummy key to parse various response headers
+            # for versioning, encryption info and then explicitly
+            # set the completed MPU object values from key.
+            k = self.key_class(self)
+            k.handle_version_headers(response)
+            k.handle_encryption_headers(response)
+            resp.version_id = k.version_id
+            resp.encrypted = k.encrypted
             return resp
         else:
             raise self.connection.provider.storage_response_error(
