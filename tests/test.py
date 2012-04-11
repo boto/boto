@@ -136,6 +136,8 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     elif testsuite == "sts":
         tests.addTest(unittest.makeSuite(SessionTokenTest))
+    elif testsuite == "swf":
+        tests.addTest(unittest.makeSuite(SimpleWorkflowLayer1Test))
     elif testsuite == "swfL1":
         tests.addTest(unittest.makeSuite(SimpleWorkflowLayer1Test))
     else:
