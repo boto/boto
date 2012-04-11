@@ -464,7 +464,7 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
-    
+
     def get_all_instance_status(self, instance_ids=None,
                                 max_results=None, next_token=None,
                                 filters=None):
@@ -1313,7 +1313,7 @@ class EC2Connection(AWSQueryConnection):
         Create a new EBS Volume.
 
         :type size: int
-        :param size: The size of the new volume, in GiB
+        :param size: The size of the new volume, in GiB, 0 means use it up
 
         :type zone: string or :class:`boto.ec2.zone.Zone`
         :param zone: The availability zone in which the Volume will be created.
@@ -1324,7 +1324,7 @@ class EC2Connection(AWSQueryConnection):
         if isinstance(zone, Zone):
             zone = zone.name
         params = {'AvailabilityZone' : zone}
-        if size:
+        if size is not None:
             params['Size'] = size
         if snapshot:
             if isinstance(snapshot, Snapshot):
@@ -2240,7 +2240,7 @@ class EC2Connection(AWSQueryConnection):
         Remove an existing egress rule from an existing VPC security group.
         You need to pass in an ip_protocol, from_port and to_port range only
         if the protocol you are using is port-based. You also need to pass in either
-        a src_group_id or cidr_ip. 
+        a src_group_id or cidr_ip.
 
         :type group_name: string
         :param group_id:  The name of the security group you are removing
@@ -2265,7 +2265,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-       
+
         params = {}
         if group_id:
             params['GroupId'] = group_id
