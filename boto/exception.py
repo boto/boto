@@ -322,6 +322,32 @@ class DynamoDBResponseError(BotoServerError):
             if self.error_code:
                 self.error_code = self.error_code.split('#')[-1]
 
+
+class SWFResponseError(BotoServerError):
+    """
+    This exception expects the fully parsed and decoded JSON response
+    body to be passed as the body parameter.
+
+    :ivar status: The HTTP status code.
+    :ivar reason: The HTTP reason message.
+    :ivar body: The Python dict that represents the decoded JSON
+        response body.
+    :ivar error_message: The full description of the AWS error encountered.
+    :ivar error_code: A short string that identifies the AWS error
+        (e.g. ConditionalCheckFailedException)
+    """
+
+    def __init__(self, status, reason, body=None, *args):
+        self.status = status
+        self.reason = reason
+        self.body = body
+        if self.body:
+            self.error_message = self.body.get('message', None)
+            self.error_code = self.body.get('__type', None)
+            if self.error_code:
+                self.error_code = self.error_code.split('#')[-1]
+
+
 class EmrResponseError(BotoServerError):
     """
     Error in response from EMR
