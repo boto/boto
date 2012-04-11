@@ -2031,15 +2031,15 @@ class EC2Connection(AWSQueryConnection):
 
         :type group_name: string
         :param group_name: The name of the security group you are adding
-                           the rule to.
+            the rule to.
 
         :type src_security_group_name: string
         :param src_security_group_name: The name of the security group you are
-                                        granting access to.
+            granting access to.
 
         :type src_security_group_owner_id: string
         :param src_security_group_owner_id: The ID of the owner of the security
-                                            group you are granting access to.
+            group you are granting access to.
 
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
@@ -2052,7 +2052,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type to_port: string
         :param to_port: The CIDR block you are providing access to.
-                        See http://goo.gl/Yj5QC
+            See http://goo.gl/Yj5QC
 
         :rtype: bool
         :return: True if successful.
@@ -2087,15 +2087,15 @@ class EC2Connection(AWSQueryConnection):
 
         :type group_name: string
         :param group_name: The name of the security group you are adding
-                           the rule to.
+            the rule to.
 
         :type src_security_group_name: string
         :param src_security_group_name: The name of the security group you are
-                                        granting access to.
+            granting access to.
 
         :type src_security_group_owner_id: string
         :param src_security_group_owner_id: The ID of the owner of the security
-                                            group you are granting access to.
+            group you are granting access to.
 
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
@@ -2108,18 +2108,17 @@ class EC2Connection(AWSQueryConnection):
 
         :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
-                        See http://goo.gl/Yj5QC
+            See http://goo.gl/Yj5QC
 
         :type group_id: string
-        :param group_id: ID of the EC2 or VPC security group to modify.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
+        :param group_id: ID of the EC2 or VPC security group to
+            modify.  This is required for VPC security groups and can
+            be used instead of group_name for EC2 security groups.
 
         :type src_security_group_group_id: string
-        :param src_security_group_group_id: The ID of the security group
-                                            you are granting access to.
-                                            Can be used instead of src_security_group_name
+        :param src_security_group_group_id: The ID of the security
+            group you are granting access to.  Can be used instead of
+            src_security_group_name
 
         :rtype: bool
         :return: True if successful.
