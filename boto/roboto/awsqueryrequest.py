@@ -223,7 +223,7 @@ class AWSQueryRequest(object):
         filter_names = [f['name'] for f in self.Filters]
         unknown_filters = [f for f in filters if f not in filter_names]
         if unknown_filters:
-            raise FilterError, 'Unknown filters: %s' % unknown_filters
+            raise FilterError('Unknown filters: %s' % unknown_filters)
         for i, filter in enumerate(self.Filters):
             name = filter['name']
             if name in filters:
@@ -452,16 +452,16 @@ class AWSQueryRequest(object):
         try:
             response = self.main()
             self.cli_formatter(response)
-        except RequiredParamError, e:
+        except RequiredParamError as e:
             print e
             sys.exit(1)
-        except self.ServiceClass.ResponseError, err:
+        except self.ServiceClass.ResponseError as err:
             print 'Error(%s): %s' % (err.error_code, err.error_message)
             sys.exit(1)
-        except boto.roboto.awsqueryservice.NoCredentialsError, err:
+        except boto.roboto.awsqueryservice.NoCredentialsError as err:
             print 'Unable to find credentials.'
             sys.exit(1)
-        except Exception, e:
+        except Exception as e:
             print e
             sys.exit(1)
 

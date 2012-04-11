@@ -169,9 +169,9 @@ class Sequence(object):
         try:
             self.db.put_attributes(self.id, new_val, expected_value=expected_value)
             self.timestamp = new_val['timestamp']
-        except SDBResponseError, e:
+        except SDBResponseError as e:
             if e.status == 409:
-                raise ValueError, "Sequence out of sync"
+                raise ValueError("Sequence out of sync")
             else:
                 raise
 
@@ -180,11 +180,11 @@ class Sequence(object):
         """Get the value"""
         val = self.db.get_attributes(self.id, consistent_read=True)
         if val:
-            if val.has_key('timestamp'):
+            if 'timestamp' in val:
                 self.timestamp = val['timestamp']
-            if val.has_key('current_value'):
+            if 'current_value' in val:
                 self._value = self.item_type(val['current_value'])
-            if val.has_key("last_value") and val['last_value'] != None:
+            if val.get('last_value') is not None:
                 self.last_value = self.item_type(val['last_value'])
         return self._value
 
@@ -208,7 +208,7 @@ class Sequence(object):
                 self.domain_name = boto.config.get("DB", "sequence_db", boto.config.get("DB", "db_name", "default"))
             try:
                 self._db = sdb.get_domain(self.domain_name)
-            except SDBResponseError, e:
+            except SDBResponseError as e:
                 if e.status == 400:
                     self._db = sdb.create_domain(self.domain_name)
                 else:

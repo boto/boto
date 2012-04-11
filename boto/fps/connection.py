@@ -146,7 +146,7 @@ class FPSConnection(AWSQueryConnection):
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
 
-        if(not params.has_key('callerReference')):
+        if('callerReference' not in params):
             params['callerReference'] = str(uuid.uuid4())
 
         parts = ''
@@ -191,7 +191,7 @@ class FPSConnection(AWSQueryConnection):
         params["signatureMethod"] = 'HmacSHA256'
         params["signatureVersion"] = '2'
         
-        if(not params.has_key('callerReference')):
+        if('callerReference' not in params):
             params['callerReference'] = str(uuid.uuid4())
 
         parts = ''

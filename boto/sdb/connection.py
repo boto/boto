@@ -612,6 +612,6 @@ class SDBConnection(AWSQueryConnection):
         try:
             return self.get_list('Select', params, [('Item', self.item_cls)],
                              parent=domain)
-        except SDBResponseError, e:
+        except SDBResponseError as e:
             e.body = "Query: %s\n%s" % (query, e.body)
             raise e

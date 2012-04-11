@@ -101,7 +101,7 @@ class SDBConverter(object):
         if value == None:
             return None
         if not isinstance(value, dict):
-            raise ValueError, 'Expected a dict value, got %s' % type(value)
+            raise ValueError('Expected a dict value, got %s' % type(value))
         new_value = []
         for key in value:
             item_type = getattr(prop, "item_type")
@@ -276,7 +276,7 @@ class SDBConverter(object):
             else:
                 value = value.split("-")
                 return date(int(value[0]), int(value[1]), int(value[2]))
-        except Exception, e:
+        except Exception as e:
             return None
 
     def encode_date(self, value):
@@ -356,7 +356,7 @@ class SDBConverter(object):
             bucket = s3.get_bucket(match.group(1), validate=False)
             try:
                 key = bucket.get_key(match.group(2))
-            except S3ResponseError, e:
+            except S3ResponseError as e:
                 if e.reason != "Forbidden":
                     raise
                 return None
@@ -471,14 +471,14 @@ class SDBManager(object):
     def load_object(self, obj):
         if not obj._loaded:
             a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
-            if a.has_key('__type__'):
+            if '__type__' in a:
                 for prop in obj.properties(hidden=False):
-                    if a.has_key(prop.name):
+                    if prop.name in a:
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         try:
                             setattr(obj, prop.name, value)
-                        except Exception, e:
+                        except Exception as e:
                             boto.log.exception(e)
             obj._loaded = True
         
@@ -486,13 +486,13 @@ class SDBManager(object):
         obj = None
         if not a:
             a = self.domain.get_attributes(id,consistent_read=self.consistent)
-        if a.has_key('__type__'):
+        if '__type__' in a:
             if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
             if cls:
                 params = {}
                 for prop in cls.properties(hidden=False):
-                    if a.has_key(prop.name):
+                    if prop.name in a:
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         params[prop.name] = value
@@ -589,7 +589,7 @@ class SDBManager(object):
                 property = cls.find_property(name)
                 if name == order_by:
                     order_by_filtered = True
-                if types.TypeType(value) == types.ListType:
+                if types.TypeType(value) == list:
                     filter_parts_sub = []
                     for val in value:
                         val = self.encode_value(property, val)
@@ -640,7 +640,7 @@ class SDBManager(object):
         return decendents
 
     def query_gql(self, query_string, *args, **kwds):
-        raise NotImplementedError, "GQL queries not supported in SimpleDB"
+        raise NotImplementedError("GQL queries not supported in SimpleDB")
 
     def save_object(self, obj, expected_value=None):
         if not obj.id:
@@ -706,7 +706,7 @@ class SDBManager(object):
             value = prop.make_value_from_datastore(value)
             setattr(obj, prop.name, value)
             return value
-        raise AttributeError, '%s not found' % name
+        raise AttributeError('%s not found' % name)
 
     def set_key_value(self, obj, name, value):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
@@ -716,7 +716,7 @@ class SDBManager(object):
 
     def get_key_value(self, obj, name):
         a = self.domain.get_attributes(obj.id, name,consistent_read=self.consistent)
-        if a.has_key(name):
+        if name in a:
             return a[name]
         else:
             return None

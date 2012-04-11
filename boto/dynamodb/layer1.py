@@ -295,7 +295,7 @@ class Layer1(AWSAuthConnection):
         json_input = json.dumps(data)
         response = self.make_request('GetItem', json_input,
                                      object_hook=object_hook)
-        if not response.has_key('Item'):
+        if 'Item' not in response:
             raise dynamodb_exceptions.DynamoDBKeyNotFoundError(
                 "Key does not exist."
             )

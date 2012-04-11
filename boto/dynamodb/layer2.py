@@ -572,7 +572,7 @@ class Layer2(object):
                 break
             if response is True:
                 pass
-            elif response.has_key("LastEvaluatedKey"):
+            elif "LastEvaluatedKey" in response:
                 lek = response['LastEvaluatedKey']
                 esk = self.dynamize_last_evaluated_key(lek)
             else:
@@ -664,7 +664,7 @@ class Layer2(object):
         while response:
             if response is True:
                 pass
-            elif response.has_key("LastEvaluatedKey"):
+            elif "LastEvaluatedKey" in response:
                 last_evaluated_key = response['LastEvaluatedKey']
                 esk = self.dynamize_item(last_evaluated_key)
             else:

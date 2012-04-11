@@ -30,8 +30,8 @@ from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
-import exception
-import hostedzone
+from . import exception
+from . import hostedzone
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
@@ -101,7 +101,7 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         if zone_list:
             e['ListHostedZonesResponse']['HostedZones'].extend(zone_list)
-        while e['ListHostedZonesResponse'].has_key('NextMarker'):
+        while 'NextMarker' in e['ListHostedZonesResponse']:
             next_marker = e['ListHostedZonesResponse']['NextMarker']
             zone_list = e['ListHostedZonesResponse']['HostedZones']
             e = self.get_all_hosted_zones(next_marker, zone_list)

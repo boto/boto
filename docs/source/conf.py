@@ -26,7 +26,7 @@ intersphinx_mapping = {'http://docs.python.org/': None}
 try:
     release = os.environ.get('SVN_REVISION', 'HEAD')
     print release
-except Exception, e:
+except Exception as e:
     print e
 
 html_title = "boto v%s" % version

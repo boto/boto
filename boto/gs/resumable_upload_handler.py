@@ -95,7 +95,7 @@ class ResumableUploadHandler(object):
             f = open(self.tracker_file_name, 'r')
             uri = f.readline().strip()
             self._set_tracker_uri(uri)
-        except IOError, e:
+        except IOError as e:
             # Ignore non-existent file (happens first time an upload
             # is attempted on a file), but warn user for other errors.
             if e.errno != errno.ENOENT:
@@ -103,7 +103,7 @@ class ResumableUploadHandler(object):
                 print('Couldn\'t read URI tracker file (%s): %s. Restarting '
                       'upload from scratch.' %
                       (self.tracker_file_name, e.strerror))
-        except InvalidUriError, e:
+        except InvalidUriError as e:
             # Warn user, but proceed (will restart because
             # self.tracker_uri == None).
             print('Invalid tracker URI (%s) found in URI tracker file '
@@ -123,7 +123,7 @@ class ResumableUploadHandler(object):
         try:
             f = open(self.tracker_file_name, 'w')
             f.write(self.tracker_uri)
-        except IOError, e:
+        except IOError as e:
             raise ResumableUploadException(
                 'Couldn\'t write URI tracker file (%s): %s.\nThis can happen'
                 'if you\'re using an incorrectly configured upload tool\n'
@@ -394,7 +394,7 @@ class ResumableUploadHandler(object):
                 key=key
                 if conn.debug >= 1:
                     print 'Resuming transfer.'
-            except ResumableUploadException, e:
+            except ResumableUploadException as e:
                 if conn.debug >= 1:
                     print 'Unable to resume transfer (%s).' % e.message
                 self._start_new_resumable_upload(key, headers)
@@ -534,7 +534,7 @@ class ResumableUploadHandler(object):
                 if debug >= 1:
                     print 'Resumable upload complete.'
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
                     print('Caught exception (%s)' % e.__repr__())
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
@@ -544,7 +544,7 @@ class ResumableUploadHandler(object):
                     # the upload (which will cause a new connection to be
                     # opened the next time an HTTP request is sent).
                     key.bucket.connection.connection.close()
-            except ResumableUploadException, e:
+            except ResumableUploadException as e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
