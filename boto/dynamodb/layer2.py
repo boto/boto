@@ -267,6 +267,9 @@ class Layer2(object):
     def update_throughput(self, table, read_units, write_units):
         """
         Update the ProvisionedThroughput for the Amazon DynamoDB Table.
+        Makes multiple calls to DynamoDB if provided values are greater than the
+        DynamoDB limit of two times the current values. Returns when the update
+        is complete and the table is active.
 
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object whose throughput is being updated.
@@ -277,10 +280,19 @@ class Layer2(object):
         :type write_units: int
         :param write_units: The new value for WriteCapacityUnits.
         """
-        response = self.layer1.update_table(table.name,
-                                            {'ReadCapacityUnits': read_units,
-                                             'WriteCapacityUnits': write_units})
-        table.update_from_response(response)
+        while True:
+            table.refresh(wait_for_active=True)
+            if table.read_units==read_units and table.write_units==write_units:
+                break
+            read_units_next, write_units_next = read_units, write_units
+            if read_units > 2 * table.read_units:
+                read_units_next = 2 * table.read_units
+            if write_units > 2 * table.write_units:
+                write_units_next = 2 * table.write_units
+            capacity = {'ReadCapacityUnits': read_units_next,
+                        'WriteCapacityUnits': write_units_next}
+            response = self.layer1.update_table(table.name, capacity)
+            table.update_from_response(response)
         
     def delete_table(self, table):
         """
