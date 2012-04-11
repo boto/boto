@@ -632,7 +632,7 @@ class AWSAuthConnection(object):
     def put_http_connection(self, host, is_secure, connection):
         self._pool.put_http_connection(host, is_secure, connection)
 
-    def proxy_ssl(self):
+    def proxy_ssl(self, goodProxy = True):
         host = '%s:%d' % (self.host, self.port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -679,7 +679,11 @@ class AWSAuthConnection(object):
         else:
             # Fallback for old Python without ssl.wrap_socket
             if hasattr(httplib, 'ssl'):
-                sslSock = httplib.ssl.SSLSocket(sock)
+                try:
+                    sslSock = httplib.ssl.SSLSocket(sock)
+                except:
+                    h = self.proxy_ssl(False)
+                    return h
             else:
                 sslSock = socket.ssl(sock, None, None)
                 sslSock = httplib.FakeSocket(sock, sslSock)
