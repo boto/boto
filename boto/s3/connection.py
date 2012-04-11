@@ -29,6 +29,7 @@ from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.provider import Provider
 from boto.s3.bucket import Bucket
+from boto.s3.requestlog import RequestLog
 from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError
@@ -322,6 +323,21 @@ class S3Connection(AWSAuthConnection):
             raise self.provider.storage_response_error(
                 response.status, response.reason, body)
         rs = ResultSet([('Bucket', self.bucket_class)])
+        h = handler.XmlHandler(rs, self)
+        xml.sax.parseString(body, h)
+        return rs
+
+    def get_all_request_logs(self, request_ids=None, headers=None):
+        query_args = "request-logs"
+        if request_ids is not None:
+           query_args += "&" + "&".join([ "request-id=%s" % req for req in request_ids])
+
+        response = self.make_request('GET', headers=headers, query_args=query_args)
+        body = response.read()
+        if response.status > 300:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, body)
+        rs = ResultSet([('RequestLog', RequestLog)])
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
