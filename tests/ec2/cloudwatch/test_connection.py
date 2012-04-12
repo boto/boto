@@ -120,8 +120,8 @@ class CloudWatchConnectionTest(unittest.TestCase):
         expected_params = {
             'MetricData.member.1.MetricName': 'N',
             'MetricData.member.1.Value': 1,
-            'MetricData.member.1.Dimensions.member.1.Name.1': 'D',
-            'MetricData.member.1.Dimensions.member.1.Value.1': 'V',
+            'MetricData.member.1.Dimensions.member.1.Name': 'D',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
             }
         self.assertEqual(params, expected_params)
 
@@ -132,12 +132,12 @@ class CloudWatchConnectionTest(unittest.TestCase):
         expected_params = {
             'MetricData.member.1.MetricName': 'N',
             'MetricData.member.1.Value': 1,
-            'MetricData.member.1.Dimensions.member.1.Name.1': 'D',
-            'MetricData.member.1.Dimensions.member.1.Value.1': 'V',
+            'MetricData.member.1.Dimensions.member.1.Name': 'D',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
             'MetricData.member.2.MetricName': 'M',
             'MetricData.member.2.Value': 2,
-            'MetricData.member.2.Dimensions.member.1.Name.1': 'D',
-            'MetricData.member.2.Dimensions.member.1.Value.1': 'V',
+            'MetricData.member.2.Dimensions.member.1.Name': 'D',
+            'MetricData.member.2.Dimensions.member.1.Value': 'V',
             }
         self.assertEqual(params, expected_params)
 
@@ -148,12 +148,12 @@ class CloudWatchConnectionTest(unittest.TestCase):
         expected_params = {
             'MetricData.member.1.MetricName': 'N',
             'MetricData.member.1.Value': 1,
-            'MetricData.member.1.Dimensions.member.1.Name.1': 'D',
-            'MetricData.member.1.Dimensions.member.1.Value.1': 'V',
+            'MetricData.member.1.Dimensions.member.1.Name': 'D',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
             'MetricData.member.2.MetricName': 'N',
             'MetricData.member.2.Value': 2,
-            'MetricData.member.2.Dimensions.member.1.Name.1': 'D',
-            'MetricData.member.2.Dimensions.member.1.Value.1': 'W',
+            'MetricData.member.2.Dimensions.member.1.Name': 'D',
+            'MetricData.member.2.Dimensions.member.1.Value': 'W',
             }
         self.assertEqual(params, expected_params)
 
@@ -170,14 +170,14 @@ class CloudWatchConnectionTest(unittest.TestCase):
         expected_params = {
             'MetricData.member.1.MetricName': 'N',
             'MetricData.member.1.Value': 1,
-            'MetricData.member.1.Dimensions.member.1.Name.1': 'D1',
-            'MetricData.member.1.Dimensions.member.1.Value.1': 'V',
-            'MetricData.member.1.Dimensions.member.2.Name.1': 'D2',
-            'MetricData.member.1.Dimensions.member.2.Value.1': 'W',
+            'MetricData.member.1.Dimensions.member.1.Name': 'D1',
+            'MetricData.member.1.Dimensions.member.1.Value': 'V',
+            'MetricData.member.1.Dimensions.member.2.Name': 'D2',
+            'MetricData.member.1.Dimensions.member.2.Value': 'W',
             }
         self.assertEqual(params, expected_params)
 
-    def test_build_get_params_multiple_parameter_dimension(self):
+    def test_build_get_params_multiple_parameter_dimension1(self):
         from collections import OrderedDict
         self.maxDiff = None
         c = CloudWatchConnection()
@@ -185,10 +185,28 @@ class CloudWatchConnectionTest(unittest.TestCase):
         dimensions = OrderedDict((("D1", "V"), ("D2", "W")))
         c.build_dimension_param(dimensions, params)
         expected_params = {
-            'Dimensions.member.1.Name.1': 'D1',
-            'Dimensions.member.1.Value.1': 'V',
-            'Dimensions.member.2.Name.1': 'D2',
-            'Dimensions.member.2.Value.1': 'W',
+            'Dimensions.member.1.Name': 'D1',
+            'Dimensions.member.1.Value': 'V',
+            'Dimensions.member.2.Name': 'D2',
+            'Dimensions.member.2.Value': 'W',
+            }
+        self.assertEqual(params, expected_params)
+
+    def test_build_get_params_multiple_parameter_dimension2(self):
+        from collections import OrderedDict
+        self.maxDiff = None
+        c = CloudWatchConnection()
+        params = {}
+        dimensions = OrderedDict((("D1", ["V1", "V2"]), ("D2", "W"), ("D3", None)))
+        c.build_dimension_param(dimensions, params)
+        expected_params = {
+            'Dimensions.member.1.Name': 'D1',
+            'Dimensions.member.1.Value': 'V1',
+            'Dimensions.member.2.Name': 'D1',
+            'Dimensions.member.2.Value': 'V2',
+            'Dimensions.member.3.Name': 'D2',
+            'Dimensions.member.3.Value': 'W',
+            'Dimensions.member.4.Name': 'D3',
             }
         self.assertEqual(params, expected_params)
 
