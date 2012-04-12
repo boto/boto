@@ -47,7 +47,28 @@ def item_object_hook(dct):
         return set(map(convert_num, dct['NS']))
     return dct
 
+def table_generator(table, callable, max_results, item_class, kwargs):
+    response = True
+    n = 0
+    while response:
+        if max_results and n == max_results:
+            break
+        if response is True:
+            pass
+        elif 'LastEvaluatedKey' in response:
+            lek = response['LastEvaluatedKey']
+            esk = layer2.dynamize_last_evaluated_key(lek)
+            kwargs['exclusive_start_key'] = esk
+        else:
+            break
+        response = callable(**kwargs)
+        for item in response['Items']:
+            if max_results and n == max_results:
+                break
+            yield item_class(table, attrs=item)
+            n += 1
 
+                
 class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -564,31 +585,21 @@ class Layer2(object):
         else:
             rkc = None
         if exclusive_start_key:
-            esk = self.build_key_from_values(table.schema, *exclusive_start_key)
+            esk = self.build_key_from_values(table.schema,
+                                             *exclusive_start_key)
         else:
             esk = None
-        response = True
-        n = 0
-        while response:
-            if max_results and n == max_results:
-                break
-            if response is True:
-                pass
-            elif 'LastEvaluatedKey' in response:
-                lek = response['LastEvaluatedKey']
-                esk = self.dynamize_last_evaluated_key(lek)
-            else:
-                break
-            response = self.layer1.query(table.name,
-                                         dynamize_value(hash_key),
-                                         rkc, attributes_to_get, request_limit,
-                                         consistent_read, scan_index_forward,
-                                         esk, object_hook=item_object_hook)
-            for item in response['Items']:
-                if max_results and n == max_results:
-                    break
-                yield item_class(table, attrs=item)
-                n += 1
+        kwargs = {'table_name': table.name,
+                  'hash_key_value': dynamize_value(hash_key),
+                  'range_key_conditions': rkc,
+                  'attributes_to_get': attributes_to_get,
+                  'limit': request_limit,
+                  'consistent_read': consistent_read,
+                  'scan_index_forward': scan_index_forward,
+                  'exclusive_start_key': esk,
+                  'object_hook': item_object_hook}
+        return table_generator(table, self.layer1.query,
+                               max_results, item_class, kwargs)
 
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, request_limit=None, max_results=None,
