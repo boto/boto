@@ -33,12 +33,10 @@ class ItemThread(threading.Thread):
     """
     A threaded :class:`Item <boto.sdb.item.Item>` retriever utility class. 
     Retrieved :class:`Item <boto.sdb.item.Item>` objects are stored in the
-    ``items`` instance variable after 
-    :py:meth:`run() <run>` is called. 
+    ``items`` instance variable after :py:meth:`run() <run>` is called.
     
-    .. tip:: 
-        The item retrieval will not start until the 
-        :func:`run() <boto.sdb.connection.ItemThread.run>` method is called.
+    .. tip:: The item retrieval will not start until
+        the :func:`run() <boto.sdb.connection.ItemThread.run>` method is called.
     """
     def __init__(self, name, domain_name, item_names):
         """
@@ -88,7 +86,7 @@ class SDBConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 converter=None):
+                 converter=None, security_token=None):
         """
         For any keywords that aren't documented, refer to the parent class,
         :py:class:`boto.connection.AWSAuthConnection`. You can avoid having
@@ -118,7 +116,8 @@ class SDBConnection(AWSQueryConnection):
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path,
+                                    security_token=security_token)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item

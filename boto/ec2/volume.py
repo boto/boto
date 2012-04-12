@@ -105,7 +105,9 @@ class Volume(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_volumes([self.id])
+        # Check the resultset since Eucalyptus ignores the volumeId param
+        unfiltered_rs = self.connection.get_all_volumes([self.id])
+        rs = [ x for x in unfiltered_rs if x.id == self.id ]
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
@@ -168,9 +170,9 @@ class Volume(TaggedEC2Object):
 
         :type description: str
         :param description: A description of the snapshot.  Limited to 256 characters.
-        
-        :rtype: bool
-        :return: True if successful
+
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         return self.connection.create_snapshot(self.id, description)
 
@@ -246,20 +248,27 @@ class AttachmentSet(object):
         else:
             setattr(self, name, value)
 
-class VolumeAttributes(PlainXmlDict):
-    """Contains all volume attributes."""
+class VolumeAttribute:
 
-    def __init__(self, parent = None):
-        super(VolumeAttributes, self).__init__(parent)
-
+    def __init__(self, parent=None):
+        self.id = None
+        self._key_name = None
+        self.attrs = {}
 
     def startElement(self, name, attrs, connection):
-        if name in ("tierType", "tierName", "replication"):
-            return self.setdefault(name, PlainXmlDict(dict_name = name))
-        else:
-            return super(VolumeAttributes, self).startElement(name, attrs, connection)
-
+        if name in ('autoEnableIO', 'tierType', 'tierName', 'replication'):
+            self._key_name = name
+        return None
 
     def endElement(self, name, value, connection):
-        if name != "DescribeVolumeAttributeResponse":
-            super(VolumeAttributes, self).endElement(name, value, connection)
+        if name == 'value':
+            if name in ('autoEnableIO', 'replication'):
+                self.attrs[self._key_name] = (value.lower() == 'true')
+            else:
+                self.attrs[self._key_name] = value
+        elif name == 'volumeId':
+            self.id = value
+        else:
+            setattr(self, name, value)
+
+            

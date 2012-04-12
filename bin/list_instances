@@ -64,7 +64,7 @@ def main():
     print format_string % headers
     print "-" * len(format_string % headers)
     for r in ec2.get_all_instances():
-        groups = [g.id for g in r.groups]
+        groups = [g.name for g in r.groups]
         for i in r.instances:
             i.groups = ','.join(groups)
             print format_string % tuple(get_column(h, i) for h in headers)

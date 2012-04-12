@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -24,6 +24,13 @@ RECORD_TYPES = ['A', 'AAAA', 'TXT', 'CNAME', 'MX', 'PTR', 'SRV', 'SPF']
 
 from boto.resultset import ResultSet
 class ResourceRecordSets(ResultSet):
+    """
+    A list of resource records.
+
+    :ivar hosted_zone_id: The ID of the hosted zone.
+    :ivar comment: A comment that will be stored with the change.
+    :ivar changes: A list of changes.
+    """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
     <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2011-05-05/">
@@ -38,7 +45,6 @@ class ResourceRecordSets(ResultSet):
         %(record)s
     </Change>"""
 
-
     def __init__(self, connection=None, hosted_zone_id=None, comment=None):
         self.connection = connection
         self.hosted_zone_id = hosted_zone_id
@@ -51,9 +57,59 @@ class ResourceRecordSets(ResultSet):
     def __repr__(self):
         return '<ResourceRecordSets: %s>' % self.hosted_zone_id
 
-    def add_change(self, action, name, type, ttl=600, alias_hosted_zone_id=None, alias_dns_name=None):
-        """Add a change request"""
-        change = Record(name, type, ttl, alias_hosted_zone_id=alias_hosted_zone_id, alias_dns_name=alias_dns_name)
+    def add_change(self, action, name, type, ttl=600,
+            alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
+            weight=None):
+        """
+        Add a change request to the set.
+
+        :type action: str
+        :param action: The action to perform ('CREATE'|'DELETE')
+
+        :type name: str
+        :param name: The name of the domain you want to perform the action on.
+
+        :type type: str
+        :param type: The DNS record type.  Valid values are:
+
+            * A
+            * AAAA
+            * CNAME
+            * MX
+            * NS
+            * PTR
+            * SOA
+            * SPF
+            * SRV
+            * TXT
+
+        :type ttl: int
+        :param ttl: The resource record cache time to live (TTL), in seconds.
+
+        :type alias_hosted_zone_id: str
+        :param alias_dns_name: *Alias resource record sets only* The value
+            of the hosted zone ID, CanonicalHostedZoneNameId, for
+            the LoadBalancer.
+
+        :type alias_dns_name: str
+        :param alias_hosted_zone_id: *Alias resource record sets only*
+            Information about the domain to which you are redirecting traffic.
+
+        :type identifier: str
+        :param identifier: *Weighted resource record sets only* An
+            identifier that differentiates among multiple resource
+            record sets that have the same combination of DNS name and type.
+
+        :type weight: int
+        :param weight: *Weighted resource record sets only* Among resource
+            record sets that have the same combination of DNS name and type,
+            a value that determines what portion of traffic for the current
+            resource record set is routed to the associated location
+        """
+        change = Record(name, type, ttl,
+                alias_hosted_zone_id=alias_hosted_zone_id,
+                alias_dns_name=alias_dns_name, identifier=identifier,
+                weight=weight)
         self.changes.append([action, change])
         return change
 
@@ -75,7 +131,7 @@ class ResourceRecordSets(ResultSet):
         return self.connection.change_rrsets(self.hosted_zone_id, self.to_xml())
 
     def endElement(self, name, value, connection):
-        """Overwritten to also add the NextRecordName and 
+        """Overwritten to also add the NextRecordName and
         NextRecordType to the base object"""
         if name == 'NextRecordName':
             self.next_record_name = value
@@ -104,8 +160,14 @@ class Record(object):
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
+        %(weight)s
         %(body)s
     </ResourceRecordSet>"""
+
+    WRRBody = """
+        <SetIdentifier>%(identifier)s</SetIdentifier>
+        <Weight>%(weight)s</Weight>
+    """
 
     ResourceRecordsBody = """
         <TTL>%(ttl)s</TTL>
@@ -122,7 +184,11 @@ class Record(object):
         <DNSName>%s</DNSName>
     </AliasTarget>"""
 
-    def __init__(self, name=None, type=None, ttl=600, resource_records=None, alias_hosted_zone_id=None, alias_dns_name=None):
+
+
+    def __init__(self, name=None, type=None, ttl=600, resource_records=None,
+            alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
+            weight=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -131,7 +197,9 @@ class Record(object):
         self.resource_records = resource_records
         self.alias_hosted_zone_id = alias_hosted_zone_id
         self.alias_dns_name = alias_dns_name
-    
+        self.identifier = identifier
+        self.weight = weight
+
     def add_value(self, value):
         """Add a resource record value"""
         self.resource_records.append(value)
@@ -155,20 +223,31 @@ class Record(object):
                 "ttl": self.ttl,
                 "records": records,
             }
+        weight = ""
+        if self.identifier != None and self.weight != None:
+            weight = self.WRRBody % {"identifier": self.identifier, "weight":
+                    self.weight}
         params = {
             "name": self.name,
             "type": self.type,
+            "weight": weight,
             "body": body,
         }
         return self.XMLBody % params
 
     def to_print(self):
+        rr = ""
         if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
             # Show alias
-            return 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
+            rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
         else:
             # Show resource record(s)
-            return ",".join(self.resource_records)
+            rr =  ",".join(self.resource_records)
+
+        if self.identifier != None and self.weight != None:
+            rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)
+
+        return rr
 
     def endElement(self, name, value, connection):
         if name == 'Name':
@@ -183,6 +262,10 @@ class Record(object):
             self.alias_hosted_zone_id = value
         elif name == 'DNSName':
             self.alias_dns_name = value
+        elif name == 'SetIdentifier':
+            self.identifier = value
+        elif name == 'Weight':
+            self.weight = value
 
     def startElement(self, name, attrs, connection):
         return None

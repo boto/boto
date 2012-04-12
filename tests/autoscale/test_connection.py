@@ -33,6 +33,7 @@ from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes, ScalingPolicy
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.instance import Instance
+from boto.ec2.autoscale.tag import Tag
 
 class AutoscaleConnectionTest(unittest.TestCase):
 
@@ -91,5 +92,75 @@ class AutoscaleConnectionTest(unittest.TestCase):
         types = c.get_all_metric_collection_types()
         self.assertTrue(type(types), MetricCollectionTypes)
 
+        # create the simplest possible AutoScale group
+        # first create the launch configuration
+        time_string = '%d' % int(time.time())
+        lc_name = 'lc-%s' % time_string
+        lc = LaunchConfiguration(name=lc_name, image_id='ami-2272864b',
+                                 instance_type='t1.micro')
+        c.create_launch_configuration(lc)
+        found = False
+        lcs = c.get_all_launch_configurations()
+        for lc in lcs:
+            if lc.name == lc_name:
+                found = True
+                break
+        assert found
+
+        # now create autoscaling group
+        group_name = 'group-%s' % time_string
+        group = AutoScalingGroup(name=group_name, launch_config=lc,
+                                 availability_zones=['us-east-1a'],
+                                 min_size=1, max_size=1)
+        c.create_auto_scaling_group(group)
+        found = False
+        groups = c.get_all_groups()
+        for group in groups:
+            if group.name == group_name:
+                found = True
+                break
+        assert found
+
+        # now create a tag
+        tag = Tag(key='foo', value='bar', resource_id=group_name,
+                  propagate_at_launch=True)
+        c.create_or_update_tags([tag])
+
+        found = False
+        tags = c.get_all_tags()
+        for tag in tags:
+            if tag.resource_id == group_name and tag.key == 'foo':
+                found = True
+                break
+        assert found
+
+        c.delete_tags([tag])
+
+        # shutdown instances and wait for them to disappear
+        group.shutdown_instances()
+        instances = True
+        while instances:
+            time.sleep(5)
+            groups = c.get_all_groups()
+            for group in groups:
+                if group.name == group_name:
+                    if not group.instances:
+                        instances = False
+            
+        group.delete()
+        lc.delete()
+        
+        found = True
+        while found:
+            found = False
+            time.sleep(5)
+            tags = c.get_all_tags()
+            for tag in tags:
+                if tag.resource_id == group_name and tag.key == 'foo':
+                    found = True
+            
+        assert not found
+
         print '--- tests completed ---'
 
+        

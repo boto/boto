@@ -12,6 +12,7 @@ def sizeof_fmt(num):
 def list_bucket(b, prefix=None):
     """List everything in a bucket"""
     from boto.s3.prefix import Prefix
+    from boto.s3.key import Key
     total = 0
     query = b
     if prefix:
@@ -34,7 +35,14 @@ def list_bucket(b, prefix=None):
                         mode = "-rwxr--"
                     elif g.permission == "FULL_CONTROL":
                         mode = "-rwxrwx"
-        print "%s\t%s\t%010s\t%s" % (mode, k.last_modified, sizeof_fmt(size), k.name)
+        if isinstance(k, Key):
+           print "%s\t%s\t%010s\t%s" % (mode, k.last_modified,
+                 sizeof_fmt(size), k.name)
+        else:
+           #If it's not a Key object, it doesn't have a last_modified time, so
+           #print nothing instead
+           print "%s\t%s\t%010s\t%s" % (mode, ' '*24,
+              sizeof_fmt(size), k.name)
         total += size
     print "="*80
     print "\t\tTOTAL:  \t%010s \t%i Files" % (sizeof_fmt(total), num)

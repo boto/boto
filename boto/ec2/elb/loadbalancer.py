@@ -29,10 +29,40 @@ from boto.resultset import ResultSet
 
 class LoadBalancer(object):
     """
-    Represents an EC2 Load Balancer
+    Represents an EC2 Load Balancer.
     """
 
     def __init__(self, connection=None, name=None, endpoints=None):
+        """
+        :ivar boto.ec2.elb.ELBConnection connection: The connection this load
+            balancer was instance was instantiated from.
+        :ivar list listeners: A list of tuples in the form of
+            ``(<Inbound port>, <Outbound port>, <Protocol>)``
+        :ivar boto.ec2.elb.healthcheck.HealthCheck health_check: The health
+            check policy for this load balancer.
+        :ivar boto.ec2.elb.policies.Policies policies: Cookie stickiness and
+            other policies.
+        :ivar str dns_name: The external DNS name for the balancer.
+        :ivar str created_time: A date+time string showing when the
+            load balancer was created.
+        :ivar list instances: A list of :py:class:`boto.ec2.instanceinfo.InstanceInfo`
+            instances, representing the EC2 instances this load balancer is
+            distributing requests to.
+        :ivar list availability_zones: The availability zones this balancer
+            covers.
+        :ivar str canonical_hosted_zone_name: Current CNAME for the balancer.
+        :ivar str canonical_hosted_zone_name_id: The Route 53 hosted zone
+            ID of this balancer. Needed when creating an Alias record in a
+            Route 53 hosted zone.
+        :ivar boto.ec2.elb.securitygroup.SecurityGroup source_security_group:
+            The security group that you can use as part of your inbound rules
+            for your load balancer back-end instances to disallow traffic
+            from sources other than your load balancer.
+        :ivar list subnets: A list of subnets this balancer is on.
+        :ivar list security_groups: A list of additional security groups that
+            have been applied.
+        :ivar str vpc_id: The ID of the VPC that this ELB resides within.
+        """
         self.connection = connection
         self.name = name
         self.listeners = None
@@ -45,6 +75,10 @@ class LoadBalancer(object):
         self.canonical_hosted_zone_name = None
         self.canonical_hosted_zone_name_id = None
         self.source_security_group = None
+        self.subnets = ListElement() 
+        self.security_groups = ListElement()
+        self.vpc_id = None 
+
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -67,6 +101,12 @@ class LoadBalancer(object):
         elif name == 'SourceSecurityGroup':
             self.source_security_group = SecurityGroup()
             return self.source_security_group
+        elif name == 'Subnets':
+            return self.subnets
+        elif name == 'SecurityGroups':
+            return self.security_groups
+        elif name == 'VPCId':
+            pass
         else:
             return None
 
@@ -83,6 +123,8 @@ class LoadBalancer(object):
             self.canonical_hosted_zone_name = value
         elif name == 'CanonicalHostedZoneNameID':
             self.canonical_hosted_zone_name_id = value
+        elif name == 'VPCId':
+            self.vpc_id = value
         else:
             setattr(self, name, value)
 
@@ -115,13 +157,12 @@ class LoadBalancer(object):
 
     def register_instances(self, instances):
         """
-        Add instances to this Load Balancer
-        All instances must be in the same region as the Load Balancer.
-        Adding endpoints that are already registered with the Load Balancer
-        has no effect.
+        Adds instances to this load balancer. All instances must be in the same
+        region as the load balancer. Adding endpoints that are already
+        registered with the load balancer has no effect.
 
-        :type zones: string or List of instance id's
-        :param zones: The name of the endpoint(s) to add.
+        :param list instances: List of instance IDs (strings) that you'd like
+            to add to this load balancer.
 
         """
         if isinstance(instances, str) or isinstance(instances, unicode):
@@ -131,12 +172,11 @@ class LoadBalancer(object):
 
     def deregister_instances(self, instances):
         """
-        Remove instances from this Load Balancer.
-        Removing instances that are not registered with the Load Balancer
-        has no effect.
+        Remove instances from this load balancer. Removing instances that are
+        not registered with the load balancer has no effect.
 
-        :type zones: string or List of instance id's
-        :param zones: The name of the endpoint(s) to add.
+        :param list instances: List of instance IDs (strings) that you'd like
+            to remove from this load balancer.
 
         """
         if isinstance(instances, str) or isinstance(instances, unicode):
@@ -146,14 +186,34 @@ class LoadBalancer(object):
 
     def delete(self):
         """
-        Delete this load balancer
+        Delete this load balancer.
         """
         return self.connection.delete_load_balancer(self.name)
 
     def configure_health_check(self, health_check):
+        """
+        Configures the health check behavior for the instances behind this
+        load balancer. See :ref:`elb-configuring-a-health-check` for a
+        walkthrough.
+
+        :param boto.ec2.elb.healthcheck.HealthCheck health_check: A
+            HealthCheck instance that tells the load balancer how to check
+            its instances for health.
+        """
         return self.connection.configure_health_check(self.name, health_check)
 
     def get_instance_health(self, instances=None):
+        """
+        Returns a list of :py:class:`boto.ec2.elb.instancestate.InstanceState`
+        objects, which show the health of the instances attached to this
+        load balancer.
+
+        :rtype: list
+        :returns: A list of
+            :py:class:`InstanceState <boto.ec2.elb.instancestate.InstanceState>`
+            instances, representing the instances
+            attached to this load balancer.
+        """
         return self.connection.describe_instance_health(self.name, instances)
 
     def create_listeners(self, listeners):
@@ -167,10 +227,8 @@ class LoadBalancer(object):
     def delete_listeners(self, listeners):
         return self.connection.delete_load_balancer_listeners(self.name, listeners)
 
-    def delete_listener(self, inPort, outPort=None, proto="tcp"):
-        if outPort == None:
-            outPort = inPort
-        return self.delete_listeners([(inPort, outPort, proto)])
+    def delete_listener(self, inPort):
+        return self.delete_listeners([inPort])
 
     def delete_policy(self, policy_name):
         """
@@ -190,4 +248,50 @@ class LoadBalancer(object):
 
     def set_listener_SSL_certificate(self, lb_port, ssl_certificate_id):
         return self.connection.set_lb_listener_SSL_certificate(self.name, lb_port, ssl_certificate_id)
+
+    def attach_subnets(self, subnets):
+        """
+        Attaches load balancer to one or more subnets.
+        Attaching subnets that are already registered with the 
+        Load Balancer has no effect.
+
+        :type subnets: string or List of strings
+        :param subnets: The name of the subnet(s) to add.
+
+        """
+        if isinstance(subnets, str) or isinstance(subnets, unicode):
+            subnets = [subnets]
+        new_subnets = self.connection.attach_lb_to_subnets(self.name, subnets)
+        self.subnets = new_subnets
+
+    def detach_subnets(self, subnets):
+        """
+        Detaches load balancer from one or more subnets.
+
+        :type subnets: string or List of strings
+        :param subnets: The name of the subnet(s) to detach.
+
+        """
+        if isinstance(subnets, str) or isinstance(subnets, unicode):
+            subnets = [subnets]
+        new_subnets = self.connection.detach_lb_to_subnets(self.name, subnets)
+        self.subnets = new_subnets
+
+    def apply_security_groups(self, security_groups):
+        """
+        Applies security groups to the load balancer.
+        Applying security groups that are already registered with the 
+        Load Balancer has no effect.
+
+        :type security_groups: string or List of strings
+        :param security_groups: The name of the security group(s) to add.
+
+        """
+        if isinstance(security_groups, str) or \
+              isinstance(security_groups, unicode):
+            security_groups = [security_groups]
+        new_sgs = self.connection.apply_security_groups_to_lb(
+                                         self.name, security_groups)
+        self.security_groups = new_sgs 
+
 

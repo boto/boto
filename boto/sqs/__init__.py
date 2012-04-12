@@ -1,4 +1,4 @@
-# Copyright (c) 2006,2007 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -30,15 +30,19 @@ def regions():
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
     return [SQSRegionInfo(name='us-east-1',
-                          endpoint='queue.amazonaws.com'),
+                          endpoint='sqs.us-east-1.amazonaws.com'),
             SQSRegionInfo(name='eu-west-1',
-                          endpoint='eu-west-1.queue.amazonaws.com'),
+                          endpoint='sqs.eu-west-1.amazonaws.com'),
             SQSRegionInfo(name='us-west-1',
-                          endpoint='us-west-1.queue.amazonaws.com'),
+                          endpoint='sqs.us-west-1.amazonaws.com'),
+            SQSRegionInfo(name='us-west-2',
+                          endpoint='sqs.us-west-2.amazonaws.com'),
+            SQSRegionInfo(name='sa-east-1',
+                          endpoint='sqs.sa-east-1.amazonaws.com'),
             SQSRegionInfo(name='ap-northeast-1',
-                          endpoint='ap-northeast-1.queue.amazonaws.com'),
+                          endpoint='sqs.ap-northeast-1.amazonaws.com'),
             SQSRegionInfo(name='ap-southeast-1',
-                          endpoint='ap-southeast-1.queue.amazonaws.com')
+                          endpoint='sqs.ap-southeast-1.amazonaws.com')
             ]
 
 def connect_to_region(region_name, **kw_params):

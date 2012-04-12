@@ -48,6 +48,7 @@ import errno
 import httplib
 import os
 import Queue
+import random
 import re
 import socket
 import sys
@@ -174,7 +175,7 @@ class HostConnectionPool(object):
             # simply doesn't make sense with App Engine urlfetch service.
             return False
         else:
-            response = conn._HTTPConnection__response
+            response = getattr(conn, '_HTTPConnection__response', None)
             return (response is None) or response.isclosed()
 
     def clean(self):
@@ -241,7 +242,9 @@ class ConnectionPool(object):
     def get_http_connection(self, host, is_secure):
         """
         Gets a connection from the pool for the named host.  Returns
-        None if there is no connection that can be reused.
+        None if there is no connection that can be reused. It's the caller's
+        responsibility to call close() on the connection when it's no longer
+        needed.
         """
         self.clean()
         with self.mutex:
@@ -301,7 +304,7 @@ class HTTPRequest(object):
                      in which case default port will be chosen.
 
         :type path: string
-        :param path: URL path that is bein accessed.
+        :param path: URL path that is being accessed.
 
         :type auth_path: string
         :param path: The part of the URL path used when creating the
@@ -364,7 +367,9 @@ class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, path='/', provider='aws'):
+                 https_connection_factory=None, path='/',
+                 provider='aws', security_token=None,
+                 suppress_consec_slashes=True):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -398,8 +403,13 @@ class AWSAuthConnection(object):
 
         :type port: int
         :param port: The port to use to connect
+
+        :type suppress_consec_slashes: bool
+        :param suppress_consec_slashes: If provided, controls whether
+            consecutive slashes will be suppressed in key paths.
         """
-        self.num_retries = 5
+        self.suppress_consec_slashes = suppress_consec_slashes
+        self.num_retries = 6
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
             is_secure = config.getboolean('Boto', 'is_secure')
@@ -424,7 +434,6 @@ class AWSAuthConnection(object):
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
-            self.http_unretryable_exceptions.append(ssl.SSLError)
             self.http_unretryable_exceptions.append(
                     https_connection.InvalidCertificateException)
 
@@ -441,10 +450,10 @@ class AWSAuthConnection(object):
             self.protocol = 'http'
         self.host = host
         self.path = path
-        if debug:
+        if isinstance(debug, (int, long)):
             self.debug = debug
         else:
-            self.debug = config.getint('Boto', 'debug', debug)
+            self.debug = config.getint('Boto', 'debug', 0)
         if port:
             self.port = port
         else:
@@ -463,7 +472,8 @@ class AWSAuthConnection(object):
 
         self.provider = Provider(provider,
                                  aws_access_key_id,
-                                 aws_secret_access_key)
+                                 aws_secret_access_key,
+                                 security_token)
 
         # allow config file to override default host
         if self.provider.host:
@@ -498,6 +508,12 @@ class AWSAuthConnection(object):
     secret_key = aws_secret_access_key
 
     def get_path(self, path='/'):
+        # The default behavior is to suppress consecutive slashes for reasons
+        # discussed at
+        # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
+        # You can override that behavior with the suppress_consec_slashes param.
+        if not self.suppress_consec_slashes:
+            return self.path + re.sub('^/*', "", path)
         pos = path.find('?')
         if pos >= 0:
             params = path[pos:]
@@ -680,7 +696,8 @@ class AWSAuthConnection(object):
         auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
-    def _mexe(self, request, sender=None, override_num_retries=None):
+    def _mexe(self, request, sender=None, override_num_retries=None,
+              retry_handler=None):
         """
         mexe - Multi-execute inside a loop, retrying multiple times to handle
                transient Internet errors by simply trying again.
@@ -688,6 +705,7 @@ class AWSAuthConnection(object):
 
         This code was inspired by the S3Utils classes posted to the boto-users
         Google group by Larry Bates.  Thanks!
+
         """
         boto.log.debug('Method: %s' % request.method)
         boto.log.debug('Path: %s' % request.path)
@@ -704,36 +722,54 @@ class AWSAuthConnection(object):
         i = 0
         connection = self.get_http_connection(request.host, self.is_secure)
         while i <= num_retries:
+            # Use binary exponential backoff to desynchronize client requests
+            next_sleep = random.random() * (2 ** i)
             try:
                 # we now re-sign each request before it is retried
+                boto.log.debug('Token: %s' % self.provider.security_token)
                 request.authorize(connection=self)
                 if callable(sender):
                     response = sender(connection, request.method, request.path,
                                       request.body, request.headers)
                 else:
-                    connection.request(request.method, request.path, request.body,
-                                       request.headers)
+                    connection.request(request.method, request.path,
+                                       request.body, request.headers)
                     response = connection.getresponse()
                 location = response.getheader('location')
                 # -- gross hack --
                 # httplib gets confused with chunked responses to HEAD requests
                 # so I have to fake it out
-                if request.method == 'HEAD' and getattr(response, 'chunked', False):
+                if request.method == 'HEAD' and getattr(response,
+                                                        'chunked', False):
                     response.chunked = 0
+                if callable(retry_handler):
+                    status = retry_handler(response, i, next_sleep)
+                    if status:
+                        msg, i, next_sleep = status
+                        if msg:
+                            boto.log.debug(msg)
+                        time.sleep(next_sleep)
+                        continue
                 if response.status == 500 or response.status == 503:
-                    boto.log.debug('received %d response, retrying in %d seconds' % (response.status, 2 ** i))
+                    msg = 'Received %d response.  ' % response.status
+                    msg += 'Retrying in %3.1f seconds' % next_sleep
+                    boto.log.debug(msg)
                     body = response.read()
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
-                    self.put_http_connection(request.host, self.is_secure, connection)
+                    self.put_http_connection(request.host, self.is_secure,
+                                             connection)
                     return response
                 else:
-                    scheme, request.host, request.path, params, query, fragment = \
-                            urlparse.urlparse(location)
+                    scheme, request.host, request.path, \
+                        params, query, fragment = urlparse.urlparse(location)
                     if query:
                         request.path += '?' + query
-                    boto.log.debug('Redirecting: %s' % scheme + '://' + request.host + request.path)
-                    connection = self.get_http_connection(request.host, scheme == 'https')
+                    msg = 'Redirecting: %s' % scheme + '://'
+                    msg += request.host + request.path
+                    boto.log.debug(msg)
+                    connection = self.get_http_connection(request.host,
+                                                          scheme == 'https')
                     continue
             except self.http_exceptions, e:
                 for unretryable in self.http_unretryable_exceptions:
@@ -744,18 +780,21 @@ class AWSAuthConnection(object):
                         raise e
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
-                connection = self.new_http_connection(request.host, self.is_secure)
-            time.sleep(2 ** i)
+                connection = self.new_http_connection(request.host,
+                                                      self.is_secure)
+            time.sleep(next_sleep)
             i += 1
-        # If we made it here, it's because we have exhausted our retries and stil haven't
-        # succeeded.  So, if we have a response object, use it to raise an exception.
-        # Otherwise, raise the exception that must have already happened.
+        # If we made it here, it's because we have exhausted our retries
+        # and stil haven't succeeded.  So, if we have a response object,
+        # use it to raise an exception.
+        # Otherwise, raise the exception that must have already h#appened.
         if response:
             raise BotoServerError(response.status, response.reason, body)
         elif e:
             raise e
         else:
-            raise BotoClientError('Please report this exception as a Boto Issue!')
+            msg = 'Please report this exception as a Boto Issue!'
+            raise BotoClientError(msg)
 
     def build_base_http_request(self, method, path, auth_path,
                                 params=None, headers=None, data='', host=None):
@@ -794,7 +833,7 @@ class AWSAuthConnection(object):
         and making a new request will open a connection again."""
 
         boto.log.debug('closing all HTTP connections')
-        self.connection = None  # compat field
+        self._connection = None  # compat field
 
 class AWSQueryConnection(AWSAuthConnection):
 
@@ -804,10 +843,13 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, path='/'):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                                   debug, https_connection_factory, path)
+                 https_connection_factory=None, path='/', security_token=None):
+        AWSAuthConnection.__init__(self, host, aws_access_key_id,
+                                   aws_secret_access_key,
+                                   is_secure, port, proxy,
+                                   proxy_port, proxy_user, proxy_pass,
+                                   debug, https_connection_factory, path,
+                                   security_token=security_token)
 
     def _required_auth_capability(self):
         return []
@@ -821,7 +863,8 @@ class AWSQueryConnection(AWSAuthConnection):
                                                     self.server_name())
         if action:
             http_request.params['Action'] = action
-        http_request.params['Version'] = self.APIVersion
+        if self.APIVersion:
+            http_request.params['Version'] = self.APIVersion
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
@@ -832,7 +875,8 @@ class AWSQueryConnection(AWSAuthConnection):
 
     # generics
 
-    def get_list(self, action, params, markers, path='/', parent=None, verb='GET'):
+    def get_list(self, action, params, markers, path='/',
+                 parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
@@ -851,7 +895,8 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-    def get_object(self, action, params, cls, path='/', parent=None, verb='GET'):
+    def get_object(self, action, params, cls, path='/',
+                   parent=None, verb='GET'):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)

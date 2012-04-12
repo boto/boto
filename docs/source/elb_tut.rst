@@ -4,61 +4,69 @@
 An Introduction to boto's Elastic Load Balancing interface
 ==========================================================
 
-This tutorial focuses on the boto interface for Elastic Load Balancing
-from Amazon Web Services.  This tutorial assumes that you have already
+This tutorial focuses on the boto interface for `Elastic Load Balancing`_
+from Amazon Web Services. This tutorial assumes that you have already
 downloaded and installed boto, and are familiar with the boto ec2 interface.
+
+.. _Elastic Load Balancing: http://aws.amazon.com/elasticloadbalancing/
 
 Elastic Load Balancing Concepts
 -------------------------------
-Elastic Load Balancing (ELB) is intimately connected with Amazon's Elastic
-Compute Cloud (EC2) service. Using the ELB service allows you to create a load
+`Elastic Load Balancing`_ (ELB) is intimately connected with Amazon's `Elastic
+Compute Cloud`_ (EC2) service. Using the ELB service allows you to create a load
 balancer - a DNS endpoint and set of ports that distributes incoming requests
-to a set of ec2 instances. The advantages of using a load balancer is that it
+to a set of EC2 instances. The advantages of using a load balancer is that it
 allows you to truly scale up or down a set of backend instances without
-disrupting service. Before the ELB service you had to do this manually by
+disrupting service. Before the ELB service, you had to do this manually by
 launching an EC2 instance and installing load balancer software on it (nginx,
 haproxy, perlbal, etc.) to distribute traffic to other EC2 instances.
 
-Recall that the ec2 service is split into Regions and Availability Zones (AZ).
-At the time of writing, there are two Regions - US and Europe, and each region
-is divided into a number of AZs (for example, us-east-1a, us-east-1b, etc.).
-You can think of AZs as data centers - each runs off a different set of ISP
-backbones and power providers. ELB load balancers can span multiple AZs but
-cannot span multiple regions. That means that if you'd like to create a set of
-instances spanning both the US and Europe Regions you'd have to create two load
-balancers and have some sort of other means of distributing requests between
-the two loadbalancers. An example of this could be using GeoIP techniques to
-choose the correct load balancer, or perhaps DNS round robin. Keep in mind also
-that traffic is distributed equally over all AZs the ELB balancer spans. This
-means you should have an equal number of instances in each AZ if you want to
-equally distribute load amongst all your instances.
+Recall that the EC2 service is split into Regions, which are further
+divided into Availability Zones (AZ).
+For example, the US-East region is divided into us-east-1a, us-east-1b,
+us-east-1c, us-east-1d, and us-east-1e. You can think of AZs as data centers -
+each runs off a different set of ISP backbones and power providers.
+ELB load balancers can span multiple AZs but cannot span multiple regions.
+That means that if you'd like to create a set of instances spanning both the
+US and Europe Regions you'd have to create two load balancers and have some
+sort of other means of distributing requests between the two load balancers.
+An example of this could be using GeoIP techniques to choose the correct load
+balancer, or perhaps DNS round robin. Keep in mind also that traffic is
+distributed equally over all AZs the ELB balancer spans. This means you should
+have an equal number of instances in each AZ if you want to equally distribute
+load amongst all your instances.
+
+.. _Elastic Compute Cloud: http://aws.amazon.com/ec2/
 
 Creating a Connection
 ---------------------
+
 The first step in accessing ELB is to create a connection to the service.
-There are two ways to do this in boto.  The first is:
-
->>> from boto.ec2.elb import ELBConnection
->>> conn = ELBConnection('<aws access key>', '<aws secret key>')
-
-There is also a shortcut function in the boto package, called connect_elb
-that may provide a slightly easier means of creating a connection:
 
 >>> import boto
->>> conn = boto.connect_elb()
+>>> conn = boto.connect_elb(
+        aws_access_key_id='YOUR-KEY-ID-HERE',
+        aws_secret_access_key='YOUR-SECRET-HERE'
+    )
 
-In either case, conn will point to an ELBConnection object which we will
-use throughout the remainder of this tutorial.
 
 A Note About Regions and Endpoints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Like EC2 the ELB service has a different endpoint for each region. By default
-the US endpoint is used. To choose a specific region, instantiate the
+
+Like EC2, the ELB service has a different endpoint for each region. By default
+the US East endpoint is used. To choose a specific region, instantiate the
 ELBConnection object with that region's information.
 
 >>> from boto.regioninfo import RegionInfo
->>> reg = RegionInfo(name='eu-west-1', endpoint='elasticloadbalancing.eu-west-1.amazonaws.com')
->>> elb = boto.connect_elb(region=reg)
+>>> reg = RegionInfo(
+        name='eu-west-1',
+        endpoint='elasticloadbalancing.eu-west-1.amazonaws.com'
+    )
+>>> conn = boto.connect_elb(
+        aws_access_key_id='YOUR-KEY-ID-HERE',
+        aws_secret_access_key='YOUR-SECRET-HERE',
+        region=reg
+    )
 
 Another way to connect to an alternative region is like this:
 
@@ -90,8 +98,22 @@ Getting Existing Load Balancers
 To retrieve any exiting load balancers:
 
 >>> conn.get_all_load_balancers()
+[LoadBalancer:load-balancer-prod, LoadBalancer:load-balancer-staging]
 
-You will get back a list of LoadBalancer objects.
+You can also filter by name
+
+>>> conn.get_all_load_balancers(load_balancer_names=['load-balancer-prod'])
+[LoadBalancer:load-balancer-prod]
+
+:py:meth:`get_all_load_balancers <boto.ec2.elb.ELBConnection.get_all_load_balancers>`
+returns a :py:class:`boto.resultset.ResultSet` that contains instances
+of :class:`boto.ec2.elb.loadbalancer.LoadBalancer`, each of which abstracts
+access to a load balancer. :py:class:`ResultSet <boto.resultset.ResultSet>`
+works very much like a list.
+
+>>> balancers = conn.get_all_load_balancers()
+>>> balancers[0]
+[LoadBalancer:load-balancer-prod]
 
 Creating a Load Balancer
 ------------------------
@@ -125,13 +147,14 @@ layer. Of course, we could specify the load balancer use TCP for port 80,
 however specifying HTTP allows you to let ELB handle some work for you -
 for example HTTP header parsing.
 
+.. _elb-configuring-a-health-check:
 
 Configuring a Health Check
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 A health check allows ELB to determine which instances are alive and able to
 respond to requests. A health check is essentially a tuple consisting of:
 
- * *target*: What to check on an instance. For a TCP check this is comprised of::
+ * *Target*: What to check on an instance. For a TCP check this is comprised of::
 
         TCP:PORT_TO_CHECK
 
@@ -143,47 +166,58 @@ respond to requests. A health check is essentially a tuple consisting of:
 
    This means that the health check will connect to the resource /RESOURCE on
    PORT_TO_CHECK. If an HTTP 200 status is returned the instance is deemed healthy.
- * *interval*: How often the check is made. This is given in seconds and defaults to 30.
-   The valid range of intervals goes from 5 seconds to 600 seconds.
- * *timeout*: The number of seconds the load balancer will wait for a check to return a
-   result.
- * *UnhealthyThreshold*: The number of consecutive failed checks to deem the instance
-   as being dead. The default is 5, and the range of valid values lies from 2 to 10.
+ * *Interval*: How often the check is made. This is given in seconds and defaults
+   to 30. The valid range of intervals goes from 5 seconds to 600 seconds.
+ * *Timeout*: The number of seconds the load balancer will wait for a check to
+   return a result.
+ * *Unhealthy threshold*: The number of consecutive failed checks to deem the
+   instance as being dead. The default is 5, and the range of valid values lies
+   from 2 to 10.
 
-The following example creates a health check called *instance_health* that simply checks
-instances every 20 seconds on port 80 over HTTP at the resource /health for 200 successes.
+The following example creates a health check called *instance_health* that
+simply checks instances every 20 seconds on port 80 over HTTP at the
+resource /health for 200 successes.
 
->>> import boto
 >>> from boto.ec2.elb import HealthCheck
->>> conn = boto.connect_elb()
->>> hc = HealthCheck('instance_health', interval=20, target='HTTP:8080/health')
+>>> hc = HealthCheck(
+        interval=20,
+        healthy_threshold=3,
+        unhealthy_threshold=5,
+        target='HTTP:8080/health'
+    )
 
 Putting It All Together
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Finally, let's create a load balancer in the US region that listens on ports 80 and 443
-and distributes requests to instances on 8080 and 8443 over HTTP and TCP. We want the
-load balancer to span the availability zones *us-east-1a* and *us-east-1b*:
+Finally, let's create a load balancer in the US region that listens on ports
+80 and 443 and distributes requests to instances on 8080 and 8443 over HTTP
+and TCP. We want the load balancer to span the availability zones
+*us-east-1a* and *us-east-1b*:
 
->>> lb = conn.create_load_balancer('my_lb', ['us-east-1a', 'us-east-1b'],
-                                   [(80, 8080, 'http'), (443, 8443, 'tcp')])
+>>> regions = ['us-east-1a', 'us-east-1b']
+>>> ports = [(80, 8080, 'http'), (443, 8443, 'tcp')]
+>>> lb = conn.create_load_balancer('my-lb', regions, ports)
+>>> # This is from the previous section.
 >>> lb.configure_health_check(hc)
 
-The load balancer has been created. To see where you can actually connect to it, do:
+The load balancer has been created. To see where you can actually connect to
+it, do:
 
 >>> print lb.dns_name
 my_elb-123456789.us-east-1.elb.amazonaws.com
 
-You can then CNAME map a better name, i.e. www.MYWEBSITE.com to the above address.
+You can then CNAME map a better name, i.e. www.MYWEBSITE.com to the
+above address.
 
 Adding Instances To a Load Balancer
 -----------------------------------
 
-Now that the load balancer has been created, there are two ways to add instances to it:
+Now that the load balancer has been created, there are two ways to add
+instances to it:
 
  #. Manually, adding each instance in turn.
- #. Mapping an autoscale group to the load balancer. Please see the Autoscale
-    tutorial for information on how to do this.
+ #. Mapping an autoscale group to the load balancer. Please see the
+    :doc:`Autoscale tutorial <autoscale_tut>` for information on how to do this.
 
 Manually Adding and Removing Instances
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

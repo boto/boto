@@ -44,6 +44,7 @@ ACL_HEADER_KEY = 'acl-header'
 AUTH_HEADER_KEY = 'auth-header'
 COPY_SOURCE_HEADER_KEY = 'copy-source-header'
 COPY_SOURCE_VERSION_ID_HEADER_KEY = 'copy-source-version-id-header'
+COPY_SOURCE_RANGE_HEADER_KEY = 'copy-source-range-header'
 DELETE_MARKER_HEADER_KEY = 'delete-marker-header'
 DATE_HEADER_KEY = 'date-header'
 METADATA_DIRECTIVE_HEADER_KEY = 'metadata-directive-header'
@@ -51,6 +52,7 @@ RESUMABLE_UPLOAD_HEADER_KEY = 'resumable-upload-header'
 SECURITY_TOKEN_HEADER_KEY = 'security-token-header'
 STORAGE_CLASS_HEADER_KEY = 'storage-class'
 MFA_HEADER_KEY = 'mfa-header'
+SERVER_SIDE_ENCRYPTION_KEY = 'server-side-encryption-header'
 VERSION_ID_HEADER_KEY = 'version-id-header'
 
 STORAGE_COPY_ERROR = 'StorageCopyError'
@@ -87,6 +89,9 @@ class Provider(object):
         'google' : True
     }
 
+    # If you update this map please make sure to put "None" for the
+    # right-hand-side for any headers that don't apply to a provider, rather
+    # than simply leaving that header out (which would cause KeyErrors).
     HeaderInfoMap = {
         'aws' : {
             HEADER_PREFIX_KEY : AWS_HEADER_PREFIX,
@@ -96,12 +101,15 @@ class Provider(object):
             COPY_SOURCE_HEADER_KEY : AWS_HEADER_PREFIX + 'copy-source',
             COPY_SOURCE_VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX +
                                                 'copy-source-version-id',
+            COPY_SOURCE_RANGE_HEADER_KEY : AWS_HEADER_PREFIX +
+                                           'copy-source-range',
             DATE_HEADER_KEY : AWS_HEADER_PREFIX + 'date',
             DELETE_MARKER_HEADER_KEY : AWS_HEADER_PREFIX + 'delete-marker',
             METADATA_DIRECTIVE_HEADER_KEY : AWS_HEADER_PREFIX +
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY : None,
             SECURITY_TOKEN_HEADER_KEY : AWS_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY : AWS_HEADER_PREFIX + 'server-side-encryption',
             VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY : AWS_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY : AWS_HEADER_PREFIX + 'mfa',
@@ -114,14 +122,16 @@ class Provider(object):
             COPY_SOURCE_HEADER_KEY : GOOG_HEADER_PREFIX + 'copy-source',
             COPY_SOURCE_VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX +
                                                 'copy-source-version-id',
+            COPY_SOURCE_RANGE_HEADER_KEY : None,
             DATE_HEADER_KEY : GOOG_HEADER_PREFIX + 'date',
             DELETE_MARKER_HEADER_KEY : GOOG_HEADER_PREFIX + 'delete-marker',
             METADATA_DIRECTIVE_HEADER_KEY : GOOG_HEADER_PREFIX  +
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
             SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY : None,
             # Note that this version header is not to be confused with
-            # the Google Storage 'x-goog-api-version' header.
+            # the Google Cloud Storage 'x-goog-api-version' header.
             VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY : None,
             MFA_HEADER_KEY : None,
@@ -145,10 +155,12 @@ class Provider(object):
         }
     }
 
-    def __init__(self, name, access_key=None, secret_key=None):
+    def __init__(self, name, access_key=None, secret_key=None,
+                 security_token=None):
         self.host = None
         self.access_key = access_key
         self.secret_key = secret_key
+        self.security_token = security_token
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
@@ -189,6 +201,8 @@ class Provider(object):
         self.copy_source_header = header_info_map[COPY_SOURCE_HEADER_KEY]
         self.copy_source_version_id = header_info_map[
             COPY_SOURCE_VERSION_ID_HEADER_KEY]
+        self.copy_source_range_header = header_info_map[
+            COPY_SOURCE_RANGE_HEADER_KEY]
         self.date_header = header_info_map[DATE_HEADER_KEY]
         self.delete_marker = header_info_map[DELETE_MARKER_HEADER_KEY]
         self.metadata_directive_header = (
@@ -196,6 +210,7 @@ class Provider(object):
         self.security_token_header = header_info_map[SECURITY_TOKEN_HEADER_KEY]
         self.resumable_upload_header = (
             header_info_map[RESUMABLE_UPLOAD_HEADER_KEY])
+        self.server_side_encryption_header = header_info_map[SERVER_SIDE_ENCRYPTION_KEY]
         self.storage_class_header = header_info_map[STORAGE_CLASS_HEADER_KEY]
         self.version_id = header_info_map[VERSION_ID_HEADER_KEY]
         self.mfa_header = header_info_map[MFA_HEADER_KEY]

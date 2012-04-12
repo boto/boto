@@ -23,6 +23,7 @@ import cgi
 import errno
 import httplib
 import os
+import random
 import re
 import socket
 import time
@@ -35,7 +36,7 @@ from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 
 """
-Handler for Google Storage resumable uploads. See
+Handler for Google Cloud Storage resumable uploads. See
 http://code.google.com/apis/storage/docs/developer-guide.html#resumable
 for details.
 
@@ -143,15 +144,12 @@ class ResumableUploadHandler(object):
         """
         parse_result = urlparse.urlparse(uri)
         if (parse_result.scheme.lower() not in ['http', 'https'] or
-            not parse_result.netloc or not parse_result.query):
-            raise InvalidUriError('Invalid tracker URI (%s)' % uri)
-        qdict = cgi.parse_qs(parse_result.query)
-        if not qdict or not 'upload_id' in qdict:
+            not parse_result.netloc):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
         self.tracker_uri = uri
         self.tracker_uri_host = parse_result.netloc
-        self.tracker_uri_path = '%s/?%s' % (parse_result.netloc,
-                                            parse_result.query)
+        self.tracker_uri_path = '%s?%s' % (
+            parse_result.path, parse_result.query)
         self.server_has_bytes = 0
 
     def get_tracker_uri(self):
@@ -442,8 +440,10 @@ class ResumableUploadHandler(object):
             if resp.status == 400:
                 raise ResumableUploadException('Got 400 response from server '
                     'state query after failed resumable upload attempt. This '
-                    'can happen if the file size changed between upload '
-                    'attempts', ResumableTransferDisposition.ABORT)
+                    'can happen for various reasons, including specifying an '
+                    'invalid request (e.g., an invalid canned ACL) or if the '
+                    'file size changed between upload attempts',
+                    ResumableTransferDisposition.ABORT)
             else:
                 raise
         finally:
@@ -505,6 +505,12 @@ class ResumableUploadHandler(object):
 
         if not headers:
             headers = {}
+        # If Content-Type header is present and set to None, remove it.
+        # This is gsutil's way of asking boto to refrain from auto-generating
+        # that header.
+        CT = 'Content-Type'
+        if CT in headers and headers[CT] is None:
+          del headers[CT]
 
         fp.seek(0, os.SEEK_END)
         file_length = fp.tell()
@@ -572,9 +578,10 @@ class ResumableUploadHandler(object):
                     'progress. You might try this upload again later',
                     ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
-            sleep_time_secs = 2**progress_less_iterations
+            # Use binary exponential backoff to desynchronize client requests
+            sleep_time_secs = random.random() * (2**progress_less_iterations)
             if debug >= 1:
                 print ('Got retryable failure (%d progress-less in a row).\n'
-                       'Sleeping %d seconds before re-trying' %
+                       'Sleeping %3.1f seconds before re-trying' %
                        (progress_less_iterations, sleep_time_secs))
             time.sleep(sleep_time_secs)

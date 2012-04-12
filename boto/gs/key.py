@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import StringIO
+from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 
 class Key(S3Key):
@@ -109,7 +111,7 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None):
+                               res_upload_handler=None, size=None):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -157,12 +159,31 @@ class Key(S3Key):
         :param res_upload_handler: If provided, this handler will perform the
             upload.
 
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+            the file pointer (fp). This is useful when uploading
+            a file in multiple parts where you are splitting the
+            file up into different ranges to be uploaded. If not
+            specified, the default behaviour is to read all bytes
+            from the file pointer. Less bytes may be available.
+            Notes:
+
+                1. The "size" parameter currently cannot be used when
+                   a resumable upload handler is given but is still
+                   useful for uploading part of a file as implemented
+                   by the parent class.
+                2. At present Google Cloud Storage does not support
+                   multipart uploads.
+
         TODO: At some point we should refactor the Bucket and Key classes,
         to move functionality common to all providers into a parent class,
         and provider-specific functionality into subclasses (rather than
         just overriding/sharing code the way it currently works).
         """
         provider = self.bucket.connection.provider
+        if res_upload_handler and size:
+            # could use size instead of file_length if provided but...
+            raise BotoClientError('"size" param not supported for resumable uploads.')
         headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
@@ -170,25 +191,34 @@ class Key(S3Key):
             self.path = fp.name
         if self.bucket != None:
             if not md5:
-                md5 = self.compute_md5(fp)
+                # compute_md5() and also set self.size to actual
+                # size of the bytes read computing the md5.
+                md5 = self.compute_md5(fp, size)
+                # adjust size if required
+                size = self.size
+            elif size:
+                self.size = size
             else:
-                # Even if md5 is provided, still need to set size of content.
-                fp.seek(0, 2)
-                self.size = fp.tell()
-                fp.seek(0)
+                # If md5 is provided, still need to size so
+                # calculate based on bytes to end of content
+                spos = fp.tell()
+                fp.seek(0, os.SEEK_END)
+                self.size = fp.tell() - spos
+                fp.seek(spos)
+                size = self.size
             self.md5 = md5[0]
             self.base64md5 = md5[1]
+
             if self.name == None:
                 self.name = self.md5
             if not replace:
-                k = self.bucket.lookup(self.name)
-                if k:
+                if self.bucket.lookup(self.name):
                     return
             if res_upload_handler:
                 res_upload_handler.send_file(self, fp, headers, cb, num_cb)
             else:
                 # Not a resumable transfer so use basic send_file mechanism.
-                self.send_file(fp, headers, cb, num_cb)
+                self.send_file(fp, headers, cb, num_cb, size=size)
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
@@ -244,3 +274,56 @@ class Key(S3Key):
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
         fp.close()
+
+    def set_contents_from_string(self, s, headers=None, replace=True,
+                                 cb=None, num_cb=10, policy=None, md5=None):
+        """
+        Store an object in S3 using the name of the Key object as the
+        key in S3 and the string 's' as the contents.
+        See set_contents_from_file method for details about the
+        parameters.
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the
+                        request to AWS.
+
+        :type replace: bool
+        :param replace: If True, replaces the contents of the file if
+                        it already exists.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+                   progress on the upload.  The callback should accept
+                   two integer parameters, the first representing the
+                   number of bytes that have been successfully
+                   transmitted to S3 and the second representing the
+                   size of the to be transmitted object.
+
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with
+                       the cb parameter this parameter determines the
+                       granularity of the callback by defining
+                       the maximum number of times the callback will
+                       be called during the file transfer.
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type md5: A tuple containing the hexdigest version of the MD5
+                   checksum of the file as the first element and the
+                   Base64-encoded version of the plain checksum as the
+                   second element.  This is the same format returned by
+                   the compute_md5 method.
+        :param md5: If you need to compute the MD5 for any reason prior
+                    to upload, it's silly to have to do it twice so this
+                    param, if present, will be used as the MD5 values
+                    of the file.  Otherwise, the checksum will be computed.
+        """
+        if isinstance(s, unicode):
+            s = s.encode("utf-8")
+        fp = StringIO.StringIO(s)
+        r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5)
+        fp.close()
+        return r

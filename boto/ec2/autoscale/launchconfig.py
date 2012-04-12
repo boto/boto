@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
 from datetime import datetime
-import base64
 from boto.resultset import ResultSet
 from boto.ec2.elb.listelement import ListElement
+import boto.utils
+import base64
 
 # this should use the corresponding object from boto.ec2
 class Ebs(object):
@@ -70,7 +70,8 @@ class BlockDeviceMapping(object):
         self.ebs = None
 
     def __repr__(self):
-        return 'BlockDeviceMapping(%s, %s)' % (self.device_name, self.virtual_name)
+        return 'BlockDeviceMapping(%s, %s)' % (self.device_name,
+                                               self.virtual_name)
 
     def startElement(self, name, attrs, connection):
         if name == 'Ebs':
@@ -82,7 +83,6 @@ class BlockDeviceMapping(object):
             self.device_name = value
         elif name == 'VirtualName':
             self.virtual_name = value
-
 
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
@@ -150,7 +150,8 @@ class LaunchConfiguration(object):
         if name == 'SecurityGroups':
             return self.security_groups
         elif name == 'BlockDeviceMappings':
-            self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
+            self.block_device_mappings = ResultSet([('member',
+                                                     BlockDeviceMapping)])
             return self.block_device_mappings
         elif name == 'InstanceMonitoring':
             self.instance_monitoring = InstanceMonitoring(self)
@@ -166,10 +167,7 @@ class LaunchConfiguration(object):
         elif name == 'ImageId':
             self.image_id = value
         elif name == 'CreatedTime':
-            try:
-                self.created_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-            except ValueError:
-                self.created_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            self.created_time = boto.utils.parse_ts(value)
         elif name == 'KernelId':
             self.kernel_id = value
         elif name == 'RamdiskId':

@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -27,7 +27,7 @@ from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 from boto.exception import BotoClientError
 
 class SecurityGroup(TaggedEC2Object):
-    
+
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None, id=None):
         TaggedEC2Object.__init__(self, connection)
@@ -36,7 +36,8 @@ class SecurityGroup(TaggedEC2Object):
         self.name = name
         self.description = description
         self.vpc_id = None
-        self.rules = []
+        self.rules = IPPermissionsList()
+        self.rules_egress = IPPermissionsList()
 
     def __repr__(self):
         return 'SecurityGroup:%s' % self.name
@@ -45,9 +46,10 @@ class SecurityGroup(TaggedEC2Object):
         retval = TaggedEC2Object.startElement(self, name, attrs, connection)
         if retval is not None:
             return retval
-        if name == 'item':
-            self.rules.append(IPPermissions(self))
-            return self.rules[-1]
+        if name == 'ipPermissions':
+            return self.rules
+        elif name == 'ipPermissionsEgress':
+            return self.rules_egress
         else:
             return None
 
@@ -72,7 +74,7 @@ class SecurityGroup(TaggedEC2Object):
             else:
                 raise Exception(
                     'Unexpected value of status %s for group %s'%(
-                        value, 
+                        value,
                         self.name
                     )
                 )
@@ -128,7 +130,7 @@ class SecurityGroup(TaggedEC2Object):
         OR ip_protocol, from_port, to_port,
         and cidr_ip.  In other words, either you are authorizing another
         group or you are authorizing some ip-based rule.
-        
+
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
 
@@ -138,14 +140,14 @@ class SecurityGroup(TaggedEC2Object):
         :type to_port: int
         :param to_port: The ending port number you are enabling
 
-        :type cidr_ip: string
+        :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
                          :class:`boto.ec2.securitygroup.GroupOrCIDR`
         :param src_group: The Security Group you are granting access to.
-                         
+
         :rtype: bool
         :return: True if successful.
         """
@@ -164,8 +166,12 @@ class SecurityGroup(TaggedEC2Object):
                                                           to_port,
                                                           cidr_ip)
         if status:
-            self.add_rule(ip_protocol, from_port, to_port, src_group_name,
-                          src_group_owner_id, cidr_ip)
+            if type(cidr_ip) != list:
+                cidr_ip = [cidr_ip]
+            for single_cidr_ip in cidr_ip:
+                self.add_rule(ip_protocol, from_port, to_port, src_group_name,
+                              src_group_owner_id, single_cidr_ip)
+
         return status
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
@@ -202,7 +208,7 @@ class SecurityGroup(TaggedEC2Object):
         :type name: string
         :param name: The name of the copy.  If not supplied, the copy
                      will have the same name as this security group.
-        
+
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The new security group.
         """
@@ -213,7 +219,6 @@ class SecurityGroup(TaggedEC2Object):
         sg = rconn.create_security_group(name or self.name, self.description)
         source_groups = []
         for rule in self.rules:
-            grant = rule.grants[0]
             for grant in rule.grants:
                 if grant.name:
                     if grant.name not in source_groups:
@@ -241,6 +246,17 @@ class SecurityGroup(TaggedEC2Object):
             if uses_group:
                 instances.extend(reservation.instances)
         return instances
+
+class IPPermissionsList(list):
+
+    def startElement(self, name, attrs, connection):
+        if name == 'item':
+            self.append(IPPermissions(self))
+            return self[-1]
+        return None
+
+    def endElement(self, name, value, connection):
+        pass
 
 class IPPermissions(object):
 
@@ -316,3 +332,4 @@ class ExtNetwork(EC2Object):
             self.extnet_name = value
         elif name == "state":
             self.state = value
+

@@ -45,7 +45,7 @@ from boto.gs.connection import GSConnection
 from boto.s3.connection import S3Connection
 
 # File 'other_cacerts.txt' contains a valid CA certificate of a CA that is used
-# by neither S3 nor Google Storage.  Validation against this CA cert should
+# by neither S3 nor Google Cloud Storage. Validation against this CA cert should
 # result in a certificate error.
 DEFAULT_CA_CERTS_FILE = os.path.join(
         os.path.dirname(os.path.abspath(__file__ )), 'other_cacerts.txt')

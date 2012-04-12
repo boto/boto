@@ -18,10 +18,10 @@ boto.iam.connection
    :members:   
    :undoc-members:
 
-boto.iam.response
------------------
+boto.iam.summarymap
+-------------------
 
-.. automodule:: boto.iam.response
+.. automodule:: boto.iam.summarymap
    :members:   
    :undoc-members:
 

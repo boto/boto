@@ -195,8 +195,8 @@ def main():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:np:qs:wr',
-                                   ['access_key', 'bucket', 'callback', 'debug', 'help', 'grant',
-                                    'ignore', 'no_op', 'prefix', 'quiet', 'secret_key', 'no_overwrite',
+                                   ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
+                                    'ignore=', 'no_op', 'prefix=', 'quiet', 'secret_key=', 'no_overwrite',
                                     'reduced'])
     except:
         usage()
@@ -256,7 +256,7 @@ def main():
             if not quiet:
                 print 'Getting list of existing keys to check against'
             keys = []
-            for key in b.list():
+            for key in b.list(get_key_name(path, prefix)):
                 keys.append(key.name)
         for root, dirs, files in os.walk(path):
             for ignore in ignore_dirs:

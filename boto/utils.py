@@ -46,6 +46,7 @@ import StringIO
 import time
 import logging.handlers
 import boto
+import boto.provider
 import tempfile
 import smtplib
 import datetime
@@ -55,6 +56,11 @@ from email.MIMEText import MIMEText
 from email.Utils import formatdate
 from email import Encoders
 import gzip
+import base64
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 
 try:
@@ -65,13 +71,19 @@ except ImportError:
     _hashfn = md5.md5
 
 # List of Query String Arguments of Interest
-qsa_of_interest = ['acl', 'location', 'logging', 'partNumber', 'policy',
-                   'requestPayment', 'torrent', 'versioning', 'versionId',
-                   'versions', 'website', 'uploads', 'uploadId',
-                   'response-content-type', 'response-content-language',
-                   'response-expires', 'reponse-cache-control',
-                   'response-content-disposition',
-                   'response-content-encoding']
+qsa_of_interest = ['acl', 'defaultObjectAcl', 'location', 'logging', 
+                   'partNumber', 'policy', 'requestPayment', 'torrent', 
+                   'versioning', 'versionId', 'versions', 'website', 
+                   'uploads', 'uploadId', 'response-content-type', 
+                   'response-content-language', 'response-expires', 
+                   'response-cache-control', 'response-content-disposition',
+                   'response-content-encoding', 'delete', 'lifecycle']
+
+def unquote_v(nv):
+    if len(nv) == 1:
+        return nv
+    else:
+        return (nv[0], urllib.unquote(nv[1]))
 
 # generates the aws canonical string for the given parameters
 def canonical_string(method, path, headers, expires=None,
@@ -118,8 +130,8 @@ def canonical_string(method, path, headers, expires=None,
 
     if len(t) > 1:
         qsa = t[1].split('&')
-        qsa = [ a.split('=') for a in qsa]
-        qsa = [ a for a in qsa if a[0] in qsa_of_interest ]
+        qsa = [ a.split('=', 1) for a in qsa]
+        qsa = [ unquote_v(a) for a in qsa if a[0] in qsa_of_interest ]
         if len(qsa) > 0:
             qsa.sort(cmp=lambda x,y:cmp(x[0], y[0]))
             qsa = [ '='.join(a) for a in qsa ]
@@ -233,6 +245,7 @@ def get_ts(ts=None):
     return time.strftime(ISO8601, ts)
 
 def parse_ts(ts):
+    ts = ts.strip()
     try:
         dt = datetime.datetime.strptime(ts, ISO8601)
         return dt
@@ -689,3 +702,53 @@ def guess_mime_type(content, deftype):
             rtype = mimetype
             break
     return(rtype)
+
+def compute_md5(fp, buf_size=8192, size=None):
+    """
+    Compute MD5 hash on passed file and return results in a tuple of values.
+
+    :type fp: file
+    :param fp: File pointer to the file to MD5 hash.  The file pointer
+               will be reset to its current location before the
+               method returns.
+
+    :type buf_size: integer
+    :param buf_size: Number of bytes per read request.
+
+    :type size: int
+    :param size: (optional) The Maximum number of bytes to read from
+                 the file pointer (fp). This is useful when uploading
+                 a file in multiple parts where the file is being
+                 split inplace into different parts. Less bytes may
+                 be available.
+
+    :rtype: tuple
+    :return: A tuple containing the hex digest version of the MD5 hash
+             as the first element, the base64 encoded version of the
+             plain digest as the second element and the data size as
+             the third element.
+    """
+    m = md5()
+    spos = fp.tell()
+    if size and size < buf_size:
+        s = fp.read(size)
+    else:
+        s = fp.read(buf_size)
+    while s:
+        m.update(s)
+        if size:
+            size -= len(s)
+            if size <= 0:
+                break
+        if size and size < buf_size:
+            s = fp.read(size)
+        else:
+            s = fp.read(buf_size)
+    hex_md5 = m.hexdigest()
+    base64md5 = base64.encodestring(m.digest())
+    if base64md5[-1] == '\n':
+        base64md5 = base64md5[0:-1]
+    # data_size based on bytes read.
+    data_size = fp.tell() - spos
+    fp.seek(spos)
+    return (hex_md5, base64md5, data_size)

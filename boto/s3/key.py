@@ -26,11 +26,14 @@ import re
 import rfc822
 import StringIO
 import base64
+import math
+import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
+from boto.utils import compute_md5
 try:
     from hashlib import md5
 except ImportError:
@@ -50,8 +53,10 @@ class Key(object):
         self.cache_control = None
         self.content_type = self.DefaultContentType
         self.content_encoding = None
+        self.content_disposition = None
         self.filename = None
         self.etag = None
+        self.is_latest = False
         self.last_modified = None
         self.owner = None
         self.storage_class = 'STANDARD'
@@ -64,6 +69,7 @@ class Key(object):
         self.version_id = None
         self.source_version_id = None
         self.delete_marker = False
+        self.encrypted = None
 
     def __repr__(self):
         if self.bucket:
@@ -106,6 +112,13 @@ class Key(object):
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
 
+    def handle_encryption_headers(self, resp):
+        provider = self.bucket.connection.provider
+        if provider.server_side_encryption_header:
+            self.encrypted = resp.getheader(provider.server_side_encryption_header, None)
+        else:
+            self.encrypted = None
+
     def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
         # If the Key object already has a version_id attribute value, it
@@ -122,7 +135,7 @@ class Key(object):
         else:
             self.delete_marker = False
 
-    def open_read(self, headers=None, query_args=None,
+    def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
         """
         Open this key for reading
@@ -178,7 +191,10 @@ class Key(object):
                     self.last_modified = value
                 elif name.lower() == 'cache-control':
                     self.cache_control = value
+                elif name.lower() == 'content-disposition':
+                    self.content_disposition = value
             self.handle_version_headers(self.resp)
+            self.handle_encryption_headers(self.resp)
 
     def open_write(self, headers=None, override_num_retries=None):
         """
@@ -274,7 +290,8 @@ class Key(object):
                                   new_storage_class)
 
     def copy(self, dst_bucket, dst_key, metadata=None,
-             reduced_redundancy=False, preserve_acl=False):
+             reduced_redundancy=False, preserve_acl=False,
+             encrypt_key=False):
         """
         Copy this Key to another bucket.
 
@@ -314,6 +331,12 @@ class Key(object):
                              of False will be significantly more
                              efficient.
 
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
+                            
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
@@ -325,7 +348,8 @@ class Key(object):
         return dst_bucket.copy_key(dst_key, self.bucket.name,
                                    self.name, metadata,
                                    storage_class=storage_class,
-                                   preserve_acl=preserve_acl)
+                                   preserve_acl=preserve_acl,
+                                   encrypt_key=encrypt_key)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -336,9 +360,14 @@ class Key(object):
 
     def endElement(self, name, value, connection):
         if name == 'Key':
-            self.name = value.encode('utf-8')
+            self.name = value
         elif name == 'ETag':
             self.etag = value
+        elif name == 'IsLatest':
+            if value == 'true':
+                self.is_latest = True
+            else:
+                self.is_latest = False
         elif name == 'LastModified':
             self.last_modified = value
         elif name == 'Size':
@@ -405,7 +434,8 @@ class Key(object):
         return self.bucket.set_canned_acl('public-read', self.name, headers)
 
     def generate_url(self, expires_in, method='GET', headers=None,
-                     query_auth=True, force_http=False, response_headers=None):
+                     query_auth=True, force_http=False, response_headers=None,
+                     expires_in_absolute=False):
         """
         Generate a URL to access this key.
 
@@ -429,15 +459,21 @@ class Key(object):
                                                    self.bucket.name, self.name,
                                                    headers, query_auth,
                                                    force_http,
-                                                   response_headers)
+                                                   response_headers,
+                                                   expires_in_absolute)
 
-    def send_file(self, fp, headers=None, cb=None, num_cb=10, query_args=None,
-							chunked_transfer=False):
+    def send_file(self, fp, headers=None, cb=None, num_cb=10,
+                  query_args=None, chunked_transfer=False, size=None):
         """
         Upload a file to a key into a bucket on S3.
 
         :type fp: file
-        :param fp: The file pointer to upload
+        :param fp: The file pointer to upload. The file pointer must point
+                   point at the offset from which you wish to upload.
+                   ie. if uploading the full file, it should point at the
+                   start of the file. Normally when a file is opened for
+                   reading, the fp will point at the first byte. See the
+                   bytes parameter below for more info.
 
         :type headers: dict
         :param headers: The headers to pass along with the PUT request
@@ -458,20 +494,43 @@ class Key(object):
                        transfer. Providing a negative integer will cause
                        your callback to be called with each buffer read.
 
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+                      the file pointer (fp). This is useful when uploading
+                      a file in multiple parts where you are splitting the
+                      file up into different ranges to be uploaded. If not
+                      specified, the default behaviour is to read all bytes
+                      from the file pointer. Less bytes may be available.
         """
         provider = self.bucket.connection.provider
+        try:
+            spos = fp.tell()
+        except IOError:
+            spos = None
+            self.read_from_stream = False
 
         def sender(http_conn, method, path, data, headers):
+            # This function is called repeatedly for temporary retries
+            # so we must be sure the file pointer is pointing at the
+            # start of the data.
+            if spos is not None and spos != fp.tell():
+                fp.seek(spos)
+            elif spos is None and self.read_from_stream:
+                # if seek is not supported, and we've read from this
+                # stream already, then we need to abort retries to 
+                # avoid setting bad data.
+                raise provider.storage_data_error(
+                    'Cannot retry failed request. fp does not support seeking.')
+
             http_conn.putrequest(method, path)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-            if chunked_transfer:
-                # MD5 for the stream has to be calculated on the fly, as
-                # we don't know the size of the stream before hand.
+            if chunked_transfer and not self.base64md5:
+                # MD5 for the stream has to be calculated on the fly.
                 m = md5()
             else:
-                fp.seek(0)
+                m = None
 
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
@@ -481,48 +540,74 @@ class Key(object):
             # Use the getattr approach to allow this to work in AppEngine.
             if getattr(http_conn, 'debuglevel', 0) < 3:
                 http_conn.set_debuglevel(0)
+
+            data_len = 0
             if cb:
-                if chunked_transfer:
+                if size:
+                    cb_size = size
+                elif self.size:
+                    cb_size = self.size
+                else:
+                    cb_size = 0
+                if chunked_transfer and cb_size == 0:
                     # For chunked Transfer, we call the cb for every 1MB
-                    # of data transferred.
+                    # of data transferred, except when we know size.
                     cb_count = (1024 * 1024)/self.BufferSize
-                    self.size = 0
-                elif num_cb > 2:
-                    cb_count = self.size / self.BufferSize / (num_cb-2)
+                elif num_cb > 1:
+                    cb_count = int(math.ceil(cb_size/self.BufferSize/(num_cb-1.0)))
                 elif num_cb < 0:
                     cb_count = -1
                 else:
                     cb_count = 0
-                i = total_bytes = 0
-                cb(total_bytes, self.size)
-            l = fp.read(self.BufferSize)
-            while len(l) > 0:
+                i = 0
+                cb(data_len, cb_size)
+
+            bytes_togo = size
+            if bytes_togo and bytes_togo < self.BufferSize:
+                chunk = fp.read(bytes_togo)
+            else:
+                chunk = fp.read(self.BufferSize)
+            if spos is None:
+                # read at least something from a non-seekable fp.
+                self.read_from_stream = True
+            while chunk:
+                chunk_len = len(chunk)
+                data_len += chunk_len
                 if chunked_transfer:
-                    http_conn.send('%x;\r\n' % len(l))
-                    http_conn.send(l)
+                    http_conn.send('%x;\r\n' % chunk_len)
+                    http_conn.send(chunk)
                     http_conn.send('\r\n')
                 else:
-                    http_conn.send(l)
+                    http_conn.send(chunk)
+                if m:
+                    m.update(chunk)
+                if bytes_togo:
+                    bytes_togo -= chunk_len
+                    if bytes_togo <= 0:
+                        break
                 if cb:
-                    total_bytes += len(l)
                     i += 1
                     if i == cb_count or cb_count == -1:
-                        cb(total_bytes, self.size)
+                        cb(data_len, cb_size)
                         i = 0
-                if chunked_transfer:
-                    m.update(l)
-                l = fp.read(self.BufferSize)
+                if bytes_togo and bytes_togo < self.BufferSize:
+                    chunk = fp.read(bytes_togo)
+                else:
+                    chunk = fp.read(self.BufferSize)
+
+            self.size = data_len
             if chunked_transfer:
                 http_conn.send('0\r\n')
+                if m:
+                    # Use the chunked trailer for the digest
+                    hd = m.hexdigest()
+                    self.md5, self.base64md5 = self.get_md5_from_hexdigest(hd)
+                    # http_conn.send("Content-MD5: %s\r\n" % self.base64md5)
                 http_conn.send('\r\n')
-                if cb:
-                    self.size = total_bytes
-                # Get the md5 which is calculated on the fly.
-                self.md5 = m.hexdigest()
-            else:
-                fp.seek(0)
-            if cb:
-                cb(total_bytes, self.size)
+
+            if cb and (cb_count <= 1 or i > 0) and data_len > 0:
+                cb(data_len, cb_size)
+
             response = http_conn.getresponse()
             body = response.read()
             http_conn.set_debuglevel(save_debug)
@@ -546,14 +631,20 @@ class Key(object):
         else:
             headers = headers.copy()
         headers['User-Agent'] = UserAgent
-        if self.base64md5:
-            headers['Content-MD5'] = self.base64md5
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
         if headers.has_key('Content-Encoding'):
             self.content_encoding = headers['Content-Encoding']
         if headers.has_key('Content-Type'):
-            self.content_type = headers['Content-Type']
+            # Some use cases need to suppress sending of the Content-Type 
+            # header and depend on the receiving server to set the content
+            # type. This can be achieved by setting headers['Content-Type'] 
+            # to None when calling this method.
+            if headers['Content-Type'] is None:
+                # Delete null Content-Type value to skip sending that header.
+                del headers['Content-Type']
+            else:
+                self.content_type = headers['Content-Type']
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
@@ -561,7 +652,13 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
-        if not chunked_transfer:
+        if self.base64md5:
+            headers['Content-MD5'] = self.base64md5
+        if chunked_transfer:
+            headers['Transfer-Encoding'] = 'chunked'
+            #if not self.base64md5:
+            #    headers['Trailer'] = "Content-MD5"
+        else:
             headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
@@ -571,35 +668,40 @@ class Key(object):
                                                    query_args=query_args)
         self.handle_version_headers(resp, force=True)
 
-    def compute_md5(self, fp):
+    def compute_md5(self, fp, size=None):
         """
         :type fp: file
         :param fp: File pointer to the file to MD5 hash.  The file pointer
-                   will be reset to the beginning of the file before the
+                   will be reset to the same position before the
                    method returns.
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+                     the file pointer (fp). This is useful when uploading
+                     a file in multiple parts where the file is being
+                     split inplace into different parts. Less bytes may
+                     be available.
 
         :rtype: tuple
         :return: A tuple containing the hex digest version of the MD5 hash
                  as the first element and the base64 encoded version of the
                  plain digest as the second element.
         """
-        m = md5()
-        fp.seek(0)
-        s = fp.read(self.BufferSize)
-        while s:
-            m.update(s)
-            s = fp.read(self.BufferSize)
-        hex_md5 = m.hexdigest()
-        base64md5 = base64.encodestring(m.digest())
-        if base64md5[-1] == '\n':
-            base64md5 = base64md5[0:-1]
-        self.size = fp.tell()
-        fp.seek(0)
-        return (hex_md5, base64md5)
+        tup = compute_md5(fp, size=size)
+        # Returned values are MD5 hash, base64 encoded MD5 hash, and data size.
+        # The internal implementation of compute_md5() needs to return the 
+        # data size but we don't want to return that value to the external
+        # caller because it changes the class interface (i.e. it might        
+        # break some code) so we consume the third tuple value here and 
+        # return the remainder of the tuple to the caller, thereby preserving 
+        # the existing interface.
+        self.size = tup[2]
+        return tup[0:2]
 
     def set_contents_from_stream(self, fp, headers=None, replace=True,
-                                cb=None, num_cb=10, policy=None,
-                                reduced_redundancy=False, query_args=None):
+                                 cb=None, num_cb=10, policy=None,
+                                 reduced_redundancy=False, query_args=None,
+                                 size=None):
         """
         Store an object using the name of the Key object as the key in
         cloud and the contents of the data stream pointed to by 'fp' as
@@ -645,6 +747,13 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+                      the file pointer (fp). This is useful when uploading
+                      a file in multiple parts where you are splitting the
+                      file up into different ranges to be uploaded. If not
+                      specified, the default behaviour is to read all bytes
+                      from the file pointer. Less bytes may be available.
         """
 
         provider = self.bucket.connection.provider
@@ -662,9 +771,6 @@ class Key(object):
         if policy:
             headers[provider.acl_header] = policy
 
-        # Set the Transfer Encoding for Streams.
-        headers['Transfer-Encoding'] = 'chunked'
-
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
             if provider.storage_class_header:
@@ -672,15 +778,15 @@ class Key(object):
 
         if self.bucket != None:
             if not replace:
-                k = self.bucket.lookup(self.name)
-                if k:
+                if self.bucket.lookup(self.name):
                     return
             self.send_file(fp, headers, cb, num_cb, query_args,
-                                            chunked_transfer=True)
+                           chunked_transfer=True, size=size)
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               reduced_redundancy=False, query_args=None):
+                               reduced_redundancy=False, query_args=None,
+                               encrypt_key=False, size=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -736,12 +842,26 @@ class Key(object):
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
 
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+                      the file pointer (fp). This is useful when uploading
+                      a file in multiple parts where you are splitting the
+                      file up into different ranges to be uploaded. If not
+                      specified, the default behaviour is to read all bytes
+                      from the file pointer. Less bytes may be available.
         """
         provider = self.bucket.connection.provider
-        if headers is None:
-            headers = {}
+        headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
@@ -751,27 +871,48 @@ class Key(object):
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
+
         if self.bucket != None:
-            if not md5:
-                md5 = self.compute_md5(fp)
+            if not md5 and provider.supports_chunked_transfer():
+                # defer md5 calculation to on the fly and
+                # we don't know anything about size yet.
+                chunked_transfer = True
+                self.size = None
             else:
-                # even if md5 is provided, still need to set size of content
-                fp.seek(0, 2)
-                self.size = fp.tell()
-                fp.seek(0)
-            self.md5 = md5[0]
-            self.base64md5 = md5[1]
+                chunked_transfer = False
+                if not md5:
+                    # compute_md5() and also set self.size to actual
+                    # size of the bytes read computing the md5.
+                    md5 = self.compute_md5(fp, size)
+                    # adjust size if required
+                    size = self.size
+                elif size:
+                    self.size = size
+                else:
+                    # If md5 is provided, still need to size so
+                    # calculate based on bytes to end of content
+                    spos = fp.tell()
+                    fp.seek(0, os.SEEK_END)
+                    self.size = fp.tell() - spos
+                    fp.seek(spos)
+                    size = self.size
+                self.md5 = md5[0]
+                self.base64md5 = md5[1]
+
             if self.name == None:
                 self.name = self.md5
             if not replace:
-                k = self.bucket.lookup(self.name)
-                if k:
+                if self.bucket.lookup(self.name):
                     return
-            self.send_file(fp, headers, cb, num_cb, query_args)
+
+            self.send_file(fp, headers=headers, cb=cb, num_cb=num_cb,
+                           query_args=query_args, chunked_transfer=chunked_transfer,
+                           size=size)
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
-                                   reduced_redundancy=False):
+                                   reduced_redundancy=False,
+                                   encrypt_key=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -824,15 +965,22 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
         """
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, reduced_redundancy)
+                                    policy, md5, reduced_redundancy,
+                                    encrypt_key=encrypt_key)
         fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
-                                 reduced_redundancy=False):
+                                 reduced_redundancy=False,
+                                 encrypt_key=False):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -882,12 +1030,18 @@ class Key(object):
                                    REDUCED_REDUNDANCY. The Reduced Redundancy
                                    Storage (RRS) feature of S3, provides lower
                                    redundancy at lower storage cost.
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
         """
         if isinstance(s, unicode):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5, reduced_redundancy)
+                                        policy, md5, reduced_redundancy,
+                                        encrypt_key=encrypt_key)
         fp.close()
         return r
 
@@ -931,15 +1085,6 @@ class Key(object):
                                  the stored object in the response.
                                  See http://goo.gl/EWOPb for details.
         """
-        if cb:
-            if num_cb > 2:
-                cb_count = self.size / self.BufferSize / (num_cb-2)
-            elif num_cb < 0:
-                cb_count = -1
-            else:
-                cb_count = 0
-            i = total_bytes = 0
-            cb(total_bytes, self.size)
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
@@ -947,6 +1092,9 @@ class Key(object):
         query_args = []
         if torrent:
             query_args.append('torrent')
+            m = None
+        else:
+            m = md5()
         # If a version_id is passed in, use that.  If not, check to see
         # if the Key object has an explicit version_id and, if so, use that.
         # Otherwise, don't pass a version_id query param.
@@ -956,20 +1104,47 @@ class Key(object):
             query_args.append('versionId=%s' % version_id)
         if response_headers:
             for key in response_headers:
-                query_args.append('%s=%s' % (key, response_headers[key]))
+                query_args.append('%s=%s' % (key, urllib.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
+
+        data_len = 0
+        if cb:
+            if self.size is None:
+                cb_size = 0
+            else:
+                cb_size = self.size
+            if self.size is None and num_cb != -1:
+                # If size is not available due to chunked transfer for example,
+                # we'll call the cb for every 1MB of data transferred.
+                cb_count = (1024 * 1024)/self.BufferSize
+            elif num_cb > 1:
+                cb_count = int(math.ceil(cb_size/self.BufferSize/(num_cb-1.0)))
+            elif num_cb < 0:
+                cb_count = -1
+            else:
+                cb_count = 0
+            i = 0
+            cb(data_len, cb_size)
         for bytes in self:
             fp.write(bytes)
+            data_len += len(bytes)
+            if m:
+                m.update(bytes)
             if cb:
-                total_bytes += len(bytes)
+                if cb_size > 0 and data_len >= cb_size:
+                    break
                 i += 1
                 if i == cb_count or cb_count == -1:
-                    cb(total_bytes, self.size)
+                    cb(data_len, cb_size)
                     i = 0
-        if cb:
-            cb(total_bytes, self.size)
+        if cb and (cb_count <= 1 or i > 0) and data_len > 0:
+            cb(data_len, cb_size)
+        if m:
+            self.md5 = m.hexdigest()
+        if self.size is None and not torrent and not headers.has_key("Range"):
+            self.size = data_len
         self.close()
         self.bucket.connection.debug = save_debug
 

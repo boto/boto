@@ -25,6 +25,7 @@ class DeleteMarker:
     def __init__(self, bucket=None, name=None):
         self.bucket = bucket
         self.name = name
+        self.version_id = None
         self.is_latest = False
         self.last_modified = None
         self.owner = None
@@ -38,10 +39,10 @@ class DeleteMarker:
 
     def endElement(self, name, value, connection):
         if name == 'Key':
-            self.name = value.encode('utf-8')
+            self.name = value
         elif name == 'IsLatest':
             if value == 'true':
-                self.is_lastest = True
+                self.is_latest = True
             else:
                 self.is_latest = False
         elif name == 'LastModified':

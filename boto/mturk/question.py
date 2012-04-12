@@ -296,13 +296,14 @@ class FreeTextAnswer(object):
 
     def __init__(self, default=None, constraints=None, num_lines=None):
         self.default = default
-        if constraints is None: constraints = Constraints()
-        self.constraints = Constraints(constraints)
+        if constraints is None:
+            self.constraints = Constraints()
+        else:
+            self.constraints = Constraints(constraints)
         self.num_lines = num_lines
     
     def get_as_xml(self):
-        constraints = Constraints()
-        items = [constraints]
+        items = [self.constraints]
         if self.default:
             items.append(SimpleField('DefaultText', self.default))
         if self.num_lines:
@@ -311,7 +312,7 @@ class FreeTextAnswer(object):
         return self.template % vars()
 
 class FileUploadAnswer(object):
-    template = """<FileUploadAnswer><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes></FileUploadAnswer>"""
+    template = """<FileUploadAnswer><MaxFileSizeInBytes>%(max_bytes)d</MaxFileSizeInBytes><MinFileSizeInBytes>%(min_bytes)d</MinFileSizeInBytes></FileUploadAnswer>"""
     
     def __init__(self, min_bytes, max_bytes):
         assert 0 <= min_bytes <= max_bytes <= 2*10**9

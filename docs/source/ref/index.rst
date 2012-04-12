@@ -8,8 +8,10 @@ API Reference
    :maxdepth: 4
 
    boto
+   cloudformation
    cloudfront
    contrib
+   dynamodb
    ec2
    ecs
    emr
@@ -18,7 +20,6 @@ API Reference
    gs
    iam
    manage
-   mashups
    mturk
    pyami
    rds
@@ -29,5 +30,7 @@ API Reference
    ses
    sns
    sqs
+   sts
+   swf
    vpc
  
