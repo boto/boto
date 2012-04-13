@@ -23,7 +23,7 @@
 """
 Represents an EC2 Elastic Block Storage Volume
 """
-from boto.ec2.ec2object import EC2Object, TaggedEC2Object, PlainXmlDict
+from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 
 class TierType(EC2Object):
     def __init__(self, connection = None):
