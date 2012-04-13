@@ -650,7 +650,8 @@ class Bucket(object):
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
-        headers = headers or {}
+        copy_headers = {}
+        copy_headers.update(headers or {})
         provider = self.connection.provider
         src_key_name = boto.utils.get_utf8_value(src_key_name)
         if preserve_acl:
@@ -658,23 +659,23 @@ class Bucket(object):
                 src_bucket = self
             else:
                 src_bucket = self.connection.get_bucket(src_bucket_name)
-            acl = src_bucket.get_xml_acl(src_key_name)
+            acl = src_bucket.get_xml_acl(src_key_name, headers=headers)
         if encrypt_key:
-            headers[provider.server_side_encryption_header] = 'AES256'
+            copy_headers[provider.server_side_encryption_header] = 'AES256'
         src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
         if src_version_id:
             src += '?versionId=%s' % src_version_id
-        headers[provider.copy_source_header] = str(src)
+        copy_headers[provider.copy_source_header] = str(src)
         # make sure storage_class_header key exists before accessing it
         if provider.storage_class_header and storage_class:
-            headers[provider.storage_class_header] = storage_class
+            copy_headers[provider.storage_class_header] = storage_class
         if metadata:
-            headers[provider.metadata_directive_header] = 'REPLACE'
-            headers = boto.utils.merge_meta(headers, metadata, provider)
+            copy_headers[provider.metadata_directive_header] = 'REPLACE'
+            copy_headers = boto.utils.merge_meta(copy_headers, metadata, provider)
         elif not query_args: # Can't use this header with multi-part copy.
-            headers[provider.metadata_directive_header] = 'COPY'
+            copy_headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
-                                                headers=headers,
+                                                headers=copy_headers,
                                                 query_args=query_args)
         body = response.read()
         if response.status == 200:
@@ -685,7 +686,7 @@ class Bucket(object):
                 raise provider.storage_copy_error(key.Code, key.Message, body)
             key.handle_version_headers(response)
             if preserve_acl:
-                self.set_xml_acl(acl, new_key_name)
+                self.set_xml_acl(acl, new_key_name, headers=headers)
             return key
         else:
             raise provider.storage_response_error(response.status,
