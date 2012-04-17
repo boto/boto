@@ -288,18 +288,15 @@ class Table(object):
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key_condition: dict
-        :param range_key_condition: A dict where the key is either
-            a scalar value appropriate for the RangeKey in the schema
-            of the database or a tuple of such values.  The value
-            associated with this key in the dict will be one of the
-            following conditions:
+        :type range_key_condition: :class:`boto.dynamodb.condition.Condition`
+        :param range_key_condition: A Condition object.
+            Condition object can be one of the following types:
 
-            'EQ'|'LE'|'LT'|'GE'|'GT'|'BEGINS_WITH'|'BETWEEN'
+            EQ|LE|LT|GE|GT|BEGINS_WITH|BETWEEN
 
-            The only condition which expects or will accept a tuple
-            of values is 'BETWEEN', otherwise a scalar value should
-            be used as the key in the dict.
+            The only condition which expects or will accept two
+            values is 'BETWEEN', otherwise a single value should
+            be passed to the Condition constructor.
 
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.

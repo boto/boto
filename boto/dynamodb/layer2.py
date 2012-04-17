@@ -47,28 +47,60 @@ def item_object_hook(dct):
         return set(map(convert_num, dct['NS']))
     return dct
 
-def table_generator(table, callable, max_results, item_class, kwargs):
+def table_generator(tgen):
+    """
+    A low-level generator used to page through results from
+    query and scan operations.  This is used by
+    :class:`boto.dynamodb.layer2.TableGenerator` and is not intended
+    to be used outside of that context.
+    """
     response = True
     n = 0
     while response:
-        if max_results and n == max_results:
+        if tgen.max_results and n == tgen.max_results:
             break
         if response is True:
             pass
         elif 'LastEvaluatedKey' in response:
             lek = response['LastEvaluatedKey']
             esk = layer2.dynamize_last_evaluated_key(lek)
-            kwargs['exclusive_start_key'] = esk
+            tgen.kwargs['exclusive_start_key'] = esk
         else:
             break
-        response = callable(**kwargs)
+        response = tgen.callable(**tgen.kwargs)
+        if 'ConsumedCapacityUnits' in response:
+            tgen.consumed_units += response['ConsumedCapacityUnits']
         for item in response['Items']:
-            if max_results and n == max_results:
+            if tgen.max_results and n == tgen.max_results:
                 break
-            yield item_class(table, attrs=item)
+            yield tgen.item_class(tgen.table, attrs=item)
             n += 1
 
                 
+class TableGenerator:
+    """
+    This is an object that wraps up the table_generator function.
+    The only real reason to have this is that we want to be able
+    to accumulate and return the ConsumedCapacityUnits element that
+    is part of each response.
+
+    :ivar consumed_units: An integer that holds the number of
+        ConsumedCapacityUnits accumulated thus far for this
+        generator.
+    """
+
+    def __init__(self, table, callable, max_results, item_class, kwargs):
+        self.table = table
+        self.callable = callable
+        self.max_results = max_results
+        self.item_class = item_class
+        self.kwargs = kwargs
+        self.consumed_units = 0
+
+    def __iter__(self):
+        return table_generator(self)
+
+
 class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -578,7 +610,7 @@ class Layer2(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: generator
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         if range_key_condition:
             rkc = self.dynamize_range_key_condition(range_key_condition)
@@ -598,8 +630,8 @@ class Layer2(object):
                   'scan_index_forward': scan_index_forward,
                   'exclusive_start_key': esk,
                   'object_hook': item_object_hook}
-        return table_generator(table, self.layer1.query,
-                               max_results, item_class, kwargs)
+        return TableGenerator(table, self.layer1.query,
+                              max_results, item_class, kwargs)
 
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, request_limit=None, max_results=None,
@@ -665,30 +697,19 @@ class Layer2(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: generator
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         if exclusive_start_key:
-            esk = self.build_key_from_values(table.schema, *exclusive_start_key)
+            esk = self.build_key_from_values(table.schema,
+                                             *exclusive_start_key)
         else:
             esk = None
-        sf = self.dynamize_scan_filter(scan_filter)
-        response = True
-        n = 0
-        while response:
-            if response is True:
-                pass
-            elif 'LastEvaluatedKey' in response:
-                last_evaluated_key = response['LastEvaluatedKey']
-                esk = self.dynamize_item(last_evaluated_key)
-            else:
-                break
-            response = self.layer1.scan(table.name, sf,
-                                        attributes_to_get, request_limit,
-                                        count, esk,
-                                        object_hook=item_object_hook)
-            if response:
-                for item in response['Items']:
-                    if max_results and n == max_results:
-                        break
-                    yield item_class(table, attrs=item)
-                    n += 1
+        kwargs = {'table_name': table.name,
+                  'scan_filter': self.dynamize_scan_filter(scan_filter),
+                  'attributes_to_get': attributes_to_get,
+                  'limit': request_limit,
+                  'count': count,
+                  'exclusive_start_key': esk,
+                  'object_hook': item_object_hook}
+        return TableGenerator(table, self.layer1.scan,
+                              max_results, item_class, kwargs)
