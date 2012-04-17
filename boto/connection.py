@@ -470,10 +470,14 @@ class AWSAuthConnection(object):
                 timeout = config.getint('Boto', 'http_socket_timeout')
                 self.http_connection_kwargs['timeout'] = timeout
 
-        self.provider = Provider(provider,
-                                 aws_access_key_id,
-                                 aws_secret_access_key,
-                                 security_token)
+        if isinstance(provider, Provider):
+            # Allow overriding Provider
+            self.provider = provider
+        else:
+            self.provider = Provider(provider,
+                                     aws_access_key_id,
+                                     aws_secret_access_key,
+                                     security_token)
 
         # allow config file to override default host
         if self.provider.host:
