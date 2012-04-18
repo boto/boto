@@ -38,7 +38,7 @@ except ImportError:
 # To get full debug output, uncomment the following line and set the
 # value of Debug to be 2
 #
-#boto.set_stream_logger('dynamodb')
+#boto.set_stream_logger('swf')
 Debug=0
 
 class Layer1(AWSAuthConnection):
@@ -47,7 +47,7 @@ class Layer1(AWSAuthConnection):
     """
 
     DefaultRegionName = 'us-east-1'
-    """The default region name for DynamoDB API."""
+    """The default region name for Simple Workflow."""
 
     ServiceName = 'com.amazonaws.swf.service.model.SimpleWorkflowService'
     """The name of the Service"""
