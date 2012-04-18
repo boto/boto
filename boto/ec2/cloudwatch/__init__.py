@@ -113,17 +113,20 @@ class CloudWatchConnection(AWSQueryConnection):
 
     def build_dimension_param(self, dimension, params):
         prefix = 'Dimensions.member'
-        for i, dim_name in enumerate(dimension):
+        i=0
+        for dim_name in dimension:
             dim_value = dimension[dim_name]
             if dim_value:
                 if isinstance(dim_value, basestring):
                     dim_value = [dim_value]
-                for j, value in enumerate(dim_value):
-                    params['%s.%d.Name.%d' % (prefix, i+1, j+1)] = dim_name
-                    params['%s.%d.Value.%d' % (prefix, i+1, j+1)] = value
+                for value in dim_value:
+                    params['%s.%d.Name' % (prefix, i+1)] = dim_name
+                    params['%s.%d.Value' % (prefix, i+1)] = value
+                    i += 1
             else:
                 params['%s.%d.Name' % (prefix, i+1)] = dim_name
-    
+                i += 1
+
     def build_list_params(self, params, items, label):
         if isinstance(items, basestring):
             items = [items]
