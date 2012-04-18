@@ -48,10 +48,10 @@ class Route53Connection(AWSAuthConnection):
     DefaultHost = 'route53.amazonaws.com'
     """The default Route53 API endpoint to connect to."""
 
-    Version = '2011-05-05'
+    Version = '2012-02-29'
     """Route53 API version."""
 
-    XMLNameSpace = 'https://route53.amazonaws.com/doc/2011-05-05/'
+    XMLNameSpace = 'https://route53.amazonaws.com/doc/2012-02-29/'
     """XML schema for this Route53 API version."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -128,6 +128,23 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
+
+    def get_hosted_zone_by_name(self, hosted_zone_name):
+        """
+        Get detailed information about a particular Hosted Zone.
+
+        :type hosted_zone_name: str
+        :param hosted_zone_name: The fully qualified domain name for the Hosted
+        Zone
+
+        """
+        if hosted_zone_name[-1] != '.':
+            hosted_zone_name += '.'
+        all_hosted_zones = self.get_all_hosted_zones()
+        for zone in all_hosted_zones['ListHostedZonesResponse']['HostedZones']:
+            #check that they gave us the FQDN for their zone
+            if zone['Name'] == hosted_zone_name:
+                return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
     def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
         """

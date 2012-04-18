@@ -248,6 +248,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 2
+        assert items.consumed_units > 0
 
         items = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'),
                             request_limit=1, max_results=1)
@@ -255,6 +256,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 1
+        assert items.consumed_units > 0
 
         # Try a few scans
         items = table.scan()
@@ -262,12 +264,14 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 3
+        assert items.consumed_units > 0
 
         items = table.scan({'Replies': GT(0)})
         n = 0
         for item in items:
             n += 1
         assert n == 1
+        assert items.consumed_units > 0
 
         # Test some integer and float attributes
         integer_value = 42

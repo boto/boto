@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -27,6 +27,7 @@ from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList
 from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
+
 
 def item_object_hook(dct):
     """
@@ -45,6 +46,60 @@ def item_object_hook(dct):
     if 'NS' in dct:
         return set(map(convert_num, dct['NS']))
     return dct
+
+def table_generator(tgen):
+    """
+    A low-level generator used to page through results from
+    query and scan operations.  This is used by
+    :class:`boto.dynamodb.layer2.TableGenerator` and is not intended
+    to be used outside of that context.
+    """
+    response = True
+    n = 0
+    while response:
+        if tgen.max_results and n == tgen.max_results:
+            break
+        if response is True:
+            pass
+        elif 'LastEvaluatedKey' in response:
+            lek = response['LastEvaluatedKey']
+            esk = layer2.dynamize_last_evaluated_key(lek)
+            tgen.kwargs['exclusive_start_key'] = esk
+        else:
+            break
+        response = tgen.callable(**tgen.kwargs)
+        if 'ConsumedCapacityUnits' in response:
+            tgen.consumed_units += response['ConsumedCapacityUnits']
+        for item in response['Items']:
+            if tgen.max_results and n == tgen.max_results:
+                break
+            yield tgen.item_class(tgen.table, attrs=item)
+            n += 1
+
+                
+class TableGenerator:
+    """
+    This is an object that wraps up the table_generator function.
+    The only real reason to have this is that we want to be able
+    to accumulate and return the ConsumedCapacityUnits element that
+    is part of each response.
+
+    :ivar consumed_units: An integer that holds the number of
+        ConsumedCapacityUnits accumulated thus far for this
+        generator.
+    """
+
+    def __init__(self, table, callable, max_results, item_class, kwargs):
+        self.table = table
+        self.callable = callable
+        self.max_results = max_results
+        self.item_class = item_class
+        self.kwargs = kwargs
+        self.consumed_units = 0
+
+    def __iter__(self):
+        return table_generator(self)
+
 
 class Layer2(object):
 
@@ -239,23 +294,24 @@ class Layer2(object):
         return Table(self,  response)
 
     lookup = get_table
+
     def create_table(self, name, schema, read_units, write_units):
         """
         Create a new Amazon DynamoDB table.
-        
+
         :type name: str
         :param name: The name of the desired table.
 
         :type schema: :class:`boto.dynamodb.schema.Schema`
         :param schema: The Schema object that defines the schema used
             by this table.
-            
+
         :type read_units: int
         :param read_units: The value for ReadCapacityUnits.
-        
+
         :type write_units: int
         :param write_units: The value for WriteCapacityUnits.
-        
+
         :rtype: :class:`boto.dynamodb.table.Table`
         :return: A Table object representing the new Amazon DynamoDB table.
         """
@@ -270,10 +326,10 @@ class Layer2(object):
 
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object whose throughput is being updated.
-        
+
         :type read_units: int
         :param read_units: The new value for ReadCapacityUnits.
-        
+
         :type write_units: int
         :param write_units: The new value for WriteCapacityUnits.
         """
@@ -281,7 +337,7 @@ class Layer2(object):
                                             {'ReadCapacityUnits': read_units,
                                              'WriteCapacityUnits': write_units})
         table.update_from_response(response)
-        
+
     def delete_table(self, table):
         """
         Delete this table and all items in it.  After calling this
@@ -304,7 +360,7 @@ class Layer2(object):
         :type hash_key_proto_value: int|long|float|str|unicode
         :param hash_key_proto_value: A sample or prototype of the type
             of value you want to use for the HashKey.
-            
+
         :type range_key_name: str
         :param range_key_name: The name of the RangeKey for the schema.
             This parameter is optional.
@@ -336,17 +392,17 @@ class Layer2(object):
 
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object from which the item is retrieved.
-        
+
         :type hash_key: int|long|float|str|unicode
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
-        
+
         :type range_key: int|long|float|str|unicode
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
-            
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -394,7 +450,7 @@ class Layer2(object):
 
         :type item: :class:`boto.dynamodb.item.Item`
         :param item: The Item to write to Amazon DynamoDB.
-        
+
         :type expected_value: dict
         :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
@@ -408,7 +464,6 @@ class Layer2(object):
             values are: None or 'ALL_OLD'. If 'ALL_OLD' is
             specified and the item is overwritten, the content
             of the old item is returned.
-            
         """
         expected_value = self.dynamize_expected_value(expected_value)
         response = self.layer1.put_item(item.table.name,
@@ -418,7 +473,7 @@ class Layer2(object):
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return response
-            
+
     def update_item(self, item, expected_value=None, return_values=None):
         """
         Commit pending item updates to Amazon DynamoDB.
@@ -460,21 +515,21 @@ class Layer2(object):
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return response
-            
+
     def delete_item(self, item, expected_value=None, return_values=None):
         """
         Delete the item from Amazon DynamoDB.
 
         :type item: :class:`boto.dynamodb.item.Item`
         :param item: The Item to delete from Amazon DynamoDB.
-        
+
         :type expected_value: dict
         :param expected_value: A dictionary of name/value pairs that you expect.
             This dictionary should have name/value pairs where the name
             is the name of the attribute and the value is either the value
             you are expecting or False if you expect the attribute not to
             exist.
-            
+
         :type return_values: str
         :param return_values: Controls the return of attribute
             name-value pairs before then were changed.  Possible
@@ -497,10 +552,10 @@ class Layer2(object):
               item_class=Item):
         """
         Perform a query on the table.
-        
+
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object that is being queried.
-        
+
         :type hash_key: int|long|float|str|unicode
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
@@ -515,7 +570,7 @@ class Layer2(object):
             The only condition which expects or will accept two
             values is 'BETWEEN', otherwise a single value should
             be passed to the Condition constructor.
-        
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -555,39 +610,29 @@ class Layer2(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: generator
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         if range_key_condition:
             rkc = self.dynamize_range_key_condition(range_key_condition)
         else:
             rkc = None
         if exclusive_start_key:
-            esk = self.build_key_from_values(table.schema, *exclusive_start_key)
+            esk = self.build_key_from_values(table.schema,
+                                             *exclusive_start_key)
         else:
             esk = None
-        response = True
-        n = 0
-        while response:
-            if max_results and n == max_results:
-                break
-            if response is True:
-                pass
-            elif response.has_key("LastEvaluatedKey"):
-                lek = response['LastEvaluatedKey']
-                esk = self.dynamize_last_evaluated_key(lek)
-            else:
-                break
-            response = self.layer1.query(table.name,
-                                         dynamize_value(hash_key),
-                                         rkc, attributes_to_get, request_limit,
-                                         consistent_read, scan_index_forward,
-                                         esk, object_hook=item_object_hook)
-            for item in response['Items']:
-                if max_results and n == max_results:
-                    break
-                yield item_class(table, attrs=item)
-                n += 1
-    
+        kwargs = {'table_name': table.name,
+                  'hash_key_value': dynamize_value(hash_key),
+                  'range_key_conditions': rkc,
+                  'attributes_to_get': attributes_to_get,
+                  'limit': request_limit,
+                  'consistent_read': consistent_read,
+                  'scan_index_forward': scan_index_forward,
+                  'exclusive_start_key': esk,
+                  'object_hook': item_object_hook}
+        return TableGenerator(table, self.layer1.query,
+                              max_results, item_class, kwargs)
+
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, request_limit=None, max_results=None,
              count=False, exclusive_start_key=None, item_class=Item):
@@ -652,31 +697,19 @@ class Layer2(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: generator
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         if exclusive_start_key:
-            esk = self.build_key_from_values(table.schema, *exclusive_start_key)
+            esk = self.build_key_from_values(table.schema,
+                                             *exclusive_start_key)
         else:
             esk = None
-        sf = self.dynamize_scan_filter(scan_filter)
-        response = True
-        n = 0
-        while response:
-            if response is True:
-                pass
-            elif response.has_key("LastEvaluatedKey"):
-                last_evaluated_key = response['LastEvaluatedKey']
-                esk = self.dynamize_item(last_evaluated_key)
-            else:
-                break
-            response = self.layer1.scan(table.name, sf,
-                                        attributes_to_get, request_limit,
-                                        count, esk,
-                                        object_hook=item_object_hook)
-            if response:
-                for item in response['Items']:
-                    if max_results and n == max_results:
-                        break
-                    yield item_class(table, attrs=item)
-                    n += 1
-
+        kwargs = {'table_name': table.name,
+                  'scan_filter': self.dynamize_scan_filter(scan_filter),
+                  'attributes_to_get': attributes_to_get,
+                  'limit': request_limit,
+                  'count': count,
+                  'exclusive_start_key': esk,
+                  'object_hook': item_object_hook}
+        return TableGenerator(table, self.layer1.scan,
+                              max_results, item_class, kwargs)

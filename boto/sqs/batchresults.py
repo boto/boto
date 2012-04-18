@@ -85,7 +85,7 @@ class BatchResults(object):
             return entry
         if name == 'BatchResultErrorEntry':
             entry = ResultEntry()
-            self.results.errors(entry)
+            self.errors.append(entry)
             return entry
         return None
 

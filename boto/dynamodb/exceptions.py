@@ -3,12 +3,14 @@ Exceptions that are specific to the dynamodb module.
 """
 from boto.exception import BotoServerError, BotoClientError
 
+
 class DynamoDBExpiredTokenError(BotoServerError):
     """
     Raised when a DynamoDB security token expires. This is generally boto's
     (or the user's) notice to renew their DynamoDB security tokens.
     """
     pass
+
 
 class DynamoDBKeyNotFoundError(BotoClientError):
     """
@@ -17,10 +19,10 @@ class DynamoDBKeyNotFoundError(BotoClientError):
     """
     pass
 
+
 class DynamoDBItemError(BotoClientError):
     """
     Raised when invalid parameters are passed when creating a
     new Item in DynamoDB.
     """
     pass
-

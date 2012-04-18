@@ -171,6 +171,7 @@ class Bucket(object):
             k.etag = response.getheader('etag')
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
+            k.content_disposition = response.getheader('content-disposition')
             k.last_modified = response.getheader('last-modified')
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
@@ -565,6 +566,11 @@ class Bucket(object):
                           This value is required anytime you are
                           deleting versioned objects from a bucket
                           that has the MFADelete option on the bucket.
+
+        :rtype: :class:`boto.s3.key.Key` or subclass
+        :returns: A key object holding information on what was deleted.
+                  The Caller can see if a delete_marker was created or
+                  removed and what version_id the delete created or removed.
         """
         provider = self.connection.provider
         if version_id:
@@ -582,6 +588,12 @@ class Bucket(object):
         if response.status != 204:
             raise provider.storage_response_error(response.status,
                                                   response.reason, body)
+        else:
+            # return a key object with information on what was deleted.
+            k = self.key_class(self)
+            k.name = key_name
+            k.handle_version_headers(response)
+            return k
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
@@ -1323,7 +1335,8 @@ class Bucket(object):
 
     def initiate_multipart_upload(self, key_name, headers=None,
                                   reduced_redundancy=False,
-                                  metadata=None, encrypt_key=False):
+                                  metadata=None, encrypt_key=False,
+                                  policy=None):
         """
         Start a multipart upload operation.
 
@@ -1354,11 +1367,16 @@ class Bucket(object):
                             be encrypted on the server-side by S3 and
                             will be stored in an encrypted form while
                             at rest in S3.
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+                       new key (once completed) in S3.
         """
         query_args = 'uploads'
         provider = self.connection.provider
-        if headers is None:
-            headers = {}
+        headers = headers or {}
+        if policy:
+            headers[provider.acl_header] = policy
         if reduced_redundancy:
             storage_class_header = provider.storage_class_header
             if storage_class_header:
@@ -1410,6 +1428,14 @@ class Bucket(object):
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
             xml.sax.parseString(body, h)
+            # Use a dummy key to parse various response headers
+            # for versioning, encryption info and then explicitly
+            # set the completed MPU object values from key.
+            k = self.key_class(self)
+            k.handle_version_headers(response)
+            k.handle_encryption_headers(response)
+            resp.version_id = k.version_id
+            resp.encrypted = k.encrypted
             return resp
         else:
             raise self.connection.provider.storage_response_error(
