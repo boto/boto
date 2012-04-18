@@ -94,19 +94,19 @@ class ACL:
         self.entries.entry_list.append(entry)
 
     def startElement(self, name, attrs, connection):
-        if name == OWNER:
+        if name.lower() == OWNER.lower():
             self.owner = User(self)
             return self.owner
-        elif name == ENTRIES:
+        elif name.lower() == ENTRIES.lower():
             self.entries = Entries(self)
             return self.entries
         else:
             return None
 
     def endElement(self, name, value, connection):
-        if name == OWNER:
+        if name.lower() == OWNER.lower():
             pass
-        elif name == ENTRIES:
+        elif name.lower() == ENTRIES.lower():
             pass
         else:
             setattr(self, name, value)
@@ -138,7 +138,7 @@ class Entries:
         return '<Entries: %s>' % ', '.join(entries_repr)
 
     def startElement(self, name, attrs, connection):
-        if name == ENTRY:
+        if name.lower() == ENTRY.lower():
             entry = Entry(self)
             self.entry_list.append(entry)
             return entry
@@ -146,7 +146,7 @@ class Entries:
             return None
 
     def endElement(self, name, value, connection):
-        if name == ENTRY:
+        if name.lower() == ENTRY.lower():
             pass
         else:
             setattr(self, name, value)
@@ -173,7 +173,7 @@ class Entry:
         return '<%s: %s>' % (self.scope.__repr__(), self.permission.__repr__())
 
     def startElement(self, name, attrs, connection):
-        if name == SCOPE:
+        if name.lower() == SCOPE.lower():
             # The following if statement used to look like this: 
             #   if not TYPE in attrs:
             # which caused problems because older versions of the 
@@ -194,15 +194,15 @@ class Entry:
                                       (TYPE, SCOPE))
             self.scope = Scope(self, attrs[TYPE])
             return self.scope
-        elif name == PERMISSION:
+        elif name.lower() == PERMISSION.lower():
             pass
         else:
             return None
 
     def endElement(self, name, value, connection):
-        if name == SCOPE:
+        if name.lower() == SCOPE.lower():
             pass
-        elif name == PERMISSION:
+        elif name.lower() == PERMISSION.lower():
             value = value.strip()
             if not value in SupportedPermissions:
                 raise InvalidAclError('Invalid Permission "%s"' % value)
@@ -219,15 +219,17 @@ class Entry:
 
 class Scope:
 
-    # Map from Scope type to list of allowed sub-elems.
+    # Map from Scope type.lower() to lower-cased list of allowed sub-elems.
     ALLOWED_SCOPE_TYPE_SUB_ELEMS = {
-        ALL_AUTHENTICATED_USERS : [],
-        ALL_USERS : [],
-        GROUP_BY_DOMAIN : [DOMAIN],
-        GROUP_BY_EMAIL : [DISPLAY_NAME, EMAIL_ADDRESS, NAME],
-        GROUP_BY_ID : [DISPLAY_NAME, ID, NAME],
-        USER_BY_EMAIL : [DISPLAY_NAME, EMAIL_ADDRESS, NAME],
-        USER_BY_ID : [DISPLAY_NAME, ID, NAME]
+        ALL_AUTHENTICATED_USERS.lower() : [],
+        ALL_USERS.lower() : [],
+        GROUP_BY_DOMAIN.lower() : [DOMAIN.lower()],
+        GROUP_BY_EMAIL.lower() : [
+            DISPLAY_NAME.lower(), EMAIL_ADDRESS.lower(), NAME.lower()],
+        GROUP_BY_ID.lower() : [DISPLAY_NAME.lower(), ID.lower(), NAME.lower()],
+        USER_BY_EMAIL.lower() : [
+            DISPLAY_NAME.lower(), EMAIL_ADDRESS.lower(), NAME.lower()],
+        USER_BY_ID.lower() : [DISPLAY_NAME.lower(), ID.lower(), NAME.lower()]
     }
 
     def __init__(self, parent, type=None, id=None, name=None,
@@ -238,7 +240,7 @@ class Scope:
         self.id = id
         self.domain = domain
         self.email_address = email_address
-        if not self.ALLOWED_SCOPE_TYPE_SUB_ELEMS.has_key(self.type):
+        if not self.ALLOWED_SCOPE_TYPE_SUB_ELEMS.has_key(self.type.lower()):
             raise InvalidAclError('Invalid %s %s "%s" ' %
                                   (SCOPE, TYPE, self.type))
 
@@ -256,36 +258,40 @@ class Scope:
             return '<%s>' % self.type
 
     def startElement(self, name, attrs, connection):
-        if not name in self.ALLOWED_SCOPE_TYPE_SUB_ELEMS[self.type]:
+        if (not name.lower() in
+            self.ALLOWED_SCOPE_TYPE_SUB_ELEMS[self.type.lower()]):
             raise InvalidAclError('Element "%s" not allowed in %s %s "%s" ' %
                                    (name, SCOPE, TYPE, self.type))
         return None
 
     def endElement(self, name, value, connection):
         value = value.strip()
-        if name == DOMAIN:
+        if name.lower() == DOMAIN.lower():
             self.domain = value
-        elif name == EMAIL_ADDRESS:
+        elif name.lower() == EMAIL_ADDRESS.lower():
             self.email_address = value
-        elif name == ID:
+        elif name.lower() == ID.lower():
             self.id = value
-        elif name == NAME:
+        elif name.lower() == NAME.lower():
             self.name = value
         else:
             setattr(self, name, value)
 
     def to_xml(self):
         s = '<%s type="%s">' % (SCOPE, self.type)
-        if self.type == ALL_AUTHENTICATED_USERS or self.type == ALL_USERS:
+        if (self.type.lower() == ALL_AUTHENTICATED_USERS.lower()
+            or self.type.lower() == ALL_USERS.lower()):
             pass
-        elif self.type == GROUP_BY_DOMAIN:
+        elif self.type.lower() == GROUP_BY_DOMAIN.lower():
             s += '<%s>%s</%s>' % (DOMAIN, self.domain, DOMAIN)
-        elif self.type == GROUP_BY_EMAIL or self.type == USER_BY_EMAIL:
+        elif (self.type.lower() == GROUP_BY_EMAIL.lower()
+              or self.type.lower() == USER_BY_EMAIL.lower()):
             s += '<%s>%s</%s>' % (EMAIL_ADDRESS, self.email_address,
                                   EMAIL_ADDRESS)
             if self.name:
               s += '<%s>%s</%s>' % (NAME, self.name, NAME)
-        elif self.type == GROUP_BY_ID or self.type == USER_BY_ID:
+        elif (self.type.lower() == GROUP_BY_ID.lower()
+              or self.type.lower() == USER_BY_ID.lower()):
             s += '<%s>%s</%s>' % (ID, self.id, ID)
             if self.name:
               s += '<%s>%s</%s>' % (NAME, self.name, NAME)

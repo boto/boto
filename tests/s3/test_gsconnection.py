@@ -2,6 +2,7 @@
 # Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
 # Copyright (c) 2011, Nexenta Systems, Inc.
+# Copyright (c) 2012, Google, Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +28,7 @@
 Some unit tests for the GSConnection
 """
 
+import boto
 import unittest
 import time
 import os
@@ -160,6 +162,18 @@ class GSConnectionTest (unittest.TestCase):
         k.set_acl('private')
         acl = k.get_acl()
         assert len(acl.entries.entry_list) == 1
+        #
+        # Test case-insensitivity of XML ACL parsing.
+        acl_xml = (
+            '<ACCESSControlList><EntrIes><Entry>'    +
+            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
+            '</Entry></EntrIes></ACCESSControlList>')
+        acl = boto.gs.acl.ACL()
+        h = handler.XmlHandler(acl, bucket)
+        xml.sax.parseString(acl_xml, h)
+        bucket.set_acl(acl)
+        assert len(acl.entries.entry_list) == 1
+        #
         # try set/get raw logging subresource
         empty_logging_str="<?xml version='1.0' encoding='UTF-8'?><Logging/>"
         logging_str = (
