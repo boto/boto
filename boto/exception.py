@@ -402,9 +402,6 @@ class GSDataError(StorageDataError):
     """
     pass
 
-class FPSResponseError(BotoServerError):
-    pass
-
 class InvalidUriError(Exception):
     """Exception raised when URI is invalid."""
 
