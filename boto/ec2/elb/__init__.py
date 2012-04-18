@@ -160,7 +160,7 @@ class ELBConnection(AWSQueryConnection):
             protocol = listener[2].upper()
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = protocol
+            params['Listeners.member.%d.Protocol' % i] = listener[2]
             if protocol == 'HTTPS' or protocol == 'SSL':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         if zones:
@@ -207,7 +207,7 @@ class ELBConnection(AWSQueryConnection):
             protocol = listener[2].upper()
             params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
             params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = protocol
+            params['Listeners.member.%d.Protocol' % i] = listener[2]
             if protocol == 'HTTPS' or protocol == 'SSL':
                 params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
         return self.get_status('CreateLoadBalancerListeners', params)
