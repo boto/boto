@@ -70,11 +70,14 @@ class Layer1(AWSAuthConnection):
     SessionExpiredError = 'com.amazon.coral.service#ExpiredTokenException'
     """The error response returned when session token has expired"""
 
+    ConditionalCheckFailedError = 'ConditionalCheckFailedException'
+    """The error response returned when a conditional check fails"""
+
     ResponseError = DynamoDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 debug=0, session_token=None, region=None):
+                 host=None, debug=0, session_token=None, region=None):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -160,6 +163,9 @@ class Layer1(AWSAuthConnection):
                 self.creds = self._get_session_token()
                 self._update_provider()
                 status = (msg, i + self.num_retries - 1, next_sleep)
+            elif self.ConditionalCheckFailedError in data.get('__type'):
+                raise dynamodb_exceptions.DynamoDBConditionalCheckFailedError(
+                    response.status, response.reason, data)
             else:
                 raise self.ResponseError(response.status, response.reason,
                                          data)

@@ -28,6 +28,7 @@ import unittest
 import time
 import uuid
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError, DynamoDBItemError
+from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.types import get_dynamodb_type
 from boto.dynamodb.condition import *
@@ -166,12 +167,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         # Try to delete the item with the wrong Expected value
         expected = {'Views': 1}
-        try:
-            item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
-            assert e.error_code == 'ConditionalCheckFailedException'
-        else:
-            raise Exception("Expected Value condition failed")
+        self.assertRaises(DynamoDBConditionalCheckFailedError,
+                          item1.delete, expected_value=expected)
 
         # Try to delete a value while expecting a non-existant attribute
         expected = {'FooBar': True}

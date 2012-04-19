@@ -2,7 +2,7 @@
 Exceptions that are specific to the dynamodb module.
 """
 from boto.exception import BotoServerError, BotoClientError
-
+from boto.exception import DynamoDBResponseError
 
 class DynamoDBExpiredTokenError(BotoServerError):
     """
@@ -24,5 +24,14 @@ class DynamoDBItemError(BotoClientError):
     """
     Raised when invalid parameters are passed when creating a
     new Item in DynamoDB.
+    """
+    pass
+
+
+class DynamoDBConditionalCheckFailedError(DynamoDBResponseError):
+    """
+    Raised when a ConditionalCheckFailedException response is received.
+    This happens when a conditional check, expressed via the expected_value
+    paramenter, fails.
     """
     pass

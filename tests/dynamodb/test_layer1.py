@@ -27,6 +27,7 @@ Tests for Layer1 of DynamoDB
 import unittest
 import time
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
+from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer1 import Layer1
 from boto.sts.credentials import Credentials
 
@@ -134,10 +135,9 @@ class DynamoDBLayer1Test (unittest.TestCase):
 
         # Try to delete the item with the wrong Expected value
         expected = {'Views': {'Value': {'N': '1'}}}
-        try:
-            result = c.delete_item(table_name, key=key1, expected=expected)
-        except c.ResponseError, e:
-            assert e.error_code == 'ConditionalCheckFailedException'
+        self.assertRaises(DynamoDBConditionalCheckFailedError,
+                          c.delete_item, table_name, key=key1,
+                          expected=expected)
 
         # Now update the existing object
         attribute_updates = {'Views': {'Value': {'N': '5'},
