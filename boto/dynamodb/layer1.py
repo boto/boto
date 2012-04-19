@@ -73,6 +73,9 @@ class Layer1(AWSAuthConnection):
     ConditionalCheckFailedError = 'ConditionalCheckFailedException'
     """The error response returned when a conditional check fails"""
 
+    ValidationError = 'ValidationException'
+    """The error response returned when an item is invalid in some way"""
+
     ResponseError = DynamoDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -165,6 +168,9 @@ class Layer1(AWSAuthConnection):
                 status = (msg, i + self.num_retries - 1, next_sleep)
             elif self.ConditionalCheckFailedError in data.get('__type'):
                 raise dynamodb_exceptions.DynamoDBConditionalCheckFailedError(
+                    response.status, response.reason, data)
+            elif self.ValidationError in data.get('__type'):
+                raise dynamodb_exceptions.DynamoDBValidationError(
                     response.status, response.reason, data)
             else:
                 raise self.ResponseError(response.status, response.reason,
