@@ -108,7 +108,7 @@ class Layer2(object):
                  host=None, debug=0, session_token=None, region=None):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
-                             host, debug, session_token, region)
+                             debug, session_token, region)
 
     def dynamize_attribute_updates(self, pending_updates):
         """
