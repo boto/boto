@@ -24,6 +24,8 @@
 
 class Batch(object):
     """
+    Used to construct a BatchGet request.
+
     :ivar table: The Table object from which the item is retrieved.
 
     :ivar keys: A list of scalar or tuple values.  Each element in the
@@ -43,6 +45,72 @@ class Batch(object):
         self.table = table
         self.keys = keys
         self.attributes_to_get = attributes_to_get
+
+    def to_dict(self):
+        """
+        Convert the Batch object into the format required for Layer1.
+        """
+        batch_dict = {}
+        key_list = []
+        for key in self.keys:
+            if isinstance(key, tuple):
+                hash_key, range_key = key
+            else:
+                hash_key = key
+                range_key = None
+            k = self.table.layer2.build_key_from_values(self.table.schema,
+                                                        hash_key, range_key)
+            key_list.append(k)
+        batch_dict['Keys'] = key_list
+        if self.attributes_to_get:
+            batch_dict['AttributesToGet'] = self.attributes_to_get
+        return batch_dict
+
+class BatchWrite(object):
+    """
+    Used to construct a BatchWrite request.  Each BatchWrite object
+    represents a collection of PutItem and DeleteItem requests for
+    a single Table.
+
+    :ivar table: The Table object from which the item is retrieved.
+
+    :ivar puts: A list of :class:`boto.dynamodb.item.Item` objects
+        that you want to write to DynamoDB.
+
+    :ivar deletes: A list of scalar or tuple values.  Each element in the
+        list represents one Item to delete.  If the schema for the
+        table has both a HashKey and a RangeKey, each element in the
+        list should be a tuple consisting of (hash_key, range_key).  If
+        the schema for the table contains only a HashKey, each element
+        in the list should be a scalar value of the appropriate type
+        for the table schema.
+    """
+
+    def __init__(self, table, puts=None, deletes=None):
+        self.table = table
+        self.puts = puts or []
+        self.deletes = deletes or []
+
+    def to_dict(self):
+        """
+        Convert the Batch object into the format required for Layer1.
+        """
+        op_list = []
+        for item in self.puts:
+            d = {'Item': self.table.layer2.dynamize_item(item)}
+            d = {'PutRequest': d}
+            op_list.append(d)
+        for key in self.deletes:
+            if isinstance(key, tuple):
+                hash_key, range_key = key
+            else:
+                hash_key = key
+                range_key = None
+            k = self.table.layer2.build_key_from_values(self.table.schema,
+                                                        hash_key, range_key)
+            d = {'Key': k}
+            op_list.append({'DeleteRequest': d})
+        return (self.table.name, op_list)
 
 
 class BatchList(list):
@@ -80,3 +148,58 @@ class BatchList(list):
 
     def submit(self):
         return self.layer2.batch_get_item(self)
+
+    def to_dict(self):
+        """
+        Convert a BatchList object into format required for Layer1.
+        """
+        d = {}
+        for batch in self:
+            d[batch.table.name] = batch.to_dict()
+        return d
+
+class BatchWriteList(list):
+    """
+    A subclass of a list object that contains a collection of
+    :class:`boto.dynamodb.batch.BatchWrite` objects.
+    """
+
+    def __init__(self, layer2):
+        list.__init__(self)
+        self.layer2 = layer2
+
+    def add_batch(self, table, puts=None, deletes=None):
+        """
+        Add a BatchWrite to this BatchWriteList.
+
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object in which the items are contained.
+
+        :type puts: list of :class:`boto.dynamodb.item.Item` objects
+        :param puts: A list of items that you want to write to DynamoDB.
+
+        :type deletes: A list
+        :param deletes: A list of scalar or tuple values.  Each element
+            in the list represents one Item to delete.  If the schema
+            for the table has both a HashKey and a RangeKey, each
+            element in the list should be a tuple consisting of
+            (hash_key, range_key).  If the schema for the table
+            contains only a HashKey, each element in the list should
+            be a scalar value of the appropriate type for the table
+            schema.
+        """
+        self.append(BatchWrite(table, puts, deletes))
+
+    def submit(self):
+        return self.layer2.batch_write_item(self)
+
+    def to_dict(self):
+        """
+        Convert a BatchWriteList object into format required for Layer1.
+        """
+        d = {}
+        for batch in self:
+            table_name, batch_dict = batch.to_dict()
+            d[table_name] = batch_dict
+        return d
+
