@@ -521,8 +521,9 @@ class Key(object):
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-            if chunked_transfer and not self.base64md5:
-                # MD5 for the stream has to be calculated on the fly.
+
+            # Calculate all MD5 checksums on the fly, if not already computed
+            if not self.base64md5:
                 m = md5()
             else:
                 m = None
@@ -591,12 +592,14 @@ class Key(object):
                     chunk = fp.read(self.BufferSize)
 
             self.size = data_len
+
+            if m:
+                # Use the chunked trailer for the digest
+                hd = m.hexdigest()
+                self.md5, self.base64md5 = self.get_md5_from_hexdigest(hd)
+
             if chunked_transfer:
                 http_conn.send('0\r\n')
-                if m:
-                    # Use the chunked trailer for the digest
-                    hd = m.hexdigest()
-                    self.md5, self.base64md5 = self.get_md5_from_hexdigest(hd)
                     # http_conn.send("Content-MD5: %s\r\n" % self.base64md5)
                 http_conn.send('\r\n')
 
