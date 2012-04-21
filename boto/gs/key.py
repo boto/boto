@@ -218,13 +218,7 @@ class Key(S3Key):
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
-            if not md5:
-                # compute_md5() and also set self.size to actual
-                # size of the bytes read computing the md5.
-                md5 = self.compute_md5(fp, size)
-                # adjust size if required
-                size = self.size
-            elif size:
+            if size:
                 self.size = size
             else:
                 # If md5 is provided, still need to size so
@@ -234,10 +228,13 @@ class Key(S3Key):
                 self.size = fp.tell() - spos
                 fp.seek(spos)
                 size = self.size
-            self.md5 = md5[0]
-            self.base64md5 = md5[1]
 
             if self.name == None:
+                if md5 == None:
+                  md5 = self.compute_md5(fp, size)
+                  self.md5 = md5[0]
+                  self.base64md5 = md5[1]
+
                 self.name = self.md5
             if not replace:
                 if self.bucket.lookup(self.name):
@@ -298,6 +295,10 @@ class Key(S3Key):
         :param res_upload_handler: If provided, this handler will perform the
             upload.
         """
+        # Clear out any previously computed md5 hashes, since we are setting the content.
+        self.md5 = None
+        self.base64md5 = None
+
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
@@ -348,6 +349,11 @@ class Key(S3Key):
                     param, if present, will be used as the MD5 values
                     of the file.  Otherwise, the checksum will be computed.
         """
+
+        # Clear out any previously computed md5 hashes, since we are setting the content.
+        self.md5 = None
+        self.base64md5 = None
+
         if isinstance(s, unicode):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)

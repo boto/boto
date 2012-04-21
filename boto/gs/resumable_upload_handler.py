@@ -34,6 +34,10 @@ from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -83,6 +87,7 @@ class ResumableUploadHandler(object):
         self.num_retries = num_retries
         self.server_has_bytes = 0  # Byte count at last server check.
         self.tracker_uri = None
+        self.incremental_md5 = False
         if tracker_file_name:
             self._load_tracker_uri_from_file()
         # Save upload_start_point in instance state so caller can find how
@@ -246,6 +251,7 @@ class ResumableUploadHandler(object):
         if conn.debug >= 1:
             print 'Starting new resumable upload.'
         self.server_has_bytes = 0
+        self.incremental_md5 = True
 
         # Start a new resumable upload by sending a POST request with an
         # empty body and the "X-Goog-Resumable: start" header. Include any
@@ -295,7 +301,7 @@ class ResumableUploadHandler(object):
         self._save_tracker_uri_to_file()
 
     def _upload_file_bytes(self, conn, http_conn, fp, file_length,
-                           total_bytes_uploaded, cb, num_cb):
+                           total_bytes_uploaded, cb, num_cb, md5sum):
         """
         Makes one attempt to upload file bytes, using an existing resumable
         upload connection.
@@ -340,6 +346,7 @@ class ResumableUploadHandler(object):
         http_conn.set_debuglevel(0)
         while buf:
             http_conn.send(buf)
+            md5sum.update(buf)
             total_bytes_uploaded += len(buf)
             if cb:
                 i += 1
@@ -375,7 +382,7 @@ class ResumableUploadHandler(object):
                                        (resp.status, resp.reason), disposition)
 
     def _attempt_resumable_upload(self, key, fp, file_length, headers, cb,
-                                  num_cb):
+                                  num_cb, md5sum):
         """
         Attempts a resumable upload.
 
@@ -391,6 +398,11 @@ class ResumableUploadHandler(object):
                 (server_start, server_end) = (
                     self._query_server_pos(conn, file_length))
                 self.server_has_bytes = server_start
+
+                # Cannot use incremental md5 calculation if the server already has some of the data.
+                if server_end:
+                  self.incremental_md5 = False
+
                 key=key
                 if conn.debug >= 1:
                     print 'Resuming transfer.'
@@ -434,7 +446,7 @@ class ResumableUploadHandler(object):
         # and can report that progress on next attempt.
         try:
             return self._upload_file_bytes(conn, http_conn, fp, file_length,
-                                           total_bytes_uploaded, cb, num_cb)
+                                           total_bytes_uploaded, cb, num_cb, md5sum)
         except (ResumableUploadException, socket.error):
             resp = self._query_server_state(conn, file_length)
             if resp.status == 400:
@@ -517,6 +529,9 @@ class ResumableUploadHandler(object):
         fp.seek(0)
         debug = key.bucket.connection.debug
 
+        # Compute the MD5 checksum on the fly.
+        md5sum = md5()
+
         # Use num-retries from constructor if one was provided; else check
         # for a value specified in the boto config file; else default to 5.
         if self.num_retries is None:
@@ -527,7 +542,19 @@ class ResumableUploadHandler(object):
             server_had_bytes_before_attempt = self.server_has_bytes
             try:
                 etag = self._attempt_resumable_upload(key, fp, file_length,
-                                                      headers, cb, num_cb)
+                                                      headers, cb, num_cb, md5sum)
+
+                # If this is a resumed upload we need to recompute the MD5 from scratch.
+                if self.incremental_md5:
+                    hd = md5sum.hexdigest()
+                    key.md5, key.base64md5 = key.get_md5_from_hexdigest(hd)
+                else:
+                    print 'Recomputing MD5 from scratch for resumed upload'
+                    fp.seek(0)
+                    hd = key.compute_md5(fp)
+                    key.md5 = hd[0]
+                    key.base64md5 = hd[1]
+
                 # Upload succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
                 self._check_final_md5(key, etag)
