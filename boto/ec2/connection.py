@@ -41,7 +41,7 @@ from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
 from boto.ec2.securitygroup import SecurityGroup
-from boto.ec2.regioninfo import RegionInfo
+from boto.ec2.regioninfo import RegionInfo,EC2RegionInfo
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering
 from boto.ec2.reservedinstance import ReservedInstance
@@ -70,14 +70,16 @@ class EC2Connection(AWSQueryConnection):
                  is_secure=True, host=None, port=None,
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/',
+                 https_connection_factory=None, region=None, region_name=None, path='/',
                  api_version=None, security_token=None):
         """
         Init method to create a new connection to EC2.
         """
         if not region:
-            region = RegionInfo(self, self.DefaultRegionName,
-                                self.DefaultRegionEndpoint)
+            if not region_name:
+                region = EC2RegionInfo(self, self.DefaultRegionName)
+            else:
+                region = EC2RegionInfo(self, region_name)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
