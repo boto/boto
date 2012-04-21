@@ -480,10 +480,10 @@ class ResumableUploadTests(unittest.TestCase):
         test_file = self.build_test_input_file(test_file_size)[1]
         harnass = CallbackTestHarnass(fail_after_n_bytes=test_file_size/2,
                                       fp_to_change=test_file,
-                                      # Writing at file_size-5 won't change file
-                                      # size because CallbackTestHarnass only
-                                      # writes 3 bytes.
-                                      fp_change_pos=test_file_size-5)
+                                      # Write to byte 1, as the CallbackTestHarnass writes
+                                      # 3 bytes. This will result in the data on the server
+                                      # being different than the local file.
+                                      fp_change_pos=1)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         try:
             self.dst_key.set_contents_from_file(
