@@ -62,3 +62,10 @@ class RegionInfo(object):
             return self.connection_cls(region=self, **kw_params)
 
 
+    def service_endpoint_templates(self, service_name=None):
+        service_endpoints = {
+            'sqs'   : 'sqs.{0}.amazonaws.com',
+            'ec2'    : 'ec2.{0}.amazonaws.com'    
+        }
+        return service_endpoints[service_name]
+

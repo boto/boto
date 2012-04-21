@@ -28,5 +28,7 @@ class SQSRegionInfo(RegionInfo):
 
     def __init__(self, connection=None, name=None, endpoint=None):
         from boto.sqs.connection import SQSConnection
+        if name:
+        	endpoint = RegionInfo.service_endpoint_templates(self, 'sqs').format(name)
         RegionInfo.__init__(self, connection, name, endpoint,
                             SQSConnection)
