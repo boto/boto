@@ -63,7 +63,7 @@ def table_generator(tgen):
             pass
         elif 'LastEvaluatedKey' in response:
             lek = response['LastEvaluatedKey']
-            esk = layer2.dynamize_last_evaluated_key(lek)
+            esk = tgen.layer2.dynamize_last_evaluated_key(lek)
             tgen.kwargs['exclusive_start_key'] = esk
         else:
             break
