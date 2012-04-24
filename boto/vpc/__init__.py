@@ -359,7 +359,7 @@ class VPCConnection(EC2Connection):
             i = 1
             for filter in filters:
                 params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
+                params[('Filter.%d.Value.1' % i)] = filter[1]
                 i += 1
         return self.get_list('DescribeCustomerGateways', params, [('item', CustomerGateway)])
 
@@ -432,7 +432,7 @@ class VPCConnection(EC2Connection):
             i = 1
             for filter in filters:
                 params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
+                params[('Filter.%d.Value.1' % i)] = filter[1]
                 i += 1
         return self.get_list('DescribeVpnGateways', params, [('item', VpnGateway)])
 
@@ -663,7 +663,7 @@ class VPCConnection(EC2Connection):
             i = 1
             for filter in filters:
                 params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
+                params[('Filter.%d.Value.1' % i)] = filter[1]
                 i += 1
         return self.get_list('DescribeVpnConnections', params, [('item', VpnConnection)])
 
