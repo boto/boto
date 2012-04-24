@@ -327,6 +327,20 @@ class Layer1(AWSAuthConnection):
         return self.make_request('BatchGetItem', json_input,
                                  object_hook=object_hook)
 
+    def batch_write_item(self, request_items, object_hook=None):
+        """
+        This operation enables you to put or delete several items
+        across multiple tables in a single API call.
+
+        :type request_items: dict
+        :param request_items: A Python version of the RequestItems
+            data structure defined by DynamoDB.
+        """
+        data = {'RequestItems': request_items}
+        json_input = json.dumps(data)
+        return self.make_request('BatchWriteItem', json_input,
+                                 object_hook=object_hook)
+
     def put_item(self, table_name, item,
                  expected=None, return_values=None,
                  object_hook=None):

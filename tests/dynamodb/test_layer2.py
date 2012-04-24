@@ -315,6 +315,42 @@ class DynamoDBLayer2Test (unittest.TestCase):
         response = batch_list.submit()
         assert len(response['Responses'][table.name]['Items']) == 2
 
+        # Try a few batch write operations
+        item4_key = 'Amazon S3'
+        item4_range = 'S3 Thread 2'
+        item4_attrs = {
+            'Message': 'S3 Thread 2 message text',
+            'LastPostedBy': 'User A',
+            'Views': 0,
+            'Replies': 0,
+            'Answered': 0,
+            'Tags': set(['largeobject', 'multipart upload']),
+            'LastPostDateTime': '12/9/2011 11:36:03 PM'
+            }
+        item5_key = 'Amazon S3'
+        item5_range = 'S3 Thread 3'
+        item5_attrs = {
+            'Message': 'S3 Thread 3 message text',
+            'LastPostedBy': 'User A',
+            'Views': 0,
+            'Replies': 0,
+            'Answered': 0,
+            'Tags': set(['largeobject', 'multipart upload']),
+            'LastPostDateTime': '12/9/2011 11:36:03 PM'
+            }
+        item4 = table.new_item(item4_key, item4_range, item4_attrs)
+        item5 = table.new_item(item5_key, item5_range, item5_attrs)
+        batch_list = c.new_batch_write_list()
+        batch_list.add_batch(table, puts=[item4, item5])
+        response = batch_list.submit()
+        # should really check for unprocessed items
+
+        batch_list = c.new_batch_write_list()
+        batch_list.add_batch(table, deletes=[(item4_key, item4_range),
+                                             (item5_key, item5_range)])
+        response = batch_list.submit()
+        
+
         # Try queries
         results = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))
         n = 0

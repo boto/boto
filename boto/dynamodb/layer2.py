@@ -25,7 +25,7 @@ from boto.dynamodb.layer1 import Layer1
 from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
-from boto.dynamodb.batch import BatchList
+from boto.dynamodb.batch import BatchList, BatchWriteList
 from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
 
 
@@ -186,32 +186,6 @@ class Layer2(object):
                 d['RangeKeyElement'] = dynamize_value(range_key)
         return d
 
-    def dynamize_request_items(self, batch_list):
-        """
-        Convert a request_items parameter into the data structure
-        required for Layer1.
-        """
-        d = None
-        if batch_list:
-            d = {}
-            for batch in batch_list:
-                batch_dict = {}
-                key_list = []
-                for key in batch.keys:
-                    if isinstance(key, tuple):
-                        hash_key, range_key = key
-                    else:
-                        hash_key = key
-                        range_key = None
-                    k = self.build_key_from_values(batch.table.schema,
-                                                   hash_key, range_key)
-                    key_list.append(k)
-                batch_dict['Keys'] = key_list
-                if batch.attributes_to_get:
-                    batch_dict['AttributesToGet'] = batch.attributes_to_get
-            d[batch.table.name] = batch_dict
-        return d
-
     def build_key_from_values(self, schema, hash_key, range_key=None):
         """
         Build a Key structure to be used for accessing items
@@ -252,6 +226,13 @@ class Layer2(object):
         object.
         """
         return BatchList(self)
+
+    def new_batch_write_list(self):
+        """
+        Return a new, empty :class:`boto.dynamodb.batch.BatchWriteList`
+        object.
+        """
+        return BatchWriteList(self)
 
     def list_tables(self, limit=None):
         """
@@ -439,9 +420,23 @@ class Layer2(object):
             batch of objects that you wish to retrieve in this
             request.
         """
-        request_items = self.dynamize_request_items(batch_list)
+        request_items = batch_list.to_dict()
         return self.layer1.batch_get_item(request_items,
                                           object_hook=item_object_hook)
+
+    def batch_write_item(self, batch_list):
+        """
+        Performs multiple Puts and Deletes in one batch.
+
+        :type batch_list: :class:`boto.dynamodb.batch.BatchWriteList`
+        :param batch_list: A BatchWriteList object which consists of a
+            list of :class:`boto.dynamoddb.batch.BatchWrite` objects.
+            Each Batch object contains the information about one
+            batch of objects that you wish to put or delete.
+        """
+        request_items = batch_list.to_dict()
+        return self.layer1.batch_write_item(request_items,
+                                            object_hook=item_object_hook)
 
     def put_item(self, item, expected_value=None, return_values=None):
         """
