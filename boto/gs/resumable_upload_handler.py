@@ -409,7 +409,6 @@ class ResumableUploadHandler(object):
                     md5sum.update(chunk)
                     bytes_to_go -= len(chunk)
 
-                key=key
                 if conn.debug >= 1:
                     print 'Resuming transfer.'
             except ResumableUploadException, e:
