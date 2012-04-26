@@ -87,7 +87,6 @@ class ResumableUploadHandler(object):
         self.num_retries = num_retries
         self.server_has_bytes = 0  # Byte count at last server check.
         self.tracker_uri = None
-        self.incremental_md5 = False
         if tracker_file_name:
             self._load_tracker_uri_from_file()
         # Save upload_start_point in instance state so caller can find how
@@ -251,7 +250,6 @@ class ResumableUploadHandler(object):
         if conn.debug >= 1:
             print 'Starting new resumable upload.'
         self.server_has_bytes = 0
-        self.incremental_md5 = True
 
         # Start a new resumable upload by sending a POST request with an
         # empty body and the "X-Goog-Resumable: start" header. Include any
@@ -399,9 +397,17 @@ class ResumableUploadHandler(object):
                     self._query_server_pos(conn, file_length))
                 self.server_has_bytes = server_start
 
-                # Cannot use incremental md5 calculation if the server already has some of the data.
                 if server_end:
-                  self.incremental_md5 = False
+                  # If the server already has some of the content, we need to update the md5 with
+                  # the bytes that have already been uploaded to ensure we get a complete hash in
+                  # the end.
+                  print 'Catching up md5 for resumed upload'
+                  fp.seek(0)
+                  bytes_to_go = server_end + 1
+                  while bytes_to_go:
+                    chunk = fp.read(min(key.BufferSize, bytes_to_go))
+                    md5sum.update(chunk)
+                    bytes_to_go -= len(chunk)
 
                 key=key
                 if conn.debug >= 1:
@@ -540,20 +546,14 @@ class ResumableUploadHandler(object):
 
         while True:  # Retry as long as we're making progress.
             server_had_bytes_before_attempt = self.server_has_bytes
+            md5sum_before_attempt = md5sum.copy()
             try:
                 etag = self._attempt_resumable_upload(key, fp, file_length,
                                                       headers, cb, num_cb, md5sum)
 
-                # If this is a resumed upload we need to recompute the MD5 from scratch.
-                if self.incremental_md5:
-                    hd = md5sum.hexdigest()
-                    key.md5, key.base64md5 = key.get_md5_from_hexdigest(hd)
-                else:
-                    print 'Recomputing MD5 from scratch for resumed upload'
-                    fp.seek(0)
-                    hd = key.compute_md5(fp)
-                    key.md5 = hd[0]
-                    key.base64md5 = hd[1]
+                # Get the final md5 for the uploaded content.
+                hd = md5sum.hexdigest()
+                key.md5, key.base64md5 = key.get_md5_from_hexdigest(hd)
 
                 # Upload succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
@@ -591,11 +591,14 @@ class ResumableUploadHandler(object):
                     if debug >= 1:
                         print('Caught ResumableUploadException (%s) - will '
                               'retry' % e.message)
-
             # At this point we had a re-tryable failure; see if made progress.
             if self.server_has_bytes > server_had_bytes_before_attempt:
                 progress_less_iterations = 0
             else:
+                # Rollback any potential md5sum updates, as we did not
+                # make any progress in this iteration.
+                md5sum = md5sum_before_attempt
+
                 progress_less_iterations += 1
 
             if progress_less_iterations > self.num_retries:
