@@ -908,13 +908,6 @@ class EC2Connection(AWSQueryConnection):
                   'Attribute' : attribute}
         return self.get_status('ResetInstanceAttribute', params, verb='POST')
 
-    def modify_instance_description(self, instance_id, description):
-        """Change instance's description."""
-        return self.get_status('ModifyInstanceAttribute',
-                               {'InstanceId' : instance_id,
-                                'Attribute' : 'description',
-                                'Value' : description}, verb='POST')
-
     # Spot Instances
 
     def get_all_spot_instance_requests(self, request_ids=None,
