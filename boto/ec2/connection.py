@@ -409,11 +409,11 @@ class EC2Connection(AWSQueryConnection):
 
         if user_ids:
              for i,user_id in enumerate(user_ids):
-                 params['LaunchPermission.%s.%d.UserId' % (operation.title(),i)] = user_id
+                 params['LaunchPermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
 
         if groups:
              for i,group in enumerate(groups):
-                 params['LaunchPermission.%s.%d.Group' % (operation.title(),i)] = group
+                 params['LaunchPermission.%s.%d.Group' % (operation.title(),i+1)] = group
 
         if product_codes:
             self.build_list_params(params, product_codes, 'ProductCode')
