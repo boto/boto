@@ -54,7 +54,7 @@ from boto.ec2.tag import Tag
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
-from boto.exception import EC2ResponseError
+from boto.exception import BotoClientError, EC2ResponseError
 
 #boto.set_stream_logger('ec2')
 
@@ -373,9 +373,9 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeImageAttribute', params,
                                ImageAttribute, verb='POST')
 
-    def modify_image_attribute(self, image_id, attribute='launchPermission',
+    def modify_image_attribute(self, image_id, attribute=None,
                                operation='add', user_ids=None, groups=None,
-                               product_codes=None):
+                               product_codes=None, description=None):
         """
         Changes an attribute of an image.
 
@@ -383,7 +383,7 @@ class EC2Connection(AWSQueryConnection):
         :param image_id: The image id you wish to change
 
         :type attribute: string
-        :param attribute: The attribute you wish to change
+        :param attribute: Ignored, for backward compatibility
 
         :type operation: string
         :param operation: Either add or remove (this is required for changing
@@ -399,16 +399,29 @@ class EC2Connection(AWSQueryConnection):
         :param product_codes: Amazon DevPay product code. Currently only one
                               product code can be associated with an AMI. Once
                               set, the product code cannot be changed or reset.
+
+        :type description: string
+        :param description: Description of the image
         """
-        params = {'ImageId' : image_id,
-                  'Attribute' : attribute,
-                  'OperationType' : operation}
+        params = {'ImageId' : image_id}
+
+        if not operation and (user_ids or groups):
+            raise BotoClientError('No operation type was specified')
+
+        if description:
+             params['Description.Value'] = description
+
         if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
+             for i,user_id in enumerate(user_ids):
+                 params['LaunchPermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
+
         if groups:
-            self.build_list_params(params, groups, 'UserGroup')
+             for i,group in enumerate(groups):
+                 params['LaunchPermission.%s.%d.Group' % (operation.title(),i+1)] = group
+
         if product_codes:
             self.build_list_params(params, product_codes, 'ProductCode')
+
         return self.get_status('ModifyImageAttribute', params, verb='POST')
 
     def reset_image_attribute(self, image_id, attribute='launchPermission'):
