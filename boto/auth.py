@@ -366,6 +366,33 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         boto.log.debug('base64 encoded digest: %s' % b64)
         return (qs, b64)
 
+class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):
+    """
+    Query Signature V2 Authentication relocating signed query
+    into the path and allowing POST requests with Content-Types.   
+    """
+
+    capability = ['mws']
+
+    def add_auth(self, req, **kwargs):
+        req.params['AWSAccessKeyId'] = self._provider.access_key
+        req.params['SignatureVersion'] = self.SignatureVersion
+        req.params['Timestamp'] = boto.utils.get_ts()
+        qs, signature = self._calc_signature(req.params, req.method,
+                                             req.auth_path, req.host)
+        boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
+        if req.method == 'POST':
+            req.headers['Content-Length'] = str(len(req.body))
+            req.headers['Content-Type'] = req.headers.get('Content-Type',
+                                                          'text/plain')
+        else:
+            req.body = ''
+        # if this is a retried req, the qs from the previous try will
+        # already be there, we need to get rid of that and rebuild it
+        req.path = req.path.split('?')[0]
+        req.path = (req.path + '?' + qs +
+                             '&Signature=' + urllib.quote_plus(signature))
+
 
 def get_auth_handler(host, config, provider, requested_capability=None):
     """Finds an AuthHandler that is ready to authenticate.
