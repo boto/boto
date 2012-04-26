@@ -437,13 +437,6 @@ class EC2Connection(AWSQueryConnection):
                   'Attribute' : attribute}
         return self.get_status('ResetImageAttribute', params, verb='POST')
 
-    def modify_image_description(self, image_id, description):
-        """Change image's description."""
-        return self.get_status('ModifyImageAttribute',
-                               {'ImageId' : image_id,
-                                'Attribute' : 'description',
-                                'Value' : description }, verb='POST')
-
     # Instance methods
 
     def get_all_instances(self, instance_ids=None, filters=None):
