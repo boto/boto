@@ -894,8 +894,7 @@ class EC2Connection(AWSQueryConnection):
                 else:
                     value = 'false'
         params = {'InstanceId' : instance_id,
-                  'Attribute' : attribute,
-                  'Value' : value}
+                  '%s.Value' % (attribute[0].upper() + attribute[1:]): value}
         return self.get_status('ModifyInstanceAttribute', params, verb='POST')
 
     def reset_instance_attribute(self, instance_id, attribute):
