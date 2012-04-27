@@ -40,6 +40,8 @@ class Snapshot(TaggedEC2Object):
         self.owner_alias = None
         self.volume_size = None
         self.description = None
+        self.volume_size_in_bytes = None
+        self.is_public = None
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
@@ -64,6 +66,10 @@ class Snapshot(TaggedEC2Object):
                 self.volume_size = value
         elif name == 'description':
             self.description = value
+        elif name == 'volumeSizeInBytes':
+            self.volume_size_in_bytes = int(value)
+        elif name == 'isPublic':
+            self.is_public = (value == 'true')
         else:
             setattr(self, name, value)
 
