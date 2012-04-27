@@ -158,6 +158,8 @@ class Instance(TaggedEC2Object):
         self.hypervisor = None
         self.virtualization_type = None
         self.architecture = None
+        self.image_description = None
+        self.description = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -265,6 +267,10 @@ class Instance(TaggedEC2Object):
             self.virtualization_type = value
         elif name == 'architecture':
             self.architecture = value
+        elif name == 'imageDescription':
+            self.image_description = value
+        elif name == 'description':
+            self.description = value
         else:
             setattr(self, name, value)
 
