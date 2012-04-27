@@ -57,6 +57,9 @@ class Volume(TaggedEC2Object):
         self.snapshot_id = None
         self.attach_data = None
         self.zone = None
+        self.tier_type = None
+        self.size_in_bytes = None
+        self.description = None
 
     def __repr__(self):
         return 'Volume:%s' % self.id
@@ -71,6 +74,9 @@ class Volume(TaggedEC2Object):
         elif name == 'tagSet':
             self.tags = boto.resultset.ResultSet([('item', Tag)])
             return self.tags
+        elif name == 'tierType':
+            self.tier_type = TierType()
+            return self.tier_type
         else:
             return None
 
@@ -88,6 +94,10 @@ class Volume(TaggedEC2Object):
             self.snapshot_id = value
         elif name == 'availabilityZone':
             self.zone = value
+        elif name == 'sizeInBytes':
+            self.size_in_bytes = int(value)
+        elif name == 'description':
+            self.description = value
         else:
             setattr(self, name, value)
 
