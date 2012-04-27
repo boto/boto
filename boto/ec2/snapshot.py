@@ -37,6 +37,7 @@ class Snapshot(TaggedEC2Object):
         self.progress = None
         self.start_time = None
         self.owner_id = None
+        self.owner_alias = None
         self.volume_size = None
         self.description = None
 
@@ -54,6 +55,8 @@ class Snapshot(TaggedEC2Object):
             self.start_time = value
         elif name == 'ownerId':
             self.owner_id = value
+        elif name == 'ownerAlias':
+            self.owner_alias = value
         elif name == 'volumeSize':
             try:
                 self.volume_size = int(value)
