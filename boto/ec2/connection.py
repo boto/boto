@@ -2501,7 +2501,7 @@ class EC2Connection(AWSQueryConnection):
                   'GroupName': group_name}
         return self.get_status('AttachExtNetwork', params, verb='POST')
 
-    def describe_extnetworks(self):
+    def get_all_extnetworks(self):
         """Get all available external networks."""
         return self.get_list('DescribeExtNetworks', {}, [( 'item', ExtNetwork )], verb='POST')
 
