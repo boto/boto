@@ -160,6 +160,8 @@ class Instance(TaggedEC2Object):
         self.architecture = None
         self.image_description = None
         self.description = None
+        self.high_availability = None
+        self.remote_console = None
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -271,6 +273,10 @@ class Instance(TaggedEC2Object):
             self.image_description = value
         elif name == 'description':
             self.description = value
+        elif name == 'highAvailability':
+            self.high_availability = (value == 'true')
+        elif name == 'remoteConsole':
+            self.remote_console = value
         else:
             setattr(self, name, value)
 

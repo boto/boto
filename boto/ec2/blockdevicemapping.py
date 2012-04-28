@@ -50,6 +50,7 @@ class BlockDeviceType(object):
         self.tier_type = tier_type
         self.tier_name = tier_name
         self.replication = replication
+        self.is_bootable = False
 
     def startElement(self, name, attrs, connection):
         pass
@@ -77,6 +78,8 @@ class BlockDeviceType(object):
             self.tier_name = value
         elif name == "replication":
             self.replication = (value.lower() != "false")
+        elif name == "isBootable":
+            self.is_bootable = (value == 'true')
         elif name == 'deleteOnTermination':
             if value == 'true':
                 self.delete_on_termination = True
