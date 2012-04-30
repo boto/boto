@@ -450,10 +450,10 @@ class AWSAuthConnection(object):
             self.protocol = 'http'
         self.host = host
         self.path = path
-        if isinstance(debug, (int, long)):
-            self.debug = debug
-        else:
-            self.debug = config.getint('Boto', 'debug', 0)
+        # if the value passed in for debug 
+        if not isinstance(debug, (int, long)):
+            debug = 0
+        self.debug = config.getint('Boto', 'debug', debug)
         if port:
             self.port = port
         else:
