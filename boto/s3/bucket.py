@@ -142,7 +142,7 @@ class Bucket(object):
         """
         return self.get_key(key_name, headers=headers)
         
-    def get_key(self, key_name, headers=None, version_id=None):
+    def get_key(self, key_name, headers=None, version_id=None, response_headers=None):
         """
         Check to see if a particular key exists within the bucket.  This
         method uses a HEAD request to check for the existance of the key.
@@ -150,12 +150,24 @@ class Bucket(object):
         
         :type key_name: string
         :param key_name: The name of the key to retrieve
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
         
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
+        query_args = []
         if version_id:
-            query_args = 'versionId=%s' % version_id
+            query_args.append('versionId=%s' % version_id)
+        if response_headers:
+            for rk,rv in response_headers.iteritems():
+                query_args.append('%s=%s' % (rk, urllib.quote(rv)))
+        if query_args:
+            query_args = '&'.join(query_args)
         else:
             query_args = None
         response = self.connection.make_request('HEAD', self.name, key_name,
