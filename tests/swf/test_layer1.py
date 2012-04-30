@@ -46,28 +46,34 @@ BOTO_SWF_UNITTEST_DOMAIN = os.environ.get("BOTO_SWF_UNITTEST_DOMAIN",
 # Some API calls establish resources, but these resources are not instantly
 # available to the next API call.  For testing purposes, it is necessary to
 # have a short pause to avoid having tests fail for invalid reasons.
-PAUSE_SECONDS = 2
+PAUSE_SECONDS = 4
 
 
 
-class SimpleWorkflowLayer1Test (unittest.TestCase):
-
+class SimpleWorkflowLayer1TestBase(unittest.TestCase):
+    """
+    There are at least two test cases which share this setUp/tearDown
+    and the class-based parameter definitions:
+        * SimpleWorkflowLayer1Test
+        * tests.swf.test_layer1_workflow_execution.SwfL1WorkflowExecutionTest
+    """
     # Some params used throughout the tests...
     # Domain registration params...
     _domain = BOTO_SWF_UNITTEST_DOMAIN
     _workflow_execution_retention_period_in_days = 'NONE'
     _domain_description = 'test workflow domain'
     # Type registration params used for workflow type and activity type...
-    _version = '1'
     _task_list = 'tasklist1'
     # Workflow type registration params...
-    _workflow_type_name  = 'wft1'
+    _workflow_type_name = 'wft1'
+    _workflow_type_version = '1'
     _workflow_type_description = 'wft1 description'
     _default_child_policy = 'REQUEST_CANCEL'
     _default_execution_start_to_close_timeout = '600'
     _default_task_start_to_close_timeout = '60'
     # Activity type registration params...
     _activity_type_name = 'at1'
+    _activity_type_version = '1'
     _activity_type_description = 'at1 description'
     _default_task_heartbeat_timeout = '30'
     _default_task_schedule_to_close_timeout = '90'
@@ -95,7 +101,7 @@ class SimpleWorkflowLayer1Test (unittest.TestCase):
         # SWFTypeAlreadyExistsError.
         try:
             r = self.conn.register_workflow_type(self._domain,
-                    self._workflow_type_name, self._version,
+                    self._workflow_type_name, self._workflow_type_version,
                     task_list=self._task_list,
                     default_child_policy=self._default_child_policy,
                     default_execution_start_to_close_timeout=
@@ -112,7 +118,7 @@ class SimpleWorkflowLayer1Test (unittest.TestCase):
         # SWFTypeAlreadyExistsError.
         try:
             r = self.conn.register_activity_type(self._domain,
-                    self._activity_type_name, self._version,
+                    self._activity_type_name, self._activity_type_version,
                     task_list=self._task_list,
                     default_task_heartbeat_timeout=
                         self._default_task_heartbeat_timeout,
@@ -123,12 +129,19 @@ class SimpleWorkflowLayer1Test (unittest.TestCase):
                     default_task_start_to_close_timeout=
                         self._default_task_start_to_close_timeout,
                     description=self._activity_type_description)
+            assert r is None
+            time.sleep(PAUSE_SECONDS)
         except swf_exceptions.SWFTypeAlreadyExistsError:
             pass
 
     def tearDown(self):
         # Delete what we can...
         pass
+
+
+
+
+class SimpleWorkflowLayer1Test(SimpleWorkflowLayer1TestBase):
 
     def test_list_domains(self):
         # Find the domain.
@@ -151,7 +164,7 @@ class SimpleWorkflowLayer1Test (unittest.TestCase):
         found = None
         for info in r['typeInfos']:
             if ( info['workflowType']['name'] == self._workflow_type_name and
-                 info['workflowType']['version'] == self._version ):
+                 info['workflowType']['version'] == self._workflow_type_version ):
                 found = info
                 break
         self.assertNotEqual(found, None, 'list_workflow_types; test type not found')
@@ -169,7 +182,7 @@ class SimpleWorkflowLayer1Test (unittest.TestCase):
             if info['activityType']['name'] == self._activity_type_name:
                 found = info
                 break
-        self.assertNotEqual(found, None, 'list_workflow_types; test type not found')
+        self.assertNotEqual(found, None, 'list_activity_types; test type not found')
         # Validate some properties.
         self.assertEqual(found['description'], self._activity_type_description,
                          'list_activity_types; description does not match')
