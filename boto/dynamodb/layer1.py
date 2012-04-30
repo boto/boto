@@ -122,6 +122,7 @@ class Layer1(AWSAuthConnection):
         """
         headers = {'X-Amz-Target': '%s_%s.%s' % (self.ServiceName,
                                                  self.Version, action),
+                   'Host': self.region.endpoint,
                    'Content-Type': 'application/x-amz-json-1.0',
                    'Content-Length': str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',

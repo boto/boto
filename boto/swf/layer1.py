@@ -92,6 +92,7 @@ class Layer1(AWSAuthConnection):
         :raises: ``SWFResponseError`` if response status is not 200.
         """
         headers = {'X-Amz-Target': '%s.%s' % (self.ServiceName, action),
+                   'Host': self.region.endpoint,
                    'Content-Type': 'application/json; charset=UTF-8',
                    'Content-Encoding': 'amz-1.0',
                    'Content-Length': str(len(body))}
