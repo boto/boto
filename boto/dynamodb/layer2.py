@@ -340,7 +340,8 @@ class Layer2(object):
 
         :type hash_key_proto_value: int|long|float|str|unicode
         :param hash_key_proto_value: A sample or prototype of the type
-            of value you want to use for the HashKey.
+            of value you want to use for the HashKey.  Alternatively,
+            you can also just pass in the Python type (e.g. int, float, etc.).
 
         :type range_key_name: str
         :param range_key_name: The name of the RangeKey for the schema.
@@ -348,8 +349,9 @@ class Layer2(object):
 
         :type range_key_proto_value: int|long|float|str|unicode
         :param range_key_proto_value: A sample or prototype of the type
-            of value you want to use for the RangeKey.  This parameter
-            is optional.
+            of value you want to use for the RangeKey.  Alternatively,
+            you can also pass in the Python type (e.g. int, float, etc.)
+            This parameter is optional.
         """
         schema = {}
         hash_key = {}
