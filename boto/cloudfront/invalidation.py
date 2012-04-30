@@ -40,7 +40,7 @@ class InvalidationBatch(object):
         # If we passed in a distribution,
         # then we use that as the connection object
         if distribution:
-            self.connection = connection
+            self.connection = distribution
         else:
             self.connection = connection
 
