@@ -549,9 +549,9 @@ def connect_cloudsearch(aws_access_key_id=None,
     :rtype: :class:`boto.ec2.autoscale.CloudSearchConnection`
     :return: A connection to Amazon's CloudSearch service
     """
-    from boto.cloudsearch import CloudSearchConnection
-    return CloudSearchConnection(aws_access_key_id, aws_secret_access_key,
-        **kwargs)
+    from boto.cloudsearch.layer2 import Layer2
+    return Layer2(aws_access_key_id, aws_secret_access_key,
+                  **kwargs)
 
 
 def check_extensions(module_name, module_path):

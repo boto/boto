@@ -21,25 +21,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.ec2.regioninfo import RegionInfo
+
+from .layer1 import Layer1
+from .domain import Domain
 
 
-def regions():
-    """
-    Get all available regions for the Amazon CloudSearch service.
+class Layer2(object):
 
-    :rtype: list
-    :return: A list of :class:`boto.regioninfo.RegionInfo`
-    """
-    import boto.cloudsearch.layer1
-    return [RegionInfo(name='us-east-1',
-                       endpoint='cloudsearch.us-east-1.amazonaws.com',
-                       connection_cls=boto.cloudsearch.layer1.Layer1),
-            ]
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 host=None, debug=0, session_token=None, region=None):
+        self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
+                             is_secure, port, proxy, proxy_port,
+                             host, debug, session_token, region)
 
+    def list_domains(self, domain_names=None):
+        """
+        Return a list of :class:`boto.cloudsearch.domain.Domain`
+        objects for each domain defined in the current account.
+        """
+        domain_data = self.layer1.describe_domains(domain_names)
+        return [Domain(self.layer1, data) for data in domain_data]
 
-def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    def create_domain(self, domain_name):
+        """
+        Create a new CloudSearch domain and return the corresponding
+        :class:`boto.cloudsearch.domain.Domain` object.
+        """
+        data = self.layer1.create_domain(domain_name)
+        return Domain(self.layer1, data)

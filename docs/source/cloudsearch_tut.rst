@@ -12,20 +12,31 @@ assumes that you have boto already downloaded and installed.
 Creating a Domain
 -----------------
 
-    from boto import connect_cloudsearch
+    import boto
 
-    instance_ip = 'whatever'
-    domain_name = 'appusers'
+    our_ip = '192.168.1.0'
 
-    conn = connect_cloudsearch(config['AWS_ACCESS_KEY_ID'], config['AWS_SECRET_ACCESS_KEY'])
-    domain = conn.create_domain(domain_name)  # Config call to provision our new domain
-    domain.allow_ip(instance_ip)  # Allow our instance to access the document and search services
-    domain.create_index_field('username', 'text')  # We'll search for now on just username
-    domain.create_index_field('location', 'text', facet=True)  # But it would be neat to drill down into different countries
-    domain.create_index_field('last_activity', 'uint', default=0)  # Epoch time of when the user last did something
-    domain.create_index_field('follower_count', 'uint', default=0) # How many
+    conn = boto.connect_cloudsearch()
+    domain = conn.create_domain('demo')
+
+    # Allow our IP address to access the document and search services
+    policy = domain.get_access_policies()
+    policy.allow_search_ip(our_ip)
+    policy.allow_doc_ip(our_ip)
+
+    # Create an 'text' index field called 'username'
+    uname_field = domain.create_index_field('username', 'text')
+    
+    # But it would be neat to drill down into different countries    
+    loc_field = domain.create_index_field('location', 'text', facet=True)
+    
+    # Epoch time of when the user last did something
+    time_field = domain.create_index_field('last_activity', 'uint', default=0)
+    
+    follower_field = domain.create_index_field('follower_count', 'uint', default=0)
 
     domain.create_rank_expression('recently_active', 'last_activity')  # We'll want to be able to just show the most recently active users
+    
     domain.create_rank_expression('activish', 'text_relevance + ((follower_count/(time() - last_activity))*1000)')  # Let's get trickier and combine text relevance with a really dynamic expression
 
 
@@ -33,12 +44,9 @@ Creating a Domain
 Adding Documents to the Index
 -----------------------------
 
-    from boto import connect_cloudsearch
-    from boto.cloudsearch import get_document_service
+Now, we can add some documents to our new search domain.
 
-    endpoint = 'paste your doc service endpoint here'
-
-    service = get_document_service(endpoint=endpoint)  # Get a new instance of cloudsearch.DocumentServiceConnection
+    doc_service = domain.get_document_service()
 
     # Presumably get some users from your db of choice.
     users = [
@@ -57,14 +65,14 @@ Adding Documents to the Index
             'location': 'UK'
         },
         {
-            'id': 3
+            'id': 3,
             'username': 'danielle',
             'last_activity': 1334252969,
             'follower_count': 100,
             'location': 'DE'
         },
         {
-            'id': 4
+            'id': 4,
             'username': 'daniella',
             'last_activity': 1334253279,
             'follower_count': 7,
@@ -72,36 +80,31 @@ Adding Documents to the Index
         }
     ]
 
-    # We don't want to keep track of versions on our user documents because it's weird
-    # But we do have the last_activity integer which is just as good as a version number
-    # since its the last time the user was modified.
-
     for user in users:
-        service.add(user['id'], user['last_activity'], user) # Add the user document in SDF style
+        doc_service.add(user['id'], user['last_activity'], user)
 
-    result = service.commit()  # Actually post the SDF to the document service
+    result = doc_service.commit()  # Actually post the SDF to the document service
 
-    # result is an instance of `cloudsearch.CommitResponse` which will makes the plain dictionary response
-    # a nice object (ie result.adds, result.deletes) and raise an exception for us if all of our documents
-    # weren't actually committed.
+The result is an instance of `cloudsearch.CommitResponse` which will
+makes the plain dictionary response a nice object (ie result.adds,
+result.deletes) and raise an exception for us if all of our documents
+weren't actually committed.
 
 
 Searching Documents
 -------------------
 
-    from boto import connect_cloudsearch
-    from boto.cloudsearch import get_search_service
-
-    endpoint = 'your search endpoint'
+Now, let's try performing a search.
 
     # Get an instance of cloudsearch.SearchServiceConnection
-    service = get_search_service(endpoint=endpoint)
+    search_service = domain.get_search_service()
 
     # Horray wildcard search
     query = "username:'dan*'"
 
 
-    results = conn.search(bq=query, rank=['-recently_active'], start=0, size=10)
+    results = search_service.search(bq=query, rank=['-recently_active'], start=0, size=10)
+    
     # Results will give us back a nice cloudsearch.SearchResults object that looks as
     # close as possible to pysolr.Results
 
@@ -114,15 +117,12 @@ Searching Documents
 Deleting Documents
 ------------------
 
-    from boto import connect_cloudsearch
-    from boto.cloudsearch import get_document_service
     import time
     from datetime import datetime
 
-    endpoint = 'paste your doc service endpoint here'
-
-    service = get_document_service(endpoint=endpoint)  # Get a new instance of cloudsearch.DocumentServiceConnection
+    doc_service = domain.get_document_service()
 
      # Again we'll cheat and use the current epoch time as our version number
-    service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
+     
+    doc_service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
     service.commit()
