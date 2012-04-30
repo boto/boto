@@ -231,6 +231,8 @@ class GSConnectionTest (unittest.TestCase):
         # delete test buckets
         c.delete_bucket(bucket1)
         c.delete_bucket(bucket2)
+        # delete temp file
+        os.unlink('foobar')
 
     def test_3_default_object_acls(self):
         """test default object acls"""

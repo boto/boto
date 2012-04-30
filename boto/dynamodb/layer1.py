@@ -165,7 +165,7 @@ class Layer1(AWSAuthConnection):
                 msg = 'Renewing Session Token'
                 self.creds = self._get_session_token()
                 self._update_provider()
-                status = (msg, i + self.num_retries - 1, next_sleep)
+                status = (msg, i + self.num_retries - 1, 0)
             elif self.ConditionalCheckFailedError in data.get('__type'):
                 raise dynamodb_exceptions.DynamoDBConditionalCheckFailedError(
                     response.status, response.reason, data)

@@ -1,5 +1,6 @@
-# Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2011 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,36 +21,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
 from boto.ec2.regioninfo import RegionInfo
 
 
 def regions():
     """
-    Get all available regions for the Amazon DynamoDB service.
+    Get all available regions for the Amazon CloudSearch service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    import boto.dynamodb.layer2
+    import boto.cloudsearch.layer1
     return [RegionInfo(name='us-east-1',
-                       endpoint='dynamodb.us-east-1.amazonaws.com',
-                       connection_cls=boto.dynamodb.layer2.Layer2),
-            RegionInfo(name='us-west-1',
-                       endpoint='dynamodb.us-west-1.amazonaws.com',
-                       connection_cls=boto.dynamodb.layer2.Layer2),
-            RegionInfo(name='us-west-2',
-                       endpoint='dynamodb.us-west-2.amazonaws.com',
-                       connection_cls=boto.dynamodb.layer2.Layer2),
-            RegionInfo(name='ap-northeast-1',
-                       endpoint='dynamodb.ap-northeast-1.amazonaws.com',
-                       connection_cls=boto.dynamodb.layer2.Layer2),
-            RegionInfo(name='ap-southeast-1',
-                       endpoint='dynamodb.ap-southeast-1.amazonaws.com',
-                       connection_cls=boto.dynamodb.layer2.Layer2),
-            RegionInfo(name='eu-west-1',
-                       endpoint='dynamodb.eu-west-1.amazonaws.com',
-                       connection_cls=boto.dynamodb.layer2.Layer2),
+                       endpoint='cloudsearch.us-east-1.amazonaws.com',
+                       connection_cls=boto.cloudsearch.layer1.Layer1),
             ]
 
 

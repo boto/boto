@@ -371,7 +371,7 @@ def connect_euca(host=None, aws_access_key_id=None, aws_secret_access_key=None,
                          region=reg, port=port, path=path,
                          is_secure=is_secure, **kwargs)
 
-def connect_ec2_endpoint(url, aws_access_key_id=None, aws_secret_access_key=None, 
+def connect_ec2_endpoint(url, aws_access_key_id=None, aws_secret_access_key=None,
                          **kwargs):
     """
     Connect to an EC2 Api endpoint.  Additional arguments are passed
@@ -437,7 +437,7 @@ def connect_walrus(host=None, aws_access_key_id=None, aws_secret_access_key=None
                                            None)
     if not host:
         host = config.get('Boto', 'walrus_host', None)
-        
+
     return S3Connection(aws_access_key_id, aws_secret_access_key,
                         host=host, port=port, path=path,
                         calling_format=OrdinaryCallingFormat(),
@@ -534,6 +534,25 @@ def connect_swf(aws_access_key_id=None,
     """
     from boto.swf.layer1 import Layer1
     return Layer1(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+
+def connect_cloudsearch(aws_access_key_id=None,
+                        aws_secret_access_key=None,
+                        **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ec2.autoscale.CloudSearchConnection`
+    :return: A connection to Amazon's CloudSearch service
+    """
+    from boto.cloudsearch.layer2 import Layer2
+    return Layer2(aws_access_key_id, aws_secret_access_key,
+                  **kwargs)
+
 
 def check_extensions(module_name, module_path):
     """
