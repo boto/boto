@@ -102,13 +102,6 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
 
         # Test a few corner cases with new_item
-        # First, try not supplying a hash_key
-        self.assertRaises(DynamoDBItemError,
-                          table.new_item, None, item1_range, item1_attrs)
-        
-        # Try supplying a hash but no range
-        self.assertRaises(DynamoDBItemError,
-                          table.new_item, item1_key, None, item1_attrs)
         
         # Try supplying a hash_key as an arg and as an item in attrs
         item1_attrs[hash_key_name] = 'foo'
