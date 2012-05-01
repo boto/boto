@@ -35,7 +35,9 @@ class SearchServiceException(Exception):
 class CommitMismatchError(Exception):
     pass
 
+
 class SearchResults(object):
+    
     def __init__(self, **attrs):
         self.rid = attrs['info']['rid']
         # self.doc_coverage_pct = attrs['info']['doc-coverage-pct']
@@ -72,23 +74,24 @@ class SearchResults(object):
 
 
 class Query(object):
+    
     RESULTS_PER_PAGE = 500
 
-    def __init__(self, q=None, bq=None, rank=[], return_fields=[], size=10,
-        start=0, facet=[], facet_constraints={}, facet_sort={}, facet_top_n={},
-        t={}):
+    def __init__(self, q=None, bq=None, rank=None,
+                 return_fields=None, size=10,
+                 start=0, facet=None, facet_constraints=None,
+                 facet_sort=None, facet_top_n=None, t=None):
 
         self.q = q
         self.bq = bq
-        self.rank = rank
-        self.return_fields = return_fields
+        self.rank = rank or []
+        self.return_fields = return_fields or []
         self.start = start
-        self.facet = facet
-        self.facet_constraints = facet_constraints
-        self.facet_sort = facet_sort
-        self.facet_top_n = facet_top_n
-        self.t = t
-
+        self.facet = facet or []
+        self.facet_constraints = facet_constraints or {}
+        self.facet_sort = facet_sort or {}
+        self.facet_top_n = facet_top_n or {}
+        self.t = t or {}
         self.page = 0
         self.update_size(size)
 
@@ -139,27 +142,26 @@ class Query(object):
 
 
 class SearchConnection(object):
+    
     def __init__(self, domain=None, endpoint=None):
-        if endpoint:
-            self.endpoint = endpoint
-        else:
+        self.domain = domain
+        self.endpoint = endpoint
+        if not endpoint:
             self.endpoint = domain.search_service_endpoint
 
-        if not self.endpoint.startswith('search-'):
-            self.endpoint = "search-%s" % self.endpoint
-
-    def build_query(self, q=None, bq=None, rank=[], return_fields=[], size=10,
-        start=0, facet=[], facet_constraints={}, facet_sort={}, facet_top_n={},
-        t={}):
+    def build_query(self, q=None, bq=None, rank=None, return_fields=None,
+                    size=10, start=0, facet=None, facet_constraints=None,
+                    facet_sort=None, facet_top_n=None, t=None):
         return Query(q=q, bq=bq, rank=rank, return_fields=return_fields,
-            size=size, start=start, facet=facet,
-            facet_constraints=facet_constraints, facet_sort=facet_sort,
-            facet_top_n=facet_top_n, t=t)
+                     size=size, start=start, facet=facet,
+                     facet_constraints=facet_constraints,
+                     facet_sort=facet_sort, facet_top_n=facet_top_n, t=t)
 
-    def search(self, q=None, bq=None, rank=[], return_fields=[], size=10,
-        start=0, facet=[], facet_constraints={}, facet_sort={}, facet_top_n={},
-        t={}):
-        """Query Cloudsearch
+    def search(self, q=None, bq=None, rank=None, return_fields=None,
+               size=10, start=0, facet=None, facet_constraints=None,
+               facet_sort=None, facet_top_n=None, t=None):
+        """
+        Query Cloudsearch
 
         :type q:
         :param q:
@@ -198,11 +200,12 @@ class SearchConnection(object):
         :return: A cloudsearch SearchResults object
         """
 
-        query = self.build_query(q=q, bq=bq, rank=rank, return_fields=return_fields,
-            size=size, start=start, facet=facet,
-            facet_constraints=facet_constraints, facet_sort=facet_sort,
-            facet_top_n=facet_top_n, t=t)
-
+        query = self.build_query(q=q, bq=bq, rank=rank,
+                                 return_fields=return_fields,
+                                 size=size, start=start, facet=facet,
+                                 facet_constraints=facet_constraints,
+                                 facet_sort=facet_sort,
+                                 facet_top_n=facet_top_n, t=t)
         return self(query)
 
     def __call__(self, query):
@@ -221,9 +224,6 @@ class SearchConnection(object):
         data = json.loads(r.content)
         data['query'] = query
         data['search_service'] = self
-
-        # import urllib
-        # print "%s?%s" % (url, urllib.urlencode(params))
 
         if 'messages' in data and 'error' in data:
             for m in data['messages']:
@@ -261,9 +261,10 @@ class SearchConnection(object):
     def get_all_hits(self, query):
         """Get a generator to iterate over all search results
 
-        Transparently handles the results paging from Cloudsearch search results
-        so even if you have many thousands of results you can iterate over all
-        results in a reasonably efficient manner.
+        Transparently handles the results paging from Cloudsearch
+        search results so even if you have many thousands of results
+        you can iterate over all results in a reasonably efficient
+        manner.
 
         :type query: :class:`exfm.cloudsearch.Query`
         :param query: A fully specified Query instance

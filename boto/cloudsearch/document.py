@@ -39,19 +39,14 @@ class CommitMismatchError(Exception):
 
 
 class DocumentServiceConnection(object):
-    endpoint = None
 
     def __init__(self, domain=None, endpoint=None):
-        if endpoint:
-            self.endpoint = endpoint
-        else:
+        self.domain = domain
+        self.endpoint = endpoint
+        if not self.endpoint:
             self.endpoint = domain.doc_service_endpoint
-
         self.documents_batch = []
         self._sdf = None
-
-        if not self.endpoint.startswith('doc-'):
-            self.endpoint = "doc-%s" % self.endpoint
 
     def add(self, _id, version, fields, lang='en'):
         d = {'type': 'add', 'id': _id, 'version': version, 'lang': lang,

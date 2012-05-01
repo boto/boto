@@ -26,7 +26,7 @@ import boto.jsonresponse
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 
-boto.set_stream_logger('cloudsearch')
+#boto.set_stream_logger('cloudsearch')
 
 def do_bool(val):
     return 'true' if val in [True, 1, '1', 'true'] else 'false'
@@ -42,7 +42,7 @@ class Layer1(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None,
                  proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=2,
+                 proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None):
         if not region:
@@ -58,10 +58,10 @@ class Layer1(AWSQueryConnection):
                                     security_token)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['sign-v2']
 
     def get_response(self, doc_path, action, params, path='/',
-        parent=None, verb='GET', list_marker=None):
+                     parent=None, verb='GET', list_marker=None):
         if not parent:
             parent = self
         response = self.make_request(action, params, path, verb)
