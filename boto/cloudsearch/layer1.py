@@ -728,5 +728,5 @@ class Layer1(AWSQueryConnection):
                     'synonyms')
         params = {'DomainName': domain_name,
                   'Synonyms': synonyms}
-        return self.get_response(doc_path, 'UpdateSynomymOptions',
+        return self.get_response(doc_path, 'UpdateSynonymOptions',
                                  params, verb='POST')
