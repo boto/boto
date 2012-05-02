@@ -144,7 +144,7 @@ class BlockDeviceMapping(dict):
                     params['%s.Ebs.TierType' % pre] = block_dev.tier_type
                 if block_dev.tier_name is not None:
                     params['%s.Ebs.TierName' % pre] = block_dev.tier_name
-                if block_dev.replication is not None:
+                if block_dev.tier_replication is not None:
                     params['%s.Ebs.TierReplication' % pre] = block_dev.tier_replication
                 if block_dev.attach_type:
                     params['%s.Ebs.AttachType' % pre] = block_dev.attach_type
