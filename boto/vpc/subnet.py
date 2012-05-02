@@ -24,6 +24,7 @@ Represents a Subnet
 """
 
 from boto.ec2.ec2object import TaggedEC2Object
+from boto.ec2.securitygroup import IPPermissionsList
 
 class Subnet(TaggedEC2Object):
 
@@ -35,9 +36,19 @@ class Subnet(TaggedEC2Object):
         self.cidr_block = None
         self.available_ip_address_count = 0
         self.availability_zone = None
+        self.rules = IPPermissionsList()
 
     def __repr__(self):
         return 'Subnet:%s' % self.id
+
+    def startElement(self, name, attrs, connection):
+        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        if retval is not None:
+            return retval
+        if name == 'ipPermissions':
+            return self.rules
+        else:
+            return None
 
     def endElement(self, name, value, connection):
         if name == 'subnetId':
