@@ -60,6 +60,7 @@ class Image(TaggedEC2Object):
         self.virtualization_type = None
         self.hypervisor = None
         self.instance_lifecycle = None
+        self.state_time = None
 
     def __repr__(self):
         return 'Image:%s' % self.id
@@ -124,6 +125,8 @@ class Image(TaggedEC2Object):
             self.hypervisor = value
         elif name == 'instanceLifecycle':
             self.instance_lifecycle = value
+        elif name == 'stateTime':
+            self.state_time = value
         else:
             setattr(self, name, value)
 
