@@ -36,7 +36,7 @@ class BlockDeviceType(object):
                  attach_type=None,
                  tier_type=None,
                  tier_name=None,
-                 replication=None):
+                 tier_replication=None):
         self.connection = connection
         self.ephemeral_name = ephemeral_name
         self.no_device = no_device
@@ -49,7 +49,7 @@ class BlockDeviceType(object):
         self.attach_type = attach_type
         self.tier_type = tier_type
         self.tier_name = tier_name
-        self.replication = replication
+        self.tier_replication = tier_replication
         self.is_bootable = False
 
     def startElement(self, name, attrs, connection):
@@ -76,8 +76,8 @@ class BlockDeviceType(object):
             self.tier_type = value
         elif name == "tierName":
             self.tier_name = value
-        elif name == "replication":
-            self.replication = (value.lower() != "false")
+        elif name == "tierReplication":
+            self.tier_replication = (value.lower() != "false")
         elif name == "isBootable":
             self.is_bootable = (value == 'true')
         elif name == 'deleteOnTermination':
@@ -145,7 +145,7 @@ class BlockDeviceMapping(dict):
                 if block_dev.tier_name is not None:
                     params['%s.Ebs.TierName' % pre] = block_dev.tier_name
                 if block_dev.replication is not None:
-                    params['%s.Ebs.Replication' % pre] = block_dev.replication
+                    params['%s.Ebs.TierReplication' % pre] = block_dev.tier_replication
                 if block_dev.attach_type:
                     params['%s.Ebs.AttachType' % pre] = block_dev.attach_type
                 if block_dev.delete_on_termination:
