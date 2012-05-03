@@ -754,10 +754,10 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of the instances suspended
         """
 
-        params = {'Suspend': 'true'}
+        params = {}
         self.build_list_params(params, instance_ids, 'InstanceId')
 
-        return self.get_list('StopInstances', params, [('item', Instance)], verb='POST')
+        return self.get_list('SuspendInstances', params, [('item', Instance)], verb='POST')
 
     def start_instances(self, instance_ids=None):
         """
