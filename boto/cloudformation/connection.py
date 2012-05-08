@@ -46,10 +46,15 @@ class CloudFormationConnection(AWSQueryConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=0,
+                 proxy_user=None, proxy_pass=None, host=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  converter=None):
-        if not region:
+        if host:
+            if not region:
+                region = "unknown"
+            region = RegionInfo(self, region,
+                host, CloudFormationConnection)
+        elif not region:
             region = RegionInfo(self, self.DefaultRegionName,
                 self.DefaultRegionEndpoint, CloudFormationConnection)
         self.region = region
