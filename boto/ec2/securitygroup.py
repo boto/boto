@@ -82,7 +82,7 @@ class SecurityGroup(TaggedEC2Object):
             setattr(self, name, value)
 
     def delete(self):
-        return self.connection.delete_security_group(self.name)
+        return self.connection.delete_security_group(group_id=self.id)
 
     def add_rule(self, ip_protocol, from_port, to_port,
                  src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
