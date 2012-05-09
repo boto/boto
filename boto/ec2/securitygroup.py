@@ -155,7 +155,10 @@ class SecurityGroup(TaggedEC2Object):
             cidr_ip = None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
-            src_group_group_id = src_group.group_id
+            if hasattr(src_group, 'group_id'):
+                src_group_group_id = src_group.group_id
+            else:
+                src_group_group_id = src_group.id
         else:
             src_group_name = None
             src_group_owner_id = None
@@ -184,7 +187,10 @@ class SecurityGroup(TaggedEC2Object):
             cidr_ip=None
             src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
-            src_group_group_id = src_group.group_id
+            if hasattr(src_group, 'group_id'):
+                src_group_group_id = src_group.group_id
+            else:
+                src_group_group_id = src_group.id
         else:
             src_group_name = None
             src_group_owner_id = None
