@@ -151,26 +151,26 @@ class SecurityGroup(TaggedEC2Object):
         :rtype: bool
         :return: True if successful.
         """
+        src_group_name = None
+        src_group_owner_id = None
+        src_group_group_id = None
         if src_group:
             cidr_ip = None
-            src_group_name = src_group.name
+            if not self.vpc_id:
+                src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
             if hasattr(src_group, 'group_id'):
                 src_group_group_id = src_group.group_id
             else:
                 src_group_group_id = src_group.id
-        else:
-            src_group_name = None
-            src_group_owner_id = None
-            src_group_group_id = None
-        status = self.connection.authorize_security_group(self.name,
-                                                          src_group_name,
+        status = self.connection.authorize_security_group(None,
+                                                          None,
                                                           src_group_owner_id,
                                                           ip_protocol,
                                                           from_port,
                                                           to_port,
                                                           cidr_ip,
-                                                          None,
+                                                          self.id,
                                                           src_group_group_id)
         if status:
             if type(cidr_ip) != list:
@@ -178,31 +178,30 @@ class SecurityGroup(TaggedEC2Object):
             for single_cidr_ip in cidr_ip:
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
                               src_group_owner_id, single_cidr_ip, src_group_group_id)
-
         return status
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
                cidr_ip=None, src_group=None):
+        src_group_name = None
+        src_group_owner_id = None
+        src_group_group_id = None
         if src_group:
             cidr_ip=None
-            src_group_name = src_group.name
+            if not self.vpc_id:
+                src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
             if hasattr(src_group, 'group_id'):
                 src_group_group_id = src_group.group_id
             else:
                 src_group_group_id = src_group.id
-        else:
-            src_group_name = None
-            src_group_owner_id = None
-            src_group_group_id = None
-        status = self.connection.revoke_security_group(self.name,
-                                                       src_group_name,
+        status = self.connection.revoke_security_group(None,
+                                                       None,
                                                        src_group_owner_id,
                                                        ip_protocol,
                                                        from_port,
                                                        to_port,
                                                        cidr_ip,
-                                                       None,
+                                                       self.id,
                                                        src_group_group_id)
         if status:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
