@@ -36,9 +36,10 @@ class CloudFormationConnection(AWSQueryConnection):
     """
     A Connection to the CloudFormation Service.
     """
-    DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'cloudformation.us-east-1.amazonaws.com'
-    APIVersion = '2010-05-15'
+    APIVersion = boto.config.get('Boto', 'cfn_version', '2010-05-15')
+    DefaultRegionName = boto.config.get('Boto', 'cfn_region_name', 'us-east-1')
+    DefaultRegionEndpoint = boto.config.get('Boto', 'cfn_region_endpoint',
+                                            'cloudformation.us-east-1.amazonaws.com')
 
     valid_states = ("CREATE_IN_PROGRESS", "CREATE_FAILED", "CREATE_COMPLETE",
             "ROLLBACK_IN_PROGRESS", "ROLLBACK_FAILED", "ROLLBACK_COMPLETE",
