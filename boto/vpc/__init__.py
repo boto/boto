@@ -50,12 +50,12 @@ class VPCConnection(EC2Connection):
 
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
-                        Possible filter keys are:
+            consists of a filter key and a filter value.
+            Possible filter keys are:
 
-                        - *state*, a list of states of the VPC (pending or available)
-                        - *cidrBlock*, a list CIDR blocks of the VPC
-                        - *dhcpOptionsId*, a list of IDs of a set of DHCP options
+            * *state* - a list of states of the VPC (pending or available)
+            * *cidrBlock* - a list CIDR blocks of the VPC
+            * *dhcpOptionsId* - a list of IDs of a set of DHCP options
 
         :rtype: list
         :return: A list of :class:`boto.vpc.vpc.VPC`
