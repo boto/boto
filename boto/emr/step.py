@@ -191,3 +191,42 @@ class StreamingStep(Step):
             self.name, self.mapper, self.reducer, self.action_on_failure,
             self.cache_files, self.cache_archives, self.step_args,
             self.input, self.output, self._jar)
+
+class ScriptRunnerStep(JarStep):
+
+    ScriptRunnerJar = 's3n://us-east-1.elasticmapreduce/libs/script-runner/script-runner.jar'
+
+    def __init__(self, name, **kw):
+        JarStep.__init__(self, name, self.ScriptRunnerJar, **kw)
+
+class PigBase(ScriptRunnerStep):
+
+    BaseArgs = ['s3n://us-east-1.elasticmapreduce/libs/pig/pig-script',
+                '--base-path', 's3n://us-east-1.elasticmapreduce/libs/pig/']
+
+class InstallPigStep(PigBase):
+    """
+    Install pig on emr step
+    """
+
+    InstallPigName = 'Install Pig'
+
+    def __init__(self, pig_versions='latest'):
+        step_args = []
+        step_args.extend(self.BaseArgs)
+        step_args.extend(['--install-pig'])
+        step_args.extend(['--pig-versions', pig_versions])
+        ScriptRunnerStep.__init__(self, self.InstallPigName, step_args=step_args)
+
+class PigStep(PigBase):
+    """
+    Pig script step
+    """
+
+    def __init__(self, name, pig_file, pig_versions='latest', pig_args=[]):
+        step_args = []
+        step_args.extend(self.BaseArgs)
+        step_args.extend(['--pig-versions', pig_versions])
+        step_args.extend(['--run-pig-script', '--args', '-f', pig_file])
+        step_args.extend(pig_args)
+        ScriptRunnerStep.__init__(self, name, step_args=step_args)
