@@ -86,7 +86,7 @@ class CloudWatchConnection(AWSQueryConnection):
                                             'monitoring.us-east-1.amazonaws.com')
 
 
-    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_sudo_id=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/'):
@@ -107,6 +107,14 @@ class CloudWatchConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path)
+        self.aws_sudo_id = aws_sudo_id
+
+    def make_request(self, action, params=None, path='/', verb='GET'):
+        if self.aws_sudo_id:
+            if params is None:
+                params = {}
+            params['AWSSudoId'] = self.aws_sudo_id
+        return AWSQueryConnection.make_request(self, action, params, path, verb)
 
     def _required_auth_capability(self):
         return ['ec2']
