@@ -291,11 +291,12 @@ class SQSConnection(AWSQueryConnection):
         :rtype: :py:class:`boto.sqs.queue.Queue` or ``None``
         :returns: The requested queue, or ``None`` if no match was found.
         """
-        rs = self.get_all_queues(queue_name)
-        for q in rs:
-            if q.url.endswith(queue_name):
-                return q
-        return None
+        params = {'QueueName': queue_name}
+        cls = Queue
+        try:
+            return self.get_object('GetQueueUrl', params, cls)
+        except SQSError:
+            return None
 
     lookup = get_queue
 
