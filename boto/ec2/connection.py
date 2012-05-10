@@ -67,7 +67,7 @@ class EC2Connection(AWSQueryConnection):
                                             'ec2.us-east-1.amazonaws.com')
     ResponseError = EC2ResponseError
 
-    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_sudo_id=None,
                  is_secure=True, host=None, port=None,
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
@@ -89,6 +89,14 @@ class EC2Connection(AWSQueryConnection):
                                     security_token)
         if api_version:
             self.APIVersion = api_version
+        self.aws_sudo_id = aws_sudo_id
+
+    def make_request(self, action, params=None, path='/', verb='GET'):
+        if self.aws_sudo_id:
+            if params is None:
+                params = {}
+            params['AWSSudoId'] = self.aws_sudo_id
+        return AWSQueryConnection.make_request(self, action, params, path, verb)
 
     def _required_auth_capability(self):
         return ['ec2']
