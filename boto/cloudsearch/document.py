@@ -28,7 +28,7 @@ except ImportError:
 
 import boto.exception
 import requests
-
+import boto
 
 class SearchServiceException(Exception):
     pass
@@ -72,10 +72,10 @@ class DocumentServiceConnection(object):
         sdf = self.get_sdf()
 
         if ': null' in sdf:
-            log.error('null value in sdf detected.  This will probably raise '
+            boto.log.error('null value in sdf detected.  This will probably raise '
                 '500 error.')
             index = sdf.index(': null')
-            log.error(sdf[index - 100:index + 100])
+            boto.log.error(sdf[index - 100:index + 100])
 
         url = "http://%s/2011-02-01/documents/batch" % (self.endpoint)
 
@@ -113,10 +113,10 @@ class CommitResponse(object):
         try:
             self.content = json.loads(response.content)
         except:
-            log.error('Error indexing documents.\nResponse Content:\n{}\n\n'
-                'SDF:\n{}'.format(self.content, self.sdf))
+            boto.log.error('Error indexing documents.\nResponse Content:\n{}\n\n'
+                'SDF:\n{}'.format(response.content, self.sdf))
             raise boto.exception.BotoServerError(self.response.status_code, '',
-                body=self.content)
+                body=response.content)
 
         self.status = self.content['status']
         if self.status == 'error':
