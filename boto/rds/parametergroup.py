@@ -127,7 +127,7 @@ class Parameter(object):
         prefix = 'Parameters.member.%d.' % i
         if self.name:
             d[prefix+'ParameterName'] = self.name
-        if self._value:
+        if self._value is not None:
             d[prefix+'ParameterValue'] = self._value
         if self.apply_type:
             d[prefix+'ApplyMethod'] = self.apply_method
