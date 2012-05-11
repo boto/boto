@@ -430,7 +430,7 @@ class Key(object):
 
     def generate_url(self, expires_in, method='GET', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False):
+                     expires_in_absolute=False, version_id=None):
         """
         Generate a URL to access this key.
 
@@ -450,12 +450,14 @@ class Key(object):
         :rtype: string
         :return: The URL to access the key
         """
+        version_id = version_id or self.version_id
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
                                                    headers, query_auth,
                                                    force_http,
                                                    response_headers,
-                                                   expires_in_absolute)
+                                                   expires_in_absolute,
+                                                   version_id)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10,
                   query_args=None, chunked_transfer=False, size=None):
