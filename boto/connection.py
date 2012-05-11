@@ -649,7 +649,12 @@ class AWSAuthConnection(object):
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
-        sock.sendall("\r\n")
+            # See discussion about this config option at
+            # https://groups.google.com/forum/?fromgroups#!topic/boto-dev/teenFvOq2Cc
+            if config.getbool('Boto', 'send_crlf_after_proxy_auth_headers', False):
+                sock.sendall("\r\n")
+        else:
+            sock.sendall("\r\n")
         resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
