@@ -2927,18 +2927,18 @@ class EC2Connection(AWSQueryConnection):
                   'DeviceIndex' : device_index}
         return self.get_status('AttachNetworkInterface', params, verb='POST')
 
-    def detach_network_interface(self, network_interface_id, force=False):
+    def detach_network_interface(self, attachment_id, force=False):
         """
         Detaches a network interface from an instance.
 
-        :type network_interface_id: str
-        :param network_interface_id: The ID of the network interface to detach.
+        :type attachment_id: str
+        :param attachment_id: The Attachment ID of the network interface to detach.
 
         :type force: bool
         :param force: Set to true to force a detachment.
 
         """
-        params = {'NetworkInterfaceId' : network_interface_id}
+        params = {'AttachmentId' : attachment_id}
         if force:
             params['Force'] = 'true'
         return self.get_status('DetachNetworkInterface', params, verb='POST')
