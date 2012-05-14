@@ -1424,7 +1424,7 @@ class EC2Connection(AWSQueryConnection):
         Create a new EBS Volume.
 
         :type size: int
-        :param size: The size of the new volume, in GiB
+        :param size: The size of the new volume, in GiB, 0 means use it up
 
         :type zone: string or :class:`boto.ec2.zone.Zone`
         :param zone: The availability zone in which the Volume will be created.
@@ -1435,7 +1435,7 @@ class EC2Connection(AWSQueryConnection):
         if isinstance(zone, Zone):
             zone = zone.name
         params = {'AvailabilityZone' : zone}
-        if size:
+        if size is not None:
             params['Size'] = size
         if snapshot:
             if isinstance(snapshot, Snapshot):
