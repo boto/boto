@@ -11,6 +11,13 @@ boto.cloudformation
    :members:   
    :undoc-members:
 
+boto.cloudformation.connection
+------------------------------
+
+.. automodule:: boto.cloudformation.connection
+   :members:
+   :undoc-members:
+
 boto.cloudformation.stack
 -------------------------
 
