@@ -293,25 +293,25 @@ class S3Connection(AWSAuthConnection):
 
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False):
-        if not headers:
-            headers = {}
+                     expires_in_absolute=False, version_id=None):
+        headers = headers or {}
         if expires_in_absolute:
             expires = int(expires_in)
         else:
             expires = int(time.time() + expires_in)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         auth_path = self.get_path(auth_path)
-        # Arguments to override response headers become part of the canonical
-        # string to be signed.
+        # optional version_id and response_headers need to be added to
+        # the query param list.
+        extra_qp = []
+        if version_id is not None:
+            extra_qp.append("versionId=%s" % version_id)
         if response_headers:
-            response_hdrs = ["%s=%s" % (k, v) for k, v in
-                             response_headers.items()]
+            for k, v in response_headers.items():
+                extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+        if extra_qp:
             delimiter = '?' if '?' not in auth_path else '&'
-            auth_path = "%s%s" % (auth_path, delimiter)
-            auth_path += '&'.join(response_hdrs)
-        else:
-            response_headers = {}
+            auth_path += delimiter + '&'.join(extra_qp)
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
@@ -320,14 +320,18 @@ class S3Connection(AWSAuthConnection):
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                                    self.aws_access_key_id)
-            # The response headers must also be GET parameters in the URL.
-            headers.update(response_headers)
-            hdrs = ['%s=%s'%(n, urllib.quote(v)) for n, v in headers.items()]
-            q_str = '&'.join(hdrs)
-            if q_str:
-                query_part += '&' + q_str
         else:
             query_part = ''
+        if headers:
+            hdr_prefix = self.provider.header_prefix
+            for k, v in headers.items():
+                if k.startswith(hdr_prefix):
+                    # headers used for sig generation must be
+                    # included in the url also.
+                    extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+        if extra_qp:
+            delimiter = '?' if not query_part else '&'
+            query_part += delimiter + '&'.join(extra_qp)
         if force_http:
             protocol = 'http'
             port = 80
