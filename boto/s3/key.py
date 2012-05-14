@@ -430,7 +430,8 @@ class Key(object):
 
     def generate_url(self, expires_in, method='GET', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False):
+                     expires_in_absolute=False, version_id=None,
+                     policy=None, reduced_redundancy=False, encrypt_key=False):
         """
         Generate a URL to access this key.
 
@@ -447,15 +448,67 @@ class Key(object):
         :type query_auth: bool
         :param query_auth:
 
+        :type force_http: bool
+        :param force_http: If True, http will be used instead of https.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
+
+        :type expires_in_absolute: bool
+        :param expires_in_absolute: 
+
+        :type version_id: string
+        :param version_id: The version_id of the object to GET. If specified
+                           this overrides any value in the key.
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
+                                   redundancy at lower storage cost.
+
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
+
         :rtype: string
         :return: The URL to access the key
         """
+        provider = self.bucket.connection.provider
+        version_id = version_id or self.version_id
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+
+        # add headers accordingly (usually PUT case)
+        if policy:
+            headers[provider.acl_header] = policy
+        if reduced_redundancy:
+            self.storage_class = 'REDUCED_REDUNDANCY'
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
+        headers = boto.utils.merge_meta(headers, self.metadata, provider)
+
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
                                                    headers, query_auth,
                                                    force_http,
                                                    response_headers,
-                                                   expires_in_absolute)
+                                                   expires_in_absolute,
+                                                   version_id)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10,
                   query_args=None, chunked_transfer=False, size=None):
