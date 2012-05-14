@@ -448,6 +448,39 @@ class Key(object):
         :type query_auth: bool
         :param query_auth:
 
+        :type force_http: bool
+        :param force_http: If True, http will be used instead of https.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP headers/values
+                                 that will override any headers associated with
+                                 the stored object in the response.
+                                 See http://goo.gl/EWOPb for details.
+
+        :type expires_in_absolute: bool
+        :param expires_in_absolute: 
+
+        :type version_id: string
+        :param version_id: The version_id of the object to GET. If specified
+                           this overrides any value in the key.
+
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+                       new key in S3.
+
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+                                   class of the new Key to be
+                                   REDUCED_REDUNDANCY. The Reduced Redundancy
+                                   Storage (RRS) feature of S3, provides lower
+                                   redundancy at lower storage cost.
+
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+                            be encrypted on the server-side by S3 and
+                            will be stored in an encrypted form while
+                            at rest in S3.
+
         :rtype: string
         :return: The URL to access the key
         """

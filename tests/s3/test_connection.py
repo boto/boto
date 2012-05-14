@@ -28,6 +28,8 @@ import unittest
 import time
 import os
 import urllib
+import urlparse
+import httplib
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
 from boto.exception import S3PermissionsError, S3ResponseError
@@ -80,6 +82,14 @@ class S3ConnectionTest (unittest.TestCase):
         url = k.generate_url(60, response_headers=rh, force_http=True)
         file = urllib.urlopen(url)
         assert s1 == file.read(), 'invalid URL %s' % url
+        # overwrite foobar contents with a PUT
+        url = k.generate_url(3600, 'PUT', force_http=True, policy='private', reduced_redundancy=True)
+        up = urlparse.urlsplit(url)
+        con = httplib.HTTPConnection(up.hostname, up.port)
+        con.request("PUT", up.path + '?' + up.query, body="hello there")
+        resp = con.getresponse()
+        assert 200 == resp.status
+        assert "hello there" == k.get_contents_as_string()
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type
