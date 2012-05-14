@@ -430,7 +430,8 @@ class Key(object):
 
     def generate_url(self, expires_in, method='GET', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False, version_id=None):
+                     expires_in_absolute=False, version_id=None,
+                     policy=None, reduced_redundancy=False, encrypt_key=False):
         """
         Generate a URL to access this key.
 
@@ -450,7 +451,24 @@ class Key(object):
         :rtype: string
         :return: The URL to access the key
         """
+        provider = self.bucket.connection.provider
         version_id = version_id or self.version_id
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+
+        # add headers accordingly (usually PUT case)
+        if policy:
+            headers[provider.acl_header] = policy
+        if reduced_redundancy:
+            self.storage_class = 'REDUCED_REDUNDANCY'
+            if provider.storage_class_header:
+                headers[provider.storage_class_header] = self.storage_class
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
+        headers = boto.utils.merge_meta(headers, self.metadata, provider)
+
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
                                                    headers, query_auth,
