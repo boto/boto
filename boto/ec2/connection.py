@@ -2002,6 +2002,8 @@ class EC2Connection(AWSQueryConnection):
                                 SecurityGroup, verb='POST')
         group.name = name
         group.description = description
+        if vpc_id is not None:
+            group.vpc_id = vpc_id
         return group
 
     def delete_security_group(self, name=None, group_id=None):
