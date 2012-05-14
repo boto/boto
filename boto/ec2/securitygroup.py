@@ -82,7 +82,10 @@ class SecurityGroup(TaggedEC2Object):
             setattr(self, name, value)
 
     def delete(self):
-        return self.connection.delete_security_group(group_id=self.id)
+        if self.vpc_id:
+            return self.connection.delete_security_group(group_id=self.id)
+        else:
+            return self.connection.delete_security_group(self.name)
 
     def add_rule(self, ip_protocol, from_port, to_port,
                  src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
@@ -151,26 +154,33 @@ class SecurityGroup(TaggedEC2Object):
         :rtype: bool
         :return: True if successful.
         """
+        group_name = None
+        if not self.vpc_id:
+            group_name = self.name
+        group_id = None
+        if self.vpc_id:
+            group_id = self.id
         src_group_name = None
         src_group_owner_id = None
         src_group_group_id = None
         if src_group:
             cidr_ip = None
+            src_group_owner_id = src_group.owner_id
             if not self.vpc_id:
                 src_group_name = src_group.name
-            src_group_owner_id = src_group.owner_id
-            if hasattr(src_group, 'group_id'):
-                src_group_group_id = src_group.group_id
             else:
-                src_group_group_id = src_group.id
-        status = self.connection.authorize_security_group(None,
-                                                          None,
+                if hasattr(src_group, 'group_id'):
+                    src_group_group_id = src_group.group_id
+                else:
+                    src_group_group_id = src_group.id
+        status = self.connection.authorize_security_group(group_name,
+                                                          src_group_name,
                                                           src_group_owner_id,
                                                           ip_protocol,
                                                           from_port,
                                                           to_port,
                                                           cidr_ip,
-                                                          self.id,
+                                                          group_id,
                                                           src_group_group_id)
         if status:
             if type(cidr_ip) != list:
@@ -182,26 +192,33 @@ class SecurityGroup(TaggedEC2Object):
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
                cidr_ip=None, src_group=None):
+        group_name = None
+        if not self.vpc_id:
+            group_name = self.name
+        group_id = None
+        if self.vpc_id:
+            group_id = self.id
         src_group_name = None
         src_group_owner_id = None
         src_group_group_id = None
         if src_group:
-            cidr_ip=None
+            cidr_ip = None
+            src_group_owner_id = src_group.owner_id
             if not self.vpc_id:
                 src_group_name = src_group.name
-            src_group_owner_id = src_group.owner_id
-            if hasattr(src_group, 'group_id'):
-                src_group_group_id = src_group.group_id
             else:
-                src_group_group_id = src_group.id
-        status = self.connection.revoke_security_group(None,
-                                                       None,
+                if hasattr(src_group, 'group_id'):
+                    src_group_group_id = src_group.group_id
+                else:
+                    src_group_group_id = src_group.id
+        status = self.connection.revoke_security_group(group_name,
+                                                       src_group_name,
                                                        src_group_owner_id,
                                                        ip_protocol,
                                                        from_port,
                                                        to_port,
                                                        cidr_ip,
-                                                       self.id,
+                                                       group_id,
                                                        src_group_group_id)
         if status:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
