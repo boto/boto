@@ -1859,7 +1859,7 @@ class EC2Connection(AWSQueryConnection):
                                SnapshotAttribute, verb='POST')
 
     def modify_snapshot_attribute(self, snapshot_id,
-                                  attribute='createVolumePermission',
+                                  attribute=None,
                                   operation='add', user_ids=None, groups=None):
         """
         Changes an attribute of an image.
@@ -1868,8 +1868,7 @@ class EC2Connection(AWSQueryConnection):
         :param snapshot_id: The snapshot id you wish to change
 
         :type attribute: string
-        :param attribute: The attribute you wish to change.  Valid values are:
-                          createVolumePermission
+        :param attribute: Ignored, for backward compatibility
 
         :type operation: string
         :param operation: Either add or remove (this is required for changing
@@ -1883,13 +1882,17 @@ class EC2Connection(AWSQueryConnection):
                        value at this time is 'all'.
 
         """
-        params = {'SnapshotId' : snapshot_id,
-                  'Attribute' : attribute,
-                  'OperationType' : operation}
+        params = {'SnapshotId' : snapshot_id}
+
+        if not operation and (user_ids or groups):
+            raise BotoClientError('No operation type was specified')
+
         if user_ids:
-            self.build_list_params(params, user_ids, 'UserId')
+             for i,user_id in enumerate(user_ids):
+                 params['CreateVolumePermission.%s.%d.UserId' % (operation.title(),i+1)] = user_id
         if groups:
-            self.build_list_params(params, groups, 'UserGroup')
+             for i,group in enumerate(groups):
+                 params['CreateVolumePermission.%s.%d.Group' % (operation.title(),i+1)] = group
         return self.get_status('ModifySnapshotAttribute', params, verb='POST')
 
     def modify_snapshot_description(self, snapshot_id, description):
