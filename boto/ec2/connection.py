@@ -1860,7 +1860,7 @@ class EC2Connection(AWSQueryConnection):
 
     def modify_snapshot_attribute(self, snapshot_id,
                                   attribute=None,
-                                  operation='add', user_ids=None, groups=None):
+                                  operation='add', user_ids=None, groups=None, description=None):
         """
         Changes an attribute of an image.
 
@@ -1884,6 +1884,9 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'SnapshotId' : snapshot_id}
 
+        if description:
+             params['Description.Value'] = description
+
         if not operation and (user_ids or groups):
             raise BotoClientError('No operation type was specified')
 
@@ -1894,13 +1897,6 @@ class EC2Connection(AWSQueryConnection):
              for i,group in enumerate(groups):
                  params['CreateVolumePermission.%s.%d.Group' % (operation.title(),i+1)] = group
         return self.get_status('ModifySnapshotAttribute', params, verb='POST')
-
-    def modify_snapshot_description(self, snapshot_id, description):
-        """Change snapshot's description."""
-        return self.get_status('ModifySnapshotAttribute',
-                               {'SnapshotId' : snapshot_id,
-                                'Attribute' : 'description',
-                                'Value' : description}, verb='POST')
 
     def reset_snapshot_attribute(self, snapshot_id,
                                  attribute='createVolumePermission'):
