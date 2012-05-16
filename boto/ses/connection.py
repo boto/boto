@@ -143,6 +143,14 @@ class SESConnection(AWSAuthConnection):
             # Recipient address ends with a dot/period. This is invalid.
             ExceptionToRaise = ses_exceptions.SESDomainEndsWithDotError
             exc_reason = "Domain ends with dot."
+        elif "Local address contains control or whitespace" in body:
+            # I think this pertains to the recipient address.
+            ExceptionToRaise = ses_exceptions.SESLocalAddressCharacterError
+            exc_reason = "Local address contains control or whitespace."
+        elif "Illegal address" in body:
+            # A clearly mal-formed address.
+            ExceptionToRaise = ses_exceptions.SESIllegalAddressError
+            exc_reason = "Illegal address"
         else:
             # This is either a common AWS error, or one that we don't devote
             # its own exception to.
