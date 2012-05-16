@@ -519,7 +519,8 @@ class EC2Connection(AWSQueryConnection):
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
                       placement_group=None, client_token=None,
-                      security_group_ids=None):
+                      security_group_ids=None,
+                      additional_info=None):
         """
         Runs an image on EC2.
 
@@ -610,6 +611,10 @@ class EC2Connection(AWSQueryConnection):
                              to ensure idempotency of the request.
                              Maximum 64 ASCII characters
 
+        :type additional_info: string
+        :param additional_info:  Specifies additional information to make
+            available to the instance(s)
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -668,6 +673,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceInitiatedShutdownBehavior'] = val
         if client_token:
             params['ClientToken'] = client_token
+        if additional_info:
+            params['AdditionalInfo'] = additional_info
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
