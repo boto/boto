@@ -1,8 +1,8 @@
 ####
 boto
 ####
-boto 2.4.0
-15-May-2012
+boto 2.4.1
+16-May-2012
 
 ************
 Introduction
