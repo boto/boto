@@ -285,7 +285,7 @@ def main():
                         else:
                             upload(bucket_name, aws_access_key_id,
                                    aws_secret_access_key, fullpath, key_name,
-                                   reduced, debug, cb, num_cb)
+                                   reduced, debug, cb, num_cb, grant or 'private')
                 total += 1
 
     # upload a single file
@@ -311,7 +311,7 @@ def main():
                 else:
                     upload(bucket_name, aws_access_key_id,
                            aws_secret_access_key, path, key_name,
-                           reduced, debug, cb, num_cb)
+                           reduced, debug, cb, num_cb, grant or 'private')
 
 if __name__ == "__main__":
     main()

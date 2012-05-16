@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import os
 import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
@@ -111,7 +112,7 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None, size=None):
+                               res_upload_handler=None, size=None, rewind=False):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -175,6 +176,15 @@ class Key(S3Key):
                 2. At present Google Cloud Storage does not support
                    multipart uploads.
 
+        :type rewind: bool
+        :param rewind: (optional) If True, the file pointer (fp) will be 
+                       rewound to the start before any bytes are read from
+                       it. The default behaviour is False which reads from
+                       the current position of the file pointer (fp).
+
+        :rtype: int
+        :return: The number of bytes written to the key.
+
         TODO: At some point we should refactor the Bucket and Key classes,
         to move functionality common to all providers into a parent class,
         and provider-specific functionality into subclasses (rather than
@@ -187,16 +197,28 @@ class Key(S3Key):
         headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
+
+        if rewind:
+            # caller requests reading from beginning of fp.
+            fp.seek(0, os.SEEK_SET)
+        else:
+            spos = fp.tell()
+            fp.seek(0, os.SEEK_END)
+            if fp.tell() == spos:
+                fp.seek(0, os.SEEK_SET)
+                if fp.tell() != spos:
+                    # Raise an exception as this is likely a programming error
+                    # whereby there is data before the fp but nothing after it.
+                    fp.seek(spos)
+                    raise AttributeError(
+                     'fp is at EOF. Use rewind option or seek() to data start.')
+            # seek back to the correct position.
+            fp.seek(spos)
+
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
-            if not md5:
-                # compute_md5() and also set self.size to actual
-                # size of the bytes read computing the md5.
-                md5 = self.compute_md5(fp, size)
-                # adjust size if required
-                size = self.size
-            elif size:
+            if size:
                 self.size = size
             else:
                 # If md5 is provided, still need to size so
@@ -206,10 +228,13 @@ class Key(S3Key):
                 self.size = fp.tell() - spos
                 fp.seek(spos)
                 size = self.size
-            self.md5 = md5[0]
-            self.base64md5 = md5[1]
 
             if self.name == None:
+                if md5 == None:
+                  md5 = self.compute_md5(fp, size)
+                  self.md5 = md5[0]
+                  self.base64md5 = md5[1]
+
                 self.name = self.md5
             if not replace:
                 if self.bucket.lookup(self.name):
@@ -270,6 +295,10 @@ class Key(S3Key):
         :param res_upload_handler: If provided, this handler will perform the
             upload.
         """
+        # Clear out any previously computed md5 hashes, since we are setting the content.
+        self.md5 = None
+        self.base64md5 = None
+
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
@@ -320,6 +349,11 @@ class Key(S3Key):
                     param, if present, will be used as the MD5 values
                     of the file.  Otherwise, the checksum will be computed.
         """
+
+        # Clear out any previously computed md5 hashes, since we are setting the content.
+        self.md5 = None
+        self.base64md5 = None
+
         if isinstance(s, unicode):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)

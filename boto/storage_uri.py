@@ -268,6 +268,22 @@ class BucketStorageUri(StorageUri):
         self.check_response(acl, 'acl', self.uri)
         return acl
 
+    def get_cors(self, validate=True, headers=None):
+        """returns a bucket's CORS XML"""
+        if not self.bucket_name:
+            raise InvalidUriError('get_cors on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        cors = bucket.get_cors(headers)
+        self.check_response(cors, 'cors', self.uri)
+        return cors
+
+    def set_cors(self, cors, validate=True, headers=None):
+        """sets or updates a bucket's CORS XML"""
+        if not self.bucket_name:
+            raise InvalidUriError('set_cors on bucket-less URI (%s)' % self.uri)
+        bucket = self.get_bucket(validate, headers)
+        bucket.set_cors(cors.to_xml(), headers)
+
     def get_location(self, validate=True, headers=None):
         if not self.bucket_name:
             raise InvalidUriError('get_location on bucket-less URI (%s)' %

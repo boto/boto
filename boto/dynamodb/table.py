@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,6 +25,7 @@ from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb import exceptions as dynamodb_exceptions
 import time
+
 
 class Table(object):
     """
@@ -60,23 +61,23 @@ class Table(object):
     @property
     def name(self):
         return self._dict['TableName']
-    
+
     @property
     def create_time(self):
         return self._dict['CreationDateTime']
-    
+
     @property
     def status(self):
         return self._dict['TableStatus']
-    
+
     @property
     def item_count(self):
         return self._dict.get('ItemCount', 0)
-    
+
     @property
     def size_bytes(self):
         return self._dict.get('TableSizeBytes', 0)
-    
+
     @property
     def schema(self):
         return self._schema
@@ -84,11 +85,11 @@ class Table(object):
     @property
     def read_units(self):
         return self._dict['ProvisionedThroughput']['ReadCapacityUnits']
-    
+
     @property
     def write_units(self):
         return self._dict['ProvisionedThroughput']['WriteCapacityUnits']
-    
+
     def update_from_response(self, response):
         """
         Update the state of the Table object based on the response
@@ -134,12 +135,12 @@ class Table(object):
 
         :type read_units: int
         :param read_units: The new value for ReadCapacityUnits.
-        
+
         :type write_units: int
         :param write_units: The new value for WriteCapacityUnits.
         """
         self.layer2.update_throughput(self, read_units, write_units)
-        
+
     def delete(self):
         """
         Delete this table and all items in it.  After calling this
@@ -157,12 +158,12 @@ class Table(object):
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
-        
+
         :type range_key: int|long|float|str|unicode
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
-            
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will
@@ -182,7 +183,7 @@ class Table(object):
                                     attributes_to_get, consistent_read,
                                     item_class)
     lookup = get_item
-    
+
     def has_item(self, hash_key, range_key=None, consistent_read=False):
         """
         Checks the table to see if the Item with the specified ``hash_key``
@@ -231,7 +232,8 @@ class Table(object):
         the hash_key and range_key values of the item.  You can use
         these explicit parameters when calling the method, such as::
 
-            >>> my_item = my_table.new_item(hash_key='a', range_key=1, attrs={'key1': 'val1', 'key2': 'val2'})
+        >>> my_item = my_table.new_item(hash_key='a', range_key=1,
+                                        attrs={'key1': 'val1', 'key2': 'val2'})
             >>> my_item
             {u'bar': 1, u'foo': 'a', 'key1': 'val1', 'key2': 'val2'}
 
@@ -256,7 +258,7 @@ class Table(object):
         :param hash_key: The HashKey of the new item.  The
             type of the value must match the type defined in the
             schema for the table.
-        
+
         :type range_key: int|long|float|str|unicode
         :param range_key: The optional RangeKey of the new item.
             The type of the value must match the type defined in the
@@ -265,12 +267,11 @@ class Table(object):
         :type attrs: dict
         :param attrs: A dictionary of key value pairs used to
             populate the new item.
-            
+
         :type item_class: Class
         :param item_class: Allows you to override the class used
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
-        
         """
         return item_class(self, hash_key, range_key, attrs)
 
@@ -281,25 +282,22 @@ class Table(object):
               item_class=Item):
         """
         Perform a query on the table.
-        
+
         :type hash_key: int|long|float|str|unicode
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key_condition: dict
-        :param range_key_condition: A dict where the key is either
-            a scalar value appropriate for the RangeKey in the schema
-            of the database or a tuple of such values.  The value
-            associated with this key in the dict will be one of the
-            following conditions:
+        :type range_key_condition: :class:`boto.dynamodb.condition.Condition`
+        :param range_key_condition: A Condition object.
+            Condition object can be one of the following types:
 
-            'EQ'|'LE'|'LT'|'GE'|'GT'|'BEGINS_WITH'|'BETWEEN'
+            EQ|LE|LT|GE|GT|BEGINS_WITH|BETWEEN
 
-            The only condition which expects or will accept a tuple
-            of values is 'BETWEEN', otherwise a scalar value should
-            be used as the key in the dict.
-        
+            The only condition which expects or will accept two
+            values is 'BETWEEN', otherwise a single value should
+            be passed to the Condition constructor.
+
         :type attributes_to_get: list
         :param attributes_to_get: A list of attribute names.
             If supplied, only the specified attribute names will

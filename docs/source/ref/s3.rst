@@ -74,3 +74,10 @@ boto.s3.deletemarker
    :members:   
    :undoc-members:
    
+boto.s3.lifecycle
+--------------------
+
+.. automodule:: boto.s3.lifecycle
+   :members:   
+   :undoc-members:
+   

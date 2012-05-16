@@ -450,10 +450,10 @@ class AWSAuthConnection(object):
             self.protocol = 'http'
         self.host = host
         self.path = path
-        if isinstance(debug, (int, long)):
-            self.debug = debug
-        else:
-            self.debug = config.getint('Boto', 'debug', 0)
+        # if the value passed in for debug 
+        if not isinstance(debug, (int, long)):
+            debug = 0
+        self.debug = config.getint('Boto', 'debug', debug)
         if port:
             self.port = port
         else:
@@ -470,10 +470,14 @@ class AWSAuthConnection(object):
                 timeout = config.getint('Boto', 'http_socket_timeout')
                 self.http_connection_kwargs['timeout'] = timeout
 
-        self.provider = Provider(provider,
-                                 aws_access_key_id,
-                                 aws_secret_access_key,
-                                 security_token)
+        if isinstance(provider, Provider):
+            # Allow overriding Provider
+            self.provider = provider
+        else:
+            self.provider = Provider(provider,
+                                     aws_access_key_id,
+                                     aws_secret_access_key,
+                                     security_token)
 
         # allow config file to override default host
         if self.provider.host:
@@ -645,7 +649,12 @@ class AWSAuthConnection(object):
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
                 sock.sendall("%s: %s\r\n" % (k, v))
-        sock.sendall("\r\n")
+            # See discussion about this config option at
+            # https://groups.google.com/forum/?fromgroups#!topic/boto-dev/teenFvOq2Cc
+            if config.getbool('Boto', 'send_crlf_after_proxy_auth_headers', False):
+                sock.sendall("\r\n")
+        else:
+            sock.sendall("\r\n")
         resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
