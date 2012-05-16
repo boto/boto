@@ -306,7 +306,7 @@ class VPCConnection(EC2Connection):
         Detach an internet gateway from a specific VPC.
 
         :type internet_gateway_id: str
-        :param internet_gateway_id: The ID of the internet gateway to delete.
+        :param internet_gateway_id: The ID of the internet gateway to detach.
 
         :type vpc_id: str
         :param vpc_id: The ID of the VPC to attach to.
