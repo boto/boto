@@ -149,13 +149,13 @@ class Service(ScriptBase):
                     self.save_results(results, input_message, output_message)
                     self.write_message(output_message)
                     self.delete_message(input_message)
-                    self.cleanup()
                 else:
                     empty_reads += 1
                     time.sleep(self.loop_delay)
             except Exception:
                 boto.log.exception('Service Failed')
                 empty_reads += 1
+            self.cleanup()
         self.notify('Service: %s Shutting Down' % self.name)
         self.shutdown()
 
