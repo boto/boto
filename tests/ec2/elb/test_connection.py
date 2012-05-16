@@ -99,6 +99,32 @@ class ELBConnectionTest(unittest.TestCase):
             listeners[:1]
             )
 
+    def test_create_load_balancer_listeners_with_policies(self):
+        c = ELBConnection()
+        name = 'elb-boto-unit-test-policy'
+        availability_zones = ['us-east-1a']
+        listeners = [(80, 8000, 'HTTP')]
+        balancer = c.create_load_balancer(name, availability_zones, listeners)
+
+        more_listeners = [(443, 8001, 'HTTP')]
+        c.create_load_balancer_listeners(name, more_listeners)
+
+        lb_policy_name = 'lb-policy'
+        c.create_lb_cookie_stickiness_policy(1000, name, lb_policy_name)
+        c.set_lb_policies_of_listener(name, listeners[0][0], lb_policy_name)
+
+        app_policy_name = 'app-policy'
+        c.create_app_cookie_stickiness_policy('appcookie', name, app_policy_name)
+        c.set_lb_policies_of_listener(name, more_listeners[0][0], app_policy_name)
+
+        balancers = c.get_all_load_balancers()
+        self.assertEqual([lb.name for lb in balancers], [name])
+        self.assertEqual(
+            sorted(l.get_tuple() for l in balancers[0].listeners),
+            sorted(listeners + more_listeners)
+            )
+        # Policy names should be checked here once they are supported
+        # in the Listener object.
 
 if __name__ == '__main__':
     unittest.main()
