@@ -774,6 +774,7 @@ class EC2Connection(AWSQueryConnection):
                           * disableApiTermination|
                           * instanceInitiatedShutdownBehavior|
                           * rootDeviceName|blockDeviceMapping
+                          * sourceDestCheck
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -803,6 +804,7 @@ class EC2Connection(AWSQueryConnection):
                           * disableApiTermination - Boolean (true)
                           * instanceInitiatedShutdownBehavior - stop|terminate
                           * rootDeviceName - device name (None)
+                          * sourceDestCheck - Boolean (true)
 
         :type value: string
         :param value: The new value for the attribute
