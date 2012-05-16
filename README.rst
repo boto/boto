@@ -1,8 +1,8 @@
 ####
 boto
 ####
-boto 2.3.0
-18-Mar-2012
+boto 2.4.0
+15-May-2012
 
 ************
 Introduction
@@ -32,6 +32,8 @@ At the moment, boto supports:
 * CloudFormation
 * Amazon DynamoDB
 * Amazon SimpleWorkflow
+* CloudSearch
+* Marketplace Web Services
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
