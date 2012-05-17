@@ -580,7 +580,7 @@ class VPCConnection(EC2Connection):
                   'CidrBlock' : cidr_block}
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDhcpOption', params, DhcpOptions)
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 
     def delete_dhcp_options(self, dhcp_options_id):
         """
