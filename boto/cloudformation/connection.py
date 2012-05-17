@@ -145,7 +145,7 @@ class CloudFormationConnection(AWSQueryConnection):
 
     def update_stack(self, stack_name, template_body=None, template_url=None,
             parameters=[], notification_arns=[], disable_rollback=False,
-            timeout_in_minutes=None):
+            timeout_in_minutes=None, capabilities=None):
         """
         Updates a CloudFormation Stack as specified by the template.
 
@@ -178,6 +178,11 @@ class CloudFormationConnection(AWSQueryConnection):
                             spend creating itself. If this timeout is exceeded,
                             the Stack will enter the CREATE_FAILED state
 
+        :type capabilities: list
+        :param capabilities: The list of capabilities you want to allow in
+            the stack.  Currently, the only valid capability is
+            'CAPABILITY_IAM'.
+
         :rtype: string
         :return: The unique Stack ID.
         """
@@ -194,6 +199,9 @@ class CloudFormationConnection(AWSQueryConnection):
             for i, (key, value) in enumerate(parameters):
                 params['Parameters.member.%d.ParameterKey' % (i+1)] = key
                 params['Parameters.member.%d.ParameterValue' % (i+1)] = value
+        if capabilities:
+            for i, value in enumerate(capabilities):
+                params['Capabilities.member.%d' % (i+1)] = value
         if len(notification_arns) > 0:
             self.build_list_params(params, notification_arns,
                                    "NotificationARNs.member")
