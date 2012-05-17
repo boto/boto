@@ -536,7 +536,9 @@ class EC2Connection(AWSQueryConnection):
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
                       placement_group=None, client_token=None,
-                      security_group_ids=None, high_available=None,
+                      security_group_ids=None,
+                      additional_info=None,
+                      high_available=None,
                       root_device_name=None, public_addressing=None,
                       virtualization_type=None, description=None):
         """
@@ -629,6 +631,10 @@ class EC2Connection(AWSQueryConnection):
                              to ensure idempotency of the request.
                              Maximum 64 ASCII characters
 
+        :type additional_info: string
+        :param additional_info:  Specifies additional information to make
+            available to the instance(s)
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -702,6 +708,8 @@ class EC2Connection(AWSQueryConnection):
             params['InstanceInitiatedShutdownBehavior'] = val
         if client_token:
             params['ClientToken'] = client_token
+        if additional_info:
+            params['AdditionalInfo'] = additional_info
         if high_available is not None:
             params['HighAvailable'] = 'true' if high_available else 'false'
         if root_device_name:
@@ -1288,7 +1296,8 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_object('AllocateAddress', params, Address, verb='POST')
 
-    def associate_address(self, instance_id, public_ip=None, allocation_id=None):
+    def associate_address(self, instance_id=None, public_ip=None,
+                          allocation_id=None, network_interface_id=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1303,10 +1312,18 @@ class EC2Connection(AWSQueryConnection):
         :type allocation_id: string
         :param allocation_id: The allocation ID for a VPC-based elastic IP.
 
+        :type network_interface_id: string
+        : param network_interface_id: The network interface ID to which
+            elastic IP is to be assigned to
+
         :rtype: bool
         :return: True if successful
         """
-        params = { 'InstanceId' : instance_id }
+        params = {}
+        if instance_id is not None:
+                params['InstanceId'] = instance_id
+        elif network_interface_id is not None:
+                params['NetworkInterfaceId'] = network_interface_id
 
         if public_ip is not None:
             params['PublicIp'] = public_ip
@@ -2099,6 +2116,8 @@ class EC2Connection(AWSQueryConnection):
                                 SecurityGroup, verb='POST')
         group.name = name
         group.description = description
+        if vpc_id is not None:
+            group.vpc_id = vpc_id
         return group
 
     def delete_security_group(self, name=None, group_id=None):
@@ -2137,15 +2156,15 @@ class EC2Connection(AWSQueryConnection):
 
         :type group_name: string
         :param group_name: The name of the security group you are adding
-                           the rule to.
+            the rule to.
 
         :type src_security_group_name: string
         :param src_security_group_name: The name of the security group you are
-                                        granting access to.
+            granting access to.
 
         :type src_security_group_owner_id: string
         :param src_security_group_owner_id: The ID of the owner of the security
-                                            group you are granting access to.
+            group you are granting access to.
 
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
@@ -2158,7 +2177,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type to_port: string
         :param to_port: The CIDR block you are providing access to.
-                        See http://goo.gl/Yj5QC
+            See http://goo.gl/Yj5QC
 
         :rtype: bool
         :return: True if successful.
@@ -2193,15 +2212,15 @@ class EC2Connection(AWSQueryConnection):
 
         :type group_name: string
         :param group_name: The name of the security group you are adding
-                           the rule to.
+            the rule to.
 
         :type src_security_group_name: string
         :param src_security_group_name: The name of the security group you are
-                                        granting access to.
+            granting access to.
 
         :type src_security_group_owner_id: string
         :param src_security_group_owner_id: The ID of the owner of the security
-                                            group you are granting access to.
+            group you are granting access to.
 
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
@@ -2214,19 +2233,17 @@ class EC2Connection(AWSQueryConnection):
 
         :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
-                        See http://goo.gl/Yj5QC
+            See http://goo.gl/Yj5QC
 
         :type group_id: string
-        :param group_id: ID of the EC2 or VPC security group to modify.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
+        :param group_id: ID of the EC2 or VPC security group to
+            modify.  This is required for VPC security groups and can
+            be used instead of group_name for EC2 security groups.
 
-        :type group_id: string
-        :param group_id: ID of the EC2 or VPC source security group.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
+        :type src_security_group_group_id: string
+        :param src_security_group_group_id: The ID of the security
+            group you are granting access to.  Can be used instead of
+            src_security_group_name
 
         :rtype: bool
         :return: True if successful.
@@ -2341,18 +2358,6 @@ class EC2Connection(AWSQueryConnection):
         :param to_port: The CIDR block you are revoking access to.
                         http://goo.gl/Yj5QC
 
-        :type group_id: string
-        :param group_id: ID of the EC2 or VPC security group to modify.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
-
-        :type group_id: string
-        :param group_id: ID of the EC2 or VPC source security group.
-                         This is required for VPC security groups and
-                         can be used instead of group_name for EC2
-                         security groups.
-
         :rtype: bool
         :return: True if successful.
         """
@@ -2407,6 +2412,17 @@ class EC2Connection(AWSQueryConnection):
         :type cidr_ip: string
         :param cidr_ip: The CIDR block you are revoking access to.
                         See http://goo.gl/Yj5QC
+
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC security group to modify.
+                         This is required for VPC security groups and
+                         can be used instead of group_name for EC2
+                         security groups.
+
+        :type src_security_group_group_id: string
+        :param src_security_group_group_id: The ID of the security group
+                                            for which you are revoking access.
+                                            Can be used instead of src_security_group_name
 
         :rtype: bool
         :return: True if successful.
@@ -3051,7 +3067,7 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'NetworkInterfaceId' : network_interface_id,
                   'InstanceId' : instance_id,
-                  'Deviceindex' : device_index}
+                  'DeviceIndex' : device_index}
         return self.get_status('AttachNetworkInterface', params, verb='POST')
 
     def detach_network_interface(self, network_interface_id, force=False):

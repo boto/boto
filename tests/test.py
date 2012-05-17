@@ -40,6 +40,8 @@ from s3.test_multidelete import S3MultiDeleteTest
 from s3.test_multipart import S3MultiPartUploadTest
 from s3.test_gsconnection import GSConnectionTest
 from s3.test_https_cert_validation import CertValidationTest
+from s3.test_resumable_downloads import ResumableDownloadTests
+from s3.test_resumable_uploads import ResumableUploadTests
 from ec2.test_connection import EC2ConnectionTest
 from ec2.elb.test_connection import ELBConnectionTest
 from ec2.cloudwatch.test_connection import CloudWatchConnectionTest
@@ -49,6 +51,8 @@ from cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
 from dynamodb.test_layer1 import DynamoDBLayer1Test
 from dynamodb.test_layer2 import DynamoDBLayer2Test
 from sts.test_session_token import SessionTokenTest
+from swf.test_layer1 import SimpleWorkflowLayer1Test
+from swf.test_layer1_workflow_execution import SwfL1WorkflowExecutionTest
 
 def usage():
     print "test.py  [-t testsuite] [-v verbosity]"
@@ -109,6 +113,8 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(S3MFATest))
     elif testsuite == "gs":
         tests.addTest(unittest.makeSuite(GSConnectionTest))
+        tests.addTest(unittest.makeSuite(ResumableDownloadTests))
+        tests.addTest(unittest.makeSuite(ResumableUploadTests))
     elif testsuite == "sqs":
         tests.addTest(unittest.makeSuite(SQSConnectionTest))
     elif testsuite == "ec2":
@@ -131,6 +137,12 @@ def suite(testsuite="all"):
         tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
     elif testsuite == "sts":
         tests.addTest(unittest.makeSuite(SessionTokenTest))
+    elif testsuite == "swf":
+        tests.addTest(unittest.makeSuite(SimpleWorkflowLayer1Test))
+        tests.addTest(unittest.makeSuite(SwfL1WorkflowExecutionTest))
+    elif testsuite == "swfL1":
+        tests.addTest(unittest.makeSuite(SimpleWorkflowLayer1Test))
+        tests.addTest(unittest.makeSuite(SwfL1WorkflowExecutionTest))
     else:
         raise ValueError("Invalid choice.")
     return tests

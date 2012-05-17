@@ -28,6 +28,7 @@ import unittest
 import time
 import uuid
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError, DynamoDBItemError
+from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.types import get_dynamodb_type
 from boto.dynamodb.condition import *
@@ -102,13 +103,6 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
 
         # Test a few corner cases with new_item
-        # First, try not supplying a hash_key
-        self.assertRaises(DynamoDBItemError,
-                          table.new_item, None, item1_range, item1_attrs)
-        
-        # Try supplying a hash but no range
-        self.assertRaises(DynamoDBItemError,
-                          table.new_item, item1_key, None, item1_attrs)
         
         # Try supplying a hash_key as an arg and as an item in attrs
         item1_attrs[hash_key_name] = 'foo'
@@ -166,12 +160,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         # Try to delete the item with the wrong Expected value
         expected = {'Views': 1}
-        try:
-            item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
-            assert e.error_code == 'ConditionalCheckFailedException'
-        else:
-            raise Exception("Expected Value condition failed")
+        self.assertRaises(DynamoDBConditionalCheckFailedError,
+                          item1.delete, expected_value=expected)
 
         # Try to delete a value while expecting a non-existant attribute
         expected = {'FooBar': True}
@@ -248,6 +238,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 2
+        assert items.consumed_units > 0
 
         items = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'),
                             request_limit=1, max_results=1)
@@ -255,6 +246,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 1
+        assert items.consumed_units > 0
 
         # Try a few scans
         items = table.scan()
@@ -262,12 +254,14 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in items:
             n += 1
         assert n == 3
+        assert items.consumed_units > 0
 
         items = table.scan({'Replies': GT(0)})
         n = 0
         for item in items:
             n += 1
         assert n == 1
+        assert items.consumed_units > 0
 
         # Test some integer and float attributes
         integer_value = 42
@@ -313,6 +307,42 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                      (item3_key, item3_range)])
         response = batch_list.submit()
         assert len(response['Responses'][table.name]['Items']) == 2
+
+        # Try a few batch write operations
+        item4_key = 'Amazon S3'
+        item4_range = 'S3 Thread 2'
+        item4_attrs = {
+            'Message': 'S3 Thread 2 message text',
+            'LastPostedBy': 'User A',
+            'Views': 0,
+            'Replies': 0,
+            'Answered': 0,
+            'Tags': set(['largeobject', 'multipart upload']),
+            'LastPostDateTime': '12/9/2011 11:36:03 PM'
+            }
+        item5_key = 'Amazon S3'
+        item5_range = 'S3 Thread 3'
+        item5_attrs = {
+            'Message': 'S3 Thread 3 message text',
+            'LastPostedBy': 'User A',
+            'Views': 0,
+            'Replies': 0,
+            'Answered': 0,
+            'Tags': set(['largeobject', 'multipart upload']),
+            'LastPostDateTime': '12/9/2011 11:36:03 PM'
+            }
+        item4 = table.new_item(item4_key, item4_range, item4_attrs)
+        item5 = table.new_item(item5_key, item5_range, item5_attrs)
+        batch_list = c.new_batch_write_list()
+        batch_list.add_batch(table, puts=[item4, item5])
+        response = batch_list.submit()
+        # should really check for unprocessed items
+
+        batch_list = c.new_batch_write_list()
+        batch_list.add_batch(table, deletes=[(item4_key, item4_range),
+                                             (item5_key, item5_range)])
+        response = batch_list.submit()
+        
 
         # Try queries
         results = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))

@@ -21,7 +21,9 @@
 #
 
 class BlockDeviceType(object):
-    """Describes a block device mapping element."""
+    """
+    Represents parameters for a block device.
+    """
 
     def __init__(self,
                  connection=None,

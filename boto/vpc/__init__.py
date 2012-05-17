@@ -50,12 +50,12 @@ class VPCConnection(EC2Connection):
 
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
-                        Possible filter keys are:
+            consists of a filter key and a filter value.
+            Possible filter keys are:
 
-                        - *state*, a list of states of the VPC (pending or available)
-                        - *cidrBlock*, a list CIDR blocks of the VPC
-                        - *dhcpOptionsId*, a list of IDs of a set of DHCP options
+            * *state* - a list of states of the VPC (pending or available)
+            * *cidrBlock* - a list CIDR blocks of the VPC
+            * *dhcpOptionsId* - a list of IDs of a set of DHCP options
 
         :rtype: list
         :return: A list of :class:`boto.vpc.vpc.VPC`
@@ -306,7 +306,7 @@ class VPCConnection(EC2Connection):
         Detach an internet gateway from a specific VPC.
 
         :type internet_gateway_id: str
-        :param internet_gateway_id: The ID of the internet gateway to delete.
+        :param internet_gateway_id: The ID of the internet gateway to detach.
 
         :type vpc_id: str
         :param vpc_id: The ID of the VPC to attach to.
@@ -580,7 +580,7 @@ class VPCConnection(EC2Connection):
                   'CidrBlock' : cidr_block}
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDhcpOption', params, DhcpOptions)
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 
     def delete_dhcp_options(self, dhcp_options_id):
         """

@@ -71,7 +71,7 @@ except ImportError:
     _hashfn = md5.md5
 
 # List of Query String Arguments of Interest
-qsa_of_interest = ['acl', 'defaultObjectAcl', 'location', 'logging', 
+qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging', 
                    'partNumber', 'policy', 'requestPayment', 'torrent', 
                    'versioning', 'versionId', 'versions', 'website', 
                    'uploads', 'uploadId', 'response-content-type', 

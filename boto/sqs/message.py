@@ -67,6 +67,7 @@ import base64
 import StringIO
 from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
+import boto
 
 class RawMessage:
     """
@@ -156,7 +157,8 @@ class Message(RawMessage):
         try:
             value = base64.b64decode(value)
         except:
-            raise SQSDecodeError('Unable to decode message', self)
+            boto.log.warning('Unable to decode message')
+            return value
         return value
 
 class MHMessage(Message):
