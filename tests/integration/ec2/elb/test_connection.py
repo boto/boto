@@ -89,15 +89,14 @@ class ELBConnectionTest(unittest.TestCase):
         balancers = c.get_all_load_balancers()
         self.assertEqual([lb.name for lb in balancers], [name])
         self.assertEqual(
-            [l.get_tuple() for l in balancers[0].listeners], listeners)
+            sorted([l.get_tuple() for l in balancers[0].listeners]),
+            sorted(listeners))
 
         c.delete_load_balancer_listeners(name, [443])
         balancers = c.get_all_load_balancers()
         self.assertEqual([lb.name for lb in balancers], [name])
-        self.assertEqual(
-            [l.get_tuple() for l in balancers[0].listeners],
-            listeners[:1]
-            )
+        self.assertEqual([l.get_tuple() for l in balancers[0].listeners],
+                         listeners[:1])
 
     def test_create_load_balancer_listeners_with_policies(self):
         c = ELBConnection()

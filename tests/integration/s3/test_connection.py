@@ -228,8 +228,9 @@ class S3ConnectionTest (unittest.TestCase):
         try:
             iter(anon_bucket.list()).next()
             self.fail("not expecting contents")
-        except S3ResponseError:
-            self.fail("we should have public-read access.")
+        except S3ResponseError, e:
+            self.fail("We should have public-read access, but received "
+                      "an error: %s" % e)
         except StopIteration:
             pass
 

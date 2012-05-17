@@ -36,7 +36,6 @@ class EC2ConnectionTest (unittest.TestCase):
     def test_1_basic(self):
         # this is my user_id, if you want to run these tests you should
         # replace this with yours or they won't work
-        user_id = '963068290131'
         print '--- running EC2Connection tests ---'
         c = EC2Connection()
         # get list of private AMI's

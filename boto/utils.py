@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -50,6 +50,7 @@ import boto.provider
 import tempfile
 import smtplib
 import datetime
+import re
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -71,13 +72,19 @@ except ImportError:
     _hashfn = md5.md5
 
 # List of Query String Arguments of Interest
-qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging', 
-                   'partNumber', 'policy', 'requestPayment', 'torrent', 
-                   'versioning', 'versionId', 'versions', 'website', 
-                   'uploads', 'uploadId', 'response-content-type', 
-                   'response-content-language', 'response-expires', 
+qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
+                   'partNumber', 'policy', 'requestPayment', 'torrent',
+                   'versioning', 'versionId', 'versions', 'website',
+                   'uploads', 'uploadId', 'response-content-type',
+                   'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
                    'response-content-encoding', 'delete', 'lifecycle']
+
+
+_first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
+_number_cap_regex = re.compile('([a-z])([0-9]+)')
+_end_cap_regex = re.compile('([a-z0-9])([A-Z])')
+
 
 def unquote_v(nv):
     if len(nv) == 1:
@@ -237,7 +244,7 @@ def get_instance_userdata(version='latest', sep=None,
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
-    
+
 def get_ts(ts=None):
     if not ts:
         ts = time.gmtime()
@@ -267,7 +274,7 @@ def find_class(module_name, class_name=None):
         return c
     except:
         return None
-    
+
 def update_dme(username, password, dme_id, ip_address):
     """
     Update your Dynamic DNS record with DNSMadeEasy.com
@@ -280,7 +287,7 @@ def update_dme(username, password, dme_id, ip_address):
 def fetch_file(uri, file=None, username=None, password=None):
     """
     Fetch a file based on the URI provided. If you do not pass in a file pointer
-    a tempfile.NamedTemporaryFile, or None if the file could not be 
+    a tempfile.NamedTemporaryFile, or None if the file could not be
     retrieved is returned.
     The URI can be either an HTTP url, or "s3://bucket_name/key_name"
     """
@@ -358,7 +365,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
     to accept a username and password on the constructor and to then use those
     credentials to authenticate with the SMTP server.  To use this, you could
     add something like this in your boto config file:
-    
+
     [handler_hand07]
     class=boto.utils.AuthSMTPHandler
     level=WARN
@@ -376,7 +383,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
         logging.handlers.SMTPHandler.__init__(self, mailhost, fromaddr, toaddrs, subject)
         self.username = username
         self.password = password
-        
+
     def emit(self, record):
         """
         Emit a record.
@@ -407,29 +414,29 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
 class LRUCache(dict):
     """A dictionary-like object that stores only a certain number of items, and
     discards its least recently used item when full.
-    
+
     >>> cache = LRUCache(3)
     >>> cache['A'] = 0
     >>> cache['B'] = 1
     >>> cache['C'] = 2
     >>> len(cache)
     3
-    
+
     >>> cache['A']
     0
-    
+
     Adding new items to the cache does not increase its size. Instead, the least
     recently used item is dropped:
-    
+
     >>> cache['D'] = 3
     >>> len(cache)
     3
     >>> 'B' in cache
     False
-    
+
     Iterating over the cache returns the keys, starting with the most recently
     used:
-    
+
     >>> for key in cache:
     ...     print key
     D
@@ -539,10 +546,10 @@ class Password(object):
 
     def set(self, value):
         self.str = self.hashfunc(value).hexdigest()
-   
+
     def __str__(self):
         return str(self.str)
-   
+
     def __eq__(self, other):
         if other == None:
             return False
@@ -569,7 +576,7 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=None,
             msg['To'] = to_string
             msg['Date'] = formatdate(localtime=True)
             msg['Subject'] = subject
-        
+
             if body:
                 msg.attach(MIMEText(body))
 
@@ -620,16 +627,23 @@ def mklist(value):
             value = [value]
     return value
 
-def pythonize_name(name, sep='_'):
-    s = ''
-    if name[0].isupper:
-        s = name[0].lower()
-    for c in name[1:]:
-        if c.isupper():
-            s += sep + c.lower()
-        else:
-            s += c
-    return s
+def pythonize_name(name):
+    """Convert camel case to a "pythonic" name.
+
+    Examples::
+
+        pythonize_name('CamelCase') -> 'camel_case'
+        pythonize_name('already_pythonized') -> 'already_pythonized'
+        pythonize_name('HTTPRequest') -> 'http_request'
+        pythonize_name('HTTPStatus200Ok') -> 'http_status_200_ok'
+        pythonize_name('UPPER') -> 'upper'
+        pythonize_name('') -> ''
+
+    """
+    s1 = _first_cap_regex.sub(r'\1_\2', name)
+    s2 = _number_cap_regex.sub(r'\1_\2', s1)
+    return _end_cap_regex.sub(r'\1_\2', s2).lower()
+
 
 def write_mime_multipart(content, compress=False, deftype='text/plain', delimiter=':'):
     """Description:
