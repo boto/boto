@@ -68,6 +68,74 @@ class CloudFormationConnection(AWSQueryConnection):
         v = bool(v)
         return {True: "true", False: "false"}[v]
 
+    def _build_create_or_update_params(self, stack_name, template_body,
+                                       template_url, parameters,
+                                       notification_arns, disable_rollback,
+                                       timeout_in_minutes, capabilities):
+        """
+        Helper that creates JSON parameters needed by a Stack Create or
+        Stack Update call.
+
+        :type stack_name: string
+        :param stack_name: The name of the Stack, must be unique amoung running
+                            Stacks
+
+        :type template_body: string
+        :param template_body: The template body (JSON string)
+
+        :type template_url: string
+        :param template_url: An S3 URL of a stored template JSON document. If
+            both the template_body and template_url are
+            specified, the template_body takes precedence
+
+        :type parameters: list of tuples
+        :param parameters: A list of (key, value) pairs for template input
+            parameters.
+
+        :type notification_arns: list of strings
+        :param notification_arns: A list of SNS topics to send Stack event
+            notifications to.
+
+        :type disable_rollback: bool
+        :param disable_rollback: Indicates whether or not to rollback on
+            failure.
+
+        :type timeout_in_minutes: int
+        :param timeout_in_minutes: Maximum amount of time to let the Stack
+            spend creating itself. If this timeout is exceeded,
+            the Stack will enter the CREATE_FAILED state.
+
+        :type capabilities: list
+        :param capabilities: The list of capabilities you want to allow in
+            the stack.  Currently, the only valid capability is
+            'CAPABILITY_IAM'.
+
+        :rtype: dict
+        :return: JSON parameters represented as a Python dict.
+        """
+        params = {'ContentType': "JSON", 'StackName': stack_name,
+                'DisableRollback': self.encode_bool(disable_rollback)}
+        if template_body:
+            params['TemplateBody'] = template_body
+        if template_url:
+            params['TemplateURL'] = template_url
+        if template_body and template_url:
+            boto.log.warning("If both TemplateBody and TemplateURL are"
+                " specified, only TemplateBody will be honored by the API")
+        if len(parameters) > 0:
+            for i, (key, value) in enumerate(parameters):
+                params['Parameters.member.%d.ParameterKey' % (i+1)] = key
+                params['Parameters.member.%d.ParameterValue' % (i+1)] = value
+        if capabilities:
+            for i, value in enumerate(capabilities):
+                params['Capabilities.member.%d' % (i+1)] = value
+        if len(notification_arns) > 0:
+            self.build_list_params(params, notification_arns,
+                                   "NotificationARNs.member")
+        if timeout_in_minutes:
+            params['TimeoutInMinutes'] = int(timeout_in_minutes)
+        return params
+
     def create_stack(self, stack_name, template_body=None, template_url=None,
             parameters=[], notification_arns=[], disable_rollback=False,
             timeout_in_minutes=None, capabilities=None):
@@ -111,28 +179,9 @@ class CloudFormationConnection(AWSQueryConnection):
         :rtype: string
         :return: The unique Stack ID.
         """
-        params = {'ContentType': "JSON", 'StackName': stack_name,
-                'DisableRollback': self.encode_bool(disable_rollback)}
-        if template_body:
-            params['TemplateBody'] = template_body
-        if template_url:
-            params['TemplateURL'] = template_url
-        if template_body and template_url:
-            boto.log.warning("If both TemplateBody and TemplateURL are"
-                " specified, only TemplateBody will be honored by the API")
-        if len(parameters) > 0:
-            for i, (key, value) in enumerate(parameters):
-                params['Parameters.member.%d.ParameterKey' % (i+1)] = key
-                params['Parameters.member.%d.ParameterValue' % (i+1)] = value
-        if capabilities:
-            for i, value in enumerate(capabilities):
-                params['Capabilities.member.%d' % (i+1)] = value
-        if len(notification_arns) > 0:
-            self.build_list_params(params, notification_arns,
-                                   "NotificationARNs.member")
-        if timeout_in_minutes:
-            params['TimeoutInMinutes'] = int(timeout_in_minutes)
-
+        params = self._build_create_or_update_params(stack_name,
+            template_body, template_url, parameters, notification_arns,
+            disable_rollback, timeout_in_minutes, capabilities)
         response = self.make_request('CreateStack', params, '/', 'POST')
         body = response.read()
         if response.status == 200:
@@ -186,28 +235,9 @@ class CloudFormationConnection(AWSQueryConnection):
         :rtype: string
         :return: The unique Stack ID.
         """
-        params = {'ContentType': "JSON", 'StackName': stack_name,
-                'DisableRollback': self.encode_bool(disable_rollback)}
-        if template_body:
-            params['TemplateBody'] = template_body
-        if template_url:
-            params['TemplateURL'] = template_url
-        if template_body and template_url:
-            boto.log.warning("If both TemplateBody and TemplateURL are"
-                " specified, only TemplateBody will be honored by the API")
-        if len(parameters) > 0:
-            for i, (key, value) in enumerate(parameters):
-                params['Parameters.member.%d.ParameterKey' % (i+1)] = key
-                params['Parameters.member.%d.ParameterValue' % (i+1)] = value
-        if capabilities:
-            for i, value in enumerate(capabilities):
-                params['Capabilities.member.%d' % (i+1)] = value
-        if len(notification_arns) > 0:
-            self.build_list_params(params, notification_arns,
-                                   "NotificationARNs.member")
-        if timeout_in_minutes:
-            params['TimeoutInMinutes'] = int(timeout_in_minutes)
-
+        params = self._build_create_or_update_params(stack_name,
+            template_body, template_url, parameters, notification_arns,
+            disable_rollback, timeout_in_minutes, capabilities)
         response = self.make_request('UpdateStack', params, '/', 'POST')
         body = response.read()
         if response.status == 200:
