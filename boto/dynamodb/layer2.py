@@ -243,8 +243,13 @@ class Layer2(object):
         :param limit: The maximum number of tables to return.
         """
         tables = []
-        while True:
-            result = self.layer1.list_tables(limit)
+        start_table = None
+        while not limit or len(tables) < limit:
+            this_round_limit = None
+            if limit:
+                this_round_limit = limit - len(tables)
+                this_round_limit = min(this_round_limit, 100)
+            result = self.layer1.list_tables(limit=this_round_limit, start_table=start_table)
             tables.extend(result.get('TableNames', []))
             start_table = result.get('LastEvaluatedTableName', None)
             if not start_table:
