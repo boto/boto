@@ -278,7 +278,7 @@ class SESConnection(AWSAuthConnection):
 
         """
         params = {
-            'RawMessage.Data': base64.b64encode(raw_message),
+            'RawMessage.Data': base64.b64encode(raw_message.encode('utf-8')),
         }
 
         if source:
