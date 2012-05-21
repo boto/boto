@@ -79,13 +79,13 @@ class BatchResults(object):
         self.errors = []
 
     def startElement(self, name, attrs, connection):
-        if name == 'SendMessageBatchResultEntry':
+        if name.endswith('MessageBatchResultEntry'):
             entry = ResultEntry()
             self.results.append(entry)
             return entry
         if name == 'BatchResultErrorEntry':
             entry = ResultEntry()
-            self.results.errors(entry)
+            self.errors.append(entry)
             return entry
         return None
 

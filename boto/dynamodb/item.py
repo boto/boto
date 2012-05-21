@@ -15,13 +15,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
 
 from boto.dynamodb.exceptions import DynamoDBItemError
+
 
 class Item(dict):
     """
@@ -34,41 +35,39 @@ class Item(dict):
     :ivar range_key_name: The name of the RangeKey associated with this item.
     :ivar table: The Table this item belongs to.
     """
-
+    
     def __init__(self, table, hash_key=None, range_key=None, attrs=None):
         self.table = table
         self._updates = None
         self._hash_key_name = self.table.schema.hash_key_name
         self._range_key_name = self.table.schema.range_key_name
-        hash_key = hash_key or attrs.get(self._hash_key_name, None)
-        if hash_key is None:
-            raise DynamoDBItemError('You must supply a hash_key')
-        if self._range_key_name:
-            range_key = range_key or attrs.get(self._range_key_name, None)
-            if range_key is None:
-                raise DynamoDBItemError('You must supply a range_key')
+        if attrs == None:
+            attrs = {}
+        if hash_key == None:
+            hash_key = attrs.get(self._hash_key_name, None)
         self[self._hash_key_name] = hash_key
         if self._range_key_name:
+            if range_key == None:
+                range_key = attrs.get(self._range_key_name, None)
             self[self._range_key_name] = range_key
-        if attrs:
-            for key, value in attrs.items():
-                if key != self._hash_key_name and key != self._range_key_name:
-                    self[key] = value
+        for key, value in attrs.items():
+            if key != self._hash_key_name and key != self._range_key_name:
+                self[key] = value
         self.consumed_units = 0
         self._updates = {}
 
     @property
     def hash_key(self):
         return self[self._hash_key_name]
-                                             
+
     @property
     def range_key(self):
         return self.get(self._range_key_name)
-                                             
+
     @property
     def hash_key_name(self):
         return self._hash_key_name
-    
+
     @property
     def range_key_name(self):
         return self._range_key_name
@@ -140,18 +139,18 @@ class Item(dict):
         """
         return self.table.layer2.update_item(self, expected_value,
                                              return_values)
-        
+
     def delete(self, expected_value=None, return_values=None):
         """
         Delete the item from DynamoDB.
 
         :type expected_value: dict
-        :param expected_value: A dictionary of name/value pairs that you expect.
-            This dictionary should have name/value pairs where the name
-            is the name of the attribute and the value is either the value
-            you are expecting or False if you expect the attribute not to
-            exist.
-            
+        :param expected_value: A dictionary of name/value pairs that
+            you expect.  This dictionary should have name/value pairs
+            where the name is the name of the attribute and the value
+            is either the value you are expecting or False if you expect
+            the attribute not to exist.
+
         :type return_values: str
         :param return_values: Controls the return of attribute
             name-value pairs before then were changed.  Possible
@@ -168,11 +167,11 @@ class Item(dict):
         in Amazon DynamoDB.
 
         :type expected_value: dict
-        :param expected_value: A dictionary of name/value pairs that you expect.
-            This dictionary should have name/value pairs where the name
-            is the name of the attribute and the value is either the value
-            you are expecting or False if you expect the attribute not to
-            exist.
+        :param expected_value: A dictionary of name/value pairs that
+            you expect.  This dictionary should have name/value pairs
+            where the name is the name of the attribute and the value
+            is either the value you are expecting or False if you expect
+            the attribute not to exist.
 
         :type return_values: str
         :param return_values: Controls the return of attribute

@@ -173,7 +173,10 @@ class LaunchConfiguration(object):
         elif name == 'RamdiskId':
             self.ramdisk_id = value
         elif name == 'UserData':
-            self.user_data = base64.b64decode(value)
+            try:
+                self.user_data = base64.b64decode(value)
+            except TypeError:
+                self.user_data = value
         elif name == 'LaunchConfigurationARN':
             self.launch_configuration_arn = value
         elif name == 'InstanceMonitoring':

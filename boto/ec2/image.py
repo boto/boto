@@ -160,7 +160,8 @@ class Image(TaggedEC2Object):
             disable_api_termination=False,
             instance_initiated_shutdown_behavior=None,
             private_ip_address=None,
-            placement_group=None, security_group_ids=None):
+            placement_group=None, security_group_ids=None,
+            additional_info=None):
         """
         Runs this instance.
         
@@ -229,11 +230,16 @@ class Image(TaggedEC2Object):
         :param placement_group: If specified, this is the name of the placement
                                 group in which the instance(s) will be launched.
 
-        :rtype: Reservation
-        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        :type additional_info: string
+        :param additional_info:  Specifies additional information to make
+            available to the instance(s)
 
         :type security_group_ids: 
         :param security_group_ids:
+        
+        :rtype: Reservation
+        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+
         """
 
         return self.connection.run_instances(self.id, min_count, max_count,
@@ -245,7 +251,8 @@ class Image(TaggedEC2Object):
                                              block_device_map, disable_api_termination,
                                              instance_initiated_shutdown_behavior,
                                              private_ip_address, placement_group, 
-                                             security_group_ids=security_group_ids)
+                                             security_group_ids=security_group_ids,
+                                             additional_info=additional_info)
 
     def deregister(self, delete_snapshot=False):
         return self.connection.deregister_image(self.id, delete_snapshot)

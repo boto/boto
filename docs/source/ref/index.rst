@@ -10,6 +10,7 @@ API Reference
    boto
    cloudformation
    cloudfront
+   cloudsearch
    contrib
    dynamodb
    ec2

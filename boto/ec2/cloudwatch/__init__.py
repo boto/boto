@@ -113,17 +113,20 @@ class CloudWatchConnection(AWSQueryConnection):
 
     def build_dimension_param(self, dimension, params):
         prefix = 'Dimensions.member'
-        for i, dim_name in enumerate(dimension):
+        i=0
+        for dim_name in dimension:
             dim_value = dimension[dim_name]
             if dim_value:
                 if isinstance(dim_value, basestring):
                     dim_value = [dim_value]
-                for j, value in enumerate(dim_value):
-                    params['%s.%d.Name.%d' % (prefix, i+1, j+1)] = dim_name
-                    params['%s.%d.Value.%d' % (prefix, i+1, j+1)] = value
+                for value in dim_value:
+                    params['%s.%d.Name' % (prefix, i+1)] = dim_name
+                    params['%s.%d.Value' % (prefix, i+1)] = value
+                    i += 1
             else:
                 params['%s.%d.Name' % (prefix, i+1)] = dim_name
-    
+                i += 1
+
     def build_list_params(self, params, items, label):
         if isinstance(items, basestring):
             items = [items]
@@ -139,7 +142,7 @@ class CloudWatchConnection(AWSQueryConnection):
 
     def build_put_params(self, params, name, value=None, timestamp=None, 
                         unit=None, dimensions=None, statistics=None):
-        args = (name, value, unit, dimensions, statistics)
+        args = (name, value, unit, dimensions, statistics, timestamp)
         length = max(map(lambda a: len(a) if isinstance(a, list) else 1, args))
 
         def aslist(a):
@@ -149,11 +152,11 @@ class CloudWatchConnection(AWSQueryConnection):
                 return a
             return [a] * length
 
-        for index, (n, v, u, d, s) in enumerate(zip(*map(aslist, args))):
+        for index, (n, v, u, d, s, t) in enumerate(zip(*map(aslist, args))):
             metric_data = {'MetricName': n}
 
             if timestamp:
-                metric_data['Timestamp'] = timestamp.isoformat()
+                metric_data['Timestamp'] = t.isoformat()
             
             if unit:
                 metric_data['Unit'] = u
@@ -320,7 +323,7 @@ class CloudWatchConnection(AWSQueryConnection):
         self.build_put_params(params, name, value=value, timestamp=timestamp,
             unit=unit, dimensions=dimensions, statistics=statistics)
 
-        return self.get_status('PutMetricData', params)
+        return self.get_status('PutMetricData', params, verb="POST")
 
 
     def describe_alarms(self, action_prefix=None, alarm_name_prefix=None,

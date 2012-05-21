@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -26,7 +26,6 @@ from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
-from boto.dynamodb.table import Table
 
 import time
 try:
@@ -39,7 +38,8 @@ except ImportError:
 # value of Debug to be 2
 #
 #boto.set_stream_logger('dynamodb')
-Debug=0
+Debug = 0
+
 
 class Layer1(AWSAuthConnection):
     """
@@ -54,13 +54,13 @@ class Layer1(AWSAuthConnection):
         keeps a running total of the number of ThroughputExceeded
         responses this connection has received from Amazon DynamoDB.
     """
-    
+
     DefaultRegionName = 'us-east-1'
     """The default region name for DynamoDB API."""
 
     ServiceName = 'DynamoDB'
     """The name of the Service"""
-    
+
     Version = '20111205'
     """DynamoDB API version."""
 
@@ -69,12 +69,18 @@ class Layer1(AWSAuthConnection):
 
     SessionExpiredError = 'com.amazon.coral.service#ExpiredTokenException'
     """The error response returned when session token has expired"""
-    
+
+    ConditionalCheckFailedError = 'ConditionalCheckFailedException'
+    """The error response returned when a conditional check fails"""
+
+    ValidationError = 'ValidationException'
+    """The error response returned when an item is invalid in some way"""
+
     ResponseError = DynamoDBResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host=None, debug=0, session_token=None, region=None):
+                 debug=0, session_token=None, region=None):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -106,7 +112,7 @@ class Layer1(AWSAuthConnection):
                                  self.creds.secret_key,
                                  self.creds.session_token)
         self._auth_handler.update_provider(self.provider)
-        
+
     def _get_session_token(self):
         boto.log.debug('Creating new Session Token')
         sts = boto.connect_sts(self._passed_access_key,
@@ -120,10 +126,11 @@ class Layer1(AWSAuthConnection):
         """
         :raises: ``DynamoDBExpiredTokenError`` if the security token expires.
         """
-        headers = {'X-Amz-Target' : '%s_%s.%s' % (self.ServiceName,
-                                                  self.Version, action),
-                   'Content-Type' : 'application/x-amz-json-1.0',
-                   'Content-Length' : str(len(body))}
+        headers = {'X-Amz-Target': '%s_%s.%s' % (self.ServiceName,
+                                                 self.Version, action),
+                   'Host': self.region.endpoint,
+                   'Content-Type': 'application/x-amz-json-1.0',
+                   'Content-Length': str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
         if self.do_instrumentation:
@@ -132,6 +139,7 @@ class Layer1(AWSAuthConnection):
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
         self.request_id = response.getheader('x-amzn-RequestId')
+        boto.log.debug('RequestId: %s' % self.request_id)
         if self.do_instrumentation:
             self.instrumentation['times'].append(time.time() - start)
             self.instrumentation['ids'].append(self.request_id)
@@ -151,14 +159,20 @@ class Layer1(AWSAuthConnection):
                 if i == 0:
                     next_sleep = 0
                 else:
-                    next_sleep = 0.05 * (2**i)
+                    next_sleep = 0.05 * (2 ** i)
                 i += 1
                 status = (msg, i, next_sleep)
             elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
                 self.creds = self._get_session_token()
                 self._update_provider()
-                status = (msg, i+self.num_retries-1, next_sleep)
+                status = (msg, i + self.num_retries - 1, 0)
+            elif self.ConditionalCheckFailedError in data.get('__type'):
+                raise dynamodb_exceptions.DynamoDBConditionalCheckFailedError(
+                    response.status, response.reason, data)
+            elif self.ValidationError in data.get('__type'):
+                raise dynamodb_exceptions.DynamoDBValidationError(
+                    response.status, response.reason, data)
             else:
                 raise self.ResponseError(response.status, response.reason,
                                          data)
@@ -201,7 +215,7 @@ class Layer1(AWSAuthConnection):
         :type table_name: str
         :param table_name: The name of the table to describe.
         """
-        data = {'TableName' : table_name}
+        data = {'TableName': table_name}
         json_input = json.dumps(data)
         return self.make_request('DescribeTable', json_input)
 
@@ -215,7 +229,7 @@ class Layer1(AWSAuthConnection):
 
         :type table_name: str
         :param table_name: The name of the table to create.
-        
+
         :type schema: dict
         :param schema: A Python version of the KeySchema data structure
             as defined by DynamoDB
@@ -224,10 +238,9 @@ class Layer1(AWSAuthConnection):
         :param provisioned_throughput: A Python version of the
             ProvisionedThroughput data structure defined by
             DynamoDB.
-        
         """
-        data = {'TableName' : table_name,
-                'KeySchema' : schema,
+        data = {'TableName': table_name,
+                'KeySchema': schema,
                 'ProvisionedThroughput': provisioned_throughput}
         json_input = json.dumps(data)
         response_dict = self.make_request('CreateTable', json_input)
@@ -236,10 +249,10 @@ class Layer1(AWSAuthConnection):
     def update_table(self, table_name, provisioned_throughput):
         """
         Updates the provisioned throughput for a given table.
-        
+
         :type table_name: str
         :param table_name: The name of the table to update.
-        
+
         :type provisioned_throughput: dict
         :param provisioned_throughput: A Python version of the
             ProvisionedThroughput data structure defined by
@@ -295,12 +308,12 @@ class Layer1(AWSAuthConnection):
         json_input = json.dumps(data)
         response = self.make_request('GetItem', json_input,
                                      object_hook=object_hook)
-        if not response.has_key('Item'):
+        if 'Item' not in response:
             raise dynamodb_exceptions.DynamoDBKeyNotFoundError(
                 "Key does not exist."
             )
         return response
-        
+
     def batch_get_item(self, request_items, object_hook=None):
         """
         Return a set of attributes for a multiple items in
@@ -310,9 +323,23 @@ class Layer1(AWSAuthConnection):
         :param request_items: A Python version of the RequestItems
             data structure defined by DynamoDB.
         """
-        data = {'RequestItems' : request_items}
+        data = {'RequestItems': request_items}
         json_input = json.dumps(data)
         return self.make_request('BatchGetItem', json_input,
+                                 object_hook=object_hook)
+
+    def batch_write_item(self, request_items, object_hook=None):
+        """
+        This operation enables you to put or delete several items
+        across multiple tables in a single API call.
+
+        :type request_items: dict
+        :param request_items: A Python version of the RequestItems
+            data structure defined by DynamoDB.
+        """
+        data = {'RequestItems': request_items}
+        json_input = json.dumps(data)
+        return self.make_request('BatchWriteItem', json_input,
                                  object_hook=object_hook)
 
     def put_item(self, table_name, item,
@@ -344,8 +371,8 @@ class Layer1(AWSAuthConnection):
             specified and the item is overwritten, the content
             of the old item is returned.
         """
-        data = {'TableName' : table_name,
-                'Item' : item}
+        data = {'TableName': table_name,
+                'Item': item}
         if expected:
             data['Expected'] = expected
         if return_values:
@@ -385,8 +412,8 @@ class Layer1(AWSAuthConnection):
             specified and the item is overwritten, the content
             of the old item is returned.
         """
-        data = {'TableName' : table_name,
-                'Key' : key,
+        data = {'TableName': table_name,
+                'Key': key,
                 'AttributeUpdates': attribute_updates}
         if expected:
             data['Expected'] = expected
@@ -422,8 +449,8 @@ class Layer1(AWSAuthConnection):
             specified and the item is overwritten, the content
             of the old item is returned.
         """
-        data = {'TableName' : table_name,
-                'Key' : key}
+        data = {'TableName': table_name,
+                'Key': key}
         if expected:
             data['Expected'] = expected
         if return_values:
@@ -540,5 +567,3 @@ class Layer1(AWSAuthConnection):
             data['ExclusiveStartKey'] = exclusive_start_key
         json_input = json.dumps(data)
         return self.make_request('Scan', json_input, object_hook=object_hook)
-
-    

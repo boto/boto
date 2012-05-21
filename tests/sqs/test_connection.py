@@ -109,6 +109,20 @@ class SQSConnectionTest (unittest.TestCase):
         time.sleep(30)
         assert queue.count_slow() == 0
 
+        # try a batch write
+        num_msgs = 10
+        msgs = [(i, 'This is message %d' % i, 0) for i in range(num_msgs)]
+        queue.write_batch(msgs)
+
+        # try to delete all of the messages using batch delete
+        deleted = 0
+        while deleted < num_msgs:
+            time.sleep(5)
+            msgs = queue.get_messages(num_msgs)
+            if msgs:
+                br = queue.delete_message_batch(msgs)
+                deleted += len(br.results)
+
         # create another queue so we can test force deletion
         # we will also test MHMessage with this queue
         queue_name = 'test%d' % int(time.time())

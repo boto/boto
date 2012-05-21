@@ -91,6 +91,19 @@ class S3MultiPartUploadTest (unittest.TestCase):
         # Abort using the one returned in the list
         lmpu.cancel_upload()
 
+    def test_list_multipart_uploads(self):
+        key_name = u"テスト"
+        mpus = []
+        mpus.append(self.bucket.initiate_multipart_upload(key_name))
+        mpus.append(self.bucket.initiate_multipart_upload(key_name))
+        rs = self.bucket.list_multipart_uploads()
+        # uploads (for a key) are returned in time initiated asc order
+        for lmpu in rs:
+            ompu = mpus.pop(0)
+            self.assertEqual(lmpu.key_name, ompu.key_name)
+            self.assertEqual(lmpu.id, ompu.id)
+        self.assertEqual(0, len(mpus))
+
     def test_four_part_file(self):
         key_name = "k"
         contents = "01234567890123456789"

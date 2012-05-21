@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -25,11 +25,15 @@ Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
 
+
 def is_num(n):
-    return isinstance(n, (int, long, float, bool))
+    types = (int, long, float, bool)
+    return isinstance(n, types) or n in types
+
 
 def is_str(n):
-    return isinstance(n, basestring)
+    return isinstance(n, basestring) or (isinstance(n, type) and issubclass(n, basestring))
+
 
 def convert_num(s):
     if '.' in s:
@@ -37,6 +41,7 @@ def convert_num(s):
     else:
         n = int(s)
     return n
+
 
 def get_dynamodb_type(val):
     """
@@ -55,8 +60,10 @@ def get_dynamodb_type(val):
         elif False not in map(is_str, val):
             dynamodb_type = 'SS'
     if dynamodb_type is None:
-        raise TypeError('Unsupported type "%s" for value "%s"' % (type(val), val))
+        msg = 'Unsupported type "%s" for value "%s"' % (type(val), val)
+        raise TypeError(msg)
     return dynamodb_type
+
 
 def dynamize_value(val):
     """
@@ -77,12 +84,11 @@ def dynamize_value(val):
 
     dynamodb_type = get_dynamodb_type(val)
     if dynamodb_type == 'N':
-        val = {dynamodb_type : _str(val)}
+        val = {dynamodb_type: _str(val)}
     elif dynamodb_type == 'S':
-        val = {dynamodb_type : val}
+        val = {dynamodb_type: val}
     elif dynamodb_type == 'NS':
-        val = {dynamodb_type : [ str(n) for n in val]}
+        val = {dynamodb_type: [str(n) for n in val]}
     elif dynamodb_type == 'SS':
-        val = {dynamodb_type : [ n for n in val]}
+        val = {dynamodb_type: [n for n in val]}
     return val
-

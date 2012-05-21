@@ -27,6 +27,8 @@ Tests for Layer1 of DynamoDB
 import unittest
 import time
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
+from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
+from boto.dynamodb.exceptions import DynamoDBValidationError
 from boto.dynamodb.layer1 import Layer1
 from boto.sts.credentials import Credentials
 
@@ -134,10 +136,9 @@ class DynamoDBLayer1Test (unittest.TestCase):
 
         # Try to delete the item with the wrong Expected value
         expected = {'Views': {'Value': {'N': '1'}}}
-        try:
-            result = c.delete_item(table_name, key=key1, expected=expected)
-        except c.ResponseError, e:
-            assert e.error_code == 'ConditionalCheckFailedException'
+        self.assertRaises(DynamoDBConditionalCheckFailedError,
+                          c.delete_item, table_name, key=key1,
+                          expected=expected)
 
         # Now update the existing object
         attribute_updates = {'Views': {'Value': {'N': '5'},
@@ -146,6 +147,17 @@ class DynamoDBLayer1Test (unittest.TestCase):
                                       'Action': 'ADD'}}
         result = c.update_item(table_name, key=key1,
                                attribute_updates=attribute_updates)
+
+        # Try and update an item, in a fashion which makes it too large.
+        # The new message text is the item size limit minus 32 bytes and
+        # the current object is larger than 32 bytes.
+        item_size_overflow_text = 'Text to be padded'.zfill(64*1024-32)
+        attribute_updates = {'Message': {'Value': {'S': item_size_overflow_text},
+                                       'Action': 'PUT'}}
+        self.assertRaises(DynamoDBValidationError,
+                          c.update_item, table_name, key=key1,
+                           attribute_updates=attribute_updates)
+
 
         # Put a few more items into the table
         item2_key = 'Amazon DynamoDB'
