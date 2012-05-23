@@ -360,7 +360,7 @@ class Instance(TaggedEC2Object):
                           disableApiTermination|
                           instanceInitiatedShutdownBehavior|
                           rootDeviceName|blockDeviceMapping
-                          sourceDestCheck
+                          sourceDestCheck|groupSet
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
