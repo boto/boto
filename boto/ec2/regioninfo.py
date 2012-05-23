@@ -30,5 +30,7 @@ class EC2RegionInfo(RegionInfo):
     
     def __init__(self, connection=None, name=None, endpoint=None):
         from boto.ec2.connection import EC2Connection
+        if name:
+        	endpoint = RegionInfo.service_endpoint_templates(self, 'ec2').format(name)
         RegionInfo.__init__(self, connection, name, endpoint,
                             EC2Connection)

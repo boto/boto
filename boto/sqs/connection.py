@@ -33,7 +33,7 @@ class SQSConnection(AWSQueryConnection):
     A Connection to the SQS Service.
     """
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'sqs.us-east-1.amazonaws.com'
+    #DefaultRegionEndpoint = 'sqs.us-east-1.amazonaws.com'
     APIVersion = '2011-10-01'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
@@ -41,11 +41,13 @@ class SQSConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/',
+                 https_connection_factory=None, region=None, region_name=None, path='/',
                  security_token=None):
         if not region:
-            region = SQSRegionInfo(self, self.DefaultRegionName,
-                                   self.DefaultRegionEndpoint)
+          if not region_name:
+            region = SQSRegionInfo(self, self.DefaultRegionName)
+          else:
+            region = SQSRegionInfo(self, region_name)
         self.region = region
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
