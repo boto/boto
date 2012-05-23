@@ -374,15 +374,17 @@ class Instance(TaggedEC2Object):
 
         :type attribute: string
         :param attribute: The attribute you wish to change.
-                          AttributeName - Expected value (default)
-                          instanceType - A valid instance type (m1.small)
-                          kernel - Kernel ID (None)
-                          ramdisk - Ramdisk ID (None)
-                          userData - Base64 encoded String (None)
-                          disableApiTermination - Boolean (true)
-                          instanceInitiatedShutdownBehavior - stop|terminate
-                          rootDeviceName - device name (None)
-                          sourceDestCheck - Boolean (true)
+
+                          * AttributeName - Expected value (default)
+                          * InstanceType - A valid instance type (m1.small)
+                          * Kernel - Kernel ID (None)
+                          * Ramdisk - Ramdisk ID (None)
+                          * UserData - Base64 encoded String (None)
+                          * DisableApiTermination - Boolean (true)
+                          * InstanceInitiatedShutdownBehavior - stop|terminate
+                          * RootDeviceName - device name (None)
+                          * SourceDestCheck - Boolean (true)
+                          * GroupSet - Set of Security Groups or IDs
 
         :type value: string
         :param value: The new value for the attribute

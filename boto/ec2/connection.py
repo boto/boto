@@ -797,14 +797,15 @@ class EC2Connection(AWSQueryConnection):
         :param attribute: The attribute you wish to change.
 
                           * AttributeName - Expected value (default)
-                          * instanceType - A valid instance type (m1.small)
-                          * kernel - Kernel ID (None)
-                          * ramdisk - Ramdisk ID (None)
-                          * userData - Base64 encoded String (None)
-                          * disableApiTermination - Boolean (true)
-                          * instanceInitiatedShutdownBehavior - stop|terminate
-                          * rootDeviceName - device name (None)
-                          * sourceDestCheck - Boolean (true)
+                          * InstanceType - A valid instance type (m1.small)
+                          * Kernel - Kernel ID (None)
+                          * Ramdisk - Ramdisk ID (None)
+                          * UserData - Base64 encoded String (None)
+                          * DisableApiTermination - Boolean (true)
+                          * InstanceInitiatedShutdownBehavior - stop|terminate
+                          * RootDeviceName - device name (None)
+                          * SourceDestCheck - Boolean (true)
+                          * GroupSet - Set of Security Groups or IDs
 
         :type value: string
         :param value: The new value for the attribute
@@ -813,15 +814,26 @@ class EC2Connection(AWSQueryConnection):
         :return: Whether the operation succeeded or not
         """
         # Allow a bool to be passed in for value of disableApiTermination
-        if attribute == 'disableApiTermination':
+        if attribute.lower() == 'disableapitermination':
             if isinstance(value, bool):
                 if value:
                     value = 'true'
                 else:
                     value = 'false'
-        params = {'InstanceId' : instance_id,
-                  'Attribute' : attribute,
-                  'Value' : value}
+
+        params = {'InstanceId' : instance_id}
+
+        # groupSet is handled differently from other arguments
+        if attribute.lower() == 'groupset':
+            for idx, sg in enumerate(value):
+                if isinstance(sg, SecurityGroup):
+                    sg = sg.id
+                params['GroupId.%s' % (idx + 1)] = sg
+        else:
+            # for backwards compatibility handle lowercase first letter
+            attribute = attribute[0].upper() + attribute[1:]
+            params['%s.Value' % attribute] = value
+
         return self.get_status('ModifyInstanceAttribute', params, verb='POST')
 
     def reset_instance_attribute(self, instance_id, attribute):
