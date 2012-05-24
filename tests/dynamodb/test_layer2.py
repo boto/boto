@@ -256,6 +256,10 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert n == 3
         assert items.consumed_units > 0
 
+        result = table.scan(count=True)
+        assert result.count == n
+        assert result.consumed_units > 0
+
         items = table.scan({'Replies': GT(0)})
         n = 0
         for item in items:
@@ -350,6 +354,10 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in results:
             n += 1
         assert n == 2
+
+        result = table.query('Amazon DynamoDB', count=True)
+        assert result.count == n
+        assert result.consumed_units > 0
         
         # Try scans
         results = table.scan({'Tags': CONTAINS('table')})

@@ -277,7 +277,7 @@ class Table(object):
 
     def query(self, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
-              max_results=None, consistent_read=False,
+              max_results=None, count=False, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
               item_class=Item):
         """
@@ -318,6 +318,11 @@ class Table(object):
             could set max_results to 100 and the generator returned
             from the query method will only yeild 100 results max.
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Query operation, even if the
+            operation has no matching items for the assigned filter.
+
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
@@ -339,7 +344,7 @@ class Table(object):
         """
         return self.layer2.query(self, hash_key, range_key_condition,
                                  attributes_to_get, request_limit,
-                                 max_results, consistent_read,
+                                 max_results, count, consistent_read,
                                  scan_index_forward, exclusive_start_key,
                                  item_class=item_class)
 

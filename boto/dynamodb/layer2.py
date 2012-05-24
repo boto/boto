@@ -101,6 +101,36 @@ class TableGenerator:
         return table_generator(self)
 
 
+class ScanQueryCount(object):
+    """
+    This is an object that wraps up the response to a Query/Scan request
+    with Count (the only returned values are Count and ConsumedCapacityUnits)
+
+    :ivar consumed_units: An integer that holds the number of
+        ConsumedCapacityUnits for this request
+
+    :ivar count: An integer that holds the returned Count
+
+    :ivar scanned_count: An integer that holds the returned ScannedCount
+        (for Scan only)
+    """
+
+    def __init__(self, response):
+        if 'ConsumedCapacityUnits' in response:
+            self.consumed_units = response['ConsumedCapacityUnits']
+        else:
+            self.consumed_units = 0
+
+        if 'Count' in response:
+            self.count = response['Count']
+        else:
+            self.count = 0
+
+        if 'ScannedCount' in response:
+            self.scanned_count = response['ScannedCount']
+        else:
+            self.scanned_count = None
+
 class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -549,7 +579,7 @@ class Layer2(object):
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
-              max_results=None, consistent_read=False,
+              max_results=None, count=False, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
               item_class=Item):
         """
@@ -593,6 +623,11 @@ class Layer2(object):
             could set max_results to 100 and the generator returned
             from the query method will only yeild 100 results max.
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Query operation, even if the
+            operation has no matching items for the assigned filter.
+
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
@@ -628,11 +663,15 @@ class Layer2(object):
                   'range_key_conditions': rkc,
                   'attributes_to_get': attributes_to_get,
                   'limit': request_limit,
+                  'count': count,
                   'consistent_read': consistent_read,
                   'scan_index_forward': scan_index_forward,
                   'exclusive_start_key': esk,
                   'object_hook': item_object_hook}
-        return TableGenerator(table, self.layer1.query,
+        if count:
+            return ScanQueryCount(self.layer1.query(**kwargs))
+        else:
+            return TableGenerator(table, self.layer1.query,
                               max_results, item_class, kwargs)
 
     def scan(self, table, scan_filter=None,
@@ -699,7 +738,7 @@ class Layer2(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator` or :class:`boto.dynamodb.layer2.ScanQueryCount`
         """
         if exclusive_start_key:
             esk = self.build_key_from_values(table.schema,
@@ -713,5 +752,8 @@ class Layer2(object):
                   'count': count,
                   'exclusive_start_key': esk,
                   'object_hook': item_object_hook}
-        return TableGenerator(table, self.layer1.scan,
+        if count:
+            return ScanQueryCount(self.layer1.scan(**kwargs))
+        else:
+            return TableGenerator(table, self.layer1.scan,
                               max_results, item_class, kwargs)
