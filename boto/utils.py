@@ -249,10 +249,12 @@ class LazyLoadMetadata(dict):
             return default
 
     def values(self):
-        return [self[key] for key in self]
+        self._materialize()
+        return super(LazyLoadMetadata, self).values()
 
     def items(self):
-        return [(key, self[key]) for key in self]
+        self._materialize()
+        return super(LazyLoadMetadata, self).items()
 
     def __str__(self):
         self._materialize()
