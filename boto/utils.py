@@ -192,26 +192,63 @@ def retry_url(url, retry_on_404=True, num_retries=10):
     return ''
 
 def _get_instance_metadata(url):
-    d = {}
-    data = retry_url(url)
-    if data:
-        fields = data.split('\n')
-        for field in fields:
-            if field.endswith('/'):
-                d[field[0:-1]] = _get_instance_metadata(url + field)
-            else:
-                p = field.find('=')
-                if p > 0:
-                    key = field[p+1:]
-                    resource = field[0:p] + '/openssh-key'
+    return LazyLoadMetadata(url)
+
+class LazyLoadMetadata(dict):
+    def __init__(self, url):
+        self._url = url
+        self._leaves = {}
+        self._dicts = []
+        data = boto.utils.retry_url(self._url)
+        if data:
+            fields = data.split('\n')
+            for field in fields:
+                if field.endswith('/'):
+                    key = field[0:-1]
+                    self._dicts.append(key)
                 else:
-                    key = resource = field
-                val = retry_url(url + resource)
-                p = val.find('\n')
-                if p > 0:
-                    val = val.split('\n')
-                d[key] = val
-    return d
+                    p = field.find('=')
+                    if p > 0:
+                        key = field[p + 1:]
+                        resource = field[0:p] + '/openssh-key'
+                    else:
+                        key = resource = field
+                    self._leaves[key] = resource
+                self[key] = None
+
+    def __getitem__(self, key):
+        if key not in self:
+            # allow dict to throw the KeyError
+            return super(LazyLoadMetadata, self).__getitem__(key)
+        
+        # already loaded
+        val = super(LazyLoadMetadata, self).__getitem__(key)
+        if val is not None:
+            return val
+
+        if key in self._leaves:
+            resource = self._leaves[key]
+            val = boto.utils.retry_url(self._url + resource)
+            p = val.find('\n')
+            if p > 0:
+                val = val.split('\n')
+            self[key] = val
+        elif key in self._dicts:
+            self[key] = LazyLoadMetadata(self._url + key + '/')
+
+        return super(LazyLoadMetadata, self).__getitem__(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def values(self):
+        return [self[key] for key in self]
+
+    def items(self):
+        return [(key, self[key]) for key in self]
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254'):
     """
