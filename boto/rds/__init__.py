@@ -896,7 +896,7 @@ class RDSConnection(AWSQueryConnection):
         if auto_minor_version_upgrade is not None:
             params['AutoMinorVersionUpgrade'] = str(auto_minor_version_upgrade).lower()
         return self.get_object('RestoreDBInstanceFromDBSnapshot',
-                               params, boto.rds.DBInstance)
+                               params, DBInstance)
 
     def restore_dbinstance_from_point_in_time(self, source_instance_id,
                                               target_instance_id,
