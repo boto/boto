@@ -216,6 +216,10 @@ class LazyLoadMetadata(dict):
                     self._leaves[key] = resource
                 self[key] = None
 
+    def _materialize(self):
+        for key in self:
+            self[key]
+
     def __getitem__(self, key):
         if key not in self:
             # allow dict to throw the KeyError
@@ -249,6 +253,14 @@ class LazyLoadMetadata(dict):
 
     def items(self):
         return [(key, self[key]) for key in self]
+
+    def __str__(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).__str__()
+
+    def __repr__(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).__repr__()
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254'):
     """
