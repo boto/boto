@@ -173,10 +173,10 @@ class Bucket(object):
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
+        response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
         if response.status/100 == 2:
-            response.read()
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
@@ -201,7 +201,6 @@ class Bucket(object):
             return k
         else:
             if response.status == 404:
-                response.read()
                 return None
             else:
                 raise self.connection.provider.storage_response_error(
