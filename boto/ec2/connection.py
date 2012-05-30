@@ -520,7 +520,7 @@ class EC2Connection(AWSQueryConnection):
                       private_ip_address=None,
                       placement_group=None, client_token=None,
                       security_group_ids=None,
-                      additional_info=None):
+                      additional_info=None, tenancy=None):
         """
         Runs an image on EC2.
 
@@ -546,7 +546,9 @@ class EC2Connection(AWSQueryConnection):
         :type instance_type: string
         :param instance_type: The type of instance to run:
 
+                              * t1.micro
                               * m1.small
+                              * m1.medium
                               * m1.large
                               * m1.xlarge
                               * c1.medium
@@ -555,7 +557,8 @@ class EC2Connection(AWSQueryConnection):
                               * m2.2xlarge
                               * m2.4xlarge
                               * cc1.4xlarge
-                              * t1.micro
+                              * cg1.4xlarge
+                              * cc2.8xlarge
 
         :type placement: string
         :param placement: The availability zone in which to launch the instances
@@ -611,17 +614,25 @@ class EC2Connection(AWSQueryConnection):
                              to ensure idempotency of the request.
                              Maximum 64 ASCII characters
 
+        :type security_group_ids: list of strings
+        :param security_group_ids: The ID of the VPC security groups with
+                                   which to associate instances
+
         :type additional_info: string
-        :param additional_info:  Specifies additional information to make
-            available to the instance(s)
+        :param additional_info: Specifies additional information to make
+                                available to the instance(s)
+
+        :type tenancy: string
+        :param tenancy: The tenancy of the instance you want to launch. An
+                        instance with a tenancy of 'dedicated' runs on
+                        single-tenant hardware and can only be launched into a
+                        VPC. Valid values are: "default" or "dedicated".
+                        NOTE: To use dedicated tenancy you MUST specify a VPC
+                        subnet-ID as well.
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
-
-        :type security_group_ids: list of strings
-        :param security_group_ids: The ID of the VPC security groups with
-                                   which to associate instances
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
@@ -654,6 +665,8 @@ class EC2Connection(AWSQueryConnection):
             params['Placement.AvailabilityZone'] = placement
         if placement_group:
             params['Placement.GroupName'] = placement_group
+        if tenancy:
+            params['Placement.Tenancy'] = tenancy
         if kernel_id:
             params['KernelId'] = kernel_id
         if ramdisk_id:
