@@ -16,13 +16,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 import xml.sax
-import urllib, base64
+import urllib
+import base64
 import time
 import boto.utils
 from boto.connection import AWSAuthConnection
@@ -32,19 +33,20 @@ from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError
 
+
 def check_lowercase_bucketname(n):
     """
     Bucket names must not contain uppercase characters. We check for
     this by appending a lowercase character and testing with islower().
     Note this also covers cases like numeric bucket names with dashes.
-        
+
     >>> check_lowercase_bucketname("Aaaa")
     Traceback (most recent call last):
     ...
     BotoClientError: S3Error: Bucket names cannot contain upper-case
     characters when using either the sub-domain or virtual hosting calling
     format.
-    
+
     >>> check_lowercase_bucketname("1234-5678-9123")
     True
     >>> check_lowercase_bucketname("abcdefg1234")
@@ -56,12 +58,14 @@ def check_lowercase_bucketname(n):
             "hosting calling format.")
     return True
 
+
 def assert_case_insensitive(f):
     def wrapper(*args, **kwargs):
         if len(args) == 3 and check_lowercase_bucketname(args[2]):
             pass
         return f(*args, **kwargs)
     return wrapper
+
 
 class _CallingFormat(object):
 
@@ -91,11 +95,13 @@ class _CallingFormat(object):
         key = boto.utils.get_utf8_value(key)
         return '/%s' % urllib.quote(key)
 
+
 class SubdomainCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
     def get_bucket_server(self, server, bucket):
         return '%s.%s' % (bucket, server)
+
 
 class VHostCallingFormat(_CallingFormat):
 
@@ -103,8 +109,9 @@ class VHostCallingFormat(_CallingFormat):
     def get_bucket_server(self, server, bucket):
         return bucket
 
+
 class OrdinaryCallingFormat(_CallingFormat):
-    
+
     def get_bucket_server(self, server, bucket):
         return server
 
@@ -115,22 +122,26 @@ class OrdinaryCallingFormat(_CallingFormat):
             path_base += "%s/" % bucket
         return path_base + urllib.quote(key)
 
+
 class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
-    
+
     def build_url_base(self, connection, protocol, server, bucket, key=''):
         url_base = '//'
         url_base += self.build_host(server, bucket)
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
 
+
 class Location:
-    DEFAULT = '' # US Classic Region
+
+    DEFAULT = ''  # US Classic Region
     EU = 'EU'
     USWest = 'us-west-1'
     USWest2 = 'us-west-2'
     SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
+
 
 class S3Connection(AWSAuthConnection):
 
@@ -172,7 +183,7 @@ class S3Connection(AWSAuthConnection):
         Set the Bucket class associated with this bucket.  By default, this
         would be the boto.s3.key.Bucket class but if you want to subclass that
         for some reason this allows you to associate your new class.
-        
+
         :type bucket_class: class
         :param bucket_class: A subclass of Bucket that can be more specific
         """
@@ -190,7 +201,6 @@ class S3Connection(AWSAuthConnection):
         return '{"expiration": "%s",\n"conditions": [%s]}' % \
             (time.strftime(boto.utils.ISO8601, expiration_time), ",".join(conditions))
 
-
     def build_post_form_args(self, bucket_name, key, expires_in = 6000,
                              acl = None, success_action_redirect = None,
                              max_content_length = None,
@@ -201,50 +211,50 @@ class S3Connection(AWSAuthConnection):
         This only returns the arguments required for the post form, not the
         actual form.  This does not return the file input field which also
         needs to be added
-        
-        :type bucket_name: string 
+
+        :type bucket_name: string
         :param bucket_name: Bucket to submit to
-        
+
         :type key: string
         :param key:  Key name, optionally add ${filename} to the end to
             attach the submitted filename
-        
+
         :type expires_in: integer
         :param expires_in: Time (in seconds) before this expires, defaults
             to 6000
-        
+
         :type acl: :class:`boto.s3.acl.ACL`
         :param acl: ACL rule to use, if any
-        
-        :type success_action_redirect: string 
+
+        :type success_action_redirect: string
         :param success_action_redirect: URL to redirect to on success
-        
-        :type max_content_length: integer 
+
+        :type max_content_length: integer
         :param max_content_length: Maximum size for this file
-        
+
         :type http_method: string
         :param http_method:  HTTP Method to use, "http" or "https"
-        
+
         :rtype: dict
         :return: A dictionary containing field names/values as well as
             a url to POST to
-        
+
             .. code-block:: python
-            
+
                 {
-                    "action": action_url_to_post_to, 
-                    "fields": [ 
+                    "action": action_url_to_post_to,
+                    "fields": [
                         {
-                            "name": field_name, 
+                            "name": field_name,
                             "value":  field_value
-                        }, 
+                        },
                         {
-                            "name": field_name2, 
+                            "name": field_name2,
                             "value": field_value2
-                        } 
-                    ] 
+                        }
+                    ]
                 }
-            
+
         """
         if fields == None:
             fields = []
@@ -289,7 +299,6 @@ class S3Connection(AWSAuthConnection):
                                                            bucket_name))
 
         return {"action": url, "fields": fields}
-
 
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
@@ -367,7 +376,7 @@ class S3Connection(AWSAuthConnection):
         :return: A string containing the canonical user id.
         """
         rs = self.get_all_buckets(headers=headers)
-        return rs.ID
+        return rs.owner.id
 
     def get_bucket(self, bucket_name, validate=True, headers=None):
         bucket = self.bucket_class(self, bucket_name)
@@ -390,17 +399,17 @@ class S3Connection(AWSAuthConnection):
 
         :type bucket_name: string
         :param bucket_name: The name of the new bucket
-        
+
         :type headers: dict
         :param headers: Additional headers to pass along with the request to AWS.
 
         :type location: :class:`boto.s3.connection.Location`
         :param location: The location of the new bucket
-        
+
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the
             new key in S3.
-             
+
         """
         check_lowercase_bucketname(bucket_name)
 
@@ -408,7 +417,7 @@ class S3Connection(AWSAuthConnection):
             if headers:
                 headers[self.provider.acl_header] = policy
             else:
-                headers = {self.provider.acl_header : policy}
+                headers = {self.provider.acl_header: policy}
         if location == Location.DEFAULT:
             data = ''
         else:
@@ -452,4 +461,3 @@ class S3Connection(AWSAuthConnection):
         return AWSAuthConnection.make_request(self, method, path, headers,
                 data, host, auth_path, sender,
                 override_num_retries=override_num_retries)
-
