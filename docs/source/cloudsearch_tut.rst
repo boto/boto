@@ -184,7 +184,7 @@ Now, we can add some documents to our new search domain.
 
     >>> doc_service = domain.get_document_service()
 
-    # Presumably get some users from your db of choice.
+    >>> # Presumably get some users from your db of choice.
     >>> users = [
         {
             'id': 1,
