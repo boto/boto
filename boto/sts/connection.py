@@ -30,6 +30,7 @@ import threading
 
 _session_token_cache = {}
 
+
 class STSConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
@@ -143,12 +144,10 @@ class STSConnection(AWSQueryConnection):
         :param policy: A JSON policy to associate with these credentials.
 
         """
-        params = {'Name' : name}
+        params = {'Name': name}
         if duration:
             params['DurationSeconds'] = duration
         if policy:
             params['Policy'] = policy
         return self.get_object('GetFederationToken', params,
                                 FederationToken, verb='POST')
-
-
