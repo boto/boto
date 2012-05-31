@@ -232,6 +232,9 @@ class ConnectionPool(object):
         # The last time the pool was cleaned.
         self.last_clean_time = 0.0
         self.mutex = threading.Lock()
+        ConnectionPool.STALE_DURATION = \
+            config.getfloat('Boto', 'connection_stale_duration',
+                            ConnectionPool.STALE_DURATION)
 
     def size(self):
         """
