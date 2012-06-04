@@ -60,10 +60,10 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-03-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2011-11-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
-                                            'ec2.us-east-1.amazonaws.com')
+                                            'ec2-shiraz.amazonaws.com')
     ResponseError = EC2ResponseError
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -1453,7 +1453,8 @@ class EC2Connection(AWSQueryConnection):
             params['AutoEnableIO.Value'] = new_value
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None):
+    def create_volume(self, size, zone, snapshot=None,
+                      type='standard', iops=None):
         """
         Create a new EBS Volume.
 
@@ -1464,17 +1465,29 @@ class EC2Connection(AWSQueryConnection):
         :param zone: The availability zone in which the Volume will be created.
 
         :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
-        :param snapshot: The snapshot from which the new Volume will be created.
+        :param snapshot: The snapshot from which the new Volume will be
+            created.
+
+        :type type: string
+        :param type: The type of volume.  Valid choices are: standard |
+            consistent-iops
+
+        :type iops: int
+        :param iops: If type is consistent-ops, the desired number of
+            IOPS must be specified (10-300).
         """
         if isinstance(zone, Zone):
             zone = zone.name
-        params = {'AvailabilityZone' : zone}
+        params = {'AvailabilityZone' : zone,
+                  'VolumeType': type}
         if size:
             params['Size'] = size
         if snapshot:
             if isinstance(snapshot, Snapshot):
                 snapshot = snapshot.id
             params['SnapshotId'] = snapshot
+        if type == 'consistent-iops':
+            params['Iops'] = iops
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id):

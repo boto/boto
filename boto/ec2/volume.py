@@ -26,6 +26,21 @@ Represents an EC2 Elastic Block Storage Volume
 from boto.ec2.ec2object import TaggedEC2Object
 
 class Volume(TaggedEC2Object):
+    """
+    Represents an EBS volume.
+
+    :ivar id: The unique ID of the volume.
+    :ivar create_time: The timestamp of when the volume was created.
+    :ivar status: The status of the volume.
+    :ivar size: The size (in GB) of the volume.
+    :ivar snapshot_id: The ID of the snapshot this volume was created
+        from, if applicable.
+    :ivar attach_data: An AttachmentSet object.
+    :ivar zone: The availability zone this volume is in.
+    :ivar type: The type of volume (standard or consistent-iops)
+    :ivar iops: If this volume is of type consistent-iops, this is
+        the number of IOPS provisioned (10-300).
+    """
     
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
@@ -36,6 +51,8 @@ class Volume(TaggedEC2Object):
         self.snapshot_id = None
         self.attach_data = None
         self.zone = None
+        self.type = None
+        self.iops = None
 
     def __repr__(self):
         return 'Volume:%s' % self.id
@@ -67,6 +84,10 @@ class Volume(TaggedEC2Object):
             self.snapshot_id = value
         elif name == 'availabilityZone':
             self.zone = value
+        elif name == 'volumeType':
+            self.type = value
+        elif name == 'iops':
+            self.iops = int(value)
         else:
             setattr(self, name, value)
 
