@@ -48,6 +48,7 @@ RegionData = {
     'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com'}
 
+
 def regions():
     """
     Get all available regions for the Auto Scaling service.
@@ -62,6 +63,7 @@ def regions():
                             connection_cls=AutoScaleConnection)
         regions.append(region)
     return regions
+
 
 def connect_to_region(region_name, **kw_params):
     """
@@ -79,17 +81,19 @@ def connect_to_region(region_name, **kw_params):
             return region.connect(**kw_params)
     return None
 
+
 class AutoScaleConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'autoscale_version', '2011-01-01')
     DefaultRegionEndpoint = boto.config.get('Boto', 'autoscale_endpoint',
                                             'autoscaling.amazonaws.com')
-    DefaultRegionName =  boto.config.get('Boto', 'autoscale_region_name',
-                                         'us-east-1')
+    DefaultRegionName = boto.config.get('Boto', 'autoscale_region_name',
+                                        'us-east-1')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None):
         """
         Init method to create a new connection to the AutoScaling service.
 
@@ -106,7 +110,8 @@ class AutoScaleConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path=path)
+                                    https_connection_factory, path=path,
+                                    security_token=security_token)
 
     def _required_auth_capability(self):
         return ['ec2']
@@ -129,7 +134,7 @@ class AutoScaleConnection(AWSQueryConnection):
             ['us-east-1b',...]
         """
         # different from EC2 list params
-        for i in xrange(1, len(items)+1):
+        for i in xrange(1, len(items) + 1):
             if isinstance(items[i-1], dict):
                 for k, v in items[i-1].iteritems():
                     if isinstance(v, dict):
@@ -333,7 +338,7 @@ class AutoScaleConnection(AWSQueryConnection):
         name = autoscale_group
         if isinstance(autoscale_group, AutoScalingGroup):
             name = autoscale_group.name
-        params = {'AutoScalingGroupName' : name}
+        params = {'AutoScalingGroupName': name}
         if max_records:
             params['MaxRecords'] = max_records
         if next_token:
@@ -488,12 +493,13 @@ class AutoScaleConnection(AWSQueryConnection):
         :param as_group: The auto scaling group to suspend processes on.
 
         :type scaling_processes: list
-        :param scaling_processes: Processes you want to suspend. If omitted, all
-            processes will be suspended.
+        :param scaling_processes: Processes you want to suspend. If omitted,
+            all processes will be suspended.
         """
         params = {'AutoScalingGroupName': as_group}
         if scaling_processes:
-            self.build_list_params(params, scaling_processes, 'ScalingProcesses')
+            self.build_list_params(params, scaling_processes,
+                                   'ScalingProcesses')
         return self.get_status('SuspendProcesses', params)
 
     def resume_processes(self, as_group, scaling_processes=None):
@@ -510,7 +516,8 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {'AutoScalingGroupName': as_group}
 
         if scaling_processes:
-            self.build_list_params(params, scaling_processes, 'ScalingProcesses')
+            self.build_list_params(params, scaling_processes,
+                                   'ScalingProcesses')
         return self.get_status('ResumeProcesses', params)
 
     def create_scheduled_group_action(self, as_group, name, time,
@@ -646,8 +653,10 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         Lists the Auto Scaling group tags.
 
-        This action supports pagination by returning a token if there are more
-        pages to retrieve. To get the next page, call this action again with             the returned token as the NextToken parameter.
+        This action supports pagination by returning a token if there
+        are more pages to retrieve. To get the next page, call this
+        action again with the returned token as the NextToken
+        parameter.
 
         :type filters: dict
         :param filters: The value of the filter type used to identify
@@ -691,5 +700,3 @@ class AutoScaleConnection(AWSQueryConnection):
         for i, tag in enumerate(tags):
             tag.build_params(params, i+1)
         return self.get_status('DeleteTags', params, verb='POST')
-
-    
