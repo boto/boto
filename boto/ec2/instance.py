@@ -1,5 +1,6 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -15,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -33,6 +34,7 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.group import Group
 import base64
 
+
 class Reservation(EC2Object):
     """
     Represents a Reservation response object.
@@ -44,7 +46,7 @@ class Reservation(EC2Object):
     :ivar instances: A list of Instance objects launched in this
                      Reservation.
     """
-    
+
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.id = None
@@ -76,7 +78,8 @@ class Reservation(EC2Object):
     def stop_all(self):
         for instance in self.instances:
             instance.stop()
-            
+
+
 class Instance(TaggedEC2Object):
     """
     Represents an instance.
@@ -115,8 +118,10 @@ class Instance(TaggedEC2Object):
     :ivar groups: List of security Groups associated with the instance.
     :ivar interfaces: List of Elastic Network Interfaces associated with
         this instance.
+    :ivar ebs_optimized: Whether instance is using optimized EBS volumes
+        or not.
     """
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -158,6 +163,7 @@ class Instance(TaggedEC2Object):
         self.hypervisor = None
         self.virtualization_type = None
         self.architecture = None
+        self.ebs_optimized = False
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -265,6 +271,12 @@ class Instance(TaggedEC2Object):
             self.virtualization_type = value
         elif name == 'architecture':
             self.architecture = value
+        elif name == 'ebsOptimized':
+            if value == 'true':
+                value = True
+            else:
+                value = False
+            self.ebs_optimized = value
         else:
             setattr(self, name, value)
 
@@ -307,7 +319,7 @@ class Instance(TaggedEC2Object):
 
         :type force: bool
         :param force: Forces the instance to stop
-        
+
         :rtype: list
         :return: A list of the instances stopped
         """
@@ -355,12 +367,20 @@ class Instance(TaggedEC2Object):
 
         :type attribute: string
         :param attribute: The attribute you need information about
-                          Valid choices are:
-                          instanceType|kernel|ramdisk|userData|
-                          disableApiTermination|
-                          instanceInitiatedShutdownBehavior|
-                          rootDeviceName|blockDeviceMapping
-                          sourceDestCheck|groupSet
+            Valid choices are:
+
+            * instanceType
+            * kernel
+            * ramdisk
+            * userData
+            * disableApiTermination
+            * instanceInitiatedShutdownBehavior
+            * rootDeviceName
+            * blockDeviceMapping
+            * productCodes
+            * sourceDestCheck
+            * groupSet
+            * ebsOptimized
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -375,16 +395,15 @@ class Instance(TaggedEC2Object):
         :type attribute: string
         :param attribute: The attribute you wish to change.
 
-                          * AttributeName - Expected value (default)
-                          * InstanceType - A valid instance type (m1.small)
-                          * Kernel - Kernel ID (None)
-                          * Ramdisk - Ramdisk ID (None)
-                          * UserData - Base64 encoded String (None)
-                          * DisableApiTermination - Boolean (true)
-                          * InstanceInitiatedShutdownBehavior - stop|terminate
-                          * RootDeviceName - device name (None)
-                          * SourceDestCheck - Boolean (true)
-                          * GroupSet - Set of Security Groups or IDs
+            * instanceType - A valid instance type (m1.small)
+            * kernel - Kernel ID (None)
+            * ramdisk - Ramdisk ID (None)
+            * userData - Base64 encoded String (None)
+            * disableApiTermination - Boolean (true)
+            * instanceInitiatedShutdownBehavior - stop|terminate
+            * sourceDestCheck - Boolean (true)
+            * groupSet - Set of Security Groups or IDs
+            * ebsOptimized - Boolean (false)
 
         :type value: string
         :param value: The new value for the attribute
@@ -408,6 +427,7 @@ class Instance(TaggedEC2Object):
         """
         return self.connection.reset_instance_attribute(self.id, attribute)
 
+
 class ConsoleOutput:
 
     def __init__(self, parent=None):
@@ -429,10 +449,12 @@ class ConsoleOutput:
         else:
             setattr(self, name, value)
 
+
 class InstanceAttribute(dict):
 
     ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
-                   'disableApiTermination', 'instanceInitiatedShutdownBehavior',
+                   'disableApiTermination',
+                   'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',
                    'groupSet']
 
@@ -458,9 +480,14 @@ class InstanceAttribute(dict):
         elif name == 'requestId':
             self.request_id = value
         elif name == 'value':
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
             self._current_value = value
         elif name in self.ValidValues:
             self[name] = self._current_value
+
 
 class SubParse(dict):
 
@@ -474,4 +501,3 @@ class SubParse(dict):
     def endElement(self, name, value, connection):
         if name != self.section:
             self[name] = value
-            
