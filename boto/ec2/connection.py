@@ -1710,10 +1710,9 @@ class EC2Connection(AWSQueryConnection):
             if temp.__contains__(t) == False:
                 temp.append(t)
 
-        target_backup_times = temp
-        # make the oldeest dates first, and make sure the month start
+        # sort to make the oldest dates first, and make sure the month start
         # and last four week's start are in the proper order
-        target_backup_times.sort()
+        target_backup_times = sorted(temp)
 
         # get all the snapshots, sort them by date and time, and
         # organize them into one array for each volume:
@@ -2799,8 +2798,7 @@ class EC2Connection(AWSQueryConnection):
     # Tag methods
 
     def build_tag_param_list(self, params, tags):
-        keys = tags.keys()
-        keys.sort()
+        keys = sorted(tags.keys())
         i = 1
         for key in keys:
             value = tags[key]

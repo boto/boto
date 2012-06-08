@@ -215,11 +215,10 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = ['%s:%s'%(n.lower().strip(),
-                      headers_to_sign[n].strip()) for n in headers_to_sign]
-        l.sort()
+        l = sorted(['%s:%s'%(n.lower().strip(),
+                    headers_to_sign[n].strip()) for n in headers_to_sign])
         return '\n'.join(l)
-        
+
     def string_to_sign(self, http_request):
         """
         Return the canonical StringToSign as well as a dict
@@ -349,8 +348,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
             params['SignatureMethod'] = 'HmacSHA1'
         if self._provider.security_token:
             params['SecurityToken'] = self._provider.security_token
-        keys = params.keys()
-        keys.sort()
+        keys = sorted(params.keys())
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])

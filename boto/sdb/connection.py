@@ -139,8 +139,7 @@ class SDBConnection(AWSQueryConnection):
 
     def _build_name_value_list(self, params, attributes, replace=False,
                               label='Attribute'):
-        keys = attributes.keys()
-        keys.sort()
+        keys = sorted(attributes.keys())
         i = 1
         for key in keys:
             value = attributes[key]
