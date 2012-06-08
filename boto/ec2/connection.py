@@ -2196,7 +2196,7 @@ class EC2Connection(AWSQueryConnection):
         if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            if type(cidr_ip) != list:
+            if not isinstance(cidr_ip, list):
                 cidr_ip = [cidr_ip]
             for i, single_cidr_ip in enumerate(cidr_ip):
                 params['IpPermissions.1.IpRanges.%d.CidrIp' % (i+1)] = \

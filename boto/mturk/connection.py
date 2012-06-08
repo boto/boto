@@ -116,7 +116,7 @@ class MTurkConnection(AWSQueryConnection):
         Common SetHITTypeNotification operation to set notification for a
         specified HIT type
         """
-        assert type(hit_type) is str, "hit_type argument should be a string."
+        assert isinstance(hit_type, str), "hit_type argument should be a string."
         
         params = {'HITTypeId': hit_type}
         
@@ -752,11 +752,11 @@ class MTurkConnection(AWSQueryConnection):
         Returns a comma+space-separated string of keywords from either
         a list or a string
         """
-        if type(keywords) is list:
+        if isinstance(keywords, list):
             keywords = ', '.join(keywords)
-        if type(keywords) is str:
+        if isinstance(keywords, str):
             final_keywords = keywords
-        elif type(keywords) is unicode:
+        elif isinstance(keywords, unicode):
             final_keywords = keywords.encode('utf-8')
         elif keywords is None:
             final_keywords = ""

@@ -540,7 +540,7 @@ class _ReverseReferenceProperty(Property):
         """Fetches collection of model instances of this collection property."""
         if model_instance is not None:
             query = Query(self.__model)
-            if type(self.__property) == list:
+            if isinstance(self.__property, list):
                 props = []
                 for prop in self.__property:
                     props.append("%s =" % prop)

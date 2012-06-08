@@ -379,7 +379,7 @@ class SelectionAnswer(object):
         if self.other:
             # add OtherSelection element as xml if available
             if hasattr(self.other, 'get_as_xml'):
-                assert type(self.other) == FreeTextAnswer, 'OtherSelection can only be a FreeTextAnswer'
+                assert isinstance(self.other, FreeTextAnswer), 'OtherSelection can only be a FreeTextAnswer'
                 selections_xml += self.other.get_as_xml().replace('FreeTextAnswer', 'OtherSelection')
             else:
                 selections_xml += "<OtherSelection />"

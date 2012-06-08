@@ -581,7 +581,7 @@ class SDBManager(object):
         for filter in filters:
             filter_parts = []
             filter_props = filter[0]
-            if type(filter_props) != list:
+            if not isinstance(filter_props, list):
                 filter_props = [filter_props]
             for filter_prop in filter_props:
                 (name, op) = filter_prop.strip().split(" ", 1)
@@ -672,7 +672,7 @@ class SDBManager(object):
         if expected_value:
             prop = obj.find_property(expected_value[0])
             v = expected_value[1]
-            if v is not None and not type(v) == bool:
+            if v is not None and not isinstance(v, bool):
                 v = self.encode_value(prop, v)
             expected_value[1] = v
         self.domain.put_attributes(obj.id, attrs, replace=True, expected_value=expected_value)
