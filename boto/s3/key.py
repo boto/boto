@@ -684,9 +684,9 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
-        if headers.has_key('Content-Encoding'):
+        if 'Content-Encoding' in headers:
             self.content_encoding = headers['Content-Encoding']
-        if headers.has_key('Content-Type'):
+        if 'Content-Type' in headers:
             # Some use cases need to suppress sending of the Content-Type 
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type'] 
@@ -1223,7 +1223,7 @@ class Key(object):
             cb(data_len, cb_size)
         if m:
             self.md5 = m.hexdigest()
-        if self.size is None and not torrent and not headers.has_key("Range"):
+        if self.size is None and not torrent and "Range" not in headers:
             self.size = data_len
         self.close()
         self.bucket.connection.debug = save_debug

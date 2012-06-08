@@ -495,7 +495,7 @@ class XMLManager(object):
 
     def get_key_value(self, obj, name):
         a = self.domain.get_attributes(obj.id, name)
-        if a.has_key(name):
+        if name in a:
             return a[name]
         else:
             return None
