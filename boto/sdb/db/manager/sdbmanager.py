@@ -49,15 +49,15 @@ class SDBConverter(object):
     """
     def __init__(self, manager):
         self.manager = manager
-        self.type_map = { bool : (self.encode_bool, self.decode_bool),
-                          int : (self.encode_int, self.decode_int),
-                          long : (self.encode_long, self.decode_long),
-                          float : (self.encode_float, self.decode_float),
-                          Model : (self.encode_reference, self.decode_reference),
-                          Key : (self.encode_reference, self.decode_reference),
-                          datetime : (self.encode_datetime, self.decode_datetime),
-                          date : (self.encode_date, self.decode_date),
-                          time : (self.encode_time, self.decode_time),
+        self.type_map = { bool: (self.encode_bool, self.decode_bool),
+                          int: (self.encode_int, self.decode_int),
+                          long: (self.encode_long, self.decode_long),
+                          float: (self.encode_float, self.decode_float),
+                          Model: (self.encode_reference, self.decode_reference),
+                          Key: (self.encode_reference, self.decode_reference),
+                          datetime: (self.encode_datetime, self.decode_datetime),
+                          date: (self.encode_date, self.decode_date),
+                          time: (self.encode_time, self.decode_time),
                           Blob: (self.encode_blob, self.decode_blob),
                           str: (self.encode_string, self.decode_string),
                       }
@@ -92,7 +92,7 @@ class SDBConverter(object):
         # We support lists up to 1,000 attributes, since
         # SDB technically only supports 1024 attributes anyway
         values = {}
-        for k,v in enumerate(value):
+        for k, v in enumerate(value):
             values["%03d" % k] = v
         return self.encode_map(prop, values)
 
@@ -128,7 +128,7 @@ class SDBConverter(object):
             dec_val = {}
             for val in value:
                 if val != None:
-                    k,v = self.decode_map_element(item_type, val)
+                    k, v = self.decode_map_element(item_type, val)
                     try:
                         k = int(k)
                     except:
@@ -143,7 +143,7 @@ class SDBConverter(object):
         ret_value = {}
         item_type = getattr(prop, "item_type")
         for val in value:
-            k,v = self.decode_map_element(item_type, val)
+            k, v = self.decode_map_element(item_type, val)
             ret_value[k] = v
         return ret_value
 
@@ -152,7 +152,7 @@ class SDBConverter(object):
         import urllib
         key = value
         if ":" in value:
-            key, value = value.split(':',1)
+            key, value = value.split(':', 1)
             key = urllib.unquote(key)
         if Model in item_type.mro():
             value = item_type(id=value)
@@ -470,7 +470,7 @@ class SDBManager(object):
             
     def load_object(self, obj):
         if not obj._loaded:
-            a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
+            a = self.domain.get_attributes(obj.id, consistent_read=self.consistent)
             if a.has_key('__type__'):
                 for prop in obj.properties(hidden=False):
                     if a.has_key(prop.name):
@@ -485,7 +485,7 @@ class SDBManager(object):
     def get_object(self, cls, id, a=None):
         obj = None
         if not a:
-            a = self.domain.get_attributes(id,consistent_read=self.consistent)
+            a = self.domain.get_attributes(id, consistent_read=self.consistent)
         if a.has_key('__type__'):
             if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
@@ -534,7 +534,7 @@ class SDBManager(object):
         if name != "itemName()":
             name = '`%s`' % name
         if val == None:
-            if op in ('is','='):
+            if op in ('is', '='):
                 return "%(name)s is null" % {"name": name}
             elif op in ('is not', '!='):
                 return "%s is not null" % name
@@ -698,7 +698,7 @@ class SDBManager(object):
         self.domain.put_attributes(obj.id, {name : value}, replace=True)
 
     def get_property(self, prop, obj, name):
-        a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
+        a = self.domain.get_attributes(obj.id, consistent_read=self.consistent)
 
         # try to get the attribute value from SDB
         if name in a:
@@ -715,7 +715,7 @@ class SDBManager(object):
         self.domain.delete_attributes(obj.id, name)
 
     def get_key_value(self, obj, name):
-        a = self.domain.get_attributes(obj.id, name,consistent_read=self.consistent)
+        a = self.domain.get_attributes(obj.id, name, consistent_read=self.consistent)
         if a.has_key(name):
             return a[name]
         else:

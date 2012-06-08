@@ -28,23 +28,23 @@ log = logging.getLogger(__file__)
 class TestPassword(unittest.TestCase):
     """Test basic password functionality"""
     
-    def clstest(self,cls):
+    def clstest(self, cls):
 
         """Insure that password.__eq__ hashes test value before compare"""
 
         password=cls('foo')
         log.debug( "Password %s" % password )
-        self.assertNotEquals(password , 'foo')
+        self.assertNotEquals(password, 'foo')
 
         password.set('foo')
         hashed = str(password)
-        self.assertEquals(password , 'foo')
+        self.assertEquals(password, 'foo')
         self.assertEquals(password.str, hashed)
 
         password = cls(hashed)
-        self.assertNotEquals(password.str , 'foo')
-        self.assertEquals(password , 'foo')
-        self.assertEquals(password.str , hashed)
+        self.assertNotEquals(password.str, 'foo')
+        self.assertEquals(password, 'foo')
+        self.assertEquals(password.str, hashed)
 
  
     def test_aaa_version_1_9_default_behavior(self):
@@ -67,7 +67,7 @@ class TestPassword(unittest.TestCase):
         from boto.utils import Password
         import hmac
 
-        def hmac_hashfunc(cls,msg):
+        def hmac_hashfunc(cls, msg):
             log.debug("\n%s %s" % (cls.__class__, cls) )
             return hmac.new('mysecretkey', msg)
 
@@ -78,7 +78,7 @@ class TestPassword(unittest.TestCase):
         password=HMACPassword()
         password.set('foo')
   
-        self.assertEquals(str(password), hmac.new('mysecretkey','foo').hexdigest())
+        self.assertEquals(str(password), hmac.new('mysecretkey', 'foo').hexdigest())
 
     def test_constructor(self):
         from boto.utils import Password
@@ -88,7 +88,7 @@ class TestPassword(unittest.TestCase):
 
         password = Password(hashfunc=hmac_hashfunc)
         password.set('foo')
-        self.assertEquals(password.str, hmac.new('mysecretkey','foo').hexdigest())
+        self.assertEquals(password.str, hmac.new('mysecretkey', 'foo').hexdigest())
 
         
        

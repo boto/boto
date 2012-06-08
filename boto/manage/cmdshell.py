@@ -54,7 +54,7 @@ class SSHClient(object):
                                          username=self.uname,
                                          pkey=self._pkey)
                 return
-            except socket.error, (value,message):
+            except socket.error, (value, message):
                 if value == 61 or value == 111:
                     print 'SSH Connection refused, will retry in 5 seconds'
                     time.sleep(5)
