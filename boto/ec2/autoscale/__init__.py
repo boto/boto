@@ -218,6 +218,8 @@ class AutoScaleConnection(AWSQueryConnection):
             params['InstanceMonitoring.Enabled'] = 'true'
         else:
             params['InstanceMonitoring.Enabled'] = 'false'
+        if launch_config.spot_price is not None:
+            params['SpotPrice'] = str(launch_config.spot_price)
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
