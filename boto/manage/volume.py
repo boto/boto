@@ -219,7 +219,7 @@ class Volume(Model):
 
     def checkfs(self, use_cmd=None):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         # detemine state of file system on volume, only works if attached
         if use_cmd:
             cmd = use_cmd
@@ -234,7 +234,7 @@ class Volume(Model):
 
     def wait(self):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         with closing(self.server.get_cmdshell()) as cmd:
             # wait for the volume device to appear
             cmd = self.server.get_cmdshell()
@@ -244,7 +244,7 @@ class Volume(Model):
 
     def format(self):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         status = None
         with closing(self.server.get_cmdshell()) as cmd:
             if not self.checkfs(cmd):
@@ -254,7 +254,7 @@ class Volume(Model):
 
     def mount(self):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         boto.log.info('handle_mount_point')
         with closing(self.server.get_cmdshell()) as cmd:
             cmd = self.server.get_cmdshell()
