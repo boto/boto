@@ -164,7 +164,7 @@ class Bucket(object):
         if version_id:
             query_args.append('versionId=%s' % version_id)
         if response_headers:
-            for rk,rv in response_headers.iteritems():
+            for rk, rv in response_headers.iteritems():
                 query_args.append('%s=%s' % (rk, urllib.quote(rv)))
         if query_args:
             query_args = '&'.join(query_args)

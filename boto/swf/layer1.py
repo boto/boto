@@ -62,7 +62,7 @@ class Layer1(AWSAuthConnection):
         'com.amazonaws.swf.base.model#OperationNotPermittedFault':
             swf_exceptions.SWFOperationNotPermittedError,
         'com.amazonaws.swf.base.model#TypeAlreadyExistsFault':
-            swf_exceptions.SWFTypeAlreadyExistsError ,
+            swf_exceptions.SWFTypeAlreadyExistsError,
     }
 
     ResponseError = SWFResponseError

@@ -65,93 +65,93 @@ STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 class Provider(object):
 
     CredentialMap = {
-        'aws' : ('aws_access_key_id', 'aws_secret_access_key'),
-        'google' : ('gs_access_key_id', 'gs_secret_access_key'),
+        'aws':    ('aws_access_key_id', 'aws_secret_access_key'),
+        'google': ('gs_access_key_id',  'gs_secret_access_key'),
     }
 
     AclClassMap = {
-        'aws' : Policy,
-        'google' : ACL
+        'aws':    Policy,
+        'google': ACL
     }
 
     CannedAclsMap = {
-        'aws' : CannedS3ACLStrings,
-        'google' : CannedGSACLStrings
+        'aws':    CannedS3ACLStrings,
+        'google': CannedGSACLStrings
     }
 
     HostKeyMap = {
-        'aws' : 's3',
-        'google' : 'gs'
+        'aws':    's3',
+        'google': 'gs'
     }
 
     ChunkedTransferSupport = {
-        'aws' : False,
-        'google' : True
+        'aws':    False,
+        'google': True
     }
 
     # If you update this map please make sure to put "None" for the
     # right-hand-side for any headers that don't apply to a provider, rather
     # than simply leaving that header out (which would cause KeyErrors).
     HeaderInfoMap = {
-        'aws' : {
-            HEADER_PREFIX_KEY : AWS_HEADER_PREFIX,
-            METADATA_PREFIX_KEY : AWS_HEADER_PREFIX + 'meta-',
-            ACL_HEADER_KEY : AWS_HEADER_PREFIX + 'acl',
-            AUTH_HEADER_KEY : 'AWS',
-            COPY_SOURCE_HEADER_KEY : AWS_HEADER_PREFIX + 'copy-source',
-            COPY_SOURCE_VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX +
+        'aws': {
+            HEADER_PREFIX_KEY: AWS_HEADER_PREFIX,
+            METADATA_PREFIX_KEY: AWS_HEADER_PREFIX + 'meta-',
+            ACL_HEADER_KEY: AWS_HEADER_PREFIX + 'acl',
+            AUTH_HEADER_KEY: 'AWS',
+            COPY_SOURCE_HEADER_KEY: AWS_HEADER_PREFIX + 'copy-source',
+            COPY_SOURCE_VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX +
                                                 'copy-source-version-id',
-            COPY_SOURCE_RANGE_HEADER_KEY : AWS_HEADER_PREFIX +
+            COPY_SOURCE_RANGE_HEADER_KEY: AWS_HEADER_PREFIX +
                                            'copy-source-range',
-            DATE_HEADER_KEY : AWS_HEADER_PREFIX + 'date',
-            DELETE_MARKER_HEADER_KEY : AWS_HEADER_PREFIX + 'delete-marker',
-            METADATA_DIRECTIVE_HEADER_KEY : AWS_HEADER_PREFIX +
+            DATE_HEADER_KEY: AWS_HEADER_PREFIX + 'date',
+            DELETE_MARKER_HEADER_KEY: AWS_HEADER_PREFIX + 'delete-marker',
+            METADATA_DIRECTIVE_HEADER_KEY: AWS_HEADER_PREFIX +
                                             'metadata-directive',
-            RESUMABLE_UPLOAD_HEADER_KEY : None,
-            SECURITY_TOKEN_HEADER_KEY : AWS_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY : AWS_HEADER_PREFIX + 'server-side-encryption',
-            VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX + 'version-id',
-            STORAGE_CLASS_HEADER_KEY : AWS_HEADER_PREFIX + 'storage-class',
-            MFA_HEADER_KEY : AWS_HEADER_PREFIX + 'mfa',
+            RESUMABLE_UPLOAD_HEADER_KEY: None,
+            SECURITY_TOKEN_HEADER_KEY: AWS_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX + 'server-side-encryption',
+            VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
+            STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
+            MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
         },
-        'google' : {
-            HEADER_PREFIX_KEY : GOOG_HEADER_PREFIX,
-            METADATA_PREFIX_KEY : GOOG_HEADER_PREFIX + 'meta-',
-            ACL_HEADER_KEY : GOOG_HEADER_PREFIX + 'acl',
-            AUTH_HEADER_KEY : 'GOOG1',
-            COPY_SOURCE_HEADER_KEY : GOOG_HEADER_PREFIX + 'copy-source',
-            COPY_SOURCE_VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX +
+        'google': {
+            HEADER_PREFIX_KEY: GOOG_HEADER_PREFIX,
+            METADATA_PREFIX_KEY: GOOG_HEADER_PREFIX + 'meta-',
+            ACL_HEADER_KEY: GOOG_HEADER_PREFIX + 'acl',
+            AUTH_HEADER_KEY: 'GOOG1',
+            COPY_SOURCE_HEADER_KEY: GOOG_HEADER_PREFIX + 'copy-source',
+            COPY_SOURCE_VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX +
                                                 'copy-source-version-id',
-            COPY_SOURCE_RANGE_HEADER_KEY : None,
-            DATE_HEADER_KEY : GOOG_HEADER_PREFIX + 'date',
-            DELETE_MARKER_HEADER_KEY : GOOG_HEADER_PREFIX + 'delete-marker',
-            METADATA_DIRECTIVE_HEADER_KEY : GOOG_HEADER_PREFIX  +
+            COPY_SOURCE_RANGE_HEADER_KEY: None,
+            DATE_HEADER_KEY: GOOG_HEADER_PREFIX + 'date',
+            DELETE_MARKER_HEADER_KEY: GOOG_HEADER_PREFIX + 'delete-marker',
+            METADATA_DIRECTIVE_HEADER_KEY: GOOG_HEADER_PREFIX  +
                                             'metadata-directive',
-            RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
-            SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY : None,
+            RESUMABLE_UPLOAD_HEADER_KEY: GOOG_HEADER_PREFIX + 'resumable',
+            SECURITY_TOKEN_HEADER_KEY: GOOG_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY: None,
             # Note that this version header is not to be confused with
             # the Google Cloud Storage 'x-goog-api-version' header.
-            VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',
-            STORAGE_CLASS_HEADER_KEY : None,
-            MFA_HEADER_KEY : None,
+            VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX + 'version-id',
+            STORAGE_CLASS_HEADER_KEY: None,
+            MFA_HEADER_KEY: None,
         }
     }
 
     ErrorMap = {
-        'aws' : {
-            STORAGE_COPY_ERROR : boto.exception.S3CopyError,
-            STORAGE_CREATE_ERROR : boto.exception.S3CreateError,
-            STORAGE_DATA_ERROR : boto.exception.S3DataError,
-            STORAGE_PERMISSIONS_ERROR : boto.exception.S3PermissionsError,
-            STORAGE_RESPONSE_ERROR : boto.exception.S3ResponseError,
+        'aws': {
+            STORAGE_COPY_ERROR: boto.exception.S3CopyError,
+            STORAGE_CREATE_ERROR: boto.exception.S3CreateError,
+            STORAGE_DATA_ERROR: boto.exception.S3DataError,
+            STORAGE_PERMISSIONS_ERROR: boto.exception.S3PermissionsError,
+            STORAGE_RESPONSE_ERROR: boto.exception.S3ResponseError,
         },
-        'google' : {
-            STORAGE_COPY_ERROR : boto.exception.GSCopyError,
-            STORAGE_CREATE_ERROR : boto.exception.GSCreateError,
-            STORAGE_DATA_ERROR : boto.exception.GSDataError,
-            STORAGE_PERMISSIONS_ERROR : boto.exception.GSPermissionsError,
-            STORAGE_RESPONSE_ERROR : boto.exception.GSResponseError,
+        'google': {
+            STORAGE_COPY_ERROR: boto.exception.GSCopyError,
+            STORAGE_CREATE_ERROR: boto.exception.GSCreateError,
+            STORAGE_DATA_ERROR: boto.exception.GSDataError,
+            STORAGE_PERMISSIONS_ERROR: boto.exception.GSPermissionsError,
+            STORAGE_RESPONSE_ERROR: boto.exception.GSResponseError,
         }
     }
 
