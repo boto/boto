@@ -291,7 +291,7 @@ class SNSConnection(AWSQueryConnection):
         Subscribe an SQS queue to a topic.
 
         This is convenience method that handles most of the complexity involved
-        in using ans SQS queue as an endpoint for an SNS topic.  To achieve this
+        in using an SQS queue as an endpoint for an SNS topic.  To achieve this
         the following operations are performed:
         
         * The correct ARN is constructed for the SQS queue and that ARN is
