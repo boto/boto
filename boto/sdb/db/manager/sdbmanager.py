@@ -471,9 +471,9 @@ class SDBManager(object):
     def load_object(self, obj):
         if not obj._loaded:
             a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
-            if a.has_key('__type__'):
+            if '__type__' in a:
                 for prop in obj.properties(hidden=False):
-                    if a.has_key(prop.name):
+                    if prop.name in a:
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         try:
@@ -486,13 +486,13 @@ class SDBManager(object):
         obj = None
         if not a:
             a = self.domain.get_attributes(id,consistent_read=self.consistent)
-        if a.has_key('__type__'):
+        if '__type__' in a:
             if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
             if cls:
                 params = {}
                 for prop in cls.properties(hidden=False):
-                    if a.has_key(prop.name):
+                    if prop.name in a:
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         params[prop.name] = value
@@ -716,7 +716,7 @@ class SDBManager(object):
 
     def get_key_value(self, obj, name):
         a = self.domain.get_attributes(obj.id, name,consistent_read=self.consistent)
-        if a.has_key(name):
+        if name in a:
             return a[name]
         else:
             return None

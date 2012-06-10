@@ -180,11 +180,11 @@ class Sequence(object):
         """Get the value"""
         val = self.db.get_attributes(self.id, consistent_read=True)
         if val:
-            if val.has_key('timestamp'):
+            if 'timestamp' in val:
                 self.timestamp = val['timestamp']
-            if val.has_key('current_value'):
+            if 'current_value' in val:
                 self._value = self.item_type(val['current_value'])
-            if val.has_key("last_value") and val['last_value'] != None:
+            if "last_value" in val and val['last_value'] != None:
                 self.last_value = self.item_type(val['last_value'])
         return self._value
 

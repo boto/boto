@@ -176,14 +176,14 @@ class Provider(object):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
             self.access_key = access_key
-        elif os.environ.has_key(access_key_name.upper()):
+        elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
 
         if secret_key is not None:
             self.secret_key = secret_key
-        elif os.environ.has_key(secret_key_name.upper()):
+        elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)

@@ -361,8 +361,8 @@ class HTTPRequest(object):
         self.headers['User-Agent'] = UserAgent
         # I'm not sure if this is still needed, now that add_auth is
         # setting the content-length for POST requests.
-        if not self.headers.has_key('Content-Length'):
-            if not self.headers.has_key('Transfer-Encoding') or \
+        if 'Content-Length' not in self.headers:
+            if 'Transfer-Encoding' not in self.headers or \
                     self.headers['Transfer-Encoding'] != 'chunked':
                 self.headers['Content-Length'] = str(len(self.body))
 
@@ -566,7 +566,7 @@ class AWSAuthConnection(object):
         self.proxy_port = proxy_port
         self.proxy_user = proxy_user
         self.proxy_pass = proxy_pass
-        if os.environ.has_key('http_proxy') and not self.proxy:
+        if 'http_proxy' in os.environ and not self.proxy:
             pattern = re.compile(
                 '(?:http://)?' \
                 '(?:(?P<user>\w+):(?P<pass>.*)@)?' \
