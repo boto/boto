@@ -162,7 +162,7 @@ def boolean_arguments(*fields):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            for field in filter(lambda x: type(kw.get(x)) is bool, fields):
+            for field in filter(lambda x: isinstance(kw.get(x), bool), fields):
                 kw[field] = str(kw[field]).lower()
             return func(*args, **kw)
         wrapper.__doc__ = "{}\nBooleans: {}".format(func.__doc__,

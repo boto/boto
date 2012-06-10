@@ -183,7 +183,7 @@ class SecurityGroup(TaggedEC2Object):
                                                           group_id,
                                                           src_group_group_id)
         if status:
-            if type(cidr_ip) != list:
+            if not isinstance(cidr_ip, list):
                 cidr_ip = [cidr_ip]
             for single_cidr_ip in cidr_ip:
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
