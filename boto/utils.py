@@ -112,8 +112,7 @@ def canonical_string(method, path, headers, expires=None,
     if expires:
         interesting_headers['date'] = str(expires)
 
-    sorted_header_keys = interesting_headers.keys()
-    sorted_header_keys.sort()
+    sorted_header_keys = sorted(interesting_headers.keys())
 
     buf = "%s\n" % method
     for key in sorted_header_keys:

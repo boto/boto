@@ -57,8 +57,7 @@ class ResultProcessor:
             self.latest_time = end_time
 
     def log_message(self, msg, path):
-        keys = msg.keys()
-        keys.sort()
+        keys = sorted(msg.keys())
         if not self.log_fp:
             self.log_fp = open(os.path.join(path, self.LogFileName), 'a')
             line = ','.join(keys)

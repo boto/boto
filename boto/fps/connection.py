@@ -213,8 +213,7 @@ class FPSConnection(AWSQueryConnection):
 
         safestr = lambda x: x is not None and str(x) or ''
         safequote = lambda x: urllib.quote(safestr(x), safe='~')
-        payload = [(k, safequote(v)) for k, v in kw.items()]
-        payload.sort()
+        payload = sorted([(k, safequote(v)) for k, v in kw.items()])
 
         encoded = lambda p: '&'.join([k + '=' + v for k, v in p])
         canonical = '\n'.join(['GET', endpoint, base, encoded(payload)])

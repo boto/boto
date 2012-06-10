@@ -66,8 +66,7 @@ class TestLists(object):
         item.save()
         time.sleep(3)
         t = SimpleListModel.get_by_id(t.id)
-        i1 = item['strs']
-        i1.sort()
+        i1 = sorted(item['strs'])
         i2 = t.strs
         i2.sort()
         assert(i1 == i2)
