@@ -153,7 +153,7 @@ def test_list():
     t = TestList()
     _objects['test_list_t'] = t
     t.name = 'a list of ints'
-    t.nums = [1,2,3,4,5]
+    t.nums = [1, 2, 3, 4, 5]
     t.put()
     tt = TestList.get_by_id(t.id)
     _objects['test_list_tt'] = tt

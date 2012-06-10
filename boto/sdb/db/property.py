@@ -488,7 +488,7 @@ class ReferenceProperty(Property):
         This causes bad things to happen"""
         if value != None and (obj.id == value or (hasattr(value, "id") and obj.id == value.id)):
             raise ValueError, "Can not associate an object with itself!"
-        return super(ReferenceProperty, self).__set__(obj,value)
+        return super(ReferenceProperty, self).__set__(obj, value)
 
     def __property_config__(self, model_class, property_name):
         Property.__property_config__(self, model_class, property_name)
@@ -643,7 +643,7 @@ class ListProperty(Property):
             value = [value]
         elif value == None: # Override to allow them to set this to "None" to remove everything
             value = []
-        return super(ListProperty, self).__set__(obj,value)
+        return super(ListProperty, self).__set__(obj, value)
 
 
 class MapProperty(Property):

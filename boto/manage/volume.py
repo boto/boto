@@ -194,7 +194,7 @@ class Volume(Model):
                     snapshot.date = boto.utils.parse_ts(snapshot.start_time)
                     snapshot.keep = True
                     snaps.append(snapshot)
-        snaps.sort(cmp=lambda x,y: cmp(x.date, y.date))
+        snaps.sort(cmp=lambda x, y: cmp(x.date, y.date))
         return snaps
 
     def attach(self, server=None):
@@ -376,7 +376,7 @@ class Volume(Model):
             for snap in partial_week[1:]:
                 snap.keep = False
         # Keep the first snapshot of each week for the previous 4 weeks
-        for i in range(0,4):
+        for i in range(0, 4):
             weeks_worth = self.get_snapshot_range(snaps, week_boundary-one_week, week_boundary)
             if len(weeks_worth) > 1:
                 for snap in weeks_worth[1:]:

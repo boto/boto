@@ -230,7 +230,7 @@ class AWSQueryRequest(object):
                 self.request_params['Filter.%d.Name' % (i+1)] = name
                 for j, value in enumerate(boto.utils.mklist(filters[name])):
                     Encoder.encode(filter, self.request_params, value,
-                                   'Filter.%d.Value.%d' % (i+1,j+1))
+                                   'Filter.%d.Value.%d' % (i+1, j+1))
 
     def process_args(self, **args):
         """

@@ -56,10 +56,10 @@ class MetricAlarm(object):
     INSUFFICIENT_DATA = 'INSUFFICIENT_DATA'
 
     _cmp_map = {
-                    '>='    :   'GreaterThanOrEqualToThreshold',
-                    '>'     :   'GreaterThanThreshold',
-                    '<'     :   'LessThanThreshold',
-                    '<='    :   'LessThanOrEqualToThreshold',
+                    '>=': 'GreaterThanOrEqualToThreshold',
+                    '>':  'GreaterThanThreshold',
+                    '<':  'LessThanThreshold',
+                    '<=': 'LessThanOrEqualToThreshold',
                }
     _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.iteritems())
 

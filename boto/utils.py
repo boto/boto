@@ -132,7 +132,7 @@ def canonical_string(method, path, headers, expires=None,
         qsa = [ a.split('=', 1) for a in qsa]
         qsa = [ unquote_v(a) for a in qsa if a[0] in qsa_of_interest ]
         if len(qsa) > 0:
-            qsa.sort(cmp=lambda x,y:cmp(x[0], y[0]))
+            qsa.sort(cmp=lambda x, y:cmp(x[0], y[0]))
             qsa = [ '='.join(a) for a in qsa ]
             buf += '?'
             buf += '&'.join(qsa)
@@ -224,7 +224,7 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254'):
 
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
-    ud_url = '%s/%s/user-data' % (url,version)
+    ud_url = '%s/%s/user-data' % (url, version)
     user_data = retry_url(ud_url, retry_on_404=False)
     if user_data:
         if sep:
@@ -650,7 +650,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     :rtype: str:
     """
     wrapper = MIMEMultipart()
-    for name,con in content:
+    for name, con in content:
         definite_type = guess_mime_type(con, deftype)
         maintype, subtype = definite_type.split('/', 1)
         if maintype == 'text':
@@ -696,7 +696,7 @@ def guess_mime_type(content, deftype):
         '#cloud-boothook' : 'text/cloud-boothook'
     }
     rtype = deftype
-    for possible_type,mimetype in starts_with_mappings.items():
+    for possible_type, mimetype in starts_with_mappings.items():
         if content.startswith(possible_type):
             rtype = mimetype
             break

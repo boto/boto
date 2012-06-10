@@ -274,7 +274,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item3['FalseBoolean'] = False
 
         # Test some set values
-        integer_set = set([1,2,3,4,5])
+        integer_set = set([1, 2, 3, 4, 5])
         float_set = set([1.1, 2.2, 3.3, 4.4, 5.5])
         mixed_set = set([1, 2, 3.3, 4, 5.555])
         str_set = set(['foo', 'bar', 'fie', 'baz'])
