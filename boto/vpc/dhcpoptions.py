@@ -38,7 +38,7 @@ class DhcpConfigSet(dict):
 
     def startElement(self, name, attrs, connection):
         if name == 'valueSet':
-            if not self.has_key(self._name):
+            if self._name not in self:
                 self[self._name] = DhcpValueSet()
             return self[self._name]
 

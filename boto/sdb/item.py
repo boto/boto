@@ -75,7 +75,7 @@ class Item(dict):
             else:
                 self.name = self.decode_value(value)
         elif name == 'Value':
-            if self.has_key(self.last_key):
+            if self.last_key in self:
                 if not isinstance(self[self.last_key], list):
                     self[self.last_key] = [self[self.last_key]]
                 value = self.decode_value(value)
