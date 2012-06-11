@@ -165,7 +165,7 @@ class ELBConnection(AWSQueryConnection):
 
         :type scheme: string
         :param scheme: The type of a LoadBalancer.  By default, Elastic
-            Load Balancing creates an Internet-facing LoadBalancer with
+            Load Balancing creates an internet-facing LoadBalancer with
             a publicly resolvable DNS name, which resolves to public IP
             addresses.
 
