@@ -223,7 +223,7 @@ class AWSQueryRequest(object):
         filter_names = [f['name'] for f in self.Filters]
         unknown_filters = [f for f in filters if f not in filter_names]
         if unknown_filters:
-            raise FilterError, 'Unknown filters: %s' % unknown_filters
+            raise FilterError('Unknown filters: %s' % unknown_filters)
         for i, filter in enumerate(self.Filters):
             name = filter['name']
             if name in filters:
