@@ -132,7 +132,7 @@ class ELBConnection(AWSQueryConnection):
                              [('member', LoadBalancer)])
 
     def create_load_balancer(self, name, zones, listeners, subnets=None,
-        security_groups=None):
+        security_groups=None, scheme='internet-facing'):
         """
         Create a new load balancer for your account. By default the load
         balancer will be created in EC2. To create a load balancer inside a
@@ -154,6 +154,27 @@ class ELBConnection(AWSQueryConnection):
             Protocol is a string containing either 'TCP', 'HTTP' or
             'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
             certificate, and must be specified when doing HTTPS.
+
+        :type subnets: list of strings
+        :param subnets: A list of subnet IDs in your VPC to attach to
+            your LoadBalancer.
+
+        :type security_groups: list of strings
+        :param security_groups: The security groups assigned to your
+            LoadBalancer within your VPC.
+
+        :type scheme: string
+        :param scheme: The type of a LoadBalancer.  By default, Elastic
+            Load Balancing creates an Internet-facing LoadBalancer with
+            a publicly resolvable DNS name, which resolves to public IP
+            addresses.
+
+            Specify the value internal for this option to create an
+            internal LoadBalancer with a DNS name that resolves to
+            private IP addresses.
+
+            This option is only available for LoadBalancers attached
+            to an Amazon VPC.
 
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`

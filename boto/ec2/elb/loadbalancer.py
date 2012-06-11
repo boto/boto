@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -26,6 +27,7 @@ from boto.ec2.elb.policies import Policies
 from boto.ec2.elb.securitygroup import SecurityGroup
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
+
 
 class LoadBalancer(object):
     """
@@ -75,10 +77,10 @@ class LoadBalancer(object):
         self.canonical_hosted_zone_name = None
         self.canonical_hosted_zone_name_id = None
         self.source_security_group = None
-        self.subnets = ListElement() 
+        self.subnets = ListElement()
         self.security_groups = ListElement()
-        self.vpc_id = None 
-
+        self.vpc_id = None
+        self.scheme = None
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -125,6 +127,8 @@ class LoadBalancer(object):
             self.canonical_hosted_zone_name_id = value
         elif name == 'VPCId':
             self.vpc_id = value
+        elif name == 'Scheme':
+            self.scheme = value
         else:
             setattr(self, name, value)
 
@@ -167,7 +171,8 @@ class LoadBalancer(object):
         """
         if isinstance(instances, str) or isinstance(instances, unicode):
             instances = [instances]
-        new_instances = self.connection.register_instances(self.name, instances)
+        new_instances = self.connection.register_instances(self.name,
+                                                           instances)
         self.instances = new_instances
 
     def deregister_instances(self, instances):
@@ -181,7 +186,8 @@ class LoadBalancer(object):
         """
         if isinstance(instances, str) or isinstance(instances, unicode):
             instances = [instances]
-        new_instances = self.connection.deregister_instances(self.name, instances)
+        new_instances = self.connection.deregister_instances(self.name,
+                                                             instances)
         self.instances = new_instances
 
     def delete(self):
@@ -217,7 +223,8 @@ class LoadBalancer(object):
         return self.connection.describe_instance_health(self.name, instances)
 
     def create_listeners(self, listeners):
-        return self.connection.create_load_balancer_listeners(self.name, listeners)
+        return self.connection.create_load_balancer_listeners(self.name,
+                                                              listeners)
 
     def create_listener(self, inPort, outPort=None, proto="tcp"):
         if outPort == None:
@@ -225,7 +232,8 @@ class LoadBalancer(object):
         return self.create_listeners([(inPort, outPort, proto)])
 
     def delete_listeners(self, listeners):
-        return self.connection.delete_load_balancer_listeners(self.name, listeners)
+        return self.connection.delete_load_balancer_listeners(self.name,
+                                                              listeners)
 
     def delete_listener(self, inPort):
         return self.delete_listeners([inPort])
@@ -238,21 +246,28 @@ class LoadBalancer(object):
         return self.connection.delete_lb_policy(self.name, policy_name)
 
     def set_policies_of_listener(self, lb_port, policies):
-        return self.connection.set_lb_policies_of_listener(self.name, lb_port, policies)
+        return self.connection.set_lb_policies_of_listener(self.name,
+                                                           lb_port,
+                                                           policies)
 
-    def create_cookie_stickiness_policy(self, cookie_expiration_period, policy_name):
+    def create_cookie_stickiness_policy(self, cookie_expiration_period,
+                                        policy_name):
         return self.connection.create_lb_cookie_stickiness_policy(cookie_expiration_period, self.name, policy_name)
 
     def create_app_cookie_stickiness_policy(self, name, policy_name):
-        return self.connection.create_app_cookie_stickiness_policy(name, self.name, policy_name)
+        return self.connection.create_app_cookie_stickiness_policy(name,
+                                                                   self.name,
+                                                                   policy_name)
 
     def set_listener_SSL_certificate(self, lb_port, ssl_certificate_id):
-        return self.connection.set_lb_listener_SSL_certificate(self.name, lb_port, ssl_certificate_id)
+        return self.connection.set_lb_listener_SSL_certificate(self.name,
+                                                               lb_port,
+                                                               ssl_certificate_id)
 
     def attach_subnets(self, subnets):
         """
         Attaches load balancer to one or more subnets.
-        Attaching subnets that are already registered with the 
+        Attaching subnets that are already registered with the
         Load Balancer has no effect.
 
         :type subnets: string or List of strings
@@ -280,7 +295,7 @@ class LoadBalancer(object):
     def apply_security_groups(self, security_groups):
         """
         Applies security groups to the load balancer.
-        Applying security groups that are already registered with the 
+        Applying security groups that are already registered with the
         Load Balancer has no effect.
 
         :type security_groups: string or List of strings
@@ -292,6 +307,4 @@ class LoadBalancer(object):
             security_groups = [security_groups]
         new_sgs = self.connection.apply_security_groups_to_lb(
                                          self.name, security_groups)
-        self.security_groups = new_sgs 
-
-
+        self.security_groups = new_sgs
