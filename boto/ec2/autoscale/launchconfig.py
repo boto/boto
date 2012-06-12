@@ -93,7 +93,8 @@ class LaunchConfiguration(object):
                  key_name=None, security_groups=None, user_data=None,
                  instance_type='m1.small', kernel_id=None,
                  ramdisk_id=None, block_device_mappings=None,
-                 instance_monitoring=False, spot_price=None):
+                 instance_monitoring=False, spot_price=None,
+                 instance_profile_name=None):
         """
         A launch configuration.
 
@@ -134,6 +135,11 @@ class LaunchConfiguration(object):
         :type spot_price: float
         :param spot_price: The spot price you are bidding.  Only applies
             if you are building an autoscaling group with spot instances.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: The name or the Amazon Resource
+            Name (ARN) of the instance profile associated with the IAM
+            role for the instance.
         """
         self.connection = connection
         self.name = name
@@ -150,6 +156,7 @@ class LaunchConfiguration(object):
         self.created_time = None
         self.instance_monitoring = instance_monitoring
         self.spot_price = spot_price
+        self.instance_profile_name = instance_profile_name
         self.launch_configuration_arn = None
 
     def __repr__(self):
@@ -192,6 +199,8 @@ class LaunchConfiguration(object):
             self.instance_monitoring = value
         elif name == 'SpotPrice':
             self.spot_price = float(value)
+        elif name == 'IamInstanceProfile':
+            self.instance_profile_name = value
         else:
             setattr(self, name, value)
 
