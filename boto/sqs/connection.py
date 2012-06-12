@@ -18,6 +18,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from xml.etree import ElementTree
 
 from boto.connection import AWSQueryConnection
 from boto.sqs.regioninfo import SQSRegionInfo
@@ -58,6 +59,18 @@ class SQSConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         return ['sqs']
+
+    def _credentials_expired(self, response):
+        if response.status != 401:
+            return False
+        try:
+            for event, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'InvalidAccessKeyId':
+                        return True
+        except ElementTree.ParseError:
+            return False
+        return False
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """

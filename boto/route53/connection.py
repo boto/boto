@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
 import xml.sax
 import time
 import uuid
 import urllib
+from xml.etree import ElementTree
+
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -65,6 +66,18 @@ class Route53Connection(AWSAuthConnection):
 
     def _required_auth_capability(self):
         return ['route53']
+
+    def _credentials_expired(self, response):
+        if response.status != 403:
+            return False
+        try:
+            for event, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'InvalidClientTokenId':
+                        return True
+        except ElementTree.ParseError:
+            return False
+        return False
 
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:

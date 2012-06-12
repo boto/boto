@@ -19,13 +19,20 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import json
 
 import boto
 import boto.jsonresponse
+from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
 
-#boto.set_stream_logger('iam')
+
+ASSUME_ROLE_POLICY_DOCUMENT = json.dumps({
+    'Statement': [{'Principal': {'Service': ['ec2.amazonaws.com']},
+                   'Effect': 'Allow',
+                   'Action': ['sts:AssumeRole']}]})
+
 
 
 class IAMConnection(AWSQueryConnection):
@@ -1006,3 +1013,115 @@ class IAMConnection(AWSQueryConnection):
         http://goo.gl/ToB7G
         """
         return self.get_object('GetAccountSummary', {}, SummaryMap)
+
+    #
+    # IAM Roles
+    #
+
+    def add_role_to_instance_profile(self, instance_profile_name, role_name):
+        return self.get_response('AddRoleToInstanceProfile',
+                                 {'InstanceProfileName': instance_profile_name,
+                                  'RoleName': role_name})
+
+    def create_instance_profile(self, instance_profile_name, path=None):
+        params = {'InstanceProfileName': instance_profile_name}
+        if path is not None:
+            params['Path'] = path
+        return self.get_response('CreateInstanceProfile', params)
+
+    def create_role(self, role_name, assume_role_policy_document=None, path=None):
+        params = {'RoleName': role_name}
+        if assume_role_policy_document is None:
+            # This is the only valid assume_role_policy_document currently, so
+            # this is used as a default value if no assume_role_policy_document
+            # is provided.
+            params['AssumeRolePolicyDocument'] =  ASSUME_ROLE_POLICY_DOCUMENT
+        else:
+            params['AssumeRolePolicyDocument'] =  assume_role_policy_document
+        if path is not None:
+            params['Path'] = path
+        return self.get_response('CreateRole', params)
+
+    def delete_instance_profile(self, instance_profile_name):
+        return self.get_response(
+            'DeleteInstanceProfile',
+            {'InstanceProfileName': instance_profile_name})
+
+    def delete_role(self, role_name):
+        return self.get_response('DeleteRole', {'RoleName': role_name})
+
+    def delete_role_policy(self, role_name, policy_name):
+        return self.get_response(
+            'DeleteRolePolicy',
+            {'RoleName': role_name, 'PolicyName': policy_name})
+
+    def get_instance_profile(self, instance_profile_name):
+        return self.get_response('GetInstanceProfile', {'InstanceProfileName':
+                                                       instance_profile_name})
+
+    def get_role(self, role_name):
+        return self.get_response('GetRole', {'RoleName': role_name})
+
+    def get_role_policy(self, role_name, policy_name):
+        return self.get_response('GetRolePolicy',
+                                 {'RoleName': role_name,
+                                  'PolicyName': policy_name})
+
+    def list_instance_profiles(self, path_prefix=None, marker=None,
+                               max_items=None):
+        params = {}
+        if path_prefix is not None:
+            params['PathPrefix'] = path_prefix
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+
+        return self.get_response('ListInstanceProfiles', params,
+                                 list_marker='InstanceProfiles')
+
+    def list_instance_profiles_for_role(self, role_name, marker=None,
+                                        max_items=None):
+        params = {'RoleName': role_name}
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+        return self.get_response('ListInstanceProfilesForRole', params,
+                                 list_marker='InstanceProfiles')
+
+    def list_role_policies(self, role_name, marker=None, max_items=None):
+        params = {'RoleName': role_name}
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+        return self.get_response('ListRolePolicies', params,
+                                 list_marker='PolicyNames')
+
+    def list_roles(self, path_prefix=None, marker=None, max_items=None):
+        params = {}
+        if path_prefix is not None:
+            params['PathPrefix'] = path_prefix
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+        return self.get_response('ListRoles', params, list_marker='Roles')
+
+    def put_role_policy(self, role_name, policy_name, policy_document):
+        return self.get_response('PutRolePolicy',
+                                 {'RoleName': role_name,
+                                  'PolicyName': policy_name,
+                                  'PolicyDocument': policy_document})
+
+    def remove_role_from_instance_profile(self, instance_profile_name,
+                                          role_name):
+        return self.get_response('RemoveRoleFromInstanceProfile',
+                                 {'InstanceProfileName': instance_profile_name,
+                                  'RoleName': role_name})
+
+    def update_assume_role_policy(self, role_name, policy_document):
+        return self.get_response('UpdateAssumeRolePolicy',
+                                 {'RoleName': role_name,
+                                  'PolicyDocument': policy_document})

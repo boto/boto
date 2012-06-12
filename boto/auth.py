@@ -104,25 +104,29 @@ class AnonAuthHandler(AuthHandler, HmacKeys):
     """
     Implements Anonymous requests.
     """
-    
+
     capability = ['anon']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
-        
+
     def add_auth(self, http_request, **kwargs):
         pass
 
 class HmacAuthV1Handler(AuthHandler, HmacKeys):
     """    Implements the HMAC request signing used by S3 and GS."""
-    
+
     capability = ['hmac-v1', 's3']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
-        
+
+    def update_provider(self, provider):
+        super(HmacAuthV1Handler, self).update_provider(provider)
+        self._hmac_256 = None
+
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         method = http_request.method
@@ -148,12 +152,16 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
     Implements the simplified HMAC authorization used by CloudFront.
     """
     capability = ['hmac-v2', 'cloudfront']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
         self._hmac_256 = None
-        
+
+    def update_provider(self, provider):
+        super(HmacAuthV2Handler, self).update_provider(provider)
+        self._hmac_256 = None
+
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if 'Date' not in headers:
@@ -164,16 +172,16 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         headers['Authorization'] = ("%s %s:%s" %
                                     (auth_hdr,
                                      self._provider.access_key, b64_hmac))
-        
+
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """Implements the new Version 3 HMAC authorization used by Route53."""
-    
+
     capability = ['hmac-v3', 'route53', 'ses']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
-        
+
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
         if 'Date' not in headers:
@@ -188,9 +196,9 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
     """
     Implements the new Version 3 HMAC authorization used by DynamoDB.
     """
-    
+
     capability = ['hmac-v3-http']
-    
+
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
@@ -234,7 +242,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
                                     '',
                                     http_request.body])
         return string_to_sign, headers_to_sign
-        
+
     def add_auth(self, req, **kwargs):
         """
         Add AWS3 authentication to a request.
@@ -367,7 +375,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
 class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):
     """
     Query Signature V2 Authentication relocating signed query
-    into the path and allowing POST requests with Content-Types.   
+    into the path and allowing POST requests with Content-Types.
     """
 
     capability = ['mws']
@@ -401,7 +409,7 @@ def get_auth_handler(host, config, provider, requested_capability=None):
     :type host: string
     :param host: The name of the host
 
-    :type config: 
+    :type config:
     :param config:
 
     :type provider:
@@ -422,13 +430,13 @@ def get_auth_handler(host, config, provider, requested_capability=None):
             ready_handlers.append(handler(host, config, provider))
         except boto.auth_handler.NotReadyToAuthenticate:
             pass
- 
+
     if not ready_handlers:
         checked_handlers = auth_handlers
         names = [handler.__name__ for handler in checked_handlers]
         raise boto.exception.NoAuthHandlerFound(
               'No handler was ready to authenticate. %d handlers were checked.'
-              ' %s ' 
+              ' %s '
               'Check your credentials' % (len(names), str(names)))
 
     if len(ready_handlers) > 1:

@@ -22,6 +22,7 @@
 # IN THE SOFTWARE.
 
 import xml.sax
+from xml.etree import ElementTree
 import urllib
 import base64
 import time
@@ -170,6 +171,18 @@ class S3Connection(AWSAuthConnection):
             return ['anon']
         else:
             return ['s3']
+
+    def _credentials_expired(self, response):
+        if response.status != 400:
+            return False
+        try:
+            for event, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'ExpiredToken':
+                        return True
+        except ElementTree.ParseError:
+            return False
+        return False
 
     def __iter__(self):
         for bucket in self.get_all_buckets():

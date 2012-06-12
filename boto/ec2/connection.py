@@ -28,6 +28,8 @@ import base64
 import warnings
 from datetime import datetime
 from datetime import timedelta
+from xml.etree import ElementTree
+
 import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
@@ -60,7 +62,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-03-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -91,6 +93,15 @@ class EC2Connection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         return ['ec2']
+
+    def _credentials_expired(self, response):
+        if response.status != 400:
+            return False
+        for event, node in ElementTree.iterparse(response, events=['start']):
+            if node.tag.endswith('Code'):
+                if node.text == 'RequestExpired':
+                    return True
+        return False
 
     def get_params(self):
         """
@@ -520,7 +531,8 @@ class EC2Connection(AWSQueryConnection):
                       private_ip_address=None,
                       placement_group=None, client_token=None,
                       security_group_ids=None,
-                      additional_info=None, tenancy=None):
+                      additional_info=None, instance_profile_name=None,
+                      instance_profile_arn=None, tenancy=None):
         """
         Runs an image on EC2.
 
@@ -688,6 +700,10 @@ class EC2Connection(AWSQueryConnection):
             params['ClientToken'] = client_token
         if additional_info:
             params['AdditionalInfo'] = additional_info
+        if instance_profile_name:
+            params['IamInstanceProfile.Name'] = instance_profile_name
+        if instance_profile_arn:
+            params['IamInstanceProfile.Arn'] = instance_profile_arn
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):

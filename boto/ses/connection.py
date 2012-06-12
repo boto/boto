@@ -19,15 +19,15 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import urllib
+import base64
+from xml.etree import ElementTree
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
-
-import urllib
-import base64
 from boto.ses import exceptions as ses_exceptions
 
 
@@ -56,6 +56,18 @@ class SESConnection(AWSAuthConnection):
 
     def _required_auth_capability(self):
         return ['ses']
+
+    def _credentials_expired(self, response):
+        if response.status != 403:
+            return False
+        try:
+            for event, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'InvalidClientTokenId':
+                        return True
+        except ElementTree.ParseError:
+            return False
+        return False
 
     def _build_list_params(self, params, items, label):
         """Add an AWS API-compatible parameter list to a dictionary.

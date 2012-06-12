@@ -89,6 +89,11 @@ class Provider(object):
         'google': True
     }
 
+    MetadataServiceSupport = {
+        'aws': True,
+        'google': False
+    }
+
     # If you update this map please make sure to put "None" for the
     # right-hand-side for any headers that don't apply to a provider, rather
     # than simply leaving that header out (which would cause KeyErrors).
@@ -187,10 +192,32 @@ class Provider(object):
             self.secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
+
+        if ((self.access_key is None or self.secret_key is None) and
+                self.MetadataServiceSupport[self.name]):
+            self._populate_keys_from_metadata_server()
+
         if isinstance(self.secret_key, unicode):
             # the secret key must be bytes and not unicode to work
             #  properly with hmac.new (see http://bugs.python.org/issue5285)
             self.secret_key = str(self.secret_key)
+
+    def _populate_keys_from_metadata_server(self):
+        # get_instance_metadata is imported here because of a circular
+        # dependency.
+        from boto.utils import get_instance_metadata
+        timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
+        credentials = get_instance_metadata(timeout=timeout)
+        if credentials is None:
+            return
+        # I'm assuming there's only one role on the instance profile.
+        security = credentials['iam']['security-credentials'].values()[0]
+        if self.access_key is None:
+            self.access_key = security['AccessKeyId']
+        if self.secret_key is None:
+            self.secret_key = security['SecretAccessKey']
+        if self.security_token is None:
+            self.security_token = security['Token']
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]

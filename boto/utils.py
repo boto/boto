@@ -38,6 +38,7 @@
 Some handy utility functions used by several classes.
 """
 
+import socket
 import urllib
 import urllib2
 import imp
@@ -69,6 +70,11 @@ try:
 except ImportError:
     import md5
     _hashfn = md5.md5
+
+try:
+    import simplejson as json
+except:
+    import json
 
 # List of Query String Arguments of Interest
 qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging', 
@@ -183,20 +189,36 @@ def retry_url(url, retry_on_404=True, num_retries=10):
                 code = e.code
             if code == 404 and not retry_on_404:
                 return ''
-        except:
+        except urllib2.URLError, e:
+            raise e
+        except Exception, e:
             pass
         boto.log.exception('Caught exception reading instance data')
         time.sleep(2**i)
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
+def _get_iam_instance_metadata(url):
+    d = {}
+    # get info first
+    data = retry_url(url + 'info', num_retries=1)
+    d['info'] = json.loads(data)
+    d['security-credentials'] = {}
+    cred_name = retry_url(url + 'security-credentials', num_retries=1)
+    data = retry_url(url + 'security-credentials' + '/' + cred_name,
+                     num_retries=1)
+    d['security-credentials'][cred_name] = json.loads(data)
+    return d
+
 def _get_instance_metadata(url):
     d = {}
-    data = retry_url(url)
+    data = retry_url(url, num_retries=1)
     if data:
         fields = data.split('\n')
         for field in fields:
-            if field.endswith('/'):
+            if field == 'iam/':
+                d[field[0:-1]] = _get_iam_instance_metadata(url + field)
+            elif field.endswith('/'):
                 d[field[0:-1]] = _get_instance_metadata(url + field)
             else:
                 p = field.find('=')
@@ -205,22 +227,39 @@ def _get_instance_metadata(url):
                     resource = field[0:p] + '/openssh-key'
                 else:
                     key = resource = field
-                val = retry_url(url + resource)
-                p = val.find('\n')
-                if p > 0:
-                    val = val.split('\n')
+                val = retry_url(url + resource, num_retries=1)
+                if val[0] == '{':
+                    val = json.loads(val)
+                else:
+                    p = val.find('\n')
+                    if p > 0:
+                        val = val.split('\n')
                 d[key] = val
     return d
 
-def get_instance_metadata(version='latest', url='http://169.254.169.254'):
+def get_instance_metadata(version='latest', url='http://169.254.169.254',
+                          timeout=None):
     """
     Returns the instance metadata as a nested Python dictionary.
     Simple values (e.g. local_hostname, hostname, etc.) will be
     stored as string values.  Values such as ancestor-ami-ids will
     be stored in the dict as a list of string values.  More complex
     fields such as public-keys and will be stored as nested dicts.
+
+    If the timeout is specified, the connection to the specified url
+    will time out after the specified number of seconds.
+
     """
-    return _get_instance_metadata('%s/%s/meta-data/' % (url, version))
+    if timeout is not None:
+        original = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+    try:
+        return _get_instance_metadata('%s/%s/meta-data/' % (url, version))
+    except urllib2.URLError, e:
+        return None
+    finally:
+        if timeout is not None:
+            socket.setdefaulttimeout(original)
 
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
