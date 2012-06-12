@@ -788,7 +788,8 @@ class Bucket(object):
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=None, src_version_id=None,
                  storage_class='STANDARD', preserve_acl=False,
-                 encrypt_key=False, headers=None, query_args=None):
+                 encrypt_key=False, headers=None, query_args=None,
+                 policy=None):
         """
         Create a new key in the bucket by copying another existing key.
 
@@ -820,7 +821,8 @@ class Bucket(object):
         :type preserve_acl: bool
         :param preserve_acl: If True, the ACL from the source key will
             be copied to the destination key.  If False, the
-            destination key will have the default ACL.  Note that
+            destination key will have the default ACL if a policy has
+            not been given (see policy parameter).  Note that
             preserving the ACL in the new key object will require two
             additional API calls to S3, one to retrieve the current
             ACL and one to set that ACL on the new object.  If you
@@ -839,6 +841,11 @@ class Bucket(object):
         :param query_args: A string of additional querystring arguments
             to append to the request
 
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied instead
+                       of the default to the new key (once completed) in S3.
+                       This setting is not used if preserve_acl is True.
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
@@ -852,6 +859,8 @@ class Bucket(object):
                 src_bucket = self.connection.get_bucket(
                     src_bucket_name, validate=False)
             acl = src_bucket.get_xml_acl(src_key_name)
+        elif policy:
+            headers[provider.acl_header] = policy
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
         src = '%s/%s' % (src_bucket_name, urllib.parse.quote(src_key_name))

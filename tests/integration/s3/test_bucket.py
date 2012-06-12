@@ -299,3 +299,52 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(s.find("<ID>"), -1)
         # Confirm Prefix is '' and not set to 'None'
         self.assertNotEqual(s.find("<Prefix></Prefix>"), -1)
+
+    def test_copy_key_policy(self):
+        src_name = 'source'
+        key = self.bucket.new_key(src_name)
+        key.set_contents_from_string('source key', policy='public-read-write')
+        # Copy using default acl policy (private)
+        cp1 = self.bucket.copy_key('cp1', self.bucket_name, src_name)
+        acl1 = cp1.get_acl()
+        # expect 1 grant to owner which is full control (as that's default)
+        self.assertEqual(len(acl1.acl.grants), 1)
+        self.assertEqual(acl1.acl.grants[0].id, acl1.owner.id)
+        self.assertEqual(acl1.acl.grants[0].permission, 'FULL_CONTROL')
+
+        # Copy preserving the source's acl policy
+        cp2 = self.bucket.copy_key('cp2', self.bucket_name, src_name,
+                                   preserve_acl=True)
+        acl2 = cp2.get_acl()
+        # Owner will still have FC, but let's make sure that the group
+        # all users has read access and write access.
+        score = 0
+        self.assertEqual(len(acl2.acl.grants), 3)
+        for g in acl2.acl.grants:
+            if g.id  == acl2.owner.id:
+                self.assertEqual(g.permission, 'FULL_CONTROL')
+                score += 1
+            elif g.type == 'Group' and g.uri.endswith('AllUsers'):
+                self.assertTrue(g.permission in ('READ', 'WRITE'))
+                score += 1
+            else:
+                self.assertFalse()
+        self.assertEqual(score, 3)
+
+        # Copy using a new acl policy
+        cp3 = self.bucket.copy_key('cp3', self.bucket_name, src_name,
+                                   policy='public-read')
+        acl3 = cp3.get_acl()
+        # Owner will have FC, but all users should only have READ.
+        score = 0
+        self.assertEqual(len(acl3.acl.grants), 2)
+        for g in acl3.acl.grants:
+            if g.id  == acl3.owner.id:
+                self.assertEqual(g.permission, 'FULL_CONTROL')
+                score += 1
+            elif g.type == 'Group' and g.uri.endswith('AllUsers'):
+                self.assertEqual(g.permission, 'READ')
+                score += 1
+            else:
+                self.assertFalse()
+        self.assertEqual(score, 2)
