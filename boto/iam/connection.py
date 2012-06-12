@@ -1019,17 +1019,52 @@ class IAMConnection(AWSQueryConnection):
     #
 
     def add_role_to_instance_profile(self, instance_profile_name, role_name):
+        """
+        Adds the specified role to the specified instance profile.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: Name of the instance profile to update.
+
+        :type role_name: string
+        :param role_name: Name of the role to add.
+        """
         return self.get_response('AddRoleToInstanceProfile',
                                  {'InstanceProfileName': instance_profile_name,
                                   'RoleName': role_name})
 
     def create_instance_profile(self, instance_profile_name, path=None):
+        """
+        Creates a new instance profile.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: Name of the instance profile to create.
+
+        :type path: string
+        :param path: The path to the instance profile.
+        """
         params = {'InstanceProfileName': instance_profile_name}
         if path is not None:
             params['Path'] = path
         return self.get_response('CreateInstanceProfile', params)
 
     def create_role(self, role_name, assume_role_policy_document=None, path=None):
+        """
+        Creates a new role for your AWS account.
+
+        The policy grants permission to an EC2 instance to assume the role.
+        The policy is URL-encoded according to RFC 3986. Currently, only EC2
+        instances can assume roles.
+
+        :type role_name: string
+        :param role_name: Name of the role to create.
+
+        :type assume_role_policy_document: string
+        :param assume_role_policy_document: The policy that grants an entity
+            permission to assume the role.
+
+        :type path: string
+        :param path: The path to the instance profile.
+        """
         params = {'RoleName': role_name}
         if assume_role_policy_document is None:
             # This is the only valid assume_role_policy_document currently, so
@@ -1043,32 +1078,100 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('CreateRole', params)
 
     def delete_instance_profile(self, instance_profile_name):
+        """
+        Deletes the specified instance profile. The instance profile must not
+        have an associated role.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: Name of the instance profile to delete.
+        """
         return self.get_response(
             'DeleteInstanceProfile',
             {'InstanceProfileName': instance_profile_name})
 
     def delete_role(self, role_name):
+        """
+        Deletes the specified role. The role must not have any policies
+        attached.
+
+        :type role_name: string
+        :param role_name: Name of the role to delete.
+        """
         return self.get_response('DeleteRole', {'RoleName': role_name})
 
     def delete_role_policy(self, role_name, policy_name):
+        """
+        Deletes the specified policy associated with the specified role.
+
+        :type role_name: string
+        :param role_name: Name of the role associated with the policy.
+
+        :type policy_name: string
+        :param policy_name: Name of the policy to delete.
+        """
         return self.get_response(
             'DeleteRolePolicy',
             {'RoleName': role_name, 'PolicyName': policy_name})
 
     def get_instance_profile(self, instance_profile_name):
+        """
+        Retrieves information about the specified instance profile, including
+        the instance profile's path, GUID, ARN, and role.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: Name of the instance profile to get
+            information about.
+        """
         return self.get_response('GetInstanceProfile', {'InstanceProfileName':
                                                        instance_profile_name})
 
     def get_role(self, role_name):
+        """
+        Retrieves information about the specified role, including the role's
+        path, GUID, ARN, and the policy granting permission to EC2 to assume
+        the role.
+
+        :type role_name: string
+        :param role_name: Name of the role associated with the policy.
+        """
         return self.get_response('GetRole', {'RoleName': role_name})
 
     def get_role_policy(self, role_name, policy_name):
+        """
+        Retrieves the specified policy document for the specified role.
+
+        :type role_name: string
+        :param role_name: Name of the role associated with the policy.
+
+        :type policy_name: string
+        :param policy_name: Name of the policy to get.
+        """
         return self.get_response('GetRolePolicy',
                                  {'RoleName': role_name,
                                   'PolicyName': policy_name})
 
     def list_instance_profiles(self, path_prefix=None, marker=None,
                                max_items=None):
+        """
+        Lists the instance profiles that have the specified path prefix. If
+        there are none, the action returns an empty list.
+
+        :type path_prefix: string
+        :param path_prefix: The path prefix for filtering the results. For
+            example: /application_abc/component_xyz/, which would get all
+            instance profiles whose path starts with
+            /application_abc/component_xyz/.
+
+        :type marker: string
+        :param marker: Use this parameter only when paginating results, and
+            only in a subsequent request after you've received a response
+            where the results are truncated. Set it to the value of the
+            Marker element in the response you just received.
+
+        :type max_items: int
+        :param max_items: Use this parameter only when paginating results to
+            indicate the maximum number of user names you want in the response.
+        """
         params = {}
         if path_prefix is not None:
             params['PathPrefix'] = path_prefix
@@ -1082,6 +1185,23 @@ class IAMConnection(AWSQueryConnection):
 
     def list_instance_profiles_for_role(self, role_name, marker=None,
                                         max_items=None):
+        """
+        Lists the instance profiles that have the specified associated role. If
+        there are none, the action returns an empty list.
+
+        :type role_name: string
+        :param role_name: The name of the role to list instance profiles for.
+
+        :type marker: string
+        :param marker: Use this parameter only when paginating results, and
+            only in a subsequent request after you've received a response
+            where the results are truncated. Set it to the value of the
+            Marker element in the response you just received.
+
+        :type max_items: int
+        :param max_items: Use this parameter only when paginating results to
+            indicate the maximum number of user names you want in the response.
+        """
         params = {'RoleName': role_name}
         if marker is not None:
             params['Marker'] = marker
@@ -1091,6 +1211,23 @@ class IAMConnection(AWSQueryConnection):
                                  list_marker='InstanceProfiles')
 
     def list_role_policies(self, role_name, marker=None, max_items=None):
+        """
+        Lists the names of the policies associated with the specified role. If
+        there are none, the action returns an empty list.
+
+        :type role_name: string
+        :param role_name: The name of the role to list policies for.
+
+        :type marker: string
+        :param marker: Use this parameter only when paginating results, and
+            only in a subsequent request after you've received a response
+            where the results are truncated. Set it to the value of the
+            marker element in the response you just received.
+
+        :type max_items: int
+        :param max_items: Use this parameter only when paginating results to
+            indicate the maximum number of user names you want in the response.
+        """
         params = {'RoleName': role_name}
         if marker is not None:
             params['Marker'] = marker
@@ -1100,6 +1237,23 @@ class IAMConnection(AWSQueryConnection):
                                  list_marker='PolicyNames')
 
     def list_roles(self, path_prefix=None, marker=None, max_items=None):
+        """
+        Lists the roles that have the specified path prefix. If there are none,
+        the action returns an empty list.
+
+        :type path_prefix: string
+        :param path_prefix: The path prefix for filtering the results.
+
+        :type marker: string
+        :param marker: Use this parameter only when paginating results, and
+            only in a subsequent request after you've received a response
+            where the results are truncated. Set it to the value of the
+            marker element in the response you just received.
+
+        :type max_items: int
+        :param max_items: Use this parameter only when paginating results to
+            indicate the maximum number of user names you want in the response.
+        """
         params = {}
         if path_prefix is not None:
             params['PathPrefix'] = path_prefix
@@ -1110,6 +1264,18 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('ListRoles', params, list_marker='Roles')
 
     def put_role_policy(self, role_name, policy_name, policy_document):
+        """
+        Adds (or updates) a policy document associated with the specified role.
+
+        :type role_name: string
+        :param role_name: Name of the role to associate the policy with.
+
+        :type policy_name: string
+        :param policy_name: Name of the policy document.
+
+        :type policy_document: string
+        :param policy_document: The policy document.
+        """
         return self.get_response('PutRolePolicy',
                                  {'RoleName': role_name,
                                   'PolicyName': policy_name,
@@ -1117,11 +1283,31 @@ class IAMConnection(AWSQueryConnection):
 
     def remove_role_from_instance_profile(self, instance_profile_name,
                                           role_name):
+        """
+        Removes the specified role from the specified instance profile.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: Name of the instance profile to update.
+
+        :type role_name: string
+        :param role_name: Name of the role to remove.
+        """
         return self.get_response('RemoveRoleFromInstanceProfile',
                                  {'InstanceProfileName': instance_profile_name,
                                   'RoleName': role_name})
 
     def update_assume_role_policy(self, role_name, policy_document):
+        """
+        Updates the policy that grants an entity permission to assume a role.
+        Currently, only an Amazon EC2 instance can assume a role.
+
+        :type role_name: string
+        :param role_name: Name of the role to update.
+
+        :type policy_document: string
+        :param policy_document: The policy that grants an entity permission to
+            assume the role.
+        """
         return self.get_response('UpdateAssumeRolePolicy',
                                  {'RoleName': role_name,
                                   'PolicyDocument': policy_document})
