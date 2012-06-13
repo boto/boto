@@ -4,10 +4,13 @@ class StackResource(object):
         for k, v in self.get_properties().iteritems():
             if v is not None:
                 clean_properties[k] = v
-        return {
+        obj = {
             'Type': self.type,
             'Properties': clean_properties
         }
+        if self.deletion_policy:
+            obj['DeletionPolicy'] = self.deletion_policy
+        return obj
 
 class IAMGroup(StackResource):
     type = 'AWS::IAM::Group'
@@ -43,13 +46,14 @@ class IAMUser(StackResource):
 class RecordSet(StackResource):
     type = "AWS::Route53::RecordSet"
     
-    def __init__(self, name, zone_name, resource_records, record_type="A", comment=None, ttl="500"):
+    def __init__(self, name, zone_name, resource_records, record_type="A", comment=None, ttl="500", deletion_policy=None):
         self.zone_name = zone_name
         self.name = name
         self.resource_records = resource_records
         self.record_type = record_type
         self.comment = comment
         self.ttl = ttl
+        self.deletion_policy = deletion_policy
     
     def get_properties(self):
         return {
@@ -58,5 +62,5 @@ class RecordSet(StackResource):
             'Type': self.record_type,
             'TTL': self.ttl,
             'Comment': self.comment,
-            'ResourceRecords': self.resource_records
+            'ResourceRecords': self.resource_records,
         }
