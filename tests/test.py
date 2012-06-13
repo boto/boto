@@ -23,17 +23,22 @@
 import logging
 import sys
 import unittest
-import argparse
 
 from nose.core import run
+import argparse
 
 
 def main():
     parser = argparse.ArgumentParser()
     known_args, remaining_args = parser.parse_known_args()
     default_args = '-a !notdefault'
-    run(argv=[__file__, default_args] + remaining_args)
+    if run(argv=[__file__, default_args] + remaining_args):
+        # run will return True is all the tests pass.  We want
+        # this to equal a 0 rc
+        return 0
+    else:
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
