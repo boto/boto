@@ -32,7 +32,7 @@ from boto import handler
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
-from boto.exception import BotoClientError
+from boto.exception import BotoClientError, XMLParseError
 
 
 def check_lowercase_bucketname(n):
@@ -176,11 +176,12 @@ class S3Connection(AWSAuthConnection):
         if response.status != 400:
             return False
         try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
+            for event, node in ElementTree.iterparse(response,
+                                                     events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'ExpiredToken':
                         return True
-        except ElementTree.ParseError:
+        except XMLParseError:
             return False
         return False
 

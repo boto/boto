@@ -65,7 +65,8 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
+from boto.exception import AWSConnectionError, BotoClientError
+from boto.exception import BotoServerError, XMLParseError
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -128,7 +129,7 @@ class HostConnectionPool(object):
         ready to be returned by get().
         """
         return len(self.queue)
-    
+
     def put(self, conn):
         """
         Adds a connection to the pool, along with the time it was
@@ -210,7 +211,7 @@ class ConnectionPool(object):
     #
     # The amout of time between calls to clean.
     #
-    
+
     CLEAN_INTERVAL = 5.0
 
     #
@@ -274,7 +275,7 @@ class ConnectionPool(object):
         get rid of empty pools.  Pools clean themselves every time a
         connection is fetched; this cleaning takes care of pools that
         aren't being used any more, so nothing is being gotten from
-        them. 
+        them.
         """
         with self.mutex:
             now = time.time()
@@ -454,7 +455,7 @@ class AWSAuthConnection(object):
             self.protocol = 'http'
         self.host = host
         self.path = path
-        # if the value passed in for debug 
+        # if the value passed in for debug
         if not isinstance(debug, (int, long)):
             debug = 0
         self.debug = config.getint('Boto', 'debug', debug)
@@ -838,11 +839,12 @@ class AWSAuthConnection(object):
         if response.status != 403:
             return False
         try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
+            for event, node in ElementTree.iterparse(response,
+                                                     events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'ExpiredToken':
                         return True
-        except ElementTree.ParseError:
+        except XMLParseError:
             return False
         return False
 

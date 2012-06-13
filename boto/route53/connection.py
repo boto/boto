@@ -28,6 +28,7 @@ from xml.etree import ElementTree
 
 import boto
 from boto.connection import AWSAuthConnection
+from boto.exception import XMLParseError
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
@@ -71,11 +72,12 @@ class Route53Connection(AWSAuthConnection):
         if response.status != 403:
             return False
         try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
+            for event, node in ElementTree.iterparse(response,
+                                                     events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'InvalidClientTokenId':
                         return True
-        except ElementTree.ParseError:
+        except XMLParseError:
             return False
         return False
 

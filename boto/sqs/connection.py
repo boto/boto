@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -26,7 +26,7 @@ from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto.sqs.batchresults import BatchResults
-from boto.exception import SQSError
+from boto.exception import SQSError, XMLParseError
 
 
 class SQSConnection(AWSQueryConnection):
@@ -64,11 +64,12 @@ class SQSConnection(AWSQueryConnection):
         if response.status != 401:
             return False
         try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
+            for event, node in ElementTree.iterparse(response,
+                                                     events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'InvalidAccessKeyId':
                         return True
-        except ElementTree.ParseError:
+        except XMLParseError:
             return False
         return False
 
@@ -108,7 +109,7 @@ class SQSConnection(AWSQueryConnection):
 
         :type queue: A Queue object
         :param queue: The SQS queue to be deleted
-        
+
         :type force_deletion: Boolean
         :param force_deletion: Normally, SQS will not delete a queue
             that contains messages.  However, if the force_deletion
@@ -116,7 +117,7 @@ class SQSConnection(AWSQueryConnection):
             whether there are messages in the queue or not.  USE WITH
             CAUTION.  This will delete all messages in the queue as
             well.
-                               
+
         :rtype: bool
         :return: True if the command succeeded, False otherwise
         """
@@ -125,7 +126,7 @@ class SQSConnection(AWSQueryConnection):
     def get_queue_attributes(self, queue, attribute='All'):
         """
         Gets one or all attributes of a Queue
-        
+
         :type queue: A Queue object
         :param queue: The SQS queue to be deleted
 
@@ -140,7 +141,7 @@ class SQSConnection(AWSQueryConnection):
             * CreatedTimestamp|
             * LastModifiedTimestamp|
             * Policy
-                         
+
         :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
         """
@@ -159,11 +160,11 @@ class SQSConnection(AWSQueryConnection):
 
         :type queue: A Queue object
         :param queue: The Queue from which messages are read.
-        
+
         :type number_messages: int
         :param number_messages: The maximum number of messages to read
                                 (default=1)
-        
+
         :type visibility_timeout: int
         :param visibility_timeout: The number of seconds the message should
             remain invisible to other queue readers
@@ -179,7 +180,7 @@ class SQSConnection(AWSQueryConnection):
             * SentTimestamp
             * ApproximateReceiveCount
             * ApproximateFirstReceiveTimestamp
-        
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
         """
@@ -198,10 +199,10 @@ class SQSConnection(AWSQueryConnection):
 
         :type queue: A :class:`boto.sqs.queue.Queue` object
         :param queue: The Queue from which messages are read.
-        
+
         :type message: A :class:`boto.sqs.message.Message` object
         :param message: The Message to be deleted
-        
+
         :rtype: bool
         :return: True if successful, False otherwise.
         """
@@ -234,10 +235,10 @@ class SQSConnection(AWSQueryConnection):
 
         :type queue: A :class:`boto.sqs.queue.Queue` object
         :param queue: The Queue from which messages are read.
-        
+
         :type receipt_handle: str
         :param receipt_handle: The receipt handle for the message
-        
+
         :rtype: bool
         :return: True if successful, False otherwise.
         """
@@ -287,11 +288,11 @@ class SQSConnection(AWSQueryConnection):
 
         :type queue: A :class:`boto.sqs.queue.Queue` object
         :param queue: The Queue from which messages are read.
-        
+
         :type receipt_handle: str
         :param queue: The receipt handle associated with the message whose
                       visibility timeout will be changed.
-        
+
         :type visibility_timeout: int
         :param visibility_timeout: The new value of the message's visibility
                                    timeout in seconds.
