@@ -207,17 +207,16 @@ class Provider(object):
         # dependency.
         from boto.utils import get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
-        credentials = get_instance_metadata(timeout=timeout, num_retries=1)
-        if credentials is None:
-            return
+        metadata = get_instance_metadata(timeout=timeout, num_retries=1)
         # I'm assuming there's only one role on the instance profile.
-        security = credentials['iam']['security-credentials'].values()[0]
-        if self.access_key is None:
-            self.access_key = security['AccessKeyId']
-        if self.secret_key is None:
-            self.secret_key = security['SecretAccessKey']
-        if self.security_token is None:
-            self.security_token = security['Token']
+        if metadata and 'iam' in metadata:
+            security = credentials['iam']['security-credentials'].values()[0]
+            if self.access_key is None:
+                self.access_key = security['AccessKeyId']
+            if self.secret_key is None:
+                self.secret_key = security['SecretAccessKey']
+            if self.security_token is None:
+                self.security_token = security['Token']
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]
