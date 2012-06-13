@@ -207,7 +207,7 @@ class Provider(object):
         # dependency.
         from boto.utils import get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
-        credentials = get_instance_metadata(timeout=timeout)
+        credentials = get_instance_metadata(timeout=timeout, num_retries=1)
         if credentials is None:
             return
         # I'm assuming there's only one role on the instance profile.
