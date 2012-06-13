@@ -627,7 +627,13 @@ class AWSAuthConnection(object):
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
                     self.http_connection_kwargs)
-            connection = httplib.HTTPConnection(host,
+            if self.https_connection_factory:
+                # even though the factory says https, this is too handy
+                # to not be able to allow overriding for http also.
+                connection = self.https_connection_factory(host,
+                    **self.http_connection_kwargs)
+            else:
+                connection = httplib.HTTPConnection(host,
                     **self.http_connection_kwargs)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
