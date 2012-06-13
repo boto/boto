@@ -6,6 +6,7 @@ from datetime import datetime
 
 from mock import Mock
 
+from tests.unit import AWSMockServiceTestCase
 from boto.cloudformation.connection import CloudFormationConnection
 
 
@@ -37,64 +38,12 @@ SAMPLE_TEMPLATE = r"""
 }
 """
 
-
-class CloudFormationConnectionBase(unittest.TestCase):
-    # This param is used by the unittest module to display a full
-    # diff when assert*Equal methods produce an error message.
-    maxDiff = None
+class CloudFormationConnectionBase(AWSMockServiceTestCase):
+    connection_class = CloudFormationConnection
 
     def setUp(self):
-        self.https_connection = Mock(spec=httplib.HTTPSConnection)
-        self.https_connection_factory = (
-            Mock(return_value=self.https_connection), ())
+        super(CloudFormationConnectionBase, self).setUp()
         self.stack_id = u'arn:aws:cloudformation:us-east-1:18:stack/Name/id'
-        self.cloud_formation = CloudFormationConnection(
-            https_connection_factory=self.https_connection_factory,
-            aws_access_key_id='aws_access_key_id',
-            aws_secret_access_key='aws_secret_access_key')
-        self.actual_request = None
-        # We want to be able to verify the request params that
-        # are sent to the CloudFormation service. By the time
-        # we get to the boto.connection.AWSAuthConnection._mexe
-        # method, all of the request params have been populated.
-        # By patching out the _mexe method with self._mexe_spy,
-        # we can record the actual http request that _mexe is passed
-        # so that we can verify the http params (and anything
-        # else about the request that we want).
-        self.original_mexe = self.cloud_formation._mexe
-        self.cloud_formation._mexe = self._mexe_spy
-
-    def _mexe_spy(self, request, *args, **kwargs):
-        self.actual_request = request
-        return self.original_mexe(request, *args, **kwargs)
-
-    def create_response(self, status_code, reason='', body=None):
-        if body is None:
-            body = self.default_body()
-        response = Mock(spec=httplib.HTTPResponse)
-        response.status = status_code
-        response.read.return_value = body
-        response.reason = reason
-        return response
-
-    def assert_request_parameters(self, params, ignore_params_values=None):
-        """Verify the actual parameters sent to the service API."""
-        request_params = self.actual_request.params.copy()
-        if ignore_params_values is not None:
-            for param in ignore_params_values:
-                # We still want to check that the ignore_params_values params
-                # are in the request parameters, we just don't need to check
-                # their value.
-                self.assertIn(param, request_params)
-                del request_params[param]
-        self.assertDictEqual(request_params, params)
-
-    def set_http_response(self, status_code, reason='', body=None):
-        http_response = self.create_response(status_code, reason, body)
-        self.https_connection.getresponse.return_value = http_response
-
-    def default_body(self):
-        return json.dumps({})
 
 
 class TestCloudFormationCreateStack(CloudFormationConnectionBase):
@@ -106,7 +55,7 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
 
     def test_create_stack_has_correct_request_params(self):
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.create_stack(
+        api_response = self.service_connection.create_stack(
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
             parameters=[('KeyName', 'myKeyName')],
@@ -144,7 +93,7 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
     def test_create_stack_with_minimum_args(self):
         # This will fail in practice, but the API docs only require stack_name.
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.create_stack('stack_name')
+        api_response = self.service_connection.create_stack('stack_name')
         self.assertEqual(api_response, self.stack_id)
         self.assert_request_parameters({
             'AWSAccessKeyId': 'aws_access_key_id',
@@ -160,8 +109,8 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
     def test_create_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
                                body='Invalid arg.')
-        with self.assertRaises(self.cloud_formation.ResponseError):
-            api_response = self.cloud_formation.create_stack(
+        with self.assertRaises(self.service_connection.ResponseError):
+            api_response = self.service_connection.create_stack(
                 'stack_name', template_body=SAMPLE_TEMPLATE,
                 parameters=[('KeyName', 'myKeyName')])
 
@@ -175,7 +124,7 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
 
     def test_update_stack_all_args(self):
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.update_stack(
+        api_response = self.service_connection.update_stack(
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
             parameters=[('KeyName', 'myKeyName')],
@@ -203,7 +152,7 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
 
     def test_update_stack_with_minimum_args(self):
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.update_stack('stack_name')
+        api_response = self.service_connection.update_stack('stack_name')
         self.assertEqual(api_response, self.stack_id)
         self.assert_request_parameters({
             'AWSAccessKeyId': 'aws_access_key_id',
@@ -219,8 +168,8 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
     def test_update_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
                                body='Invalid arg.')
-        with self.assertRaises(self.cloud_formation.ResponseError):
-            api_response = self.cloud_formation.update_stack(
+        with self.assertRaises(self.service_connection.ResponseError):
+            api_response = self.service_connection.update_stack(
                 'stack_name', template_body=SAMPLE_TEMPLATE,
                 parameters=[('KeyName', 'myKeyName')])
 
@@ -233,7 +182,7 @@ class TestCloudFormationDeleteStack(CloudFormationConnectionBase):
 
     def test_delete_stack(self):
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.delete_stack('stack_name')
+        api_response = self.service_connection.delete_stack('stack_name')
         self.assertEqual(api_response, json.loads(self.default_body()))
         self.assert_request_parameters({
             'AWSAccessKeyId': 'aws_access_key_id',
@@ -247,8 +196,8 @@ class TestCloudFormationDeleteStack(CloudFormationConnectionBase):
 
     def test_delete_stack_fails(self):
         self.set_http_response(status_code=400)
-        with self.assertRaises(self.cloud_formation.ResponseError):
-            api_response = self.cloud_formation.delete_stack('stack_name')
+        with self.assertRaises(self.service_connection.ResponseError):
+            api_response = self.service_connection.delete_stack('stack_name')
 
 
 class TestCloudFormationDescribeStackResource(CloudFormationConnectionBase):
@@ -257,7 +206,7 @@ class TestCloudFormationDescribeStackResource(CloudFormationConnectionBase):
 
     def test_describe_stack_resource(self):
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.describe_stack_resource(
+        api_response = self.service_connection.describe_stack_resource(
             'stack_name', 'resource_id')
         self.assertEqual(api_response, 'fake server response')
         self.assert_request_parameters({
@@ -273,8 +222,8 @@ class TestCloudFormationDescribeStackResource(CloudFormationConnectionBase):
 
     def test_describe_stack_resource_fails(self):
         self.set_http_response(status_code=400)
-        with self.assertRaises(self.cloud_formation.ResponseError):
-            api_response = self.cloud_formation.describe_stack_resource(
+        with self.assertRaises(self.service_connection.ResponseError):
+            api_response = self.service_connection.describe_stack_resource(
                 'stack_name', 'resource_id')
 
 
@@ -284,7 +233,7 @@ class TestCloudFormationGetTemplate(CloudFormationConnectionBase):
 
     def test_get_template(self):
         self.set_http_response(status_code=200)
-        api_response = self.cloud_formation.get_template('stack_name')
+        api_response = self.service_connection.get_template('stack_name')
         self.assertEqual(api_response, 'fake server response')
         self.assert_request_parameters({
             'AWSAccessKeyId': 'aws_access_key_id',
@@ -299,8 +248,8 @@ class TestCloudFormationGetTemplate(CloudFormationConnectionBase):
 
     def test_get_template_fails(self):
         self.set_http_response(status_code=400)
-        with self.assertRaises(self.cloud_formation.ResponseError):
-            api_response = self.cloud_formation.get_template('stack_name')
+        with self.assertRaises(self.service_connection.ResponseError):
+            api_response = self.service_connection.get_template('stack_name')
 
 
 class TestCloudFormationGetStackevents(CloudFormationConnectionBase):
@@ -335,7 +284,7 @@ class TestCloudFormationGetStackevents(CloudFormationConnectionBase):
 
     def test_describe_stack_events(self):
         self.set_http_response(status_code=200)
-        first, second = self.cloud_formation.describe_stack_events('stack_name', next_token='next_token')
+        first, second = self.service_connection.describe_stack_events('stack_name', next_token='next_token')
         self.assertEqual(first.event_id, 'Event-1-Id')
         self.assertEqual(first.logical_resource_id, 'MyStack')
         self.assertEqual(first.physical_resource_id, 'MyStack_One')
@@ -398,7 +347,7 @@ class TestCloudFormationDescribeStackResources(CloudFormationConnectionBase):
 
     def test_describe_stack_resources(self):
         self.set_http_response(status_code=200)
-        first, second = self.cloud_formation.describe_stack_resources(
+        first, second = self.service_connection.describe_stack_resources(
             'stack_name', 'logical_resource_id', 'physical_resource_id')
         self.assertEqual(first.description, None)
         self.assertEqual(first.logical_resource_id, 'MyDBInstance')
@@ -473,7 +422,7 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
 
     def test_describe_stacks(self):
         self.set_http_response(status_code=200)
-        stack = self.cloud_formation.describe_stacks('MyStack')[0]
+        stack = self.service_connection.describe_stacks('MyStack')[0]
         self.assertEqual(stack.creation_time,
                          datetime(2012, 5, 16, 22, 55, 31))
         self.assertEqual(stack.description, 'My Description')
@@ -537,7 +486,7 @@ class TestCloudFormationListStackResources(CloudFormationConnectionBase):
 
     def test_list_stack_resources(self):
         self.set_http_response(status_code=200)
-        resources = self.cloud_formation.list_stack_resources('MyStack',
+        resources = self.service_connection.list_stack_resources('MyStack',
                                                               next_token='next_token')
         self.assertEqual(len(resources), 2)
         self.assertEqual(resources[0].last_updated_timestamp,
@@ -587,7 +536,7 @@ class TestCloudFormationListStacks(CloudFormationConnectionBase):
 
     def test_list_stacks(self):
         self.set_http_response(status_code=200)
-        stacks = self.cloud_formation.list_stacks(['CREATE_IN_PROGRESS'],
+        stacks = self.service_connection.list_stacks(['CREATE_IN_PROGRESS'],
                                                   next_token='next_token')
         self.assertEqual(len(stacks), 1)
         self.assertEqual(stacks[0].stack_id,
@@ -638,7 +587,7 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
 
     def test_validate_template(self):
         self.set_http_response(status_code=200)
-        template = self.cloud_formation.validate_template(template_body=SAMPLE_TEMPLATE,
+        template = self.service_connection.validate_template(template_body=SAMPLE_TEMPLATE,
                                                           template_url='http://url')
         self.assertEqual(template.description, 'My Description.')
         self.assertEqual(len(template.template_parameters), 2)

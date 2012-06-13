@@ -38,7 +38,28 @@ from boto.gs.connection import GSConnection
 from boto.gs.cors import Cors
 from boto import handler
 from boto import storage_uri
+from boto.provider import Provider
 
+
+_HAS_GOOGLE_CREDENTIALS = None
+
+
+def has_google_credentials():
+    global _HAS_GOOGLE_CREDENTIALS
+    if _HAS_GOOGLE_CREDENTIALS is None:
+        provider = Provider('google')
+        if provider.access_key is None or provider.secret_key is None:
+            _HAS_GOOGLE_CREDENTIALS = False
+        else:
+            _HAS_GOOGLE_CREDENTIALS = True
+    return _HAS_GOOGLE_CREDENTIALS
+
+
+
+@unittest.skipUnless(has_google_credentials(),
+                     "Google credentials are required to run the Google "
+                     "Cloud Storage tests.  Update your boto.cfg to run "
+                     "these tests.")
 class GSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):

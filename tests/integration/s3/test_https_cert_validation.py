@@ -39,10 +39,13 @@ import os
 import ssl
 import unittest
 
+from nose.plugins.attrib import attr
+
 import boto
 from boto import exception, https_connection
 from boto.gs.connection import GSConnection
 from boto.s3.connection import S3Connection
+
 
 # File 'other_cacerts.txt' contains a valid CA certificate of a CA that is used
 # by neither S3 nor Google Cloud Storage. Validation against this CA cert should
@@ -59,6 +62,8 @@ PROXY_PORT = os.environ.get('PROXY_PORT', '3128')
 # the server should return a certificate with CN 'www.<somedomain>.com').
 INVALID_HOSTNAME_HOST = os.environ.get('INVALID_HOSTNAME_HOST', 'www')
 
+
+@attr('notdefault')
 class CertValidationTest (unittest.TestCase):
 
     def setUp(self):

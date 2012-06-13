@@ -52,6 +52,7 @@ import boto.provider
 import tempfile
 import smtplib
 import datetime
+import re
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -85,6 +86,12 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
                    'response-content-encoding', 'delete', 'lifecycle']
+
+
+_first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
+_number_cap_regex = re.compile('([a-z])([0-9]+)')
+_end_cap_regex = re.compile('([a-z0-9])([A-Z])')
+
 
 def unquote_v(nv):
     if len(nv) == 1:
@@ -664,16 +671,23 @@ def mklist(value):
             value = [value]
     return value
 
-def pythonize_name(name, sep='_'):
-    s = ''
-    if name[0].isupper:
-        s = name[0].lower()
-    for c in name[1:]:
-        if c.isupper():
-            s += sep + c.lower()
-        else:
-            s += c
-    return s
+def pythonize_name(name):
+    """Convert camel case to a "pythonic" name.
+
+    Examples::
+
+        pythonize_name('CamelCase') -> 'camel_case'
+        pythonize_name('already_pythonized') -> 'already_pythonized'
+        pythonize_name('HTTPRequest') -> 'http_request'
+        pythonize_name('HTTPStatus200Ok') -> 'http_status_200_ok'
+        pythonize_name('UPPER') -> 'upper'
+        pythonize_name('') -> ''
+
+    """
+    s1 = _first_cap_regex.sub(r'\1_\2', name)
+    s2 = _number_cap_regex.sub(r'\1_\2', s1)
+    return _end_cap_regex.sub(r'\1_\2', s2).lower()
+
 
 def write_mime_multipart(content, compress=False, deftype='text/plain', delimiter=':'):
     """Description:
