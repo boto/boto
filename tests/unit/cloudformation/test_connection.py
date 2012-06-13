@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import unittest
 import httplib
-import json
 from datetime import datetime
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 from mock import Mock
 
