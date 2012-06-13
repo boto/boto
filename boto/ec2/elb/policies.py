@@ -78,9 +78,11 @@ class Policies(object):
         if name == 'AppCookieStickinessPolicies':
             rs = ResultSet([('member', AppCookieStickinessPolicy)])
             self.app_cookie_stickiness_policies = rs
+            return rs
         elif name == 'LBCookieStickinessPolicies':
             rs = ResultSet([('member', LBCookieStickinessPolicy)])
             self.lb_cookie_stickiness_policies = rs
+            return rs
 
     def endElement(self, name, value, connection):
         return

@@ -80,11 +80,12 @@ def http_body(field):
                 message = "{} requires {} and content_type arguments for " \
                           "building HTTP body".format(func.action, field)
                 raise KeyError(message)
-            body = kw.pop(field)
-            return func(*args, body=body, headers={
+            kw['body'] = kw.pop(field)
+            kw['headers'] = {
                 'Content-Type': kw.pop('content_type'),
-                'Content-MD5':  content_md5(body),
-            }, **kw)
+                'Content-MD5':  content_md5(kw['body']),
+            }
+            return func(*args, **kw)
         wrapper.__doc__ = "{}\nRequired HTTP Body: " \
                           "{}".format(func.__doc__, field)
         return add_attrs_from(func, to=wrapper)
@@ -161,7 +162,7 @@ def boolean_arguments(*fields):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            for field in filter(lambda x: type(kw.get(x)) is bool, fields):
+            for field in filter(lambda x: isinstance(kw.get(x), bool), fields):
                 kw[field] = str(kw[field]).lower()
             return func(*args, **kw)
         wrapper.__doc__ = "{}\nBooleans: {}".format(func.__doc__,

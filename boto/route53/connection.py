@@ -15,16 +15,17 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
 import xml.sax
 import time
 import uuid
 import urllib
+from xml.etree import ElementTree
+
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -41,8 +42,9 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
     <Comment>%(comment)s</Comment>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
-        
+
 #boto.set_stream_logger('dns')
+
 
 class Route53Connection(AWSAuthConnection):
     DefaultHost = 'route53.amazonaws.com'
@@ -56,22 +58,37 @@ class Route53Connection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0):
+                 host=DefaultHost, debug=0, security_token=None):
         AWSAuthConnection.__init__(self, host,
-                aws_access_key_id, aws_secret_access_key,
-                True, port, proxy, proxy_port, debug=debug)
+                                   aws_access_key_id, aws_secret_access_key,
+                                   True, port, proxy, proxy_port, debug=debug,
+                                   security_token=security_token)
 
     def _required_auth_capability(self):
         return ['route53']
+
+    def _credentials_expired(self, response):
+        if response.status != 403:
+            return False
+        try:
+            for event, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'InvalidClientTokenId':
+                        return True
+        except ElementTree.ParseError:
+            return False
+        return False
 
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
             for key, val in params.iteritems():
-                if val is None: continue
+                if val is None:
+                    continue
                 pairs.append(key + '=' + urllib.quote(str(val)))
             path += '?' + '&'.join(pairs)
-        return AWSAuthConnection.make_request(self, action, path, headers, data)
+        return AWSAuthConnection.make_request(self, action, path,
+                                              headers, data)
 
     # Hosted Zones
 
@@ -101,7 +118,7 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         if zone_list:
             e['ListHostedZonesResponse']['HostedZones'].extend(zone_list)
-        while e['ListHostedZonesResponse'].has_key('NextMarker'):
+        while 'NextMarker' in e['ListHostedZonesResponse']:
             next_marker = e['ListHostedZonesResponse']['NextMarker']
             zone_list = e['ListHostedZonesResponse']['HostedZones']
             e = self.get_all_hosted_zones(next_marker, zone_list)
@@ -110,7 +127,7 @@ class Route53Connection(AWSAuthConnection):
     def get_hosted_zone(self, hosted_zone_id):
         """
         Get detailed information about a particular Hosted Zone.
-        
+
         :type hosted_zone_id: str
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
@@ -150,7 +167,7 @@ class Route53Connection(AWSAuthConnection):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
         information about the newly created Hosted Zone.
-        
+
         :type domain_name: str
         :param domain_name: The name of the domain. This should be a
             fully-specified domain, and should end with a final period
@@ -170,20 +187,20 @@ class Route53Connection(AWSAuthConnection):
             use that.
 
         :type comment: str
-        :param comment: Any comments you want to include about the hosted      
+        :param comment: Any comments you want to include about the hosted
             zone.
 
         """
         if caller_ref is None:
             caller_ref = str(uuid.uuid4())
-        params = {'name' : domain_name,
-                  'caller_ref' : caller_ref,
-                  'comment' : comment,
-                  'xmlns' : self.XMLNameSpace}
+        params = {'name': domain_name,
+                  'caller_ref': caller_ref,
+                  'comment': comment,
+                  'xmlns': self.XMLNameSpace}
         xml = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
-                                     {'Content-Type' : 'text/xml'}, xml)
+                                     {'Content-Type': 'text/xml'}, xml)
         body = response.read()
         boto.log.debug(body)
         if response.status == 201:
@@ -196,7 +213,7 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        
+
     def delete_hosted_zone(self, hosted_zone_id):
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('DELETE', uri)
@@ -218,7 +235,7 @@ class Route53Connection(AWSAuthConnection):
         """
         Retrieve the Resource Record Sets defined for this Hosted Zone.
         Returns the raw XML data returned by the Route53 call.
-        
+
         :type hosted_zone_id: str
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
@@ -298,7 +315,7 @@ class Route53Connection(AWSAuthConnection):
         """
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('POST', uri,
-                                     {'Content-Type' : 'text/xml'},
+                                     {'Content-Type': 'text/xml'},
                                      xml_body)
         body = response.read()
         boto.log.debug(body)

@@ -94,7 +94,7 @@ ready to associate it with our new autoscale group.
 
 >>> ag = AutoScalingGroup(group_name='my_group', load_balancers=['my-lb'],
                           availability_zones=['us-east-1a', 'us-east-1b'],
-                          launch_config=lc, min_size=4, max_size=4)
+                          launch_config=lc, min_size=4, max_size=8)
 >>> conn.create_auto_scaling_group(ag)
 
 We now have a new autoscaling group defined! At this point instances should be
@@ -116,25 +116,76 @@ its associated load balancer.
 
 Scaling a Group Up or Down
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-It might be more useful to also define means to scale a group up or down
-depending on certain criteria. For example, if the average CPU utilization of
-all your instances goes above 60%, you may want to scale up a number of
-instances to deal with demand - likewise you might want to scale down if usage
-drops. These criteria are defined in *triggers*.
+It can also be useful to scale a group up or down depending on certain criteria. 
+For example, if the average CPU utilization of the group goes above 70%, you may
+want to scale up the number of instances to deal with demand. Likewise, you
+might want to scale down if usage drops again. 
+These rules for **how** to scale are defined by *Scaling Polices*, and the rules for
+**when** to scale are defined by CloudWatch *Metric Alarms*.
 
-For example, let's modify our above group to have a maxsize of 8 and define means
-of scaling up based on CPU utilization. We'll say we should scale up if the average
-CPU usage goes above 80% and scale down if it goes below 40%.
+For example, let's configure scaling for the above group based on CPU utilization. 
+We'll say it should scale up if the average CPU usage goes above 70% and scale
+down if it goes below 40%.
 
->>> from boto.ec2.autoscale import Trigger
->>> tr = Trigger(name='my_trigger', autoscale_group=ag,
-             measure_name='CPUUtilization', statistic='Average',
-             unit='Percent',
-             dimensions=[('AutoScalingGroupName', ag.name)],
-             period=60, lower_threshold=40,
-             lower_breach_scale_increment='-5',
-             upper_threshold=80,
-             upper_breach_scale_increment='10',
-             breach_duration=360)
->> conn.create_trigger(tr)
+Firstly, define some Scaling Policies. These tell Auto Scaling how to scale
+the group (but not when to do it, we'll specify that later).
 
+We need one policy for scaling up and one for scaling down.
+
+>>> scale_up_policy = ScalingPolicy(
+            name='scale_up', adjustment_type='ChangeInCapacity',
+            as_name='my_group', scaling_adjustment=1, cooldown=180)
+>>> scale_down_policy = ScalingPolicy(
+            name='scale_down', adjustment_type='ChangeInCapacity',
+            as_name='my_group', scaling_adjustment=-1, cooldown=180)
+
+The policy objects are now defined locally.
+Let's submit them to AWS.
+
+>>> conn.create_scaling_policy(scale_up_policy)
+>>> conn.create_scaling_policy(scale_down_policy)
+
+Now that the polices have been digested by AWS, they have extra properties
+that we aren't aware of locally. We need to refresh them by requesting them
+back again. 
+
+>>> scale_up_policy = autoscale.get_all_policies(
+            as_group='my_group', policy_names=['scale_up'])[0]
+>>> scale_down_policy = autoscale.get_all_policies(
+            as_group='my_group', policy_names=['scale_down'])[0]
+
+Specifically, we'll need the Amazon Resource Name (ARN) of each policy, which
+will now be a property of our ScalingPolicy objects.
+
+Next we'll create CloudWatch alarms that will define when to run the
+Auto Scaling Policies.
+
+>>> cloudwatch = boto.connect_cloudwatch()
+
+It makes sense to measure the average CPU usage across the whole Auto Scaling
+Group, rather than individual instances. We express that as CloudWatch
+*Dimensions*.
+
+>>> alarm_dimensions = {"AutoScalingGroupName": 'my_group'}
+
+Create an alarm for when to scale up, and one for when to scale down.
+
+>>> scale_up_alarm = MetricAlarm(
+            name='scale_up_on_cpu', namespace='AWS/EC2',
+            metric='CPUUtilization', statistic='Average',
+            comparison='>', threshold='70',
+            period='60', evaluation_periods=2,
+            alarm_actions=[scale_up_policy.policy_arn],
+            dimensions=alarm_dimensions)
+>>> cloudwatch.create_alarm(scale_up_alarm)
+
+>>> scale_down_alarm = MetricAlarm(
+            name='scale_down_on_cpu', namespace='AWS/EC2',
+            metric='CPUUtilization', statistic='Average',
+            comparison='<', threshold='40',
+            period='60', evaluation_periods=2,
+            alarm_actions=[scale_down_policy.policy_arn],
+            dimensions=alarm_dimensions)
+>>> cloudwatch.create_alarm(scale_down_alarm)
+
+Auto Scaling will now create a new instance if the existing cluster averages more than 70% CPU for two minutes. Similarly, it will terminate an instance when CPU usage sits below 40%. Auto Scaling will not add or remove instances beyond the limits of the Scaling Group's 'max_size' and 'min_size' properties.

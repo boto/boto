@@ -36,13 +36,14 @@ from boto.regioninfo import RegionInfo
 import boto
 
 RegionData = {
-    'us-east-1' : 'monitoring.us-east-1.amazonaws.com',
-    'us-west-1' : 'monitoring.us-west-1.amazonaws.com',
-    'us-west-2' : 'monitoring.us-west-2.amazonaws.com',
-    'sa-east-1' : 'monitoring.sa-east-1.amazonaws.com',
-    'eu-west-1' : 'monitoring.eu-west-1.amazonaws.com',
-    'ap-northeast-1' : 'monitoring.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1' : 'monitoring.ap-southeast-1.amazonaws.com'}
+    'us-east-1': 'monitoring.us-east-1.amazonaws.com',
+    'us-west-1': 'monitoring.us-west-1.amazonaws.com',
+    'us-west-2': 'monitoring.us-west-2.amazonaws.com',
+    'sa-east-1': 'monitoring.sa-east-1.amazonaws.com',
+    'eu-west-1': 'monitoring.eu-west-1.amazonaws.com',
+    'ap-northeast-1': 'monitoring.ap-northeast-1.amazonaws.com',
+    'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com'}
+
 
 def regions():
     """
@@ -58,6 +59,7 @@ def regions():
                             connection_cls=CloudWatchConnection)
         regions.append(region)
     return regions
+
 
 def connect_to_region(region_name, **kw_params):
     """
@@ -85,11 +87,11 @@ class CloudWatchConnection(AWSQueryConnection):
                                             'cloudwatch_region_endpoint',
                                             'monitoring.us-east-1.amazonaws.com')
 
-
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
@@ -102,18 +104,19 @@ class CloudWatchConnection(AWSQueryConnection):
         self.region = region
 
         AWSQueryConnection.__init__(self, aws_access_key_id,
-                                    aws_secret_access_key, 
+                                    aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path,
+                                    security_token)
 
     def _required_auth_capability(self):
         return ['ec2']
 
     def build_dimension_param(self, dimension, params):
         prefix = 'Dimensions.member'
-        i=0
+        i = 0
         for dim_name in dimension:
             dim_value = dimension[dim_name]
             if dim_value:
@@ -133,14 +136,14 @@ class CloudWatchConnection(AWSQueryConnection):
         for index, item in enumerate(items):
             i = index + 1
             if isinstance(item, dict):
-                for k,v in item.iteritems():
+                for k, v in item.iteritems():
                     params[label % (i, 'Name')] = k
                     if v is not None:
                         params[label % (i, 'Value')] = v
             else:
                 params[label % i] = item
 
-    def build_put_params(self, params, name, value=None, timestamp=None, 
+    def build_put_params(self, params, name, value=None, timestamp=None,
                         unit=None, dimensions=None, statistics=None):
         args = (name, value, unit, dimensions, statistics, timestamp)
         length = max(map(lambda a: len(a) if isinstance(a, list) else 1, args))
@@ -157,13 +160,13 @@ class CloudWatchConnection(AWSQueryConnection):
 
             if timestamp:
                 metric_data['Timestamp'] = t.isoformat()
-            
+
             if unit:
                 metric_data['Unit'] = u
-            
+
             if dimensions:
                 self.build_dimension_param(d, metric_data)
-            
+
             if statistics:
                 metric_data['StatisticValues.Maximum'] = s['maximum']
                 metric_data['StatisticValues.Minimum'] = s['minimum']
@@ -189,20 +192,20 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type period: integer
         :param period: The granularity, in seconds, of the returned datapoints.
-                       Period must be at least 60 seconds and must be a multiple
-                       of 60. The default value is 60.
+            Period must be at least 60 seconds and must be a multiple
+            of 60. The default value is 60.
 
         :type start_time: datetime
-        :param start_time: The time stamp to use for determining the first
-                           datapoint to return. The value specified is
-                           inclusive; results include datapoints with the
-                           time stamp specified.
+        :param start_time: The time stamp to use for determining the
+            first datapoint to return. The value specified is
+            inclusive; results include datapoints with the time stamp
+            specified.
 
         :type end_time: datetime
-        :param end_time: The time stamp to use for determining the last
-                         datapoint to return. The value specified is
-                         exclusive; results will include datapoints up to
-                         the time stamp specified.
+        :param end_time: The time stamp to use for determining the
+            last datapoint to return. The value specified is
+            exclusive; results will include datapoints up to the time
+            stamp specified.
 
         :type metric_name: string
         :param metric_name: The metric name.
@@ -212,7 +215,7 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type statistics: list
         :param statistics: A list of statistics names Valid values:
-                           Average | Sum | SampleCount | Maximum | Minimum
+            Average | Sum | SampleCount | Maximum | Minimum
 
         :type dimensions: dict
         :param dimensions: A dictionary of dimension key/values where
@@ -222,11 +225,11 @@ class CloudWatchConnection(AWSQueryConnection):
                            dimension.
         :rtype: list
         """
-        params = {'Period' : period,
-                  'MetricName' : metric_name,
-                  'Namespace' : namespace,
-                  'StartTime' : start_time.isoformat(),
-                  'EndTime' : end_time.isoformat()}
+        params = {'Period': period,
+                  'MetricName': metric_name,
+                  'Namespace': namespace,
+                  'StartTime': start_time.isoformat(),
+                  'EndTime': end_time.isoformat()}
         self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
             self.build_dimension_param(dimensions, params)
@@ -240,30 +243,28 @@ class CloudWatchConnection(AWSQueryConnection):
         data available.
 
         :type next_token: str
-        :param next_token: A maximum of 500 metrics will be returned at one
-                           time.  If more results are available, the
-                           ResultSet returned will contain a non-Null
-                           next_token attribute.  Passing that token as a
-                           parameter to list_metrics will retrieve the
-                           next page of metrics.
+        :param next_token: A maximum of 500 metrics will be returned
+            at one time.  If more results are available, the ResultSet
+            returned will contain a non-Null next_token attribute.
+            Passing that token as a parameter to list_metrics will
+            retrieve the next page of metrics.
 
         :type dimension: dict
-        :param dimension_filters: A dictionary containing name/value pairs
-                                  that will be used to filter the results.
-                                  The key in the dictionary is the name of
-                                  a Dimension.  The value in the dictionary
-                                  is either a scalar value of that Dimension
-                                  name that you want to filter on, a list
-                                  of values to filter on or None if
-                                  you want all metrics with that Dimension name.
+        :param dimension_filters: A dictionary containing name/value
+            pairs that will be used to filter the results.  The key in
+            the dictionary is the name of a Dimension.  The value in
+            the dictionary is either a scalar value of that Dimension
+            name that you want to filter on, a list of values to
+            filter on or None if you want all metrics with that
+            Dimension name.
 
         :type metric_name: str
         :param metric_name: The name of the Metric to filter against.  If None,
-                            all Metric names will be returned.
+            all Metric names will be returned.
 
         :type namespace: str
         :param namespace: A Metric namespace to filter against (e.g. AWS/EC2).
-                          If None, Metrics from all namespaces will be returned.
+            If None, Metrics from all namespaces will be returned.
         """
         params = {}
         if next_token:
@@ -274,16 +275,16 @@ class CloudWatchConnection(AWSQueryConnection):
             params['MetricName'] = metric_name
         if namespace:
             params['Namespace'] = namespace
-        
+
         return self.get_list('ListMetrics', params, [('member', Metric)])
-    
-    def put_metric_data(self, namespace, name, value=None, timestamp=None, 
+
+    def put_metric_data(self, namespace, name, value=None, timestamp=None,
                         unit=None, dimensions=None, statistics=None):
         """
-        Publishes metric data points to Amazon CloudWatch. Amazon Cloudwatch 
-        associates the data points with the specified metric. If the specified 
-        metric does not exist, Amazon CloudWatch creates the metric. If a list 
-        is specified for some, but not all, of the arguments, the remaining 
+        Publishes metric data points to Amazon CloudWatch. Amazon Cloudwatch
+        associates the data points with the specified metric. If the specified
+        metric does not exist, Amazon CloudWatch creates the metric. If a list
+        is specified for some, but not all, of the arguments, the remaining
         arguments are repeated a corresponding number of times.
 
         :type namespace: str
@@ -296,11 +297,11 @@ class CloudWatchConnection(AWSQueryConnection):
         :param value: The value for the metric.
 
         :type timestamp: datetime or list
-        :param timestamp: The time stamp used for the metric. If not specified, 
+        :param timestamp: The time stamp used for the metric. If not specified,
             the default value is set to the time the metric data was received.
-        
+
         :type unit: string or list
-        :param unit: The unit of the metric.  Valid Values: Seconds | 
+        :param unit: The unit of the metric.  Valid Values: Seconds |
             Microseconds | Milliseconds | Bytes | Kilobytes |
             Megabytes | Gigabytes | Terabytes | Bits | Kilobits |
             Megabits | Gigabits | Terabits | Percent | Count |
@@ -308,12 +309,12 @@ class CloudWatchConnection(AWSQueryConnection):
             Gigabytes/Second | Terabytes/Second | Bits/Second |
             Kilobits/Second | Megabits/Second | Gigabits/Second |
             Terabits/Second | Count/Second | None
-        
+
         :type dimensions: dict
-        :param dimensions: Add extra name value pairs to associate 
+        :param dimensions: Add extra name value pairs to associate
             with the metric, i.e.:
             {'name1': value1, 'name2': (value2, value3)}
-        
+
         :type statistics: dict or list
         :param statistics: Use a statistic set instead of a value, for example::
 
@@ -324,7 +325,6 @@ class CloudWatchConnection(AWSQueryConnection):
             unit=unit, dimensions=dimensions, statistics=statistics)
 
         return self.get_status('PutMetricData', params, verb="POST")
-
 
     def describe_alarms(self, action_prefix=None, alarm_name_prefix=None,
                         alarm_names=None, max_records=None, state_value=None,
@@ -340,21 +340,21 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type alarm_name_prefix: string
         :param alarm_name_prefix: The alarm name prefix. AlarmNames cannot
-                                  be specified if this parameter is specified.
+            be specified if this parameter is specified.
 
         :type alarm_names: list
         :param alarm_names: A list of alarm names to retrieve information for.
 
         :type max_records: int
         :param max_records: The maximum number of alarm descriptions
-                            to retrieve.
+            to retrieve.
 
         :type state_value: string
         :param state_value: The state value to be used in matching alarms.
 
         :type next_token: string
         :param next_token: The token returned by a previous call to
-                           indicate that there is more data.
+            indicate that there is more data.
 
         :rtype list
         """
@@ -398,15 +398,15 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type history_item_type: string
         :param history_item_type: The type of alarm histories to retreive
-                                  (ConfigurationUpdate | StateUpdate | Action)
+            (ConfigurationUpdate | StateUpdate | Action)
 
         :type max_records: int
         :param max_records: The maximum number of alarm descriptions
-                            to retrieve.
+            to retrieve.
 
         :type next_token: string
         :param next_token: The token returned by a previous call to indicate
-                           that there is more data.
+            that there is more data.
 
         :rtype list
         """
@@ -440,26 +440,25 @@ class CloudWatchConnection(AWSQueryConnection):
 
         :type period: int
         :param period: The period in seconds over which the statistic
-                       is applied.
+            is applied.
 
         :type statistic: string
         :param statistic: The statistic for the metric.
 
-        :param dimension_filters: A dictionary containing name/value pairs
-                                  that will be used to filter the results.
-                                  The key in the dictionary is the name of
-                                  a Dimension.  The value in the dictionary
-                                  is either a scalar value of that Dimension
-                                  name that you want to filter on, a list
-                                  of values to filter on or None if
-                                  you want all metrics with that Dimension name.
+        :param dimension_filters: A dictionary containing name/value
+            pairs that will be used to filter the results.  The key in
+            the dictionary is the name of a Dimension.  The value in
+            the dictionary is either a scalar value of that Dimension
+            name that you want to filter on, a list of values to
+            filter on or None if you want all metrics with that
+            Dimension name.
 
         :type unit: string
 
         :rtype list
         """
-        params = {'MetricName' : metric_name,
-                  'Namespace' : namespace}
+        params = {'MetricName': metric_name,
+                  'Namespace': namespace}
         if period:
             params['Period'] = period
         if statistic:
@@ -488,14 +487,14 @@ class CloudWatchConnection(AWSQueryConnection):
         :param alarm: MetricAlarm object.
         """
         params = {
-                    'AlarmName'             :       alarm.name,
-                    'MetricName'            :       alarm.metric,
-                    'Namespace'             :       alarm.namespace,
-                    'Statistic'             :       alarm.statistic,
-                    'ComparisonOperator'    :       alarm.comparison,
-                    'Threshold'             :       alarm.threshold,
-                    'EvaluationPeriods'     :       alarm.evaluation_periods,
-                    'Period'                :       alarm.period,
+                    'AlarmName': alarm.name,
+                    'MetricName': alarm.metric,
+                    'Namespace': alarm.namespace,
+                    'Statistic': alarm.statistic,
+                    'ComparisonOperator': alarm.comparison,
+                    'Threshold': alarm.threshold,
+                    'EvaluationPeriods': alarm.evaluation_periods,
+                    'Period': alarm.period,
                  }
         if alarm.actions_enabled is not None:
             params['ActionsEnabled'] = alarm.actions_enabled
@@ -552,9 +551,9 @@ class CloudWatchConnection(AWSQueryConnection):
         :type state_reason_data: string
         :param state_reason_data: Reason string (will be jsonified).
         """
-        params = {'AlarmName' : alarm_name,
-                  'StateReason' : state_reason,
-                  'StateValue' : state_value}
+        params = {'AlarmName': alarm_name,
+                  'StateReason': state_reason,
+                  'StateValue': state_value}
         if state_reason_data:
             params['StateReasonData'] = json.dumps(state_reason_data)
 
@@ -581,4 +580,3 @@ class CloudWatchConnection(AWSQueryConnection):
         params = {}
         self.build_list_params(params, alarm_names, 'AlarmNames.member.%s')
         return self.get_status('DisableAlarmActions', params)
-

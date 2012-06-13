@@ -51,7 +51,7 @@ class S3MFATest (unittest.TestCase):
 
         # Check enabling mfa worked.
         i = 0
-        for i in range(1,8):
+        for i in range(1, 8):
             time.sleep(2**i)
             d = self.bucket.get_versioning_status()
             if d['Versioning'] == 'Enabled' and d['MfaDelete'] == 'Enabled':
@@ -82,7 +82,7 @@ class S3MFATest (unittest.TestCase):
 
         # Lastly, check disabling mfa worked.
         i = 0
-        for i in range(1,8):
+        for i in range(1, 8):
             time.sleep(2**i)
             d = self.bucket.get_versioning_status()
             if d['Versioning'] == 'Suspended' and d['MfaDelete'] != 'Enabled':

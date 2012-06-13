@@ -184,6 +184,9 @@ class Instance(TaggedEC2Object):
             return self.eventsSet
         elif name == 'networkInterfaceSet':
             self.interfaces = ResultSet([('item', NetworkInterface)])
+        elif name == 'iamInstanceProfile':
+            self.instance_profile = SubParse('iamInstanceProfile')
+            return self.instance_profile
         return None
 
     def endElement(self, name, value, connection):
@@ -360,6 +363,7 @@ class Instance(TaggedEC2Object):
                           disableApiTermination|
                           instanceInitiatedShutdownBehavior|
                           rootDeviceName|blockDeviceMapping
+                          sourceDestCheck|groupSet
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -373,14 +377,17 @@ class Instance(TaggedEC2Object):
 
         :type attribute: string
         :param attribute: The attribute you wish to change.
-                          AttributeName - Expected value (default)
-                          instanceType - A valid instance type (m1.small)
-                          kernel - Kernel ID (None)
-                          ramdisk - Ramdisk ID (None)
-                          userData - Base64 encoded String (None)
-                          disableApiTermination - Boolean (true)
-                          instanceInitiatedShutdownBehavior - stop|terminate
-                          rootDeviceName - device name (None)
+
+                          * AttributeName - Expected value (default)
+                          * InstanceType - A valid instance type (m1.small)
+                          * Kernel - Kernel ID (None)
+                          * Ramdisk - Ramdisk ID (None)
+                          * UserData - Base64 encoded String (None)
+                          * DisableApiTermination - Boolean (true)
+                          * InstanceInitiatedShutdownBehavior - stop|terminate
+                          * RootDeviceName - device name (None)
+                          * SourceDestCheck - Boolean (true)
+                          * GroupSet - Set of Security Groups or IDs
 
         :type value: string
         :param value: The new value for the attribute

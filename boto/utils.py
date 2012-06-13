@@ -1,5 +1,6 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -16,7 +17,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -38,6 +39,7 @@
 Some handy utility functions used by several classes.
 """
 
+import socket
 import urllib
 import urllib2
 import imp
@@ -70,12 +72,17 @@ except ImportError:
     import md5
     _hashfn = md5.md5
 
+try:
+    import simplejson as json
+except:
+    import json
+
 # List of Query String Arguments of Interest
-qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging', 
-                   'partNumber', 'policy', 'requestPayment', 'torrent', 
-                   'versioning', 'versionId', 'versions', 'website', 
-                   'uploads', 'uploadId', 'response-content-type', 
-                   'response-content-language', 'response-expires', 
+qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
+                   'partNumber', 'policy', 'requestPayment', 'torrent',
+                   'versioning', 'versionId', 'versions', 'website',
+                   'uploads', 'uploadId', 'response-content-type',
+                   'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
                    'response-content-encoding', 'delete', 'lifecycle']
 
@@ -98,13 +105,13 @@ def canonical_string(method, path, headers, expires=None,
             interesting_headers[lk] = headers[key].strip()
 
     # these keys get empty strings if they don't exist
-    if not interesting_headers.has_key('content-type'):
+    if 'content-type' not in interesting_headers:
         interesting_headers['content-type'] = ''
-    if not interesting_headers.has_key('content-md5'):
+    if 'content-md5' not in interesting_headers:
         interesting_headers['content-md5'] = ''
 
     # just in case someone used this.  it's not necessary in this lib.
-    if interesting_headers.has_key(provider.date_header):
+    if provider.date_header in interesting_headers:
         interesting_headers['date'] = ''
 
     # if you're using expires for query string auth, then it trumps date
@@ -112,8 +119,7 @@ def canonical_string(method, path, headers, expires=None,
     if expires:
         interesting_headers['date'] = str(expires)
 
-    sorted_header_keys = interesting_headers.keys()
-    sorted_header_keys.sort()
+    sorted_header_keys = sorted(interesting_headers.keys())
 
     buf = "%s\n" % method
     for key in sorted_header_keys:
@@ -125,16 +131,16 @@ def canonical_string(method, path, headers, expires=None,
 
     # don't include anything after the first ? in the resource...
     # unless it is one of the QSA of interest, defined above
-    t =  path.split('?')
+    t = path.split('?')
     buf += t[0]
 
     if len(t) > 1:
         qsa = t[1].split('&')
-        qsa = [ a.split('=', 1) for a in qsa]
-        qsa = [ unquote_v(a) for a in qsa if a[0] in qsa_of_interest ]
+        qsa = [a.split('=', 1) for a in qsa]
+        qsa = [unquote_v(a) for a in qsa if a[0] in qsa_of_interest]
         if len(qsa) > 0:
-            qsa.sort(cmp=lambda x,y:cmp(x[0], y[0]))
-            qsa = [ '='.join(a) for a in qsa ]
+            qsa.sort(cmp=lambda x, y:cmp(x[0], y[0]))
+            qsa = ['='.join(a) for a in qsa]
             buf += '?'
             buf += '&'.join(qsa)
 
@@ -184,21 +190,40 @@ def retry_url(url, retry_on_404=True, num_retries=10):
                 code = e.code
             if code == 404 and not retry_on_404:
                 return ''
-        except:
+        except urllib2.URLError, e:
+            raise e
+        except Exception, e:
             pass
         boto.log.exception('Caught exception reading instance data')
         time.sleep(2**i)
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
-def _get_instance_metadata(url):
+def _get_iam_instance_metadata(url, num_retries):
     d = {}
-    data = retry_url(url)
+    # get info first
+    data = retry_url(url + 'info', num_retries=num_retries)
+    d['info'] = json.loads(data)
+    d['security-credentials'] = {}
+    cred_name = retry_url(url + 'security-credentials',
+                          num_retries=num_retries)
+    data = retry_url(url + 'security-credentials' + '/' + cred_name,
+                     num_retries=num_retries)
+    d['security-credentials'][cred_name] = json.loads(data)
+    return d
+
+def _get_instance_metadata(url, num_retries):
+    d = {}
+    data = retry_url(url, num_retries=num_retries)
     if data:
         fields = data.split('\n')
         for field in fields:
-            if field.endswith('/'):
-                d[field[0:-1]] = _get_instance_metadata(url + field)
+            if field == 'iam/':
+                d[field[0:-1]] = _get_iam_instance_metadata(url + field,
+                                                            num_retries=num_retries)
+            elif field.endswith('/'):
+                d[field[0:-1]] = _get_instance_metadata(url + field,
+                                                        num_retries=num_retries)
             else:
                 p = field.find('=')
                 if p > 0:
@@ -206,26 +231,44 @@ def _get_instance_metadata(url):
                     resource = field[0:p] + '/openssh-key'
                 else:
                     key = resource = field
-                val = retry_url(url + resource)
-                p = val.find('\n')
-                if p > 0:
-                    val = val.split('\n')
+                val = retry_url(url + resource, num_retries=num_retries)
+                if val[0] == '{':
+                    val = json.loads(val)
+                else:
+                    p = val.find('\n')
+                    if p > 0:
+                        val = val.split('\n')
                 d[key] = val
     return d
 
-def get_instance_metadata(version='latest', url='http://169.254.169.254'):
+def get_instance_metadata(version='latest', url='http://169.254.169.254',
+                          timeout=None, num_retries=5):
     """
     Returns the instance metadata as a nested Python dictionary.
     Simple values (e.g. local_hostname, hostname, etc.) will be
     stored as string values.  Values such as ancestor-ami-ids will
     be stored in the dict as a list of string values.  More complex
     fields such as public-keys and will be stored as nested dicts.
+
+    If the timeout is specified, the connection to the specified url
+    will time out after the specified number of seconds.
+
     """
-    return _get_instance_metadata('%s/%s/meta-data/' % (url, version))
+    if timeout is not None:
+        original = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+    try:
+        return _get_instance_metadata('%s/%s/meta-data/' % (url, version),
+                                      num_retries=num_retries)
+    except urllib2.URLError, e:
+        return None
+    finally:
+        if timeout is not None:
+            socket.setdefaulttimeout(original)
 
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
-    ud_url = '%s/%s/user-data' % (url,version)
+    ud_url = '%s/%s/user-data' % (url, version)
     user_data = retry_url(ud_url, retry_on_404=False)
     if user_data:
         if sep:
@@ -238,7 +281,7 @@ def get_instance_userdata(version='latest', sep=None,
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
-    
+
 def get_ts(ts=None):
     if not ts:
         ts = time.gmtime()
@@ -268,7 +311,7 @@ def find_class(module_name, class_name=None):
         return c
     except:
         return None
-    
+
 def update_dme(username, password, dme_id, ip_address):
     """
     Update your Dynamic DNS record with DNSMadeEasy.com
@@ -281,7 +324,7 @@ def update_dme(username, password, dme_id, ip_address):
 def fetch_file(uri, file=None, username=None, password=None):
     """
     Fetch a file based on the URI provided. If you do not pass in a file pointer
-    a tempfile.NamedTemporaryFile, or None if the file could not be 
+    a tempfile.NamedTemporaryFile, or None if the file could not be
     retrieved is returned.
     The URI can be either an HTTP url, or "s3://bucket_name/key_name"
     """
@@ -359,7 +402,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
     to accept a username and password on the constructor and to then use those
     credentials to authenticate with the SMTP server.  To use this, you could
     add something like this in your boto config file:
-    
+
     [handler_hand07]
     class=boto.utils.AuthSMTPHandler
     level=WARN
@@ -377,7 +420,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
         logging.handlers.SMTPHandler.__init__(self, mailhost, fromaddr, toaddrs, subject)
         self.username = username
         self.password = password
-        
+
     def emit(self, record):
         """
         Emit a record.
@@ -408,29 +451,29 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
 class LRUCache(dict):
     """A dictionary-like object that stores only a certain number of items, and
     discards its least recently used item when full.
-    
+
     >>> cache = LRUCache(3)
     >>> cache['A'] = 0
     >>> cache['B'] = 1
     >>> cache['C'] = 2
     >>> len(cache)
     3
-    
+
     >>> cache['A']
     0
-    
+
     Adding new items to the cache does not increase its size. Instead, the least
     recently used item is dropped:
-    
+
     >>> cache['D'] = 3
     >>> len(cache)
     3
     >>> 'B' in cache
     False
-    
+
     Iterating over the cache returns the keys, starting with the most recently
     used:
-    
+
     >>> for key in cache:
     ...     print key
     D
@@ -540,10 +583,10 @@ class Password(object):
 
     def set(self, value):
         self.str = self.hashfunc(value).hexdigest()
-   
+
     def __str__(self):
         return str(self.str)
-   
+
     def __eq__(self, other):
         if other == None:
             return False
@@ -570,7 +613,7 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=None,
             msg['To'] = to_string
             msg['Date'] = formatdate(localtime=True)
             msg['Subject'] = subject
-        
+
             if body:
                 msg.attach(MIMEText(body))
 
@@ -651,7 +694,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     :rtype: str:
     """
     wrapper = MIMEMultipart()
-    for name,con in content:
+    for name, con in content:
         definite_type = guess_mime_type(con, deftype)
         maintype, subtype = definite_type.split('/', 1)
         if maintype == 'text':
@@ -697,7 +740,7 @@ def guess_mime_type(content, deftype):
         '#cloud-boothook' : 'text/cloud-boothook'
     }
     rtype = deftype
-    for possible_type,mimetype in starts_with_mappings.items():
+    for possible_type, mimetype in starts_with_mappings.items():
         if content.startswith(possible_type):
             rtype = mimetype
             break

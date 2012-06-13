@@ -92,7 +92,7 @@ class GSConnectionTest (unittest.TestCase):
         fp = open('foobar1', 'wb')
         k.get_contents_to_file(fp)
         fp.close()
-        fp2.seek(0,0)
+        fp2.seek(0, 0)
         fp = open('foobar1', 'rb')
         assert (fp2.read() == fp.read()), 'Chunked Transfer corrupted the Data'
         fp.close()

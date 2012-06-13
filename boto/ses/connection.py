@@ -19,15 +19,15 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import urllib
+import base64
+from xml.etree import ElementTree
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
-
-import urllib
-import base64
 from boto.ses import exceptions as ses_exceptions
 
 
@@ -41,7 +41,8 @@ class SESConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -50,10 +51,23 @@ class SESConnection(AWSAuthConnection):
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port,
                                    proxy_user, proxy_pass, debug,
-                                   https_connection_factory, path)
+                                   https_connection_factory, path,
+                                   security_token=security_token)
 
     def _required_auth_capability(self):
         return ['ses']
+
+    def _credentials_expired(self, response):
+        if response.status != 403:
+            return False
+        try:
+            for event, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'InvalidClientTokenId':
+                        return True
+        except ElementTree.ParseError:
+            return False
+        return False
 
     def _build_list_params(self, params, items, label):
         """Add an AWS API-compatible parameter list to a dictionary.
@@ -151,8 +165,9 @@ class SESConnection(AWSAuthConnection):
 
         raise ExceptionToRaise(response.status, exc_reason, body)
 
-    def send_email(self, source, subject, body, to_addresses, cc_addresses=None,
-                   bcc_addresses=None, format='text', reply_addresses=None,
+    def send_email(self, source, subject, body, to_addresses,
+                   cc_addresses=None, bcc_addresses=None,
+                   format='text', reply_addresses=None,
                    return_path=None, text_body=None, html_body=None):
         """Composes an email message based on input data, and then immediately
         queues the message for sending.
@@ -190,9 +205,9 @@ class SESConnection(AWSAuthConnection):
         :param return_path: The email address to which bounce notifications are
                             to be forwarded. If the message cannot be delivered
                             to the recipient, then an error message will be
-                            returned from the recipient's ISP; this message will
-                            then be forwarded to the email address specified by
-                            the ReturnPath parameter.
+                            returned from the recipient's ISP; this message
+                            will then be forwarded to the email address
+                            specified by the ReturnPath parameter.
 
         :type text_body: string
         :param text_body: The text body to send with this email.
@@ -225,7 +240,7 @@ class SESConnection(AWSAuthConnection):
         if text_body is not None:
             params['Message.Body.Text.Data'] = text_body
 
-        if(format not in ("text","html")):
+        if(format not in ("text", "html")):
             raise ValueError("'format' argument must be 'text' or 'html'")
 
         if(not (html_body or text_body)):
@@ -278,7 +293,7 @@ class SESConnection(AWSAuthConnection):
 
         """
         params = {
-            'RawMessage.Data': base64.b64encode(raw_message),
+            'RawMessage.Data': base64.b64encode(raw_message.encode('utf-8')),
         }
 
         if source:

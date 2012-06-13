@@ -1,4 +1,5 @@
 # Copyright (c) 2009 Reza Lotun http://reza.lotun.name/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -26,6 +27,8 @@ import boto.utils
 import base64
 
 # this should use the corresponding object from boto.ec2
+
+
 class Ebs(object):
     def __init__(self, connection=None, snapshot_id=None, volume_size=None):
         self.connection = connection
@@ -84,12 +87,14 @@ class BlockDeviceMapping(object):
         elif name == 'VirtualName':
             self.virtual_name = value
 
+
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
                  key_name=None, security_groups=None, user_data=None,
                  instance_type='m1.small', kernel_id=None,
                  ramdisk_id=None, block_device_mappings=None,
-                 instance_monitoring=False):
+                 instance_monitoring=False, spot_price=None,
+                 instance_profile_name=None):
         """
         A launch configuration.
 
@@ -98,14 +103,14 @@ class LaunchConfiguration(object):
 
         :type image_id: str
         :param image_id: Unique ID of the Amazon Machine Image (AMI) which was
-                         assigned during registration.
+            assigned during registration.
 
         :type key_name: str
         :param key_name: The name of the EC2 key pair.
 
         :type security_groups: list
         :param security_groups: Names of the security groups with which to
-                                associate the EC2 instances.
+            associate the EC2 instances.
 
         :type user_data: str
         :param user_data: The user data available to launched EC2 instances.
@@ -121,11 +126,20 @@ class LaunchConfiguration(object):
 
         :type block_device_mappings: list
         :param block_device_mappings: Specifies how block devices are exposed
-                                      for instances
+            for instances
 
         :type instance_monitoring: bool
         :param instance_monitoring: Whether instances in group are launched
-                                    with detailed monitoring.
+            with detailed monitoring.
+
+        :type spot_price: float
+        :param spot_price: The spot price you are bidding.  Only applies
+            if you are building an autoscaling group with spot instances.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: The name or the Amazon Resource
+            Name (ARN) of the instance profile associated with the IAM
+            role for the instance.
         """
         self.connection = connection
         self.name = name
@@ -141,6 +155,8 @@ class LaunchConfiguration(object):
         self.user_data = user_data
         self.created_time = None
         self.instance_monitoring = instance_monitoring
+        self.spot_price = spot_price
+        self.instance_profile_name = instance_profile_name
         self.launch_configuration_arn = None
 
     def __repr__(self):
@@ -181,10 +197,13 @@ class LaunchConfiguration(object):
             self.launch_configuration_arn = value
         elif name == 'InstanceMonitoring':
             self.instance_monitoring = value
+        elif name == 'SpotPrice':
+            self.spot_price = float(value)
+        elif name == 'IamInstanceProfile':
+            self.instance_profile_name = value
         else:
             setattr(self, name, value)
 
     def delete(self):
         """ Delete this launch configuration. """
         return self.connection.delete_launch_configuration(self.name)
-

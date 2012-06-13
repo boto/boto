@@ -105,7 +105,7 @@ class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 host=None, debug=0, session_token=None, region=None):
+                 debug=0, session_token=None, region=None):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
                              debug, session_token, region)
@@ -243,8 +243,13 @@ class Layer2(object):
         :param limit: The maximum number of tables to return.
         """
         tables = []
-        while True:
-            result = self.layer1.list_tables(limit)
+        start_table = None
+        while not limit or len(tables) < limit:
+            this_round_limit = None
+            if limit:
+                this_round_limit = limit - len(tables)
+                this_round_limit = min(this_round_limit, 100)
+            result = self.layer1.list_tables(limit=this_round_limit, start_table=start_table)
             tables.extend(result.get('TableNames', []))
             start_table = result.get('LastEvaluatedTableName', None)
             if not start_table:

@@ -200,7 +200,7 @@ class MHMessage(Message):
         return s
 
     def __getitem__(self, key):
-        if self._body.has_key(key):
+        if key in self._body:
             return self._body[key]
         else:
             raise KeyError(key)
@@ -219,7 +219,7 @@ class MHMessage(Message):
         return self._body.items()
 
     def has_key(self, key):
-        return self._body.has_key(key)
+        return key in self._body
 
     def update(self, d):
         self._body.update(d)

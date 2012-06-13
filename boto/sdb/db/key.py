@@ -23,7 +23,7 @@ class Key(object):
 
     @classmethod
     def from_path(cls, *args, **kwds):
-        raise NotImplementedError, "Paths are not currently supported"
+        raise NotImplementedError("Paths are not currently supported")
 
     def __init__(self, encoded=None, obj=None):
         self.name = None
@@ -35,7 +35,7 @@ class Key(object):
             self.kind = None
 
     def app(self):
-        raise NotImplementedError, "Applications are not currently supported"
+        raise NotImplementedError("Applications are not currently supported")
 
     def kind(self):
         return self.kind
@@ -44,7 +44,7 @@ class Key(object):
         return self.id
 
     def name(self):
-        raise NotImplementedError, "Key Names are not currently supported"
+        raise NotImplementedError("Key Names are not currently supported")
 
     def id_or_name(self):
         return self.id
@@ -53,7 +53,7 @@ class Key(object):
         return self.id != None
 
     def parent(self):
-        raise NotImplementedError, "Key parents are not currently supported"
+        raise NotImplementedError("Key parents are not currently supported")
         
     def __str__(self):
         return self.id_or_name()

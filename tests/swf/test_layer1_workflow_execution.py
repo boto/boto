@@ -23,7 +23,7 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         """
         # Poll for a decision task.
         tries = 0 
-        while 1:
+        while True:
             dtask = self.conn.poll_for_decision_task(self._domain, 
                 self._task_list, reverse_order=True)
             if dtask.get('taskToken') is not None:
@@ -80,7 +80,7 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         """
         # Poll for an activity task.
         tries = 0 
-        while 1:
+        while True:
             atask = self.conn.poll_for_activity_task(self._domain, 
                 self._task_list, identity='test worker')
             if atask.get('activityId') is not None:
