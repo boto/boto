@@ -6,6 +6,26 @@ from boto.ec2.volume import Volume, AttachmentSet
 
 
 class VolumeTests(unittest.TestCase):
+    def setUp(self):
+        self.volume_one = Volume()
+        self.volume_one.id = 1
+        self.volume_one.create_time = 1339661223
+        self.volume_one.status = 'one_status'
+        self.volume_one.size = 'one_size'
+        self.volume_one.snapshot_id = 1
+        self.volume_one.attach_data = 'one_data'
+        self.volume_one.zone = 'one_zone'
+
+        self.volume_two = Volume()
+        self.volume_two.connection = mock.Mock()
+        self.volume_two.id = 1
+        self.volume_two.create_time = 1339661224
+        self.volume_two.status = 'two_status'
+        self.volume_two.size = 'two_size'
+        self.volume_two.snapshot_id = 2
+        self.volume_two.attach_data = 'two_data'
+        self.volume_two.zone = 'two_zone'
+
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_calls_TaggedEC2Object_startElement_with_correct_args(self, startElement):
         volume = Volume()
@@ -76,6 +96,39 @@ class VolumeTests(unittest.TestCase):
 
     def test_endElement_with_other_name_sets_other_name_attribute(self):
         return self.check_that_attribute_has_been_set('someName', 'some value', 'someName')
+
+    def test_update_with_result_set_greater_than_0_updates_dict(self):
+        self.volume_two.connection.get_all_volumes.return_value = [self.volume_one]
+        self.volume_two.update()
+
+        assert all([self.volume_two.create_time == 1339661223,
+                    self.volume_two.status == 'one_status',
+                    self.volume_two.size == 'one_size',
+                    self.volume_two.snapshot_id == 1,
+                    self.volume_two.attach_data == 'one_data',
+                    self.volume_two.zone == 'one_zone'])
+
+    def test_update_with_validate_true_raises_value_error(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.connection.get_all_volumes.return_value = []
+        with self.assertRaisesRegexp(ValueError, "^1 is not a valid Volume ID$"):
+            self.volume_one.update(True)
+
+    def test_update_returns_status(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.connection.get_all_volumes.return_value = [self.volume_two]
+        retval = self.volume_one.update()
+        self.assertEqual(retval, "two_status")
+
+    def test_delete_calls_delete_volume(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.delete()
+        self.volume_one.connection.delete_volume.assert_called_with(1)
+
+    def test_attach_calls_attach_volume(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.attach('instance_id', '/dev/null')
+        self.volume_one.connection.attach_volume.assert_called_with(1, 'instance_id', '/dev/null')
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(VolumeTests)
