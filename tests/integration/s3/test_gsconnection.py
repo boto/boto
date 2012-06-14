@@ -29,7 +29,6 @@ Some unit tests for the GSConnection
 """
 
 import boto
-import unittest
 import time
 import os
 import re
@@ -39,6 +38,7 @@ from boto.gs.cors import Cors
 from boto import handler
 from boto import storage_uri
 from boto.provider import Provider
+from tests.unit import unittest
 
 
 _HAS_GOOGLE_CREDENTIALS = None
