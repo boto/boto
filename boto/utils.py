@@ -238,7 +238,8 @@ def _get_instance_metadata(url, num_retries):
                     resource = field[0:p] + '/openssh-key'
                 else:
                     key = resource = field
-                val = retry_url(url + resource, num_retries=num_retries)
+                val = retry_url(url + urllib.quote(resource, safe="/:"),
+                                num_retries=num_retries)
                 if val[0] == '{':
                     val = json.loads(val)
                 else:
