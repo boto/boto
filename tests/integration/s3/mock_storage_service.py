@@ -65,6 +65,7 @@ class MockKey(object):
         self.etag = None
         self.size = None
         self.content_encoding = None
+        self.content_language = None
         self.content_type = None
         self.last_modified = 'Wed, 06 Oct 2010 05:11:54 GMT'
         self.BufferSize = 8192
@@ -100,6 +101,8 @@ class MockKey(object):
             self.content_encoding = headers['Content-Encoding']
         if 'Content-Type' in headers:
             self.content_type = headers['Content-Type']
+        if 'Content-Language' in headers:
+            self.content_language = headers['Content-Language']
 
     def open_read(self, headers=NOT_IMPL, query_args=NOT_IMPL,
                   override_num_retries=NOT_IMPL):
