@@ -54,6 +54,7 @@ class Key(object):
         self.content_type = self.DefaultContentType
         self.content_encoding = None
         self.content_disposition = None
+        self.content_language = None
         self.filename = None
         self.etag = None
         self.is_latest = False
@@ -187,6 +188,8 @@ class Key(object):
                     self.content_type = value
                 elif name.lower() == 'content-encoding':
                     self.content_encoding = value
+                elif name.lower() == 'content-language':
+                    self.content_language = value
                 elif name.lower() == 'last-modified':
                     self.last_modified = value
                 elif name.lower() == 'cache-control':
@@ -686,6 +689,8 @@ class Key(object):
             headers[provider.storage_class_header] = self.storage_class
         if 'Content-Encoding' in headers:
             self.content_encoding = headers['Content-Encoding']
+        if 'Content-Language' in headers:
+            self.content_encoding = headers['Content-Language']
         if 'Content-Type' in headers:
             # Some use cases need to suppress sending of the Content-Type 
             # header and depend on the receiving server to set the content
