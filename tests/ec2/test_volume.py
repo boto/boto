@@ -46,6 +46,37 @@ class VolumeTests(unittest.TestCase):
         retval = volume.startElement('not tagSet or attachmentSet', None, None)
         self.assertEquals(retval, None)
 
+    def check_that_attribute_has_been_set(self, name, value, attribute):
+        volume = Volume()
+        volume.endElement(name, value, None)
+        self.assertEqual(getattr(volume, attribute), value)
+
+    def test_endElement_with_name_volumeId_sets_id(self):
+        return self.check_that_attribute_has_been_set('volumeId', 'some value', 'id')
+
+    def test_endElement_with_name_createTime_sets_create_time(self):
+        return self.check_that_attribute_has_been_set('createTime', 'some time', 'create_time')
+
+    def test_endElement_with_name_status_sets_status(self):
+        return self.check_that_attribute_has_been_set('status', 'some status', 'status')
+
+    def test_endElement_with_name_status_and_empty_string_value_doesnt_set_status(self):
+        volume = Volume()
+        volume.endElement('status', '', None)
+        self.assertNotEqual(volume.status, '')
+
+    def test_endElement_with_name_size_sets_size(self):
+        return self.check_that_attribute_has_been_set('size', 5, 'size')
+
+    def test_endElement_with_name_snapshotId_sets_snapshot_id(self):
+        return self.check_that_attribute_has_been_set('snapshotId', 1, 'snapshot_id')
+
+    def test_endElement_with_name_availabilityZone_sets_zone(self):
+        return self.check_that_attribute_has_been_set('availabilityZone', 'some zone', 'zone')
+
+    def test_endElement_with_other_name_sets_other_name_attribute(self):
+        return self.check_that_attribute_has_been_set('someName', 'some value', 'someName')
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(VolumeTests)
     unittest.TextTestRunner(verbosity=2).run(suite)
