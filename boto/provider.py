@@ -210,7 +210,7 @@ class Provider(object):
         metadata = get_instance_metadata(timeout=timeout, num_retries=1)
         # I'm assuming there's only one role on the instance profile.
         if metadata and 'iam' in metadata:
-            security = credentials['iam']['security-credentials'].values()[0]
+            security = metadata['iam']['security-credentials'].values()[0]
             if self.access_key is None:
                 self.access_key = security['AccessKeyId']
             if self.secret_key is None:

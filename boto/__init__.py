@@ -34,7 +34,7 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.5.0'
+__version__ = '2.5.1'
 Version = __version__  # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
