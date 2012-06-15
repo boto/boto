@@ -7,23 +7,30 @@ from boto.ec2.volume import Volume, AttachmentSet
 
 class VolumeTests(unittest.TestCase):
     def setUp(self):
+        self.attach_data = AttachmentSet()
+        self.attach_data.id = 1
+        self.attach_data.instance_id = 2
+        self.attach_data.status = 'some status'
+        self.attach_data.attach_time = 5
+        self.attach_data.device = '/dev/null'
+
         self.volume_one = Volume()
         self.volume_one.id = 1
-        self.volume_one.create_time = 1339661223
+        self.volume_one.create_time = 5
         self.volume_one.status = 'one_status'
         self.volume_one.size = 'one_size'
         self.volume_one.snapshot_id = 1
-        self.volume_one.attach_data = 'one_data'
+        self.volume_one.attach_data = self.attach_data
         self.volume_one.zone = 'one_zone'
 
         self.volume_two = Volume()
         self.volume_two.connection = mock.Mock()
         self.volume_two.id = 1
-        self.volume_two.create_time = 1339661224
+        self.volume_two.create_time = 6
         self.volume_two.status = 'two_status'
         self.volume_two.size = 'two_size'
         self.volume_two.snapshot_id = 2
-        self.volume_two.attach_data = 'two_data'
+        self.volume_two.attach_data = None
         self.volume_two.zone = 'two_zone'
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
@@ -38,7 +45,7 @@ class VolumeTests(unittest.TestCase):
         startElement.return_value = tag_set
         volume = Volume()
         retval = volume.startElement(None, None, None)
-        self.assertEquals(retval, tag_set)
+        self.assertEqual(retval, tag_set)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     @mock.patch("boto.resultset.ResultSet")
@@ -48,23 +55,23 @@ class VolumeTests(unittest.TestCase):
         volume = Volume()
         volume.tags = result_set
         retval = volume.startElement('tagSet', None, None)
-        self.assertEquals(retval, volume.tags)
+        self.assertEqual(retval, volume.tags)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_with_name_attachmentSet_returns_AttachmentSet(self, startElement):
         startElement.return_value = None
-        attach_data = mock.Mock(AttachmentSet)
+        attach_data = AttachmentSet()
         volume = Volume()
         volume.attach_data = attach_data
         retval = volume.startElement('attachmentSet', None, None)
-        self.assertEquals(retval, volume.attach_data)
+        self.assertEqual(retval, volume.attach_data)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_else_returns_None(self, startElement):
         startElement.return_value = None
         volume = Volume()
         retval = volume.startElement('not tagSet or attachmentSet', None, None)
-        self.assertEquals(retval, None)
+        self.assertEqual(retval, None)
 
     def check_that_attribute_has_been_set(self, name, value, attribute):
         volume = Volume()
@@ -101,11 +108,11 @@ class VolumeTests(unittest.TestCase):
         self.volume_two.connection.get_all_volumes.return_value = [self.volume_one]
         self.volume_two.update()
 
-        assert all([self.volume_two.create_time == 1339661223,
+        assert all([self.volume_two.create_time == 5,
                     self.volume_two.status == 'one_status',
                     self.volume_two.size == 'one_size',
                     self.volume_two.snapshot_id == 1,
-                    self.volume_two.attach_data == 'one_data',
+                    self.volume_two.attach_data == self.attach_data,
                     self.volume_two.zone == 'one_zone'])
 
     def test_update_with_validate_true_raises_value_error(self):
@@ -129,6 +136,49 @@ class VolumeTests(unittest.TestCase):
         self.volume_one.connection = mock.Mock()
         self.volume_one.attach('instance_id', '/dev/null')
         self.volume_one.connection.attach_volume.assert_called_with(1, 'instance_id', '/dev/null')
+
+    def test_detach_calls_detach_volume(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.detach()
+        self.volume_one.connection.detach_volume.assert_called_with(
+                1, 2, "/dev/null", False)
+
+    def test_detach_with_no_attach_data(self):
+        self.volume_two.connection = mock.Mock()
+        self.volume_two.detach()
+        self.volume_two.connection.detach_volume.assert_called_with(
+                1, None, None, False)
+
+    def test_detach_with_force_calls_detach_volume_with_force(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.detach(True)
+        self.volume_one.connection.detach_volume.assert_called_with(
+                1, 2, "/dev/null", True)
+
+
+    def test_create_snapshot_calls_connection_create_snapshot(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.create_snapshot()
+        self.volume_one.connection.create_snapshot.assert_called_with(
+                1, None)
+
+    def test_create_snapshot_with_description(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.create_snapshot("some description")
+        self.volume_one.connection.create_snapshot.assert_called_with(
+                1, "some description")
+
+    def test_volume_state_returns_status(self):
+        retval = self.volume_one.volume_state()
+        self.assertEqual(retval, "one_status")
+
+    def test_attachment_state_returns_state(self):
+        retval = self.volume_one.attachment_state()
+        self.assertEqual(retval, "some status")
+
+    def test_attachment_state_no_attach_data_returns_None(self):
+        retval = self.volume_two.attachment_state()
+        self.assertEqual(retval, None)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(VolumeTests)
