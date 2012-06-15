@@ -38,6 +38,10 @@ def main():
     attribute_args = []
     for service_attribute in known_args.service_tests:
         attribute_args.extend(['-a', '!notdefault,' +service_attribute])
+    if not attribute_args:
+        # If the user did not specify any filtering criteria, we at least
+        # will filter out any test tagged 'notdefault'.
+        attribute_args = ['-a', '!notdefault']
     all_args = [__file__] + attribute_args + remaining_args
     print "nose command:", ' '.join(all_args)
     if run(argv=all_args):
