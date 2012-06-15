@@ -30,7 +30,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--service-tests', action="append",
+    parser.add_argument('-t', '--service-tests', action="append", default=[],
                         help="Run tests for a given service.  This will "
                         "run any test tagged with the specified value, "
                         "e.g -t s3 -t ec2")
