@@ -1,8 +1,9 @@
 import mock
 import unittest
 
+from boto.ec2.snapshot import Snapshot
 from boto.ec2.tag import Tag, TagSet
-from boto.ec2.volume import Volume, AttachmentSet
+from boto.ec2.volume import Volume, AttachmentSet, VolumeAttribute
 
 
 class VolumeTests(unittest.TestCase):
@@ -180,6 +181,79 @@ class VolumeTests(unittest.TestCase):
         retval = self.volume_two.attachment_state()
         self.assertEqual(retval, None)
 
+    def test_snapshots_returns_snapshots(self):
+        snapshot_one = Snapshot()
+        snapshot_one.volume_id = 1
+        snapshot_two = Snapshot()
+        snapshot_two.volume_id = 2
+
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.connection.get_all_snapshots.return_value = [snapshot_one, snapshot_two]
+        retval = self.volume_one.snapshots()
+        self.assertEqual(retval, [snapshot_one])
+
+    def test_snapshots__with_owner_and_restorable_by(self):
+        self.volume_one.connection = mock.Mock()
+        self.volume_one.connection.get_all_snapshots.return_value = []
+        self.volume_one.snapshots("owner", "restorable_by")
+        self.volume_one.connection.get_all_snapshots.assert_called_with(
+                owner="owner", restorable_by="restorable_by")
+
+class AttachmentSetTests(unittest.TestCase):
+    def check_that_attribute_has_been_set(self, name, value, attribute):
+        attachment_set = AttachmentSet()
+        attachment_set.endElement(name, value, None)
+        self.assertEqual(getattr(attachment_set, attribute), value)
+
+    def test_endElement_with_name_volumeId_sets_id(self):
+        return self.check_that_attribute_has_been_set('volumeId', 'some value', 'id')
+
+    def test_endElement_with_name_instanceId_sets_instance_id(self):
+        return self.check_that_attribute_has_been_set('instanceId', 1, 'instance_id')
+
+    def test_endElement_with_name_status_sets_status(self):
+        return self.check_that_attribute_has_been_set('status', 'some value', 'status')
+
+    def test_endElement_with_name_attachTime_sets_attach_time(self):
+        return self.check_that_attribute_has_been_set('attachTime', 5, 'attach_time')
+
+    def test_endElement_with_name_device_sets_device(self):
+        return self.check_that_attribute_has_been_set('device', '/dev/null', 'device')
+
+    def test_endElement_with_other_name_sets_other_name_attribute(self):
+        return self.check_that_attribute_has_been_set('someName', 'some value', 'someName')
+
+class VolumeAttributeTests(unittest.TestCase):
+    def setUp(self):
+        self.volume_attribute = VolumeAttribute()
+        self.volume_attribute._key_name = "key_name"
+        self.volume_attribute.attrs = {"key_name": False}
+
+    def test_startElement_with_name_autoEnableIO_sets_key_name(self):
+        self.volume_attribute.startElement("autoEnableIO", None, None)
+        self.assertEqual(self.volume_attribute._key_name, "autoEnableIO")
+
+    def test_startElement_without_name_autoEnableIO_returns_None(self):
+        retval = self.volume_attribute.startElement("some name", None, None)
+        self.assertEqual(retval, None)
+
+    def test_endElement_with_name_value_and_value_true_sets_attrs_key_name_True(self):
+        self.volume_attribute.endElement('value', 'true', None)
+        self.assertEqual(self.volume_attribute.attrs["key_name"], True)
+
+    def test_endElement_with_name_value_and_value_false_sets_attrs_key_name_False(self):
+        self.volume_attribute._key_name = "other_key_name"
+        self.volume_attribute.endElement('value', 'false', None)
+        self.assertEqual(self.volume_attribute.attrs["other_key_name"], False)
+
+    def test_endElement_with_name_volumeId_sets_id(self):
+        self.volume_attribute.endElement('volumeId', 'some_value', None)
+        self.assertEqual(self.volume_attribute.id, "some_value")
+
+    def test_endElement_with_other_name_sets_other_name_attribute(self):
+        self.volume_attribute.endElement('someName', 'some value', None)
+        self.assertEqual(self.volume_attribute.someName, "some value")
+
+
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(VolumeTests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
