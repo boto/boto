@@ -11,34 +11,34 @@ class VolumeTests(unittest.TestCase):
         self.attach_data = AttachmentSet()
         self.attach_data.id = 1
         self.attach_data.instance_id = 2
-        self.attach_data.status = 'some status'
+        self.attach_data.status = "some status"
         self.attach_data.attach_time = 5
-        self.attach_data.device = '/dev/null'
+        self.attach_data.device = "/dev/null"
 
         self.volume_one = Volume()
         self.volume_one.id = 1
         self.volume_one.create_time = 5
-        self.volume_one.status = 'one_status'
-        self.volume_one.size = 'one_size'
+        self.volume_one.status = "one_status"
+        self.volume_one.size = "one_size"
         self.volume_one.snapshot_id = 1
         self.volume_one.attach_data = self.attach_data
-        self.volume_one.zone = 'one_zone'
+        self.volume_one.zone = "one_zone"
 
         self.volume_two = Volume()
         self.volume_two.connection = mock.Mock()
         self.volume_two.id = 1
         self.volume_two.create_time = 6
-        self.volume_two.status = 'two_status'
-        self.volume_two.size = 'two_size'
+        self.volume_two.status = "two_status"
+        self.volume_two.size = "two_size"
         self.volume_two.snapshot_id = 2
         self.volume_two.attach_data = None
-        self.volume_two.zone = 'two_zone'
+        self.volume_two.zone = "two_zone"
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_calls_TaggedEC2Object_startElement_with_correct_args(self, startElement):
         volume = Volume()
-        volume.startElement('some name', 'some attrs', None)
-        startElement.assert_called_with(volume, 'some name', 'some attrs', None)
+        volume.startElement("some name", "some attrs", None)
+        startElement.assert_called_with(volume, "some name", "some attrs", None)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_retval_not_None_returns_correct_thing(self, startElement):
@@ -52,10 +52,10 @@ class VolumeTests(unittest.TestCase):
     @mock.patch("boto.resultset.ResultSet")
     def test_startElement_with_name_tagSet_calls_ResultSet(self, ResultSet, startElement):
         startElement.return_value = None
-        result_set = mock.Mock(ResultSet([('item', Tag)]))
+        result_set = mock.Mock(ResultSet([("item", Tag)]))
         volume = Volume()
         volume.tags = result_set
-        retval = volume.startElement('tagSet', None, None)
+        retval = volume.startElement("tagSet", None, None)
         self.assertEqual(retval, volume.tags)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
@@ -64,14 +64,14 @@ class VolumeTests(unittest.TestCase):
         attach_data = AttachmentSet()
         volume = Volume()
         volume.attach_data = attach_data
-        retval = volume.startElement('attachmentSet', None, None)
+        retval = volume.startElement("attachmentSet", None, None)
         self.assertEqual(retval, volume.attach_data)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_else_returns_None(self, startElement):
         startElement.return_value = None
         volume = Volume()
-        retval = volume.startElement('not tagSet or attachmentSet', None, None)
+        retval = volume.startElement("not tagSet or attachmentSet", None, None)
         self.assertEqual(retval, None)
 
     def check_that_attribute_has_been_set(self, name, value, attribute):
@@ -80,41 +80,41 @@ class VolumeTests(unittest.TestCase):
         self.assertEqual(getattr(volume, attribute), value)
 
     def test_endElement_with_name_volumeId_sets_id(self):
-        return self.check_that_attribute_has_been_set('volumeId', 'some value', 'id')
+        return self.check_that_attribute_has_been_set("volumeId", "some value", "id")
 
     def test_endElement_with_name_createTime_sets_create_time(self):
-        return self.check_that_attribute_has_been_set('createTime', 'some time', 'create_time')
+        return self.check_that_attribute_has_been_set("createTime", "some time", "create_time")
 
     def test_endElement_with_name_status_sets_status(self):
-        return self.check_that_attribute_has_been_set('status', 'some status', 'status')
+        return self.check_that_attribute_has_been_set("status", "some status", "status")
 
     def test_endElement_with_name_status_and_empty_string_value_doesnt_set_status(self):
         volume = Volume()
-        volume.endElement('status', '', None)
-        self.assertNotEqual(volume.status, '')
+        volume.endElement("status", "", None)
+        self.assertNotEqual(volume.status, "")
 
     def test_endElement_with_name_size_sets_size(self):
-        return self.check_that_attribute_has_been_set('size', 5, 'size')
+        return self.check_that_attribute_has_been_set("size", 5, "size")
 
     def test_endElement_with_name_snapshotId_sets_snapshot_id(self):
-        return self.check_that_attribute_has_been_set('snapshotId', 1, 'snapshot_id')
+        return self.check_that_attribute_has_been_set("snapshotId", 1, "snapshot_id")
 
     def test_endElement_with_name_availabilityZone_sets_zone(self):
-        return self.check_that_attribute_has_been_set('availabilityZone', 'some zone', 'zone')
+        return self.check_that_attribute_has_been_set("availabilityZone", "some zone", "zone")
 
     def test_endElement_with_other_name_sets_other_name_attribute(self):
-        return self.check_that_attribute_has_been_set('someName', 'some value', 'someName')
+        return self.check_that_attribute_has_been_set("someName", "some value", "someName")
 
     def test_update_with_result_set_greater_than_0_updates_dict(self):
         self.volume_two.connection.get_all_volumes.return_value = [self.volume_one]
         self.volume_two.update()
 
         assert all([self.volume_two.create_time == 5,
-                    self.volume_two.status == 'one_status',
-                    self.volume_two.size == 'one_size',
+                    self.volume_two.status == "one_status",
+                    self.volume_two.size == "one_size",
                     self.volume_two.snapshot_id == 1,
                     self.volume_two.attach_data == self.attach_data,
-                    self.volume_two.zone == 'one_zone'])
+                    self.volume_two.zone == "one_zone"])
 
     def test_update_with_validate_true_raises_value_error(self):
         self.volume_one.connection = mock.Mock()
@@ -135,8 +135,8 @@ class VolumeTests(unittest.TestCase):
 
     def test_attach_calls_attach_volume(self):
         self.volume_one.connection = mock.Mock()
-        self.volume_one.attach('instance_id', '/dev/null')
-        self.volume_one.connection.attach_volume.assert_called_with(1, 'instance_id', '/dev/null')
+        self.volume_one.attach("instance_id", "/dev/null")
+        self.volume_one.connection.attach_volume.assert_called_with(1, "instance_id", "/dev/null")
 
     def test_detach_calls_detach_volume(self):
         self.volume_one.connection = mock.Mock()
@@ -206,22 +206,22 @@ class AttachmentSetTests(unittest.TestCase):
         self.assertEqual(getattr(attachment_set, attribute), value)
 
     def test_endElement_with_name_volumeId_sets_id(self):
-        return self.check_that_attribute_has_been_set('volumeId', 'some value', 'id')
+        return self.check_that_attribute_has_been_set("volumeId", "some value", "id")
 
     def test_endElement_with_name_instanceId_sets_instance_id(self):
-        return self.check_that_attribute_has_been_set('instanceId', 1, 'instance_id')
+        return self.check_that_attribute_has_been_set("instanceId", 1, "instance_id")
 
     def test_endElement_with_name_status_sets_status(self):
-        return self.check_that_attribute_has_been_set('status', 'some value', 'status')
+        return self.check_that_attribute_has_been_set("status", "some value", "status")
 
     def test_endElement_with_name_attachTime_sets_attach_time(self):
-        return self.check_that_attribute_has_been_set('attachTime', 5, 'attach_time')
+        return self.check_that_attribute_has_been_set("attachTime", 5, "attach_time")
 
     def test_endElement_with_name_device_sets_device(self):
-        return self.check_that_attribute_has_been_set('device', '/dev/null', 'device')
+        return self.check_that_attribute_has_been_set("device", "/dev/null", "device")
 
     def test_endElement_with_other_name_sets_other_name_attribute(self):
-        return self.check_that_attribute_has_been_set('someName', 'some value', 'someName')
+        return self.check_that_attribute_has_been_set("someName", "some value", "someName")
 
 class VolumeAttributeTests(unittest.TestCase):
     def setUp(self):
@@ -238,22 +238,22 @@ class VolumeAttributeTests(unittest.TestCase):
         self.assertEqual(retval, None)
 
     def test_endElement_with_name_value_and_value_true_sets_attrs_key_name_True(self):
-        self.volume_attribute.endElement('value', 'true', None)
-        self.assertEqual(self.volume_attribute.attrs["key_name"], True)
+        self.volume_attribute.endElement("value", "true", None)
+        self.assertEqual(self.volume_attribute.attrs['key_name'], True)
 
     def test_endElement_with_name_value_and_value_false_sets_attrs_key_name_False(self):
         self.volume_attribute._key_name = "other_key_name"
-        self.volume_attribute.endElement('value', 'false', None)
-        self.assertEqual(self.volume_attribute.attrs["other_key_name"], False)
+        self.volume_attribute.endElement("value", "false", None)
+        self.assertEqual(self.volume_attribute.attrs['other_key_name'], False)
 
     def test_endElement_with_name_volumeId_sets_id(self):
-        self.volume_attribute.endElement('volumeId', 'some_value', None)
+        self.volume_attribute.endElement("volumeId", "some_value", None)
         self.assertEqual(self.volume_attribute.id, "some_value")
 
     def test_endElement_with_other_name_sets_other_name_attribute(self):
-        self.volume_attribute.endElement('someName', 'some value', None)
+        self.volume_attribute.endElement("someName", "some value", None)
         self.assertEqual(self.volume_attribute.someName, "some value")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
