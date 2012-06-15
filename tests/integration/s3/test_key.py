@@ -34,6 +34,7 @@ from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
 class S3KeyTest (unittest.TestCase):
+    s3 = True
 
     def setUp(self):
         self.conn = S3Connection()

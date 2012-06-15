@@ -34,7 +34,9 @@ from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
 from boto.exception import S3PermissionsError, S3ResponseError
 
+
 class S3ConnectionTest (unittest.TestCase):
+    s3 = True
 
     def test_1_basic(self):
         print '--- running S3Connection tests ---'

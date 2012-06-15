@@ -61,6 +61,7 @@ class ResumableUploadTests(unittest.TestCase):
     """
     Resumable upload test suite.
     """
+    gs = True
 
     def get_suite_description(self):
         return 'Resumable upload test suite'
@@ -448,7 +449,7 @@ class ResumableUploadTests(unittest.TestCase):
             # This abort should be a hard abort (file size changing during
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(e.message.find('file size changed'), -1, e.message) 
+            self.assertNotEqual(e.message.find('file size changed'), -1, e.message)
 
     def test_upload_with_file_size_change_during_upload(self):
         """

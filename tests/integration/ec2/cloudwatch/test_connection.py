@@ -100,6 +100,7 @@ DESCRIBE_ALARMS_BODY = """<DescribeAlarmsResponse xmlns="http://monitoring.amazo
 
 
 class CloudWatchConnectionTest(unittest.TestCase):
+    ec2 = True
 
     def test_build_list_params(self):
         c = CloudWatchConnection()

@@ -61,6 +61,7 @@ class ResumableDownloadTests(unittest.TestCase):
     """
     Resumable download test suite.
     """
+    gs = True
 
     def get_suite_description(self):
         return 'Resumable download test suite'

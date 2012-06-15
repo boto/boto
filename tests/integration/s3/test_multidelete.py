@@ -34,7 +34,8 @@ from boto.s3.prefix import Prefix
 from boto.s3.connection import S3Connection
 from boto.exception import S3ResponseError
 
-class S3MultiDeleteTest (unittest.TestCase):
+class S3MultiDeleteTest(unittest.TestCase):
+    s3 = True
 
     def setUp(self):
         self.conn = S3Connection()

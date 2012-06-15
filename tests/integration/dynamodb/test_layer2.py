@@ -34,6 +34,7 @@ from boto.dynamodb.types import get_dynamodb_type
 from boto.dynamodb.condition import *
 
 class DynamoDBLayer2Test (unittest.TestCase):
+    dynamodb = True
 
     def test_layer2_basic(self):
         print '--- running Amazon DynamoDB Layer2 tests ---'

@@ -28,6 +28,7 @@ import unittest
 from boto.ec2.elb import ELBConnection
 
 class ELBConnectionTest(unittest.TestCase):
+    ec2 = True
 
     def tearDown(self):
         """ Deletes all load balancers after every test. """

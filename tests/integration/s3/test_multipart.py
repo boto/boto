@@ -37,7 +37,9 @@ import time
 import StringIO
 from boto.s3.connection import S3Connection
 
-class S3MultiPartUploadTest (unittest.TestCase):
+
+class S3MultiPartUploadTest(unittest.TestCase):
+    s3 = True
 
     def setUp(self):
         self.conn = S3Connection(is_secure=False)
