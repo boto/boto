@@ -96,6 +96,18 @@ GENERAL_EXPIRED = (
     '  <RequestId>7dfbf919-ae4f-11e1-bc8c-039e0b6d4242</RequestId>\n'
     '</ErrorResponse>\n'
 )
+# Similar to GENERAL_EXPIRED, but not quite correct.
+INVALID_FORMAT = (
+    '<ErrorResponse xmlns="http://elasticloadbalancing.amazonaws.com/'
+    'doc/2011-11-15/">\n'
+    '  <Error>\n'
+    '    <Type>Sender</Type>\n'
+    '    <Code><Message>The security token included in the request '
+    'is expired</Message></Code>\n'
+    '  </Error>\n'
+    '  <RequestId>7dfbf919-ae4f-11e1-bc8c-039e0b6d4242</RequestId>\n'
+    '</ErrorResponse>\n'
+)
 
 
 class FakeResponse(StringIO):
@@ -162,6 +174,10 @@ class TestExpire(unittest.TestCase):
     def test_non_xml_response(self):
         c = CloudSearchConnection()
         self.assert_is_not_expired(c, "{'this is': 'json'}", status=403)
+
+    def test_invalid_schema(self):
+        c = CloudSearchConnection()
+        self.assert_is_not_expired(c, INVALID_FORMAT, status=403)
 
 
 if __name__ == '__main__':
