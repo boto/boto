@@ -26,6 +26,8 @@ from xml.etree import ElementTree
 import urllib
 import base64
 import time
+from cStringIO import StringIO
+
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -176,7 +178,7 @@ class S3Connection(AWSAuthConnection):
         if response.status != 400:
             return False
         try:
-            for event, node in ElementTree.iterparse(response,
+            for event, node in ElementTree.iterparse(StringIO(response.read()),
                                                      events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'ExpiredToken':

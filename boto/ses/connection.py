@@ -22,6 +22,7 @@
 import urllib
 import base64
 from xml.etree import ElementTree
+from cStringIO import StringIO
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
@@ -61,7 +62,8 @@ class SESConnection(AWSAuthConnection):
         if response.status != 403:
             return False
         try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
+            for event, node in ElementTree.iterparse(StringIO(response.read()),
+                                                     events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'InvalidClientTokenId':
                         return True

@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 from xml.etree import ElementTree
+from cStringIO import StringIO
 
 from boto.connection import AWSQueryConnection
 from boto.sqs.regioninfo import SQSRegionInfo
@@ -64,7 +65,7 @@ class SQSConnection(AWSQueryConnection):
         if response.status != 401:
             return False
         try:
-            for event, node in ElementTree.iterparse(response,
+            for event, node in ElementTree.iterparse(StringIO(response.read()),
                                                      events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'InvalidAccessKeyId':

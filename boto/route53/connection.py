@@ -25,6 +25,7 @@ import time
 import uuid
 import urllib
 from xml.etree import ElementTree
+from cStringIO import StringIO
 
 import boto
 from boto.connection import AWSAuthConnection
@@ -72,7 +73,7 @@ class Route53Connection(AWSAuthConnection):
         if response.status != 403:
             return False
         try:
-            for event, node in ElementTree.iterparse(response,
+            for event, node in ElementTree.iterparse(StringIO(response.read()),
                                                      events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'InvalidClientTokenId':

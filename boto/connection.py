@@ -56,6 +56,7 @@ import time
 import urllib, urlparse
 import xml.sax
 from xml.etree import ElementTree
+from cStringIO import StringIO
 
 import auth
 import auth_handler
@@ -368,6 +369,37 @@ class HTTPRequest(object):
                     self.headers['Transfer-Encoding'] != 'chunked':
                 self.headers['Content-Length'] = str(len(self.body))
 
+
+class HTTPResponse(httplib.HTTPResponse):
+
+    def __init__(self, sock, debuglevel=0, strict=0, method=None, buffering=False):
+        httplib.HTTPResponse.__init__(self, sock, debuglevel, strict, method,
+                                      buffering)
+        self._cached_response = ''
+
+    def read(self, amt=None):
+        """Read the response.
+
+        This method does not have the same behavior as
+        httplib.HTTPResponse.read.  Instead, if this method is called with
+        no ``amt`` arg, then the response body will be cached.  Subsequent
+        calls to ``read()`` with no args **will return the cached response**.
+
+        """
+        if amt is None:
+            # The reason for doing this is that many places in boto call
+            # response.read() and except to get the response body that they
+            # can then process.  To make sure this always works as they expect
+            # we're caching the response so that multiple calls to read()
+            # will return the full body.  Note that this behavior only
+            # happens if the amt arg is not specified.
+            if not self._cached_response:
+                self._cached_response = httplib.HTTPResponse.read(self)
+            return self._cached_response
+        else:
+            return httplib.HTTPResponse.read(self, amt)
+
+
 class AWSAuthConnection(object):
     def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -643,6 +675,9 @@ class AWSAuthConnection(object):
         # set a private variable which will enable that
         if host.split(':')[0] == self.host and is_secure == self.is_secure:
             self._connection = (host, is_secure)
+        # Set the response class of the http connection to use our custom
+        # class.
+        connection.response_class = HTTPResponse
         return connection
 
     def put_http_connection(self, host, is_secure, connection):
@@ -839,7 +874,7 @@ class AWSAuthConnection(object):
         if response.status != 403:
             return False
         try:
-            for event, node in ElementTree.iterparse(response,
+            for event, node in ElementTree.iterparse(StringIO(response.read()),
                                                      events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'ExpiredToken':
