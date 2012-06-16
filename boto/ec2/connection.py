@@ -28,7 +28,6 @@ import base64
 import warnings
 from datetime import datetime
 from datetime import timedelta
-from xml.etree import ElementTree
 
 import boto
 from boto.connection import AWSQueryConnection
@@ -97,9 +96,10 @@ class EC2Connection(AWSQueryConnection):
     def _credentials_expired(self, response):
         if response.status != 400:
             return False
-        for event, node in ElementTree.iterparse(response, events=['start']):
-            if node.tag.endswith('Code'):
-                if node.text == 'RequestExpired':
+        error = EC2ResponseError('', '', body=response.read())
+        if error.errors is not None:
+            for code, message in error.errors:
+                if code == 'RequestExpired':
                     return True
         return False
 
