@@ -24,12 +24,9 @@ import xml.sax
 import time
 import uuid
 import urllib
-from xml.etree import ElementTree
-from cStringIO import StringIO
 
 import boto
 from boto.connection import AWSAuthConnection
-from boto.exception import XMLParseError
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
@@ -72,15 +69,8 @@ class Route53Connection(AWSAuthConnection):
     def _credentials_expired(self, response):
         if response.status != 403:
             return False
-        try:
-            for event, node in ElementTree.iterparse(StringIO(response.read()),
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'InvalidClientTokenId':
-                        return True
-        except XMLParseError:
-            return False
-        return False
+        error = exception.DNSServerError('', '', body=response.read())
+        return error.error_code == 'InvalidClientTokenId'
 
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:

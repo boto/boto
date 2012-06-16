@@ -55,8 +55,6 @@ import sys
 import time
 import urllib, urlparse
 import xml.sax
-from xml.etree import ElementTree
-from cStringIO import StringIO
 
 import auth
 import auth_handler
@@ -67,7 +65,7 @@ import boto.cacerts
 
 from boto import config, UserAgent
 from boto.exception import AWSConnectionError, BotoClientError
-from boto.exception import BotoServerError, XMLParseError
+from boto.exception import BotoServerError
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -372,9 +370,8 @@ class HTTPRequest(object):
 
 class HTTPResponse(httplib.HTTPResponse):
 
-    def __init__(self, sock, debuglevel=0, strict=0, method=None, buffering=False):
-        httplib.HTTPResponse.__init__(self, sock, debuglevel, strict, method,
-                                      buffering)
+    def __init__(self, *args, **kwargs):
+        httplib.HTTPResponse.__init__(self, *args, **kwargs)
         self._cached_response = ''
 
     def read(self, amt=None):
@@ -873,15 +870,8 @@ class AWSAuthConnection(object):
         # renewed.
         if response.status != 403:
             return False
-        try:
-            for event, node in ElementTree.iterparse(StringIO(response.read()),
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'ExpiredToken':
-                        return True
-        except XMLParseError:
-            return False
-        return False
+        error = BotoServerError('', '', body=response.read())
+        return error.error_code == 'ExpiredToken'
 
     def _renew_credentials(self):
         # By resetting the provider with a new provider, this will trigger the
