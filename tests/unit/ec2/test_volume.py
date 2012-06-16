@@ -79,31 +79,20 @@ class VolumeTests(unittest.TestCase):
         volume.endElement(name, value, None)
         self.assertEqual(getattr(volume, attribute), value)
 
-    def test_endElement_with_name_volumeId_sets_id(self):
-        return self.check_that_attribute_has_been_set("volumeId", "some value", "id")
-
-    def test_endElement_with_name_createTime_sets_create_time(self):
-        return self.check_that_attribute_has_been_set("createTime", "some time", "create_time")
-
-    def test_endElement_with_name_status_sets_status(self):
-        return self.check_that_attribute_has_been_set("status", "some status", "status")
+    def test_endElement_sets_correct_attributes_with_values(self):
+        for arguments in [("volumeId", "some value", "id"),
+                          ("createTime", "some time", "create_time"),
+                          ("status", "some status", "status"),
+                          ("size", 5, "size"),
+                          ("snapshotId", 1, "snapshot_id"),
+                          ("availabilityZone", "some zone", "zone"),
+                          ("someName", "some value", "someName")]:
+            self.check_that_attribute_has_been_set(arguments[0], arguments[1], arguments[2])
 
     def test_endElement_with_name_status_and_empty_string_value_doesnt_set_status(self):
         volume = Volume()
         volume.endElement("status", "", None)
         self.assertNotEqual(volume.status, "")
-
-    def test_endElement_with_name_size_sets_size(self):
-        return self.check_that_attribute_has_been_set("size", 5, "size")
-
-    def test_endElement_with_name_snapshotId_sets_snapshot_id(self):
-        return self.check_that_attribute_has_been_set("snapshotId", 1, "snapshot_id")
-
-    def test_endElement_with_name_availabilityZone_sets_zone(self):
-        return self.check_that_attribute_has_been_set("availabilityZone", "some zone", "zone")
-
-    def test_endElement_with_other_name_sets_other_name_attribute(self):
-        return self.check_that_attribute_has_been_set("someName", "some value", "someName")
 
     def test_update_with_result_set_greater_than_0_updates_dict(self):
         self.volume_two.connection.get_all_volumes.return_value = [self.volume_one]
