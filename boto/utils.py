@@ -206,29 +206,13 @@ def retry_url(url, retry_on_404=True, num_retries=10):
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
-def _get_iam_instance_metadata(url, num_retries):
-    d = {}
-    # get info first
-    data = retry_url(url + 'info', num_retries=num_retries)
-    d['info'] = json.loads(data)
-    d['security-credentials'] = {}
-    cred_name = retry_url(url + 'security-credentials',
-                          num_retries=num_retries)
-    data = retry_url(url + 'security-credentials' + '/' + cred_name,
-                     num_retries=num_retries)
-    d['security-credentials'][cred_name] = json.loads(data)
-    return d
-
 def _get_instance_metadata(url, num_retries):
     d = {}
     data = retry_url(url, num_retries=num_retries)
     if data:
         fields = data.split('\n')
         for field in fields:
-            if field == 'iam/':
-                d[field[0:-1]] = _get_iam_instance_metadata(url + field,
-                                                            num_retries=num_retries)
-            elif field.endswith('/'):
+            if field.endswith('/'):
                 d[field[0:-1]] = _get_instance_metadata(url + field,
                                                         num_retries=num_retries)
             else:
