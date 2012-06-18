@@ -50,13 +50,13 @@ boto have been split into two main categories, unit and integration tests:
   Also keep in mind anyone who runs these tests will incur any usage
   fees associated with the various AWS services.
 
-To run all the unit tests, run::
+To run all the unit tests, cd to the ``tests/`` directory and run::
 
-    $ python tests/test.py tests/unit
+    $ python test.py unit
 
 You should see output like this::
 
-    $ python tests/test.py tests/unit
+    $ python test.py unit
     ................................
     ----------------------------------------------------------------------
     Ran 32 tests in 0.075s
@@ -65,9 +65,42 @@ You should see output like this::
 
 To run the integration tests, run::
 
-    $ python tests/test.py tests/integration
+    $ python test.py integration
 
 Note that running the integration tests may take a while.
+
+Various integration tests have been tagged with service names to allow
+you to easily run tests by service type.  For example, to run the ec2
+integration tests you can run::
+
+    $ python test.py -t ec2
+
+You can specify the ``-t`` argument multiple times.  For example, to
+run the s3 and ec2 tests you can run::
+
+    $ python test.py -t ec2 -t s3
+
+.. warning::
+
+  In the examples above no top level directory was specified.  By default,
+  nose will assume the current working directory, so the above command is
+  equivalent to::
+
+      $ python test.py -t ec2 -t s3 .
+
+  Be sure that you are in the ``tests/`` directory when running the tests,
+  or explicitly specify the top level directory.  For example, if you in the
+  root directory of the boto repo, you could run the ec2 and s3 tests by
+  running::
+
+      $ python tests/test.py -t ec2 -t s3 tests/
+
+
+You can use nose's collect plugin to see what tests are associated with each
+service tag::
+
+    $ python tests.py -t s3 -t ec2 --with-id --collect -v
+
 
 Testing Details
 ---------------

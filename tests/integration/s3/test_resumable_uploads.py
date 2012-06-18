@@ -61,11 +61,12 @@ class ResumableUploadTests(unittest.TestCase):
     """
     Resumable upload test suite.
     """
+    gs = True
 
     def get_suite_description(self):
         return 'Resumable upload test suite'
 
-    def build_test_input_file(self, size):
+    def build_input_file(self, size):
         buf = []
         # I manually construct the random data here instead of calling
         # os.urandom() because I want to constrain the range of data (in
@@ -109,16 +110,16 @@ class ResumableUploadTests(unittest.TestCase):
         # Create test source file data.
         self.empty_src_file_size = 0
         (self.empty_src_file_as_string, self.empty_src_file) = (
-            self.build_test_input_file(self.empty_src_file_size))
+            self.build_input_file(self.empty_src_file_size))
         self.small_src_file_size = 2 * 1024  # 2 KB.
         (self.small_src_file_as_string, self.small_src_file) = (
-            self.build_test_input_file(self.small_src_file_size))
+            self.build_input_file(self.small_src_file_size))
         self.larger_src_file_size = 500 * 1024  # 500 KB.
         (self.larger_src_file_as_string, self.larger_src_file) = (
-            self.build_test_input_file(self.larger_src_file_size))
+            self.build_input_file(self.larger_src_file_size))
         self.largest_src_file_size = 1024 * 1024  # 1 MB.
         (self.largest_src_file_as_string, self.largest_src_file) = (
-            self.build_test_input_file(self.largest_src_file_size))
+            self.build_input_file(self.largest_src_file_size))
 
         # Create temp dir.
         self.tmp_dir = tempfile.mkdtemp(prefix=self.tmpdir_prefix)
@@ -448,7 +449,7 @@ class ResumableUploadTests(unittest.TestCase):
             # This abort should be a hard abort (file size changing during
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(e.message.find('file size changed'), -1, e.message) 
+            self.assertNotEqual(e.message.find('file size changed'), -1, e.message)
 
     def test_upload_with_file_size_change_during_upload(self):
         """
@@ -457,7 +458,7 @@ class ResumableUploadTests(unittest.TestCase):
         """
         # Create a file we can change during the upload.
         test_file_size = 500 * 1024  # 500 KB.
-        test_file = self.build_test_input_file(test_file_size)[1]
+        test_file = self.build_input_file(test_file_size)[1]
         harnass = CallbackTestHarnass(fp_to_change=test_file,
                                       fp_change_pos=test_file_size)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
@@ -477,7 +478,7 @@ class ResumableUploadTests(unittest.TestCase):
         (so, size stays the same) while upload in progress
         """
         test_file_size = 500 * 1024  # 500 KB.
-        test_file = self.build_test_input_file(test_file_size)[1]
+        test_file = self.build_input_file(test_file_size)[1]
         harnass = CallbackTestHarnass(fail_after_n_bytes=test_file_size/2,
                                       fp_to_change=test_file,
                                       # Write to byte 1, as the CallbackTestHarnass writes

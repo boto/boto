@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import unittest
+from tests.unit import unittest
 
 import mock
 
