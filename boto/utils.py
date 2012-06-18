@@ -276,7 +276,7 @@ class LazyLoadMetadata(dict):
                     val = val.split('\n')
             self[key] = val
         elif key in self._dicts:
-            self[key] = LazyLoadMetadata(self._url + key + '/')
+            self[key] = LazyLoadMetadata(self._url + key + '/', self._num_retries)
 
         return super(LazyLoadMetadata, self).__getitem__(key)
 
