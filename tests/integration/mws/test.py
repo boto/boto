@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from unittest import main, skip, skipUnless, TestCase
+from tests.unit import unittest
 import sys
 import os
 import os.path
@@ -26,17 +26,16 @@ if __name__ == "__main__":
 from boto.mws.connection import MWSConnection
 
 
-class MWSTestCase(TestCase):
+class MWSTestCase(unittest.TestCase):
 
-    def __init__(self, *args, **kw):
-        TestCase.__init__(self, *args, **kw)
+    def setUp(self):
         self.mws = MWSConnection(Merchant=simple, debug=0)
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_feedlist(self):
         self.mws.get_feed_submission_list()
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_inbound_status(self):
         response = self.mws.get_inbound_service_status()
         status = response.GetServiceStatusResult.Status
@@ -52,13 +51,13 @@ class MWSTestCase(TestCase):
     def marketplace_id(self):
         return self.marketplace.MarketplaceId
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_marketplace_participations(self):
         response = self.mws.list_marketplace_participations()
         result = response.ListMarketplaceParticipationsResult
         self.assertTrue(result.ListMarketplaces.Marketplace[0].MarketplaceId)
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_product_categories_for_asin(self):
         asin = '144930544X'
         response = self.mws.get_product_categories_for_asin(\
@@ -67,7 +66,7 @@ class MWSTestCase(TestCase):
         result = response._result
         self.assertTrue(int(result.Self.ProductCategoryId) == 21)
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_list_matching_products(self):
         response = self.mws.list_matching_products(\
             MarketplaceId=self.marketplace_id,
@@ -75,7 +74,7 @@ class MWSTestCase(TestCase):
         products = response._result.Products
         self.assertTrue(len(products))
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_matching_product(self):
         asin = 'B001UDRNHO'
         response = self.mws.get_matching_product(\
@@ -84,7 +83,7 @@ class MWSTestCase(TestCase):
         product = response._result[0].Product
 
 
-    @skipUnless(simple and isolator, "skipping simple test")
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_lowest_offer_listings_for_asin(self):
         asin = '144930544X'
         response = self.mws.get_lowest_offer_listings_for_asin(\
@@ -95,4 +94,4 @@ class MWSTestCase(TestCase):
         self.assertTrue(product.LowestOfferListings)
 
 if __name__ == "__main__":
-    main()
+    unittest.main()
