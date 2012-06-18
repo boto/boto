@@ -223,6 +223,8 @@ class CloudWatchConnection(AWSQueryConnection):
         self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
             self.build_dimension_param(dimensions, params)
+        if unit:
+            params['Unit'] = unit
         return self.get_list('GetMetricStatistics', params,
                              [('member', Datapoint)])
 
