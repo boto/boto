@@ -30,8 +30,9 @@ class Condition(object):
     is to test if something is a Condition instance or not.
     """
 
-    pass
-
+    def __eq__(self, other):
+        if isinstance(other, Condition):
+            return self.to_dict() == other.to_dict()
 
 class ConditionNoArgs(Condition):
     """
