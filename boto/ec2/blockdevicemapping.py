@@ -64,10 +64,7 @@ class BlockDeviceType(object):
         elif name == 'attachTime':
             self.attach_time = value
         elif name == 'deleteOnTermination':
-            if value == 'true':
-                self.delete_on_termination = True
-            else:
-                self.delete_on_termination = False
+            self.delete_on_termination = (value == 'true')
         else:
             setattr(self, name, value)
 
