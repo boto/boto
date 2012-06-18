@@ -14,17 +14,18 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import boto
 
+
 def get_manager(cls):
     """
-    Returns the appropriate Manager class for a given Model class.  It does this by
-    looking in the boto config for a section like this::
-    
+    Returns the appropriate Manager class for a given Model class.  It
+    does this by looking in the boto config for a section like this::
+
         [DB]
         db_type = SimpleDB
         db_user = <aws access key id>
@@ -36,10 +37,11 @@ def get_manager(cls):
         db_passwd = <another aws secret access key>
         db_name = basic_domain
         db_port = 1111
-    
-    The values in the DB section are "generic values" that will be used if nothing more
-    specific is found.  You can also create a section for a specific Model class that
-    gives the db info for that class.  In the example above, TestBasic is a Model subclass.
+
+    The values in the DB section are "generic values" that will be used
+    if nothing more specific is found.  You can also create a section for
+    a specific Model class that gives the db info for that class.
+    In the example above, TestBasic is a Model subclass.
     """
     db_user = boto.config.get('DB', 'db_user', None)
     db_passwd = boto.config.get('DB', 'db_passwd', None)
@@ -51,7 +53,7 @@ def get_manager(cls):
     enable_ssl = boto.config.getbool('DB', 'enable_ssl', True)
     sql_dir = boto.config.get('DB', 'sql_dir', None)
     debug = boto.config.getint('DB', 'debug', 0)
-    # first see if there is a fully qualified section name in the Boto config file
+    # first see if there is a fully qualified section name in the Boto config
     module_name = cls.__module__.replace('.', '_')
     db_section = 'DB_' + module_name + '_' + cls.__name__
     if not boto.config.has_section(db_section):
@@ -75,17 +77,9 @@ def get_manager(cls):
         from sdbmanager import SDBManager
         return SDBManager(cls, db_name, db_user, db_passwd,
                           db_host, db_port, db_table, sql_dir, enable_ssl)
-    elif db_type == 'PostgreSQL':
-        from pgmanager import PGManager
-        if db_table:
-            return PGManager(cls, db_name, db_user, db_passwd,
-                             db_host, db_port, db_table, sql_dir, enable_ssl)
-        else:
-            return None
     elif db_type == 'XML':
         from xmlmanager import XMLManager
         return XMLManager(cls, db_name, db_user, db_passwd,
                           db_host, db_port, db_table, sql_dir, enable_ssl)
     else:
-        raise ValueError, 'Unknown db_type: %s' % db_type
-
+        raise ValueError('Unknown db_type: %s' % db_type)

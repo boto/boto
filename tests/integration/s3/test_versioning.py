@@ -46,7 +46,7 @@ class S3VersionTest (unittest.TestCase):
     def test_1_versions(self):
         # check versioning off
         d = self.bucket.get_versioning_status()
-        self.assertFalse(d.has_key('Versioning'))
+        self.assertFalse('Versioning' in d)
 
         # enable versioning
         self.bucket.configure_versioning(versioning=True)
@@ -112,6 +112,8 @@ class S3VersionTest (unittest.TestCase):
         
         # Now suspend Versioning on the bucket
         self.bucket.configure_versioning(False)
+        # Allow time for the change to fully propagate.
+        time.sleep(3)
         d = self.bucket.get_versioning_status()
         self.assertEqual('Suspended', d['Versioning'])
         

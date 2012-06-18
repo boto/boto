@@ -29,7 +29,6 @@ Some unit tests for the GSConnection
 """
 
 import boto
-import unittest
 import time
 import os
 import re
@@ -38,7 +37,29 @@ from boto.gs.connection import GSConnection
 from boto.gs.cors import Cors
 from boto import handler
 from boto import storage_uri
+from boto.provider import Provider
+from tests.unit import unittest
 
+
+_HAS_GOOGLE_CREDENTIALS = None
+
+
+def has_google_credentials():
+    global _HAS_GOOGLE_CREDENTIALS
+    if _HAS_GOOGLE_CREDENTIALS is None:
+        provider = Provider('google')
+        if provider.access_key is None or provider.secret_key is None:
+            _HAS_GOOGLE_CREDENTIALS = False
+        else:
+            _HAS_GOOGLE_CREDENTIALS = True
+    return _HAS_GOOGLE_CREDENTIALS
+
+
+
+@unittest.skipUnless(has_google_credentials(),
+                     "Google credentials are required to run the Google "
+                     "Cloud Storage tests.  Update your boto.cfg to run "
+                     "these tests.")
 class GSConnectionTest (unittest.TestCase):
 
     def test_1_basic(self):
@@ -92,7 +113,7 @@ class GSConnectionTest (unittest.TestCase):
         fp = open('foobar1', 'wb')
         k.get_contents_to_file(fp)
         fp.close()
-        fp2.seek(0,0)
+        fp2.seek(0, 0)
         fp = open('foobar1', 'rb')
         assert (fp2.read() == fp.read()), 'Chunked Transfer corrupted the Data'
         fp.close()

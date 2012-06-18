@@ -62,7 +62,7 @@ class Layer1(AWSAuthConnection):
         'com.amazonaws.swf.base.model#OperationNotPermittedFault':
             swf_exceptions.SWFOperationNotPermittedError,
         'com.amazonaws.swf.base.model#TypeAlreadyExistsFault':
-            swf_exceptions.SWFTypeAlreadyExistsError ,
+            swf_exceptions.SWFTypeAlreadyExistsError,
     }
 
     ResponseError = SWFResponseError
@@ -86,6 +86,20 @@ class Layer1(AWSAuthConnection):
 
     def _required_auth_capability(self):
         return ['hmac-v3-http']
+
+    def _credentials_expired(self, response):
+        if response.status != 400:
+            return False
+        try:
+            parsed = json.loads(response.read())
+            # It seems that SWF doesn't really have a specific "Token Expired"
+            # message, but this is a best effort heuristic.
+            expected = 'com.amazon.coral.service#UnrecognizedClientException'
+            return (parsed['__type'] == expected and \
+                    'security token' in parsed['message'])
+        except Exception, e:
+            return False
+        return False
 
     def make_request(self, action, body='', object_hook=None):
         """

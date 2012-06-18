@@ -164,7 +164,7 @@ class Bucket(object):
         if version_id:
             query_args.append('versionId=%s' % version_id)
         if response_headers:
-            for rk,rv in response_headers.iteritems():
+            for rk, rv in response_headers.iteritems():
                 query_args.append('%s=%s' % (rk, urllib.quote(rv)))
         if query_args:
             query_args = '&'.join(query_args)
@@ -173,10 +173,10 @@ class Bucket(object):
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
+        response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
         if response.status/100 == 2:
-            response.read()
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
@@ -184,6 +184,7 @@ class Bucket(object):
             k.content_type = response.getheader('content-type')
             k.content_encoding = response.getheader('content-encoding')
             k.content_disposition = response.getheader('content-disposition')
+            k.content_language = response.getheader('content-language')
             k.last_modified = response.getheader('last-modified')
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
@@ -201,7 +202,6 @@ class Bucket(object):
             return k
         else:
             if response.status == 404:
-                response.read()
                 return None
             else:
                 raise self.connection.provider.storage_response_error(
@@ -749,7 +749,7 @@ class Bucket(object):
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=acl_str.encode('ISO-8859-1'),
+                                                data=acl_str.encode('UTF-8'),
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()

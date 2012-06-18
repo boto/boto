@@ -127,12 +127,12 @@ class SnapshotAttribute:
         if name == 'createVolumePermission':
             self.name = 'create_volume_permission'
         elif name == 'group':
-            if self.attrs.has_key('groups'):
+            if 'groups' in self.attrs:
                 self.attrs['groups'].append(value)
             else:
                 self.attrs['groups'] = [value]
         elif name == 'userId':
-            if self.attrs.has_key('user_ids'):
+            if 'user_ids' in self.attrs:
                 self.attrs['user_ids'].append(value)
             else:
                 self.attrs['user_ids'] = [value]

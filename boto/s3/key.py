@@ -54,6 +54,7 @@ class Key(object):
         self.content_type = self.DefaultContentType
         self.content_encoding = None
         self.content_disposition = None
+        self.content_language = None
         self.filename = None
         self.etag = None
         self.is_latest = False
@@ -171,7 +172,7 @@ class Key(object):
             response_headers = self.resp.msg
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
-            for name,value in response_headers.items():
+            for name, value in response_headers.items():
                 # To get correct size for Range GETs, use Content-Range
                 # header if one was returned. If not, use Content-Length
                 # header.
@@ -187,6 +188,8 @@ class Key(object):
                     self.content_type = value
                 elif name.lower() == 'content-encoding':
                     self.content_encoding = value
+                elif name.lower() == 'content-language':
+                    self.content_language = value
                 elif name.lower() == 'last-modified':
                     self.last_modified = value
                 elif name.lower() == 'cache-control':
@@ -684,9 +687,11 @@ class Key(object):
         headers['User-Agent'] = UserAgent
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
-        if headers.has_key('Content-Encoding'):
+        if 'Content-Encoding' in headers:
             self.content_encoding = headers['Content-Encoding']
-        if headers.has_key('Content-Type'):
+        if 'Content-Language' in headers:
+            self.content_encoding = headers['Content-Language']
+        if 'Content-Type' in headers:
             # Some use cases need to suppress sending of the Content-Type 
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type'] 
@@ -1223,7 +1228,7 @@ class Key(object):
             cb(data_len, cb_size)
         if m:
             self.md5 = m.hexdigest()
-        if self.size is None and not torrent and not headers.has_key("Range"):
+        if self.size is None and not torrent and "Range" not in headers:
             self.size = data_len
         self.close()
         self.bucket.connection.debug = save_debug

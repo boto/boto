@@ -55,6 +55,16 @@ class SNSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['sns']
 
+    def _credentials_expired(self, response):
+        if response.status != 403:
+            return False
+        try:
+            parsed = json.loads(response.read())
+            return parsed['Error']['Code'] == 'ExpiredToken'
+        except Exception:
+            return False
+        return False
+
     def get_all_topics(self, next_token=None):
         """
         :type next_token: string
@@ -291,7 +301,7 @@ class SNSConnection(AWSQueryConnection):
         Subscribe an SQS queue to a topic.
 
         This is convenience method that handles most of the complexity involved
-        in using ans SQS queue as an endpoint for an SNS topic.  To achieve this
+        in using an SQS queue as an endpoint for an SNS topic.  To achieve this
         the following operations are performed:
         
         * The correct ARN is constructed for the SQS queue and that ARN is

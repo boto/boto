@@ -142,7 +142,7 @@ class Bucket(S3Bucket):
 
     def set_cors(self, cors, headers=None):
         """sets or changes a bucket's CORS XML."""
-        cors_xml = cors.encode('ISO-8859-1')
+        cors_xml = cors.encode('UTF-8')
         response = self.connection.make_request('PUT', self.name,
                                                 data=cors_xml,
                                                 query_args=CORS_ARG,

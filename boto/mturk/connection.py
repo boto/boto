@@ -116,7 +116,7 @@ class MTurkConnection(AWSQueryConnection):
         Common SetHITTypeNotification operation to set notification for a
         specified HIT type
         """
-        assert type(hit_type) is str, "hit_type argument should be a string."
+        assert isinstance(hit_type, str), "hit_type argument should be a string."
         
         params = {'HITTypeId': hit_type}
         
@@ -176,9 +176,9 @@ class MTurkConnection(AWSQueryConnection):
         
         # Handle basic required arguments and set up params dict
         params = {'Question': question_param.get_as_xml(),
-                  'LifetimeInSeconds' :
+                  'LifetimeInSeconds':
                       self.duration_as_seconds(lifetime),
-                  'MaxAssignments' : max_assignments,
+                  'MaxAssignments': max_assignments,
                   }
 
         # if hit type specified then add it
@@ -280,7 +280,7 @@ class MTurkConnection(AWSQueryConnection):
         page_size = 100
         search_rs = self.search_hits(page_size=page_size)
         total_records = int(search_rs.TotalNumResults)
-        get_page_hits = lambda(page): self.search_hits(page_size=page_size, page_number=page)
+        get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
         page_nums = self._get_pages(page_size, total_records)
         hit_sets = itertools.imap(get_page_hits, page_nums)
         return itertools.chain.from_iterable(hit_sets)
@@ -351,7 +351,7 @@ class MTurkConnection(AWSQueryConnection):
     def approve_assignment(self, assignment_id, feedback=None):
         """
         """
-        params = {'AssignmentId' : assignment_id,}
+        params = {'AssignmentId': assignment_id,}
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('ApproveAssignment', params)
@@ -359,7 +359,7 @@ class MTurkConnection(AWSQueryConnection):
     def reject_assignment(self, assignment_id, feedback=None):
         """
         """
-        params = {'AssignmentId' : assignment_id,}
+        params = {'AssignmentId': assignment_id,}
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('RejectAssignment', params)
@@ -367,7 +367,7 @@ class MTurkConnection(AWSQueryConnection):
     def get_hit(self, hit_id, response_groups=None):
         """
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         # Handle optional response groups argument
         if response_groups:
             self.build_list_params(params, response_groups, 'ResponseGroup')
@@ -383,7 +383,7 @@ class MTurkConnection(AWSQueryConnection):
         Reviewing.  Similarly, only Reviewing HITs can be reverted back to a
         status of Reviewable.
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         if revert:
             params['Revert'] = revert
         return self._process_request('SetHITAsReviewing', params)
@@ -405,7 +405,7 @@ class MTurkConnection(AWSQueryConnection):
         It is not possible to re-enable a HIT once it has been disabled.
         To make the work from a disabled HIT available again, create a new HIT.
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         # Handle optional response groups argument
         if response_groups:
             self.build_list_params(params, response_groups, 'ResponseGroup')
@@ -422,7 +422,7 @@ class MTurkConnection(AWSQueryConnection):
         reviewable, then call GetAssignmentsForHIT to retrieve the
         assignments.  Disposing of a HIT removes the HIT from the
         results of a call to GetReviewableHITs.  """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         return self._process_request('DisposeHIT', params)
 
     def expire_hit(self, hit_id):
@@ -439,7 +439,7 @@ class MTurkConnection(AWSQueryConnection):
         submitted, the expired HIT becomes"reviewable", and will be
         returned by a call to GetReviewableHITs.
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         return self._process_request('ForceExpireHIT', params)
 
     def extend_hit(self, hit_id, assignments_increment=None, expiration_increment=None):
@@ -461,7 +461,7 @@ class MTurkConnection(AWSQueryConnection):
            (assignments_increment is not None and expiration_increment is not None):
             raise ValueError("Must specify either assignments_increment or expiration_increment, but not both")
 
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         if assignments_increment:
             params['MaxAssignmentsIncrement'] = assignments_increment
         if expiration_increment:
@@ -568,9 +568,9 @@ class MTurkConnection(AWSQueryConnection):
 
         """
 
-        params = {'Name' : name,
-                  'Description' : description,
-                  'QualificationTypeStatus' : status,
+        params = {'Name': name,
+                  'Description': description,
+                  'QualificationTypeStatus': status,
                   }
         if retry_delay is not None:
             params['RetryDelayInSeconds'] = retry_delay
@@ -752,11 +752,11 @@ class MTurkConnection(AWSQueryConnection):
         Returns a comma+space-separated string of keywords from either
         a list or a string
         """
-        if type(keywords) is list:
+        if isinstance(keywords, list):
             keywords = ', '.join(keywords)
-        if type(keywords) is str:
+        if isinstance(keywords, str):
             final_keywords = keywords
-        elif type(keywords) is unicode:
+        elif isinstance(keywords, unicode):
             final_keywords = keywords.encode('utf-8')
         elif keywords is None:
             final_keywords = ""

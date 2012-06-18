@@ -150,7 +150,7 @@ class S3MultiDeleteTest (unittest.TestCase):
         nkeys = 100
         
         # create a bunch of keynames
-        key_names = ['key-%03d' % i for i in range(0,nkeys)]
+        key_names = ['key-%03d' % i for i in range(0, nkeys)]
 
         # create the corresponding keys
         for key_name in key_names:
