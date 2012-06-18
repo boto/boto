@@ -22,17 +22,17 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-from xml.etree import ElementTree
 import urllib
 import base64
 import time
+
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
-from boto.exception import BotoClientError, XMLParseError
+from boto.exception import BotoClientError, S3ResponseError
 
 
 def check_lowercase_bucketname(n):
@@ -175,15 +175,8 @@ class S3Connection(AWSAuthConnection):
     def _credentials_expired(self, response):
         if response.status != 400:
             return False
-        try:
-            for event, node in ElementTree.iterparse(response,
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'ExpiredToken':
-                        return True
-        except XMLParseError:
-            return False
-        return False
+        error = S3ResponseError('', '', body=response.read())
+        return error.error_code == 'ExpiredToken'
 
     def __iter__(self):
         for bucket in self.get_all_buckets():

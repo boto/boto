@@ -21,7 +21,6 @@
 # IN THE SOFTWARE.
 import urllib
 import base64
-from xml.etree import ElementTree
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
@@ -29,6 +28,7 @@ from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
 from boto.ses import exceptions as ses_exceptions
+from boto.exception import BotoServerError
 
 
 class SESConnection(AWSAuthConnection):
@@ -60,14 +60,8 @@ class SESConnection(AWSAuthConnection):
     def _credentials_expired(self, response):
         if response.status != 403:
             return False
-        try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'InvalidClientTokenId':
-                        return True
-        except ElementTree.ParseError:
-            return False
-        return False
+        error = BotoServerError('', '', body=response.read())
+        return error.error_code == 'InvalidClientTokenId'
 
     def _build_list_params(self, params, items, label):
         """Add an AWS API-compatible parameter list to a dictionary.

@@ -236,3 +236,12 @@ class S3ConnectionTest (unittest.TestCase):
 
         # cleanup
         auth_con.delete_bucket(auth_bucket)
+
+    def test_error_code_populated(self):
+        c = S3Connection()
+        try:
+            c.create_bucket('bad$bucket$name')
+        except S3ResponseError, e:
+            self.assertEqual(e.error_code, 'InvalidBucketName')
+        else:
+            self.fail("S3ResponseError not raised.")
