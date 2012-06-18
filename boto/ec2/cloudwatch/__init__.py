@@ -223,6 +223,17 @@ class CloudWatchConnection(AWSQueryConnection):
                            is either a scalar value or an iterator
                            of values to be associated with that
                            dimension.
+
+        :type unit: string
+        :param unit: The unit for the metric.  Value values are:
+            Seconds | Microseconds | Milliseconds | Bytes | Kilobytes |
+            Megabytes | Gigabytes | Terabytes | Bits | Kilobits |
+            Megabits | Gigabits | Terabits | Percent | Count |
+            Bytes/Second | Kilobytes/Second | Megabytes/Second |
+            Gigabytes/Second | Terabytes/Second | Bits/Second |
+            Kilobits/Second | Megabits/Second | Gigabits/Second |
+            Terabits/Second | Count/Second | None
+
         :rtype: list
         """
         params = {'Period': period,
