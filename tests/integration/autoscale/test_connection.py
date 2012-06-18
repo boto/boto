@@ -35,7 +35,10 @@ from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.tag import Tag
 
+
 class AutoscaleConnectionTest(unittest.TestCase):
+    ec2 = True
+    autoscale = True
 
     def test_basic(self):
         # NB: as it says on the tin these are really basic tests that only
@@ -146,10 +149,10 @@ class AutoscaleConnectionTest(unittest.TestCase):
                 if group.name == group_name:
                     if not group.instances:
                         instances = False
-            
+
         group.delete()
         lc.delete()
-        
+
         found = True
         while found:
             found = False
@@ -158,9 +161,7 @@ class AutoscaleConnectionTest(unittest.TestCase):
             for tag in tags:
                 if tag.resource_id == group_name and tag.key == 'foo':
                     found = True
-            
+
         assert not found
 
         print '--- tests completed ---'
-
-        

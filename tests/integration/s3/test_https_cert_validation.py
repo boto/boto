@@ -63,9 +63,8 @@ PROXY_PORT = os.environ.get('PROXY_PORT', '3128')
 INVALID_HOSTNAME_HOST = os.environ.get('INVALID_HOSTNAME_HOST', 'www')
 
 
-@attr('notdefault')
-class CertValidationTest (unittest.TestCase):
-
+@attr('notdefault', 'ssl')
+class CertValidationTest(unittest.TestCase):
     def setUp(self):
         # Clear config
         for section in boto.config.sections():

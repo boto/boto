@@ -34,6 +34,7 @@ from boto.s3.bucketlogging import BucketLogging
 from boto.s3.acl import Grant
 
 class S3BucketTest (unittest.TestCase):
+    s3 = True
 
     def setUp(self):
         self.conn = S3Connection()

@@ -31,6 +31,7 @@ from boto.sdb.connection import SDBConnection
 from boto.exception import SDBResponseError
 
 class SDBConnectionTest (unittest.TestCase):
+    sdb = True
 
     def test_1_basic(self):
         print '--- running SDBConnection tests ---'

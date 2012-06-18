@@ -60,7 +60,8 @@ def has_google_credentials():
                      "Google credentials are required to run the Google "
                      "Cloud Storage tests.  Update your boto.cfg to run "
                      "these tests.")
-class GSConnectionTest (unittest.TestCase):
+class GSConnectionTest(unittest.TestCase):
+    gs = True
 
     def test_1_basic(self):
         """basic regression test for Google Cloud Storage"""

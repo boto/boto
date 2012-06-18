@@ -51,6 +51,7 @@ json_policy = """{
 }"""
 
 class S3EncryptionTest (unittest.TestCase):
+    s3 = True
 
     def test_1_versions(self):
         print '--- running S3Encryption tests ---'
