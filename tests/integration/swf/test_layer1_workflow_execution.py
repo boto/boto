@@ -17,14 +17,16 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
     """
     test a simple workflow execution
     """
+    swf = True
+
     def run_decider(self):
         """
         run one iteration of a simple decision engine
         """
         # Poll for a decision task.
-        tries = 0 
+        tries = 0
         while True:
-            dtask = self.conn.poll_for_decision_task(self._domain, 
+            dtask = self.conn.poll_for_decision_task(self._domain,
                 self._task_list, reverse_order=True)
             if dtask.get('taskToken') is not None:
                 # This means a real decision task has arrived.
@@ -52,8 +54,8 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         decisions = Layer1Decisions()
         if event['eventType'] == 'WorkflowExecutionStarted':
             activity_id = str(uuid.uuid1())
-            decisions.schedule_activity_task(activity_id, 
-                self._activity_type_name, self._activity_type_version, 
+            decisions.schedule_activity_task(activity_id,
+                self._activity_type_name, self._activity_type_version,
                 task_list=self._task_list,
                 input=event['workflowExecutionStartedEventAttributes']['input'])
         elif event['eventType'] == 'ActivityTaskCompleted':
@@ -79,9 +81,9 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         run one iteration of a simple worker engine
         """
         # Poll for an activity task.
-        tries = 0 
+        tries = 0
         while True:
-            atask = self.conn.poll_for_activity_task(self._domain, 
+            atask = self.conn.poll_for_activity_task(self._domain,
                 self._task_list, identity='test worker')
             if atask.get('activityId') is not None:
                 # This means a real activity task has arrived.
@@ -102,12 +104,12 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         if reason is None:
             r = self.conn.respond_activity_task_completed(
                 atask['taskToken'], result)
-        else: 
+        else:
             r = self.conn.respond_activity_task_failed(
                 atask['taskToken'], reason=reason, details=details)
         assert r is None
 
-            
+
     def test_workflow_execution(self):
         # Start a workflow execution whose activity task will succeed.
         workflow_id = 'wfid-%.2f' % (time.time(),)
@@ -132,7 +134,7 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         self.run_decider()
 
         # Check that the result was stored in the execution history.
-        r = self.conn.get_workflow_execution_history(self._domain, 
+        r = self.conn.get_workflow_execution_history(self._domain,
                                                      run_id, workflow_id,
                                                      reverse_order=True)['events'][0]
         result = r['workflowExecutionCompletedEventAttributes']['result']
@@ -163,7 +165,7 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         self.run_decider()
 
         # Check that the failure was stored in the execution history.
-        r = self.conn.get_workflow_execution_history(self._domain, 
+        r = self.conn.get_workflow_execution_history(self._domain,
                                                      run_id, workflow_id,
                                                      reverse_order=True)['events'][0]
         reason = r['workflowExecutionFailedEventAttributes']['reason']

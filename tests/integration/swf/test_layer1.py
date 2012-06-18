@@ -57,6 +57,7 @@ class SimpleWorkflowLayer1TestBase(unittest.TestCase):
         * SimpleWorkflowLayer1Test
         * tests.swf.test_layer1_workflow_execution.SwfL1WorkflowExecutionTest
     """
+    swf = True
     # Some params used throughout the tests...
     # Domain registration params...
     _domain = BOTO_SWF_UNITTEST_DOMAIN

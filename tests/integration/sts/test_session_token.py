@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -32,6 +32,7 @@ from boto.sts.credentials import Credentials
 from boto.s3.connection import S3Connection
 
 class SessionTokenTest (unittest.TestCase):
+    sts = True
 
     def test_session_token(self):
         print '--- running Session Token tests ---'
@@ -54,7 +55,7 @@ class SessionTokenTest (unittest.TestCase):
         os.unlink('token.json')
 
         assert not token.is_expired()
-        
+
         # Try using the session token with S3
         s3 = S3Connection(aws_access_key_id=token.access_key,
                           aws_secret_access_key=token.secret_key,
@@ -62,4 +63,3 @@ class SessionTokenTest (unittest.TestCase):
         buckets = s3.get_all_buckets()
 
         print '--- tests completed ---'
-

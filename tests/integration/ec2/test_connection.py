@@ -27,13 +27,17 @@ Some unit tests for the EC2Connection
 
 import unittest
 import time
-from boto.ec2.connection import EC2Connection
 import telnetlib
 import socket
 
-class EC2ConnectionTest (unittest.TestCase):
+from nose.plugins.attrib import attr
+from boto.ec2.connection import EC2Connection
 
-    def test_1_basic(self):
+class EC2ConnectionTest (unittest.TestCase):
+    ec2 = True
+
+    @attr('notdefault')
+    def test_launch_permissions(self):
         # this is my user_id, if you want to run these tests you should
         # replace this with yours or they won't work
         user_id = '963068290131'
@@ -57,7 +61,9 @@ class EC2ConnectionTest (unittest.TestCase):
         d = image.get_launch_permissions()
         assert 'groups' not in d
         
+    def test_1_basic(self):
         # create 2 new security groups
+        c = EC2Connection()
         group1_name = 'test-%d' % int(time.time())
         group_desc = 'This is a security group created during unit testing'
         group1 = c.create_security_group(group1_name, group_desc)
