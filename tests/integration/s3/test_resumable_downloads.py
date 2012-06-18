@@ -73,7 +73,7 @@ class ResumableDownloadTests(unittest.TestCase):
         except StorageResponseError, e:
             pass
 
-    def build_test_input_object(self, obj_name, size):
+    def build_input_object(self, obj_name, size):
         buf = []
         for i in range(size):
             buf.append(str(random.randint(0, 9)))
@@ -97,13 +97,13 @@ class ResumableDownloadTests(unittest.TestCase):
         # Create test source objects.
         self.empty_src_key_size = 0
         (self.empty_src_key_as_string, self.empty_src_key) = (
-            self.build_test_input_object('empty', self.empty_src_key_size))
+            self.build_input_object('empty', self.empty_src_key_size))
         self.small_src_key_size = 2 * 1024  # 2 KB.
         (self.small_src_key_as_string, self.small_src_key) = (
-            self.build_test_input_object('small', self.small_src_key_size))
+            self.build_input_object('small', self.small_src_key_size))
         self.larger_src_key_size = 500 * 1024  # 500 KB.
         (self.larger_src_key_as_string, self.larger_src_key) = (
-            self.build_test_input_object('larger', self.larger_src_key_size))
+            self.build_input_object('larger', self.larger_src_key_size))
 
         # Use a designated tmpdir prefix to make it easy to find the end of
         # the tmp path.
