@@ -248,7 +248,8 @@ class LazyLoadMetadata(dict):
 
         if key in self._leaves:
             resource = self._leaves[key]
-            val = boto.utils.retry_url(self._url + urllib.quote(resource, safe="/:"),
+            val = boto.utils.retry_url(self._url + urllib.quote(resource,
+                                                                safe="/:"),
                                        num_retries=self._num_retries)
             if val[0] == '{':
                 val = json.loads(val)
@@ -258,7 +259,8 @@ class LazyLoadMetadata(dict):
                     val = val.split('\n')
             self[key] = val
         elif key in self._dicts:
-            self[key] = LazyLoadMetadata(self._url + key + '/', self._num_retries)
+            self[key] = LazyLoadMetadata(self._url + key + '/',
+                                         self._num_retries)
 
         return super(LazyLoadMetadata, self).__getitem__(key)
 
