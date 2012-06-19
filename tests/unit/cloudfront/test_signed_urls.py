@@ -194,7 +194,8 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(2, len(condition.keys()))
+        date_less_than = condition["DateLessThan"]
         date_greater_than = condition["DateGreaterThan"]
         self.assertEqual(1, len(date_greater_than.keys()))
         aws_epoch_time = date_greater_than["AWS:EpochTime"]
@@ -217,8 +218,9 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(2, len(condition.keys()))
         ip_address = condition["IpAddress"]
+        self.assertTrue("DateLessThan" in condition)
         self.assertEqual(1, len(ip_address.keys()))
         source_ip = ip_address["AWS:SourceIp"]
         self.assertEqual("%s/32" % ip_range, source_ip)
@@ -240,7 +242,8 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         resource = statement["Resource"]
         self.assertEqual(url, resource)
         condition = statement["Condition"]
-        self.assertEqual(1, len(condition.keys()))
+        self.assertEqual(2, len(condition.keys()))
+        self.assertTrue("DateLessThan" in condition)
         ip_address = condition["IpAddress"]
         self.assertEqual(1, len(ip_address.keys()))
         source_ip = ip_address["AWS:SourceIp"]
