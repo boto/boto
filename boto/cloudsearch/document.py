@@ -122,8 +122,9 @@ class CommitResponse(object):
         if self.status == 'error':
             self.errors = [e.get('message') for e in self.content.get('errors',
                 [])]
-        else:
-            self.errors = []
+
+            # raise error here or self._check_num_ops is going to fail
+            raise SearchServiceException("Errors in commit: %s" % self.errors)
 
         self.adds = self.content['adds']
         self.deletes = self.content['deletes']
