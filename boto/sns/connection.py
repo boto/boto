@@ -1,4 +1,5 @@
 # Copyright (c) 2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Derek McGowan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -18,11 +19,17 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from xml.etree import ElementTree
+import uuid
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-import boto
-import uuid
+from boto.exception import BotoServerError
+from boto.sns.topic import Topic
+from boto.sns.attributes import Attributes
+from boto.sns.result import PublishResult
+from boto.sns.subscription import Subscription
+
 try:
     import simplejson as json
 except ImportError:
@@ -38,12 +45,13 @@ class SNSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, sqs_protocol='sqs'):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
                                 connection_cls=SNSConnection)
         self.region = region
+        self.sqs_protocol = sqs_protocol
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
@@ -59,9 +67,11 @@ class SNSConnection(AWSQueryConnection):
         if response.status != 403:
             return False
         try:
-            parsed = json.loads(response.read())
-            return parsed['Error']['Code'] == 'ExpiredToken'
-        except Exception:
+            for _, node in ElementTree.iterparse(response, events=['start']):
+                if node.tag.endswith('Code'):
+                    if node.text == 'InvalidAccessKeyId':
+                        return True
+        except ElementTree.ParseError:
             return False
         return False
 
@@ -72,43 +82,28 @@ class SNSConnection(AWSQueryConnection):
                            this method.
 
         """
-        params = {'ContentType' : 'JSON'}
+        params = {}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListTopics', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_list('ListTopics', params, [('Topics', Topic)])
         
     def get_topic_attributes(self, topic):
         """
         Get attributes of a Topic
 
-        :type topic: string
-        :param topic: The ARN of the topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic to get attributes for.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic}
-        response = self.make_request('GetTopicAttributes', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        params = {'TopicArn' : topic.arn}
+        return self.get_object('GetTopicAttributes', params, Attributes)
         
     def set_topic_attributes(self, topic, attr_name, attr_value):
         """
-        Get attributes of a Topic
+        Set attributes of a Topic
 
-        :type topic: string
-        :param topic: The ARN of the topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic to set attributes on.
 
         :type attr_name: string
         :param attr_name: The name of the attribute you want to set.
@@ -119,26 +114,18 @@ class SNSConnection(AWSQueryConnection):
         :param attr_value: The new value for the attribute.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic,
+        params = {'TopicArn' : topic.arn,
                   'AttributeName' : attr_name,
                   'AttributeValue' : attr_value}
-        response = self.make_request('SetTopicAttributes', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_status('SetTopicAttributes', params)
         
     def add_permission(self, topic, label, account_ids, actions):
         """
         Adds a statement to a topic's access control policy, granting
         access for the specified AWS accounts to the specified actions.
 
-        :type topic: string
-        :param topic: The ARN of the topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic to grant access on.
 
         :type label: string
         :param label: A unique identifier for the new policy statement.
@@ -150,45 +137,28 @@ class SNSConnection(AWSQueryConnection):
         :type actions: list of strings
         :param actions: The actions you want to allow for each of the
                         specified principal(s).
-
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic,
+        params = {'TopicArn' : topic.arn,
                   'Label' : label}
         self.build_list_params(params, account_ids, 'AWSAccountId')
         self.build_list_params(params, actions, 'ActionName')
-        response = self.make_request('AddPermission', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_status('AddPermission', params)
         
     def remove_permission(self, topic, label):
         """
         Removes a statement from a topic's access control policy.
 
-        :type topic: string
-        :param topic: The ARN of the topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic to remove from.
 
         :type label: string
         :param label: A unique identifier for the policy statement
                       to be removed.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic,
+        params = {'TopicArn' : topic.arn,
                   'Label' : label}
-        response = self.make_request('RemovePermission', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_status('RemovePermission', params)
         
     def create_topic(self, topic):
         """
@@ -198,44 +168,28 @@ class SNSConnection(AWSQueryConnection):
         :param topic: The name of the new topic.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'Name' : topic}
-        response = self.make_request('CreateTopic', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        params = {'Name': topic}
+        try:
+            return self.get_object('CreateTopic', params, Topic)
+        except BotoServerError:
+            return None
 
     def delete_topic(self, topic):
         """
         Delete an existing topic
 
-        :type topic: string
-        :param topic: The ARN of the topic
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: Topic to delete
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic}
-        response = self.make_request('DeleteTopic', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
-
-
+        return self.get_status('DeleteTopic', {'TopicArn':topic.arn})
 
     def publish(self, topic, message, subject=None):
         """
-        Get properties of a Topic
+        Publish to a Topic
 
-        :type topic: string
-        :param topic: The ARN of the new topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The Topic to publish to.
 
         :type message: string
         :param message: The message you want to send to the topic.
@@ -247,26 +201,21 @@ class SNSConnection(AWSQueryConnection):
                         line of the email notifications.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic,
+        params = {'TopicArn' : topic.arn,
                   'Message' : message}
         if subject:
             params['Subject'] = subject
-        response = self.make_request('Publish', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        try:
+            return self.get_object('Publish', params, PublishResult)
+        except BotoServerError:
+            return None
         
     def subscribe(self, topic, protocol, endpoint):
         """
         Subscribe to a Topic.
 
-        :type topic: string
-        :param topic: The name of the new topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic to subscribe to.
 
         :type protocol: string
         :param protocol: The protocol used to communicate with
@@ -283,18 +232,14 @@ class SNSConnection(AWSQueryConnection):
                          * For sqs, this would be the ARN of an SQS Queue
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic,
+        params = {'TopicArn' : topic.arn,
                   'Protocol' : protocol,
                   'Endpoint' : endpoint}
-        response = self.make_request('Subscribe', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        try:
+            return self.get_object('Subscribe', params, Subscription)
+        except BotoServerError:
+            return None
+
 
     def subscribe_sqs_queue(self, topic, queue):
         """
@@ -313,17 +258,23 @@ class SNSConnection(AWSQueryConnection):
           a policy associated with it, this process will add a Statement to
           that policy.  If no policy exists, a new policy will be created.
           
-        :type topic: string
-        :param topic: The name of the new topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic to subscribe to.
 
         :type queue: A boto Queue object
         :param queue: The queue you wish to subscribe to the SNS Topic.
         """
-        t = queue.id.split('/')
-        q_arn = 'arn:aws:sqs:%s:%s:%s' % (queue.connection.region.name,
-                                          t[1], t[2])
-        resp = self.subscribe(topic, 'sqs', q_arn)
-        policy = queue.get_attributes('Policy')
+        
+        queue_attributes = queue.get_attributes(['Policy', 'QueueArn'])
+        if 'QueueArn' not in queue_attributes:
+            return None
+        if 'Policy' not in queue_attributes or len(queue_attributes['Policy']) == 0:
+            policy = {}
+        else:
+            policy = json.loads(queue_attributes['Policy'])
+        
+        if 'Id' not in policy:
+            policy['Id'] = str(uuid.uuid4())
         if 'Version' not in policy:
             policy['Version'] = '2008-10-17'
         if 'Statement' not in policy:
@@ -331,20 +282,22 @@ class SNSConnection(AWSQueryConnection):
         statement = {'Action' : 'SQS:SendMessage',
                      'Effect' : 'Allow',
                      'Principal' : {'AWS' : '*'},
-                     'Resource' : q_arn,
+                     'Resource' : queue_attributes['QueueArn'],
                      'Sid' : str(uuid.uuid4()),
-                     'Condition' : {'StringLike' : {'aws:SourceArn' : topic}}}
+                     'Condition' : {'StringLike' : {'aws:SourceArn' : topic.arn}}}
         policy['Statement'].append(statement)
-        queue.set_attribute('Policy', json.dumps(policy))
-        return resp
+        if queue.set_attribute('Policy', json.dumps(policy)):
+            return self.subscribe(topic, self.sqs_protocol, queue_attributes['QueueArn'])
+        else:
+            return None
 
     def confirm_subscription(self, topic, token,
                              authenticate_on_unsubscribe=False):
         """
         Get properties of a Topic
 
-        :type topic: string
-        :param topic: The ARN of the new topic.
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic which is subscribed to.
 
         :type token: string
         :param token: Short-lived token sent to and endpoint during
@@ -357,39 +310,23 @@ class SNSConnection(AWSQueryConnection):
                                             of the subscription.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic,
+        params = {'TopicArn' : topic.arn,
                   'Token' : token}
         if authenticate_on_unsubscribe:
             params['AuthenticateOnUnsubscribe'] = 'true'
-        response = self.make_request('ConfirmSubscription', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        
+        return self.get_object('ConfirmSubscription', params, Subscription)
         
     def unsubscribe(self, subscription):
         """
         Allows endpoint owner to delete subscription.
         Confirmation message will be delivered.
 
-        :type subscription: string
-        :param subscription: The ARN of the subscription to be deleted.
+        :type subscription: A :class:`boto.sns.subscription.Subscription` object.
+        :param subscription: The subscription to be deleted.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'SubscriptionArn' : subscription}
-        response = self.make_request('Unsubscribe', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_status('Unsubscribe', {'SubscriptionArn' : subscription.arn})
         
     def get_all_subscriptions(self, next_token=None):
         """
@@ -400,24 +337,18 @@ class SNSConnection(AWSQueryConnection):
                            this method.
 
         """
-        params = {'ContentType' : 'JSON'}
+        params = {}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptions', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            
+        return self.get_list('ListSubscriptions', params, [('Subscriptions', Subscription)])
         
     def get_all_subscriptions_by_topic(self, topic, next_token=None):
         """
         Get list of all subscriptions to a specific topic.
 
-        :type topic: string
-        :param topic: The ARN of the topic for which you wish to
+        :type topic: A :class:`boto.sns.topic.Topic` object.
+        :param topic: The topic for which you wish to
                       find subscriptions.
 
         :type next_token: string
@@ -425,17 +356,7 @@ class SNSConnection(AWSQueryConnection):
                            this method.
 
         """
-        params = {'ContentType' : 'JSON',
-                  'TopicArn' : topic}
+        params = {'TopicArn' : topic.arn}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptionsByTopic', params,
-                                     '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
-        
+        return self.get_list('ListSubscriptionsByTopic', params, [('Subscriptions', Subscription)])

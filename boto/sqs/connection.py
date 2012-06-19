@@ -64,8 +64,7 @@ class SQSConnection(AWSQueryConnection):
         if response.status != 401:
             return False
         try:
-            for event, node in ElementTree.iterparse(response,
-                                                     events=['start']):
+            for _, node in ElementTree.iterparse(response, events=['start']):
                 if node.tag.endswith('Code'):
                     if node.text == 'InvalidAccessKeyId':
                         return True
@@ -123,14 +122,14 @@ class SQSConnection(AWSQueryConnection):
         """
         return self.get_status('DeleteQueue', None, queue.id)
 
-    def get_queue_attributes(self, queue, attribute='All'):
+    def get_queue_attributes(self, queue, attributes='All'):
         """
         Gets one or all attributes of a Queue
 
         :type queue: A Queue object
         :param queue: The SQS queue to be deleted
 
-        :type attribute: str
+        :type attribute: str or list
         :type attribute: The specific attribute requested.  If not
             supplied, the default is to return all attributes.  Valid
             attributes are:
@@ -145,7 +144,14 @@ class SQSConnection(AWSQueryConnection):
         :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
         """
-        params = {'AttributeName' : attribute}
+        if isinstance(attributes, list):
+            params = {}
+            i = 1
+            for attribute in attributes:
+                params['AttributeName.'+str(i)] = attribute 
+                i = i+1
+        else:
+            params = {'AttributeName.1' : attributes}
         return self.get_object('GetQueueAttributes', params,
                                Attributes, queue.id)
 
