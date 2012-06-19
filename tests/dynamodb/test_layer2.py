@@ -189,9 +189,9 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item1_updated = table.get_item(item1_key, item1_range,
                                        consistent_read=True)
         assert item1_updated['Replies'] == item1_attrs['Replies'] + 2
-        self.assertFalse(item1_updated.has_key(removed_attr))
+        self.assertFalse(removed_attr in item1_updated)
         self.assertTrue(removed_tag not in item1_updated['Tags'])
-        self.assertTrue(item1_updated.has_key('RepliesBy'))
+        self.assertTrue('RepliesBy' in item1_updated)
         self.assertTrue(item1_updated['RepliesBy'] == replies_by_set)
 
         # Put a few more items into the table
@@ -278,7 +278,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item3['FalseBoolean'] = False
 
         # Test some set values
-        integer_set = set([1,2,3,4,5])
+        integer_set = set([1, 2, 3, 4, 5])
         float_set = set([1.1, 2.2, 3.3, 4.4, 5.5])
         mixed_set = set([1, 2, 3.3, 4, 5.555])
         str_set = set(['foo', 'bar', 'fie', 'baz'])

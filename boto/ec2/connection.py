@@ -28,6 +28,8 @@ import base64
 import warnings
 from datetime import datetime
 from datetime import timedelta
+from xml.etree import ElementTree
+
 import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
@@ -60,7 +62,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-03-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -92,6 +94,15 @@ class EC2Connection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['ec2']
 
+    def _credentials_expired(self, response):
+        if response.status != 400:
+            return False
+        for event, node in ElementTree.iterparse(response, events=['start']):
+            if node.tag.endswith('Code'):
+                if node.text == 'RequestExpired':
+                    return True
+        return False
+
     def get_params(self):
         """
         Returns a dictionary containing the value of of all of the keyword
@@ -118,7 +129,7 @@ class EC2Connection(AWSQueryConnection):
                 value = [value]
             j = 1
             for v in value:
-                params['Filter.%d.Value.%d' % (i,j)] = v
+                params['Filter.%d.Value.%d' % (i, j)] = v
                 j += 1
             i += 1
 
@@ -520,7 +531,8 @@ class EC2Connection(AWSQueryConnection):
                       private_ip_address=None,
                       placement_group=None, client_token=None,
                       security_group_ids=None,
-                      additional_info=None):
+                      additional_info=None, instance_profile_name=None,
+                      instance_profile_arn=None, tenancy=None):
         """
         Runs an image on EC2.
 
@@ -546,7 +558,9 @@ class EC2Connection(AWSQueryConnection):
         :type instance_type: string
         :param instance_type: The type of instance to run:
 
+                              * t1.micro
                               * m1.small
+                              * m1.medium
                               * m1.large
                               * m1.xlarge
                               * c1.medium
@@ -555,7 +569,8 @@ class EC2Connection(AWSQueryConnection):
                               * m2.2xlarge
                               * m2.4xlarge
                               * cc1.4xlarge
-                              * t1.micro
+                              * cg1.4xlarge
+                              * cc2.8xlarge
 
         :type placement: string
         :param placement: The availability zone in which to launch the instances
@@ -611,17 +626,25 @@ class EC2Connection(AWSQueryConnection):
                              to ensure idempotency of the request.
                              Maximum 64 ASCII characters
 
+        :type security_group_ids: list of strings
+        :param security_group_ids: The ID of the VPC security groups with
+                                   which to associate instances
+
         :type additional_info: string
-        :param additional_info:  Specifies additional information to make
-            available to the instance(s)
+        :param additional_info: Specifies additional information to make
+                                available to the instance(s)
+
+        :type tenancy: string
+        :param tenancy: The tenancy of the instance you want to launch. An
+                        instance with a tenancy of 'dedicated' runs on
+                        single-tenant hardware and can only be launched into a
+                        VPC. Valid values are: "default" or "dedicated".
+                        NOTE: To use dedicated tenancy you MUST specify a VPC
+                        subnet-ID as well.
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
-
-        :type security_group_ids: list of strings
-        :param security_group_ids: The ID of the VPC security groups with
-                                   which to associate instances
         """
         params = {'ImageId':image_id,
                   'MinCount':min_count,
@@ -654,6 +677,8 @@ class EC2Connection(AWSQueryConnection):
             params['Placement.AvailabilityZone'] = placement
         if placement_group:
             params['Placement.GroupName'] = placement_group
+        if tenancy:
+            params['Placement.Tenancy'] = tenancy
         if kernel_id:
             params['KernelId'] = kernel_id
         if ramdisk_id:
@@ -675,6 +700,10 @@ class EC2Connection(AWSQueryConnection):
             params['ClientToken'] = client_token
         if additional_info:
             params['AdditionalInfo'] = additional_info
+        if instance_profile_name:
+            params['IamInstanceProfile.Name'] = instance_profile_name
+        if instance_profile_arn:
+            params['IamInstanceProfile.Arn'] = instance_profile_arn
         return self.get_object('RunInstances', params, Reservation, verb='POST')
 
     def terminate_instances(self, instance_ids=None):
@@ -781,7 +810,7 @@ class EC2Connection(AWSQueryConnection):
                           * disableApiTermination|
                           * instanceInitiatedShutdownBehavior|
                           * rootDeviceName|blockDeviceMapping
-                          * sourceDestCheck
+                          * sourceDestCheck|groupSet
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -804,14 +833,15 @@ class EC2Connection(AWSQueryConnection):
         :param attribute: The attribute you wish to change.
 
                           * AttributeName - Expected value (default)
-                          * instanceType - A valid instance type (m1.small)
-                          * kernel - Kernel ID (None)
-                          * ramdisk - Ramdisk ID (None)
-                          * userData - Base64 encoded String (None)
-                          * disableApiTermination - Boolean (true)
-                          * instanceInitiatedShutdownBehavior - stop|terminate
-                          * rootDeviceName - device name (None)
-                          * sourceDestCheck - Boolean (true)
+                          * InstanceType - A valid instance type (m1.small)
+                          * Kernel - Kernel ID (None)
+                          * Ramdisk - Ramdisk ID (None)
+                          * UserData - Base64 encoded String (None)
+                          * DisableApiTermination - Boolean (true)
+                          * InstanceInitiatedShutdownBehavior - stop|terminate
+                          * RootDeviceName - device name (None)
+                          * SourceDestCheck - Boolean (true)
+                          * GroupSet - Set of Security Groups or IDs
 
         :type value: string
         :param value: The new value for the attribute
@@ -820,15 +850,26 @@ class EC2Connection(AWSQueryConnection):
         :return: Whether the operation succeeded or not
         """
         # Allow a bool to be passed in for value of disableApiTermination
-        if attribute == 'disableApiTermination':
+        if attribute.lower() == 'disableapitermination':
             if isinstance(value, bool):
                 if value:
                     value = 'true'
                 else:
                     value = 'false'
-        params = {'InstanceId' : instance_id,
-                  'Attribute' : attribute,
-                  'Value' : value}
+
+        params = {'InstanceId' : instance_id}
+
+        # groupSet is handled differently from other arguments
+        if attribute.lower() == 'groupset':
+            for idx, sg in enumerate(value):
+                if isinstance(sg, SecurityGroup):
+                    sg = sg.id
+                params['GroupId.%s' % (idx + 1)] = sg
+        else:
+            # for backwards compatibility handle lowercase first letter
+            attribute = attribute[0].upper() + attribute[1:]
+            params['%s.Value' % attribute] = value
+
         return self.get_status('ModifyInstanceAttribute', params, verb='POST')
 
     def reset_instance_attribute(self, instance_id, attribute):
@@ -1685,10 +1726,9 @@ class EC2Connection(AWSQueryConnection):
             if temp.__contains__(t) == False:
                 temp.append(t)
 
-        target_backup_times = temp
-        # make the oldeest dates first, and make sure the month start
+        # sort to make the oldest dates first, and make sure the month start
         # and last four week's start are in the proper order
-        target_backup_times.sort()
+        target_backup_times = sorted(temp)
 
         # get all the snapshots, sort them by date and time, and
         # organize them into one array for each volume:
@@ -2171,7 +2211,7 @@ class EC2Connection(AWSQueryConnection):
         if to_port is not None:
             params['IpPermissions.1.ToPort'] = to_port
         if cidr_ip:
-            if type(cidr_ip) != list:
+            if not isinstance(cidr_ip, list):
                 cidr_ip = [cidr_ip]
             for i, single_cidr_ip in enumerate(cidr_ip):
                 params['IpPermissions.1.IpRanges.%d.CidrIp' % (i+1)] = \
@@ -2774,8 +2814,7 @@ class EC2Connection(AWSQueryConnection):
     # Tag methods
 
     def build_tag_param_list(self, params, tags):
-        keys = tags.keys()
-        keys.sort()
+        keys = sorted(tags.keys())
         i = 1
         for key in keys:
             value = tags[key]

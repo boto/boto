@@ -146,7 +146,7 @@ class Sequence(object):
         self.item_type = type(fnc(None))
         self.timestamp = None
         # Allow us to pass in a full name to a function
-        if type(fnc) == str:
+        if isinstance(fnc, str):
             from boto.utils import find_class
             fnc = find_class(fnc)
         self.fnc = fnc
@@ -171,7 +171,7 @@ class Sequence(object):
             self.timestamp = new_val['timestamp']
         except SDBResponseError, e:
             if e.status == 409:
-                raise ValueError, "Sequence out of sync"
+                raise ValueError("Sequence out of sync")
             else:
                 raise
 
@@ -180,11 +180,11 @@ class Sequence(object):
         """Get the value"""
         val = self.db.get_attributes(self.id, consistent_read=True)
         if val:
-            if val.has_key('timestamp'):
+            if 'timestamp' in val:
                 self.timestamp = val['timestamp']
-            if val.has_key('current_value'):
+            if 'current_value' in val:
                 self._value = self.item_type(val['current_value'])
-            if val.has_key("last_value") and val['last_value'] != None:
+            if "last_value" in val and val['last_value'] != None:
                 self.last_value = self.item_type(val['last_value'])
         return self._value
 

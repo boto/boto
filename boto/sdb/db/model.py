@@ -86,7 +86,7 @@ class Model(object):
 
     @classmethod
     def get_by_key_name(cls, key_names, parent=None):
-        raise NotImplementedError, "Key Names are not currently supported"
+        raise NotImplementedError("Key Names are not currently supported")
 
     @classmethod
     def find(cls, limit=None, next_token=None, **params):
@@ -101,7 +101,7 @@ class Model(object):
 
     @classmethod
     def get_or_insert(key_name, **kw):
-        raise NotImplementedError, "get_or_insert not currently supported"
+        raise NotImplementedError("get_or_insert not currently supported")
             
     @classmethod
     def properties(cls, hidden=True):
@@ -154,7 +154,7 @@ class Model(object):
                 setattr(self, prop.name, prop.default_value())
             except ValueError:
                 pass
-        if kw.has_key('manager'):
+        if 'manager' in kw:
             self._manager = kw['manager']
         self.id = id
         for key in kw:

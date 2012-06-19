@@ -395,7 +395,7 @@ class XMLManager(object):
         return ' intersection '.join(parts)
 
     def query_gql(self, query_string, *args, **kwds):
-        raise NotImplementedError, "GQL queries not supported in XML"
+        raise NotImplementedError("GQL queries not supported in XML")
 
     def save_list(self, doc, items, prop_node):
         items_node = doc.createElement('items')
@@ -495,7 +495,7 @@ class XMLManager(object):
 
     def get_key_value(self, obj, name):
         a = self.domain.get_attributes(obj.id, name)
-        if a.has_key(name):
+        if name in a:
             return a[name]
         else:
             return None

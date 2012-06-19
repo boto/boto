@@ -136,7 +136,7 @@ class S3KeyTest (unittest.TestCase):
         # let's try a wrong md5 by just altering it.
         k = self.bucket.new_key("k")
         sfp.seek(0)
-        hexdig,base64 = k.compute_md5(sfp)
+        hexdig, base64 = k.compute_md5(sfp)
         bad_md5 = (hexdig, base64[3:])
         try:
             k.set_contents_from_file(sfp, md5=bad_md5)
