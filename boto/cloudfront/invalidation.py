@@ -47,6 +47,9 @@ class InvalidationBatch(object):
         else:
             self.connection = connection
 
+    def __repr__(self):
+        return '<InvalidationBatch: %s>' % self.id
+
     def add(self, path):
         """Add another path to this invalidation request"""
         return self.paths.append(path)
