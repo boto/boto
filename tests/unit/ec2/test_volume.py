@@ -1,5 +1,5 @@
 import mock
-import unittest
+from tests.unit import unittest
 
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.tag import Tag, TagSet
