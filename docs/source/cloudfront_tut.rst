@@ -177,3 +177,20 @@ results pass the ``next_marker`` attribute of the previous
     >>>     print 'Object: %s, ID: %s, Status: %s' % (inval, inval.id, inval.status)
     Object: <InvalidationSummary: I1X3F6N0PLGJN5>, ID: I1X3F6N0PLGJN5, Status: Completed
     Object: <InvalidationSummary: I1F3G9N0ZLGKN2>, ID: I1F3G9N0ZLGKN2, Status: Completed
+
+You can get the :class:`boto.cloudfront.invalidation.InvalidationBatch` object
+representing the invalidation request pointed to by a
+:class:`boto.cloudfront.invalidation.InvalidationSummary` object using::
+
+    >>> inval_req = inval.get_invalidation_request()
+    >>> print inval_req
+    <InvalidationBatch: IFCT7K03VUETK>
+
+Simiarly you can get the parent
+:class:`boto.cloudfront.distribution.Distribution` object for the invalidation
+request from a :class:`boto.cloudfront.invalidation.InvalidationSummary` object
+using::
+
+    >>> dist = inval.get_distribution()
+    >>> print dist
+    <boto.cloudfront.distribution.Distribution instance at 0x304a7e8>
