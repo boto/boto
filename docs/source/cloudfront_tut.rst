@@ -15,9 +15,17 @@ CloudFront.
 
 Creating a CloudFront connection
 --------------------------------
+If you've placed your credentials in your ``$HOME/.boto`` config file then you
+can simply create a CloudFront connection using::
 
     >>> import boto
     >>> c = boto.connect_cloudfront()
+
+If you do not have this file you will need to specify your AWS access key and
+secret access key::
+
+    >>> import boto
+    >>> c = boto.connect_cloudfront('your-aws-access-key-id', 'your-aws-secret-access-key')
 
 Create a new :class:`boto.cloudfront.distribution.Distribution`::
 
