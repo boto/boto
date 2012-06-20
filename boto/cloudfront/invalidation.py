@@ -203,7 +203,7 @@ class InvalidationSummary(object):
         """
         return self.connection.get_distribution_info(self.distribution_id)
 
-    def get_invalidation(self):
+    def get_invalidation_request(self):
         """
         Returns an InvalidationBatch object representing the invalidation
         request referred to in the InvalidationSummary.
