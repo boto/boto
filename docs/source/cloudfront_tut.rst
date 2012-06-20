@@ -27,6 +27,8 @@ secret access key::
     >>> import boto
     >>> c = boto.connect_cloudfront('your-aws-access-key-id', 'your-aws-secret-access-key')
 
+Working with CloudFront Distributions
+-------------------------------------
 Create a new :class:`boto.cloudfront.distribution.Distribution`::
 
     >>> distro = c.create_distribution(origin='mybucket.s3.amazonaws.com', enabled=False, comment='My new Distribution')
@@ -81,7 +83,7 @@ convenience methods::
 
     >>> distro.enable()  # just calls distro.update(enabled=True)
 
-or
+or::
 
     >>> distro.disable()  # just calls distro.update(enabled=False)
 
