@@ -60,7 +60,8 @@ class CloudFrontConnection(AWSAuthConnection):
 
     # Generics
 
-    def _get_all_objects(self, resource, tags):
+    def _get_all_objects(self, resource, tags, result_set_class=None,
+                         result_set_kwargs=None):
         if not tags:
             tags = [('DistributionSummary', DistributionSummary)]
         response = self.make_request('GET', '/%s/%s' % (self.Version,
@@ -69,7 +70,9 @@ class CloudFrontConnection(AWSAuthConnection):
         boto.log.debug(body)
         if response.status >= 300:
             raise CloudFrontServerError(response.status, response.reason, body)
-        rs = ResultSet(tags)
+        rs_class = result_set_class or ResultSet
+        rs_kwargs = result_set_kwargs or dict()
+        rs = rs_class(tags, **rs_kwargs)
         h = handler.XmlHandler(rs, self)
         xml.sax.parseString(body, h)
         return rs
