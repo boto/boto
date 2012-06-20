@@ -26,6 +26,9 @@ INVAL_SUMMARY_TEMPLATE = r"""
 
 
 class CFInvalidationListTest(unittest.TestCase):
+
+    cloudfront = True
+
     def setUp(self):
         self.cf = boto.connect_cloudfront('aws.aws_access_key_id',
                                           'aws.aws_secret_access_key')
