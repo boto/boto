@@ -99,7 +99,7 @@ Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 All rights reserved.
 
-.. _release_notes: https://github.com/boto/boto/wiki
+.. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto
 .. _Online documentation: http://docs.pythonboto.org
 .. _Python Cheese Shop: http://pypi.python.org/pypi/boto
