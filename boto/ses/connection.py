@@ -100,7 +100,6 @@ class SESConnection(AWSAuthConnection):
             if isinstance(v, unicode):  # UTF-8 encode only if it's Unicode
                 params[k] = v.encode('utf-8')
 
-        print params
         response = super(SESConnection, self).make_request(
             'POST',
             '/',
@@ -111,7 +110,7 @@ class SESConnection(AWSAuthConnection):
         if response.status == 200:
             list_markers = ('VerifiedEmailAddresses', 'Identities', 'VerificationAttributes', 'SendDataPoints')
             item_markers = ('member', 'item', 'entry')
-            print body
+
             e = boto.jsonresponse.Element(list_marker=list_markers, item_marker=item_markers)
             h = boto.jsonresponse.XmlHandler(e, None)
             h.parse(body)
