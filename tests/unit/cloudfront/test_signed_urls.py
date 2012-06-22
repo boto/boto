@@ -8,6 +8,9 @@ from textwrap import dedent
 from boto.cloudfront.distribution import Distribution
 
 class CloudfrontSignedUrlsTest(unittest.TestCase):
+
+    cloudfront = True
+
     def setUp(self):
         self.pk_str = dedent("""
             -----BEGIN RSA PRIVATE KEY-----
