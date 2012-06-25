@@ -307,6 +307,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
                 headers_to_sign[name] = value
         return headers_to_sign
 
+    def query_string(self, http_request):
+        parameter_names = sorted(http_request.params.keys())
+        pairs = []
+        for pname in parameter_names:
+            param_val = boto.utils.get_utf8_value(parameter_names[pname])
+            pairs.append(urllib.quote(pname, safe='') + '=' +
+                         urllib.quote(val, safe='-_~'))
+        return '&'.join(pairs)
+
     def canonical_query_string(self, http_request):
         l = []
         for param in http_request.params:
@@ -419,6 +428,10 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
+        qs = self.query_string(req)
+        if qs:
+            req.path = req.path.split('?')[0]
+            req.path = req.path + '?' + qs
 
 
 class QuerySignatureHelper(HmacKeys):
