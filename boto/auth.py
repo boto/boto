@@ -311,9 +311,9 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parameter_names = sorted(http_request.params.keys())
         pairs = []
         for pname in parameter_names:
-            param_val = boto.utils.get_utf8_value(parameter_names[pname])
+            pval = http_request.params[pname].encode('utf-8')
             pairs.append(urllib.quote(pname, safe='') + '=' +
-                         urllib.quote(val, safe='-_~'))
+                         urllib.quote(pval, safe='-_~'))
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
