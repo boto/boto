@@ -1,0 +1,16 @@
+language: python
+
+python:
+  - 2.6
+  - 2.7
+
+before_install:
+  - sudo apt-get install swig python-m2crypto
+
+install:
+  - python setup.py install -q
+
+script:
+  - pip install --use-mirrors -qr requirements.txt
+  - pip install --upgrade git+https://github.com/msabramo/M2Crypto.git@develop
+  - ( cd tests && python test.py unit )
