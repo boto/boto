@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 
 import logging
+import os
 import sys
 import unittest
 
@@ -44,6 +45,11 @@ def main():
         attribute_args = ['-a', '!notdefault']
     all_args = [__file__] + attribute_args + remaining_args
     print "nose command:", ' '.join(all_args)
+    # Some tests depend on AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+    if not os.environ.get('AWS_ACCESS_KEY_ID'):
+        os.environ['AWS_ACCESS_KEY_ID'] = 'aaa'
+    if not os.environ.get('AWS_SECRET_ACCESS_KEY'):
+        os.environ['AWS_SECRET_ACCESS_KEY'] = 'bbb'
     if run(argv=all_args):
         # run will return True is all the tests pass.  We want
         # this to equal a 0 rc
