@@ -12,5 +12,5 @@ install:
 
 script:
   - pip install --use-mirrors -qr requirements.txt
-  - pip install --upgrade git+https://github.com/msabramo/M2Crypto.git@develop
+  - pip install --upgrade git+https://github.com/msabramo/M2Crypto.git@1de89f579e5377412fd428fb96edbfd3ef4e5c4d
   - ( cd tests && python test.py unit )
