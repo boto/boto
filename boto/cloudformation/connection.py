@@ -337,7 +337,7 @@ class CloudFormationConnection(AWSQueryConnection):
         if template_body:
             params['TemplateBody'] = template_body
         if template_url:
-            params['TemplateUrl'] = template_url
+            params['TemplateURL'] = template_url
         if template_body and template_url:
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
