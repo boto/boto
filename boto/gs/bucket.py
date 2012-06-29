@@ -36,6 +36,10 @@ STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
 
 class Bucket(S3Bucket):
+    WebsiteBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                   '<WebsiteConfiguration>%s%s</WebsiteConfiguration>')
+    WebsiteMainPageFragment = '<MainPageSuffix>%s</MainPageSuffix>'
+    WebsiteErrorFragment = '<NotFoundPage>%s</NotFoundPage>'
 
     def __init__(self, connection=None, name=None, key_class=GSKey):
         super(Bucket, self).__init__(connection, name, key_class)
@@ -160,16 +164,16 @@ class Bucket(S3Bucket):
         Convenience method that provides a quick way to add an email grant
         to a bucket. This method retrieves the current ACL, creates a new
         grant based on the parameters passed in, adds that grant to the ACL
-        and then PUT's the new ACL back to GS.
-        
+        and then PUT's the new ACL back to GCS.
+
         :type permission: string
         :param permission: The permission being granted. Should be one of:
                            (READ, WRITE, FULL_CONTROL).
-        
+
         :type email_address: string
         :param email_address: The email address associated with the GS
                               account your are granting the permission to.
-        
+
         :type recursive: boolean
         :param recursive: A boolean value to controls whether the call
                           will apply the grant to all keys within the bucket
@@ -193,18 +197,19 @@ class Bucket(S3Bucket):
     # to allow polymorphic treatment at application layer.
     def add_user_grant(self, permission, user_id, recursive=False, headers=None):
         """
-        Convenience method that provides a quick way to add a canonical user grant to a bucket.
-        This method retrieves the current ACL, creates a new grant based on the parameters
-        passed in, adds that grant to the ACL and then PUTs the new ACL back to GS.
-        
+        Convenience method that provides a quick way to add a canonical user
+        grant to a bucket. This method retrieves the current ACL, creates a new
+        grant based on the parameters passed in, adds that grant to the ACL and
+        then PUTs the new ACL back to GCS.
+
         :type permission: string
         :param permission:  The permission being granted.  Should be one of:
                             (READ|WRITE|FULL_CONTROL)
-        
+
         :type user_id: string
-        :param user_id:     The canonical user id associated with the GS account you are granting
-                            the permission to.
-                            
+        :param user_id:     The canonical user id associated with the GS account
+                            you are granting the permission to.
+
         :type recursive: bool
         :param recursive: A boolean value to controls whether the call
                           will apply the grant to all keys within the bucket
@@ -230,7 +235,7 @@ class Bucket(S3Bucket):
         Convenience method that provides a quick way to add an email group
         grant to a bucket. This method retrieves the current ACL, creates a new
         grant based on the parameters passed in, adds that grant to the ACL and
-        then PUT's the new ACL back to GS.
+        then PUT's the new ACL back to GCS.
 
         :type permission: string
         :param permission: The permission being granted. Should be one of:
@@ -284,3 +289,94 @@ class Bucket(S3Bucket):
         xml_str = xml_str + '</Logging>'
 
         self.set_subresource('logging', xml_str, headers=headers)
+    def configure_website(self, main_page_suffix=None, error_key=None,
+                          headers=None):
+        """
+        Configure this bucket to act as a website
+
+        :type suffix: str
+        :param suffix: Suffix that is appended to a request that is for a
+                       "directory" on the website endpoint (e.g. if the suffix
+                       is index.html and you make a request to
+                       samplebucket/images/ the data that is returned will
+                       be for the object with the key name images/index.html).
+                       The suffix must not be empty and must not include a
+                       slash character. This parameter is optional and the
+                       property is disabled if excluded.
+
+
+        :type error_key: str
+        :param error_key: The object key name to use when a 400
+                          error occurs. This parameter is optional and the
+                          property is disabled if excluded.
+
+        """
+        if main_page_suffix:
+            main_page_frag = self.WebsiteMainPageFragment % main_page_suffix
+        else:
+            main_page_frag = ''
+
+        if error_key:
+            error_frag = self.WebsiteErrorFragment % error_key
+        else:
+            error_frag = ''
+
+        body = self.WebsiteBody % (main_page_frag, error_frag)
+        response = self.connection.make_request('PUT', self.name, data=body,
+                                                query_args='websiteConfig',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_website_configuration(self, headers=None):
+        """
+        Returns the current status of website configuration on the bucket.
+
+        :rtype: dict
+        :returns: A dictionary containing a Python representation
+                  of the XML response from GCS. The overall structure is:
+
+        * WebsiteConfiguration
+          * MainPageSuffix: suffix that is appended to request that
+              is for a "directory" on the website endpoint
+          * NotFoundPage: name of an object to serve when site visitors
+              encounter a 404
+        """
+        return self.get_website_configuration_xml(self, headers)[0]
+
+    def get_website_configuration_with_xml(self, headers=None):
+        """
+        Returns the current status of website configuration on the bucket as
+        unparsed XML.
+
+        :rtype: 2-Tuple
+        :returns: 2-tuple containing:
+        1) A dictionary containing a Python representation
+                  of the XML response from GCS. The overall structure is:
+          * WebsiteConfiguration
+            * MainPageSuffix: suffix that is appended to request that
+                is for a "directory" on the website endpoint
+            * NotFoundPage: name of an object to serve when site visitors
+                encounter a 404
+        2) unparsed XML describing the bucket's website configuration.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='websiteConfig', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e, body
+
+    def delete_website_configuration(self, headers=None):
+        self.configure_website(headers=headers)

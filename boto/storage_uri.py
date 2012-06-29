@@ -492,6 +492,17 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         bucket.disable_logging(headers=headers)
 
+    def set_website_config(self, main_page_suffix=None, error_key=None,
+                           validate=None, headers=None):
+        bucket = self.get_bucket(validate, headers)
+        if not (main_page_suffix or error_key):
+            bucket.delete_website_configuration(headers)
+        else:
+            bucket.configure_website(main_page_suffix, error_key, headers)
+
+    def get_website_config(self, validate=None, headers=None):
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_website_configuration_with_xml(headers)
 
 
 class FileStorageUri(StorageUri):

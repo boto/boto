@@ -1262,18 +1262,38 @@ class Bucket(object):
 
               * Key : name of object to serve when an error occurs
         """
+        return self.get_website_configuration_xml(self, headers)[0]
+
+    def get_website_configuration_with_xml(self, headers=None):
+        """
+        Returns the current status of website configuration on the bucket as
+        unparsed XML.
+
+        :rtype: 2-Tuple
+        :returns: 2-tuple containing:
+        1) A dictionary containing a Python representation
+                  of the XML response from GCS. The overall structure is:
+          * WebsiteConfiguration
+            * IndexDocument
+              * Suffix : suffix that is appended to request that
+                is for a "directory" on the website endpoint
+              * ErrorDocument
+                * Key : name of object to serve when an error occurs
+        2) unparsed XML describing the bucket's website configuration.
+        """
         response = self.connection.make_request('GET', self.name,
                 query_args='website', headers=headers)
         body = response.read()
         boto.log.debug(body)
-        if response.status == 200:
-            e = boto.jsonresponse.Element()
-            h = boto.jsonresponse.XmlHandler(e, None)
-            h.parse(body)
-            return e
-        else:
+
+        if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e, body
 
     def delete_website_configuration(self, headers=None):
         """
