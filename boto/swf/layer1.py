@@ -63,6 +63,8 @@ class Layer1(AWSAuthConnection):
             swf_exceptions.SWFOperationNotPermittedError,
         'com.amazonaws.swf.base.model#TypeAlreadyExistsFault':
             swf_exceptions.SWFTypeAlreadyExistsError,
+        'com.amazonaws.swf.base.model#WorkflowExecutionAlreadyStartedFault':
+            swf_exceptions.SWFWorkflowExecutionAlreadyStartedError,
     }
 
     ResponseError = SWFResponseError
@@ -158,7 +160,7 @@ class Layer1(AWSAuthConnection):
             history. This enables diagnostic tracing when problems arise.
             The form of this identity is user defined.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'taskList': {'name': task_list}}
         if identity:
@@ -179,7 +181,7 @@ class Layer1(AWSAuthConnection):
         :param result: The result of the activity task. It is a free
             form string that is implementation specific.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'taskToken': task_token}
         if result:
@@ -203,7 +205,7 @@ class Layer1(AWSAuthConnection):
         :type reason: string
         :param reason: Description of the error that may assist in diagnostics.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'taskToken': task_token}
         if details:
@@ -226,7 +228,7 @@ class Layer1(AWSAuthConnection):
         :type details: string
         :param details: Optional detailed information about the failure.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'taskToken': task_token}
         if details:
@@ -253,7 +255,7 @@ class Layer1(AWSAuthConnection):
         :param details: If specified, contains details about the
             progress of the task.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'taskToken': task_token}
         if details:
@@ -305,7 +307,7 @@ class Layer1(AWSAuthConnection):
             reverse order. By default the results are returned in
             ascending order of the eventTimestamp of the events.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'taskList': {'name': task_list}}
         if identity:
@@ -340,7 +342,7 @@ class Layer1(AWSAuthConnection):
         :param execution_context: User defined context to add to
             workflow execution.
 
-        :raises: #UnknownResourceFault, #OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'taskToken': task_token}
         if decisions:
@@ -371,7 +373,7 @@ class Layer1(AWSAuthConnection):
         :param workflow_id: The workflowId of the workflow execution
             to cancel.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'workflowId': workflow_id}
         if run_id:
@@ -457,8 +459,8 @@ class Layer1(AWSAuthConnection):
             registering the workflow type using register_workflow_type.
 
         :raises: UnknownResourceFault, TypeDeprecatedFault,
-            WorkflowExecutionAlreadyStartedFault, LimitExceededFault,
-            OperationNotPermittedFault, DefaultUndefinedFault
+            SWFWorkflowExecutionAlreadyStartedError, SWFLimitExceededError,
+            SWFOperationNotPermittedError, DefaultUndefinedFault
         """
         data = {'domain': domain, 'workflowId': workflow_id}
         data['workflowType'] = {'name': workflow_name,
@@ -506,7 +508,7 @@ class Layer1(AWSAuthConnection):
         :type run_id: string
         :param run_id: The runId of the workflow execution to signal.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'signalName': signal_name,
                 'workflowId': workflow_id}
@@ -565,7 +567,7 @@ class Layer1(AWSAuthConnection):
         :type run_id: string
         :param run_id: The runId of the workflow execution to terminate.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'workflowId': workflow_id}
         if child_policy:
@@ -647,8 +649,8 @@ class Layer1(AWSAuthConnection):
         :type description: string
         :param description: A textual description of the activity type.
 
-        :raises: TypeAlreadyExistsFault, LimitExceededFault,
-            UnknownResourceFault, OperationNotPermittedFault
+        :raises: SWFTypeAlreadyExistsError, SWFLimitExceededError,
+            UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'name': name,'version': version}
         if task_list:
@@ -683,7 +685,7 @@ class Layer1(AWSAuthConnection):
         :param activity_version: The version of this activity.
 
         :raises: UnknownResourceFault, TypeDeprecatedFault,
-            OperationNotPermittedFault
+            SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['activityType'] = {'name': activity_name,
@@ -714,7 +716,7 @@ class Layer1(AWSAuthConnection):
         :param version: The version of the workflow type.
 
         :type task_list: list of name, version of tasks
-        :param name: If set, specifies the default task list to use
+        :param task_list: If set, specifies the default task list to use
             for scheduling decision tasks for executions of this workflow
             type. This default is used only if a task list is not provided
             when starting the execution through the StartWorkflowExecution
@@ -760,8 +762,8 @@ class Layer1(AWSAuthConnection):
         :type description: string
         :param description: Textual description of the workflow type.
 
-        :raises: TypeAlreadyExistsFault, LimitExceededFault,
-            UnknownResourceFault, OperationNotPermittedFault
+        :raises: SWFTypeAlreadyExistsError, SWFLimitExceededError,
+            UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'name': name, 'version': version}
         if task_list:
@@ -796,7 +798,7 @@ class Layer1(AWSAuthConnection):
         :param workflow_version: The version of the workflow type.
 
         :raises: UnknownResourceFault, TypeDeprecatedFault,
-            OperationNotPermittedFault
+            SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['workflowType'] = {'name': workflow_name,
@@ -828,8 +830,8 @@ class Layer1(AWSAuthConnection):
         :type description: string
         :param description: Textual description of the domain.
 
-        :raises: DomainAlreadyExistsFault, LimitExceededFault,
-            OperationNotPermittedFault
+        :raises: SWFDomainAlreadyExistsError, SWFLimitExceededError,
+            SWFOperationNotPermittedError
         """
         data = {'name': name,
                 'workflowExecutionRetentionPeriodInDays': workflow_execution_retention_period_in_days}
@@ -852,7 +854,7 @@ class Layer1(AWSAuthConnection):
         :param name: The name of the domain to deprecate.
 
         :raises: UnknownResourceFault, DomainDeprecatedFault,
-            OperationNotPermittedFault
+            SWFOperationNotPermittedError
         """
         data = {'name': name}
         json_input = json.dumps(data)
@@ -909,7 +911,7 @@ class Layer1(AWSAuthConnection):
             ascending alphabetical order of the name of the activity
             types.
 
-        :raises: OperationNotPermittedFault, UnknownResourceFault
+        :raises: SWFOperationNotPermittedError, UnknownResourceFault
         """
         data = {'domain': domain, 'registrationStatus': registration_status}
         if name:
@@ -939,7 +941,7 @@ class Layer1(AWSAuthConnection):
         :type activity_version: string
         :param activity_version: The version of this activity.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['activityType'] = {'name': activity_name,
@@ -989,7 +991,7 @@ class Layer1(AWSAuthConnection):
             ascending alphabetical order of the name of the workflow
             types.
 
-        :raises: OperationNotPermittedFault, UnknownResourceFault
+        :raises: SWFOperationNotPermittedError, UnknownResourceFault
         """
         data = {'domain': domain, 'registrationStatus': registration_status}
         if maximum_page_size:
@@ -1020,7 +1022,7 @@ class Layer1(AWSAuthConnection):
         :type workflow_version: string
         :param workflow_version: The version of the workflow type.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['workflowType'] = {'name': workflow_name,
@@ -1047,7 +1049,7 @@ class Layer1(AWSAuthConnection):
         :param workflow_id: The user defined identifier associated
             with the workflow execution.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['execution'] = {'runId': run_id, 'workflowId': workflow_id}
@@ -1095,7 +1097,7 @@ class Layer1(AWSAuthConnection):
             reverse order. By default the results are returned in
             ascending order of the eventTimeStamp of the events.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['execution'] = {'runId': run_id, 'workflowId': workflow_id}
@@ -1146,7 +1148,7 @@ class Layer1(AWSAuthConnection):
         :param workflow_id: If specified, only workflow executions
             matching the workflow_id are counted.
 
-        :raises: #UnknownResourceFault, #OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         data['startTimeFilter'] = {'oldestDate': oldest_date,
@@ -1223,7 +1225,7 @@ class Layer1(AWSAuthConnection):
             descending order of the start or the close time of the
             executions.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
 
         """
         data = {'domain': domain}
@@ -1315,7 +1317,7 @@ class Layer1(AWSAuthConnection):
         :type workflow_version: string
         :param workflow_version: Version of the workflow type to filter on.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         if start_latest_date and start_oldest_date:
@@ -1424,7 +1426,7 @@ class Layer1(AWSAuthConnection):
             descending order of the start or the close time of the
             executions.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain}
         if start_latest_date and start_oldest_date:
@@ -1488,7 +1490,7 @@ class Layer1(AWSAuthConnection):
             reverse order. By default the results are returned in
             ascending alphabetical order of the name of the domains.
 
-        :raises: OperationNotPermittedFault
+        :raises: SWFOperationNotPermittedError
         """
         data = {'registrationStatus': registration_status}
         if maximum_page_size:
@@ -1508,7 +1510,7 @@ class Layer1(AWSAuthConnection):
         :type name: string
         :param name: The name of the domain to describe.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'name': name}
         json_input = json.dumps(data)
@@ -1530,7 +1532,7 @@ class Layer1(AWSAuthConnection):
         :type task_list: string
         :param task_list: The name of the task list.
 
-        :raises: #UnknownResourceFault, #OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'taskList': {'name': task_list}}
         json_input = json.dumps(data)
@@ -1550,7 +1552,7 @@ class Layer1(AWSAuthConnection):
         :type task_list: string
         :param task_list: The name of the task list.
 
-        :raises: UnknownResourceFault, OperationNotPermittedFault
+        :raises: UnknownResourceFault, SWFOperationNotPermittedError
         """
         data = {'domain': domain, 'taskList': {'name': task_list}}
         json_input = json.dumps(data)
