@@ -63,6 +63,8 @@ class Layer1(AWSAuthConnection):
             swf_exceptions.SWFOperationNotPermittedError,
         'com.amazonaws.swf.base.model#TypeAlreadyExistsFault':
             swf_exceptions.SWFTypeAlreadyExistsError,
+        'com.amazonaws.swf.base.model#WorkflowExecutionAlreadyStartedFault':
+            swf_exceptions.SWFWorkflowExecutionAlreadyStartedError,
     }
 
     ResponseError = SWFResponseError
@@ -457,7 +459,7 @@ class Layer1(AWSAuthConnection):
             registering the workflow type using register_workflow_type.
 
         :raises: UnknownResourceFault, TypeDeprecatedFault,
-            WorkflowExecutionAlreadyStartedFault, SWFLimitExceededError,
+            SWFWorkflowExecutionAlreadyStartedError, SWFLimitExceededError,
             SWFOperationNotPermittedError, DefaultUndefinedFault
         """
         data = {'domain': domain, 'workflowId': workflow_id}
