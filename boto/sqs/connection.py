@@ -18,7 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from xml.etree import ElementTree
 
 from boto.connection import AWSQueryConnection
 from boto.sqs.regioninfo import SQSRegionInfo
@@ -26,7 +25,7 @@ from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto.sqs.batchresults import BatchResults
-from boto.exception import SQSError, XMLParseError
+from boto.exception import SQSError, BotoServerError
 
 
 class SQSConnection(AWSQueryConnection):
@@ -63,15 +62,8 @@ class SQSConnection(AWSQueryConnection):
     def _credentials_expired(self, response):
         if response.status != 401:
             return False
-        try:
-            for event, node in ElementTree.iterparse(response,
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'InvalidAccessKeyId':
-                        return True
-        except XMLParseError:
-            return False
-        return False
+        error = BotoServerError('', '', body=response.read())
+        return error.error_code == 'InvalidAccessKeyId'
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """

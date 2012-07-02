@@ -25,7 +25,7 @@ class ComplexType(dict):
     _value = 'Value'
 
     def __repr__(self):
-        return '{}{}'.format(getattr(self, self._value, None), self.copy())
+        return '{0}{1}'.format(getattr(self, self._value, None), self.copy())
 
     def __str__(self):
         return str(getattr(self, self._value, ''))
@@ -165,15 +165,14 @@ class ResponseElement(dict):
         return self._connection
 
     def __repr__(self):
-        render = lambda pair: '{!s}: {!r}'.format(*pair)
+        render = lambda pair: '{0!s}: {1!r}'.format(*pair)
         do_show = lambda pair: not pair[0].startswith('_')
         attrs = filter(do_show, self.__dict__.items())
         name = self.__class__.__name__
         if name == 'JITResponse':
-            name = '^{}^'.format(self._name or '')
-        return '{}{!r}({})'.format(name,
-                            self.copy(),
-                            ', '.join(map(render, attrs)))
+            name = '^{0}^'.format(self._name or '')
+        return '{0}{1!r}({2})'.format(
+            name, self.copy(), ', '.join(map(render, attrs)))
 
     def _type_for(self, name, attrs):
         return self._override.get(name, globals().get(name, ResponseElement))
@@ -333,7 +332,7 @@ class ComplexAmount(ResponseElement):
     _amount = 'Value'
 
     def __repr__(self):
-        return '{} {}'.format(self.CurrencyCode, getattr(self, self._amount))
+        return '{0} {1}'.format(self.CurrencyCode, getattr(self, self._amount))
 
     def __float__(self):
         return float(getattr(self, self._amount))
@@ -344,7 +343,7 @@ class ComplexAmount(ResponseElement):
     @strip_namespace
     def startElement(self, name, attrs, connection):
         if name not in ('CurrencyCode', self._amount):
-            message = 'Unrecognized tag {} in ComplexAmount'.format(name)
+            message = 'Unrecognized tag {0} in ComplexAmount'.format(name)
             raise AssertionError(message)
         return ResponseElement.startElement(self, name, attrs, connection)
 
@@ -361,7 +360,7 @@ class ComplexMoney(ComplexAmount):
 
 class ComplexWeight(ResponseElement):
     def __repr__(self):
-        return '{} {}'.format(self.Value, self.Unit)
+        return '{0} {1}'.format(self.Value, self.Unit)
 
     def __float__(self):
         return float(self.Value)
@@ -372,7 +371,7 @@ class ComplexWeight(ResponseElement):
     @strip_namespace
     def startElement(self, name, attrs, connection):
         if name not in ('Unit', 'Value'):
-            message = 'Unrecognized tag {} in ComplexWeight'.format(name)
+            message = 'Unrecognized tag {0} in ComplexWeight'.format(name)
             raise AssertionError(message)
         return ResponseElement.startElement(self, name, attrs, connection)
 
@@ -398,7 +397,7 @@ class ComplexDimensions(ResponseElement):
     @strip_namespace
     def startElement(self, name, attrs, connection):
         if name not in self._dimensions:
-            message = 'Unrecognized tag {} in ComplexDimensions'.format(name)
+            message = 'Unrecognized tag {0} in ComplexDimensions'.format(name)
             raise AssertionError(message)
         setattr(self, name, Dimension(attrs.copy()))
 
