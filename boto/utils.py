@@ -251,7 +251,7 @@ class LazyLoadMetadata(dict):
             val = boto.utils.retry_url(self._url + urllib.quote(resource,
                                                                 safe="/:"),
                                        num_retries=self._num_retries)
-            if val[0] == '{':
+            if val and val[0] == '{':
                 val = json.loads(val)
             else:
                 p = val.find('\n')
