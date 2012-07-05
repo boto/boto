@@ -611,7 +611,7 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
             'SignatureMethod': 'HmacSHA256',
             'SignatureVersion': 2,
             'TemplateBody': SAMPLE_TEMPLATE,
-            'TemplateUrl': 'http://url',
+            'TemplateURL': 'http://url',
             'Version': '2010-05-15',
         }, ignore_params_values=['Timestamp'])
 
