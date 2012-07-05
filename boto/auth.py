@@ -187,6 +187,10 @@ class HmacAuthV3Handler(AuthHandler, HmacKeys):
         if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
 
+        if self._provider.security_token:
+            key = self._provider.security_token_header
+            headers[key] = self._provider.security_token
+
         b64_hmac = self.sign_string(headers['Date'])
         s = "AWS3-HTTPS AWSAccessKeyId=%s," % self._provider.access_key
         s += "Algorithm=%s,Signature=%s" % (self.algorithm(), b64_hmac)
