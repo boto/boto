@@ -311,6 +311,32 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
         if timeout is not None:
             socket.setdefaulttimeout(original)
 
+def get_instance_identity(version='latest', url='http://169.254.169.254',
+                          timeout=None, num_retries=5):
+    """
+    Returns the instance identity as a nested Python dictionary.
+    """
+    iid = {}
+    base_url = 'http://169.254.169.254/latest/dynamic/instance-identity'
+    if timeout is not None:
+        original = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+    try:
+        data = retry_url(base_url, num_retries=num_retries)
+        fields = data.split('\n')
+        for field in fields:
+            val = retry_url(base_url + '/' + field + '/')
+            if val[0] == '{':
+                val = json.loads(val)
+            if field:
+                iid[field] = val
+        return iid
+    except urllib2.URLError, e:
+        return None
+    finally:
+        if timeout is not None:
+            socket.setdefaulttimeout(original)
+
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
     ud_url = '%s/%s/user-data' % (url, version)
