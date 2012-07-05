@@ -34,7 +34,6 @@ ASSUME_ROLE_POLICY_DOCUMENT = json.dumps({
                    'Action': ['sts:AssumeRole']}]})
 
 
-
 class IAMConnection(AWSQueryConnection):
 
     APIVersion = '2010-05-08'
@@ -53,6 +52,7 @@ class IAMConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         return ['iam']
+        #return ['hmac-v4']
 
     def get_response(self, action, params, path='/', parent=None,
                      verb='GET', list_marker='Set'):
