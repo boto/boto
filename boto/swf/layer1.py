@@ -654,7 +654,7 @@ class Layer1(AWSAuthConnection):
         """
         data = {'domain': domain, 'name': name,'version': version}
         if task_list:
-            data['taskList'] = {'name': task_list}
+            data['defaultTaskList'] = {'name': task_list}
         if default_task_heartbeat_timeout:
             data['defaultTaskHeartbeatTimeout'] = default_task_heartbeat_timeout
         if default_task_schedule_to_close_timeout:
