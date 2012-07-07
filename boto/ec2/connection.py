@@ -1263,7 +1263,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('AllocateAddress', params, Address, verb='POST')
 
     def associate_address(self, instance_id=None, public_ip=None,
-                          allocation_id=None, network_interface_id=None):
+                          allocation_id=None, network_interface_id=None,
+                          private_ip=None, allow_reassociation=None):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1282,6 +1283,16 @@ class EC2Connection(AWSQueryConnection):
         : param network_interface_id: The network interface ID to which
             elastic IP is to be assigned to
 
+        :type private_ip: string
+        : param network_interface_id: The primary or secondary private IP
+            address to associate with the Elastic IP address.
+
+        :type allow_reassociation: bool
+        :param allow_reassociation: Specify this option to allow an Elastic IP
+            address that is already associated with another network interface
+            or instance to be re-associated with the specified instance or
+            interface.
+
         :rtype: bool
         :return: True if successful
         """
@@ -1295,6 +1306,12 @@ class EC2Connection(AWSQueryConnection):
             params['PublicIp'] = public_ip
         elif allocation_id is not None:
             params['AllocationId'] = allocation_id
+
+        if private_ip is not None:
+            params['PrivateIpAddress'] = private_ip
+
+        if allow_reassociation:
+            params['AllowReassociation'] = 'true'
 
         return self.get_status('AssociateAddress', params, verb='POST')
 
