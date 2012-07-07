@@ -1280,11 +1280,11 @@ class EC2Connection(AWSQueryConnection):
         :param allocation_id: The allocation ID for a VPC-based elastic IP.
 
         :type network_interface_id: string
-        : param network_interface_id: The network interface ID to which
+        :param network_interface_id: The network interface ID to which
             elastic IP is to be assigned to
 
         :type private_ip: string
-        : param network_interface_id: The primary or secondary private IP
+        :param private_ip: The primary or secondary private IP
             address to associate with the Elastic IP address.
 
         :type allow_reassociation: bool
