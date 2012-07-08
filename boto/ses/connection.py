@@ -294,8 +294,12 @@ class SESConnection(AWSAuthConnection):
         :param destinations: A list of destinations for the message.
 
         """
+
+        if isinstance(raw_message, unicode):
+            raw_message = raw_message.encode('utf-8')
+
         params = {
-            'RawMessage.Data': base64.b64encode(raw_message.encode('utf-8')),
+            'RawMessage.Data': base64.b64encode(raw_message),
         }
 
         if source:
