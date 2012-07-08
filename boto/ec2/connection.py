@@ -61,7 +61,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -1262,9 +1262,55 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_object('AllocateAddress', params, Address, verb='POST')
 
+    def assign_private_ip_addresses(self, network_interface_id=None,
+                                    private_ip_addresses=None,
+                                    secondary_private_ip_address_count=None,
+                                    allow_reassignment=False):
+        """
+        Assigns one or more secondary private IP addresses to a network
+        interface in Amazon VPC.
+
+        :type network_interface_id: string
+        :param network_interface_id: The network interface to which the IP
+            address will be assigned.
+
+        :type private_ip_addresses: list
+        :param private_ip_addresses: Assigns the specified IP addresses as
+            secondary IP addresses to the network interface.
+
+        :type secondary_private_ip_address_count: int
+        :param secondary_private_ip_address_count: The number of secondary IP
+            addresses to assign to the network interface. You cannot specify
+            this parameter when also specifying private_ip_addresses.
+
+        :type allow_reassignment: bool
+        :param allow_reassignment: Specifies whether to allow an IP address
+            that is already assigned to another network interface or instance
+            to be reassigned to the specified network interface.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {}
+
+        if network_interface_id is not None:
+            params['NetworkInterfaceId'] = network_interface_id
+
+        if private_ip_addresses is not None:
+            self.build_list_params(params, private_ip_addresses,
+                                   'PrivateIpAddress')
+        elif secondary_private_ip_address_count is not None:
+            params['SecondaryPrivateIpAddressCount'] = \
+                secondary_private_ip_address_count
+
+        if allow_reassignment:
+            params['AllowReassignment'] = 'true'
+
+        return self.get_status('AssignPrivateIpAddresses', params, verb='POST')
+
     def associate_address(self, instance_id=None, public_ip=None,
                           allocation_id=None, network_interface_id=None,
-                          private_ip=None, allow_reassociation=None):
+                          private_ip_address=None, allow_reassociation=False):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1280,12 +1326,12 @@ class EC2Connection(AWSQueryConnection):
         :param allocation_id: The allocation ID for a VPC-based elastic IP.
 
         :type network_interface_id: string
-        : param network_interface_id: The network interface ID to which
+        :param network_interface_id: The network interface ID to which
             elastic IP is to be assigned to
 
-        :type private_ip: string
-        : param network_interface_id: The primary or secondary private IP
-            address to associate with the Elastic IP address.
+        :type private_ip_address: string
+        :param private_ip_address: The primary or secondary private IP address
+            to associate with the Elastic IP address.
 
         :type allow_reassociation: bool
         :param allow_reassociation: Specify this option to allow an Elastic IP
@@ -1307,8 +1353,8 @@ class EC2Connection(AWSQueryConnection):
         elif allocation_id is not None:
             params['AllocationId'] = allocation_id
 
-        if private_ip is not None:
-            params['PrivateIpAddress'] = private_ip
+        if private_ip_address is not None:
+            params['PrivateIpAddress'] = private_ip_address
 
         if allow_reassociation:
             params['AllowReassociation'] = 'true'
@@ -1358,6 +1404,35 @@ class EC2Connection(AWSQueryConnection):
             params['AllocationId'] = allocation_id
 
         return self.get_status('ReleaseAddress', params, verb='POST')
+
+    def unassign_private_ip_addresses(self, network_interface_id=None,
+                                      private_ip_addresses=None):
+        """
+        Unassigns one or more secondary private IP addresses from a network
+        interface in Amazon VPC.
+
+        :type network_interface_id: string
+        :param network_interface_id: The network interface from which the
+            secondary private IP address will be unassigned.
+
+        :type private_ip_addresses: list
+        :param private_ip_addresses: Specifies the secondary private IP
+            addresses that you want to unassign from the network interface.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {}
+
+        if network_interface_id is not None:
+            params['NetworkInterfaceId'] = network_interface_id
+
+        if private_ip_addresses is not None:
+            self.build_list_params(params, private_ip_addresses,
+                                   'PrivateIpAddress')
+
+        return self.get_status('UnassignPrivateIpAddresses', params,
+                               verb='POST')
 
     # Volume methods
 
