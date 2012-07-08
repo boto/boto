@@ -61,7 +61,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
