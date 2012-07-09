@@ -27,6 +27,7 @@ except:
 import boto
 from boto.cloudformation.stack import Stack, StackSummary, StackEvent
 from boto.cloudformation.stack import StackResource, StackResourceSummary
+from boto.cloudformation.stack import StackResourceDetail
 from boto.cloudformation.template import Template
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
@@ -272,17 +273,10 @@ class CloudFormationConnection(AWSQueryConnection):
             StackEvent)])
 
     def describe_stack_resource(self, stack_name_or_id, logical_resource_id):
-        params = {'ContentType': "JSON", 'StackName': stack_name_or_id,
+        params = {'StackName': stack_name_or_id,
                 'LogicalResourceId': logical_resource_id}
-        response = self.make_request('DescribeStackResource', params,
-                                     '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self.get_object('DescribeStackResource', params,
+            StackResourceDetail, '/', 'GET')
 
     def describe_stack_resources(self, stack_name_or_id=None,
             logical_resource_id=None,

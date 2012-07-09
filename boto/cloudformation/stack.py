@@ -2,6 +2,12 @@ from datetime import datetime
 
 from boto.resultset import ResultSet
 
+try:
+    import simplejson as json
+except:
+    import json
+
+
 class Stack:
     def __init__(self, connection=None):
         self.connection = connection
@@ -224,6 +230,48 @@ class StackResource:
     def __repr__(self):
         return "StackResource:%s (%s)" % (self.logical_resource_id,
                 self.resource_type)
+
+
+class StackResourceDetail:
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.description = None
+        self.last_updated_timestamp = None
+        self.logical_resource_id = None
+        self.metadata = None
+        self.physical_resource_id = None
+        self.resource_status = None
+        self.resource_status_reason = None
+        self.resource_type = None
+        self.stack_id = None
+        self.stack_name = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == "Description":
+            self.description = value
+        elif name == "LastUpdatedTimestamp":
+            self.last_updated_timestamp = datetime.strptime(value,
+                '%Y-%m-%dT%H:%M:%SZ')
+        elif name == "LogicalResourceId":
+            self.logical_resource_id = value
+        elif name == "Metadata":
+            self.metadata = json.loads(value)
+        elif name == "PhysicalResourceId":
+            self.physical_resource_id = value
+        elif name == "ResourceStatus":
+            self.resource_status = value
+        elif name == "ResourceStatusReason":
+            self.resource_status_reason = value
+        elif name == "ResourceType":
+            self.resource_type = value
+        elif name == "StackId":
+            self.stack_id = value
+        elif name == "StackName":
+            self.stack_name = value
+
 
 class StackResourceSummary:
     def __init__(self, connection=None):
