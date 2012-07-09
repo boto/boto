@@ -128,55 +128,66 @@ class TestExpire(unittest.TestCase):
             "Connection was NOT suppose to be expired but was: %s" % response)
 
     def test_ec2_expiration(self):
-        c = EC2Connection()
+        c = EC2Connection(aws_access_key_id='aws_access_key_id',
+                          aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, EC2_EXPIRED, status=400)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=400)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=403)
 
     def test_elb_expiration(self):
-        c = ELBConnection()
+        c = ELBConnection(aws_access_key_id='aws_access_key_id',
+                          aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, GENERAL_EXPIRED, status=403)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=403)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=400)
 
     def test_cloudsearch_expiration(self):
-        c = CloudSearchConnection()
+        c = CloudSearchConnection(aws_access_key_id='aws_access_key_id',
+                                  aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, GENERAL_EXPIRED, status=403)
 
     def test_route_53_expiration(self):
-        c = Route53Connection()
+        c = Route53Connection(aws_access_key_id='aws_access_key_id',
+                              aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, ROUTE_53_EXPIRED, status=403)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=403)
 
     def test_ses_expiration(self):
-        c = SESConnection()
+        c = SESConnection(aws_access_key_id='aws_access_key_id',
+                          aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, SES_EXPIRED, status=403)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=403)
 
     def test_sqs_expiration(self):
-        c = SQSConnection()
+        c = SQSConnection(aws_access_key_id='aws_access_key_id',
+                          aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, SQS_EXPIRED, status=401)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=403)
 
     def test_s3_expired(self):
-        c = S3Connection()
+        c = S3Connection(aws_access_key_id='aws_access_key_id',
+                         aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, S3_EXPIRED, status=400)
         self.assert_is_not_expired(c, GENERIC_BAD_REQUEST, status=400)
 
     def test_sns_expired(self):
-        c = SNSConnection()
+        c = SNSConnection(aws_access_key_id='aws_access_key_id',
+                          aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, SNS_EXPIRED, status=403)
 
     def test_swf_expired(self):
-        c = SWFConnection()
+        c = SWFConnection(aws_access_key_id='aws_access_key_id',
+                          aws_secret_access_key='aws_secret_access_key')
         self.assert_is_expired(c, SWF_EXPIRED, status=400)
 
     def test_non_xml_response(self):
-        c = CloudSearchConnection()
+        c = CloudSearchConnection(aws_access_key_id='aws_access_key_id',
+                                  aws_secret_access_key='aws_secret_access_key')
         self.assert_is_not_expired(c, "{'this is': 'json'}", status=403)
 
     def test_invalid_schema(self):
-        c = CloudSearchConnection()
+        c = CloudSearchConnection(aws_access_key_id='aws_access_key_id',
+                                  aws_secret_access_key='aws_secret_access_key')
         self.assert_is_not_expired(c, INVALID_FORMAT, status=403)
 
 
