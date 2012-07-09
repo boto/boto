@@ -70,7 +70,6 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
         # These are the parameters that are actually sent to the CloudFormation
         # service.
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'CreateStack',
             'Capabilities.member.1': 'CAPABILITY_IAM',
             'ContentType': 'JSON',
@@ -79,14 +78,12 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
             'NotificationARNs.member.2': 'arn:notify2',
             'Parameters.member.1.ParameterKey': 'KeyName',
             'Parameters.member.1.ParameterValue': 'myKeyName',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
             'TimeoutInMinutes': 20,
             'TemplateBody': SAMPLE_TEMPLATE,
             'TemplateURL': 'http://url',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     # The test_create_stack_has_correct_request_params verified all of the
     # params needed when making a create_stack service call.  The rest of the
@@ -99,15 +96,12 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
         api_response = self.service_connection.create_stack('stack_name')
         self.assertEqual(api_response, self.stack_id)
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'CreateStack',
             'ContentType': 'JSON',
             'DisableRollback': 'false',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_create_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
@@ -136,7 +130,6 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             timeout_in_minutes=20
         )
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'UpdateStack',
             'ContentType': 'JSON',
             'DisableRollback': 'true',
@@ -144,29 +137,24 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             'NotificationARNs.member.2': 'arn:notify2',
             'Parameters.member.1.ParameterKey': 'KeyName',
             'Parameters.member.1.ParameterValue': 'myKeyName',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
             'TimeoutInMinutes': 20,
             'TemplateBody': SAMPLE_TEMPLATE,
             'TemplateURL': 'http://url',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_update_stack_with_minimum_args(self):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.update_stack('stack_name')
         self.assertEqual(api_response, self.stack_id)
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'UpdateStack',
             'ContentType': 'JSON',
             'DisableRollback': 'false',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_update_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
@@ -188,14 +176,11 @@ class TestCloudFormationDeleteStack(CloudFormationConnectionBase):
         api_response = self.service_connection.delete_stack('stack_name')
         self.assertEqual(api_response, json.loads(self.default_body()))
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'DeleteStack',
             'ContentType': 'JSON',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_delete_stack_fails(self):
         self.set_http_response(status_code=400)
@@ -213,15 +198,12 @@ class TestCloudFormationDescribeStackResource(CloudFormationConnectionBase):
             'stack_name', 'resource_id')
         self.assertEqual(api_response, 'fake server response')
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'DescribeStackResource',
             'ContentType': 'JSON',
             'LogicalResourceId': 'resource_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_describe_stack_resource_fails(self):
         self.set_http_response(status_code=400)
@@ -239,14 +221,11 @@ class TestCloudFormationGetTemplate(CloudFormationConnectionBase):
         api_response = self.service_connection.get_template('stack_name')
         self.assertEqual(api_response, 'fake server response')
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'GetTemplate',
             'ContentType': 'JSON',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
     def test_get_template_fails(self):
@@ -311,14 +290,11 @@ class TestCloudFormationGetStackevents(CloudFormationConnectionBase):
         self.assertIsNotNone(second.timestamp)
 
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'DescribeStackEvents',
             'NextToken': 'next_token',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class TestCloudFormationDescribeStackResources(CloudFormationConnectionBase):
@@ -373,15 +349,12 @@ class TestCloudFormationDescribeStackResources(CloudFormationConnectionBase):
         self.assertIsNotNone(second.timestamp)
 
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'DescribeStackResources',
             'LogicalResourceId': 'logical_resource_id',
             'PhysicalResourceId': 'physical_resource_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'stack_name',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
@@ -450,13 +423,10 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.capabilities[0].value, 'CAPABILITY_IAM')
 
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'DescribeStacks',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'MyStack',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class TestCloudFormationListStackResources(CloudFormationConnectionBase):
@@ -509,14 +479,11 @@ class TestCloudFormationListStackResources(CloudFormationConnectionBase):
         self.assertEqual(resources[1].resource_type, 'AWS::CloudWatch::Alarm')
 
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'ListStackResources',
             'NextToken': 'next_token',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackName': 'MyStack',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class TestCloudFormationListStacks(CloudFormationConnectionBase):
@@ -552,14 +519,11 @@ class TestCloudFormationListStacks(CloudFormationConnectionBase):
         self.assertEqual(stacks[0].template_description, 'My Description.')
 
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'ListStacks',
             'NextToken': 'next_token',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'StackStatusFilter.member.1': 'CREATE_IN_PROGRESS',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
@@ -606,14 +570,11 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
         self.assertEqual(param2.parameter_key, 'KeyName')
 
         self.assert_request_parameters({
-            'AWSAccessKeyId': 'aws_access_key_id',
             'Action': 'ValidateTemplate',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'TemplateBody': SAMPLE_TEMPLATE,
             'TemplateURL': 'http://url',
             'Version': '2010-05-15',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 if __name__ == '__main__':

@@ -64,7 +64,7 @@ class CloudFormationConnection(AWSQueryConnection):
                                     security_token)
 
     def _required_auth_capability(self):
-        return ['cloudformation']
+        return ['hmac-v4']
 
     def encode_bool(self, v):
         v = bool(v)
