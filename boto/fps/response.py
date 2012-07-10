@@ -27,7 +27,7 @@ class ResponseElement(object):
         render = lambda pair: '{!s}: {!r}'.format(*pair)
         do_show = lambda pair: not pair[0].startswith('_')
         attrs = filter(do_show, self.__dict__.items())
-        return '{}({})'.format(self.__class__.__name__,
+        return '{0}({1})'.format(self.__class__.__name__,
                                ', '.join(map(render, attrs)))
 
     def startElement(self, name, attrs, connection):
@@ -54,7 +54,7 @@ class Response(ResponseElement):
 
 class ComplexAmount(ResponseElement):
     def __repr__(self):
-        return '{} {}'.format(self.CurrencyCode, self.Value)
+        return '{0} {1}'.format(self.CurrencyCode, self.Value)
 
     def __float__(self):
         return float(self.Value)
@@ -64,7 +64,7 @@ class ComplexAmount(ResponseElement):
 
     def startElement(self, name, attrs, connection):
         if name not in ('CurrencyCode', 'Value'):
-            message = 'Unrecognized tag {} in ComplexAmount'.format(name)
+            message = 'Unrecognized tag {0} in ComplexAmount'.format(name)
             raise AssertionError(message)
         return ResponseElement.startElement(self, name, attrs, connection)
 

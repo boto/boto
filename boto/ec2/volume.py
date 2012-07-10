@@ -23,6 +23,8 @@
 """
 Represents an EC2 Elastic Block Storage Volume
 """
+from boto.resultset import ResultSet
+from boto.ec2.tag import Tag
 from boto.ec2.ec2object import TaggedEC2Object
 
 class Volume(TaggedEC2Object):
@@ -48,7 +50,7 @@ class Volume(TaggedEC2Object):
             self.attach_data = AttachmentSet()
             return self.attach_data
         elif name == 'tagSet':
-            self.tags = boto.resultset.ResultSet([('item', Tag)])
+            self.tags = ResultSet([('item', Tag)])
             return self.tags
         else:
             return None

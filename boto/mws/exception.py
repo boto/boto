@@ -41,9 +41,9 @@ class ResponseError(BotoServerError):
     retry = False
 
     def __repr__(self):
-        return '{}({}, {},\n\t{})'.format(self.__class__.__name__,
-                                          self.status, self.reason,
-                                          self.error_message)
+        return '{0}({1}, {2},\n\t{3})'.format(self.__class__.__name__,
+                                              self.status, self.reason,
+                                              self.error_message)
 
     def __str__(self):
         return 'MWS Response Error: {0.status} {0.__class__.__name__} {1}\n' \

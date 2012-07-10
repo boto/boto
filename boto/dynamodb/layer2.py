@@ -76,7 +76,7 @@ def table_generator(tgen):
             yield tgen.item_class(tgen.table, attrs=item)
             n += 1
 
-                
+
 class TableGenerator:
     """
     This is an object that wraps up the table_generator function.
@@ -135,10 +135,10 @@ class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 debug=0, session_token=None, region=None):
+                 debug=0, security_token=None, region=None):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
-                             debug, session_token, region)
+                             debug, security_token, region)
 
     def dynamize_attribute_updates(self, pending_updates):
         """

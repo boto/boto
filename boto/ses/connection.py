@@ -21,7 +21,6 @@
 # IN THE SOFTWARE.
 import urllib
 import base64
-from xml.etree import ElementTree
 
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
@@ -29,6 +28,7 @@ from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
 from boto.ses import exceptions as ses_exceptions
+from boto.exception import BotoServerError
 
 
 class SESConnection(AWSAuthConnection):
@@ -60,14 +60,8 @@ class SESConnection(AWSAuthConnection):
     def _credentials_expired(self, response):
         if response.status != 403:
             return False
-        try:
-            for event, node in ElementTree.iterparse(response, events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'InvalidClientTokenId':
-                        return True
-        except ElementTree.ParseError:
-            return False
-        return False
+        error = BotoServerError('', '', body=response.read())
+        return error.error_code == 'InvalidClientTokenId'
 
     def _build_list_params(self, params, items, label):
         """Add an AWS API-compatible parameter list to a dictionary.
@@ -157,6 +151,14 @@ class SESConnection(AWSAuthConnection):
             # Recipient address ends with a dot/period. This is invalid.
             ExceptionToRaise = ses_exceptions.SESDomainEndsWithDotError
             exc_reason = "Domain ends with dot."
+        elif "Local address contains control or whitespace" in body:
+            # I think this pertains to the recipient address.
+            ExceptionToRaise = ses_exceptions.SESLocalAddressCharacterError
+            exc_reason = "Local address contains control or whitespace."
+        elif "Illegal address" in body:
+            # A clearly mal-formed address.
+            ExceptionToRaise = ses_exceptions.SESIllegalAddressError
+            exc_reason = "Illegal address"
         else:
             # This is either a common AWS error, or one that we don't devote
             # its own exception to.
@@ -292,8 +294,12 @@ class SESConnection(AWSAuthConnection):
         :param destinations: A list of destinations for the message.
 
         """
+
+        if isinstance(raw_message, unicode):
+            raw_message = raw_message.encode('utf-8')
+
         params = {
-            'RawMessage.Data': base64.b64encode(raw_message.encode('utf-8')),
+            'RawMessage.Data': base64.b64encode(raw_message),
         }
 
         if source:
