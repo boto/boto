@@ -81,6 +81,21 @@ class Layer1(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, session_token=None, region=None):
+        """
+        This is, for the moment at least, more complicated than other
+        Connection classes wrt credentials.  If a session token is
+        passed in, it is expected to be a Credential object obtained
+        from a call to STS and those credentials will be used as-is.
+        If no session_token is passed in, we need to check to see if
+        we are running on an EC2 instance with an IAM Role associated
+        with it.  If so, use those temporarty credentials.  Finally, if
+        neither of the above scenarios were true, we must create
+        temporary credentials by making a call to STS ourselves.
+
+        NOTE: If this is called with an STS session token and no real
+              AWS credentials, there will be no way to renew the STS
+              session token when it expires.
+        """
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -92,32 +107,50 @@ class Layer1(AWSAuthConnection):
         self.region = region
         self._passed_access_key = aws_access_key_id
         self._passed_secret_key = aws_secret_access_key
-        if not session_token:
-            session_token = self._get_session_token()
-        self.creds = session_token
+        if session_token:
+            # If an STS session token was passed in, use it.
+            # Note, however, that if no real credentials are passed
+            # in it will be impossible to renew this session token
+            # and when it expires, things will stop working.
+            AWSAuthConnection.__init__(self, self.region.endpoint,
+                                       session_token.access_key,
+                                       session_token.secret_key,
+                                       is_secure, port, proxy, proxy_port,
+                                       debug=debug,
+                                       security_token=session_token.session_token)
+        else:
+            # Create a connection in the normal way and see if
+            # session credentials are found.  If so, it means we are
+            # using IAM Roles on an EC2 instance and we are good to go.
+            # If not, we need to explicitly create a session token.
+            AWSAuthConnection.__init__(self, self.region.endpoint,
+                                       aws_access_key_id,
+                                       aws_secret_access_key,
+                                       is_secure, port, proxy, proxy_port,
+                                       debug=debug)
+            if not self.provider.security_token:
+                self._need_session_token = True
+                self._get_session_token()
+            else:
+                self._need_session_token = False
         self.throughput_exceeded_events = 0
         self.request_id = None
         self.instrumentation = {'times': [], 'ids': []}
         self.do_instrumentation = False
-        AWSAuthConnection.__init__(self, self.region.endpoint,
-                                   self.creds.access_key,
-                                   self.creds.secret_key,
-                                   is_secure, port, proxy, proxy_port,
-                                   debug=debug,
-                                   security_token=self.creds.session_token)
-
-    def _update_provider(self):
-        self.provider = Provider('aws',
-                                 self.creds.access_key,
-                                 self.creds.secret_key,
-                                 self.creds.session_token)
-        self._auth_handler.update_provider(self.provider)
 
     def _get_session_token(self):
-        boto.log.debug('Creating new Session Token')
-        sts = boto.connect_sts(self._passed_access_key,
-                               self._passed_secret_key)
-        return sts.get_session_token()
+        if self._need_session_token:
+            boto.log.debug('Creating new Session Token')
+            sts = boto.connect_sts(self._passed_access_key,
+                                   self._passed_secret_key)
+            token = sts.get_session_token()
+            self.provider = Provider(self._provider_type,
+                                     token.access_key,
+                                     token.secret_key,
+                                     token.session_token)
+        else:
+            self.provider = Provider(self._provider_type)
+        self._auth_handler.update_provider(self.provider)
 
     def _required_auth_capability(self):
         return ['hmac-v3-http']
@@ -164,8 +197,7 @@ class Layer1(AWSAuthConnection):
                 status = (msg, i, next_sleep)
             elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
-                self.creds = self._get_session_token()
-                self._update_provider()
+                self._get_session_token()
                 status = (msg, i + self.num_retries - 1, 0)
             elif self.ConditionalCheckFailedError in data.get('__type'):
                 raise dynamodb_exceptions.DynamoDBConditionalCheckFailedError(
