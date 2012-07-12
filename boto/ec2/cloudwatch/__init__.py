@@ -263,7 +263,7 @@ class CloudWatchConnection(AWSQueryConnection):
             retrieve the next page of metrics.
 
         :type dimension: dict
-        :param dimension_filters: A dictionary containing name/value
+        :param dimensions: A dictionary containing name/value
             pairs that will be used to filter the results.  The key in
             the dictionary is the name of a Dimension.  The value in
             the dictionary is either a scalar value of that Dimension
