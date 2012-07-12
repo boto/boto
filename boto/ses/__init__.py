@@ -37,12 +37,12 @@ def regions():
 def connect_to_region(region_name, **kw_params):
     """
     Given a valid region name, return a 
-    :class:`boto.sns.connection.SESConnection`.
+    :class:`boto.ses.connection.SESConnection`.
 
     :type: str
     :param region_name: The name of the region to connect to.
     
-    :rtype: :class:`boto.sns.connection.SESConnection` or ``None``
+    :rtype: :class:`boto.ses.connection.SESConnection` or ``None``
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
