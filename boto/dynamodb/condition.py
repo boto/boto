@@ -83,6 +83,23 @@ class ConditionTwoArgs(Condition):
                 'ComparisonOperator': self.__class__.__name__}
 
 
+class ConditionSeveralArgs(Condition):
+    """
+    Abstract class for conditions that require several argument (ex: IN).
+    """
+
+    def __init__(self, values):
+        self.values = values
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__,
+                               ', '.join(self.values))
+
+    def to_dict(self):
+        return {'AttributeValueList': [dynamize_value(v) for v in self.values],
+                'ComparisonOperator': self.__class__.__name__}
+
+
 class EQ(ConditionOneArg):
 
     pass
@@ -138,7 +155,7 @@ class BEGINS_WITH(ConditionOneArg):
     pass
 
 
-class IN(ConditionOneArg):
+class IN(ConditionSeveralArgs):
 
     pass
 
