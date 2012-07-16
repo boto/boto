@@ -133,6 +133,7 @@ if __name__ == "__main__":
     parser.add_option("-d", "--dns", help="Returns public and private DNS (implicates --wait)", default=False, action="store_true", dest="dns")
     parser.add_option("-T", "--tag", help="Set tag", default=None, action="append", dest="tags", metavar="key:value")
     parser.add_option("-s", "--scripts", help="Pass in a script or a folder containing scripts to be run when the instance starts up, assumes cloud-init. Specify scripts in a list specified by commas. If multiple scripts are specified, they are run lexically (A good way to ensure they run in the order is to prefix filenames with numbers)", type='string', action="callback", callback=scripts_callback)
+    parser.add_option("--role", help="IAM Role to use, this implies --no-add-cred", dest="role")
 
     (options, args) = parser.parse_args()
 
@@ -152,7 +153,7 @@ if __name__ == "__main__":
         print "Region %s not found." % options.region
         sys.exit(1)
     ec2 = boto.connect_ec2(region=region)
-    if not options.nocred:
+    if not options.nocred and not options.role:
         cfg.add_creds(ec2)
 
     iobj = IObject()
@@ -214,10 +215,15 @@ if __name__ == "__main__":
     if options.save_ebs:
         shutdown_proc = "save"
 
+    instance_profile_name = None
+    if options.role:
+        instance_profile_name = options.role
+
     r = ami.run(min_count=int(options.min_count), max_count=int(options.max_count),
             key_name=key_name, user_data=user_data,
             security_groups=groups, instance_type=options.type,
-            placement=options.zone, instance_initiated_shutdown_behavior=shutdown_proc)
+            placement=options.zone, instance_initiated_shutdown_behavior=shutdown_proc,
+            instance_profile_name=instance_profile_name)
 
     instance = r.instances[0]
 
