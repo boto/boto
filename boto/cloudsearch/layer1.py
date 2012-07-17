@@ -397,8 +397,8 @@ class Layer1(AWSQueryConnection):
                     'describe_domains_result',
                     'domain_status_list')
         params = {}
-        if domain_names:
-            params['DomainNames'] = domain_names
+        for i, domain in enumerate(domain_names, 1):
+            params['Domains.members.%d' % (i,)] = domain
         return self.get_response(doc_path, 'DescribeDomains',
                                  params, verb='POST',
                                  list_marker='DomainStatusList')
