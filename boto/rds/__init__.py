@@ -251,7 +251,9 @@ class RDSConnection(AWSQueryConnection):
         if db_name:
             params['DBName'] = db_name
         if param_group:
-            params['DBParameterGroupName'] = param_group
+            params['DBParameterGroupName'] = (param_group.name
+                                              if isinstance(param_group, ParameterGroup)
+                                              else param_group)
         if security_groups:
             l = []
             for group in security_groups:
@@ -414,7 +416,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBInstanceIdentifier': id}
         if param_group:
-            params['DBParameterGroupName'] = param_group
+            params['DBParameterGroupName'] = (param_group.name
+                                              if isinstance(param_group, ParameterGroup)
+                                              else param_group)
         if security_groups:
             l = []
             for group in security_groups:
@@ -851,24 +855,24 @@ class RDSConnection(AWSQueryConnection):
                                            auto_minor_version_upgrade=None):
         """
         Create a new DBInstance from a DB snapshot.
-    
+
         :type identifier: string
         :param identifier: The identifier for the DBSnapshot
-    
+
         :type instance_id: string
         :param instance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
-    
+
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the
                                DBInstance.  Valid values are:
                                db.m1.small | db.m1.large | db.m1.xlarge |
                                db.m2.2xlarge | db.m2.4xlarge
-    
+
         :type port: int
         :param port: Port number on which database accepts connections.
                      Valid values [1115-65535].  Defaults to 3306.
-    
+
         :type availability_zone: str
         :param availability_zone: Name of the availability zone to place
                                   DBInstance into.
@@ -884,7 +888,7 @@ class RDSConnection(AWSQueryConnection):
                                            automatically to the Read Replica
                                            during the maintenance window.
                                            Default is the API default.
-    
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """
