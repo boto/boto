@@ -4,6 +4,9 @@ boto
 boto 2.5.2
 21-Jun-2012
 
+.. image:: https://secure.travis-ci.org/boto/boto.png?branch=develop
+        :target: https://secure.travis-ci.org/boto/boto
+
 ************
 Introduction
 ************

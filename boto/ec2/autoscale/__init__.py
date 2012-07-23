@@ -114,7 +114,7 @@ class AutoScaleConnection(AWSQueryConnection):
                                     security_token=security_token)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_list_params(self, params, items, label):
         """
