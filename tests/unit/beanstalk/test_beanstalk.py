@@ -76,3 +76,39 @@ class TestCreateApplicationVersion(AWSMockServiceTestCase):
                                   ['ApplicationVersion']
         self.assertEqual(app_version['ApplicationName'], 'application1')
         self.assertEqual(app_version['VersionLabel'], 'version1')
+
+
+class TestCreateEnvironment(AWSMockServiceTestCase):
+    connection_class = Layer1
+
+    def default_body(self):
+        return json.dumps({})
+
+    def test_create_environment(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.create_environment(
+            'application1', 'environment1', 'version1',
+            '32bit Amazon Linux running Tomcat 7',
+            option_settings=[
+                ('aws:autoscaling:launchconfiguration', 'Ec2KeyName',
+                 'mykeypair'),
+                ('aws:elasticbeanstalk:application:environment', 'ENVVAR',
+                 'VALUE1')])
+        self.assert_request_parameters({
+            'Action': 'CreateEnvironment',
+            'ApplicationName': 'application1',
+            'EnvironmentName': 'environment1',
+            'TemplateName': '32bit Amazon Linux running Tomcat 7',
+            'ContentType': 'JSON',
+            'SignatureMethod': 'HmacSHA256',
+            'SignatureVersion': 2,
+            'Version': '2010-12-01',
+            'VersionLabel': 'version1',
+            'AWSAccessKeyId': 'aws_access_key_id',
+            'OptionSettings.member.1.Namespace': 'aws:autoscaling:launchconfiguration',
+            'OptionSettings.member.1.OptionName': 'Ec2KeyName',
+            'OptionSettings.member.1.Value': 'mykeypair',
+            'OptionSettings.member.2.Namespace': 'aws:elasticbeanstalk:application:environment',
+            'OptionSettings.member.2.OptionName': 'ENVVAR',
+            'OptionSettings.member.2.Value': 'VALUE1',
+        }, ignore_params_values=['Timestamp'])

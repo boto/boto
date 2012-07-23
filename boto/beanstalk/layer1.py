@@ -233,9 +233,10 @@ class Layer1(AWSQueryConnection):
         if description:
             params['Description'] = description
         if option_settings:
-            self.build_list_params(params, option_settings,
-                                   'OptionSettings.member')
-        return self._get_response('CreateConfigurationTemplate', params)
+            self._build_list_params(params, option_settings,
+                                   'OptionSettings.member',
+                                   ('Namespace', 'OptionName', 'Value'))
+        return self.get_response('CreateConfigurationTemplate', params)
 
     def create_environment(self, application_name, environment_name,
                            version_label=None, template_name=None,
@@ -302,7 +303,11 @@ class Layer1(AWSQueryConnection):
         the specified configuration options to the requested value in
         the configuration set for the new environment. These override
         the values obtained from the solution stack or the configuration
-        template.
+        template.  Each element in the list is a tuple of (Namespace,
+        OptionName, Value), for example::
+
+            [('aws:autoscaling:launchconfiguration',
+              'Ec2KeyName', 'mykeypair')]
 
         :type options_to_remove: list
         :param options_to_remove: A list of custom user-defined
@@ -310,6 +315,7 @@ class Layer1(AWSQueryConnection):
         this new environment.
 
         :raises: TooManyEnvironmentsException, InsufficientPrivilegesException
+
         """
         params = {'ApplicationName': application_name,
                   'EnvironmentName': environment_name}
@@ -324,8 +330,9 @@ class Layer1(AWSQueryConnection):
         if description:
             params['Description'] = description
         if option_settings:
-            self.build_list_params(params, option_settings,
-                                   'OptionSettings.member')
+            self._build_list_params(params, option_settings,
+                                   'OptionSettings.member',
+                                   ('Namespace', 'OptionName', 'Value'))
         if options_to_remove:
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
@@ -535,7 +542,7 @@ class Layer1(AWSQueryConnection):
         two sets of setting descriptions. One is the deployed
         configuration set, and the other is a draft configuration of an
         environment that is either in the process of deployment or that
-        failed to deploy. Related Topics
+        failed to deploy.
 
         :type application_name: string
         :param application_name: The application for the environment or
@@ -979,8 +986,7 @@ class Layer1(AWSQueryConnection):
                                       options_to_remove=None):
         """
         Updates the specified configuration template to have the
-        specified properties or configuration option values. Related
-        Topics
+        specified properties or configuration option values.
 
         :type application_name: string
         :param application_name: The name of the application associated
@@ -1013,8 +1019,9 @@ class Layer1(AWSQueryConnection):
         if description:
             params['Description'] = description
         if option_settings:
-            self.build_list_params(params, option_settings,
-                                   'OptionSettings.member')
+            self._build_list_params(params, option_settings,
+                                   'OptionSettings.member',
+                                   ('Namespace', 'OptionName', 'Value'))
         if options_to_remove:
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
@@ -1093,8 +1100,9 @@ class Layer1(AWSQueryConnection):
         if description:
             params['Description'] = description
         if option_settings:
-            self.build_list_params(params, option_settings,
-                                   'OptionSettings.member')
+            self._build_list_params(params, option_settings,
+                                   'OptionSettings.member',
+                                   ('Namespace', 'OptionName', 'Value'))
         if options_to_remove:
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
@@ -1131,10 +1139,36 @@ class Layer1(AWSQueryConnection):
         :raises: InsufficientPrivilegesException
         """
         params = {'ApplicationName': application_name}
-        self.build_list_params(params, option_settings,
-                               'OptionSettings.member')
+        self._build_list_params(params, option_settings,
+                               'OptionSettings.member',
+                               ('Namespace', 'OptionName', 'Value'))
         if template_name:
             params['TemplateName'] = template_name
         if environment_name:
             params['EnvironmentName'] = environment_name
+<<<<<<< HEAD
         return self._get_response('ValidateConfigurationSettings', params)
+=======
+        return self.get_response('ValidateConfigurationSettings', params)
+
+    def encode_bool(self, v):
+        v = bool(v)
+        return {True: "true", False: "false"}[v]
+
+    def _build_list_params(self, params, user_values, prefix, tuple_names):
+        # For params such as the ConfigurationOptionSettings,
+        # they can specify a list of tuples where each tuple maps to a specific
+        # arg.  For example:
+        # user_values = [('foo', 'bar', 'baz']
+        # prefix=MyOption.member
+        # tuple_names=('One', 'Two', 'Three')
+        # would result in:
+        # MyOption.member.1.One = foo
+        # MyOption.member.1.Two = bar
+        # MyOption.member.1.Three = baz
+        for i, user_value in enumerate(user_values, 1):
+            current_prefix = '%s.%s' % (prefix, i)
+            for key, value in zip(tuple_names, user_value):
+                full_key = '%s.%s' % (current_prefix, key)
+                params[full_key] = value
+>>>>>>> 78630fc... Bug fix for ConfigurationOptionSettings
