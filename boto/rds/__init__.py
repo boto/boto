@@ -399,7 +399,9 @@ class RDSConnection(AWSQueryConnection):
                   'DBInstanceClass': instance_class,
                   'DBInstanceIdentifier': id,
                   'DBName': db_name,
-                  'DBParameterGroupName': param_group,
+                  'DBParameterGroupName': (param_group.name
+                                           if isinstance(param_group, ParameterGroup)
+                                           else param_group),
                   'DBSubnetGroupName': db_subnet_group_name,
                   'Engine': engine,
                   'EngineVersion': engine_version,
@@ -586,7 +588,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBInstanceIdentifier': id}
         if param_group:
-            params['DBParameterGroupName'] = param_group
+            params['DBParameterGroupName'] = (param_group.name
+                                              if isinstance(param_group, ParameterGroup)
+                                              else param_group)
         if security_groups:
             l = []
             for group in security_groups:
