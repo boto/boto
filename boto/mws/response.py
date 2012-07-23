@@ -582,12 +582,12 @@ class GetProductCategoriesForASINResult(GetProductCategoriesResult):
 
 
 class Order(ResponseElement):
-    OrderTotal = Element(ComplexAmount)
+    OrderTotal = Element(ComplexMoney)
     ShippingAddress = Element()
     PaymentExecutionDetail = Element(\
         PaymentExecutionDetailItem=ElementList(\
             PaymentExecutionDetailItem=Element(\
-                Payment=Element(ComplexAmount)
+                Payment=Element(ComplexMoney)
             )
         )
     )
@@ -606,17 +606,17 @@ class GetOrderResult(ListOrdersResult):
 
 
 class OrderItem(ResponseElement):
-    ItemPrice = Element(ComplexAmount)
-    ShippingPrice = Element(ComplexAmount)
-    GiftWrapPrice = Element(ComplexAmount)
-    ItemTax = Element(ComplexAmount)
-    ShippingTax = Element(ComplexAmount)
-    GiftWrapTax = Element(ComplexAmount)
-    ShippingDiscount = Element(ComplexAmount)
-    PromotionDiscount = Element(ComplexAmount)
+    ItemPrice = Element(ComplexMoney)
+    ShippingPrice = Element(ComplexMoney)
+    GiftWrapPrice = Element(ComplexMoney)
+    ItemTax = Element(ComplexMoney)
+    ShippingTax = Element(ComplexMoney)
+    GiftWrapTax = Element(ComplexMoney)
+    ShippingDiscount = Element(ComplexMoney)
+    PromotionDiscount = Element(ComplexMoney)
     PromotionIds = SimpleList()
-    CODFee = Element(ComplexAmount)
-    CODFeeDiscount = Element(ComplexAmount)
+    CODFee = Element(ComplexMoney)
+    CODFeeDiscount = Element(ComplexMoney)
 
 
 class ListOrderItemsResult(ResponseElement):
