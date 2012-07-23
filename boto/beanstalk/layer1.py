@@ -153,8 +153,9 @@ class Layer1(AWSQueryConnection):
         if s3_key:
             params['SourceBundle.S3Key'] = s3_key
         if auto_create_application:
-            params['AutoCreateApplication'] = auto_create_application
-        return self._get_response('CreateApplicationVersion', params)
+            params['AutoCreateApplication'] = self.encode_bool(
+                auto_create_application)
+        return self.get_response('CreateApplicationVersion', params)
 
     def create_configuration_template(self, application_name, template_name,
                                       solution_stack_name=None,
@@ -637,7 +638,7 @@ class Layer1(AWSQueryConnection):
             self.build_list_params(params, environment_names,
                                    'EnvironmentNames.member')
         if include_deleted:
-            params['IncludeDeleted'] = include_deleted
+            params['IncludeDeleted'] = self.encode_bool(include_deleted)
         if included_deleted_back_to:
             params['IncludedDeletedBackTo'] = included_deleted_back_to
         return self._get_response('DescribeEnvironments', params)

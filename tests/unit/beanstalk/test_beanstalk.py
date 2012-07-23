@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+
+import json
+
+from tests.unit import AWSMockServiceTestCase
+
+from boto.beanstalk.layer1 import Layer1
+
+# These tests are just checking the basic structure of
+# the Elastic Beanstalk code, by picking a few calls
+# and verifying we get the expected results with mocked
+# responses.  The integration tests actually verify the
+# API calls interact with the service correctly.
+class TestListAvailableSolutionStacks(AWSMockServiceTestCase):
+    connection_class = Layer1
+
+    def default_body(self):
+        return json.dumps(
+            {u'ListAvailableSolutionStacksResponse':
+               {u'ListAvailableSolutionStacksResult':
+                  {u'SolutionStackDetails': [
+                      {u'PermittedFileTypes': [u'war', u'zip'],
+                       u'SolutionStackName': u'32bit Amazon Linux running Tomcat 7'},
+                      {u'PermittedFileTypes': [u'zip'],
+                       u'SolutionStackName': u'32bit Amazon Linux running PHP 5.3'}],
+                      u'SolutionStacks': [u'32bit Amazon Linux running Tomcat 7',
+                                          u'32bit Amazon Linux running PHP 5.3']},
+                u'ResponseMetadata': {u'RequestId': u'request_id'}}})
+
+    def test_list_available_solution_stacks(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.list_available_solution_stacks()
+        stack_details = api_response['ListAvailableSolutionStacksResponse']\
+                                    ['ListAvailableSolutionStacksResult']\
+                                    ['SolutionStackDetails']
+        solution_stacks = api_response['ListAvailableSolutionStacksResponse']\
+                                      ['ListAvailableSolutionStacksResult']\
+                                      ['SolutionStacks']
+        self.assertEqual(solution_stacks,
+                        [u'32bit Amazon Linux running Tomcat 7',
+                         u'32bit Amazon Linux running PHP 5.3'])
+        # These are the parameters that are actually sent to the CloudFormation
+        # service.
+        self.assert_request_parameters({
+            'Action': 'ListAvailableSolutionStacks',
+            'ContentType': 'JSON',
+            'SignatureMethod': 'HmacSHA256',
+            'SignatureVersion': 2,
+            'Version': '2010-12-01',
+            'AWSAccessKeyId': 'aws_access_key_id',
+        }, ignore_params_values=['Timestamp'])
+
+
+class TestCreateApplicationVersion(AWSMockServiceTestCase):
+    connection_class = Layer1
+
+    def default_body(self):
+        return json.dumps({
+            'CreateApplicationVersionResponse':
+              {u'CreateApplicationVersionResult':
+                 {u'ApplicationVersion':
+                    {u'ApplicationName': u'application1',
+                     u'DateCreated': 1343067094.342,
+                     u'DateUpdated': 1343067094.342,
+                     u'Description': None,
+                     u'SourceBundle': {u'S3Bucket': u'elasticbeanstalk-us-east-1',
+                     u'S3Key': u'resources/elasticbeanstalk-sampleapp.war'},
+                     u'VersionLabel': u'version1'}}}})
+
+    def test_create_application_version(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.create_application_version(
+            'application1', 'version1', auto_create_application=True)
+        app_version = api_response['CreateApplicationVersionResponse']\
+                                  ['CreateApplicationVersionResult']\
+                                  ['ApplicationVersion']
+        self.assertEqual(app_version['ApplicationName'], 'application1')
+        self.assertEqual(app_version['VersionLabel'], 'version1')
