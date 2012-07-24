@@ -57,7 +57,11 @@ class Layer1(AWSQueryConnection):
         # TODO: figure out what's needed here.
         return ['ec2']
 
-    def get_response(self, action, params, path='/', verb='GET'):
+    def _encode_bool(self, v):
+        v = bool(v)
+        return {True: "true", False: "false"}[v]
+
+    def _get_response(self, action, params, path='/', verb='GET'):
         params['ContentType'] = 'JSON'
         response = self.make_request(action, params, path, verb)
         body = response.read()
@@ -75,7 +79,7 @@ class Layer1(AWSQueryConnection):
         reserved.
         """
         params = {'CNAMEPrefix': cname_prefix}
-        return self.get_response('CheckDNSAvailability', params)
+        return self._get_response('CheckDNSAvailability', params)
 
     def create_application(self, application_name, description=None):
         """
@@ -96,7 +100,7 @@ class Layer1(AWSQueryConnection):
         params = {'ApplicationName': application_name}
         if description:
             params['Description'] = description
-        return self.get_response('CreateApplication', params)
+        return self._get_response('CreateApplication', params)
 
     def create_application_version(self, application_name, version_label,
                                    description=None, s3_bucket=None,
@@ -145,12 +149,12 @@ class Layer1(AWSQueryConnection):
         if description:
             params['Description'] = description
         if s3_bucket:
-            params['S3Bucket'] = s3_bucket
+            params['SourceBundle.S3Bucket'] = s3_bucket
         if s3_key:
-            params['S3Key'] = s3_key
+            params['SourceBundle.S3Key'] = s3_key
         if auto_create_application:
             params['AutoCreateApplication'] = auto_create_application
-        return self.get_response('CreateApplicationVersion', params)
+        return self._get_response('CreateApplicationVersion', params)
 
     def create_configuration_template(self, application_name, template_name,
                                       solution_stack_name=None,
@@ -230,7 +234,7 @@ class Layer1(AWSQueryConnection):
         if option_settings:
             self.build_list_params(params, option_settings,
                                    'OptionSettings.member')
-        return self.get_response('CreateConfigurationTemplate', params)
+        return self._get_response('CreateConfigurationTemplate', params)
 
     def create_environment(self, application_name, environment_name,
                            version_label=None, template_name=None,
@@ -324,7 +328,7 @@ class Layer1(AWSQueryConnection):
         if options_to_remove:
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
-        return self.get_response('CreateEnvironment', params)
+        return self._get_response('CreateEnvironment', params)
 
     def create_storage_location(self):
         """
@@ -336,7 +340,7 @@ class Layer1(AWSQueryConnection):
                  InsufficientPrivilegesException
 
         """
-        return self.get_response('CreateStorageLocation', params={})
+        return self._get_response('CreateStorageLocation', params={})
 
     def delete_application(self, application_name,
                            terminate_env_by_force=None):
@@ -357,9 +361,9 @@ class Layer1(AWSQueryConnection):
         """
         params = {'ApplicationName': application_name}
         if terminate_env_by_force:
-            params['TerminateEnvByForce'] = self.encode_bool(
+            params['TerminateEnvByForce'] = self._encode_bool(
                 terminate_env_by_force)
-        return self.get_response('DeleteApplication', params)
+        return self._get_response('DeleteApplication', params)
 
     def delete_application_version(self, application_name, version_label,
                                    delete_source_bundle=None):
@@ -384,9 +388,9 @@ class Layer1(AWSQueryConnection):
         params = {'ApplicationName': application_name,
                   'VersionLabel': version_label}
         if delete_source_bundle:
-            params['DeleteSourceBundle'] = self.encode_bool(
+            params['DeleteSourceBundle'] = self._encode_bool(
                 delete_source_bundle)
-        return self.get_response('DeleteApplicationVersion', params)
+        return self._get_response('DeleteApplicationVersion', params)
 
     def delete_configuration_template(self, application_name, template_name):
         """Deletes the specified configuration template.
@@ -404,7 +408,7 @@ class Layer1(AWSQueryConnection):
         """
         params = {'ApplicationName': application_name,
                   'TemplateName': template_name}
-        return self.get_response('DeleteConfigurationTemplate', params)
+        return self._get_response('DeleteConfigurationTemplate', params)
 
     def delete_environment_configuration(self, application_name,
                                          environment_name):
@@ -430,7 +434,7 @@ class Layer1(AWSQueryConnection):
         """
         params = {'ApplicationName': application_name,
                   'EnvironmentName': environment_name}
-        return self.get_response('DeleteEnvironmentConfiguration', params)
+        return self._get_response('DeleteEnvironmentConfiguration', params)
 
     def describe_application_versions(self, application_name=None,
                                       version_labels=None):
@@ -453,7 +457,7 @@ class Layer1(AWSQueryConnection):
         if version_labels:
             self.build_list_params(params, version_labels,
                                    'VersionLabels.member')
-        return self.get_response('DescribeApplicationVersions', params)
+        return self._get_response('DescribeApplicationVersions', params)
 
     def describe_applications(self, application_names=None):
         """Returns the descriptions of existing applications.
@@ -468,7 +472,7 @@ class Layer1(AWSQueryConnection):
         if application_names:
             self.build_list_params(params, application_names,
                                    'ApplicationNames.member')
-        return self.get_response('DescribeApplications', params)
+        return self._get_response('DescribeApplications', params)
 
     def describe_configuration_options(self, application_name=None,
                                        template_name=None,
@@ -516,7 +520,7 @@ class Layer1(AWSQueryConnection):
             params['SolutionStackName'] = solution_stack_name
         if options:
             self.build_list_params(params, options, 'Options.member')
-        return self.get_response('DescribeConfigurationOptions', params)
+        return self._get_response('DescribeConfigurationOptions', params)
 
     def describe_configuration_settings(self, application_name,
                                         template_name=None,
@@ -557,7 +561,7 @@ class Layer1(AWSQueryConnection):
             params['TemplateName'] = template_name
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('DescribeConfigurationSettings', params)
+        return self._get_response('DescribeConfigurationSettings', params)
 
     def describe_environment_resources(self, environment_id=None,
                                        environment_name=None):
@@ -582,7 +586,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentId'] = environment_id
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('DescribeEnvironmentResources', params)
+        return self._get_response('DescribeEnvironmentResources', params)
 
     def describe_environments(self, application_name=None, version_label=None,
                               environment_ids=None, environment_names=None,
@@ -636,7 +640,7 @@ class Layer1(AWSQueryConnection):
             params['IncludeDeleted'] = include_deleted
         if included_deleted_back_to:
             params['IncludedDeletedBackTo'] = included_deleted_back_to
-        return self.get_response('DescribeEnvironments', params)
+        return self._get_response('DescribeEnvironments', params)
 
     def describe_events(self, application_name=None, version_label=None,
                         template_name=None, environment_id=None,
@@ -721,11 +725,11 @@ class Layer1(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if next_token:
             params['NextToken'] = next_token
-        return self.get_response('DescribeEvents', params)
+        return self._get_response('DescribeEvents', params)
 
     def list_available_solution_stacks(self):
         """Returns a list of the available solution stack names."""
-        return self.get_response('ListAvailableSolutionStacks', params={})
+        return self._get_response('ListAvailableSolutionStacks', params={})
 
     def rebuild_environment(self, environment_id=None, environment_name=None):
         """
@@ -752,7 +756,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentId'] = environment_id
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('RebuildEnvironment', params)
+        return self._get_response('RebuildEnvironment', params)
 
     def request_environment_info(self, info_type, environment_id=None,
                                  environment_name=None):
@@ -787,7 +791,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentId'] = environment_id
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('RequestEnvironmentInfo', params)
+        return self._get_response('RequestEnvironmentInfo', params)
 
     def restart_app_server(self, environment_id=None, environment_name=None):
         """
@@ -811,7 +815,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentId'] = environment_id
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('RestartAppServer', params)
+        return self._get_response('RestartAppServer', params)
 
     def retrieve_environment_info(self, info_type, environment_id=None,
                                   environment_name=None):
@@ -841,7 +845,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentId'] = environment_id
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('RetrieveEnvironmentInfo', params)
+        return self._get_response('RetrieveEnvironmentInfo', params)
 
     def swap_environment_cnames(self, source_environment_id=None,
                                  source_environment_name=None,
@@ -886,7 +890,7 @@ class Layer1(AWSQueryConnection):
             params['DestinationEnvironmentId'] = destination_environment_id
         if destination_environment_name:
             params['DestinationEnvironmentName'] = destination_environment_name
-        return self.get_response('SwapEnvironmentCNAMEs', params)
+        return self._get_response('SwapEnvironmentCNAMEs', params)
 
     def terminate_environment(self, environment_id=None, environment_name=None,
                               terminate_resources=None):
@@ -922,9 +926,9 @@ class Layer1(AWSQueryConnection):
         if environment_name:
             params['EnvironmentName'] = environment_name
         if terminate_resources:
-            params['TerminateResources'] = self.encode_bool(
+            params['TerminateResources'] = self._encode_bool(
                 terminate_resources)
-        return self.get_response('TerminateEnvironment', params)
+        return self._get_response('TerminateEnvironment', params)
 
     def update_application(self, application_name, description=None):
         """
@@ -944,7 +948,7 @@ class Layer1(AWSQueryConnection):
         params = {'ApplicationName': application_name}
         if description:
             params['Description'] = description
-        return self.get_response('UpdateApplication', params)
+        return self._get_response('UpdateApplication', params)
 
     def update_application_version(self, application_name, version_label,
                                    description=None):
@@ -967,7 +971,7 @@ class Layer1(AWSQueryConnection):
                   'VersionLabel': version_label}
         if description:
             params['Description'] = description
-        return self.get_response('UpdateApplicationVersion', params)
+        return self._get_response('UpdateApplicationVersion', params)
 
     def update_configuration_template(self, application_name, template_name,
                                       description=None, option_settings=None,
@@ -1013,7 +1017,7 @@ class Layer1(AWSQueryConnection):
         if options_to_remove:
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
-        return self.get_response('UpdateConfigurationTemplate', params)
+        return self._get_response('UpdateConfigurationTemplate', params)
 
     def update_environment(self, environment_id=None, environment_name=None,
                            version_label=None, template_name=None,
@@ -1093,7 +1097,7 @@ class Layer1(AWSQueryConnection):
         if options_to_remove:
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
-        return self.get_response('UpdateEnvironment', params)
+        return self._get_response('UpdateEnvironment', params)
 
     def validate_configuration_settings(self, application_name,
                                         option_settings, template_name=None,
@@ -1132,8 +1136,4 @@ class Layer1(AWSQueryConnection):
             params['TemplateName'] = template_name
         if environment_name:
             params['EnvironmentName'] = environment_name
-        return self.get_response('ValidateConfigurationSettings', params)
-
-    def encode_bool(self, v):
-        v = bool(v)
-        return {True: "true", False: "false"}[v]
+        return self._get_response('ValidateConfigurationSettings', params)
