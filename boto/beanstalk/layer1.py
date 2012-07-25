@@ -128,6 +128,9 @@ class Layer1(AWSQueryConnection):
 
         :type s3_key: string
         :param s3_key: The Amazon S3 key where the data is located.
+        Both s3_bucket and s3_key must be specified in order to use
+        a specific source bundle.  If both of these values are not specified
+        the sample application will be used.
 
         :type auto_create_application: boolean
         :param auto_create_application: Determines how the system
@@ -148,9 +151,8 @@ class Layer1(AWSQueryConnection):
                   'VersionLabel': version_label}
         if description:
             params['Description'] = description
-        if s3_bucket:
+        if s3_bucket and s3_key:
             params['SourceBundle.S3Bucket'] = s3_bucket
-        if s3_key:
             params['SourceBundle.S3Key'] = s3_key
         if auto_create_application:
             params['AutoCreateApplication'] = self.encode_bool(
