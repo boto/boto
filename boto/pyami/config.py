@@ -35,12 +35,15 @@ except (AttributeError, ImportError):
   # This is probably running on App Engine.
   expanduser = (lambda x: x)
 
-# By default we use two locations for the boto configurations,
+# By default we use three locations for the boto configurations,
 # /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
+# os.getcwd() was added so users could have multiple config files
+# without using environment variables
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
 UserConfigPath = os.path.join(expanduser('~'), '.boto')
 BotoConfigLocations.append(UserConfigPath)
+BotoConfigLocations.append( os.getcwd() + "/.boto" )
 
 # If there's a BOTO_CONFIG variable set, we load ONLY 
 # that variable
