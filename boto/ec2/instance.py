@@ -36,6 +36,26 @@ import base64
 
 class InstanceState(object):
     """
+    The state of the instance.
+
+    :ivar code: The low byte represents the state. The high byte is an
+        opaque internal value and should be ignored.  Valid values:
+
+        * 0 (pending)
+        * 16 (running)
+        * 32 (shutting-down)
+        * 48 (terminated)
+        * 64 (stopping)
+        * 80 (stopped)
+
+    :ivar name: The name of the state of the instance.  Valid values:
+
+        * "pending"
+        * "running"
+        * "shutting-down"
+        * "terminated"
+        * "stopping"
+        * "stopped"
     """
     def __init__(self, code=0, name=None):
         self.code = code
@@ -52,6 +72,39 @@ class InstanceState(object):
             self.code = int(value)
         elif name == 'name':
             self.name = value
+        else:
+            setattr(self, name, value)
+
+
+class InstancePlacement(object):
+    """
+    The location where the instance launched.
+
+    :ivar zone: The Availability Zone of the instance.
+    :ivar group_name: The name of the placement group the instance is
+        in (for cluster compute instances).
+    :ivar tenancy: The tenancy of the instance (if the instance is
+        running within a VPC). An instance with a tenancy of dedicated
+        runs on single-tenant hardware.
+    """
+    def __init__(self, zone=None, group_name=None, tenancy=None):
+        self.zone = zone
+        self.group_name = group_name
+        self.tenancy = tenancy
+
+    def __repr__(self):
+        return self.zone
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'availabilityZone':
+            self.zone = value
+        elif name == 'groupName':
+            self.group_name = value
+        elif name == 'tenancy':
+            self.tenancy = value
         else:
             setattr(self, name, value)
 
@@ -121,6 +174,11 @@ class Instance(TaggedEC2Object):
     :ivar launch_time: The time the instance was launched.
     :ivar image_id: The ID of the AMI used to launch this instance.
     :ivar placement: The availability zone in which the instance is running.
+    :ivar placement_group: The name of the placement group the instance
+        is in (for cluster compute instances).
+    :ivar placement_tenancy: The tenancy of the instance, if the instance
+        is running within a VPC.  An instance with a tenancy of dedicated
+        runs on a single-tenant hardware.
     :ivar kernel: The kernel associated with the instance.
     :ivar ramdisk: The ramdisk associated with the instance.
     :ivar architecture: The architecture of the image (i386|x86_64).
@@ -155,7 +213,6 @@ class Instance(TaggedEC2Object):
         self.instance_type = None
         self.launch_time = None
         self.image_id = None
-        self.placement = None
         self.kernel = None
         self.ramdisk = None
         self.product_codes = ProductCodes()
@@ -184,6 +241,7 @@ class Instance(TaggedEC2Object):
         self.architecture = None
         self._previous_state = None
         self._state = InstanceState()
+        self._placement = InstancePlacement()
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -207,6 +265,55 @@ class Instance(TaggedEC2Object):
         if self._previous_state:
             return self._previous_state.code
         return 0
+
+        self.kernel = None
+        self.ramdisk = None
+        self.product_codes = ProductCodes()
+        self.ami_launch_index = None
+        self.monitored = False
+        self.spot_instance_request_id = None
+        self.subnet_id = None
+        self.vpc_id = None
+        self.private_ip_address = None
+        self.ip_address = None
+        self.requester_id = None
+        self._in_monitoring_element = False
+        self.persistent = False
+        self.root_device_name = None
+        self.root_device_type = None
+        self.block_device_mapping = None
+        self.state_reason = None
+        self.group_name = None
+        self.client_token = None
+        self.eventsSet = None
+        self.groups = []
+        self.platform = None
+        self.interfaces = []
+        self.hypervisor = None
+        self.virtualization_type = None
+        self.architecture = None
+        self._previous_state = None
+        self._state = InstanceState()
+        self._placement = InstancePlacement()
+
+    def __repr__(self):
+        return 'Instance:%s' % self.id
+
+    @property
+    def state(self):
+        return self._state.name
+
+    @property
+    def placement(self):
+        return self._placement.zone
+
+    @property
+    def placement_group(self):
+        return self._placement.group_name
+
+    @property
+    def placement_tenancy(self):
+        return self._placement.tenancy
 
     def startElement(self, name, attrs, connection):
         retval = TaggedEC2Object.startElement(self, name, attrs, connection)
@@ -240,6 +347,8 @@ class Instance(TaggedEC2Object):
             return self._previous_state
         elif name == 'instanceState':
             return self._state
+        elif name == 'placement':
+            return self._placement
         return None
 
     def endElement(self, name, value, connection):
@@ -274,12 +383,8 @@ class Instance(TaggedEC2Object):
             self.root_device_type = value
         elif name == 'launchTime':
             self.launch_time = value
-        elif name == 'availabilityZone':
-            self.placement = value
         elif name == 'platform':
             self.platform = value
-        elif name == 'placement':
-            pass
         elif name == 'kernelId':
             self.kernel = value
         elif name == 'ramdiskId':
