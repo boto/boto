@@ -155,8 +155,8 @@ class SNSConnection(AWSQueryConnection):
         params = {'ContentType' : 'JSON',
                   'TopicArn' : topic,
                   'Label' : label}
-        self.build_list_params(params, account_ids, 'AWSAccountId')
-        self.build_list_params(params, actions, 'ActionName')
+        self.build_list_params(params, account_ids, 'AWSAccountId.member')
+        self.build_list_params(params, actions, 'ActionName.member')
         response = self.make_request('AddPermission', params, '/', 'GET')
         body = response.read()
         if response.status == 200:
