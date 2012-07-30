@@ -24,23 +24,16 @@
 Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
+from decimal import Decimal
 
-
+#120717 elee, add Decimal to the list of types recognized as a number.
 def is_num(n):
-    types = (int, long, float, bool)
+    types = (int, long, float, bool, Decimal)
     return isinstance(n, types) or n in types
 
 
 def is_str(n):
     return isinstance(n, basestring) or (isinstance(n, type) and issubclass(n, basestring))
-
-
-def convert_num(s):
-    if '.' in s:
-        n = float(s)
-    else:
-        n = int(s)
-    return n
 
 
 def get_dynamodb_type(val):

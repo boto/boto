@@ -26,7 +26,8 @@ from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
-from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
+from boto.dynamodb.types import get_dynamodb_type, dynamize_value
+from decimal import Decimal
 
 
 def item_object_hook(dct):
@@ -40,11 +41,11 @@ def item_object_hook(dct):
     if 'S' in dct:
         return dct['S']
     if 'N' in dct:
-        return convert_num(dct['N'])
+        return Decimal(dct['N'])
     if 'SS' in dct:
         return set(dct['SS'])
     if 'NS' in dct:
-        return set(map(convert_num, dct['NS']))
+        return set(map(Decimal, dct['NS']))
     return dct
 
 def table_generator(tgen):
