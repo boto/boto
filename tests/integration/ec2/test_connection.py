@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -32,6 +32,7 @@ import socket
 
 from nose.plugins.attrib import attr
 from boto.ec2.connection import EC2Connection
+
 
 class EC2ConnectionTest (unittest.TestCase):
     ec2 = True
@@ -60,7 +61,7 @@ class EC2ConnectionTest (unittest.TestCase):
         time.sleep(10)
         d = image.get_launch_permissions()
         assert 'groups' not in d
-        
+
     def test_1_basic(self):
         # create 2 new security groups
         c = EC2Connection()
@@ -83,18 +84,26 @@ class EC2ConnectionTest (unittest.TestCase):
         assert len(rs) == 1
         # try some group to group authorizations/revocations
         # first try the old style
-        status = c.authorize_security_group(group1.name, group2.name, group2.owner_id)
+        status = c.authorize_security_group(group1.name,
+                                            group2.name,
+                                            group2.owner_id)
         assert status
-        status = c.revoke_security_group(group1.name, group2.name, group2.owner_id)
+        status = c.revoke_security_group(group1.name,
+                                         group2.name,
+                                         group2.owner_id)
         assert status
         # now try specifying a specific port
-        status = c.authorize_security_group(group1.name, group2.name, group2.owner_id,
+        status = c.authorize_security_group(group1.name,
+                                            group2.name,
+                                            group2.owner_id,
                                             'tcp', 22, 22)
         assert status
-        status = c.revoke_security_group(group1.name, group2.name, group2.owner_id,
+        status = c.revoke_security_group(group1.name,
+                                         group2.name,
+                                         group2.owner_id,
                                          'tcp', 22, 22)
         assert status
-        
+
         # now delete the second security group
         status = c.delete_security_group(group2_name)
         # now make sure it's really gone
@@ -106,7 +115,7 @@ class EC2ConnectionTest (unittest.TestCase):
         assert not found
 
         group = group1
-        
+
         # now try to launch apache image with our new security group
         rs = c.get_all_images()
         img_loc = 'ec2-public-images/fedora-core4-apache.manifest.xml'
@@ -137,9 +146,16 @@ class EC2ConnectionTest (unittest.TestCase):
             pass
         # now kill the instance and delete the security group
         instance.terminate()
+
+        # check that state and previous_state have updated
+        assert instance.state == 'shutting-down'
+        assert instance.state_code == 32
+        assert instance.previous_state == 'running'
+        assert instance.previous_state_code == 16
+
         # unfortunately, I can't delete the sg within this script
         #sg.delete()
-        
+
         # create a new key pair
         key_name = 'test-%d' % int(time.time())
         status = c.create_key_pair(key_name)
@@ -172,5 +188,5 @@ class EC2ConnectionTest (unittest.TestCase):
         assert len(l) == 1
         assert len(l[0].product_codes) == 1
         assert l[0].product_codes[0] == demo_paid_ami_product_code
-        
+
         print '--- tests completed ---'
