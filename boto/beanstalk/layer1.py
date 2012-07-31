@@ -38,7 +38,7 @@ class Layer1(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None,
                  proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=2,
+                 proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None):
         if not region:
@@ -758,7 +758,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentName'] = environment_name
         return self._get_response('RebuildEnvironment', params)
 
-    def request_environment_info(self, info_type, environment_id=None,
+    def request_environment_info(self, info_type='tail', environment_id=None,
                                  environment_name=None):
         """
         Initiates a request to compile the specified type of
@@ -817,7 +817,7 @@ class Layer1(AWSQueryConnection):
             params['EnvironmentName'] = environment_name
         return self._get_response('RestartAppServer', params)
 
-    def retrieve_environment_info(self, info_type, environment_id=None,
+    def retrieve_environment_info(self, info_type='tail', environment_id=None,
                                   environment_name=None):
         """
         Retrieves the compiled information from a RequestEnvironmentInfo

@@ -2,7 +2,7 @@ import ast
 from boto.exception import BotoServerError
 
 
-def handle(e):
+def simple(e):
     err = ast.literal_eval(e.error_message)
     code = err['Error']['Code']
 
@@ -10,11 +10,11 @@ def handle(e):
         # dynamically get the error class
         simple_e = getattr(Wrapper, code)(e, err)
     except:
-        # re-raise original exception on failure
-        #   (may fail on 'error code' not documented and not found below)
-        raise e
+        # return original exception on failure
+        #   (would fail on 'error code' not documented so not found below)
+        return e
 
-    raise simple_e
+    return simple_e
 
 
 class SimpleException(BotoServerError):

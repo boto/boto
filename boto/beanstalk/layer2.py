@@ -34,18 +34,18 @@ class Layer2(Layer1):
         # layer1 api call
         name = self._method_called
 
-        # turn 'this_is_a_function_name' into 'ThisIsAFunctionNameResponse'
-        cls_name = ''.join( [ part.capitalize() for part in name.split('_') ] ) + 'Response'
-        # get the class object from boto.beanstalk.response
-        Class = getattr(Wrapper, cls_name)
-
         try:
             # get super's response
             response = getattr(super(Layer2, self), name)(*args, **kargs)
 
         except BotoServerError as e:
             # throw a more descriptive error
-            exception.handle(e)
+            raise exception.simple(e)
+
+        # turn 'this_is_a_function_name' into 'ThisIsAFunctionNameResponse'
+        cls_name = ''.join( [ part.capitalize() for part in name.split('_') ] ) + 'Response'
+        # get the class object from boto.beanstalk.response
+        Class = getattr(Wrapper, cls_name)
 
         # return class instead
         return Class(response)
