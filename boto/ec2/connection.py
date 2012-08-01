@@ -641,11 +641,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type ebs_optimized: bool
         :param ebs_optimized: Whether the instance is optimized for
-            EBS I/O. This optimization provides dedicated throughput
+            EBS I/O.  This optimization provides dedicated throughput
             to Amazon EBS and an optimized configuration stack to
-            provide optimal EBS I/O performance. This optimization
-            isn’t available with all instance types. Additional usage
-            charges apply when using an EBS Optimized instance.
+            provide optimal EBS I/O performance.  This optimization
+            isn't available with all instance types.
 
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
