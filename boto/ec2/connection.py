@@ -1561,7 +1561,8 @@ class EC2Connection(AWSQueryConnection):
             params['AutoEnableIO.Value'] = new_value
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None):
+    def create_volume(self, size, zone, snapshot=None, volume_type="standard",
+                      iops=None):
         """
         Create a new EBS Volume.
 
@@ -1573,16 +1574,26 @@ class EC2Connection(AWSQueryConnection):
 
         :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
         :param snapshot: The snapshot from which the new Volume will be created.
+
+        :type volume_type: string
+        :param volume_type: Type of volume. Can be 'standard' or 'io1'.
+                            Default is 'standard'.
+
+        :type iops: int
+        :param iops: The number of I/O operations per second the volume supports.
         """
         if isinstance(zone, Zone):
             zone = zone.name
-        params = {'AvailabilityZone' : zone}
+        params = {'AvailabilityZone' : zone,
+                  'VolumeType' : volume_type}
         if size:
             params['Size'] = size
         if snapshot:
             if isinstance(snapshot, Snapshot):
                 snapshot = snapshot.id
             params['SnapshotId'] = snapshot
+        if iops:
+            params['Iops'] = iops
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id):
