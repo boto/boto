@@ -61,7 +61,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-06-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-07-20')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -1561,7 +1561,7 @@ class EC2Connection(AWSQueryConnection):
             params['AutoEnableIO.Value'] = new_value
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None):
+    def create_volume(self, size, zone, snapshot=None, volume_type=None, iops=None):
         """
         Create a new EBS Volume.
 
@@ -1573,6 +1573,13 @@ class EC2Connection(AWSQueryConnection):
 
         :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
         :param snapshot: The snapshot from which the new Volume will be created.
+
+        :type volume_type: string
+        :param volume_type: The volume type. Valid values are: standard | io1
+
+        :type iops: string
+        :param iops: The number of I/O operations per second (IOPS) that the 
+            volume supports. Valid values: Range is 1 to 1000
         """
         if isinstance(zone, Zone):
             zone = zone.name
@@ -1583,6 +1590,10 @@ class EC2Connection(AWSQueryConnection):
             if isinstance(snapshot, Snapshot):
                 snapshot = snapshot.id
             params['SnapshotId'] = snapshot
+        if volume_type:
+            params['VolumeType'] = volume_type
+        if iops:
+            params['Iops'] = iops
         return self.get_object('CreateVolume', params, Volume, verb='POST')
 
     def delete_volume(self, volume_id):

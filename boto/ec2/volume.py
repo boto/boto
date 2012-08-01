@@ -38,6 +38,7 @@ class Volume(TaggedEC2Object):
         self.snapshot_id = None
         self.attach_data = None
         self.zone = None
+        self.volume_type = None
 
     def __repr__(self):
         return 'Volume:%s' % self.id
@@ -69,6 +70,8 @@ class Volume(TaggedEC2Object):
             self.snapshot_id = value
         elif name == 'availabilityZone':
             self.zone = value
+        elif name == 'volumeType':
+            self.volume_type = value
         else:
             setattr(self, name, value)
 
