@@ -1577,7 +1577,7 @@ class EC2Connection(AWSQueryConnection):
         :type volume_type: string
         :param volume_type: The volume type. Valid values are: standard | io1
 
-        :type iops: string
+        :type iops: int
         :param iops: The number of I/O operations per second (IOPS) that the 
             volume supports. Valid values: Range is 1 to 1000
         """
