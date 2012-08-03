@@ -60,6 +60,7 @@ zones = Zone.get_all()
 zone = Zone.get('example.com')
 
 # constructing a FQDN for a name
+zone.fqdn() == 'example.com'
 zone.fqdn('test') == 'test.example.com'
 zone.fqdn('test.example.com') == 'test.example.com'
 zone.fqdn('test.example.com', trailing_dot=True) == 'test.example.com.'
@@ -80,7 +81,17 @@ nameservers = ns_records and ns_records[0].value or []
 # adding a CNAME record with ttl=60
 # (note, you can use incomplete names when passing zone as a kw-argument)
 rec = Record( type='CNAME', name='www', value='', ttl=60, zone=zone )
-status = rec.add()  # same as zone.add_record( rec )
+rec.add()  # same as zone.add_record( rec )
+
+# adding a multi-resource A record for the domain
+rec = Record( name='example.com', value='192.168.1.1, 192.168.1.2, 192.168.1.3' )
+status = rec.add( zone )
+
+# watching status of a change
+from time import sleep
+while status == 'pending':
+    sleep(5)
+    print status.update()
 
 # adding three A records
 Record( name='node01.example.com', value='192.168.1.1' ).add( zone )
@@ -88,15 +99,13 @@ Record( name='node02.example.com', value='192.168.1.2' ).add( zone )
 Record( name='node03.example.com', value='192.168.1.3' ).add( zone )
 
 # adding a weighted CNAME record set (WRR)
-r1 = Record( type='CNAME', name='node', value='node01', weight=2, id='node01', zone=zone )
-r2 = Record( type='CNAME', name='node', value='node02', weight=2, id='node02', zone=zone )
-r3 = Record( type='CNAME', name='node', value='node03', weight=2, id='node03', zone=zone )
-zone.add_record( r1 )  # same as r1.add()
-zone.add_record( r2 )  # same as r2.add()
-zone.add_record( r3 )  # same as r3.add()
+for name in ['node01', 'node02', 'node03']:
+    value = zone.fqdn( name )
+    r = Record( type='CNAME', name='node', value=value, weight=2, id=name, zone=zone )
+    r.add()
 
 # updaing a record
-r1.update( id='heavy-node', weight=5 )
+r1.update( id='heavy-node', weight=5, value='node04.example.com' )
 
 # deleting a record
 r2.delete()

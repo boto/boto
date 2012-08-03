@@ -1,38 +1,55 @@
 # vim: fileencoding=utf-8 et ts=4 sts=4 sw=4 tw=0 fdm=marker fmr=#{,#}
 
-__version__    = '0.3'
+__version__    = '0.3.2'
 __author__     = 'Alexander Glyzov'
 __maintainer__ = 'Alexander Glyzov'
 __email__      = 'bonoba@gmail.com'
 
 __all__ = ['Zone', 'Record']
 
+from socket    import gethostbyname
 from functools import partial
 
 from boto                import connect_route53
 from boto.route53.record import ResourceRecordSets
 
 
+def norm_weight( weight ):  #{
+    if weight:
+        try:    weight = max(int(weight), 0)
+        except: weight = None
+    return weight or None
+#}
+
 class Record(object):  #{
 
     def __init__(self, name, value, type='A', ttl=300, weight=None, id=None, zone=None, normalize=True):
-        if not normalize:
-            fqdn = lambda h: h
+        type = str(type).upper()
+
+        if not normalize or type == 'PTR':
+            norm_host = lambda h: h
         elif zone:
             assert isinstance(zone, Zone)
-            fqdn = partial( zone.fqdn, trailing_dot=True )
+            norm_host = partial( zone.fqdn, trailing_dot=True )
         else:
-            fqdn = lambda h: h if h.endswith('.') else h+'.'
+            norm_host = lambda h: h if h.endswith('.') else h+'.'
+
+        if not normalize:
+            norm_value = lambda v: v
+        elif type in ('A','AAAA'):
+            norm_value = lambda v: v or gethostbyname( zone.name )
+        else:
+            norm_value = lambda v: (v or zone.name).rstrip('.')+'.'
 
         if not isinstance(value, (list, tuple, set, dict)):
             value = str(value).split(',')
         value = [h.strip() for h in value]
 
         self.type   = type
-        self.name   = name  if type == 'PTR' else fqdn(name)
-        self.value  = value if type in ('A','AAAA','TXT') else map(fqdn, value)
+        self.name   = norm_host( name )
+        self.value  = map(norm_value, value)
         self.ttl    = ttl
-        self.weight = weight
+        self.weight = norm_weight( weight )
         self.id     = id
         self.zone   = zone
 
@@ -226,14 +243,16 @@ class Zone(object):  #{
         records = []
         if name and type != 'PTR':
             name = self.fqdn( name )
+        weight = norm_weight( weight )
 
         for boto_record in self.conn.get_all_rrsets(self.id):
             record = Record.from_boto_record( boto_record, zone=self )
-            record_name = self.fqdn( record.name )
+            record_name   = self.fqdn( record.name )
+            record_weight = norm_weight( record.weight )
             if  (record_name   == name   if name   else True)\
             and (record.type   == type   if type   else True)\
             and (record.ttl    == ttl    if ttl    else True)\
-            and (record.weight == weight if weight else True)\
+            and (record_weight == weight if weight else True)\
             and (record.id     == id     if id     else True):
                 records.append( record )
 
