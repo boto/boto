@@ -545,6 +545,8 @@ class ProductsBulkOperationResponse(ResponseResultList):
 class GetMatchingProductResponse(ProductsBulkOperationResponse):
     pass
 
+class GetMatchingProductForIdResponse(ProductsBulkOperationResponse):
+	pass
 
 class GetCompetitivePricingForSKUResponse(ProductsBulkOperationResponse):
     pass
