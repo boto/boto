@@ -652,3 +652,35 @@ class Wrapper(object):
                 for member in response['Messages']:
                     message = ValidationMessage(member)
                     self.messages.append(message)
+
+
+# for celery
+CheckDnsAvailabilityResponse = Wrapper.CheckDnsAvailabilityResponse
+CreateApplicationResponse = Wrapper.CreateApplicationResponse
+CreateApplicationVersionResponse = Wrapper.CreateApplicationVersionResponse
+CreateConfigurationTemplateResponse = Wrapper.CreateConfigurationTemplateResponse
+CreateEnvironmentResponse = Wrapper.CreateEnvironmentResponse
+CreateStorageLocationResponse = Wrapper.CreateStorageLocationResponse
+DeleteApplicationResponse = Wrapper.DeleteApplicationResponse
+DeleteApplicationVersionResponse = Wrapper.DeleteApplicationVersionResponse
+DeleteConfigurationTemplateResponse = Wrapper.DeleteConfigurationTemplateResponse
+DeleteEnvironmentConfigurationResponse = Wrapper.DeleteEnvironmentConfigurationResponse
+DescribeApplicationVersionsResponse = Wrapper.DescribeApplicationVersionsResponse
+DescribeApplicationsResponse = Wrapper.DescribeApplicationsResponse
+DescribeConfigurationOptionsResponse = Wrapper.DescribeConfigurationOptionsResponse
+DescribeConfigurationSettingsResponse = Wrapper.DescribeConfigurationSettingsResponse
+DescribeEnvironmentResourcesResponse = Wrapper.DescribeEnvironmentResourcesResponse
+DescribeEnvironmentsResponse = Wrapper.DescribeEnvironmentsResponse
+DescribeEventsResponse = Wrapper.DescribeEventsResponse
+ListAvailableSolutionStacksResponse = Wrapper.ListAvailableSolutionStacksResponse
+RebuildEnvironmentResponse = Wrapper.RebuildEnvironmentResponse
+RequestEnvironmentInfoResponse = Wrapper.RequestEnvironmentInfoResponse
+RestartAppServerResponse = Wrapper.RestartAppServerResponse
+RetrieveEnvironmentInfoResponse = Wrapper.RetrieveEnvironmentInfoResponse
+SwapEnvironmentCnamesResponse = Wrapper.SwapEnvironmentCnamesResponse
+TerminateEnvironmentResponse = Wrapper.TerminateEnvironmentResponse
+UpdateApplicationResponse = Wrapper.UpdateApplicationResponse
+UpdateApplicationVersionResponse = Wrapper.UpdateApplicationVersionResponse
+UpdateConfigurationTemplateResponse = Wrapper.UpdateConfigurationTemplateResponse
+UpdateEnvironmentResponse = Wrapper.UpdateEnvironmentResponse
+ValidateConfigurationSettingsResponse = Wrapper.ValidateConfigurationSettingsResponse

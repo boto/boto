@@ -66,3 +66,33 @@ class Wrapper(object):
     class OperationInProgress(SimpleException): pass
     class SourceBundleDeletion(SimpleException): pass
     class OperationInProgress(SimpleException): pass
+
+
+# for celery
+ValidationError = Wrapper.ValidationError
+IncompleteSignature = Wrapper.IncompleteSignature
+InternalFailure = Wrapper.InternalFailure
+InvalidAction = Wrapper.InvalidAction
+InvalidClientTokenId = Wrapper.InvalidClientTokenId
+InvalidParameterCombination = Wrapper.InvalidParameterCombination
+InvalidParameterValue = Wrapper.InvalidParameterValue
+InvalidQueryParameter = Wrapper.InvalidQueryParameter
+MalformedQueryString = Wrapper.MalformedQueryString
+MissingAction = Wrapper.MissingAction
+MissingAuthenticationToken = Wrapper.MissingAuthenticationToken
+MissingParameter = Wrapper.MissingParameter
+OptInRequired = Wrapper.OptInRequired
+RequestExpired = Wrapper.RequestExpired
+ServiceUnavailable = Wrapper.ServiceUnavailable
+Throttling = Wrapper.Throttling
+TooManyApplications = Wrapper.TooManyApplications
+InsufficientPrivileges = Wrapper.InsufficientPrivileges
+S3LocationNotInServiceRegion = Wrapper.S3LocationNotInServiceRegion
+TooManyApplicationVersions = Wrapper.TooManyApplicationVersions
+TooManyConfigurationTemplates = Wrapper.TooManyConfigurationTemplates
+TooManyEnvironments = Wrapper.TooManyEnvironments
+S3SubscriptionRequired = Wrapper.S3SubscriptionRequired
+TooManyBuckets = Wrapper.TooManyBuckets
+OperationInProgress = Wrapper.OperationInProgress
+SourceBundleDeletion = Wrapper.SourceBundleDeletion
+OperationInProgress = Wrapper.OperationInProgress
