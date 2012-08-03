@@ -1,11 +1,13 @@
 # vim: fileencoding=utf-8 et ts=4 sts=4 sw=4 tw=0 fdm=marker fmr=#{,#}
 
-__version__    = '0.1'
+__version__    = '0.3'
 __author__     = 'Alexander Glyzov'
 __maintainer__ = 'Alexander Glyzov'
 __email__      = 'bonoba@gmail.com'
 
 __all__ = ['Zone', 'Record']
+
+from functools import partial
 
 from boto                import connect_route53
 from boto.route53.record import ResourceRecordSets
@@ -13,10 +15,12 @@ from boto.route53.record import ResourceRecordSets
 
 class Record(object):  #{
 
-    def __init__(self, name, value, type='A', ttl=300, weight=None, id=None, zone=None):
-        if zone:
+    def __init__(self, name, value, type='A', ttl=300, weight=None, id=None, zone=None, normalize=True):
+        if not normalize:
+            fqdn = lambda h: h
+        elif zone:
             assert isinstance(zone, Zone)
-            fqdn = zone.fqdn
+            fqdn = partial( zone.fqdn, trailing_dot=True )
         else:
             fqdn = lambda h: h if h.endswith('.') else h+'.'
 
@@ -37,11 +41,12 @@ class Record(object):  #{
         return cls(
             boto_record.name,
             boto_record.resource_records,
-            type   = boto_record.type,
-            ttl    = boto_record.ttl,
-            weight = boto_record.weight,
-            id     = boto_record.identifier,
-            zone   = zone
+            type      = boto_record.type,
+            ttl       = boto_record.ttl,
+            weight    = boto_record.weight,
+            id        = boto_record.identifier,
+            zone      = zone,
+            normalize = False  # don't change original host names
         )
 
     def __repr__(self):
@@ -109,8 +114,11 @@ class Zone(object):  #{
     def __repr__(self):
         return '<Zone: %s, %s>' % (self.name, self.id)
 
-    def fqdn(self, host=''):
-        """ Returns a fully qualified domain name for the argument """
+    def fqdn(self, host='', trailing_dot=False):
+        """ Returns a fully qualified domain name for the argument
+
+            dot=<bool> - append or remove trailing dot
+        """
         if not host.endswith('.'):
             if host.endswith( self.name[:-1] ):
                 host += '.'
@@ -118,13 +126,18 @@ class Zone(object):  #{
                 host += '.%s' % self.name
             else:
                 host = self.name
+
+        host = host.rstrip('.')
+        if trailing_dot:
+            host += '.'
+
         return host
 
     def add_record(self, record, comment=''):
         """Add a new record to this zone"""
         assert isinstance(record, Record)
 
-        changes = ResourceRecordSets(self.conn, self.id, comment)
+        changes = ResourceRecordSets( self.conn, self.id, comment )
         change  = changes.add_change(
             "CREATE",
             record.name,
@@ -137,7 +150,7 @@ class Zone(object):  #{
             change.add_value(value)
 
         record.zone = self
-        return Status( changes.commit() )
+        return Status( changes.commit(), conn=self.conn )
 
     def update_record(
         self,
@@ -152,7 +165,7 @@ class Zone(object):  #{
     ):
         assert isinstance(record, Record)
 
-        changes = ResourceRecordSets(self.conn, self.id, comment)
+        changes = ResourceRecordSets( self.conn, self.id, comment )
 
         change = changes.add_change(
             "DELETE",
@@ -163,9 +176,9 @@ class Zone(object):  #{
             identifier = record.id
         )
         for val in record.value:
-            change.add_value(val)
+            change.add_value( val )
 
-        record.name   = name   or record.name
+        record.name   = self.fqdn( name or record.name )
         record.type   = type   or record.type
         record.ttl    = ttl    or record.ttl
         record.weight = weight or record.weight
@@ -181,12 +194,12 @@ class Zone(object):  #{
         )
         new = Record( record.name, value or record.value, type=record.type, zone=self )
         for val in new.value:
-            change.add_value(val)
+            change.add_value( val )
 
         record.value = new.value
         record.zone  = self
 
-        return Status(changes.commit())
+        return Status( changes.commit(), conn=self.conn )
 
     def delete_record(self, record):
         """Delete a record from this zone"""
@@ -206,17 +219,18 @@ class Zone(object):  #{
 
         record.zone = None
 
-        return Status(changes.commit())
+        return Status( changes.commit(), conn=self.conn )
 
     def get_records(self, name=None, type=None, ttl=None, weight=None, id=None):
         """Get a list of this zone records (optionally filtered)"""
         records = []
         if name and type != 'PTR':
-            name = self.fqdn(name)
+            name = self.fqdn( name )
 
         for boto_record in self.conn.get_all_rrsets(self.id):
             record = Record.from_boto_record( boto_record, zone=self )
-            if  (record.name   == name   if name   else True)\
+            record_name = self.fqdn( record.name )
+            if  (record_name   == name   if name   else True)\
             and (record.type   == type   if type   else True)\
             and (record.ttl    == ttl    if ttl    else True)\
             and (record.weight == weight if weight else True)\
@@ -232,16 +246,18 @@ class Zone(object):  #{
 class Status(object):  #{
     def __init__(self, change_resp, conn=None, key='ChangeResourceRecordSetsResponse'):
         self.conn = conn or connect_route53()
-        _dict     = change_resp[key]['ChangeInfo']
-        self.id   = _dict.get('Id','').replace('/change/','')
+        _dict = change_resp[key]['ChangeInfo']
 
         for key, value in _dict.items():
             setattr(self, key.lower(), value)
 
+        self.id     = (self.id     or '').replace('/change/','')
+        self.status = (self.status or '').lower()
+
     def update(self):
         """ Update the status of this request."""
         change_resp = self.conn.get_change(self.id)
-        self.status = change_resp['GetChangeResponse']['ChangeInfo']['Status']
+        self.status = change_resp['GetChangeResponse']['ChangeInfo']['Status'].lower()
         return self.status
 
     def __repr__(self):
@@ -249,4 +265,7 @@ class Status(object):  #{
 
     def __str__(self):
         return self.status
+
+    def __eq__(self, other):
+        return str(self) == str(other)
 #}
