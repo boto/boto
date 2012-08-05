@@ -625,11 +625,11 @@ class EC2Connection(AWSQueryConnection):
 
         :type security_group_ids: list of strings
         :param security_group_ids: The ID of the VPC security groups with
-            which to associate instances
+            which to associate instances.
 
         :type additional_info: string
         :param additional_info: Specifies additional information to make
-            available to the instance(s)
+            available to the instance(s).
 
         :type tenancy: string
         :param tenancy: The tenancy of the instance you want to
@@ -638,6 +638,14 @@ class EC2Connection(AWSQueryConnection):
             VPC. Valid values are:"default" or "dedicated".
             NOTE: To use dedicated tenancy you MUST specify a VPC
             subnet-ID as well.
+
+        :type instance_profile_arn: string
+        :param instance_profile_arn: The Amazon resource name (ARN) of
+            the IAM Instance Profile (IIP) to associate with the instances.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: The name of
+            the IAM Instance Profile (IIP) to associate with the instances.
 
         :type ebs_optimized: bool
         :param ebs_optimized: Whether the instance is optimized for
@@ -996,7 +1004,11 @@ class EC2Connection(AWSQueryConnection):
                                kernel_id=None, ramdisk_id=None,
                                monitoring_enabled=False, subnet_id=None,
                                placement_group=None,
-                               block_device_map=None):
+                               block_device_map=None,
+                               instance_profile_arn=None,
+                               instance_profile_name=None,
+                               security_group_ids=None,
+                               ebs_optimized=False):
         """
         Request instances on the spot market at a particular price.
 
@@ -1080,11 +1092,31 @@ class EC2Connection(AWSQueryConnection):
         :param block_device_map: A BlockDeviceMapping data structure
             describing the EBS volumes associated with the Image.
 
+        :type security_group_ids: list of strings
+        :param security_group_ids: The ID of the VPC security groups with
+            which to associate instances.
+
+        :type instance_profile_arn: string
+        :param instance_profile_arn: The Amazon resource name (ARN) of
+            the IAM Instance Profile (IIP) to associate with the instances.
+
+        :type instance_profile_name: string
+        :param instance_profile_name: The name of
+            the IAM Instance Profile (IIP) to associate with the instances.
+
+        :type ebs_optimized: bool
+        :param ebs_optimized: Whether the instance is optimized for
+            EBS I/O.  This optimization provides dedicated throughput
+            to Amazon EBS and an optimized configuration stack to
+            provide optimal EBS I/O performance.  This optimization
+            isn't available with all instance types.
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
                  associated with the request for machines
         """
-        params = {'LaunchSpecification.ImageId': image_id,
+        ls = 'LaunchSpecification'
+        params = {'%s.ImageId' % ls: image_id,
                   'Type': type,
                   'SpotPrice': price}
         if count:
@@ -1098,7 +1130,16 @@ class EC2Connection(AWSQueryConnection):
         if availability_zone_group:
             params['AvailabilityZoneGroup'] = availability_zone_group
         if key_name:
-            params['LaunchSpecification.KeyName'] = key_name
+            params['%s.KeyName' % ls] = key_name
+        if security_group_ids:
+            l = []
+            for group in security_group_ids:
+                if isinstance(group, SecurityGroup):
+                    l.append(group.id)
+                else:
+                    l.append(group)
+            self.build_list_params(params, l,
+                                   '%s.SecurityGroupId' % ls)
         if security_groups:
             l = []
             for group in security_groups:
@@ -1106,28 +1147,33 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group.name)
                 else:
                     l.append(group)
-            self.build_list_params(params, l,
-                                   'LaunchSpecification.SecurityGroup')
+            self.build_list_params(params, l, '%s.SecurityGroup' % ls)
         if user_data:
-            params['LaunchSpecification.UserData'] = base64.b64encode(user_data)
+            params['%s.UserData' % ls] = base64.b64encode(user_data)
         if addressing_type:
-            params['LaunchSpecification.AddressingType'] = addressing_type
+            params['%s.AddressingType' % ls] = addressing_type
         if instance_type:
-            params['LaunchSpecification.InstanceType'] = instance_type
+            params['%s.InstanceType' % ls] = instance_type
         if placement:
-            params['LaunchSpecification.Placement.AvailabilityZone'] = placement
+            params['%s.Placement.AvailabilityZone' % ls] = placement
         if kernel_id:
-            params['LaunchSpecification.KernelId'] = kernel_id
+            params['%s.KernelId' % ls] = kernel_id
         if ramdisk_id:
-            params['LaunchSpecification.RamdiskId'] = ramdisk_id
+            params['%s.RamdiskId' % ls] = ramdisk_id
         if monitoring_enabled:
-            params['LaunchSpecification.Monitoring.Enabled'] = 'true'
+            params['%s.Monitoring.Enabled' % ls] = 'true'
         if subnet_id:
-            params['LaunchSpecification.SubnetId'] = subnet_id
+            params['%s.SubnetId' % ls] = subnet_id
         if placement_group:
-            params['LaunchSpecification.Placement.GroupName'] = placement_group
+            params['%s.Placement.GroupName' % ls] = placement_group
         if block_device_map:
-            block_device_map.build_list_params(params, 'LaunchSpecification.')
+            block_device_map.build_list_params(params, '%s.' % ls)
+        if instance_profile_name:
+            params['%s.IamInstanceProfile.Name' % ls] = instance_profile_name
+        if instance_profile_arn:
+            params['%s.IamInstanceProfile.Arn' % ls] = instance_profile_arn
+        if ebs_optimized:
+            params['%s.EbsOptimized' % ls] = 'true'
         return self.get_list('RequestSpotInstances', params,
                              [('item', SpotInstanceRequest)],
                              verb='POST')
