@@ -13,12 +13,23 @@ class SESError(BotoServerError):
     pass
 
 
+
 class SESAddressNotVerifiedError(SESError):
     """
     Raised when a "Reply-To" address has not been validated in SES yet.
     """
     pass
 
+class SESIdentityNotVerifiedError(SESError):
+    """
+    Raised when an identity (domain or address) has not been verified in SES yet.
+    """
+    pass
+
+class SESDomainNotConfirmedError(SESError):
+    """
+    """
+    pass
 
 class SESAddressBlacklistedError(SESError):
     """
