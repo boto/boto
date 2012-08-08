@@ -1,4 +1,4 @@
-# Copyright (c) 202 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # All Rights Reserved
 #
@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,6 +28,7 @@ from boto.regioninfo import RegionInfo
 
 #boto.set_stream_logger('cloudsearch')
 
+
 def do_bool(val):
     return 'true' if val in [True, 1, '1', 'true'] else 'false'
 
@@ -38,7 +39,7 @@ class Layer1(AWSQueryConnection):
     DefaultRegionName = boto.config.get('Boto', 'cs_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'cs_region_endpoint',
                                             'cloudsearch.us-east-1.amazonaws.com')
-    
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None,
                  proxy=None, proxy_port=None,
@@ -202,7 +203,7 @@ class Layer1(AWSQueryConnection):
             params['IndexField.TextOptions.DefaultValue'] = default
             params['IndexField.TextOptions.FacetEnabled'] = do_bool(facet)
             params['IndexField.TextOptions.ResultEnabled'] = do_bool(result)
-        
+
         return self.get_response(doc_path, 'DefineIndexField',
                                  params, verb='POST')
 
