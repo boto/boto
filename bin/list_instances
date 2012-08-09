@@ -13,6 +13,7 @@ HEADERS = {
     'Zone': {'get': attrgetter('placement'), 'length':15},
     'Groups': {'get': attrgetter('groups'), 'length':30},
     'Hostname': {'get': attrgetter('public_dns_name'), 'length':50},
+    'PrivateHostname': {'get': attrgetter('private_dns_name'), 'length':50},
     'State': {'get': attrgetter('state'), 'length':15},
     'Image': {'get': attrgetter('image_id'), 'length':15},
     'Type': {'get': attrgetter('instance_type'), 'length':15},
