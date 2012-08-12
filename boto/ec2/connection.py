@@ -1557,7 +1557,7 @@ class EC2Connection(AWSQueryConnection):
                         as the value.  The set of allowable filter
                         names/values is dependent on the request
                         being performed.  Check the EC2 API guide
-                        for details.
+                        for details at http://goo.gl/bYK8w
 
         :rtype: list of :class:`boto.ec2.volume.Volume`
         :return: The requested Volume objects
