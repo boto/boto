@@ -86,7 +86,8 @@ class AutoScalingGroup(object):
                  load_balancers=None, default_cooldown=None,
                  health_check_type=None, health_check_period=None,
                  placement_group=None, vpc_zone_identifier=None,
-                 desired_capacity=None, min_size=None, max_size=None, **kwargs):
+                 desired_capacity=None, min_size=None, max_size=None, 
+                 tags=None, **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -164,7 +165,7 @@ class AutoScalingGroup(object):
         self.autoscaling_group_arn = None
         self.vpc_zone_identifier = vpc_zone_identifier
         self.instances = None
-        self.tags = None
+        self.tags = tags or None
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):

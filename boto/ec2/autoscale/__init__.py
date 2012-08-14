@@ -176,6 +176,9 @@ class AutoScaleConnection(AWSQueryConnection):
             if as_group.load_balancers:
                 self.build_list_params(params, as_group.load_balancers,
                                        'LoadBalancerNames')
+            if as_group.tags:
+                for i, tag in enumerate(as_group.tags):
+                    tag.build_params(params, i+1)
         return self.get_object(op, params, Request)
 
     def create_auto_scaling_group(self, as_group):
