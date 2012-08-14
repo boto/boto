@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -30,7 +30,7 @@ from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 import xml.sax
 
-# constants for http query args 
+# constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
@@ -49,6 +49,7 @@ class Bucket(S3Bucket):
         key_name was passed). We include a version_id argument to support a
         polymorphic interface for callers, however, version_id is not relevant
         for Google Cloud Storage buckets and is therefore ignored here."""
+        key_name = key_name or ''
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -57,18 +58,19 @@ class Bucket(S3Bucket):
             self.set_canned_acl(acl_or_str, key_name, headers=headers)
 
     def set_def_acl(self, acl_or_str, key_name='', headers=None):
-        """sets or changes a bucket's default object acl"""
+        """sets or changes a bucket's default object acl. The key_name argument
+        is ignored since keys have no default ACL property."""
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
-            self.set_def_xml_acl(acl_or_str.to_xml(), key_name, headers=headers)
+            self.set_def_xml_acl(acl_or_str.to_xml(), '', headers=headers)
         else:
-            self.set_def_canned_acl(acl_or_str, key_name, headers=headers)
+            self.set_def_canned_acl(acl_or_str, '', headers=headers)
 
     def get_acl_helper(self, key_name, headers, query_args):
         """provides common functionality for get_acl() and get_def_acl()"""
         response = self.connection.make_request('GET', self.name, key_name,
-                                                query_args=query_args, 
+                                                query_args=query_args,
                                                 headers=headers)
         body = response.read()
         if response.status == 200:
@@ -82,17 +84,18 @@ class Bucket(S3Bucket):
 
     def get_acl(self, key_name='', headers=None, version_id=None):
         """returns a bucket's acl. We include a version_id argument
-           to support a polymorphic interface for callers, however, 
-           version_id is not relevant for Google Cloud Storage buckets 
-           and is therefore ignored here.""" 
+           to support a polymorphic interface for callers, however,
+           version_id is not relevant for Google Cloud Storage buckets
+           and is therefore ignored here."""
         return self.get_acl_helper(key_name, headers, STANDARD_ACL)
 
     def get_def_acl(self, key_name='', headers=None):
-        """returns a bucket's default object acl""" 
-        return self.get_acl_helper(key_name, headers, DEF_OBJ_ACL)
+        """returns a bucket's default object acl. The key_name argument is
+        ignored since keys have no default ACL property."""
+        return self.get_acl_helper('', headers, DEF_OBJ_ACL)
 
     def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
-        """provides common functionality for set_canned_acl() and 
+        """provides common functionality for set_canned_acl() and
            set_def_canned_acl()"""
         assert acl_str in CannedACLStrings
 
@@ -108,30 +111,32 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def set_canned_acl(self, acl_str, key_name='', headers=None, 
+    def set_canned_acl(self, acl_str, key_name='', headers=None,
                        version_id=None):
-        """sets or changes a bucket's acl to a predefined (canned) value. 
-           We include a version_id argument to support a polymorphic 
-           interface for callers, however, version_id is not relevant for 
-           Google Cloud Storage buckets and is therefore ignored here.""" 
-        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+        """sets or changes a bucket's acl to a predefined (canned) value.
+           We include a version_id argument to support a polymorphic
+           interface for callers, however, version_id is not relevant for
+           Google Cloud Storage buckets and is therefore ignored here."""
+        return self.set_canned_acl_helper(acl_str, key_name, headers,
                                           STANDARD_ACL)
 
     def set_def_canned_acl(self, acl_str, key_name='', headers=None):
-        """sets or changes a bucket's default object acl to a predefined 
-           (canned) value"""
-        return self.set_canned_acl_helper(acl_str, key_name, headers, 
+        """sets or changes a bucket's default object acl to a predefined
+           (canned) value. The key_name argument is ignored since keys have no
+           default ACL property."""
+        return self.set_canned_acl_helper(acl_str, '', headers,
                                           query_args=DEF_OBJ_ACL)
 
     def set_def_xml_acl(self, acl_str, key_name='', headers=None):
-        """sets or changes a bucket's default object ACL"""
-        return self.set_xml_acl(acl_str, key_name, headers, 
+        """sets or changes a bucket's default object ACL. The key_name argument
+        is ignored since keys have no default ACL property."""
+        return self.set_xml_acl(acl_str, '', headers,
                                 query_args=DEF_OBJ_ACL)
 
     def get_cors(self, headers=None):
         """returns a bucket's CORS XML"""
         response = self.connection.make_request('GET', self.name,
-                                                query_args=CORS_ARG, 
+                                                query_args=CORS_ARG,
                                                 headers=headers)
         body = response.read()
         if response.status == 200:
@@ -289,6 +294,7 @@ class Bucket(S3Bucket):
         xml_str = xml_str + '</Logging>'
 
         self.set_subresource('logging', xml_str, headers=headers)
+
     def configure_website(self, main_page_suffix=None, error_key=None,
                           headers=None):
         """
