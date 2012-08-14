@@ -1,5 +1,6 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -201,6 +202,10 @@ class Instance(TaggedEC2Object):
     :ivar groups: List of security Groups associated with the instance.
     :ivar interfaces: List of Elastic Network Interfaces associated with
         this instance.
+    :ivar ebs_optimized: Whether instance is using optimized EBS volumes
+        or not.
+    :ivar instance_profile: A Python dict containing the instance
+        profile id and arn associated with this instance.
     """
 
     def __init__(self, connection=None):
@@ -239,6 +244,7 @@ class Instance(TaggedEC2Object):
         self.hypervisor = None
         self.virtualization_type = None
         self.architecture = None
+        self.instance_profile = None
         self._previous_state = None
         self._state = InstanceState()
         self._placement = InstancePlacement()
@@ -265,39 +271,6 @@ class Instance(TaggedEC2Object):
         if self._previous_state:
             return self._previous_state.code
         return 0
-
-        self.kernel = None
-        self.ramdisk = None
-        self.product_codes = ProductCodes()
-        self.ami_launch_index = None
-        self.monitored = False
-        self.spot_instance_request_id = None
-        self.subnet_id = None
-        self.vpc_id = None
-        self.private_ip_address = None
-        self.ip_address = None
-        self.requester_id = None
-        self._in_monitoring_element = False
-        self.persistent = False
-        self.root_device_name = None
-        self.root_device_type = None
-        self.block_device_mapping = None
-        self.state_reason = None
-        self.group_name = None
-        self.client_token = None
-        self.eventsSet = None
-        self.groups = []
-        self.platform = None
-        self.interfaces = []
-        self.hypervisor = None
-        self.virtualization_type = None
-        self.architecture = None
-        self._previous_state = None
-        self._state = InstanceState()
-        self._placement = InstancePlacement()
-
-    def __repr__(self):
-        return 'Instance:%s' % self.id
 
     @property
     def state(self):
@@ -424,6 +397,8 @@ class Instance(TaggedEC2Object):
             self.virtualization_type = value
         elif name == 'architecture':
             self.architecture = value
+        elif name == 'ebsOptimized':
+            self.ebs_optimized = (value == 'true')
         else:
             setattr(self, name, value)
 
@@ -514,12 +489,20 @@ class Instance(TaggedEC2Object):
 
         :type attribute: string
         :param attribute: The attribute you need information about
-                          Valid choices are:
-                          instanceType|kernel|ramdisk|userData|
-                          disableApiTermination|
-                          instanceInitiatedShutdownBehavior|
-                          rootDeviceName|blockDeviceMapping
-                          sourceDestCheck|groupSet
+            Valid choices are:
+
+            * instanceType
+            * kernel
+            * ramdisk
+            * userData
+            * disableApiTermination
+            * instanceInitiatedShutdownBehavior
+            * rootDeviceName
+            * blockDeviceMapping
+            * productCodes
+            * sourceDestCheck
+            * groupSet
+            * ebsOptimized
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -534,16 +517,15 @@ class Instance(TaggedEC2Object):
         :type attribute: string
         :param attribute: The attribute you wish to change.
 
-                          * AttributeName - Expected value (default)
-                          * InstanceType - A valid instance type (m1.small)
-                          * Kernel - Kernel ID (None)
-                          * Ramdisk - Ramdisk ID (None)
-                          * UserData - Base64 encoded String (None)
-                          * DisableApiTermination - Boolean (true)
-                          * InstanceInitiatedShutdownBehavior - stop|terminate
-                          * RootDeviceName - device name (None)
-                          * SourceDestCheck - Boolean (true)
-                          * GroupSet - Set of Security Groups or IDs
+            * instanceType - A valid instance type (m1.small)
+            * kernel - Kernel ID (None)
+            * ramdisk - Ramdisk ID (None)
+            * userData - Base64 encoded String (None)
+            * disableApiTermination - Boolean (true)
+            * instanceInitiatedShutdownBehavior - stop|terminate
+            * sourceDestCheck - Boolean (true)
+            * groupSet - Set of Security Groups or IDs
+            * ebsOptimized - Boolean (false)
 
         :type value: string
         :param value: The new value for the attribute
@@ -620,6 +602,10 @@ class InstanceAttribute(dict):
         elif name == 'requestId':
             self.request_id = value
         elif name == 'value':
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
             self._current_value = value
         elif name in self.ValidValues:
             self[name] = self._current_value

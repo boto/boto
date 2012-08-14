@@ -630,6 +630,29 @@ class AutoScaleConnection(AWSQueryConnection):
             params['HonorCooldown'] = honor_cooldown
         return self.get_status('ExecutePolicy', params)
 
+    def put_notification_configuration(self, autoscale_group, topic, notification_types):
+        """
+        Configures an Auto Scaling group to send notifications when specified events take place.
+
+        :type as_group: str or :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param as_group: The Auto Scaling group to put notification configuration on.
+
+        :type topic: str
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple Notification Service (SNS) topic.
+
+        :type notification_types: list
+        :param notification_types: The type of events that will trigger the notification.
+        """
+
+        name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': name,
+                  'TopicARN': topic}
+        self.build_list_params(params, notification_types, 'NotificationTypes')
+        return self.get_status('PutNotificationConfiguration', params)
+
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):
         """

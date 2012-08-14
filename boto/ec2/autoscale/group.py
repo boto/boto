@@ -270,6 +270,12 @@ class AutoScalingGroup(object):
         return self.connection.get_all_activities(self, activity_ids,
                                                   max_records)
 
+    def put_notification_configuration(self, topic, notification_types):
+        """
+        Configures an Auto Scaling group to send notifications when specified events take place.
+        """
+        return self.connection.put_notification_configuration(self, topic, notification_types)
+
     def suspend_processes(self, scaling_processes=None):
         """
         Suspends Auto Scaling processes for an Auto Scaling group.

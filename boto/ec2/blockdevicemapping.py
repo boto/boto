@@ -1,4 +1,5 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -14,11 +15,12 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+
 
 class BlockDeviceType(object):
     """
@@ -34,7 +36,9 @@ class BlockDeviceType(object):
                  status=None,
                  attach_time=None,
                  delete_on_termination=False,
-                 size=None):
+                 size=None,
+                 volume_type=None,
+                 iops=None):
         self.connection = connection
         self.ephemeral_name = ephemeral_name
         self.no_device = no_device
@@ -44,18 +48,20 @@ class BlockDeviceType(object):
         self.attach_time = attach_time
         self.delete_on_termination = delete_on_termination
         self.size = size
+        self.volume_type = volume_type
+        self.iops = iops
 
     def startElement(self, name, attrs, connection):
         pass
 
     def endElement(self, name, value, connection):
-        if name =='volumeId':
+        if name == 'volumeId':
             self.volume_id = value
         elif name == 'virtualName':
             self.ephemeral_name = value
-        elif name =='NoDevice':
+        elif name == 'NoDevice':
             self.no_device = (value == 'true')
-        elif name =='snapshotId':
+        elif name == 'snapshotId':
             self.snapshot_id = value
         elif name == 'volumeSize':
             self.size = int(value)
@@ -65,19 +71,24 @@ class BlockDeviceType(object):
             self.attach_time = value
         elif name == 'deleteOnTermination':
             self.delete_on_termination = (value == 'true')
+        elif name == 'volumeType':
+            self.volume_type = value
+        elif name == 'iops':
+            self.iops = int(value)
         else:
             setattr(self, name, value)
 
 # for backwards compatibility
 EBSBlockDeviceType = BlockDeviceType
 
+
 class BlockDeviceMapping(dict):
     """
     Represents a collection of BlockDeviceTypes when creating ec2 instances.
 
-    Example: 
+    Example:
     dev_sda1 = BlockDeviceType()
-    dev_sda1.size = 100   # change root volume to 100GB instead of default for ami
+    dev_sda1.size = 100   # change root volume to 100GB instead of default
     bdm = BlockDeviceMapping()
     bdm['/dev/sda1'] = dev_sda1
     reservation = image.run(..., block_device_map=bdm, ...)
@@ -123,4 +134,8 @@ class BlockDeviceMapping(dict):
                     params['%s.Ebs.DeleteOnTermination' % pre] = 'true'
                 else:
                     params['%s.Ebs.DeleteOnTermination' % pre] = 'false'
+                if block_dev.volume_type:
+                    params['%s.Ebs.VolumeType' % pre] = block_dev.volume_type
+                if block_dev.iops is not None:
+                    params['%s.Ebs.Iops' % pre] = block_dev.iops
             i += 1
