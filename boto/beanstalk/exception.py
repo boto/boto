@@ -1,9 +1,9 @@
-import ast
+import json
 from boto.exception import BotoServerError
 
 
 def simple(e):
-    err = ast.literal_eval(e.error_message)
+    err = json.loads(e.error_message)
     code = err['Error']['Code']
 
     try:
