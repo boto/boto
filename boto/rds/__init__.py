@@ -23,6 +23,8 @@
 import boto.utils
 import urllib
 from boto.connection import AWSQueryConnection
+from boto.exception import BotoServerError
+from boto.resultset import ResultSet
 from boto.rds.dbinstance import DBInstance
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
@@ -135,8 +137,21 @@ class RDSConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if marker:
             params['Marker'] = marker
-        return self.get_list('DescribeDBInstances', params,
+
+        try:
+            return self.get_list('DescribeDBInstances', params,
                              [('DBInstance', DBInstance)])
+
+        except BotoServerError as error:
+            if error.code == "DBInstanceNotFound":
+                # no dbinstnace found that matches our filters
+                # (e.g. instance_id)
+                # simply return an empty resultset
+                return ResultSet()
+            else:
+                # We did not handle the exception, so re-raise
+                raise
+
 
     def create_dbinstance(self, id, allocated_storage, instance_class,
                           master_username, master_password, port=3306,
