@@ -949,6 +949,14 @@ class AWSQueryConnection(AWSAuthConnection):
             h = boto.handler.XmlHandler(rs, parent)
             xml.sax.parseString(body, h)
             return rs
+        # 404 errors are fine. They indicate that no objects are found matching
+        # the filters. Let the caller handle the exception gracefully.
+        #
+        # At the least this prevents boto.log.error from being called, giving
+        # us a chance to catch the exception without errors being thrown around
+        # whenever a 404 is not really an error but a feature of REST.
+        elif response.status == 404:
+            raise self.ResponseError(response.status, response.reason, body)
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
