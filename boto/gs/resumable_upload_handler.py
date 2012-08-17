@@ -310,6 +310,8 @@ class ResumableUploadHandler(object):
         """
         buf = fp.read(self.BUFFER_SIZE)
         if cb:
+            # The cb_count represents the number of full buffers to send between
+            # cb executions.
             if num_cb > 2:
                 cb_count = file_length / self.BUFFER_SIZE / (num_cb-2)
             elif num_cb < 0:
@@ -398,9 +400,9 @@ class ResumableUploadHandler(object):
                 self.server_has_bytes = server_start
 
                 if server_end:
-                  # If the server already has some of the content, we need to update the md5 with
-                  # the bytes that have already been uploaded to ensure we get a complete hash in
-                  # the end.
+                  # If the server already has some of the content, we need to
+                  # update the md5 with the bytes that have already been
+                  # uploaded to ensure we get a complete hash in the end.
                   print 'Catching up md5 for resumed upload'
                   fp.seek(0)
                   bytes_to_go = server_end + 1
@@ -489,34 +491,78 @@ class ResumableUploadHandler(object):
                 '(incorrect uploaded object deleted)',
                 ResumableTransferDisposition.ABORT)
 
+    def handle_resumable_upload_exception(self, e, debug):
+        if (e.disposition == ResumableTransferDisposition.ABORT_CUR_PROCESS):
+            if debug >= 1:
+                print('Caught non-retryable ResumableUploadException (%s); '
+                      'aborting but retaining tracker file' % e.message)
+            raise
+        elif (e.disposition == ResumableTransferDisposition.ABORT):
+            if debug >= 1:
+                print('Caught non-retryable ResumableUploadException (%s); '
+                      'aborting and removing tracker file' % e.message)
+            self._remove_tracker_file()
+            raise
+        else:
+            if debug >= 1:
+                print('Caught ResumableUploadException (%s) - will retry' %
+                      e.message)
+
+    def track_progress_less_iterations(self, server_had_bytes_before_attempt,
+                                       roll_back_md5=True, debug=0):
+        # At this point we had a re-tryable failure; see if made progress.
+        if self.server_has_bytes > server_had_bytes_before_attempt:
+            self.progress_less_iterations = 0   # If progress, reset counter.
+        else:
+            self.progress_less_iterations += 1
+            if roll_back_md5:
+                # Rollback any potential md5sum updates, as we did not
+                # make any progress in this iteration.
+                self.md5sum = self.md5sum_before_attempt
+
+        if self.progress_less_iterations > self.num_retries:
+            # Don't retry any longer in the current process.
+            raise ResumableUploadException(
+                    'Too many resumable upload attempts failed without '
+                    'progress. You might try this upload again later',
+                    ResumableTransferDisposition.ABORT_CUR_PROCESS)
+
+        # Use binary exponential backoff to desynchronize client requests
+        sleep_time_secs = random.random() * (2**self.progress_less_iterations)
+        if debug >= 1:
+            print ('Got retryable failure (%d progress-less in a row).\n'
+                   'Sleeping %3.1f seconds before re-trying' %
+                   (self.progress_less_iterations, sleep_time_secs))
+        time.sleep(sleep_time_secs)
+
     def send_file(self, key, fp, headers, cb=None, num_cb=10):
         """
         Upload a file to a key into a bucket on GS, using GS resumable upload
         protocol.
-        
+
         :type key: :class:`boto.s3.key.Key` or subclass
         :param key: The Key object to which data is to be uploaded
-        
+
         :type fp: file-like object
         :param fp: The file pointer to upload
-        
+
         :type headers: dict
         :param headers: The headers to pass along with the PUT request
-        
+
         :type cb: function
         :param cb: a callback function that will be called to report progress on
             the upload.  The callback should accept two integer parameters, the
             first representing the number of bytes that have been successfully
             transmitted to GS, and the second representing the total number of
             bytes that need to be transmitted.
-                    
+
         :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the cb
             parameter, this parameter determines the granularity of the callback
             by defining the maximum number of times the callback will be called
             during the file transfer. Providing a negative integer will cause
             your callback to be called with each buffer read.
-             
+
         Raises ResumableUploadException if a problem occurs during the transfer.
         """
 
@@ -535,23 +581,24 @@ class ResumableUploadHandler(object):
         debug = key.bucket.connection.debug
 
         # Compute the MD5 checksum on the fly.
-        md5sum = md5()
+        self.md5sum = md5()
 
         # Use num-retries from constructor if one was provided; else check
         # for a value specified in the boto config file; else default to 5.
         if self.num_retries is None:
             self.num_retries = config.getint('Boto', 'num_retries', 5)
-        progress_less_iterations = 0
+        self.progress_less_iterations = 0
 
         while True:  # Retry as long as we're making progress.
             server_had_bytes_before_attempt = self.server_has_bytes
-            md5sum_before_attempt = md5sum.copy()
+            self.md5sum_before_attempt = self.md5sum.copy()
             try:
                 etag = self._attempt_resumable_upload(key, fp, file_length,
-                                                      headers, cb, num_cb, md5sum)
+                                                      headers, cb, num_cb,
+                                                      self.md5sum)
 
                 # Get the final md5 for the uploaded content.
-                hd = md5sum.hexdigest()
+                hd = self.md5sum.hexdigest()
                 key.md5, key.base64md5 = key.get_md5_from_hexdigest(hd)
 
                 # Upload succceded, so remove the tracker file (if have one).
@@ -571,46 +618,7 @@ class ResumableUploadHandler(object):
                     # opened the next time an HTTP request is sent).
                     key.bucket.connection.connection.close()
             except ResumableUploadException, e:
-                if (e.disposition ==
-                    ResumableTransferDisposition.ABORT_CUR_PROCESS):
-                    if debug >= 1:
-                        print('Caught non-retryable ResumableUploadException '
-                              '(%s); aborting but retaining tracker file' %
-                              e.message)
-                    raise
-                elif (e.disposition ==
-                    ResumableTransferDisposition.ABORT):
-                    if debug >= 1:
-                        print('Caught non-retryable ResumableUploadException '
-                              '(%s); aborting and removing tracker file' %
-                              e.message)
-                    self._remove_tracker_file()
-                    raise
-                else:
-                    if debug >= 1:
-                        print('Caught ResumableUploadException (%s) - will '
-                              'retry' % e.message)
-            # At this point we had a re-tryable failure; see if made progress.
-            if self.server_has_bytes > server_had_bytes_before_attempt:
-                progress_less_iterations = 0
-            else:
-                # Rollback any potential md5sum updates, as we did not
-                # make any progress in this iteration.
-                md5sum = md5sum_before_attempt
+                self.handle_resumable_upload_exception(e, debug)
 
-                progress_less_iterations += 1
-
-            if progress_less_iterations > self.num_retries:
-                # Don't retry any longer in the current process.
-                raise ResumableUploadException(
-                    'Too many resumable upload attempts failed without '
-                    'progress. You might try this upload again later',
-                    ResumableTransferDisposition.ABORT_CUR_PROCESS)
-
-            # Use binary exponential backoff to desynchronize client requests
-            sleep_time_secs = random.random() * (2**progress_less_iterations)
-            if debug >= 1:
-                print ('Got retryable failure (%d progress-less in a row).\n'
-                       'Sleeping %3.1f seconds before re-trying' %
-                       (progress_less_iterations, sleep_time_secs))
-            time.sleep(sleep_time_secs)
+            self.track_progress_less_iterations(server_had_bytes_before_attempt,
+                                                True, debug)
