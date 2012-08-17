@@ -227,7 +227,6 @@ class AutoScalingGroup(object):
         elif name == 'DesiredCapacity':
             self.desired_capacity = int(value)
         elif name == 'MaxSize':
-            print '==== %s =====' % value
             self.max_size = int(value)
         elif name == 'AutoScalingGroupName':
             self.name = value
@@ -243,7 +242,6 @@ class AutoScalingGroup(object):
         elif name == 'VPCZoneIdentifier':
             self.vpc_zone_identifier = value
         else:
-            print '==== %s = %s' % (name, value)
             setattr(self, name, value)
 
     def set_capacity(self, capacity):
