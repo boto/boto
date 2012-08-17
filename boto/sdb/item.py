@@ -31,11 +31,9 @@ class Item(dict):
     The keys on instances of this object correspond to attributes that are
     stored on the SDB item. 
     
-    .. tip::
-        While it is possible to instantiate this class directly, you may want
-        to use the convenience methods on :py:class:`boto.sdb.domain.Domain`
-        for that purpose. For example, 
-        :py:meth:`boto.sdb.domain.Domain.get_item`.
+    .. tip:: While it is possible to instantiate this class directly, you may
+        want to use the convenience methods on :py:class:`boto.sdb.domain.Domain`
+        for that purpose. For example, :py:meth:`boto.sdb.domain.Domain.get_item`.
     """
     def __init__(self, domain, name='', active=False):
         """
@@ -77,7 +75,7 @@ class Item(dict):
             else:
                 self.name = self.decode_value(value)
         elif name == 'Value':
-            if self.has_key(self.last_key):
+            if self.last_key in self:
                 if not isinstance(self[self.last_key], list):
                     self[self.last_key] = [self[self.last_key]]
                 value = self.decode_value(value)

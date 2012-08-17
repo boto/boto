@@ -276,7 +276,7 @@ class Domain:
         """
         Delete this domain, and all items under it
         """
-        return self.connection.delete(self)
+        return self.connection.delete_domain(self)
 
 
 class DomainMetaData:
@@ -343,7 +343,7 @@ class DomainDumpParser(ContentHandler):
             if self.value and self.attribute:
                 value = self.value.strip()
                 attr_name = self.attribute.strip()
-                if self.attrs.has_key(attr_name):
+                if attr_name in self.attrs:
                     self.attrs[attr_name].append(value)
                 else:
                     self.attrs[attr_name] = [value]

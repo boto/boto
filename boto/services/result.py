@@ -57,8 +57,7 @@ class ResultProcessor:
             self.latest_time = end_time
 
     def log_message(self, msg, path):
-        keys = msg.keys()
-        keys.sort()
+        keys = sorted(msg.keys())
         if not self.log_fp:
             self.log_fp = open(os.path.join(path, self.LogFileName), 'a')
             line = ','.join(keys)
@@ -76,7 +75,7 @@ class ResultProcessor:
         self.log_message(record, path)
         self.calculate_stats(record)
         outputs = record['OutputKey'].split(',')
-        if record.has_key('OutputBucket'):
+        if 'OutputBucket' in record:
             bucket = boto.lookup('s3', record['OutputBucket'])
         else:
             bucket = boto.lookup('s3', record['Bucket'])
@@ -92,7 +91,7 @@ class ResultProcessor:
     def get_results_from_queue(self, path, get_file=True, delete_msg=True):
         m = self.queue.read()
         while m:
-            if m.has_key('Batch') and m['Batch'] == self.batch:
+            if 'Batch' in m and m['Batch'] == self.batch:
                 self.process_record(m, path, get_file)
                 if delete_msg:
                     self.queue.delete_message(m)

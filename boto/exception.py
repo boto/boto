@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -29,14 +29,20 @@ import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
 
+try:
+    from xml.etree.ElementTree import ParseError as XMLParseError
+except ImportError:
+    # In python2.6/5, xml.etree.ElementTree.ParseError does not exist.
+    from xml.parsers.expat import ExpatError as XMLParseError
+
 
 class BotoClientError(StandardError):
     """
     General Boto Client error (error accessing AWS)
     """
 
-    def __init__(self, reason):
-        StandardError.__init__(self)
+    def __init__(self, reason, *args):
+        StandardError.__init__(self, reason, *args)
         self.reason = reason
 
     def __repr__(self):
@@ -69,8 +75,8 @@ class GSPermissionsError(StoragePermissionsError):
 
 class BotoServerError(StandardError):
 
-    def __init__(self, status, reason, body=None):
-        StandardError.__init__(self)
+    def __init__(self, status, reason, body=None, *args):
+        StandardError.__init__(self, status, reason, body, *args)
         self.status = status
         self.reason = reason
         self.body = body or ''
@@ -85,12 +91,13 @@ class BotoServerError(StandardError):
             try:
                 h = handler.XmlHandler(self, self)
                 xml.sax.parseString(self.body, h)
-            except xml.sax.SAXParseException, pe:
-                # Go ahead and clean up anything that may have
-                # managed to get into the error data so we
-                # don't get partial garbage.
-                print "Warning: failed to parse error message from AWS: %s" % pe
-                self._cleanupParsedProperties()
+            except (TypeError, xml.sax.SAXParseException), pe:
+                # Remove unparsable message body so we don't include garbage
+                # in exception. But first, save self.body in self.error_message
+                # because occasionally we get error messages from Eucalyptus
+                # that are just text strings that we want to preserve.
+                self.error_message = self.body
+                self.body = None
 
     def __getattr__(self, name):
         if name == 'message':
@@ -221,7 +228,7 @@ class SQSDecodeError(BotoClientError):
     Error when decoding an SQS message.
     """
     def __init__(self, reason, message):
-        BotoClientError.__init__(self, reason)
+        BotoClientError.__init__(self, reason, message)
         self.message = message
 
     def __repr__(self):
@@ -297,6 +304,56 @@ class EC2ResponseError(BotoServerError):
         for p in ('errors'):
             setattr(self, p, None)
 
+class DynamoDBResponseError(BotoServerError):
+    """
+    This exception expects the fully parsed and decoded JSON response
+    body to be passed as the body parameter.
+
+    :ivar status: The HTTP status code.
+    :ivar reason: The HTTP reason message.
+    :ivar body: The Python dict that represents the decoded JSON
+        response body.
+    :ivar error_message: The full description of the AWS error encountered.
+    :ivar error_code: A short string that identifies the AWS error
+        (e.g. ConditionalCheckFailedException)
+    """
+
+    def __init__(self, status, reason, body=None, *args):
+        self.status = status
+        self.reason = reason
+        self.body = body
+        if self.body:
+            self.error_message = self.body.get('message', None)
+            self.error_code = self.body.get('__type', None)
+            if self.error_code:
+                self.error_code = self.error_code.split('#')[-1]
+
+
+class SWFResponseError(BotoServerError):
+    """
+    This exception expects the fully parsed and decoded JSON response
+    body to be passed as the body parameter.
+
+    :ivar status: The HTTP status code.
+    :ivar reason: The HTTP reason message.
+    :ivar body: The Python dict that represents the decoded JSON
+        response body.
+    :ivar error_message: The full description of the AWS error encountered.
+    :ivar error_code: A short string that identifies the AWS error
+        (e.g. ConditionalCheckFailedException)
+    """
+
+    def __init__(self, status, reason, body=None, *args):
+        self.status = status
+        self.reason = reason
+        self.body = body
+        if self.body:
+            self.error_message = self.body.get('message', None)
+            self.error_code = self.body.get('__type', None)
+            if self.error_code:
+                self.error_code = self.error_code.split('#')[-1]
+
+
 class EmrResponseError(BotoServerError):
     """
     Error in response from EMR
@@ -351,21 +408,25 @@ class GSDataError(StorageDataError):
     """
     pass
 
-class FPSResponseError(BotoServerError):
-    pass
-
 class InvalidUriError(Exception):
     """Exception raised when URI is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self)
+        Exception.__init__(self, message)
         self.message = message
 
 class InvalidAclError(Exception):
     """Exception raised when ACL XML is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self)
+        Exception.__init__(self, message)
+        self.message = message
+
+class InvalidCorsError(Exception):
+    """Exception raised when CORS XML is invalid."""
+
+    def __init__(self, message):
+        Exception.__init__(self, message)
         self.message = message
 
 class NoAuthHandlerFound(Exception):
@@ -400,7 +461,7 @@ class ResumableTransferDisposition(object):
     ABORT_CUR_PROCESS = 'ABORT_CUR_PROCESS'
 
     # ABORT means the resumable transfer failed in a way that it does not
-    # make sense to continue in the current process, and further that the 
+    # make sense to continue in the current process, and further that the
     # current tracker ID should not be preserved (in a tracker file if one
     # was specified at resumable upload start time). If the user tries again
     # later (e.g., a separate run of gsutil) it will get a new resumable
@@ -415,7 +476,7 @@ class ResumableUploadException(Exception):
     """
 
     def __init__(self, message, disposition):
-        Exception.__init__(self)
+        Exception.__init__(self, message, disposition)
         self.message = message
         self.disposition = disposition
 
@@ -431,7 +492,7 @@ class ResumableDownloadException(Exception):
     """
 
     def __init__(self, message, disposition):
-        Exception.__init__(self)
+        Exception.__init__(self, message, disposition)
         self.message = message
         self.disposition = disposition
 

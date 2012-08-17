@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,38 +28,43 @@ from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
-from boto.exception import SDBPersistenceError
+from boto.exception import SDBPersistenceError, S3ResponseError
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
+
 
 class TimeDecodeError(Exception):
     pass
 
+
 class SDBConverter(object):
     """
-    Responsible for converting base Python types to format compatible with underlying
-    database.  For SimpleDB, that means everything needs to be converted to a string
-    when stored in SimpleDB and from a string when retrieved.
+    Responsible for converting base Python types to format compatible
+    with underlying database.  For SimpleDB, that means everything
+    needs to be converted to a string when stored in SimpleDB and from
+    a string when retrieved.
 
-    To convert a value, pass it to the encode or decode method.  The encode method
-    will take a Python native value and convert to DB format.  The decode method will
-    take a DB format value and convert it to Python native format.  To find the appropriate
-    method to call, the generic encode/decode methods will look for the type-specific
-    method by searching for a method called "encode_<type name>" or "decode_<type name>".
+    To convert a value, pass it to the encode or decode method.  The
+    encode method will take a Python native value and convert to DB
+    format.  The decode method will take a DB format value and convert
+    it to Python native format.  To find the appropriate method to
+    call, the generic encode/decode methods will look for the
+    type-specific method by searching for a method
+    called"encode_<type name>" or "decode_<type name>".
     """
     def __init__(self, manager):
         self.manager = manager
-        self.type_map = { bool : (self.encode_bool, self.decode_bool),
-                          int : (self.encode_int, self.decode_int),
-                          long : (self.encode_long, self.decode_long),
-                          float : (self.encode_float, self.decode_float),
-                          Model : (self.encode_reference, self.decode_reference),
-                          Key : (self.encode_reference, self.decode_reference),
-                          datetime : (self.encode_datetime, self.decode_datetime),
-                          date : (self.encode_date, self.decode_date),
-                          time : (self.encode_time, self.decode_time),
-                          Blob: (self.encode_blob, self.decode_blob),
-                          str: (self.encode_string, self.decode_string),
+        self.type_map = {bool: (self.encode_bool, self.decode_bool),
+                         int: (self.encode_int, self.decode_int),
+                         long: (self.encode_long, self.decode_long),
+                         float: (self.encode_float, self.decode_float),
+                         Model: (self.encode_reference, self.decode_reference),
+                         Key: (self.encode_reference, self.decode_reference),
+                         datetime: (self.encode_datetime, self.decode_datetime),
+                         date: (self.encode_date, self.decode_date),
+                         time: (self.encode_time, self.decode_time),
+                         Blob: (self.encode_blob, self.decode_blob),
+                         str: (self.encode_string, self.decode_string),
                       }
 
     def encode(self, item_type, value):
@@ -92,15 +97,16 @@ class SDBConverter(object):
         # We support lists up to 1,000 attributes, since
         # SDB technically only supports 1024 attributes anyway
         values = {}
-        for k,v in enumerate(value):
+        for k, v in enumerate(value):
             values["%03d" % k] = v
         return self.encode_map(prop, values)
 
     def encode_map(self, prop, value):
+        import urllib
         if value == None:
             return None
         if not isinstance(value, dict):
-            raise ValueError, 'Expected a dict value, got %s' % type(value)
+            raise ValueError('Expected a dict value, got %s' % type(value))
         new_value = []
         for key in value:
             item_type = getattr(prop, "item_type")
@@ -108,7 +114,7 @@ class SDBConverter(object):
                 item_type = Model
             encoded_value = self.encode(item_type, value[key])
             if encoded_value != None:
-                new_value.append('%s:%s' % (key, encoded_value))
+                new_value.append('%s:%s' % (urllib.quote(key), encoded_value))
         return new_value
 
     def encode_prop(self, prop, value):
@@ -127,7 +133,7 @@ class SDBConverter(object):
             dec_val = {}
             for val in value:
                 if val != None:
-                    k,v = self.decode_map_element(item_type, val)
+                    k, v = self.decode_map_element(item_type, val)
                     try:
                         k = int(k)
                     except:
@@ -142,15 +148,17 @@ class SDBConverter(object):
         ret_value = {}
         item_type = getattr(prop, "item_type")
         for val in value:
-            k,v = self.decode_map_element(item_type, val)
+            k, v = self.decode_map_element(item_type, val)
             ret_value[k] = v
         return ret_value
 
     def decode_map_element(self, item_type, value):
         """Decode a single element for a map"""
+        import urllib
         key = value
         if ":" in value:
-            key, value = value.split(':',1)
+            key, value = value.split(':', 1)
+            key = urllib.unquote(key)
         if Model in item_type.mro():
             value = item_type(id=value)
         else:
@@ -254,12 +262,26 @@ class SDBConverter(object):
     def encode_datetime(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
             return value
-        return value.strftime(ISO8601)
+        if isinstance(value, datetime):
+            return value.strftime(ISO8601)
+        else:
+            return value.isoformat()
 
     def decode_datetime(self, value):
+        """Handles both Dates and DateTime objects"""
+        if value is None:
+            return value
         try:
-            return datetime.strptime(value, ISO8601)
-        except:
+            if "T" in value:
+                if "." in value:
+                    # Handle true "isoformat()" dates, which may have a microsecond on at the end of them
+                    return datetime.strptime(value.split(".")[0], "%Y-%m-%dT%H:%M:%S")
+                else:
+                    return datetime.strptime(value, ISO8601)
+            else:
+                value = value.split("-")
+                return date(int(value[0]), int(value[1]), int(value[2]))
+        except Exception, e:
             return None
 
     def encode_date(self, value):
@@ -329,7 +351,6 @@ class SDBConverter(object):
             key.set_contents_from_string(value.value)
         return value.id
 
-
     def decode_blob(self, value):
         if not value:
             return None
@@ -337,7 +358,12 @@ class SDBConverter(object):
         if match:
             s3 = self.manager.get_s3_connection()
             bucket = s3.get_bucket(match.group(1), validate=False)
-            key = bucket.get_key(match.group(2))
+            try:
+                key = bucket.get_key(match.group(2))
+            except S3ResponseError, e:
+                if e.reason != "Forbidden":
+                    raise
+                return None
         else:
             return None
         if key:
@@ -346,26 +372,31 @@ class SDBConverter(object):
             return None
 
     def encode_string(self, value):
-        """Encode string to make sure it's unicode/utf-8 compatible.
-        Thanks to Robert Mela for this code"""
-        if not isinstance(value, str): return value
+        """Convert ASCII, Latin-1 or UTF-8 to pure Unicode"""
+        if not isinstance(value, str):
+            return value
         try:
-            return unicode(value)
-        except: pass
-        arr = []
-        for ch in value:
-            arr.append(unichr(ord(ch)))
-        return u"".join(arr)
+            return unicode(value, 'utf-8')
+        except:
+            # really, this should throw an exception.
+            # in the interest of not breaking current
+            # systems, however:
+            arr = []
+            for ch in value:
+                arr.append(unichr(ord(ch)))
+            return u"".join(arr)
 
     def decode_string(self, value):
         """Decoding a string is really nothing, just
         return the value as-is"""
         return value
 
+
 class SDBManager(object):
-    
+
     def __init__(self, cls, db_name, db_user, db_passwd,
-                 db_host, db_port, db_table, ddl_dir, enable_ssl, consistent=None):
+                 db_host, db_port, db_table, ddl_dir, enable_ssl,
+                 consistent=None):
         self.cls = cls
         self.db_name = db_name
         self.db_user = db_user
@@ -397,9 +428,15 @@ class SDBManager(object):
         return self._domain
 
     def _connect(self):
-        self._sdb = boto.connect_sdb(aws_access_key_id=self.db_user,
-                                    aws_secret_access_key=self.db_passwd,
-                                    is_secure=self.enable_ssl)
+        args = dict(aws_access_key_id=self.db_user,
+                    aws_secret_access_key=self.db_passwd,
+                    is_secure=self.enable_ssl)
+        try:
+            region = [x for x in boto.sdb.regions() if x.endpoint == self.db_host][0]
+            args['region'] = region
+        except IndexError:
+            pass
+        self._sdb = boto.connect_sdb(**args)
         # This assumes that the domain has already been created
         # It's much more efficient to do it this way rather than
         # having this make a roundtrip each time to validate.
@@ -413,7 +450,7 @@ class SDBManager(object):
             obj = self.get_object(cls, item.name, item)
             if obj:
                 yield obj
-            
+
     def encode_value(self, prop, value):
         if value == None:
             return None
@@ -438,13 +475,13 @@ class SDBManager(object):
         except:
             self.bucket = s3.create_bucket(bucket_name)
         return self.bucket
-            
+
     def load_object(self, obj):
         if not obj._loaded:
-            a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
-            if a.has_key('__type__'):
+            a = self.domain.get_attributes(obj.id, consistent_read=self.consistent)
+            if '__type__' in a:
                 for prop in obj.properties(hidden=False):
-                    if a.has_key(prop.name):
+                    if prop.name in a:
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         try:
@@ -452,18 +489,18 @@ class SDBManager(object):
                         except Exception, e:
                             boto.log.exception(e)
             obj._loaded = True
-        
+
     def get_object(self, cls, id, a=None):
         obj = None
         if not a:
-            a = self.domain.get_attributes(id,consistent_read=self.consistent)
-        if a.has_key('__type__'):
+            a = self.domain.get_attributes(id, consistent_read=self.consistent)
+        if '__type__' in a:
             if not cls or a['__type__'] != cls.__name__:
                 cls = find_class(a['__module__'], a['__type__'])
             if cls:
                 params = {}
                 for prop in cls.properties(hidden=False):
-                    if a.has_key(prop.name):
+                    if prop.name in a:
                         value = self.decode_value(prop, a[prop.name])
                         value = prop.make_value_from_datastore(value)
                         params[prop.name] = value
@@ -473,7 +510,7 @@ class SDBManager(object):
                 s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])
                 boto.log.info('sdbmanager: %s' % s)
         return obj
-        
+
     def get_object_from_id(self, id):
         return self.get_object(None, id)
 
@@ -498,14 +535,13 @@ class SDBManager(object):
                 return count
         return count
 
-
     def _build_filter(self, property, name, op, val):
         if name == "__id__":
             name = 'itemName()'
         if name != "itemName()":
             name = '`%s`' % name
         if val == None:
-            if op in ('is','='):
+            if op in ('is', '='):
                 return "%(name)s is null" % {"name": name}
             elif op in ('is not', '!='):
                 return "%s is not null" % name
@@ -526,23 +562,33 @@ class SDBManager(object):
         """
         import types
         query_parts = []
+
         order_by_filtered = False
+
         if order_by:
             if order_by[0] == "-":
-                order_by_method = "DESC";
+                order_by_method = "DESC"
                 order_by = order_by[1:]
             else:
-                order_by_method = "ASC";
+                order_by_method = "ASC"
+
+        if select:
+            if order_by and order_by in select:
+                order_by_filtered = True
+            query_parts.append("(%s)" % select)
+
         if isinstance(filters, str) or isinstance(filters, unicode):
-            query = "WHERE `__type__` = '%s' AND %s" % (cls.__name__, filters)
-            if order_by != None:
+            query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
+            if order_by in ["__id__", "itemName()"]:
+                query += " ORDER BY itemName() %s" % order_by_method
+            elif order_by != None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)
             return query
 
         for filter in filters:
             filter_parts = []
             filter_props = filter[0]
-            if type(filter_props) != list:
+            if not isinstance(filter_props, list):
                 filter_props = [filter_props]
             for filter_prop in filter_props:
                 (name, op) = filter_prop.strip().split(" ", 1)
@@ -573,17 +619,18 @@ class SDBManager(object):
         type_query = "(`__type__` = '%s'" % cls.__name__
         for subclass in self._get_all_decendents(cls).keys():
             type_query += " or `__type__` = '%s'" % subclass
-        type_query +=")"
+        type_query += ")"
         query_parts.append(type_query)
 
         order_by_query = ""
+
         if order_by:
             if not order_by_filtered:
                 query_parts.append("`%s` LIKE '%%'" % order_by)
-            order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
-
-        if select:
-            query_parts.append("(%s)" % select)
+            if order_by in ["__id__", "itemName()"]:
+                order_by_query = " ORDER BY itemName() %s" % order_by_method
+            else:
+                order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
 
         if len(query_parts) > 0:
             return "WHERE %s %s" % (" AND ".join(query_parts), order_by_query)
@@ -600,15 +647,15 @@ class SDBManager(object):
         return decendents
 
     def query_gql(self, query_string, *args, **kwds):
-        raise NotImplementedError, "GQL queries not supported in SimpleDB"
+        raise NotImplementedError("GQL queries not supported in SimpleDB")
 
     def save_object(self, obj, expected_value=None):
         if not obj.id:
             obj.id = str(uuid.uuid4())
 
-        attrs = {'__type__' : obj.__class__.__name__,
-                 '__module__' : obj.__class__.__module__,
-                 '__lineage__' : obj.get_lineage()}
+        attrs = {'__type__': obj.__class__.__name__,
+                 '__module__': obj.__class__.__module__,
+                 '__lineage__': obj.get_lineage()}
         del_attrs = []
         for property in obj.properties(hidden=False):
             value = property.get_value_for_datastore(obj)
@@ -632,7 +679,7 @@ class SDBManager(object):
         if expected_value:
             prop = obj.find_property(expected_value[0])
             v = expected_value[1]
-            if v is not None and not type(v) == bool:
+            if v is not None and not isinstance(v, bool):
                 v = self.encode_value(prop, v)
             expected_value[1] = v
         self.domain.put_attributes(obj.id, attrs, replace=True, expected_value=expected_value)
@@ -644,6 +691,7 @@ class SDBManager(object):
         self.domain.delete_attributes(obj.id)
 
     def set_property(self, prop, obj, name, value):
+        setattr(obj, name, value)
         value = prop.get_value_for_datastore(obj)
         value = self.encode_value(prop, value)
         if prop.unique:
@@ -654,10 +702,10 @@ class SDBManager(object):
                     raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
             except(StopIteration):
                 pass
-        self.domain.put_attributes(obj.id, {name : value}, replace=True)
+        self.domain.put_attributes(obj.id, {name: value}, replace=True)
 
     def get_property(self, prop, obj, name):
-        a = self.domain.get_attributes(obj.id,consistent_read=self.consistent)
+        a = self.domain.get_attributes(obj.id, consistent_read=self.consistent)
 
         # try to get the attribute value from SDB
         if name in a:
@@ -665,21 +713,20 @@ class SDBManager(object):
             value = prop.make_value_from_datastore(value)
             setattr(obj, prop.name, value)
             return value
-        raise AttributeError, '%s not found' % name
+        raise AttributeError('%s not found' % name)
 
     def set_key_value(self, obj, name, value):
-        self.domain.put_attributes(obj.id, {name : value}, replace=True)
+        self.domain.put_attributes(obj.id, {name: value}, replace=True)
 
     def delete_key_value(self, obj, name):
         self.domain.delete_attributes(obj.id, name)
 
     def get_key_value(self, obj, name):
-        a = self.domain.get_attributes(obj.id, name,consistent_read=self.consistent)
-        if a.has_key(name):
+        a = self.domain.get_attributes(obj.id, name, consistent_read=self.consistent)
+        if name in a:
             return a[name]
         else:
             return None
-    
+
     def get_raw_item(self, obj):
         return self.domain.get_item(obj.id)
-        

@@ -43,7 +43,8 @@ class SQSConnectionTest (unittest.TestCase):
     
         # try illegal name
         try:
-            queue = c.create_queue('bad_queue_name')
+            queue = c.create_queue('bad*queue*name')
+            self.fail('queue name should have been bad')
         except SQSError:
             pass
         
@@ -65,14 +66,14 @@ class SQSConnectionTest (unittest.TestCase):
 
         # now try to get queue attributes
         a = q.get_attributes()
-        assert a.has_key('ApproximateNumberOfMessages')
-        assert a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' in a
+        assert 'VisibilityTimeout' in a
         a = q.get_attributes('ApproximateNumberOfMessages')
-        assert a.has_key('ApproximateNumberOfMessages')
-        assert not a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' in a
+        assert 'VisibilityTimeout' not in a
         a = q.get_attributes('VisibilityTimeout')
-        assert not a.has_key('ApproximateNumberOfMessages')
-        assert a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' not in a
+        assert 'VisibilityTimeout' in a
 
         # now change the visibility timeout
         timeout = 45
@@ -107,6 +108,20 @@ class SQSConnectionTest (unittest.TestCase):
         queue.delete_message(message)
         time.sleep(30)
         assert queue.count_slow() == 0
+
+        # try a batch write
+        num_msgs = 10
+        msgs = [(i, 'This is message %d' % i, 0) for i in range(num_msgs)]
+        queue.write_batch(msgs)
+
+        # try to delete all of the messages using batch delete
+        deleted = 0
+        while deleted < num_msgs:
+            time.sleep(5)
+            msgs = queue.get_messages(num_msgs)
+            if msgs:
+                br = queue.delete_message_batch(msgs)
+                deleted += len(br.results)
 
         # create another queue so we can test force deletion
         # we will also test MHMessage with this queue

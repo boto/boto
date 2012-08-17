@@ -3,7 +3,14 @@ import urlparse
 import boto
 import boto.connection
 import boto.jsonresponse
+import boto.exception
 import awsqueryrequest
+
+class NoCredentialsError(boto.exception.BotoClientError):
+
+    def __init__(self):
+        s = 'Unable to find credentials'
+        boto.exception.BotoClientError.__init__(self, s)
 
 class AWSQueryService(boto.connection.AWSQueryConnection):
 
@@ -23,16 +30,21 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         self.check_for_credential_file()
         self.check_for_env_url()
         if 'host' not in self.args:
-            region_name = self.args.get('region_name', self.Regions[0]['name'])
-            for region in self.Regions:
-                if region['name'] == region_name:
-                    self.args['host'] = region['endpoint']
+            if self.Regions:
+                region_name = self.args.get('region_name',
+                                            self.Regions[0]['name'])
+                for region in self.Regions:
+                    if region['name'] == region_name:
+                        self.args['host'] = region['endpoint']
         if 'path' not in self.args:
             self.args['path'] = self.Path
         if 'port' not in self.args:
             self.args['port'] = self.Port
-        boto.connection.AWSQueryConnection.__init__(self, **self.args)
-        self.aws_response = None
+        try:
+            boto.connection.AWSQueryConnection.__init__(self, **self.args)
+            self.aws_response = None
+        except boto.exception.NoAuthHandlerFound:
+            raise NoCredentialsError()
 
     def check_for_credential_file(self):
         """
@@ -53,13 +65,17 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
                 lines = fp.readlines()
                 fp.close()
                 for line in lines:
-                    name, value = line.split('=')
-                    if name.strip() == 'AWSAccessKeyId':
-                        if 'aws_access_key_id' not in self.args:
-                            self.args['aws_access_key_id'] = value.strip()
-                    elif name.strip() == 'AWSSecretKey':
-                        if 'aws_secret_access_key' not in self.args:
-                            self.args['aws_secret_access_key'] = value.strip()
+                    if line[0] != '#':
+                        if '=' in line:
+                            name, value = line.split('=', 1)
+                            if name.strip() == 'AWSAccessKeyId':
+                                if 'aws_access_key_id' not in self.args:
+                                    value = value.strip()
+                                    self.args['aws_access_key_id'] = value
+                            elif name.strip() == 'AWSSecretKey':
+                                if 'aws_secret_access_key' not in self.args:
+                                    value = value.strip()
+                                    self.args['aws_secret_access_key'] = value
             else:
                 print 'Warning: unable to read AWS_CREDENTIAL_FILE'
 
@@ -76,7 +92,6 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         url = self.args.get('url', None)
         if url:
             del self.args['url']
-        # TODO: move EUARE_URL to class variable
         if not url and self.EnvURL in os.environ:
             url = os.environ[self.EnvURL]
         if url:

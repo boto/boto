@@ -45,7 +45,16 @@ from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
-from tests.s3.cb_test_harnass import CallbackTestHarnass
+from cb_test_harnass import CallbackTestHarnass
+
+# We don't use the OAuth2 authentication plugin directly; importing it here
+# ensures that it's loaded and available by default.
+try:
+  from oauth2_plugin import oauth2_plugin
+except ImportError:
+  # Do nothing - if user doesn't have OAuth2 configured it doesn't matter;
+  # and if they do, the tests will fail (as they should in that case).
+  pass
 
 
 class ResumableDownloadTests(unittest.TestCase):
@@ -63,116 +72,88 @@ class ResumableDownloadTests(unittest.TestCase):
         except StorageResponseError, e:
             pass
 
-    @classmethod
-    def setUp(cls):
-        """
-        Creates file-like object for detination of each download test.
-
-        This method's namingCase is required by the unittest framework.
-        """
-        cls.dst_fp = open(cls.dst_file_name, 'w')
-
-    @classmethod
-    def tearDown(cls):
-        """
-        Deletes any objects or files created by last test run, and closes
-        any keys in case they were read incompletely (which would leave
-        partial buffers of data for subsequent tests to trip over).
-
-        This method's namingCase is required by the unittest framework.
-        """
-        # Recursively delete dst dir and then re-create it, so in effect we
-        # remove all dirs and files under that directory.
-        shutil.rmtree(cls.tmp_dir)
-        os.mkdir(cls.tmp_dir)
-
-        # Close test objects.
-        cls.resilient_close(cls.empty_src_key)
-        cls.resilient_close(cls.small_src_key)
-        cls.resilient_close(cls.larger_src_key)
-
-    @classmethod
-    def build_test_input_object(cls, obj_name, size, debug):
+    def build_test_input_object(self, obj_name, size):
         buf = []
         for i in range(size):
             buf.append(str(random.randint(0, 9)))
         string_data = ''.join(buf)
-        uri = cls.src_bucket_uri.clone_replace_name(obj_name)
+        uri = self.src_bucket_uri.clone_replace_name(obj_name)
         key = uri.new_key(validate=False)
         key.set_contents_from_file(StringIO.StringIO(string_data))
-        # Set debug on key's connection after creating data, so only the test
-        # runs will show HTTP output (if called passed debug>0).
-        key.bucket.connection.debug = debug
         return (string_data, key)
 
-    @classmethod
-    def set_up_class(cls, debug):
+    def setUp(self):
         """
-        Initializes test suite.
+        Initializes for each test.
         """
-
         # Create the test bucket.
         hostname = socket.gethostname().split('.')[0]
-        uri_base_str = 'gs://res_download_test_%s_%s_%s' % (
+        uri_base_str = 'gs://res-download-test-%s-%s-%s' % (
             hostname, os.getpid(), int(time.time()))
-        cls.src_bucket_uri = storage_uri('%s_dst' % uri_base_str)
-        cls.src_bucket_uri.create_bucket()
+        self.src_bucket_uri = storage_uri('%s-dst' % uri_base_str)
+        self.src_bucket_uri.create_bucket()
 
         # Create test source objects.
-        cls.empty_src_key_size = 0
-        (cls.empty_src_key_as_string, cls.empty_src_key) = (
-            cls.build_test_input_object('empty', cls.empty_src_key_size,
-                                        debug=debug))
-        cls.small_src_key_size = 2 * 1024  # 2 KB.
-        (cls.small_src_key_as_string, cls.small_src_key) = (
-            cls.build_test_input_object('small', cls.small_src_key_size,
-                                        debug=debug))
-        cls.larger_src_key_size = 500 * 1024  # 500 KB.
-        (cls.larger_src_key_as_string, cls.larger_src_key) = (
-            cls.build_test_input_object('larger', cls.larger_src_key_size,
-                                        debug=debug))
+        self.empty_src_key_size = 0
+        (self.empty_src_key_as_string, self.empty_src_key) = (
+            self.build_test_input_object('empty', self.empty_src_key_size))
+        self.small_src_key_size = 2 * 1024  # 2 KB.
+        (self.small_src_key_as_string, self.small_src_key) = (
+            self.build_test_input_object('small', self.small_src_key_size))
+        self.larger_src_key_size = 500 * 1024  # 500 KB.
+        (self.larger_src_key_as_string, self.larger_src_key) = (
+            self.build_test_input_object('larger', self.larger_src_key_size))
 
         # Use a designated tmpdir prefix to make it easy to find the end of
         # the tmp path.
-        cls.tmpdir_prefix = 'tmp_resumable_download_test'
+        self.tmpdir_prefix = 'tmp_resumable_download_test'
 
         # Create temp dir and name for download file.
-        cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
-        cls.dst_file_name = '%s%sdst_file' % (cls.tmp_dir, os.sep)
+        self.tmp_dir = tempfile.mkdtemp(prefix=self.tmpdir_prefix)
+        self.dst_file_name = '%s%sdst_file' % (self.tmp_dir, os.sep)
 
-        cls.tracker_file_name = '%s%stracker' % (cls.tmp_dir, os.sep)
+        self.tracker_file_name = '%s%stracker' % (self.tmp_dir, os.sep)
 
-        cls.created_test_data = True
+        # Create file-like object for detination of each download test.
+        self.dst_fp = open(self.dst_file_name, 'w')
+        self.created_test_data = True
 
-    @classmethod
-    def tear_down_class(cls):
+    def tearDown(self):
         """
-        Deletes test objects and bucket and tmp dir created by set_up_class.
+        Deletes test objects and bucket and tmp dir created by set_up_class,
+        and closes any keys in case they were read incompletely (which would
+        leave partial buffers of data for subsequent tests to trip over).
         """
-        if not hasattr(cls, 'created_test_data'):
+        if not hasattr(self, 'created_test_data'):
             return
-        # Call cls.tearDown() in case the tests got interrupted, to ensure
-        # dst objects get deleted.
-        cls.tearDown()
+        # Recursively delete dst dir and then re-create it, so in effect we
+        # remove all dirs and files under that directory.
+        shutil.rmtree(self.tmp_dir)
+        os.mkdir(self.tmp_dir)
+
+        # Close test objects.
+        self.resilient_close(self.empty_src_key)
+        self.resilient_close(self.small_src_key)
+        self.resilient_close(self.larger_src_key)
 
         # Delete test objects.
-        cls.empty_src_key.delete()
-        cls.small_src_key.delete()
-        cls.larger_src_key.delete()
+        self.empty_src_key.delete()
+        self.small_src_key.delete()
+        self.larger_src_key.delete()
 
         # Retry (for up to 2 minutes) the bucket gets deleted (it may not
         # the first time round, due to eventual consistency of bucket delete
         # operations).
         for i in range(60):
             try:
-                cls.src_bucket_uri.delete_bucket()
+                self.src_bucket_uri.delete_bucket()
                 break
             except StorageResponseError:
                 print 'Test bucket (%s) not yet deleted, still trying' % (
-                    cls.src_bucket_uri.uri)
+                    self.src_bucket_uri.uri)
                 time.sleep(2)
-        shutil.rmtree(cls.tmp_dir)
-        cls.tmp_dir = tempfile.mkdtemp(prefix=cls.tmpdir_prefix)
+        shutil.rmtree(self.tmp_dir)
+        self.tmp_dir = tempfile.mkdtemp(prefix=self.tmpdir_prefix)
 
     def test_non_resumable_download(self):
         """
@@ -227,6 +208,22 @@ class ResumableDownloadTests(unittest.TestCase):
         """
         # Test one of the RETRYABLE_EXCEPTIONS.
         exception = ResumableDownloadHandler.RETRYABLE_EXCEPTIONS[0]
+        harnass = CallbackTestHarnass(exception=exception)
+        res_download_handler = ResumableDownloadHandler(num_retries=1)
+        self.small_src_key.get_contents_to_file(
+            self.dst_fp, cb=harnass.call,
+            res_download_handler=res_download_handler)
+        # Ensure downloaded object has correct content.
+        self.assertEqual(self.small_src_key_size,
+                         get_cur_file_size(self.dst_fp))
+        self.assertEqual(self.small_src_key_as_string,
+                         self.small_src_key.get_contents_as_string())
+
+    def test_broken_pipe_recovery(self):
+        """
+        Tests handling of a Broken Pipe (which interacts with an httplib bug)
+        """
+        exception = IOError(errno.EPIPE, "Broken pipe")
         harnass = CallbackTestHarnass(exception=exception)
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         self.small_src_key.get_contents_to_file(
@@ -354,88 +351,6 @@ class ResumableDownloadTests(unittest.TestCase):
             self.dst_fp, res_download_handler=res_download_handler)
         self.assertEqual(0, get_cur_file_size(self.dst_fp))
 
-    def test_download_with_object_size_change_between_starts(self):
-        """
-        Tests resumable download on an object that changes sizes between inital
-        download start and restart
-        """
-        harnass = CallbackTestHarnass(
-            fail_after_n_bytes=self.larger_src_key_size/2, num_times_to_fail=2)
-        # Set up first process' ResumableDownloadHandler not to do any
-        # retries (initial download request will establish expected size to
-        # download server).
-        res_download_handler = ResumableDownloadHandler(
-            tracker_file_name=self.tracker_file_name, num_retries=0)
-        try:
-            self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
-                res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # First abort (from harnass-forced failure) should be
-            # ABORT_CUR_PROCESS.
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
-            # Ensure a tracker file survived.
-            self.assertTrue(os.path.exists(self.tracker_file_name))
-        # Try it again, this time with different src key (simulating an
-        # object that changes sizes between downloads).
-        try:
-            self.small_src_key.get_contents_to_file(
-                self.dst_fp, res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # This abort should be a hard abort (object size changing during
-            # transfer).
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(
-                e.message.find('md5 signature doesn\'t match etag'), -1)
-
-    def test_download_with_file_content_change_during_download(self):
-        """
-        Tests resumable download on an object where the file content changes
-        without changing length while download in progress
-        """
-        harnass = CallbackTestHarnass(
-            fail_after_n_bytes=self.larger_src_key_size/2, num_times_to_fail=2)
-        # Set up first process' ResumableDownloadHandler not to do any
-        # retries (initial download request will establish expected size to
-        # download server).
-        res_download_handler = ResumableDownloadHandler(
-            tracker_file_name=self.tracker_file_name, num_retries=0)
-        dst_filename = self.dst_fp.name
-        try:
-            self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
-                res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # First abort (from harnass-forced failure) should be
-            # ABORT_CUR_PROCESS.
-            self.assertEqual(e.disposition,
-                             ResumableTransferDisposition.ABORT_CUR_PROCESS)
-            # Ensure a tracker file survived.
-            self.assertTrue(os.path.exists(self.tracker_file_name))
-        # Before trying again change the first byte of the file fragment
-        # that was already downloaded.
-        orig_size = get_cur_file_size(self.dst_fp)
-        self.dst_fp.seek(0, os.SEEK_SET)
-        self.dst_fp.write('a')
-        # Ensure the file size didn't change.
-        self.assertEqual(orig_size, get_cur_file_size(self.dst_fp))
-        try:
-            self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
-                res_download_handler=res_download_handler)
-            self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
-            # This abort should be a hard abort (file content changing during
-            # transfer).
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            self.assertNotEqual(
-                e.message.find('md5 signature doesn\'t match etag'), -1)
-            # Ensure the bad data wasn't left around.
-            self.assertFalse(os.path.exists(dst_filename))
-
     def test_download_with_invalid_tracker_etag(self):
         """
         Tests resumable download with a tracker file containing an invalid etag
@@ -497,36 +412,3 @@ class ResumableDownloadTests(unittest.TestCase):
         finally:
             # Restore original protection of dir where tracker_file lives.
             os.chmod(self.tmp_dir, save_mod)
-
-if __name__ == '__main__':
-    if sys.version_info[:3] < (2, 5, 1):
-        sys.exit('These tests must be run on at least Python 2.5.1\n')
-
-    # Use -d to see more HTTP protocol detail during tests. Note that
-    # unlike the upload test case, you won't see much for the downloads
-    # because there's no HTTP server state protocol for in the download case
-    # (and the actual Range GET HTTP protocol detail is suppressed by the
-    # normal boto.s3.Key.get_file() processing).
-    debug = 0
-    opts, args = getopt.getopt(sys.argv[1:], 'd', ['debug'])
-    for o, a in opts:
-      if o in ('-d', '--debug'):
-        debug = 2
-
-    test_loader = unittest.TestLoader()
-    test_loader.testMethodPrefix = 'test_'
-    suite = test_loader.loadTestsFromTestCase(ResumableDownloadTests)
-    # Seems like there should be a cleaner way to find the test_class.
-    test_class = suite.__getattribute__('_tests')[0]
-    # We call set_up_class() and tear_down_class() ourselves because we
-    # don't assume the user has Python 2.7 (which supports classmethods
-    # that do it, with camelCase versions of these names).
-    try:
-        print 'Setting up %s...' % test_class.get_suite_description()
-        test_class.set_up_class(debug)
-        print 'Running %s...' % test_class.get_suite_description()
-        unittest.TextTestRunner(verbosity=2).run(suite)
-    finally:
-        print 'Cleaning up after %s...' % test_class.get_suite_description()
-        test_class.tear_down_class()
-        print ''

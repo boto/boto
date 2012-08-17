@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -24,8 +24,11 @@ Represents a connection to the EC2 service.
 """
 
 from boto.ec2.connection import EC2Connection
+from boto.resultset import ResultSet
 from boto.vpc.vpc import VPC
 from boto.vpc.customergateway import CustomerGateway
+from boto.vpc.routetable import RouteTable
+from boto.vpc.internetgateway import InternetGateway
 from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
@@ -34,25 +37,25 @@ from boto.vpc.vpnconnection import VpnConnection
 class VPCConnection(EC2Connection):
 
     # VPC methods
-        
+
     def get_all_vpcs(self, vpc_ids=None, filters=None):
         """
         Retrieve information about your VPCs.  You can filter results to
         return information only about those VPCs that match your search
         parameters.  Otherwise, all VPCs associated with your account
         are returned.
-        
+
         :type vpc_ids: list
         :param vpc_ids: A list of strings with the desired VPC ID's
-        
+
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
-                        Possible filter keys are:
-                        
-                        - *state*, the state of the VPC (pending or available)
-                        - *cidrBlock*, CIDR block of the VPC
-                        - *dhcpOptionsId*, the ID of a set of DHCP options
+            consists of a filter key and a filter value.
+            Possible filter keys are:
+
+            * *state* - a list of states of the VPC (pending or available)
+            * *cidrBlock* - a list CIDR blocks of the VPC
+            * *dhcpOptionsId* - a list of IDs of a set of DHCP options
 
         :rtype: list
         :return: A list of :class:`boto.vpc.vpc.VPC`
@@ -61,11 +64,7 @@ class VPCConnection(EC2Connection):
         if vpc_ids:
             self.build_list_params(params, vpc_ids, 'VpcId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Key' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
 
     def create_vpc(self, cidr_block):
@@ -80,7 +79,7 @@ class VPCConnection(EC2Connection):
         """
         params = {'CidrBlock' : cidr_block}
         return self.get_object('CreateVpc', params, VPC)
-        
+
     def delete_vpc(self, vpc_id):
         """
         Delete a Virtual Private Cloud.
@@ -94,6 +93,234 @@ class VPCConnection(EC2Connection):
         params = {'VpcId': vpc_id}
         return self.get_status('DeleteVpc', params)
 
+    # Route Tables
+
+    def get_all_route_tables(self, route_table_ids=None, filters=None):
+        """
+        Retrieve information about your routing tables. You can filter results
+        to return information only about those route tables that match your
+        search parameters. Otherwise, all route tables associated with your
+        account are returned.
+
+        :type route_table_ids: list
+        :param route_table_ids: A list of strings with the desired route table
+                                IDs.
+
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters. Each tuple
+                        consists of a filter key and a filter value.
+
+        :rtype: list
+        :return: A list of :class:`boto.vpc.routetable.RouteTable`
+        """
+        params = {}
+        if route_table_ids:
+            self.build_list_params(params, route_table_ids, "RouteTableId")
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        return self.get_list('DescribeRouteTables', params, [('item', RouteTable)])
+
+    def associate_route_table(self, route_table_id, subnet_id):
+        """
+        Associates a route table with a specific subnet.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the route table to associate.
+
+        :type subnet_id: str
+        :param subnet_id: The ID of the subnet to associate with.
+
+        :rtype: str
+        :return: The ID of the association created
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'SubnetId': subnet_id
+        }
+
+        result = self.get_object('AssociateRouteTable', params, ResultSet)
+        return result.associationId
+
+    def disassociate_route_table(self, association_id):
+        """
+        Removes an association from a route table. This will cause all subnets
+        that would've used this association to now use the main routing
+        association instead.
+
+        :type association_id: str
+        :param association_id: The ID of the association to disassociate.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = { 'AssociationId': association_id }
+        return self.get_status('DisassociateRouteTable', params)
+
+    def create_route_table(self, vpc_id):
+        """
+        Creates a new route table.
+
+        :type vpc_id: str
+        :param vpc_id: The VPC ID to associate this route table with.
+
+        :rtype: The newly created route table
+        :return: A :class:`boto.vpc.routetable.RouteTable` object
+        """
+        params = { 'VpcId': vpc_id }
+        return self.get_object('CreateRouteTable', params, RouteTable)
+
+    def delete_route_table(self, route_table_id):
+        """
+        Delete a route table.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the route table to delete.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = { 'RouteTableId': route_table_id }
+        return self.get_status('DeleteRouteTable', params)
+
+    def create_route(self, route_table_id, destination_cidr_block, gateway_id=None, instance_id=None):
+        """
+        Creates a new route in the route table within a VPC. The route's target
+        can be either a gateway attached to the VPC or a NAT instance in the
+        VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the route table for the route.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR address block used for the
+                                       destination match.
+
+        :type gateway_id: str
+        :param gateway_id: The ID of the gateway attached to your VPC.
+
+        :type instance_id: str
+        :param instance_id: The ID of a NAT instance in your VPC.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'DestinationCidrBlock': destination_cidr_block
+        }
+
+        if gateway_id is not None:
+            params['GatewayId'] = gateway_id
+        elif instance_id is not None:
+            params['InstanceId'] = instance_id
+
+        return self.get_status('CreateRoute', params)
+
+    def delete_route(self, route_table_id, destination_cidr_block):
+        """
+        Deletes a route from a route table within a VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the route table with the route.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR address block used for
+                                       destination match.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'DestinationCidrBlock': destination_cidr_block
+        }
+
+        return self.get_status('DeleteRoute', params)
+
+    # Internet Gateways
+
+    def get_all_internet_gateways(self, internet_gateway_ids=None, filters=None):
+        """
+        Get a list of internet gateways. You can filter results to return information
+        about only those gateways that you're interested in.
+
+        :type internet_gateway_ids: list
+        :param internet_gateway_ids: A list of strings with the desired gateway IDs.
+
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters.  Each tuple
+                        consists of a filter key and a filter value.
+        """
+        params = {}
+
+        if internet_gateway_ids:
+            self.build_list_params(params, internet_gateway_ids, 'InternetGatewayId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        return self.get_list('DescribeInternetGateways', params, [('item', InternetGateway)])
+
+    def create_internet_gateway(self):
+        """
+        Creates an internet gateway for VPC.
+
+        :rtype: Newly created internet gateway.
+        :return: `boto.vpc.internetgateway.InternetGateway`
+        """
+        return self.get_object('CreateInternetGateway', {}, InternetGateway)
+
+    def delete_internet_gateway(self, internet_gateway_id):
+        """
+        Deletes an internet gateway from the VPC.
+
+        :type internet_gateway_id: str
+        :param internet_gateway_id: The ID of the internet gateway to delete.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = { 'InternetGatewayId': internet_gateway_id }
+        return self.get_status('DeleteInternetGateway', params)
+
+    def attach_internet_gateway(self, internet_gateway_id, vpc_id):
+        """
+        Attach an internet gateway to a specific VPC.
+
+        :type internet_gateway_id: str
+        :param internet_gateway_id: The ID of the internet gateway to delete.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC to attach to.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = {
+            'InternetGatewayId': internet_gateway_id,
+            'VpcId': vpc_id
+        }
+
+        return self.get_status('AttachInternetGateway', params)
+
+    def detach_internet_gateway(self, internet_gateway_id, vpc_id):
+        """
+        Detach an internet gateway from a specific VPC.
+
+        :type internet_gateway_id: str
+        :param internet_gateway_id: The ID of the internet gateway to detach.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC to attach to.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = {
+            'InternetGatewayId': internet_gateway_id,
+            'VpcId': vpc_id
+        }
+
+        return self.get_status('DetachInternetGateway', params)
+
     # Customer Gateways
 
     def get_all_customer_gateways(self, customer_gateway_ids=None, filters=None):
@@ -102,15 +329,15 @@ class VPCConnection(EC2Connection):
         return information only about those CustomerGateways that match your search
         parameters.  Otherwise, all CustomerGateways associated with your account
         are returned.
-        
+
         :type customer_gateway_ids: list
         :param customer_gateway_ids: A list of strings with the desired CustomerGateway ID's
-        
+
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                        
+
                          - *state*, the state of the CustomerGateway
                            (pending,available,deleting,deleted)
                          - *type*, the type of customer gateway (ipsec.1)
@@ -124,11 +351,8 @@ class VPCConnection(EC2Connection):
         if customer_gateway_ids:
             self.build_list_params(params, customer_gateway_ids, 'CustomerGatewayId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Key' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
+
         return self.get_list('DescribeCustomerGateways', params, [('item', CustomerGateway)])
 
     def create_customer_gateway(self, type, ip_address, bgp_asn):
@@ -153,7 +377,7 @@ class VPCConnection(EC2Connection):
                   'IpAddress' : ip_address,
                   'BgpAsn' : bgp_asn}
         return self.get_object('CreateCustomerGateway', params, CustomerGateway)
-        
+
     def delete_customer_gateway(self, customer_gateway_id):
         """
         Delete a Customer Gateway.
@@ -178,16 +402,16 @@ class VPCConnection(EC2Connection):
 
         :type vpn_gateway_ids: list
         :param vpn_gateway_ids: A list of strings with the desired VpnGateway ID's
-        
+
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                        
-                        - *state*, the state of the VpnGateway
+
+                        - *state*, a list of states of the VpnGateway
                           (pending,available,deleting,deleted)
-                        - *type*, the type of customer gateway (ipsec.1)
-                        - *availabilityZone*, the Availability zone the
+                        - *type*, a list types of customer gateway (ipsec.1)
+                        - *availabilityZone*, a list of  Availability zones the
                           VPN gateway is in.
 
         :rtype: list
@@ -197,11 +421,7 @@ class VPCConnection(EC2Connection):
         if vpn_gateway_ids:
             self.build_list_params(params, vpn_gateway_ids, 'VpnGatewayId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Key' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpnGateways', params, [('item', VpnGateway)])
 
     def create_vpn_gateway(self, type, availability_zone=None):
@@ -221,7 +441,7 @@ class VPCConnection(EC2Connection):
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         return self.get_object('CreateVpnGateway', params, VpnGateway)
-        
+
     def delete_vpn_gateway(self, vpn_gateway_id):
         """
         Delete a Vpn Gateway.
@@ -260,20 +480,20 @@ class VPCConnection(EC2Connection):
         return information only about those Subnets that match your search
         parameters.  Otherwise, all Subnets associated with your account
         are returned.
-        
+
         :type subnet_ids: list
         :param subnet_ids: A list of strings with the desired Subnet ID's
-        
+
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                        
-                        - *state*, the state of the Subnet
+
+                        - *state*, a list of states of the Subnet
                           (pending,available)
-                        - *vpdId*, the ID of teh VPC the subnet is in.
-                        - *cidrBlock*, CIDR block of the subnet
-                        - *availabilityZone*, the Availability Zone
+                        - *vpdId*, a list of IDs of teh VPC the subnet is in.
+                        - *cidrBlock*, a list of CIDR blocks of the subnet
+                        - *availabilityZone*, list of the Availability Zones
                           the subnet is in.
 
 
@@ -284,11 +504,7 @@ class VPCConnection(EC2Connection):
         if subnet_ids:
             self.build_list_params(params, subnet_ids, 'SubnetId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Key' % i)] = filter[0]
-                params[('Filter.%d.Value.1' % i)] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
 
     def create_subnet(self, vpc_id, cidr_block, availability_zone=None):
@@ -312,7 +528,7 @@ class VPCConnection(EC2Connection):
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         return self.get_object('CreateSubnet', params, Subnet)
-        
+
     def delete_subnet(self, subnet_id):
         """
         Delete a subnet.
@@ -326,16 +542,16 @@ class VPCConnection(EC2Connection):
         params = {'SubnetId': subnet_id}
         return self.get_status('DeleteSubnet', params)
 
-    
+
     # DHCP Options
 
     def get_all_dhcp_options(self, dhcp_options_ids=None):
         """
         Retrieve information about your DhcpOptions.
-        
+
         :type dhcp_options_ids: list
         :param dhcp_options_ids: A list of strings with the desired DhcpOption ID's
-        
+
         :rtype: list
         :return: A list of :class:`boto.vpc.dhcpoptions.DhcpOptions`
         """
@@ -365,7 +581,7 @@ class VPCConnection(EC2Connection):
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         return self.get_object('CreateDhcpOption', params, DhcpOptions)
-        
+
     def delete_dhcp_options(self, dhcp_options_id):
         """
         Delete a DHCP Options
@@ -382,13 +598,13 @@ class VPCConnection(EC2Connection):
     def associate_dhcp_options(self, dhcp_options_id, vpc_id):
         """
         Associate a set of Dhcp Options with a VPC.
-        
+
         :type dhcp_options_id: str
         :param dhcp_options_id: The ID of the Dhcp Options
-        
+
         :type vpc_id: str
         :param vpc_id: The ID of the VPC.
-        
+
         :rtype: bool
         :return: True if successful
         """
@@ -404,21 +620,21 @@ class VPCConnection(EC2Connection):
         return information only about those VPN_CONNECTIONs that match your search
         parameters.  Otherwise, all VPN_CONNECTIONs associated with your account
         are returned.
-        
+
         :type vpn_connection_ids: list
         :param vpn_connection_ids: A list of strings with the desired VPN_CONNECTION ID's
-        
+
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
                         consists of a filter key and a filter value.
                         Possible filter keys are:
-                        
-                        - *state*, the state of the VPN_CONNECTION
+
+                        - *state*, a list of states of the VPN_CONNECTION
                           pending,available,deleting,deleted
-                        - *type*, the type of connection, currently 'ipsec.1'
-                        - *customerGatewayId*, the ID of the customer gateway
+                        - *type*, a list of types of connection, currently 'ipsec.1'
+                        - *customerGatewayId*, a list of IDs of the customer gateway
                           associated with the VPN
-                        - *vpnGatewayId*, the ID of the VPN gateway associated
+                        - *vpnGatewayId*, a list of IDs of the VPN gateway associated
                           with the VPN connection
 
         :rtype: list
@@ -428,11 +644,7 @@ class VPCConnection(EC2Connection):
         if vpn_connection_ids:
             self.build_list_params(params, vpn_connection_ids, 'Vpn_ConnectionId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Key' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpnConnections', params, [('item', VpnConnection)])
 
     def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id):
@@ -456,7 +668,7 @@ class VPCConnection(EC2Connection):
                   'CustomerGatewayId' : customer_gateway_id,
                   'VpnGatewayId' : vpn_gateway_id}
         return self.get_object('CreateVpnConnection', params, VpnConnection)
-        
+
     def delete_vpn_connection(self, vpn_connection_id):
         """
         Delete a VPN Connection.
@@ -469,5 +681,3 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpnConnectionId': vpn_connection_id}
         return self.get_status('DeleteVpnConnection', params)
-
-    

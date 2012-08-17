@@ -41,7 +41,7 @@ class MTurkConnection(AWSQueryConnection):
     APIVersion = '2008-08-02'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=None, debug=0,
                  https_connection_factory=None):
@@ -94,7 +94,8 @@ class MTurkConnection(AWSQueryConnection):
         if qual_req is not None:
             params.update(qual_req.get_as_params())
 
-        return self._process_request('RegisterHITType', params)
+        return self._process_request('RegisterHITType', params, [('HITTypeId', HITTypeId)])
+
 
     def set_email_notification(self, hit_type, email, event_types=None):
         """
@@ -115,7 +116,7 @@ class MTurkConnection(AWSQueryConnection):
         Common SetHITTypeNotification operation to set notification for a
         specified HIT type
         """
-        assert type(hit_type) is str, "hit_type argument should be a string."
+        assert isinstance(hit_type, str), "hit_type argument should be a string."
         
         params = {'HITTypeId': hit_type}
         
@@ -175,9 +176,9 @@ class MTurkConnection(AWSQueryConnection):
         
         # Handle basic required arguments and set up params dict
         params = {'Question': question_param.get_as_xml(),
-                  'LifetimeInSeconds' :
+                  'LifetimeInSeconds':
                       self.duration_as_seconds(lifetime),
-                  'MaxAssignments' : max_assignments,
+                  'MaxAssignments': max_assignments,
                   }
 
         # if hit type specified then add it
@@ -228,8 +229,9 @@ class MTurkConnection(AWSQueryConnection):
         Change the HIT type of an existing HIT. Note that the reward associated
         with the new HIT type must match the reward of the current HIT type in
         order for the operation to be valid.
-        \thit_id is a string
-        \thit_type is a string
+        
+        :type hit_id: str
+        :type hit_type: str
         """
         params = {'HITId' : hit_id,
                   'HITTypeId': hit_type}
@@ -278,7 +280,7 @@ class MTurkConnection(AWSQueryConnection):
         page_size = 100
         search_rs = self.search_hits(page_size=page_size)
         total_records = int(search_rs.TotalNumResults)
-        get_page_hits = lambda(page): self.search_hits(page_size=page_size, page_number=page)
+        get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
         page_nums = self._get_pages(page_size, total_records)
         hit_sets = itertools.imap(get_page_hits, page_nums)
         return itertools.chain.from_iterable(hit_sets)
@@ -349,7 +351,7 @@ class MTurkConnection(AWSQueryConnection):
     def approve_assignment(self, assignment_id, feedback=None):
         """
         """
-        params = {'AssignmentId' : assignment_id,}
+        params = {'AssignmentId': assignment_id,}
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('ApproveAssignment', params)
@@ -357,7 +359,7 @@ class MTurkConnection(AWSQueryConnection):
     def reject_assignment(self, assignment_id, feedback=None):
         """
         """
-        params = {'AssignmentId' : assignment_id,}
+        params = {'AssignmentId': assignment_id,}
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('RejectAssignment', params)
@@ -365,7 +367,7 @@ class MTurkConnection(AWSQueryConnection):
     def get_hit(self, hit_id, response_groups=None):
         """
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         # Handle optional response groups argument
         if response_groups:
             self.build_list_params(params, response_groups, 'ResponseGroup')
@@ -381,7 +383,7 @@ class MTurkConnection(AWSQueryConnection):
         Reviewing.  Similarly, only Reviewing HITs can be reverted back to a
         status of Reviewable.
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         if revert:
             params['Revert'] = revert
         return self._process_request('SetHITAsReviewing', params)
@@ -403,7 +405,7 @@ class MTurkConnection(AWSQueryConnection):
         It is not possible to re-enable a HIT once it has been disabled.
         To make the work from a disabled HIT available again, create a new HIT.
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         # Handle optional response groups argument
         if response_groups:
             self.build_list_params(params, response_groups, 'ResponseGroup')
@@ -420,7 +422,7 @@ class MTurkConnection(AWSQueryConnection):
         reviewable, then call GetAssignmentsForHIT to retrieve the
         assignments.  Disposing of a HIT removes the HIT from the
         results of a call to GetReviewableHITs.  """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         return self._process_request('DisposeHIT', params)
 
     def expire_hit(self, hit_id):
@@ -437,7 +439,7 @@ class MTurkConnection(AWSQueryConnection):
         submitted, the expired HIT becomes"reviewable", and will be
         returned by a call to GetReviewableHITs.
         """
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         return self._process_request('ForceExpireHIT', params)
 
     def extend_hit(self, hit_id, assignments_increment=None, expiration_increment=None):
@@ -459,7 +461,7 @@ class MTurkConnection(AWSQueryConnection):
            (assignments_increment is not None and expiration_increment is not None):
             raise ValueError("Must specify either assignments_increment or expiration_increment, but not both")
 
-        params = {'HITId' : hit_id,}
+        params = {'HITId': hit_id,}
         if assignments_increment:
             params['MaxAssignmentsIncrement'] = assignments_increment
         if expiration_increment:
@@ -559,19 +561,19 @@ class MTurkConnection(AWSQueryConnection):
 
         test_duration: the number of seconds a worker has to complete the test.
 
-        auto_granted: if True, requests for the Qualification are granted immediately.
-          Can't coexist with a test.
+        auto_granted: if True, requests for the Qualification are granted
+           immediately.  Can't coexist with a test.
 
         auto_granted_value: auto_granted qualifications are given this value.
 
         """
 
-        params = {'Name' : name,
-                  'Description' : description,
-                  'QualificationTypeStatus' : status,
+        params = {'Name': name,
+                  'Description': description,
+                  'QualificationTypeStatus': status,
                   }
         if retry_delay is not None:
-            params['RetryDelay'] = retry_delay
+            params['RetryDelayInSeconds'] = retry_delay
 
         if test is not None:
             assert(isinstance(test, QuestionForm))
@@ -589,7 +591,7 @@ class MTurkConnection(AWSQueryConnection):
                 # Eventually someone will write an AnswerKey class.
 
         if auto_granted:
-            assert(test is False)
+            assert(test is None)
             params['AutoGranted'] = True
             params['AutoGrantedValue'] = auto_granted_value
 
@@ -628,14 +630,14 @@ class MTurkConnection(AWSQueryConnection):
             params['QualificationTypeStatus'] = status
 
         if retry_delay is not None:
-            params['RetryDelay'] = retry_delay
+            params['RetryDelayInSeconds'] = retry_delay
 
         if test is not None:
             assert(isinstance(test, QuestionForm))
             params['Test'] = test.get_as_xml()
 
         if test_duration is not None:
-            params['TestDuration'] = test_duration
+            params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
             if isinstance(answer_key, basestring):
@@ -671,7 +673,7 @@ class MTurkConnection(AWSQueryConnection):
                   'MustBeRequestable' : must_be_requestable,
                   'MustBeOwnedByCaller' : must_be_owned_by_caller}
         return self._process_request('SearchQualificationTypes', params,
-                                     [('QualificationType', QualificationType),])
+                    [('QualificationType', QualificationType),])
 
     def get_qualification_requests(self, qualification_type_id,
                                    sort_by='Expiration',
@@ -684,7 +686,7 @@ class MTurkConnection(AWSQueryConnection):
                   'PageSize' : page_size,
                   'PageNumber' : page_number}
         return self._process_request('GetQualificationRequests', params,
-                                     [('QualificationRequest', QualificationRequest),])
+                    [('QualificationRequest', QualificationRequest),])
 
     def grant_qualification(self, qualification_request_id, integer_value=1):
         """TODO: Document."""
@@ -705,8 +707,23 @@ class MTurkConnection(AWSQueryConnection):
         params = {'QualificationTypeId' : qualification_type_id,
                   'WorkerId' : worker_id,
                   'IntegerValue' : value,
-                  'SendNotification' : send_notification, }
+                  'SendNotification' : send_notification}
         return self._process_request('AssignQualification', params)
+
+    def get_qualification_score(self, qualification_type_id, worker_id):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id}
+        return self._process_request('GetQualificationScore', params,
+                    [('Qualification', Qualification),])
+
+    def update_qualification_score(self, qualification_type_id, worker_id,
+                                   value):
+        """TODO: Document."""
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'SubjectId' : worker_id,
+                  'IntegerValue' : value}
+        return self._process_request('UpdateQualificationScore', params)
 
     def _process_request(self, request_type, params, marker_elems=None):
         """
@@ -735,11 +752,11 @@ class MTurkConnection(AWSQueryConnection):
         Returns a comma+space-separated string of keywords from either
         a list or a string
         """
-        if type(keywords) is list:
+        if isinstance(keywords, list):
             keywords = ', '.join(keywords)
-        if type(keywords) is str:
+        if isinstance(keywords, str):
             final_keywords = keywords
-        elif type(keywords) is unicode:
+        elif isinstance(keywords, unicode):
             final_keywords = keywords.encode('utf-8')
         elif keywords is None:
             final_keywords = ""
@@ -803,6 +820,24 @@ class HIT(BaseAutoResultElement):
 
     # are we there yet?
     expired = property(_has_expired)
+
+class HITTypeId(BaseAutoResultElement):
+    """
+    Class to extract an HITTypeId structure from a response 
+    """
+
+    pass
+
+class Qualification(BaseAutoResultElement):
+    """
+    Class to extract an Qualification structure from a response (used in
+    ResultSet)
+    
+    Will have attributes named as per the Developer Guide such as
+    QualificationTypeId, IntegerValue. Does not seem to contain GrantTime.
+    """
+    
+    pass
 
 class QualificationType(BaseAutoResultElement):
     """
@@ -881,7 +916,5 @@ class QuestionFormAnswer(BaseAutoResultElement):
     def endElement(self, name, value, connection):
         if name == 'QuestionIdentifier':
             self.qid = value
-        elif name in ['FreeText', 'SelectionIdentifier'] and self.qid:
-            self.fields.append((self.qid,value))
-        elif name == 'Answer':
-            self.qid = None
+        elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
+            self.fields.append( value )

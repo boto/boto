@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import boto
+from boto.s3.connection import OrdinaryCallingFormat
 
 def sizeof_fmt(num):
     for x in ['b ','KB','MB','GB','TB', 'XB']:
@@ -11,6 +12,7 @@ def sizeof_fmt(num):
 def list_bucket(b, prefix=None):
     """List everything in a bucket"""
     from boto.s3.prefix import Prefix
+    from boto.s3.key import Key
     total = 0
     query = b
     if prefix:
@@ -33,10 +35,17 @@ def list_bucket(b, prefix=None):
                         mode = "-rwxr--"
                     elif g.permission == "FULL_CONTROL":
                         mode = "-rwxrwx"
-        print "%s\t%010s\t%s" % (mode, sizeof_fmt(size), k.name)
+        if isinstance(k, Key):
+           print "%s\t%s\t%010s\t%s" % (mode, k.last_modified,
+                 sizeof_fmt(size), k.name)
+        else:
+           #If it's not a Key object, it doesn't have a last_modified time, so
+           #print nothing instead
+           print "%s\t%s\t%010s\t%s" % (mode, ' '*24,
+              sizeof_fmt(size), k.name)
         total += size
-    print "="*60
-    print "TOTAL: \t%010s \t%i Files" % (sizeof_fmt(total), num)
+    print "="*80
+    print "\t\tTOTAL:  \t%010s \t%i Files" % (sizeof_fmt(total), num)
 
 def list_buckets(s3):
     """List all the buckets"""
@@ -45,12 +54,24 @@ def list_buckets(s3):
 
 if __name__ == "__main__":
     import sys
-    s3 = boto.connect_s3()
+
+    pairs = []
+    mixedCase = False
+    for name in sys.argv[1:]:
+            if "/" in name:
+                pairs.append(name.split("/",1))
+            else:
+                pairs.append([name, None])
+            if pairs[-1][0].lower() != pairs[-1][0]:
+                mixedCase = True
+    
+    if mixedCase:
+        s3 = boto.connect_s3(calling_format=OrdinaryCallingFormat())
+    else:
+        s3 = boto.connect_s3()
+
     if len(sys.argv) < 2:
         list_buckets(s3)
     else:
-        for name in sys.argv[1:]:
-            prefix = None
-            if "/" in name:
-                (name, prefix) = name.split("/",1)
+        for name, prefix in pairs:
             list_bucket(s3.get_bucket(name), prefix)

@@ -21,17 +21,29 @@
 #
 
 class BlockDeviceType(object):
+    """
+    Represents parameters for a block device.
+    """
 
-    def __init__(self, connection=None):
+    def __init__(self,
+                 connection=None,
+                 ephemeral_name=None,
+                 no_device=False,
+                 volume_id=None,
+                 snapshot_id=None,
+                 status=None,
+                 attach_time=None,
+                 delete_on_termination=False,
+                 size=None):
         self.connection = connection
-        self.ephemeral_name = None
-        self.no_device = False
-        self.volume_id = None
-        self.snapshot_id = None
-        self.status = None
-        self.attach_time = None
-        self.delete_on_termination = False
-        self.size = None
+        self.ephemeral_name = ephemeral_name
+        self.no_device = no_device
+        self.volume_id = volume_id
+        self.snapshot_id = snapshot_id
+        self.status = status
+        self.attach_time = attach_time
+        self.delete_on_termination = delete_on_termination
+        self.size = size
 
     def startElement(self, name, attrs, connection):
         pass
@@ -63,15 +75,29 @@ class BlockDeviceType(object):
 EBSBlockDeviceType = BlockDeviceType
 
 class BlockDeviceMapping(dict):
+    """
+    Represents a collection of BlockDeviceTypes when creating ec2 instances.
+
+    Example: 
+    dev_sda1 = BlockDeviceType()
+    dev_sda1.size = 100   # change root volume to 100GB instead of default for ami
+    bdm = BlockDeviceMapping()
+    bdm['/dev/sda1'] = dev_sda1
+    reservation = image.run(..., block_device_map=bdm, ...)
+    """
 
     def __init__(self, connection=None):
+        """
+        :type connection: :class:`boto.ec2.EC2Connection`
+        :param connection: Optional connection.
+        """
         dict.__init__(self)
         self.connection = connection
         self.current_name = None
         self.current_value = None
 
     def startElement(self, name, attrs, connection):
-        if name == 'ebs':
+        if name == 'ebs' or name == 'virtualName':
             self.current_value = BlockDeviceType(self)
             return self.current_value
 

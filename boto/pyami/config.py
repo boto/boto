@@ -15,40 +15,50 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
 import StringIO, os, re
+import warnings
 import ConfigParser
 import boto
 
+# If running in Google App Engine there is no "user" and
+# os.path.expanduser() will fail. Attempt to detect this case and use a
+# no-op expanduser function in this case.
+try:
+  os.path.expanduser('~')
+  expanduser = os.path.expanduser
+except (AttributeError, ImportError):
+  # This is probably running on App Engine.
+  expanduser = (lambda x: x)
+
 # By default we use two locations for the boto configurations,
-# /etc/boto.cfg and $HOME/.boto (which is ~/.boto on both Windows and
-# Unix platforms for python)
+# /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
 BotoConfigPath = '/etc/boto.cfg'
 BotoConfigLocations = [BotoConfigPath]
-UserConfigPath = os.path.expanduser('~/.boto')
+UserConfigPath = os.path.join(expanduser('~'), '.boto')
 BotoConfigLocations.append(UserConfigPath)
 
-# IF there's a BOTO_CONFIG variable set, we load ONLY 
+# If there's a BOTO_CONFIG variable set, we load ONLY
 # that variable
 if 'BOTO_CONFIG' in os.environ:
-    BotoConfigLocations = [os.path.expanduser(os.environ['BOTO_CONFIG'])]
+    BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
 
 # If there's a BOTO_PATH variable set, we use anything there
-# as the current configuration locations, split with semicolons
+# as the current configuration locations, split with colons
 elif 'BOTO_PATH' in os.environ:
     BotoConfigLocations = []
     for path in os.environ['BOTO_PATH'].split(":"):
-        BotoConfigLocations.append(os.path.expanduser(path))
+        BotoConfigLocations.append(expanduser(path))
 
 
-class Config(ConfigParser.ConfigParser):
+class Config(ConfigParser.SafeConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        ConfigParser.ConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
+        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
                                                       'debug' : '0'})
         if do_load:
             if path:
@@ -59,12 +69,16 @@ class Config(ConfigParser.ConfigParser):
                 self.read(BotoConfigLocations)
                 self.possibly_hide_credentials()
             if "AWS_CREDENTIAL_FILE" in os.environ:
-                self.load_credential_file(os.path.expanduser(os.environ['AWS_CREDENTIAL_FILE']))
+                full_path = expanduser(os.environ['AWS_CREDENTIAL_FILE'])
+                try:
+                    self.load_credential_file(full_path)
+                except IOError:
+                    warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
 
     def possibly_hide_credentials(self):
         """
         If the Credentials:do_not_store_credentials flag is set, blank out the credentials
-        from the returned config object and re-read them from the config file in the get 
+        from the returned config object and re-read them from the config file in the get
         command when needed. In this way, if you have an open python interpreter and you
         remove a keyfob with your credentials on it when you shutdown for the night, your
         session can't be used to do something possibly sinister with AWS, should you loose
@@ -147,28 +161,32 @@ class Config(ConfigParser.ConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            if self.has_option('Credentials', 'do_not_store_credentials') and \
-                    ConfigParser.ConfigParser.get(self, 'Credentials', 'do_not_store_credentials') == 'True':
+           val = ConfigParser.SafeConfigParser.get(self, section, name)
+           #--
+           #--- If we're not storing credentials, val won't have the correct info for aws*key names
+           #--  Look them up special...
+           #--
+           if self.has_option('Credentials', 'do_not_store_credentials') and \
+                    ConfigParser.SafeConfigParser.get(self, 'Credentials', 'do_not_store_credentials') == 'True':
                 if section == 'Credentials' and name == 'aws_access_key_id':
                     local_config_parser = ConfigParser.SafeConfigParser({'working_dir' : '/tmp', 'debug' : 0})
                     local_config_parser.read(BotoConfigLocations)
-                    return local_config_parser.get('Credentials', 'aws_access_key_id')
+                    val = local_config_parser.get('Credentials', 'aws_access_key_id')
                 if section == 'Credentials' and name == 'aws_secret_access_key':
                     local_config_parser = ConfigParser.SafeConfigParser({'working_dir' : '/tmp', 'debug' : 0})
                     local_config_parser.read(BotoConfigLocations)
-                    return local_config_parser.get('Credentials', 'aws_secret_access_key')
-            val = ConfigParser.ConfigParser.get(self, section, name)
+                    val = local_config_parser.get('Credentials', 'aws_secret_access_key')
         except:
             val = default
         return val
-    
+
     def getint(self, section, name, default=0):
         try:
             val = ConfigParser.SafeConfigParser.getint(self, section, name)
         except:
             val = int(default)
         return val
-    
+
     def getfloat(self, section, name, default=0.0):
         try:
             val = ConfigParser.SafeConfigParser.getfloat(self, section, name)
@@ -186,13 +204,13 @@ class Config(ConfigParser.ConfigParser):
         else:
             val = default
         return val
-    
+
     def setbool(self, section, name, value):
         if value:
             self.set(section, name, 'true')
         else:
             self.set(section, name, 'false')
-    
+
     def dump(self):
         s = StringIO.StringIO()
         self.write(s)
@@ -208,9 +226,13 @@ class Config(ConfigParser.ConfigParser):
                     fp.write('%s = xxxxxxxxxxxxxxxxxx\n' % option)
                 else:
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
-    
+
     def dump_to_sdb(self, domain_name, item_name):
-        import simplejson
+        try:
+            import simplejson as json
+        except ImportError:
+            import json
+
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         if not domain:
@@ -221,18 +243,22 @@ class Config(ConfigParser.ConfigParser):
             d = {}
             for option in self.options(section):
                 d[option] = self.get(section, option)
-            item[section] = simplejson.dumps(d)
+            item[section] = json.dumps(d)
         item.save()
 
     def load_from_sdb(self, domain_name, item_name):
-        import simplejson
+        try:
+            import json
+        except ImportError:
+            import simplejson as json
+
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         item = domain.get_item(item_name)
         for section in item.keys():
             if not self.has_section(section):
                 self.add_section(section)
-            d = simplejson.loads(item[section])
+            d = json.loads(item[section])
             for attr_name in d.keys():
                 attr_value = d[attr_name]
                 if attr_value == None:

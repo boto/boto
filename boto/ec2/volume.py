@@ -84,7 +84,9 @@ class Volume(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_volumes([self.id])
+        # Check the resultset since Eucalyptus ignores the volumeId param
+        unfiltered_rs = self.connection.get_all_volumes([self.id])
+        rs = [ x for x in unfiltered_rs if x.id == self.id ]
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
@@ -110,7 +112,7 @@ class Volume(TaggedEC2Object):
 
         :type device: str
         :param device: The device on the instance through which the
-                       volume will be exposted (e.g. /dev/sdh)
+                       volume will be exposed (e.g. /dev/sdh)
 
         :rtype: bool
         :return: True if successful
@@ -147,9 +149,9 @@ class Volume(TaggedEC2Object):
 
         :type description: str
         :param description: A description of the snapshot.  Limited to 256 characters.
-        
-        :rtype: bool
-        :return: True if successful
+
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         return self.connection.create_snapshot(self.id, description)
 
@@ -225,3 +227,27 @@ class AttachmentSet(object):
         else:
             setattr(self, name, value)
 
+class VolumeAttribute:
+
+    def __init__(self, parent=None):
+        self.id = None
+        self._key_name = None
+        self.attrs = {}
+
+    def startElement(self, name, attrs, connection):
+        if name == 'autoEnableIO':
+            self._key_name = name
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'value':
+            if value.lower() == 'true':
+                self.attrs[self._key_name] = True
+            else:
+                self.attrs[self._key_name] = False
+        elif name == 'volumeId':
+            self.id = value
+        else:
+            setattr(self, name, value)
+
+            

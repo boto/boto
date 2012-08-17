@@ -28,6 +28,15 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 
 import copy
 import boto
+import base64
+
+from boto.utils import compute_md5
+from boto.s3.prefix import Prefix
+
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 NOT_IMPL = None
 
@@ -53,10 +62,18 @@ class MockKey(object):
         self.bucket = bucket
         self.name = name
         self.data = None
+        self.etag = None
         self.size = None
         self.content_encoding = None
         self.content_type = None
         self.last_modified = 'Wed, 06 Oct 2010 05:11:54 GMT'
+        self.BufferSize = 8192
+
+    def __repr__(self):
+        if self.bucket:
+            return '<MockKey: %s,%s>' % (self.bucket.name, self.name)
+        else:
+            return '<MockKey: %s>' % self.name
 
     def get_contents_as_string(self, headers=NOT_IMPL,
                                cb=NOT_IMPL, num_cb=NOT_IMPL,
@@ -92,7 +109,8 @@ class MockKey(object):
                                cb=NOT_IMPL, num_cb=NOT_IMPL,
                                policy=NOT_IMPL, md5=NOT_IMPL,
                                res_upload_handler=NOT_IMPL):
-        self.data = fp.readlines()
+        self.data = fp.read()
+        self.set_etag()
         self.size = len(self.data)
         self._handle_headers(headers)
 
@@ -100,25 +118,89 @@ class MockKey(object):
                                  cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
                                  md5=NOT_IMPL, reduced_redundancy=NOT_IMPL):
         self.data = copy.copy(s)
+        self.set_etag()
         self.size = len(s)
         self._handle_headers(headers)
 
+    def set_contents_from_filename(self, filename, headers=None,
+                                   replace=NOT_IMPL, cb=NOT_IMPL,
+                                   num_cb=NOT_IMPL, policy=NOT_IMPL,
+                                   md5=NOT_IMPL, res_upload_handler=NOT_IMPL):
+        fp = open(filename, 'rb')
+        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                    policy, md5, res_upload_handler)
+        fp.close()
+    
+    def copy(self, dst_bucket_name, dst_key, metadata=NOT_IMPL,
+             reduced_redundancy=NOT_IMPL, preserve_acl=NOT_IMPL):
+        dst_bucket = self.bucket.connection.get_bucket(dst_bucket_name)
+        return dst_bucket.copy_key(dst_key, self.bucket.name,
+                                   self.name, metadata)
+
+    def set_etag(self):
+        """
+        Set etag attribute by generating hex MD5 checksum on current 
+        contents of mock key.
+        """
+        m = md5()
+        m.update(self.data)
+        hex_md5 = m.hexdigest()
+        self.etag = hex_md5
+
+    def compute_md5(self, fp):
+        """
+        :type fp: file
+        :param fp: File pointer to the file to MD5 hash.  The file pointer
+                   will be reset to the beginning of the file before the
+                   method returns.
+
+        :rtype: tuple
+        :return: A tuple containing the hex digest version of the MD5 hash
+                 as the first element and the base64 encoded version of the
+                 plain digest as the second element.
+        """
+        tup = compute_md5(fp)
+        # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
+        # The internal implementation of compute_md5() needs to return the 
+        # file size but we don't want to return that value to the external
+        # caller because it changes the class interface (i.e. it might
+        # break some code) so we consume the third tuple value here and 
+        # return the remainder of the tuple to the caller, thereby preserving 
+        # the existing interface.
+        self.size = tup[2]
+        return tup[0:2]
 
 class MockBucket(object):
 
-    def __init__(self, connection=NOT_IMPL, name=None, key_class=NOT_IMPL):
+    def __init__(self, connection=None, name=None, key_class=NOT_IMPL):
         self.name = name
         self.keys = {}
         self.acls = {name: MockAcl()}
+        # default object ACLs are one per bucket and not supported for keys
+        self.def_acl = MockAcl()
+        self.subresources = {}
+        self.connection = connection
+        self.logging = False
+
+    def __repr__(self):
+        return 'MockBucket: %s' % self.name
 
     def copy_key(self, new_key_name, src_bucket_name,
                  src_key_name, metadata=NOT_IMPL, src_version_id=NOT_IMPL,
-                 storage_class=NOT_IMPL, preserve_acl=NOT_IMPL):
+                 storage_class=NOT_IMPL, preserve_acl=NOT_IMPL,
+                 encrypt_key=NOT_IMPL, headers=NOT_IMPL, query_args=NOT_IMPL):
         new_key = self.new_key(key_name=new_key_name)
         src_key = mock_connection.get_bucket(
             src_bucket_name).get_key(src_key_name)
         new_key.data = copy.copy(src_key.data)
         new_key.size = len(new_key.data)
+        return new_key
+
+    def disable_logging(self):
+        self.logging = False
+
+    def enable_logging(self, target_bucket_prefix):
+        self.logging = True
 
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
@@ -127,6 +209,18 @@ class MockBucket(object):
         else:
             # Return ACL for the bucket.
             return self.acls[self.name]
+
+    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL, 
+                    version_id=NOT_IMPL):
+        # Return default ACL for the bucket.
+        return self.def_acl
+
+    def get_subresource(self, subresource, key_name=NOT_IMPL, headers=NOT_IMPL,
+                        version_id=NOT_IMPL):
+        if subresource in self.subresources:
+            return self.subresources[subresource]
+        else:
+            return '<Subresource/>'
 
     def new_key(self, key_name=None):
         mock_key = MockKey(self, key_name)
@@ -149,17 +243,29 @@ class MockBucket(object):
             return None
         return self.keys[key_name]
 
-    def list(self, prefix='', delimiter=NOT_IMPL, marker=NOT_IMPL,
+    def list(self, prefix='', delimiter='', marker=NOT_IMPL,
              headers=NOT_IMPL):
+        prefix = prefix or '' # Turn None into '' for prefix match.
         # Return list instead of using a generator so we don't get
         # 'dictionary changed size during iteration' error when performing
         # deletions while iterating (e.g., during test cleanup).
         result = []
+        key_name_set = set()
         for k in self.keys.itervalues():
-            if not prefix:
-                result.append(k)
-            elif k.name.startswith(prefix):
-                result.append(k)
+            if k.name.startswith(prefix):
+                k_name_past_prefix = k.name[len(prefix):]
+                if delimiter:
+                  pos = k_name_past_prefix.find(delimiter)
+                else:
+                  pos = -1
+                if (pos != -1):
+                    key_or_prefix = Prefix(
+                        bucket=self, name=k.name[:len(prefix)+pos+1])
+                else:
+                    key_or_prefix = MockKey(bucket=self, name=k.name)
+                if key_or_prefix.name not in key_name_set:
+                    key_name_set.add(key_or_prefix.name)
+                    result.append(key_or_prefix)
         return result
 
     def set_acl(self, acl_or_str, key_name='', headers=NOT_IMPL,
@@ -168,10 +274,21 @@ class MockBucket(object):
         # the get_acl call will just return that string name.
         if key_name:
             # Set ACL for the key.
-            self.acls[key_name] = acl_or_str
+            self.acls[key_name] = MockAcl(acl_or_str)
         else:
             # Set ACL for the bucket.
-            self.acls[self.name] = acl_or_str
+            self.acls[self.name] = MockAcl(acl_or_str)
+
+    def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, headers=NOT_IMPL,
+                    version_id=NOT_IMPL):
+        # We only handle setting ACL XML here; if you pass a canned ACL
+        # the get_acl call will just return that string name.
+        # Set default ACL for the bucket.
+        self.def_acl = acl_or_str
+
+    def set_subresource(self, subresource, value, key_name=NOT_IMPL,
+                        headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.subresources[subresource] = value
 
 
 class MockConnection(object):
@@ -191,15 +308,17 @@ class MockConnection(object):
                       policy=NOT_IMPL):
         if bucket_name in self.buckets:
             raise boto.exception.StorageCreateError(
-                409, 'BucketAlreadyOwnedByYou', 'bucket already exists')
-        mock_bucket = MockBucket(name=bucket_name)
+                409, 'BucketAlreadyOwnedByYou',
+                "<Message>Your previous request to create the named bucket "
+                "succeeded and you already own it.</Message>")
+        mock_bucket = MockBucket(name=bucket_name, connection=self)
         self.buckets[bucket_name] = mock_bucket
         return mock_bucket
 
     def delete_bucket(self, bucket, headers=NOT_IMPL):
         if bucket not in self.buckets:
-            raise boto.exception.StorageResponseError(404, 'NoSuchBucket',
-                                                'no such bucket')
+            raise boto.exception.StorageResponseError(
+                404, 'NoSuchBucket', '<Message>no such bucket</Message>')
         del self.buckets[bucket]
 
     def get_bucket(self, bucket_name, validate=NOT_IMPL, headers=NOT_IMPL):
@@ -218,8 +337,10 @@ mock_connection = MockConnection()
 
 class MockBucketStorageUri(object):
 
+    delim = '/'
+
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=NOT_IMPL):
+                 debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL):
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -258,11 +379,27 @@ class MockBucketStorageUri(object):
                    version_id=NOT_IMPL, mfa_token=NOT_IMPL):
         self.get_bucket().delete_key(self.object_name)
 
+    def disable_logging(self, validate=NOT_IMPL, headers=NOT_IMPL,
+                        version_id=NOT_IMPL):
+        self.get_bucket().disable_logging()
+
+    def enable_logging(self, target_bucket, target_prefix, validate=NOT_IMPL,
+                       headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.get_bucket().enable_logging(target_bucket)
+
     def equals(self, uri):
         return self.uri == uri.uri
 
     def get_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, version_id=NOT_IMPL):
         return self.get_bucket().get_acl(self.object_name)
+
+    def get_def_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, 
+                    version_id=NOT_IMPL):
+        return self.get_bucket().get_def_acl(self.object_name)
+
+    def get_subresource(self, subresource, validate=NOT_IMPL, headers=NOT_IMPL,
+                        version_id=NOT_IMPL):
+        return self.get_bucket().get_subresource(subresource, self.object_name)
 
     def get_all_buckets(self, headers=NOT_IMPL):
         return self.connect().get_all_buckets()
@@ -284,10 +421,28 @@ class MockBucketStorageUri(object):
         return True
 
     def names_container(self):
-        return not self.object_name
+        return bool(not self.object_name)
 
     def names_singleton(self):
-        return self.object_name
+        return bool(self.object_name)
+
+    def names_directory(self):
+        return False
+
+    def names_provider(self):
+        return bool(not self.bucket_name)
+
+    def names_bucket(self):
+        return self.names_container()
+
+    def names_file(self):
+        return False
+
+    def names_object(self):
+        return not self.names_container()
+
+    def is_stream(self):
+        return False
 
     def new_key(self, validate=NOT_IMPL, headers=NOT_IMPL):
         bucket = self.get_bucket()
@@ -296,3 +451,11 @@ class MockBucketStorageUri(object):
     def set_acl(self, acl_or_str, key_name='', validate=NOT_IMPL,
                 headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().set_acl(acl_or_str, key_name)
+
+    def set_def_acl(self, acl_or_str, key_name=NOT_IMPL, validate=NOT_IMPL,
+                    headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.get_bucket().set_def_acl(acl_or_str)
+
+    def set_subresource(self, subresource, value, validate=NOT_IMPL,
+                        headers=NOT_IMPL, version_id=NOT_IMPL):
+        self.get_bucket().set_subresource(subresource, value, self.object_name)

@@ -25,6 +25,10 @@ class InstanceInfo(object):
     """
     
     def __init__(self, connection=None, id=None, state=None):
+        """
+        :ivar str id: The instance's EC2 ID.
+        :ivar str state: Specifies the current status of the instance.
+        """
         self.connection = connection
         self.id = id
         self.state = state
