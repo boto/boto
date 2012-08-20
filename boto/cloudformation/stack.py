@@ -240,7 +240,7 @@ class StackResourceSummary:
 
     def endElement(self, name, value, connection):
         if name == "LastUpdatedTimestamp":
-            self.last_updated_timestampe = datetime.strptime(value,
+            self.last_updated_timestamp = datetime.strptime(value,
                 '%Y-%m-%dT%H:%M:%SZ')
         elif name == "LogicalResourceId":
             self.logical_resource_id = value

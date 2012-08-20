@@ -189,7 +189,7 @@ class Entry:
             # __contains__() method works). At one time gsutil disallowed
             # xmlplus-based parsers, until this more specific problem was 
             # determined.
-            if not attrs.has_key(TYPE):
+            if TYPE not in attrs:
                 raise InvalidAclError('Missing "%s" in "%s" part of ACL' %
                                       (TYPE, SCOPE))
             self.scope = Scope(self, attrs[TYPE])
@@ -240,7 +240,7 @@ class Scope:
         self.id = id
         self.domain = domain
         self.email_address = email_address
-        if not self.ALLOWED_SCOPE_TYPE_SUB_ELEMS.has_key(self.type.lower()):
+        if self.type.lower() not in self.ALLOWED_SCOPE_TYPE_SUB_ELEMS:
             raise InvalidAclError('Invalid %s %s "%s" ' %
                                   (SCOPE, TYPE, self.type))
 

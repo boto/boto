@@ -46,7 +46,14 @@ def list(elb):
 
 def get(elb, name):
     """Get details about ELB <name>"""
-    elbs = elb.get_all_load_balancers(name)
+    try:
+        elbs = elb.get_all_load_balancers(name)
+    except boto.exception.BotoServerError as se:
+        if se.code == 'LoadBalancerNotFound':
+            elbs = []
+        else:
+            raise
+
     if len(elbs) < 1:
         print "No load balancer by the name of %s found" % name
         return
@@ -55,7 +62,13 @@ def get(elb, name):
             print "="*80
             print "Name: %s" % b.name
             print "DNS Name: %s" % b.dns_name
+            if b.canonical_hosted_zone_name:
+                print "Canonical hosted zone name: %s" % b.canonical_hosted_zone_name
+            if b.canonical_hosted_zone_name_id:
+                print "Canonical hosted zone name id: %s" % b.canonical_hosted_zone_name_id
+            print
 
+            print "Health Check: %s" % b.health_check
             print
 
             print "Listeners"
@@ -75,8 +88,10 @@ def get(elb, name):
 
             print "Instances"
             print "---------"
-            for i in b.instances:
-                print i.id
+            print "%-12s %-15s %s" % ("ID", "STATE", "DESCRIPTION")
+            for state in b.get_instance_health():
+                print "%-12s %-15s %s" % (state.instance_id, state.state,
+                                         state.description)
 
             print
 

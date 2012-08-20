@@ -65,93 +65,98 @@ STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 class Provider(object):
 
     CredentialMap = {
-        'aws' : ('aws_access_key_id', 'aws_secret_access_key'),
-        'google' : ('gs_access_key_id', 'gs_secret_access_key'),
+        'aws':    ('aws_access_key_id', 'aws_secret_access_key'),
+        'google': ('gs_access_key_id',  'gs_secret_access_key'),
     }
 
     AclClassMap = {
-        'aws' : Policy,
-        'google' : ACL
+        'aws':    Policy,
+        'google': ACL
     }
 
     CannedAclsMap = {
-        'aws' : CannedS3ACLStrings,
-        'google' : CannedGSACLStrings
+        'aws':    CannedS3ACLStrings,
+        'google': CannedGSACLStrings
     }
 
     HostKeyMap = {
-        'aws' : 's3',
-        'google' : 'gs'
+        'aws':    's3',
+        'google': 'gs'
     }
 
     ChunkedTransferSupport = {
-        'aws' : False,
-        'google' : True
+        'aws':    False,
+        'google': True
+    }
+
+    MetadataServiceSupport = {
+        'aws': True,
+        'google': False
     }
 
     # If you update this map please make sure to put "None" for the
     # right-hand-side for any headers that don't apply to a provider, rather
     # than simply leaving that header out (which would cause KeyErrors).
     HeaderInfoMap = {
-        'aws' : {
-            HEADER_PREFIX_KEY : AWS_HEADER_PREFIX,
-            METADATA_PREFIX_KEY : AWS_HEADER_PREFIX + 'meta-',
-            ACL_HEADER_KEY : AWS_HEADER_PREFIX + 'acl',
-            AUTH_HEADER_KEY : 'AWS',
-            COPY_SOURCE_HEADER_KEY : AWS_HEADER_PREFIX + 'copy-source',
-            COPY_SOURCE_VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX +
+        'aws': {
+            HEADER_PREFIX_KEY: AWS_HEADER_PREFIX,
+            METADATA_PREFIX_KEY: AWS_HEADER_PREFIX + 'meta-',
+            ACL_HEADER_KEY: AWS_HEADER_PREFIX + 'acl',
+            AUTH_HEADER_KEY: 'AWS',
+            COPY_SOURCE_HEADER_KEY: AWS_HEADER_PREFIX + 'copy-source',
+            COPY_SOURCE_VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX +
                                                 'copy-source-version-id',
-            COPY_SOURCE_RANGE_HEADER_KEY : AWS_HEADER_PREFIX +
+            COPY_SOURCE_RANGE_HEADER_KEY: AWS_HEADER_PREFIX +
                                            'copy-source-range',
-            DATE_HEADER_KEY : AWS_HEADER_PREFIX + 'date',
-            DELETE_MARKER_HEADER_KEY : AWS_HEADER_PREFIX + 'delete-marker',
-            METADATA_DIRECTIVE_HEADER_KEY : AWS_HEADER_PREFIX +
+            DATE_HEADER_KEY: AWS_HEADER_PREFIX + 'date',
+            DELETE_MARKER_HEADER_KEY: AWS_HEADER_PREFIX + 'delete-marker',
+            METADATA_DIRECTIVE_HEADER_KEY: AWS_HEADER_PREFIX +
                                             'metadata-directive',
-            RESUMABLE_UPLOAD_HEADER_KEY : None,
-            SECURITY_TOKEN_HEADER_KEY : AWS_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY : AWS_HEADER_PREFIX + 'server-side-encryption',
-            VERSION_ID_HEADER_KEY : AWS_HEADER_PREFIX + 'version-id',
-            STORAGE_CLASS_HEADER_KEY : AWS_HEADER_PREFIX + 'storage-class',
-            MFA_HEADER_KEY : AWS_HEADER_PREFIX + 'mfa',
+            RESUMABLE_UPLOAD_HEADER_KEY: None,
+            SECURITY_TOKEN_HEADER_KEY: AWS_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX + 'server-side-encryption',
+            VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
+            STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
+            MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
         },
-        'google' : {
-            HEADER_PREFIX_KEY : GOOG_HEADER_PREFIX,
-            METADATA_PREFIX_KEY : GOOG_HEADER_PREFIX + 'meta-',
-            ACL_HEADER_KEY : GOOG_HEADER_PREFIX + 'acl',
-            AUTH_HEADER_KEY : 'GOOG1',
-            COPY_SOURCE_HEADER_KEY : GOOG_HEADER_PREFIX + 'copy-source',
-            COPY_SOURCE_VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX +
+        'google': {
+            HEADER_PREFIX_KEY: GOOG_HEADER_PREFIX,
+            METADATA_PREFIX_KEY: GOOG_HEADER_PREFIX + 'meta-',
+            ACL_HEADER_KEY: GOOG_HEADER_PREFIX + 'acl',
+            AUTH_HEADER_KEY: 'GOOG1',
+            COPY_SOURCE_HEADER_KEY: GOOG_HEADER_PREFIX + 'copy-source',
+            COPY_SOURCE_VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX +
                                                 'copy-source-version-id',
-            COPY_SOURCE_RANGE_HEADER_KEY : None,
-            DATE_HEADER_KEY : GOOG_HEADER_PREFIX + 'date',
-            DELETE_MARKER_HEADER_KEY : GOOG_HEADER_PREFIX + 'delete-marker',
-            METADATA_DIRECTIVE_HEADER_KEY : GOOG_HEADER_PREFIX  +
+            COPY_SOURCE_RANGE_HEADER_KEY: None,
+            DATE_HEADER_KEY: GOOG_HEADER_PREFIX + 'date',
+            DELETE_MARKER_HEADER_KEY: GOOG_HEADER_PREFIX + 'delete-marker',
+            METADATA_DIRECTIVE_HEADER_KEY: GOOG_HEADER_PREFIX  +
                                             'metadata-directive',
-            RESUMABLE_UPLOAD_HEADER_KEY : GOOG_HEADER_PREFIX + 'resumable',
-            SECURITY_TOKEN_HEADER_KEY : GOOG_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY : None,
+            RESUMABLE_UPLOAD_HEADER_KEY: GOOG_HEADER_PREFIX + 'resumable',
+            SECURITY_TOKEN_HEADER_KEY: GOOG_HEADER_PREFIX + 'security-token',
+            SERVER_SIDE_ENCRYPTION_KEY: None,
             # Note that this version header is not to be confused with
             # the Google Cloud Storage 'x-goog-api-version' header.
-            VERSION_ID_HEADER_KEY : GOOG_HEADER_PREFIX + 'version-id',
-            STORAGE_CLASS_HEADER_KEY : None,
-            MFA_HEADER_KEY : None,
+            VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX + 'version-id',
+            STORAGE_CLASS_HEADER_KEY: None,
+            MFA_HEADER_KEY: None,
         }
     }
 
     ErrorMap = {
-        'aws' : {
-            STORAGE_COPY_ERROR : boto.exception.S3CopyError,
-            STORAGE_CREATE_ERROR : boto.exception.S3CreateError,
-            STORAGE_DATA_ERROR : boto.exception.S3DataError,
-            STORAGE_PERMISSIONS_ERROR : boto.exception.S3PermissionsError,
-            STORAGE_RESPONSE_ERROR : boto.exception.S3ResponseError,
+        'aws': {
+            STORAGE_COPY_ERROR: boto.exception.S3CopyError,
+            STORAGE_CREATE_ERROR: boto.exception.S3CreateError,
+            STORAGE_DATA_ERROR: boto.exception.S3DataError,
+            STORAGE_PERMISSIONS_ERROR: boto.exception.S3PermissionsError,
+            STORAGE_RESPONSE_ERROR: boto.exception.S3ResponseError,
         },
-        'google' : {
-            STORAGE_COPY_ERROR : boto.exception.GSCopyError,
-            STORAGE_CREATE_ERROR : boto.exception.GSCreateError,
-            STORAGE_DATA_ERROR : boto.exception.GSDataError,
-            STORAGE_PERMISSIONS_ERROR : boto.exception.GSPermissionsError,
-            STORAGE_RESPONSE_ERROR : boto.exception.GSResponseError,
+        'google': {
+            STORAGE_COPY_ERROR: boto.exception.GSCopyError,
+            STORAGE_CREATE_ERROR: boto.exception.GSCreateError,
+            STORAGE_DATA_ERROR: boto.exception.GSDataError,
+            STORAGE_PERMISSIONS_ERROR: boto.exception.GSPermissionsError,
+            STORAGE_RESPONSE_ERROR: boto.exception.GSResponseError,
         }
     }
 
@@ -176,21 +181,42 @@ class Provider(object):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
             self.access_key = access_key
-        elif os.environ.has_key(access_key_name.upper()):
+        elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
 
         if secret_key is not None:
             self.secret_key = secret_key
-        elif os.environ.has_key(secret_key_name.upper()):
+        elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
+
+        if ((self.access_key is None or self.secret_key is None) and
+                self.MetadataServiceSupport[self.name]):
+            self._populate_keys_from_metadata_server()
+
         if isinstance(self.secret_key, unicode):
             # the secret key must be bytes and not unicode to work
             #  properly with hmac.new (see http://bugs.python.org/issue5285)
             self.secret_key = str(self.secret_key)
+
+    def _populate_keys_from_metadata_server(self):
+        # get_instance_metadata is imported here because of a circular
+        # dependency.
+        from boto.utils import get_instance_metadata
+        timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
+        metadata = get_instance_metadata(timeout=timeout, num_retries=1)
+        # I'm assuming there's only one role on the instance profile.
+        if metadata and 'iam' in metadata:
+            security = metadata['iam']['security-credentials'].values()[0]
+            if self.access_key is None:
+                self.access_key = security['AccessKeyId']
+            if self.secret_key is None:
+                self.secret_key = security['SecretAccessKey']
+            if self.security_token is None:
+                self.security_token = security['Token']
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]

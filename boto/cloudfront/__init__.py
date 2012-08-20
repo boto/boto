@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -34,6 +34,7 @@ from boto.cloudfront.invalidation import InvalidationBatch
 from boto.resultset import ResultSet
 from boto.cloudfront.exception import CloudFrontServerError
 
+
 class CloudFrontConnection(AWSAuthConnection):
 
     DefaultHost = 'cloudfront.amazonaws.com'
@@ -41,10 +42,11 @@ class CloudFrontConnection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0):
+                 host=DefaultHost, debug=0, security_token=None):
         AWSAuthConnection.__init__(self, host,
-                aws_access_key_id, aws_secret_access_key,
-                True, port, proxy, proxy_port, debug=debug)
+                                   aws_access_key_id, aws_secret_access_key,
+                                   True, port, proxy, proxy_port, debug=debug,
+                                   security_token=security_token)
 
     def get_etag(self, response):
         response_headers = response.msg
@@ -57,11 +59,12 @@ class CloudFrontConnection(AWSAuthConnection):
         return ['cloudfront']
 
     # Generics
-    
+
     def _get_all_objects(self, resource, tags):
         if not tags:
-            tags=[('DistributionSummary', DistributionSummary)]
-        response = self.make_request('GET', '/%s/%s' % (self.Version, resource))
+            tags = [('DistributionSummary', DistributionSummary)]
+        response = self.make_request('GET', '/%s/%s' % (self.Version,
+                                                        resource))
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
@@ -99,24 +102,26 @@ class CloudFrontConnection(AWSAuthConnection):
         h = handler.XmlHandler(d, self)
         xml.sax.parseString(body, h)
         return d
-    
+
     def _set_config(self, distribution_id, etag, config):
         if isinstance(config, StreamingDistributionConfig):
             resource = 'streaming-distribution'
         else:
             resource = 'distribution'
         uri = '/%s/%s/%s/config' % (self.Version, resource, distribution_id)
-        headers = {'If-Match' : etag, 'Content-Type' : 'text/xml'}
+        headers = {'If-Match': etag, 'Content-Type': 'text/xml'}
         response = self.make_request('PUT', uri, headers, config.to_xml())
         body = response.read()
         boto.log.debug(body)
         if response.status != 200:
             raise CloudFrontServerError(response.status, response.reason, body)
         return self.get_etag(response)
-    
+
     def _create_object(self, config, resource, dist_class):
-        response = self.make_request('POST', '/%s/%s' % (self.Version, resource),
-                                     {'Content-Type' : 'text/xml'}, data=config.to_xml())
+        response = self.make_request('POST', '/%s/%s' % (self.Version,
+                                                         resource),
+                                     {'Content-Type': 'text/xml'},
+                                     data=config.to_xml())
         body = response.read()
         boto.log.debug(body)
         if response.status == 201:
@@ -127,19 +132,19 @@ class CloudFrontConnection(AWSAuthConnection):
             return d
         else:
             raise CloudFrontServerError(response.status, response.reason, body)
-        
+
     def _delete_object(self, id, etag, resource):
         uri = '/%s/%s/%s' % (self.Version, resource, id)
-        response = self.make_request('DELETE', uri, {'If-Match' : etag})
+        response = self.make_request('DELETE', uri, {'If-Match': etag})
         body = response.read()
         boto.log.debug(body)
         if response.status != 204:
             raise CloudFrontServerError(response.status, response.reason, body)
 
     # Distributions
-        
+
     def get_all_distributions(self):
-        tags=[('DistributionSummary', DistributionSummary)]
+        tags = [('DistributionSummary', DistributionSummary)]
         return self._get_all_objects('distribution', tags)
 
     def get_distribution_info(self, distribution_id):
@@ -148,10 +153,10 @@ class CloudFrontConnection(AWSAuthConnection):
     def get_distribution_config(self, distribution_id):
         return self._get_config(distribution_id, 'distribution',
                                 DistributionConfig)
-    
+
     def set_distribution_config(self, distribution_id, etag, config):
         return self._set_config(distribution_id, etag, config)
-    
+
     def create_distribution(self, origin, enabled, caller_reference='',
                             cnames=None, comment='', trusted_signers=None):
         config = DistributionConfig(origin=origin, enabled=enabled,
@@ -159,14 +164,14 @@ class CloudFrontConnection(AWSAuthConnection):
                                     cnames=cnames, comment=comment,
                                     trusted_signers=trusted_signers)
         return self._create_object(config, 'distribution', Distribution)
-        
+
     def delete_distribution(self, distribution_id, etag):
         return self._delete_object(distribution_id, etag, 'distribution')
 
     # Streaming Distributions
-        
+
     def get_all_streaming_distributions(self):
-        tags=[('StreamingDistributionSummary', StreamingDistributionSummary)]
+        tags = [('StreamingDistributionSummary', StreamingDistributionSummary)]
         return self._get_all_objects('streaming-distribution', tags)
 
     def get_streaming_distribution_info(self, distribution_id):
@@ -176,10 +181,10 @@ class CloudFrontConnection(AWSAuthConnection):
     def get_streaming_distribution_config(self, distribution_id):
         return self._get_config(distribution_id, 'streaming-distribution',
                                 StreamingDistributionConfig)
-    
+
     def set_streaming_distribution_config(self, distribution_id, etag, config):
         return self._set_config(distribution_id, etag, config)
-    
+
     def create_streaming_distribution(self, origin, enabled,
                                       caller_reference='',
                                       cnames=None, comment='',
@@ -190,14 +195,15 @@ class CloudFrontConnection(AWSAuthConnection):
                                              trusted_signers=trusted_signers)
         return self._create_object(config, 'streaming-distribution',
                                    StreamingDistribution)
-        
+
     def delete_streaming_distribution(self, distribution_id, etag):
-        return self._delete_object(distribution_id, etag, 'streaming-distribution')
+        return self._delete_object(distribution_id, etag,
+                                   'streaming-distribution')
 
     # Origin Access Identity
 
     def get_all_origin_access_identity(self):
-        tags=[('CloudFrontOriginAccessIdentitySummary',
+        tags = [('CloudFrontOriginAccessIdentitySummary',
                OriginAccessIdentitySummary)]
         return self._get_all_objects('origin-access-identity/cloudfront', tags)
 
@@ -209,23 +215,23 @@ class CloudFrontConnection(AWSAuthConnection):
         return self._get_config(access_id,
                                 'origin-access-identity/cloudfront',
                                 OriginAccessIdentityConfig)
-    
+
     def set_origin_access_identity_config(self, access_id,
                                           etag, config):
         return self._set_config(access_id, etag, config)
-    
+
     def create_origin_access_identity(self, caller_reference='', comment=''):
         config = OriginAccessIdentityConfig(caller_reference=caller_reference,
                                             comment=comment)
         return self._create_object(config, 'origin-access-identity/cloudfront',
                                    OriginAccessIdentity)
-        
+
     def delete_origin_access_identity(self, access_id, etag):
         return self._delete_object(access_id, etag,
                                    'origin-access-identity/cloudfront')
 
     # Object Invalidation
-    
+
     def create_invalidation_request(self, distribution_id, paths,
                                     caller_reference=None):
         """Creates a new invalidation request
@@ -239,7 +245,7 @@ class CloudFrontConnection(AWSAuthConnection):
         uri = '/%s/distribution/%s/invalidation' % (self.Version,
                                                     distribution_id)
         response = self.make_request('POST', uri,
-                                     {'Content-Type' : 'text/xml'},
+                                     {'Content-Type': 'text/xml'},
                                      data=paths.to_xml())
         body = response.read()
         if response.status == 201:
@@ -249,9 +255,12 @@ class CloudFrontConnection(AWSAuthConnection):
         else:
             raise CloudFrontServerError(response.status, response.reason, body)
 
-    def invalidation_request_status (self, distribution_id, request_id, caller_reference=None):
-        uri = '/%s/distribution/%s/invalidation/%s' % (self.Version, distribution_id, request_id )
-        response = self.make_request('GET', uri, {'Content-Type' : 'text/xml'})
+    def invalidation_request_status(self, distribution_id,
+                                     request_id, caller_reference=None):
+        uri = '/%s/distribution/%s/invalidation/%s' % (self.Version,
+                                                       distribution_id,
+                                                       request_id)
+        response = self.make_request('GET', uri, {'Content-Type': 'text/xml'})
         body = response.read()
         if response.status == 200:
             paths = InvalidationBatch([])
@@ -260,5 +269,3 @@ class CloudFrontConnection(AWSAuthConnection):
             return paths
         else:
             raise CloudFrontServerError(response.status, response.reason, body)
-
-

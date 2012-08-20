@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,6 +28,12 @@ import base64
 import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
+
+try:
+    from xml.etree.ElementTree import ParseError as XMLParseError
+except ImportError:
+    # In python2.6/5, xml.etree.ElementTree.ParseError does not exist.
+    from xml.parsers.expat import ExpatError as XMLParseError
 
 
 class BotoClientError(StandardError):
@@ -455,7 +461,7 @@ class ResumableTransferDisposition(object):
     ABORT_CUR_PROCESS = 'ABORT_CUR_PROCESS'
 
     # ABORT means the resumable transfer failed in a way that it does not
-    # make sense to continue in the current process, and further that the 
+    # make sense to continue in the current process, and further that the
     # current tracker ID should not be preserved (in a tracker file if one
     # was specified at resumable upload start time). If the user tries again
     # later (e.g., a separate run of gsutil) it will get a new resumable

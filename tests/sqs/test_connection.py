@@ -66,14 +66,14 @@ class SQSConnectionTest (unittest.TestCase):
 
         # now try to get queue attributes
         a = q.get_attributes()
-        assert a.has_key('ApproximateNumberOfMessages')
-        assert a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' in a
+        assert 'VisibilityTimeout' in a
         a = q.get_attributes('ApproximateNumberOfMessages')
-        assert a.has_key('ApproximateNumberOfMessages')
-        assert not a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' in a
+        assert 'VisibilityTimeout' not in a
         a = q.get_attributes('VisibilityTimeout')
-        assert not a.has_key('ApproximateNumberOfMessages')
-        assert a.has_key('VisibilityTimeout')
+        assert 'ApproximateNumberOfMessages' not in a
+        assert 'VisibilityTimeout' in a
 
         # now change the visibility timeout
         timeout = 45
