@@ -106,7 +106,7 @@ class Bootstrap(ScriptBase):
                             have_branch = True
                             break
                 if not have_branch:
-                    os.system('git checkout --track -b %s origin/%s' % (version, version))
+                    os.system('git branch --track %s origin/%s' % (version, version))
                 os.chdir(swd)
             else:
                 version = 'master'
