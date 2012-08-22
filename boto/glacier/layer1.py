@@ -342,10 +342,61 @@ class Layer1(AWSAuthConnection):
         downloaded is the correct data.
 
         :type vault_name: str :param
-        vault_name: The name of the new vault
+        :param vault_name: The name of the new vault
 
         :type job_id: str
         :param job_id: The ID of the job.
         """
         uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
         return self.make_request('GET', uri)
+
+    # Archives
+
+    def upload_archive(self, vault_name, archive,
+                       linear_hash, tree_hash, description=None):
+        """
+        This operation adds an archive to a vault. For a successful
+        upload, your data is durably persisted. In response, Amazon
+        Glacier returns the archive ID in the x-amz-archive-id header
+        of the response. You should save the archive ID returned so
+        that you can access the archive later.
+
+        :type vault_name: str :param
+        :param vault_name: The name of the vault
+
+        :type archive: bytes
+        :param archive: The data to upload.
+
+        :type linear_hash: str
+        :param linear_hash: The SHA256 checksum (a linear hash) of the
+            payload.
+
+        :type tree_hash: str
+        :param tree_hash: The user-computed SHA256 tree hash of the
+            payload.  For more information on computing the
+            tree hash, see http://goo.gl/u7chF.
+
+        :type description: str
+        :param description: An optional description of the archive.
+        """
+        uri = 'vaults/%s/archives' % vault_name
+        headers = {'x-amz-content-sha256': linear_hash,
+                   'x-amz-sha256-tree-hash': tree_hash,
+                   'x-amz-content-length': len(archive)}
+        if description:
+            headers['x-amz-archive-description'] = description
+        return self.make_request('GET', uri, headers=headers,
+                                 data=archive, ok_responses=(201,))
+
+    def delete_archive(self, vault_name, archive_id):
+        """
+        This operation deletes an archive from a vault.
+
+        :type vault_name: str
+        :param vault_name: The name of the new vault
+
+        :type archive_id: str
+        :param archive_id: The ID for the archive to be deleted.
+        """
+        uri = 'vaults/%s/archives/%s' % (vault_name, archive_id)
+        return self.make_request('DELETE', uri, ok_responses=(204,))
