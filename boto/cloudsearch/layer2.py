@@ -50,3 +50,16 @@ class Layer2(object):
         """
         data = self.layer1.create_domain(domain_name)
         return Domain(self.layer1, data)
+
+    def lookup(self, domain_name):
+        """
+        Lookup a single domain
+        :param domain_name: The name of the domain to look up
+        :type domain_name: str
+
+        :return: Domain object, or None if the domain isn't found
+        :rtype: :class:`boto.cloudsearch.domain.Domain`
+        """
+        domains = self.list_domains(domain_names=[domain_name])
+        if len(domains) > 0:
+            return domains[0]
