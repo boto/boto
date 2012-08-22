@@ -59,7 +59,8 @@ class Layer1(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['hmac-v4']
 
-    def make_request(self, verb, resource, headers=None, data=''):
+    def make_request(self, verb, resource, headers=None,
+                     data='', ok_responses=(200,)):
         if headers is None:
             headers = {}
         headers = {'x-amz-glacier-version': self.Version}
@@ -68,10 +69,17 @@ class Layer1(AWSAuthConnection):
                                                   headers=headers,
                                                   data=data)
         body = response.read()
-        if body:
-            boto.log.debug(body)
-            body = json.loads(body)
-        return body
+        if response.status in ok_responses:
+            if body:
+                boto.log.debug(body)
+                body = json.loads(body)
+            return body
+        else:
+            msg = 'Expected %s, got (%d, %s)' % (ok_responses,
+                                                 response.status,
+                                                 body)
+            # create glacier-specific exceptions
+            raise BaseException(msg)
 
     # Vaults
 
@@ -151,7 +159,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('PUT', uri)
+        return self.make_request('PUT', uri, ok_responses=(201,))
 
     def delete_vault(self, vault_name):
         """
@@ -170,7 +178,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('DELETE', uri)
+        return self.make_request('DELETE', uri, ok_responses=(204,))
 
     def get_vault_notifications(self, vault_name):
         """
@@ -208,7 +216,8 @@ class Layer1(AWSAuthConnection):
         """
         uri = 'vaults/%s/notification-configuration' % vault_name
         json_config = json.dumps(notification_config)
-        return self.make_request('PUT', uri, data=json_config)
+        return self.make_request('PUT', uri, data=json_config,
+                                 ok_responses=(204,))
 
     def delete_vault_notifications(self, vault_name):
         """
@@ -219,7 +228,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s/notification-configuration' % vault_name
-        return self.make_request('DELETE', uri)
+        return self.make_request('DELETE', uri, ok_responses=(204,))
 
     # Jobs
 
@@ -275,7 +284,7 @@ class Layer1(AWSAuthConnection):
         :param job_id: The ID of the job.
         """
         uri = 'vaults/%s/jobs/%s' % (vault_name, job_id)
-        return self.make_request('GET', uri)
+        return self.make_request('GET', uri, ok_responses=(201,))
 
     def initiate_job(self, vault_name, job_data):
         """
@@ -314,7 +323,8 @@ class Layer1(AWSAuthConnection):
         """
         uri = 'vaults/%s/jobs' % vault_name
         json_job_data = json.dumps(job_data)
-        return self.make_request('POST', uri, data=json_job_data)
+        return self.make_request('POST', uri, data=json_job_data,
+                                 ok_responses=(202,))
 
     def get_job_output(self, vault_name, job_id):
         """
