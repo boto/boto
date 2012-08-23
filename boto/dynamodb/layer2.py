@@ -20,13 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import base64
 
 from boto.dynamodb.layer1 import Layer1
 from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
-from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
+from boto.dynamodb.types import get_dynamodb_type, dynamize_value, \
+        convert_num, convert_binary
 
 
 def item_object_hook(dct):
@@ -45,7 +47,12 @@ def item_object_hook(dct):
         return set(dct['SS'])
     if 'NS' in dct:
         return set(map(convert_num, dct['NS']))
+    if 'B' in dct:
+        return base64.b64decode(dct['B'])
+    if 'BS' in dct:
+        return set(map(convert_binary, dct['BS']))
     return dct
+
 
 def table_generator(tgen):
     """
