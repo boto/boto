@@ -27,26 +27,36 @@ Tests for Layer2 of Amazon DynamoDB
 import unittest
 import time
 import uuid
-from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError, DynamoDBItemError
+from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer2 import Layer2
-from boto.dynamodb.types import get_dynamodb_type
-from boto.dynamodb.condition import *
+from boto.dynamodb.types import get_dynamodb_type, Binary
+from boto.dynamodb.condition import BEGINS_WITH, CONTAINS, GT
+
 
 class DynamoDBLayer2Test (unittest.TestCase):
     dynamodb = True
 
+    def setUp(self):
+        self.dynamodb = Layer2()
+        self.hash_key_name = 'forum_name'
+        self.hash_key_proto_value = ''
+        self.range_key_name = 'subject'
+        self.range_key_proto_value = ''
+
+    def create_table(self, table_name, schema, read_units, write_units):
+        result = self.dynamodb.create_table(table_name, schema, read_units, write_units)
+        self.addCleanup(self.dynamodb.delete_table, result)
+        return result
+
     def test_layer2_basic(self):
         print '--- running Amazon DynamoDB Layer2 tests ---'
-        c = Layer2()
+        c = self.dynamodb
 
         # First create a schema for the table
-        hash_key_name = 'forum_name'
-        hash_key_proto_value = ''
-        range_key_name = 'subject'
-        range_key_proto_value = ''
-        schema = c.create_schema(hash_key_name, hash_key_proto_value,
-                                 range_key_name, range_key_proto_value)
+        schema = c.create_schema(self.hash_key_name, self.hash_key_proto_value,
+                                 self.range_key_name,
+                                 self.range_key_proto_value)
 
         # Create another schema without a range key
         schema2 = c.create_schema('post_id', '')
@@ -56,12 +66,12 @@ class DynamoDBLayer2Test (unittest.TestCase):
         table_name = 'test-%d' % index
         read_units = 5
         write_units = 5
-        table = c.create_table(table_name, schema, read_units, write_units)
+        table = self.create_table(table_name, schema, read_units, write_units)
         assert table.name == table_name
-        assert table.schema.hash_key_name == hash_key_name
-        assert table.schema.hash_key_type == get_dynamodb_type(hash_key_proto_value)
-        assert table.schema.range_key_name == range_key_name
-        assert table.schema.range_key_type == get_dynamodb_type(range_key_proto_value)
+        assert table.schema.hash_key_name == self.hash_key_name
+        assert table.schema.hash_key_type == get_dynamodb_type(self.hash_key_proto_value)
+        assert table.schema.range_key_name == self.range_key_name
+        assert table.schema.range_key_type == get_dynamodb_type(self.range_key_proto_value)
         assert table.read_units == read_units
         assert table.write_units == write_units
         assert table.item_count == 0
@@ -69,7 +79,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         # Create the second table
         table2_name = 'test-%d' % (index + 1)
-        table2 = c.create_table(table2_name, schema2, read_units, write_units)
+        table2 = self.create_table(table2_name, schema2, read_units, write_units)
 
         # Wait for table to become active
         table.refresh(wait_for_active=True)
@@ -106,12 +116,12 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # Test a few corner cases with new_item
         
         # Try supplying a hash_key as an arg and as an item in attrs
-        item1_attrs[hash_key_name] = 'foo'
+        item1_attrs[self.hash_key_name] = 'foo'
         foobar_item = table.new_item(item1_key, item1_range, item1_attrs)
         assert foobar_item.hash_key == item1_key
 
         # Try supplying a range_key as an arg and as an item in attrs
-        item1_attrs[range_key_name] = 'bar'
+        item1_attrs[self.range_key_name] = 'bar'
         foobar_item = table.new_item(item1_key, item1_range, item1_attrs)
         assert foobar_item.range_key == item1_range
 
@@ -120,8 +130,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert foobar_item.hash_key == 'foo'
         assert foobar_item.range_key == 'bar'
 
-        del item1_attrs[hash_key_name]
-        del item1_attrs[range_key_name]
+        del item1_attrs[self.hash_key_name]
+        del item1_attrs[self.range_key_name]
 
         item1 = table.new_item(item1_key, item1_range, item1_attrs)
         # make sure the put() succeeds
@@ -368,16 +378,47 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # Now delete the remaining items
         ret_vals = item2.delete(return_values='ALL_OLD')
         # some additional checks here would be useful
-        assert ret_vals['Attributes'][hash_key_name] == item2_key
-        assert ret_vals['Attributes'][range_key_name] == item2_range
+        assert ret_vals['Attributes'][self.hash_key_name] == item2_key
+        assert ret_vals['Attributes'][self.range_key_name] == item2_range
         
         item3.delete()
         table2_item1.delete()
-
-        # Now delete the tables
-        table.delete()
-        table2.delete()
-        assert table.status == 'DELETING'
-        assert table2.status == 'DELETING'
-
         print '--- tests completed ---'
+
+    def test_binary_attrs(self):
+        c = self.dynamodb
+        schema = c.create_schema(self.hash_key_name, self.hash_key_proto_value,
+                                 self.range_key_name,
+                                 self.range_key_proto_value)
+        index = int(time.time())
+        table_name = 'test-%d' % index
+        read_units = 5
+        write_units = 5
+        table = self.create_table(table_name, schema, read_units, write_units)
+        table.refresh(wait_for_active=True)
+        item1_key = 'Amazon S3'
+        item1_range = 'S3 Thread 1'
+        item1_attrs = {
+            'Message': 'S3 Thread 1 message text',
+            'LastPostedBy': 'User A',
+            'Views': 0,
+            'Replies': 0,
+            'Answered': 0,
+            'BinaryData': Binary('\x01\x02\x03\x04'),
+            'BinarySequence': set([Binary('\x01\x02'), Binary('\x03\x04')]),
+            'Tags': set(['largeobject', 'multipart upload']),
+            'LastPostDateTime': '12/9/2011 11:36:03 PM'
+            }
+        item1 = table.new_item(item1_key, item1_range, item1_attrs)
+        item1.put()
+
+        retrieved = table.get_item(item1_key, item1_range, consistent_read=True)
+        self.assertEqual(retrieved['Message'], 'S3 Thread 1 message text')
+        self.assertEqual(retrieved['Views'], 0)
+        self.assertEqual(retrieved['Tags'],
+                         set(['largeobject', 'multipart upload']))
+        self.assertEqual(retrieved['BinaryData'], Binary('\x01\x02\x03\x04'))
+        # Also comparable directly to bytes:
+        self.assertEqual(retrieved['BinaryData'], bytes('\x01\x02\x03\x04'))
+        self.assertEqual(retrieved['BinarySequence'],
+                         set([Binary('\x01\x02'), Binary('\x03\x04')]))
