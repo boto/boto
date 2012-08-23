@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -124,7 +124,7 @@ class Bucket(object):
         bucket so that when you call bucket.new_key() or when you get a listing
         of keys in the bucket you will get an instances of your key class
         rather than the default.
-        
+
         :type key_class: class
         :param key_class: A subclass of Key that can be more specific
         """
@@ -133,21 +133,21 @@ class Bucket(object):
     def lookup(self, key_name, headers=None):
         """
         Deprecated: Please use get_key method.
-        
+
         :type key_name: string
         :param key_name: The name of the key to retrieve
-        
+
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
         return self.get_key(key_name, headers=headers)
-        
+
     def get_key(self, key_name, headers=None, version_id=None, response_headers=None):
         """
         Check to see if a particular key exists within the bucket.  This
         method uses a HEAD request to check for the existance of the key.
         Returns: An instance of a Key object or None
-        
+
         :type key_name: string
         :param key_name: The name of the key to retrieve
 
@@ -156,7 +156,7 @@ class Bucket(object):
                                  that will override any headers associated with
                                  the stored object in the response.
                                  See http://goo.gl/EWOPb for details.
-        
+
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
@@ -213,7 +213,7 @@ class Bucket(object):
         BucketListResultSet that automatically handles all of the result
         paging, etc. from S3.  You just need to keep iterating until
         there are no more results.
-        
+
         Called with no arguments, this will return an iterator object across
         all keys within the bucket.
 
@@ -224,23 +224,23 @@ class Bucket(object):
         as Content-Type and user metadata are not available in the XML.
         Therefore, if you want these additional metadata fields you will
         have to do a HEAD request on the Key in the bucket.
-        
+
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
                         prefix.  For example, if you call the method with
                         prefix='/foo/' then the iterator will only cycle
                         through the keys that begin with the string '/foo/'.
-                        
+
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
                         to allow you to organize and browse your keys
                         hierarchically. See:
                         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
                         for more details.
-                        
+
         :type marker: string
         :param marker: The "marker" of where you are in the result set
-        
+
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
@@ -255,23 +255,23 @@ class Bucket(object):
         there are no more results.
         Called with no arguments, this will return an iterator object across
         all keys within the bucket.
-        
+
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
                         prefix.  For example, if you call the method with
                         prefix='/foo/' then the iterator will only cycle
                         through the keys that begin with the string '/foo/'.
-                        
+
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
                         to allow you to organize and browse your keys
                         hierarchically. See:
                         http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
                         for more details.
-                        
+
         :type marker: string
         :param marker: The "marker" of where you are in the result set
-        
+
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
@@ -286,10 +286,10 @@ class Bucket(object):
         instance of an MultiPartUploadListResultSet that automatically
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.
-        
+
         :type marker: string
         :param marker: The "marker" of where you are in the result set
-        
+
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
@@ -332,17 +332,17 @@ class Bucket(object):
         This closely models the actual S3 API and requires you to manually
         handle the paging of results.  For a higher-level method
         that handles the details of paging for you, you can use the list method.
-        
+
         :type max_keys: int
         :param max_keys: The maximum number of keys to retrieve
-        
+
         :type prefix: string
         :param prefix: The prefix of the keys you want to retrieve
-        
+
         :type marker: string
         :param marker: The "marker" of where you are in the result set
-        
-        :type delimiter: string 
+
+        :type delimiter: string
         :param delimiter: If this optional, Unicode string parameter
                           is included with your request, then keys that
                           contain the same string between the prefix and
@@ -353,7 +353,7 @@ class Bucket(object):
 
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
-        
+
         """
         return self._get_all([('Contents', self.key_class),
                               ('CommonPrefixes', Prefix)],
@@ -365,22 +365,22 @@ class Bucket(object):
         This closely models the actual S3 API and requires you to manually
         handle the paging of results.  For a higher-level method
         that handles the details of paging for you, you can use the list method.
-        
+
         :type max_keys: int
         :param max_keys: The maximum number of keys to retrieve
-        
+
         :type prefix: string
         :param prefix: The prefix of the keys you want to retrieve
-        
+
         :type key_marker: string
         :param key_marker: The "marker" of where you are in the result set
                            with respect to keys.
-        
+
         :type version_id_marker: string
         :param version_id_marker: The "marker" of where you are in the result
                                   set with respect to version-id's.
-        
-        :type delimiter: string 
+
+        :type delimiter: string
         :param delimiter: If this optional, Unicode string parameter
                           is included with your request, then keys that
                           contain the same string between the prefix and
@@ -391,7 +391,7 @@ class Bucket(object):
 
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
-        
+
         """
         return self._get_all([('Version', self.key_class),
                               ('CommonPrefixes', Prefix),
@@ -405,11 +405,11 @@ class Bucket(object):
         actual S3 API and requires you to manually handle the paging
         of results.  For a higher-level method that handles the
         details of paging for you, you can use the list method.
-        
+
         :type max_uploads: int
         :param max_uploads: The maximum number of uploads to retrieve.
                             Default value is 1000.
-        
+
         :type key_marker: string
         :param key_marker: Together with upload_id_marker, this parameter
                            specifies the multipart upload after which listing
@@ -422,7 +422,7 @@ class Bucket(object):
                            also be included, provided those multipart uploads
                            have upload IDs lexicographically greater than the
                            specified upload_id_marker.
-        
+
         :type upload_id_marker: string
         :param upload_id_marker: Together with key-marker, specifies
                                  the multipart upload after which listing
@@ -434,10 +434,10 @@ class Bucket(object):
                                  lexicographically greater than the specified
                                  upload_id_marker.
 
-        
+
         :rtype: ResultSet
         :return: The result from S3 listing the uploads requested
-        
+
         """
         return self._get_all([('Upload', MultiPartUpload),
                               ('CommonPrefixes', Prefix)],
@@ -446,13 +446,15 @@ class Bucket(object):
     def new_key(self, key_name=None):
         """
         Creates a new key
-        
+
         :type key_name: string
         :param key_name: The name of the key to create
-        
+
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
         """
+        if not key_name:
+            raise ValueError('Empty key names are not allowed')
         return self.key_class(self, key_name)
 
     def generate_url(self, expires_in, method='GET', headers=None,
@@ -470,7 +472,7 @@ class Bucket(object):
         VersionID is specified for that key then that version is removed.
         Returns a MultiDeleteResult Object, which contains Deleted
         and Error elements for each key you ask to delete.
-        
+
         :type keys: list
         :param keys: A list of either key_names or (key_name, versionid) pairs
                      or a list of Key instances.
@@ -564,13 +566,13 @@ class Bucket(object):
         """
         Deletes a key from the bucket.  If a version_id is provided,
         only that version of the key will be deleted.
-        
+
         :type key_name: string
         :param key_name: The key name to delete
 
         :type version_id: string
         :param version_id: The version ID (optional)
-        
+
         :type mfa_token: tuple or list of strings
         :param mfa_token: A tuple or list consisting of the serial number
                           from the MFA device and the current value of
@@ -869,15 +871,15 @@ class Bucket(object):
         to a bucket. This method retrieves the current ACL, creates a new
         grant based on the parameters passed in, adds that grant to the ACL
         and then PUT's the new ACL back to S3.
-        
+
         :type permission: string
         :param permission: The permission being granted. Should be one of:
                            (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
-        
+
         :type email_address: string
         :param email_address: The email address associated with the AWS
                               account your are granting the permission to.
-        
+
         :type recursive: boolean
         :param recursive: A boolean value to controls whether the command
                           will apply the grant to all keys within the bucket
@@ -904,15 +906,15 @@ class Bucket(object):
         user grant to a bucket.  This method retrieves the current ACL,
         creates a new grant based on the parameters passed in, adds that
         grant to the ACL and then PUT's the new ACL back to S3.
-        
+
         :type permission: string
         :param permission: The permission being granted. Should be one of:
                            (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
-        
+
         :type user_id: string
         :param user_id:     The canonical user id associated with the AWS
                             account your are granting the permission to.
-                            
+
         :type recursive: boolean
         :param recursive: A boolean value to controls whether the command
                           will apply the grant to all keys within the bucket
@@ -921,7 +923,7 @@ class Bucket(object):
                           in the bucket and apply the same grant to each key.
                           CAUTION: If you have a lot of keys, this could take
                           a long time!
-                          
+
         :type display_name: string
         :param display_name: An option string containing the user's
                              Display Name.  Only required on Walrus.
@@ -985,7 +987,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def enable_logging(self, target_bucket, target_prefix='', grants=None, headers=None):
         """
         Enable logging on a bucket.
@@ -994,7 +996,7 @@ class Bucket(object):
         :param target_bucket: The bucket to log to.
 
         :type target_prefix: string
-        :param target_prefix: The prefix which should be prepended to the 
+        :param target_prefix: The prefix which should be prepended to the
                               generated log files written to the target_bucket.
 
         :type grants: list of Grant objects
@@ -1008,7 +1010,7 @@ class Bucket(object):
             target_bucket = target_bucket.name
         blogging = BucketLogging(target=target_bucket, prefix=target_prefix, grants=grants)
         return self.set_xml_logging(blogging.to_xml(), headers=headers)
- 
+
     def disable_logging(self, headers=None):
         """
         Disable logging on a bucket.
@@ -1070,14 +1072,14 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def configure_versioning(self, versioning, mfa_delete=False,
                              mfa_token=None, headers=None):
         """
         Configure versioning for this bucket.
-        
+
         ..note:: This feature is currently in beta.
-                 
+
         :type versioning: bool
         :param versioning: A boolean indicating whether version is
                            enabled (True) or disabled (False).
@@ -1120,7 +1122,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def get_versioning_status(self, headers=None):
         """
         Returns the current status of versioning on the bucket.
@@ -1153,7 +1155,7 @@ class Bucket(object):
     def configure_lifecycle(self, lifecycle_config, headers=None):
         """
         Configure lifecycle for this bucket.
-        
+
         :type lifecycle_config: :class:`boto.s3.lifecycle.Lifecycle`
         :param lifecycle_config: The lifecycle configuration you want
             to configure for this bucket.
@@ -1174,7 +1176,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def get_lifecycle_config(self, headers=None):
         """
         Returns the current lifecycle configuration on the bucket.
@@ -1243,7 +1245,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def get_website_configuration(self, headers=None):
         """
         Returns the current status of website configuration on the bucket.
@@ -1363,7 +1365,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
 
     def initiate_multipart_upload(self, key_name, headers=None,
                                   reduced_redundancy=False,
@@ -1393,7 +1395,7 @@ class Bucket(object):
         :type metadata: dict
         :param metadata: Any metadata that you would like to set on the key
                          that results from the multipart upload.
-                         
+
         :type encrypt_key: bool
         :param encrypt_key: If True, the new copy of the object will
                             be encrypted on the server-side by S3 and
@@ -1435,7 +1437,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def complete_multipart_upload(self, key_name, upload_id,
                                   xml_body, headers=None):
         """
@@ -1472,7 +1474,7 @@ class Bucket(object):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def cancel_multipart_upload(self, key_name, upload_id, headers=None):
         query_args = 'uploadId=%s' % upload_id
         response = self.connection.make_request('DELETE', self.name, key_name,
@@ -1483,6 +1485,6 @@ class Bucket(object):
         if response.status != 204:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-        
+
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
