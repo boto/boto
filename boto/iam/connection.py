@@ -673,7 +673,7 @@ class IAMConnection(AWSQueryConnection):
     # Server Certificates
     #
 
-    def get_all_server_certs(self, path_prefix='/',
+    def list_server_certs(self, path_prefix='/',
                              marker=None, max_items=None):
         """
         Lists the server certificates that have the specified path prefix.
@@ -704,6 +704,10 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('ListServerCertificates',
                                  params,
                                  list_marker='ServerCertificateMetadataList')
+
+    # Preserves backwards compatibility.
+    # TODO: Look into deprecating this eventually?
+    get_all_server_certs = list_server_certs
 
     def update_server_cert(self, cert_name, new_cert_name=None,
                            new_path=None):
