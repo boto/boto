@@ -653,7 +653,6 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @requires(['AmazonOrderId'])
-    @structured_lists('AmazonOrderId.Id')
     @api_action('Orders', 30, 2)
     def list_order_items(self, path, response, **kw):
         """Returns order item information for an AmazonOrderId that
