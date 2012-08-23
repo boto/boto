@@ -399,7 +399,8 @@ class Layer1(AWSQueryConnection):
                     'domain_status_list')
         params = {}
         if domain_names:
-            params['DomainNames'] = domain_names
+            for i, domain_name in enumerate(domain_names, 1):
+                params['DomainNames.member.%d' % i] = domain_name
         return self.get_response(doc_path, 'DescribeDomains',
                                  params, verb='POST',
                                  list_marker='DomainStatusList')
@@ -428,7 +429,8 @@ class Layer1(AWSQueryConnection):
                     'index_fields')
         params = {'DomainName': domain_name}
         if field_names:
-            params['FieldNames'] = field_names
+            for i, field_name in enumerate(field_names, 1):
+                params['FieldNames.member.%d' % i] = field_name
         return self.get_response(doc_path, 'DescribeIndexFields',
                                  params, verb='POST',
                                  list_marker='IndexFields')
@@ -457,7 +459,8 @@ class Layer1(AWSQueryConnection):
                     'rank_expressions')
         params = {'DomainName': domain_name}
         if rank_names:
-            params['RankNames'] = rank_names
+            for i, rank_name in enumerate(rank_names, 1):
+                params['RankNames.member.%d' % i] = rank_name
         return self.get_response(doc_path, 'DescribeRankExpressions',
                                  params, verb='POST',
                                  list_marker='RankExpressions')
