@@ -556,6 +556,10 @@ class GetMatchingProductResponse(ProductsBulkOperationResponse):
     pass
 
 
+class GetMatchingProductForIdResult(ListMatchingProductsResult):
+    pass
+
+
 class GetCompetitivePricingForSKUResponse(ProductsBulkOperationResponse):
     pass
 
