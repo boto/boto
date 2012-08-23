@@ -41,7 +41,7 @@ class EmrConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'emr_version', '2009-03-31')
     DefaultRegionName = boto.config.get('Boto', 'emr_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'emr_region_endpoint',
-                                            'elasticmapreduce.amazonaws.com')
+                                            'elasticmapreduce.us-east-1.amazonaws.com')
     ResponseError = EmrResponseError
 
     # Constants for AWS Console debugging
