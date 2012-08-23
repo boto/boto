@@ -4,7 +4,7 @@ import time
 from functools import partial
 
 from boto.beanstalk.layer2 import Layer2
-from boto.beanstalk.response import Wrapper as response
+import boto.beanstalk.response as response
 
 
 class BasicSuite(unittest.TestCase):

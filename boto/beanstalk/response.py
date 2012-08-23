@@ -307,380 +307,345 @@ class ValidationMessage(BaseObject):
         self.severity = str(response['Severity'])
 
 
-# to allow easy access in boto.beanstalk.layer2 
-class Wrapper(object):
+# these are the response objects layer2 uses, one for each layer1 api call
+class CheckDNSAvailabilityResponse(Response):
+    def __init__(self, response):
+        response = response['CheckDNSAvailabilityResponse']
+        super(CheckDNSAvailabilityResponse, self).__init__(response)
 
-    # these are the response objects layer2 uses, one for each layer1 api call
-    class CheckDNSAvailabilityResponse(Response):
-        def __init__(self, response):
-            response = response['CheckDNSAvailabilityResponse']
-            super(Wrapper.CheckDNSAvailabilityResponse, self).__init__(response)
+        response = response['CheckDNSAvailabilityResult']
+        self.fully_qualified_cname = str(response['FullyQualifiedCNAME'])
+        self.available = bool(response['Available'])
+# our naming convension produces this class name but api names it with more capitals
+class CheckDnsAvailabilityResponse(CheckDNSAvailabilityResponse): pass
 
-            response = response['CheckDNSAvailabilityResult']
-            self.fully_qualified_cname = str(response['FullyQualifiedCNAME'])
-            self.available = bool(response['Available'])
-    # our naming convension produces this class name but api names it with more capitals
-    class CheckDnsAvailabilityResponse(CheckDNSAvailabilityResponse): pass
+class CreateApplicationResponse(Response):
+    def __init__(self, response):
+        response = response['CreateApplicationResponse']
+        super(CreateApplicationResponse, self).__init__(response)
 
-    class CreateApplicationResponse(Response):
-        def __init__(self, response):
-            response = response['CreateApplicationResponse']
-            super(Wrapper.CreateApplicationResponse, self).__init__(response)
+        response = response['CreateApplicationResult']
+        if response['Application']:
+            self.application = ApplicationDescription(response['Application'])
+        else:
+            self.application = None
 
-            response = response['CreateApplicationResult']
-            if response['Application']:
-                self.application = ApplicationDescription(response['Application'])
-            else:
-                self.application = None
+class CreateApplicationVersionResponse(Response):
+    def __init__(self, response):
+        response = response['CreateApplicationVersionResponse']
+        super(CreateApplicationVersionResponse, self).__init__(response)
 
-    class CreateApplicationVersionResponse(Response):
-        def __init__(self, response):
-            response = response['CreateApplicationVersionResponse']
-            super(Wrapper.CreateApplicationVersionResponse, self).__init__(response)
+        response = response['CreateApplicationVersionResult']
+        if response['ApplicationVersion']:
+            self.application_version = ApplicationVersionDescription(response['ApplicationVersion'])
+        else:
+            self.application_version = None
 
-            response = response['CreateApplicationVersionResult']
-            if response['ApplicationVersion']:
-                self.application_version = ApplicationVersionDescription(response['ApplicationVersion'])
-            else:
-                self.application_version = None
+class CreateConfigurationTemplateResponse(Response):
+    def __init__(self, response):
+        response = response['CreateConfigurationTemplateResponse']
+        super(CreateConfigurationTemplateResponse, self).__init__(response)
 
-    class CreateConfigurationTemplateResponse(Response):
-        def __init__(self, response):
-            response = response['CreateConfigurationTemplateResponse']
-            super(Wrapper.CreateConfigurationTemplateResponse, self).__init__(response)
+        response = response['CreateConfigurationTemplateResult']
+        self.application_name = str(response['ApplicationName'])
+        self.date_created = datetime.fromtimestamp(response['DateCreated'])
+        self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
+        self.deployment_status = str(response['DeploymentStatus'])
+        self.description = str(response['Description'])
+        self.environment_name = str(response['EnvironmentName'])
+        self.option_settings = []
+        if response['OptionSettings']:
+            for member in response['OptionSettings']:
+                option_setting = ConfigurationOptionSetting(member)
+                self.option_settings.append(option_setting)
+        self.solution_stack_name = str(response['SolutionStackName'])
+        self.template_name = str(response['TemplateName'])
 
-            response = response['CreateConfigurationTemplateResult']
-            self.application_name = str(response['ApplicationName'])
-            self.date_created = datetime.fromtimestamp(response['DateCreated'])
-            self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
-            self.deployment_status = str(response['DeploymentStatus'])
-            self.description = str(response['Description'])
-            self.environment_name = str(response['EnvironmentName'])
-            self.option_settings = []
-            if response['OptionSettings']:
-                for member in response['OptionSettings']:
-                    option_setting = ConfigurationOptionSetting(member)
-                    self.option_settings.append(option_setting)
-            self.solution_stack_name = str(response['SolutionStackName'])
-            self.template_name = str(response['TemplateName'])
+class CreateEnvironmentResponse(Response):
+    def __init__(self, response):
+        response = response['CreateEnvironmentResponse']
+        super(CreateEnvironmentResponse, self).__init__(response)
 
-    class CreateEnvironmentResponse(Response):
-        def __init__(self, response):
-            response = response['CreateEnvironmentResponse']
-            super(Wrapper.CreateEnvironmentResponse, self).__init__(response)
+        response = response['CreateEnvironmentResult']
+        self.application_name = str(response['ApplicationName'])
+        self.cname = str(response['CNAME'])
+        self.date_created = datetime.fromtimestamp(response['DateCreated'])
+        self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
+        self.description = str(response['Description'])
+        self.endpoint_url = str(response['EndpointURL'])
+        self.environment_id = str(response['EnvironmentId'])
+        self.environment_name = str(response['EnvironmentName'])
+        self.health = str(response['Health'])
+        if response['Resources']:
+            self.resources = EnvironmentResourcesDescription(response['Resources'])
+        else:
+            self.resources = None
+        self.solution_stack_name = str(response['SolutionStackName'])
+        self.status = str(response['Status'])
+        self.template_name = str(response['TemplateName'])
+        self.version_label = str(response['VersionLabel'])
 
-            response = response['CreateEnvironmentResult']
-            self.application_name = str(response['ApplicationName'])
-            self.cname = str(response['CNAME'])
-            self.date_created = datetime.fromtimestamp(response['DateCreated'])
-            self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
-            self.description = str(response['Description'])
-            self.endpoint_url = str(response['EndpointURL'])
-            self.environment_id = str(response['EnvironmentId'])
-            self.environment_name = str(response['EnvironmentName'])
-            self.health = str(response['Health'])
-            if response['Resources']:
-                self.resources = EnvironmentResourcesDescription(response['Resources'])
-            else:
-                self.resources = None
-            self.solution_stack_name = str(response['SolutionStackName'])
-            self.status = str(response['Status'])
-            self.template_name = str(response['TemplateName'])
-            self.version_label = str(response['VersionLabel'])
+class CreateStorageLocationResponse(Response):
+    def __init__(self, response):
+        response = response['CreateStorageLocationResponse']
+        super(CreateStorageLocationResponse, self).__init__(response)
 
-    class CreateStorageLocationResponse(Response):
-        def __init__(self, response):
-            response = response['CreateStorageLocationResponse']
-            super(Wrapper.CreateStorageLocationResponse, self).__init__(response)
+        response = response['CreateStorageLocationResult']
+        self.s3_bucket = str(response['S3Bucket'])
 
-            response = response['CreateStorageLocationResult']
-            self.s3_bucket = str(response['S3Bucket'])
+class DeleteApplicationResponse(Response):
+    def __init__(self, response):
+        response = response['DeleteApplicationResponse']
+        super(DeleteApplicationResponse, self).__init__(response)
 
-    class DeleteApplicationResponse(Response):
-        def __init__(self, response):
-            response = response['DeleteApplicationResponse']
-            super(Wrapper.DeleteApplicationResponse, self).__init__(response)
+class DeleteApplicationVersionResponse(Response):
+    def __init__(self, response):
+        response = response['DeleteApplicationVersionResponse']
+        super(DeleteApplicationVersionResponse, self).__init__(response)
 
-    class DeleteApplicationVersionResponse(Response):
-        def __init__(self, response):
-            response = response['DeleteApplicationVersionResponse']
-            super(Wrapper.DeleteApplicationVersionResponse, self).__init__(response)
+class DeleteConfigurationTemplateResponse(Response):
+    def __init__(self, response):
+        response = response['DeleteConfigurationTemplateResponse']
+        super(DeleteConfigurationTemplateResponse, self).__init__(response)
 
-    class DeleteConfigurationTemplateResponse(Response):
-        def __init__(self, response):
-            response = response['DeleteConfigurationTemplateResponse']
-            super(Wrapper.DeleteConfigurationTemplateResponse, self).__init__(response)
+class DeleteEnvironmentConfigurationResponse(Response):
+    def __init__(self, response):
+        response = response['DeleteEnvironmentConfigurationResponse']
+        super(DeleteEnvironmentConfigurationResponse, self).__init__(response)
 
-    class DeleteEnvironmentConfigurationResponse(Response):
-        def __init__(self, response):
-            response = response['DeleteEnvironmentConfigurationResponse']
-            super(Wrapper.DeleteEnvironmentConfigurationResponse, self).__init__(response)
+class DescribeApplicationVersionsResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeApplicationVersionsResponse']
+        super(DescribeApplicationVersionsResponse, self).__init__(response)
 
-    class DescribeApplicationVersionsResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeApplicationVersionsResponse']
-            super(Wrapper.DescribeApplicationVersionsResponse, self).__init__(response)
+        response = response['DescribeApplicationVersionsResult']
+        self.application_versions = []
+        if response['ApplicationVersions']:
+            for member in response['ApplicationVersions']:
+                application_version = ApplicationVersionDescription(member)
+                self.application_versions.append(application_version)
 
-            response = response['DescribeApplicationVersionsResult']
-            self.application_versions = []
-            if response['ApplicationVersions']:
-                for member in response['ApplicationVersions']:
-                    application_version = ApplicationVersionDescription(member)
-                    self.application_versions.append(application_version)
+class DescribeApplicationsResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeApplicationsResponse']
+        super(DescribeApplicationsResponse, self).__init__(response)
 
-    class DescribeApplicationsResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeApplicationsResponse']
-            super(Wrapper.DescribeApplicationsResponse, self).__init__(response)
+        response = response['DescribeApplicationsResult']
+        self.applications = []
+        if response['Applications']:
+            for member in response['Applications']:
+                application = ApplicationDescription(member)
+                self.applications.append(application)
 
-            response = response['DescribeApplicationsResult']
-            self.applications = []
-            if response['Applications']:
-                for member in response['Applications']:
-                    application = ApplicationDescription(member)
-                    self.applications.append(application)
+class DescribeConfigurationOptionsResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeConfigurationOptionsResponse']
+        super(DescribeConfigurationOptionsResponse, self).__init__(response)
 
-    class DescribeConfigurationOptionsResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeConfigurationOptionsResponse']
-            super(Wrapper.DescribeConfigurationOptionsResponse, self).__init__(response)
+        response = response['DescribeConfigurationOptionsResult']
+        self.options = []
+        if response['Options']:
+            for member in response['Options']:
+                option = ConfigurationOptionDescription(member)
+                self.options.append(option)
+        self.solution_stack_name = str(response['SolutionStackName'])
 
-            response = response['DescribeConfigurationOptionsResult']
-            self.options = []
-            if response['Options']:
-                for member in response['Options']:
-                    option = ConfigurationOptionDescription(member)
-                    self.options.append(option)
-            self.solution_stack_name = str(response['SolutionStackName'])
+class DescribeConfigurationSettingsResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeConfigurationSettingsResponse']
+        super(DescribeConfigurationSettingsResponse, self).__init__(response)
 
-    class DescribeConfigurationSettingsResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeConfigurationSettingsResponse']
-            super(Wrapper.DescribeConfigurationSettingsResponse, self).__init__(response)
+        response = response['DescribeConfigurationSettingsResult']
+        self.configuration_settings = []
+        if response['ConfigurationSettings']:
+            for member in response['ConfigurationSettings']:
+                configuration_setting = ConfigurationSettingsDescription(member)
+                self.configuration_settings.append(configuration_setting)
 
-            response = response['DescribeConfigurationSettingsResult']
-            self.configuration_settings = []
-            if response['ConfigurationSettings']:
-                for member in response['ConfigurationSettings']:
-                    configuration_setting = ConfigurationSettingsDescription(member)
-                    self.configuration_settings.append(configuration_setting)
+class DescribeEnvironmentResourcesResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeEnvironmentResourcesResponse']
+        super(DescribeEnvironmentResourcesResponse, self).__init__(response)
 
-    class DescribeEnvironmentResourcesResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeEnvironmentResourcesResponse']
-            super(Wrapper.DescribeEnvironmentResourcesResponse, self).__init__(response)
+        response = response['DescribeEnvironmentResourcesResult']
+        if response['EnvironmentResources']:
+            self.environment_resources = EnvironmentResourceDescription(response['EnvironmentResources'])
+        else:
+            self.environment_resources = None
 
-            response = response['DescribeEnvironmentResourcesResult']
-            if response['EnvironmentResources']:
-                self.environment_resources = EnvironmentResourceDescription(response['EnvironmentResources'])
-            else:
-                self.environment_resources = None
+class DescribeEnvironmentsResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeEnvironmentsResponse']
+        super(DescribeEnvironmentsResponse, self).__init__(response)
 
-    class DescribeEnvironmentsResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeEnvironmentsResponse']
-            super(Wrapper.DescribeEnvironmentsResponse, self).__init__(response)
+        response = response['DescribeEnvironmentsResult']
+        self.environments = []
+        if response['Environments']:
+            for member in response['Environments']:
+                environment = EnvironmentDescription(member)
+                self.environments.append(environment)
 
-            response = response['DescribeEnvironmentsResult']
-            self.environments = []
-            if response['Environments']:
-                for member in response['Environments']:
-                    environment = EnvironmentDescription(member)
-                    self.environments.append(environment)
+class DescribeEventsResponse(Response):
+    def __init__(self, response):
+        response = response['DescribeEventsResponse']
+        super(DescribeEventsResponse, self).__init__(response)
 
-    class DescribeEventsResponse(Response):
-        def __init__(self, response):
-            response = response['DescribeEventsResponse']
-            super(Wrapper.DescribeEventsResponse, self).__init__(response)
+        response = response['DescribeEventsResult']
+        self.events = []
+        if response['Events']:
+            for member in response['Events']:
+                event = EventDescription(member)
+                self.events.append(event)
+        self.next_tokent = str(response['NextToken'])
 
-            response = response['DescribeEventsResult']
-            self.events = []
-            if response['Events']:
-                for member in response['Events']:
-                    event = EventDescription(member)
-                    self.events.append(event)
-            self.next_tokent = str(response['NextToken'])
+class ListAvailableSolutionStacksResponse(Response):
+    def __init__(self, response):
+        response = response['ListAvailableSolutionStacksResponse']
+        super(ListAvailableSolutionStacksResponse, self).__init__(response)
 
-    class ListAvailableSolutionStacksResponse(Response):
-        def __init__(self, response):
-            response = response['ListAvailableSolutionStacksResponse']
-            super(Wrapper.ListAvailableSolutionStacksResponse, self).__init__(response)
+        response = response['ListAvailableSolutionStacksResult']
+        self.solution_stack_details = []
+        if response['SolutionStackDetails']:
+            for member in response['SolutionStackDetails']:
+                solution_stack_detail = SolutionStackDescription(member)
+                self.solution_stack_details.append(solution_stack_detail)
+        self.solution_stacks = []
+        if response['SolutionStacks']:
+            for member in response['SolutionStacks']:
+                solution_stack = str(member)
+                self.solution_stacks.append(solution_stack)
 
-            response = response['ListAvailableSolutionStacksResult']
-            self.solution_stack_details = []
-            if response['SolutionStackDetails']:
-                for member in response['SolutionStackDetails']:
-                    solution_stack_detail = SolutionStackDescription(member)
-                    self.solution_stack_details.append(solution_stack_detail)
-            self.solution_stacks = []
-            if response['SolutionStacks']:
-                for member in response['SolutionStacks']:
-                    solution_stack = str(member)
-                    self.solution_stacks.append(solution_stack)
+class RebuildEnvironmentResponse(Response):
+    def __init__(self, response):
+        response = response['RebuildEnvironmentResponse']
+        super(RebuildEnvironmentResponse, self).__init__(response)
 
-    class RebuildEnvironmentResponse(Response):
-        def __init__(self, response):
-            response = response['RebuildEnvironmentResponse']
-            super(Wrapper.RebuildEnvironmentResponse, self).__init__(response)
+class RequestEnvironmentInfoResponse(Response):
+    def __init__(self, response):
+        response = response['RequestEnvironmentInfoResponse']
+        super(RequestEnvironmentInfoResponse, self).__init__(response)
 
-    class RequestEnvironmentInfoResponse(Response):
-        def __init__(self, response):
-            response = response['RequestEnvironmentInfoResponse']
-            super(Wrapper.RequestEnvironmentInfoResponse, self).__init__(response)
+class RestartAppServerResponse(Response):
+    def __init__(self, response):
+        response = response['RestartAppServerResponse']
+        super(RestartAppServerResponse, self).__init__(response)
 
-    class RestartAppServerResponse(Response):
-        def __init__(self, response):
-            response = response['RestartAppServerResponse']
-            super(Wrapper.RestartAppServerResponse, self).__init__(response)
+class RetrieveEnvironmentInfoResponse(Response):
+    def __init__(self, response):
+        response = response['RetrieveEnvironmentInfoResponse']
+        super(RetrieveEnvironmentInfoResponse, self).__init__(response)
 
-    class RetrieveEnvironmentInfoResponse(Response):
-        def __init__(self, response):
-            response = response['RetrieveEnvironmentInfoResponse']
-            super(Wrapper.RetrieveEnvironmentInfoResponse, self).__init__(response)
+        response = response['RetrieveEnvironmentInfoResult']
+        self.environment_info = []
+        if response['EnvironmentInfo']:
+            for member in response['EnvironmentInfo']:
+                environment_info = EnvironmentInfoDescription(member)
+                self.environment_info.append(environment_info)
 
-            response = response['RetrieveEnvironmentInfoResult']
-            self.environment_info = []
-            if response['EnvironmentInfo']:
-                for member in response['EnvironmentInfo']:
-                    environment_info = EnvironmentInfoDescription(member)
-                    self.environment_info.append(environment_info)
+class SwapEnvironmentCNAMEsResponse(Response):
+    def __init__(self, response):
+        response = response['SwapEnvironmentCNAMEsResponse']
+        super(SwapEnvironmentCNAMEsResponse, self).__init__(response)
+class SwapEnvironmentCnamesResponse(SwapEnvironmentCNAMEsResponse): pass
 
-    class SwapEnvironmentCNAMEsResponse(Response):
-        def __init__(self, response):
-            response = response['SwapEnvironmentCNAMEsResponse']
-            super(Wrapper.SwapEnvironmentCNAMEsResponse, self).__init__(response)
-    class SwapEnvironmentCnamesResponse(SwapEnvironmentCNAMEsResponse): pass
+class TerminateEnvironmentResponse(Response):
+    def __init__(self, response):
+        response = response['TerminateEnvironmentResponse']
+        super(TerminateEnvironmentResponse, self).__init__(response)
 
-    class TerminateEnvironmentResponse(Response):
-        def __init__(self, response):
-            response = response['TerminateEnvironmentResponse']
-            super(Wrapper.TerminateEnvironmentResponse, self).__init__(response)
+        response = response['TerminateEnvironmentResult']
+        self.application_name = str(response['ApplicationName'])
+        self.cname = str(response['CNAME'])
+        self.date_created = datetime.fromtimestamp(response['DateCreated'])
+        self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
+        self.description = str(response['Description'])
+        self.endpoint_url = str(response['EndpointURL'])
+        self.environment_id = str(response['EnvironmentId'])
+        self.environment_name = str(response['EnvironmentName'])
+        self.health = str(response['Health'])
+        if response['Resources']:
+            self.resources = EnvironmentResourcesDescription(response['Resources'])
+        else:
+            self.resources = None
+        self.solution_stack_name = str(response['SolutionStackName'])
+        self.status = str(response['Status'])
+        self.template_name = str(response['TemplateName'])
+        self.version_label = str(response['VersionLabel'])
+        
+class UpdateApplicationResponse(Response):
+    def __init__(self, response):
+        response = response['UpdateApplicationResponse']
+        super(UpdateApplicationResponse, self).__init__(response)
 
-            response = response['TerminateEnvironmentResult']
-            self.application_name = str(response['ApplicationName'])
-            self.cname = str(response['CNAME'])
-            self.date_created = datetime.fromtimestamp(response['DateCreated'])
-            self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
-            self.description = str(response['Description'])
-            self.endpoint_url = str(response['EndpointURL'])
-            self.environment_id = str(response['EnvironmentId'])
-            self.environment_name = str(response['EnvironmentName'])
-            self.health = str(response['Health'])
-            if response['Resources']:
-                self.resources = EnvironmentResourcesDescription(response['Resources'])
-            else:
-                self.resources = None
-            self.solution_stack_name = str(response['SolutionStackName'])
-            self.status = str(response['Status'])
-            self.template_name = str(response['TemplateName'])
-            self.version_label = str(response['VersionLabel'])
-            
-    class UpdateApplicationResponse(Response):
-        def __init__(self, response):
-            response = response['UpdateApplicationResponse']
-            super(Wrapper.UpdateApplicationResponse, self).__init__(response)
+        response = response['UpdateApplicationResult']
+        if response['Application']:
+            self.application = ApplicationDescription(response['Application'])
+        else:
+            self.application = None
 
-            response = response['UpdateApplicationResult']
-            if response['Application']:
-                self.application = ApplicationDescription(response['Application'])
-            else:
-                self.application = None
+class UpdateApplicationVersionResponse(Response):
+    def __init__(self, response):
+        response = response['UpdateApplicationVersionResponse']
+        super(UpdateApplicationVersionResponse, self).__init__(response)
 
-    class UpdateApplicationVersionResponse(Response):
-        def __init__(self, response):
-            response = response['UpdateApplicationVersionResponse']
-            super(Wrapper.UpdateApplicationVersionResponse, self).__init__(response)
+        response = response['UpdateApplicationVersionResult']
+        if response['ApplicationVersion']:
+            self.application_version = ApplicationVersionDescription(response['ApplicationVersion'])
+        else:
+            self.application_version = None
 
-            response = response['UpdateApplicationVersionResult']
-            if response['ApplicationVersion']:
-                self.application_version = ApplicationVersionDescription(response['ApplicationVersion'])
-            else:
-                self.application_version = None
+class UpdateConfigurationTemplateResponse(Response):
+    def __init__(self, response):
+        response = response['UpdateConfigurationTemplateResponse']
+        super(UpdateConfigurationTemplateResponse, self).__init__(response)
 
-    class UpdateConfigurationTemplateResponse(Response):
-        def __init__(self, response):
-            response = response['UpdateConfigurationTemplateResponse']
-            super(Wrapper.UpdateConfigurationTemplateResponse, self).__init__(response)
+        response = response['UpdateConfigurationTemplateResult']
+        self.application_name = str(response['ApplicationName'])
+        self.date_created = datetime.fromtimestamp(response['DateCreated'])
+        self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
+        self.deployment_status = str(response['DeploymentStatus'])
+        self.description = str(response['Description'])
+        self.environment_name = str(response['EnvironmentName'])
+        self.option_settings = []
+        if response['OptionSettings']:
+            for member in response['OptionSettings']:
+                option_setting = ConfigurationOptionSetting(member)
+                self.option_settings.append(option_setting)
+        self.solution_stack_name = str(response['SolutionStackName'])
+        self.template_name = str(response['TemplateName'])
 
-            response = response['UpdateConfigurationTemplateResult']
-            self.application_name = str(response['ApplicationName'])
-            self.date_created = datetime.fromtimestamp(response['DateCreated'])
-            self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
-            self.deployment_status = str(response['DeploymentStatus'])
-            self.description = str(response['Description'])
-            self.environment_name = str(response['EnvironmentName'])
-            self.option_settings = []
-            if response['OptionSettings']:
-                for member in response['OptionSettings']:
-                    option_setting = ConfigurationOptionSetting(member)
-                    self.option_settings.append(option_setting)
-            self.solution_stack_name = str(response['SolutionStackName'])
-            self.template_name = str(response['TemplateName'])
+class UpdateEnvironmentResponse(Response):
+    def __init__(self, response):
+        response = response['UpdateEnvironmentResponse']
+        super(UpdateEnvironmentResponse, self).__init__(response)
 
-    class UpdateEnvironmentResponse(Response):
-        def __init__(self, response):
-            response = response['UpdateEnvironmentResponse']
-            super(Wrapper.UpdateEnvironmentResponse, self).__init__(response)
+        response = response['UpdateEnvironmentResult']
+        self.application_name = str(response['ApplicationName'])
+        self.cname = str(response['CNAME'])
+        self.date_created = datetime.fromtimestamp(response['DateCreated'])
+        self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
+        self.description = str(response['Description'])
+        self.endpoint_url = str(response['EndpointURL'])
+        self.environment_id = str(response['EnvironmentId'])
+        self.environment_name = str(response['EnvironmentName'])
+        self.health = str(response['Health'])
+        if response['Resources']:
+            self.resources = EnvironmentResourcesDescription(response['Resources'])
+        else:
+            self.resources = None
+        self.solution_stack_name = str(response['SolutionStackName'])
+        self.status = str(response['Status'])
+        self.template_name = str(response['TemplateName'])
+        self.version_label = str(response['VersionLabel'])
 
-            response = response['UpdateEnvironmentResult']
-            self.application_name = str(response['ApplicationName'])
-            self.cname = str(response['CNAME'])
-            self.date_created = datetime.fromtimestamp(response['DateCreated'])
-            self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
-            self.description = str(response['Description'])
-            self.endpoint_url = str(response['EndpointURL'])
-            self.environment_id = str(response['EnvironmentId'])
-            self.environment_name = str(response['EnvironmentName'])
-            self.health = str(response['Health'])
-            if response['Resources']:
-                self.resources = EnvironmentResourcesDescription(response['Resources'])
-            else:
-                self.resources = None
-            self.solution_stack_name = str(response['SolutionStackName'])
-            self.status = str(response['Status'])
-            self.template_name = str(response['TemplateName'])
-            self.version_label = str(response['VersionLabel'])
+class ValidateConfigurationSettingsResponse(Response):
+    def __init__(self, response):
+        response = response['ValidateConfigurationSettingsResponse']
+        super(ValidateConfigurationSettingsResponse, self).__init__(response)
 
-    class ValidateConfigurationSettingsResponse(Response):
-        def __init__(self, response):
-            response = response['ValidateConfigurationSettingsResponse']
-            super(Wrapper.ValidateConfigurationSettingsResponse, self).__init__(response)
-
-            response = response['ValidateConfigurationSettingsResult']
-            self.messages = []
-            if response['Messages']:
-                for member in response['Messages']:
-                    message = ValidationMessage(member)
-                    self.messages.append(message)
-
-
-# for celery
-CheckDnsAvailabilityResponse = Wrapper.CheckDnsAvailabilityResponse
-CreateApplicationResponse = Wrapper.CreateApplicationResponse
-CreateApplicationVersionResponse = Wrapper.CreateApplicationVersionResponse
-CreateConfigurationTemplateResponse = Wrapper.CreateConfigurationTemplateResponse
-CreateEnvironmentResponse = Wrapper.CreateEnvironmentResponse
-CreateStorageLocationResponse = Wrapper.CreateStorageLocationResponse
-DeleteApplicationResponse = Wrapper.DeleteApplicationResponse
-DeleteApplicationVersionResponse = Wrapper.DeleteApplicationVersionResponse
-DeleteConfigurationTemplateResponse = Wrapper.DeleteConfigurationTemplateResponse
-DeleteEnvironmentConfigurationResponse = Wrapper.DeleteEnvironmentConfigurationResponse
-DescribeApplicationVersionsResponse = Wrapper.DescribeApplicationVersionsResponse
-DescribeApplicationsResponse = Wrapper.DescribeApplicationsResponse
-DescribeConfigurationOptionsResponse = Wrapper.DescribeConfigurationOptionsResponse
-DescribeConfigurationSettingsResponse = Wrapper.DescribeConfigurationSettingsResponse
-DescribeEnvironmentResourcesResponse = Wrapper.DescribeEnvironmentResourcesResponse
-DescribeEnvironmentsResponse = Wrapper.DescribeEnvironmentsResponse
-DescribeEventsResponse = Wrapper.DescribeEventsResponse
-ListAvailableSolutionStacksResponse = Wrapper.ListAvailableSolutionStacksResponse
-RebuildEnvironmentResponse = Wrapper.RebuildEnvironmentResponse
-RequestEnvironmentInfoResponse = Wrapper.RequestEnvironmentInfoResponse
-RestartAppServerResponse = Wrapper.RestartAppServerResponse
-RetrieveEnvironmentInfoResponse = Wrapper.RetrieveEnvironmentInfoResponse
-SwapEnvironmentCnamesResponse = Wrapper.SwapEnvironmentCnamesResponse
-TerminateEnvironmentResponse = Wrapper.TerminateEnvironmentResponse
-UpdateApplicationResponse = Wrapper.UpdateApplicationResponse
-UpdateApplicationVersionResponse = Wrapper.UpdateApplicationVersionResponse
-UpdateConfigurationTemplateResponse = Wrapper.UpdateConfigurationTemplateResponse
-UpdateEnvironmentResponse = Wrapper.UpdateEnvironmentResponse
-ValidateConfigurationSettingsResponse = Wrapper.ValidateConfigurationSettingsResponse
+        response = response['ValidateConfigurationSettingsResult']
+        self.messages = []
+        if response['Messages']:
+            for member in response['Messages']:
+                message = ValidationMessage(member)
+                self.messages.append(message)
