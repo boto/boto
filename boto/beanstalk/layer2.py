@@ -29,5 +29,5 @@ class Layer2(object):
     def __getattr__(self, name):
         try:
             return beanstalk_wrapper(getattr(self.api, name), name)
-        except AttributeError, e:
+        except AttributeError:
             raise AttributeError("%s has no attribute %r" % (self, name))

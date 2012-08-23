@@ -1,3 +1,4 @@
+import sys
 import json
 from boto.exception import BotoServerError
 
@@ -7,10 +8,10 @@ def simple(e):
     code = err['Error']['Code']
 
     try:
-        # dynamically get the error class
-        simple_e = globals()[code](e, err)
-    except:
-        # return original exception on failure
+        # Dynamically get the error class.
+        simple_e = getattr(sys.modules[__name__], code)(e, err)
+    except AttributeError:
+        # Return original exception on failure.
         return e
 
     return simple_e
@@ -63,4 +64,3 @@ class S3SubscriptionRequired(SimpleException): pass
 class TooManyBuckets(SimpleException): pass
 class OperationInProgress(SimpleException): pass
 class SourceBundleDeletion(SimpleException): pass
-class OperationInProgress(SimpleException): pass
