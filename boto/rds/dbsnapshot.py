@@ -22,6 +22,22 @@
 class DBSnapshot(object):
     """
     Represents a RDS DB Snapshot
+
+    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html
+
+    :ivar EngineVersion: Specifies the version of the database engine
+    :ivar LicenseModel: License model information for the restored DB instance
+    :ivar allocated_storage: Specifies the allocated storage size in gigabytes (GB)
+    :ivar availability_zone: Specifies the name of the Availability Zone the DB Instance was located in at the time of the DB Snapshot
+    :ivar connection: boto.rds.RDSConnection associated with the current object
+    :ivar engine: Specifies the name of the database engine
+    :ivar id: Specifies the identifier for the DB Snapshot (DBSnapshotIdentifier)
+    :ivar instance_create_time: Specifies the time (UTC) when the snapshot was taken
+    :ivar instance_id: Specifies the the DBInstanceIdentifier of the DB Instance this DB Snapshot was created from (DBInstanceIdentifier)
+    :ivar master_username: Provides the master username for the DB Instance
+    :ivar port: Specifies the port that the database engine was listening on at the time of the snapshot
+    :ivar snapshot_create_time: Provides the time (UTC) when the snapshot was taken
+    :ivar status: Specifies the status of this DB Snapshot. Possible values are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
     """
     
     def __init__(self, connection=None, id=None):
@@ -69,6 +85,3 @@ class DBSnapshot(object):
             self.time = value
         else:
             setattr(self, name, value)
-
-            
-

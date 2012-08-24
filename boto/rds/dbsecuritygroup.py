@@ -25,7 +25,19 @@ Represents an DBSecurityGroup
 from boto.ec2.securitygroup import SecurityGroup
 
 class DBSecurityGroup(object):
+    """
+    Represents an RDS database security group
 
+    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBSecurityGroup.html
+
+    :ivar Status: The current status of the security group. Possibile values are [ active, ? ]. Reference documentation lacks specifics of possibilities
+    :ivar connection: boto.rds.RDSConnection associated with the current object
+    :ivar description: The description of the security group
+    :ivar ec2_groups: List of EC2SecurityGroup objects that this security group PERMITS
+    :ivar ip_ranges: List of IPRange objects (containing CIDR addresses) that this security group PERMITS
+    :ivar name: Name of the security group
+    :ivar owner_id: ID of the owner of the security group. Can be 'None'
+    """
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None):
         self.connection = connection
@@ -117,6 +129,9 @@ class DBSecurityGroup(object):
             self.name, cidr_ip=cidr_ip)
 
 class IPRange(object):
+    """
+    Describes a CIDR address range for use in a DBSecurityGroup
+    """
 
     def __init__(self, parent=None):
         self.parent = parent
@@ -138,6 +153,9 @@ class IPRange(object):
             setattr(self, name, value)
 
 class EC2SecurityGroup(object):
+    """
+    Describes an EC2 security group for use in a DBSecurityGroup
+    """
 
     def __init__(self, parent=None):
         self.parent = parent
@@ -157,4 +175,3 @@ class EC2SecurityGroup(object):
             self.owner_id = value
         else:
             setattr(self, name, value)
-
