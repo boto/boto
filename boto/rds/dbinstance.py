@@ -25,6 +25,23 @@ from boto.rds.parametergroup import ParameterGroup
 class DBInstance(object):
     """
     Represents a RDS  DBInstance
+
+    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBInstance.html
+
+    :ivar EngineVersion: Indicates the database engine version
+    :ivar LicenseModel: License model information for this DB Instance
+    :ivar engine: Provides the name of the database engine to be used for this DB Instance
+    :ivar id: Contains a user-supplied database identifier. This is the unique key that identifies a DB Instance (DBInstanceIdentifier)
+    :ivar instance_class: Contains the name of the compute and memory capacity class of the DB Instance (DBInstanceClass)
+    :ivar latest_restorable_time: Specifies the latest time to which a database can be restored with point-in-time restore
+    :ivar master_username: Contains the master username for the DB Instance
+    :ivar multi_az: Specifies if the DB Instance is a Multi-AZ deployment
+    :ivar parameter_group: Provides the list of DB Parameter Groups applied to this DB Instance (DBParameterGroups)
+    :ivar pending_modified_values: Specifies that changes to the DB Instance are pending. This element is only included when changes are pending. Specific changes are identified by subelements
+    :ivar preferred_backup_window: Specifies the daily time range during which automated backups are created if automated backups are enabled, as determined by the BackupRetentionPeriod
+    :ivar preferred_maintenance_window: Specifies the weekly time range (in UTC) during which system maintenance can occur
+    :ivar security_group: Provides List of DB Security Group elements containing only DBSecurityGroup.Name and DBSecurityGroup.Status subelements
+    :ivar status: Possible responses are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
     """
     
     def __init__(self, connection=None, id=None):

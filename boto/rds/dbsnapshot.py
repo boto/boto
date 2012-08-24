@@ -23,7 +23,7 @@ class DBSnapshot(object):
     """
     Represents a RDS DB Snapshot
 
-    Properties reference available from AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html
+    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html
 
     :ivar EngineVersion: Specifies the version of the database engine
     :ivar LicenseModel: License model information for the restored DB instance
