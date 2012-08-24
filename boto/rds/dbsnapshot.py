@@ -37,7 +37,7 @@ class DBSnapshot(object):
     :ivar master_username: Provides the master username for the DB Instance
     :ivar port: Specifies the port that the database engine was listening on at the time of the snapshot
     :ivar snapshot_create_time: Provides the time (UTC) when the snapshot was taken
-    :ivar status: Specifies the status of this DB Snapshot. Possible responses are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
+    :ivar status: Specifies the status of this DB Snapshot. Possible values are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
     """
     
     def __init__(self, connection=None, id=None):

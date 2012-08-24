@@ -41,7 +41,7 @@ class DBInstance(object):
     :ivar preferred_backup_window: Specifies the daily time range during which automated backups are created if automated backups are enabled, as determined by the BackupRetentionPeriod
     :ivar preferred_maintenance_window: Specifies the weekly time range (in UTC) during which system maintenance can occur
     :ivar security_group: Provides List of DB Security Group elements containing only DBSecurityGroup.Name and DBSecurityGroup.Status subelements
-    :ivar status: Possible responses are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
+    :ivar status: Possible values are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
     """
     
     def __init__(self, connection=None, id=None):
