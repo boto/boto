@@ -109,6 +109,8 @@ Additional Resources
    ref/sns
    ses_tut
    ref/ses
+   cloudsearch_tut
+   ref/cloudsearch
    cloudwatch_tut
    ref/cloudwatch
    ref/route53

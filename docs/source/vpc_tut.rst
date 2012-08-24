@@ -88,11 +88,13 @@ Attaching a VPN Gateway to a VPC
 >>>
 
 Associating an Elastic IP with a VPC Instance
---------------------------------
+---------------------------------------------
+
 >>> ec2.connection.associate_address('i-71b2f60b', None, 'eipalloc-35cf685d')
 >>>
 
 Releasing an Elastic IP Attached to a VPC Instance
---------------------------------
+--------------------------------------------------
+
 >>> ec2.connection.release_address(None, 'eipalloc-35cf685d')
 >>>
