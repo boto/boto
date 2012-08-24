@@ -37,6 +37,7 @@ from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 from boto.s3.lifecycle import Lifecycle
+from boto.s3.cors import CORSConfiguration
 from boto.s3.bucketlogging import BucketLogging
 import boto.jsonresponse
 import boto.utils
@@ -49,9 +50,11 @@ import base64
 from collections import defaultdict
 
 # as per http://goo.gl/BDuud (02/19/2011)
-class S3WebsiteEndpointTranslate:
-    trans_region = defaultdict(lambda :'s3-website-us-east-1')
 
+
+class S3WebsiteEndpointTranslate:
+
+    trans_region = defaultdict(lambda: 's3-website-us-east-1')
     trans_region['eu-west-1'] = 's3-website-eu-west-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
     trans_region['us-west-2'] = 's3-website-us-west-2'
@@ -64,6 +67,7 @@ class S3WebsiteEndpointTranslate:
         return self.trans_region[reg]
 
 S3Permissions = ['READ', 'WRITE', 'READ_ACP', 'WRITE_ACP', 'FULL_CONTROL']
+
 
 class Bucket(object):
 
@@ -87,6 +91,16 @@ class Bucket(object):
       </WebsiteConfiguration>"""
 
     WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
+
+    CORSBody = """<?xml version="1.0" encoding="UTF-8"?>
+    <CORSConfiguration
+      <CORSRule>
+        <AllowedOrigin>%s</AllowedOrigin>
+        <AllowedMethod>%s</AllowedMethod>
+        <MaxAgeSeconds>%d</MaxAgeSeconds>
+        <ExposeHeader>%s</ExposeHeader>
+      </CORSRule>
+    </CORSConfiguration>"""
 
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
@@ -142,7 +156,8 @@ class Bucket(object):
         """
         return self.get_key(key_name, headers=headers)
 
-    def get_key(self, key_name, headers=None, version_id=None, response_headers=None):
+    def get_key(self, key_name, headers=None, version_id=None,
+                response_headers=None):
         """
         Check to see if a particular key exists within the bucket.  This
         method uses a HEAD request to check for the existance of the key.
@@ -152,10 +167,10 @@ class Bucket(object):
         :param key_name: The name of the key to retrieve
 
         :type response_headers: dict
-        :param response_headers: A dictionary containing HTTP headers/values
-                                 that will override any headers associated with
-                                 the stored object in the response.
-                                 See http://goo.gl/EWOPb for details.
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response.  See
+            http://goo.gl/EWOPb for details.
 
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
@@ -176,7 +191,7 @@ class Bucket(object):
         response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
-        if response.status/100 == 2:
+        if response.status / 100 == 2:
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
@@ -227,16 +242,16 @@ class Bucket(object):
 
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
-                        prefix.  For example, if you call the method with
-                        prefix='/foo/' then the iterator will only cycle
-                        through the keys that begin with the string '/foo/'.
+            prefix.  For example, if you call the method with
+            prefix='/foo/' then the iterator will only cycle through
+            the keys that begin with the string '/foo/'.
 
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
-                        to allow you to organize and browse your keys
-                        hierarchically. See:
-                        http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
-                        for more details.
+            to allow you to organize and browse your keys
+            hierarchically. See:
+            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
+            more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
@@ -249,25 +264,25 @@ class Bucket(object):
     def list_versions(self, prefix='', delimiter='', key_marker='',
                       version_id_marker='', headers=None):
         """
-        List version objects within a bucket.  This returns an instance of an
-        VersionedBucketListResultSet that automatically handles all of the result
-        paging, etc. from S3.  You just need to keep iterating until
-        there are no more results.
-        Called with no arguments, this will return an iterator object across
+        List version objects within a bucket.  This returns an
+        instance of an VersionedBucketListResultSet that automatically
+        handles all of the result paging, etc. from S3.  You just need
+        to keep iterating until there are no more results.  Called
+        with no arguments, this will return an iterator object across
         all keys within the bucket.
 
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
-                        prefix.  For example, if you call the method with
-                        prefix='/foo/' then the iterator will only cycle
-                        through the keys that begin with the string '/foo/'.
+            prefix.  For example, if you call the method with
+            prefix='/foo/' then the iterator will only cycle through
+            the keys that begin with the string '/foo/'.
 
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
-                        to allow you to organize and browse your keys
-                        hierarchically. See:
-                        http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
-                        for more details.
+            to allow you to organize and browse your keys
+            hierarchically. See:
+            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
+            more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
@@ -275,8 +290,9 @@ class Bucket(object):
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
-        return VersionedBucketListResultSet(self, prefix, delimiter, key_marker,
-                                            version_id_marker, headers)
+        return VersionedBucketListResultSet(self, prefix, delimiter,
+                                            key_marker, version_id_marker,
+                                            headers)
 
     def list_multipart_uploads(self, key_marker='',
                                upload_id_marker='',
@@ -328,10 +344,11 @@ class Bucket(object):
 
     def get_all_keys(self, headers=None, **params):
         """
-        A lower-level method for listing contents of a bucket.
-        This closely models the actual S3 API and requires you to manually
-        handle the paging of results.  For a higher-level method
-        that handles the details of paging for you, you can use the list method.
+        A lower-level method for listing contents of a bucket.  This
+        closely models the actual S3 API and requires you to manually
+        handle the paging of results.  For a higher-level method that
+        handles the details of paging for you, you can use the list
+        method.
 
         :type max_keys: int
         :param max_keys: The maximum number of keys to retrieve
@@ -344,12 +361,11 @@ class Bucket(object):
 
         :type delimiter: string
         :param delimiter: If this optional, Unicode string parameter
-                          is included with your request, then keys that
-                          contain the same string between the prefix and
-                          the first occurrence of the delimiter will be
-                          rolled up into a single result element in the
-                          CommonPrefixes collection. These rolled-up keys
-                          are not returned elsewhere in the response.
+            is included with your request, then keys that contain the
+            same string between the prefix and the first occurrence of
+            the delimiter will be rolled up into a single result
+            element in the CommonPrefixes collection. These rolled-up
+            keys are not returned elsewhere in the response.
 
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
@@ -361,10 +377,11 @@ class Bucket(object):
 
     def get_all_versions(self, headers=None, **params):
         """
-        A lower-level, version-aware method for listing contents of a bucket.
-        This closely models the actual S3 API and requires you to manually
-        handle the paging of results.  For a higher-level method
-        that handles the details of paging for you, you can use the list method.
+        A lower-level, version-aware method for listing contents of a
+        bucket.  This closely models the actual S3 API and requires
+        you to manually handle the paging of results.  For a
+        higher-level method that handles the details of paging for
+        you, you can use the list method.
 
         :type max_keys: int
         :param max_keys: The maximum number of keys to retrieve
@@ -374,24 +391,22 @@ class Bucket(object):
 
         :type key_marker: string
         :param key_marker: The "marker" of where you are in the result set
-                           with respect to keys.
+            with respect to keys.
 
         :type version_id_marker: string
         :param version_id_marker: The "marker" of where you are in the result
-                                  set with respect to version-id's.
+            set with respect to version-id's.
 
         :type delimiter: string
         :param delimiter: If this optional, Unicode string parameter
-                          is included with your request, then keys that
-                          contain the same string between the prefix and
-                          the first occurrence of the delimiter will be
-                          rolled up into a single result element in the
-                          CommonPrefixes collection. These rolled-up keys
-                          are not returned elsewhere in the response.
+            is included with your request, then keys that contain the
+            same string between the prefix and the first occurrence of
+            the delimiter will be rolled up into a single result
+            element in the CommonPrefixes collection. These rolled-up
+            keys are not returned elsewhere in the response.
 
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
-
         """
         return self._get_all([('Version', self.key_class),
                               ('CommonPrefixes', Prefix),
@@ -408,32 +423,29 @@ class Bucket(object):
 
         :type max_uploads: int
         :param max_uploads: The maximum number of uploads to retrieve.
-                            Default value is 1000.
+            Default value is 1000.
 
         :type key_marker: string
-        :param key_marker: Together with upload_id_marker, this parameter
-                           specifies the multipart upload after which listing
-                           should begin.  If upload_id_marker is not specified,
-                           only the keys lexicographically greater than the
-                           specified key_marker will be included in the list.
+        :param key_marker: Together with upload_id_marker, this
+            parameter specifies the multipart upload after which
+            listing should begin.  If upload_id_marker is not
+            specified, only the keys lexicographically greater than
+            the specified key_marker will be included in the list.
 
-                           If upload_id_marker is specified, any multipart
-                           uploads for a key equal to the key_marker might
-                           also be included, provided those multipart uploads
-                           have upload IDs lexicographically greater than the
-                           specified upload_id_marker.
+            If upload_id_marker is specified, any multipart uploads
+            for a key equal to the key_marker might also be included,
+            provided those multipart uploads have upload IDs
+            lexicographically greater than the specified
+            upload_id_marker.
 
         :type upload_id_marker: string
         :param upload_id_marker: Together with key-marker, specifies
-                                 the multipart upload after which listing
-                                 should begin. If key_marker is not specified,
-                                 the upload_id_marker parameter is ignored.
-                                 Otherwise, any multipart uploads for a key
-                                 equal to the key_marker might be included
-                                 in the list only if they have an upload ID
-                                 lexicographically greater than the specified
-                                 upload_id_marker.
-
+            the multipart upload after which listing should begin. If
+            key_marker is not specified, the upload_id_marker
+            parameter is ignored.  Otherwise, any multipart uploads
+            for a key equal to the key_marker might be included in the
+            list only if they have an upload ID lexicographically
+            greater than the specified upload_id_marker.
 
         :rtype: ResultSet
         :return: The result from S3 listing the uploads requested
@@ -475,21 +487,20 @@ class Bucket(object):
 
         :type keys: list
         :param keys: A list of either key_names or (key_name, versionid) pairs
-                     or a list of Key instances.
+            or a list of Key instances.
 
         :type quiet: boolean
-        :param quiet: In quiet mode the response includes only keys where
-                      the delete operation encountered an error. For a
-                      successful deletion, the operation does not return
-                      any information about the delete in the response body.
+        :param quiet: In quiet mode the response includes only keys
+            where the delete operation encountered an error. For a
+            successful deletion, the operation does not return any
+            information about the delete in the response body.
 
         :type mfa_token: tuple or list of strings
-        :param mfa_token: A tuple or list consisting of the serial number
-                          from the MFA device and the current value of
-                          the six-digit token associated with the device.
-                          This value is required anytime you are
-                          deleting versioned objects from a bucket
-                          that has the MFADelete option on the bucket.
+        :param mfa_token: A tuple or list consisting of the serial
+            number from the MFA device and the current value of the
+            six-digit token associated with the device.  This value is
+            required anytime you are deleting versioned objects from a
+            bucket that has the MFADelete option on the bucket.
 
         :returns: An instance of MultiDeleteResult
         """
@@ -497,6 +508,7 @@ class Bucket(object):
         result = MultiDeleteResult(self)
         provider = self.connection.provider
         query_args = 'delete'
+
         def delete_keys2(hdrs):
             hdrs = hdrs or {}
             data = u"""<?xml version="1.0" encoding="UTF-8"?>"""
@@ -522,21 +534,20 @@ class Bucket(object):
                         key_name = key.name
                         code = 'PrefixSkipped'   # Don't delete Prefix
                     else:
-                        key_name = repr(key)     # try get a string
-                        code = 'InvalidArgument' # other unknown type
+                        key_name = repr(key)   # try get a string
+                        code = 'InvalidArgument'  # other unknown type
                     message = 'Invalid. No delete action taken for this object.'
                     error = Error(key_name, code=code, message=message)
                     result.errors.append(error)
                     continue
                 count += 1
-                #key_name = key_name.decode('utf-8')
                 data += u"<Object><Key>%s</Key>" % xml.sax.saxutils.escape(key_name)
                 if version_id:
                     data += u"<VersionId>%s</VersionId>" % version_id
                 data += u"</Object>"
             data += u"</Delete>"
             if count <= 0:
-                return False # no more
+                return False  # no more
             data = data.encode('utf-8')
             fp = StringIO.StringIO(data)
             md5 = boto.utils.compute_md5(fp)
@@ -552,7 +563,7 @@ class Bucket(object):
             if response.status == 200:
                 h = handler.XmlHandler(result, self)
                 xml.sax.parseString(body, h)
-                return count >= 1000 # more?
+                return count >= 1000  # more?
             else:
                 raise provider.storage_response_error(response.status,
                                                       response.reason,
@@ -574,17 +585,17 @@ class Bucket(object):
         :param version_id: The version ID (optional)
 
         :type mfa_token: tuple or list of strings
-        :param mfa_token: A tuple or list consisting of the serial number
-                          from the MFA device and the current value of
-                          the six-digit token associated with the device.
-                          This value is required anytime you are
-                          deleting versioned objects from a bucket
-                          that has the MFADelete option on the bucket.
+        :param mfa_token: A tuple or list consisting of the serial
+            number from the MFA device and the current value of the
+            six-digit token associated with the device.  This value is
+            required anytime you are deleting versioned objects from a
+            bucket that has the MFADelete option on the bucket.
 
         :rtype: :class:`boto.s3.key.Key` or subclass
-        :returns: A key object holding information on what was deleted.
-                  The Caller can see if a delete_marker was created or
-                  removed and what version_id the delete created or removed.
+        :returns: A key object holding information on what was
+            deleted.  The Caller can see if a delete_marker was
+            created or removed and what version_id the delete created
+            or removed.
         """
         provider = self.connection.provider
         if version_id:
@@ -627,48 +638,41 @@ class Bucket(object):
 
         :type src_version_id: string
         :param src_version_id: The version id for the key.  This param
-                               is optional.  If not specified, the newest
-                               version of the key will be copied.
+            is optional.  If not specified, the newest version of the
+            key will be copied.
 
         :type metadata: dict
-        :param metadata: Metadata to be associated with new key.
-                         If metadata is supplied, it will replace the
-                         metadata of the source key being copied.
-                         If no metadata is supplied, the source key's
-                         metadata will be copied to the new key.
+        :param metadata: Metadata to be associated with new key.  If
+            metadata is supplied, it will replace the metadata of the
+            source key being copied.  If no metadata is supplied, the
+            source key's metadata will be copied to the new key.
 
         :type storage_class: string
-        :param storage_class: The storage class of the new key.
-                              By default, the new key will use the
-                              standard storage class.  Possible values are:
-                              STANDARD | REDUCED_REDUNDANCY
+        :param storage_class: The storage class of the new key.  By
+            default, the new key will use the standard storage class.
+            Possible values are: STANDARD | REDUCED_REDUNDANCY
 
         :type preserve_acl: bool
-        :param preserve_acl: If True, the ACL from the source key
-                             will be copied to the destination
-                             key.  If False, the destination key
-                             will have the default ACL.
-                             Note that preserving the ACL in the
-                             new key object will require two
-                             additional API calls to S3, one to
-                             retrieve the current ACL and one to
-                             set that ACL on the new object.  If
-                             you don't care about the ACL, a value
-                             of False will be significantly more
-                             efficient.
+        :param preserve_acl: If True, the ACL from the source key will
+            be copied to the destination key.  If False, the
+            destination key will have the default ACL.  Note that
+            preserving the ACL in the new key object will require two
+            additional API calls to S3, one to retrieve the current
+            ACL and one to set that ACL on the new object.  If you
+            don't care about the ACL, a value of False will be
+            significantly more efficient.
 
         :type encrypt_key: bool
         :param encrypt_key: If True, the new copy of the object will
-                            be encrypted on the server-side by S3 and
-                            will be stored in an encrypted form while
-                            at rest in S3.
+            be encrypted on the server-side by S3 and will be stored
+            in an encrypted form while at rest in S3.
 
         :type headers: dict
         :param headers: A dictionary of header name/value pairs.
 
         :type query_args: string
         :param query_args: A string of additional querystring arguments
-                           to append to the request
+            to append to the request
 
         :rtype: :class:`boto.s3.key.Key` or subclass
         :returns: An instance of the newly created key object
@@ -694,7 +698,7 @@ class Bucket(object):
         if metadata:
             headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata, provider)
-        elif not query_args: # Can't use this header with multi-part copy.
+        elif not query_args:  # Can't use this header with multi-part copy.
             headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers,
@@ -721,7 +725,7 @@ class Bucket(object):
         if headers:
             headers[self.connection.provider.acl_header] = acl_str
         else:
-            headers={self.connection.provider.acl_header: acl_str}
+            headers = {self.connection.provider.acl_header: acl_str}
 
         query_args = 'acl'
         if version_id:
@@ -784,7 +788,7 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def set_subresource(self, subresource, value, key_name = '', headers=None,
+    def set_subresource(self, subresource, value, key_name='', headers=None,
                         version_id=None):
         """
         Set a subresource for a bucket or key.
@@ -797,15 +801,15 @@ class Bucket(object):
 
         :type key_name: string
         :param key_name: The key to operate on, or None to operate on the
-                         bucket.
+            bucket.
 
         :type headers: dict
         :param headers: Additional HTTP headers to include in the request.
 
         :type src_version_id: string
-        :param src_version_id: Optional. The version id of the key to operate
-                               on. If not specified, operate on the newest
-                               version.
+        :param src_version_id: Optional. The version id of the key to
+            operate on. If not specified, operate on the newest
+            version.
         """
         if not subresource:
             raise TypeError('set_subresource called with subresource=None')
@@ -831,15 +835,15 @@ class Bucket(object):
 
         :type key_name: string
         :param key_name: The key to operate on, or None to operate on the
-                         bucket.
+            bucket.
 
         :type headers: dict
         :param headers: Additional HTTP headers to include in the request.
 
         :type src_version_id: string
-        :param src_version_id: Optional. The version id of the key to operate
-                               on. If not specified, operate on the newest
-                               version.
+        :param src_version_id: Optional. The version id of the key to
+            operate on. If not specified, operate on the newest
+            version.
 
         :rtype: string
         :returns: The value of the subresource.
@@ -874,20 +878,19 @@ class Bucket(object):
 
         :type permission: string
         :param permission: The permission being granted. Should be one of:
-                           (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
+            (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
 
         :type email_address: string
         :param email_address: The email address associated with the AWS
-                              account your are granting the permission to.
+            account your are granting the permission to.
 
         :type recursive: boolean
-        :param recursive: A boolean value to controls whether the command
-                          will apply the grant to all keys within the bucket
-                          or not.  The default value is False.  By passing a
-                          True value, the call will iterate through all keys
-                          in the bucket and apply the same grant to each key.
-                          CAUTION: If you have a lot of keys, this could take
-                          a long time!
+        :param recursive: A boolean value to controls whether the
+            command will apply the grant to all keys within the bucket
+            or not.  The default value is False.  By passing a True
+            value, the call will iterate through all keys in the
+            bucket and apply the same grant to each key.  CAUTION: If
+            you have a lot of keys, this could take a long time!
         """
         if permission not in S3Permissions:
             raise self.connection.provider.storage_permissions_error(
@@ -909,24 +912,23 @@ class Bucket(object):
 
         :type permission: string
         :param permission: The permission being granted. Should be one of:
-                           (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
+            (READ, WRITE, READ_ACP, WRITE_ACP, FULL_CONTROL).
 
         :type user_id: string
         :param user_id:     The canonical user id associated with the AWS
-                            account your are granting the permission to.
+            account your are granting the permission to.
 
         :type recursive: boolean
-        :param recursive: A boolean value to controls whether the command
-                          will apply the grant to all keys within the bucket
-                          or not.  The default value is False.  By passing a
-                          True value, the call will iterate through all keys
-                          in the bucket and apply the same grant to each key.
-                          CAUTION: If you have a lot of keys, this could take
-                          a long time!
+        :param recursive: A boolean value to controls whether the
+            command will apply the grant to all keys within the bucket
+            or not.  The default value is False.  By passing a True
+            value, the call will iterate through all keys in the
+            bucket and apply the same grant to each key.  CAUTION: If
+            you have a lot of keys, this could take a long time!
 
         :type display_name: string
         :param display_name: An option string containing the user's
-                             Display Name.  Only required on Walrus.
+            Display Name.  Only required on Walrus.
         """
         if permission not in S3Permissions:
             raise self.connection.provider.storage_permissions_error(
@@ -950,8 +952,7 @@ class Bucket(object):
 
         :rtype: str
         :return: The LocationConstraint for the bucket or the empty
-                 string if no constraint was specified when bucket
-                 was created.
+            string if no constraint was specified when bucket was created.
         """
         response = self.connection.make_request('GET', self.name,
                                                 query_args='location')
@@ -970,10 +971,10 @@ class Bucket(object):
         Set logging on a bucket directly to the given xml string.
 
         :type logging_str: unicode string
-        :param logging_str: The XML for the bucketloggingstatus which will be set.
-                            The string will be converted to utf-8 before it is sent.
-                            Usually, you will obtain this XML from the BucketLogging
-                            object.
+        :param logging_str: The XML for the bucketloggingstatus which
+            will be set.  The string will be converted to utf-8 before
+            it is sent.  Usually, you will obtain this XML from the
+            BucketLogging object.
 
         :rtype: bool
         :return: True if ok or raises an exception.
@@ -988,7 +989,8 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def enable_logging(self, target_bucket, target_prefix='', grants=None, headers=None):
+    def enable_logging(self, target_bucket, target_prefix='',
+                       grants=None, headers=None):
         """
         Enable logging on a bucket.
 
@@ -997,18 +999,19 @@ class Bucket(object):
 
         :type target_prefix: string
         :param target_prefix: The prefix which should be prepended to the
-                              generated log files written to the target_bucket.
+            generated log files written to the target_bucket.
 
         :type grants: list of Grant objects
         :param grants: A list of extra permissions which will be granted on
-                       the log files which are created.
+            the log files which are created.
 
         :rtype: bool
         :return: True if ok or raises an exception.
         """
         if isinstance(target_bucket, Bucket):
             target_bucket = target_bucket.name
-        blogging = BucketLogging(target=target_bucket, prefix=target_prefix, grants=grants)
+        blogging = BucketLogging(target=target_bucket, prefix=target_prefix,
+                                 grants=grants)
         return self.set_xml_logging(blogging.to_xml(), headers=headers)
 
     def disable_logging(self, headers=None):
@@ -1082,23 +1085,21 @@ class Bucket(object):
 
         :type versioning: bool
         :param versioning: A boolean indicating whether version is
-                           enabled (True) or disabled (False).
+            enabled (True) or disabled (False).
 
         :type mfa_delete: bool
-        :param mfa_delete: A boolean indicating whether the Multi-Factor
-                           Authentication Delete feature is enabled (True)
-                           or disabled (False).  If mfa_delete is enabled
-                           then all Delete operations will require the
-                           token from your MFA device to be passed in
-                           the request.
+        :param mfa_delete: A boolean indicating whether the
+            Multi-Factor Authentication Delete feature is enabled
+            (True) or disabled (False).  If mfa_delete is enabled then
+            all Delete operations will require the token from your MFA
+            device to be passed in the request.
 
         :type mfa_token: tuple or list of strings
-        :param mfa_token: A tuple or list consisting of the serial number
-                          from the MFA device and the current value of
-                          the six-digit token associated with the device.
-                          This value is required when you are changing
-                          the status of the MfaDelete property of
-                          the bucket.
+        :param mfa_token: A tuple or list consisting of the serial
+            number from the MFA device and the current value of the
+            six-digit token associated with the device.  This value is
+            required when you are changing the status of the MfaDelete
+            property of the bucket.
         """
         if versioning:
             ver = 'Enabled'
@@ -1129,11 +1130,11 @@ class Bucket(object):
 
         :rtype: dict
         :returns: A dictionary containing a key named 'Versioning'
-                  that can have a value of either Enabled, Disabled,
-                  or Suspended. Also, if MFADelete has ever been enabled
-                  on the bucket, the dictionary will contain a key
-                  named 'MFADelete' which will have a value of either
-                  Enabled or Suspended.
+            that can have a value of either Enabled, Disabled, or
+            Suspended. Also, if MFADelete has ever been enabled on the
+            bucket, the dictionary will contain a key named
+            'MFADelete' which will have a value of either Enabled or
+            Suspended.
         """
         response = self.connection.make_request('GET', self.name,
                 query_args='versioning', headers=headers)
@@ -1219,16 +1220,15 @@ class Bucket(object):
 
         :type suffix: str
         :param suffix: Suffix that is appended to a request that is for a
-                       "directory" on the website endpoint (e.g. if the suffix
-                       is index.html and you make a request to
-                       samplebucket/images/ the data that is returned will
-                       be for the object with the key name images/index.html).
-                       The suffix must not be empty and must not include a
-                       slash character.
+            "directory" on the website endpoint (e.g. if the suffix is
+            index.html and you make a request to samplebucket/images/
+            the data that is returned will be for the object with the
+            key name images/index.html).  The suffix must not be empty
+            and must not include a slash character.
 
         :type error_key: str
         :param error_key: The object key name to use when a 4XX class
-                          error occurs.  This is optional.
+            error occurs.  This is optional.
 
         """
         if error_key:
@@ -1252,7 +1252,7 @@ class Bucket(object):
 
         :rtype: dict
         :returns: A dictionary containing a Python representation
-                  of the XML response from S3. The overall structure is:
+            of the XML response from S3. The overall structure is:
 
         * WebsiteConfiguration
 
@@ -1366,6 +1366,66 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def configure_cors(self, cors_config, headers=None):
+        """
+        Configure CORS for this bucket.
+
+        :type cors_config: :class:`boto.s3.cors.CORSConfiguration`
+        :param cors_config: The CORS configuration you want
+            to configure for this bucket.
+        """
+        fp = StringIO.StringIO(cors_config.to_xml())
+        md5 = boto.utils.compute_md5(fp)
+        if headers is None:
+            headers = {}
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('PUT', self.name,
+                                                data=fp.getvalue(),
+                                                query_args='cors',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_cors_config(self, headers=None):
+        """
+        Returns the current CORS configuration on the bucket.
+
+        :rtype: :class:`boto.s3.cors.CORSConfiguration`
+        :returns: A CORSConfiguration object that describes all current
+            CORS rules in effect for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='cors', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            cors = CORSConfiguration()
+            h = handler.XmlHandler(cors, self)
+            xml.sax.parseString(body, h)
+            return cors
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def delete_cors_configuration(self, headers=None):
+        """
+        Removes all CORS configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                                                query_args='cors',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def initiate_multipart_upload(self, key_name, headers=None,
                                   reduced_redundancy=False,
@@ -1375,36 +1435,34 @@ class Bucket(object):
         Start a multipart upload operation.
 
         :type key_name: string
-        :param key_name: The name of the key that will ultimately result from
-                         this multipart upload operation.  This will be exactly
-                         as the key appears in the bucket after the upload
-                         process has been completed.
+        :param key_name: The name of the key that will ultimately
+            result from this multipart upload operation.  This will be
+            exactly as the key appears in the bucket after the upload
+            process has been completed.
 
         :type headers: dict
         :param headers: Additional HTTP headers to send and store with the
-                        resulting key in S3.
+            resulting key in S3.
 
         :type reduced_redundancy: boolean
-        :param reduced_redundancy: In multipart uploads, the storage class is
-                                   specified when initiating the upload,
-                                   not when uploading individual parts.  So
-                                   if you want the resulting key to use the
-                                   reduced redundancy storage class set this
-                                   flag when you initiate the upload.
+        :param reduced_redundancy: In multipart uploads, the storage
+            class is specified when initiating the upload, not when
+            uploading individual parts.  So if you want the resulting
+            key to use the reduced redundancy storage class set this
+            flag when you initiate the upload.
 
         :type metadata: dict
         :param metadata: Any metadata that you would like to set on the key
-                         that results from the multipart upload.
+            that results from the multipart upload.
 
         :type encrypt_key: bool
         :param encrypt_key: If True, the new copy of the object will
-                            be encrypted on the server-side by S3 and
-                            will be stored in an encrypted form while
-                            at rest in S3.
+            be encrypted on the server-side by S3 and will be stored
+            in an encrypted form while at rest in S3.
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the
-                       new key (once completed) in S3.
+            new key (once completed) in S3.
         """
         query_args = 'uploads'
         provider = self.connection.provider
