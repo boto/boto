@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -22,11 +22,7 @@
 import boto.ec2
 from boto.sdb.db.property import StringProperty, IntegerProperty
 from boto.manage import propget
-
-InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
-                 'c1.medium', 'c1.xlarge', 'm2.xlarge',
-                 'm2.2xlarge', 'm2.4xlarge', 'cc1.4xlarge',
-                 't1.micro']
+from boto.ec2 import InstanceTypes
 
 class BuyReservation(object):
 
@@ -52,7 +48,7 @@ class BuyReservation(object):
             prop = StringProperty(name='zone', verbose_name='EC2 Availability Zone',
                                   choices=self.ec2.get_all_zones)
             params['zone'] = propget.get(prop)
-            
+
     def get(self, params):
         self.get_region(params)
         self.ec2 = params['region'].connect()
