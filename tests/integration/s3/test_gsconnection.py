@@ -72,16 +72,16 @@ class GSConnectionTest(unittest.TestCase):
         bucket = c.create_bucket(bucket_name)
         # now try a get_bucket call and see if it's really there
         bucket = c.get_bucket(bucket_name)
-        k = bucket.new_key()
-        k.name = 'foobar'
+        key_name = 'foobar'
+        k = bucket.new_key(key_name)
         s1 = 'This is a test of file upload and download'
         s2 = 'This is a second string to test file upload and download'
         k.set_contents_from_string(s1)
-        fp = open('foobar', 'wb')
+        fp = open(key_name, 'wb')
         # now get the contents from s3 to a local file
         k.get_contents_to_file(fp)
         fp.close()
-        fp = open('foobar')
+        fp = open(key_name)
         # check to make sure content read from s3 is identical to original
         assert s1 == fp.read(), 'corrupted file'
         fp.close()
@@ -136,8 +136,8 @@ class GSConnectionTest(unittest.TestCase):
         k = bucket.lookup('notthere')
         assert k == None
         # try some metadata stuff
-        k = bucket.new_key()
-        k.name = 'has_metadata'
+        key_name = 'has_metadata'
+        k = bucket.new_key(key_name)
         mdkey1 = 'meta1'
         mdval1 = 'This is the first metadata value'
         k.set_metadata(mdkey1, mdval1)
@@ -151,12 +151,11 @@ class GSConnectionTest(unittest.TestCase):
         k.set_metadata(mdkey3, mdval3)
         k.set_contents_from_string(s1)
 
-        k = bucket.lookup('has_metadata')
+        k = bucket.lookup(key_name)
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
         assert k.get_metadata(mdkey3) == mdval3
-        k = bucket.new_key()
-        k.name = 'has_metadata'
+        k = bucket.new_key(key_name)
         k.get_contents_as_string()
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
@@ -225,18 +224,18 @@ class GSConnectionTest(unittest.TestCase):
         bucket_name_2 = 'test2-%d' % int(time.time())
         bucket1 = c.create_bucket(bucket_name_1)
         bucket2 = c.create_bucket(bucket_name_2)
-        # verify buckets got created 
+        # verify buckets got created
         bucket1 = c.get_bucket(bucket_name_1)
         bucket2 = c.get_bucket(bucket_name_2)
         # create a key in bucket1 and give it some content
-        k1 = bucket1.new_key()
-        assert isinstance(k1, bucket1.key_class)
         key_name = 'foobar'
+        k1 = bucket1.new_key(key_name)
+        assert isinstance(k1, bucket1.key_class)
         k1.name = key_name
         s = 'This is a test.'
         k1.set_contents_from_string(s)
         # copy the new key from bucket1 to bucket2
-        k1.copy(bucket_name_2, key_name) 
+        k1.copy(bucket_name_2, key_name)
         # now copy the contents from bucket2 to a local file
         k2 = bucket2.lookup(key_name)
         assert isinstance(k2, bucket2.key_class)
@@ -377,5 +376,5 @@ class GSConnectionTest(unittest.TestCase):
         assert cors == cors_doc
         # delete bucket
         uri.delete_bucket()
-        
+
         print '--- tests completed ---'
