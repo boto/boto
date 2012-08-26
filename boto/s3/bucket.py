@@ -37,6 +37,7 @@ from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 from boto.s3.lifecycle import Lifecycle
+from boto.s3.tagging import Tags
 from boto.s3.bucketlogging import BucketLogging
 import boto.jsonresponse
 import boto.utils
@@ -1488,3 +1489,52 @@ class Bucket(object):
 
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
+
+    def get_tags(self):
+        response = self.get_xml_tags()
+        tags = Tags()
+        h = handler.XmlHandler(tags, self)
+        xml.sax.parseString(response, h)
+        return tags
+
+    def get_xml_tags(self):
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='tagging',
+                                                headers=None)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def set_xml_tags(self, tag_str, headers=None, query_args='tagging'):
+        if headers is None:
+            headers = {}
+        md5 = boto.utils.compute_md5(StringIO.StringIO(tag_str))
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('PUT', self.name,
+                                                data=tag_str.encode('utf-8'),
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        if response.status != 204:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        return True
+
+    def set_tags(self, tags, headers=None):
+        return self.set_xml_tags(tags.to_xml(), headers=headers)
+
+    def delete_tags(self, headers=None):
+        response = self.connection.make_request('DELETE', self.name,
+                                                query_args='tagging',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

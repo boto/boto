@@ -85,7 +85,8 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    'uploads', 'uploadId', 'response-content-type',
                    'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
-                   'response-content-encoding', 'delete', 'lifecycle']
+                   'response-content-encoding', 'delete', 'lifecycle',
+                   'tagging']
 
 
 _first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
