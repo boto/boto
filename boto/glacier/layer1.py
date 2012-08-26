@@ -63,7 +63,7 @@ class Layer1(AWSAuthConnection):
                      data='', ok_responses=(200,)):
         if headers is None:
             headers = {}
-        headers = {'x-amz-glacier-version': self.Version}
+        headers['x-amz-glacier-version'] = self.Version
         uri = '/%s/%s' % (self.account_id, resource)
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   headers=headers,
@@ -382,10 +382,10 @@ class Layer1(AWSAuthConnection):
         uri = 'vaults/%s/archives' % vault_name
         headers = {'x-amz-content-sha256': linear_hash,
                    'x-amz-sha256-tree-hash': tree_hash,
-                   'x-amz-content-length': len(archive)}
+                   'x-amz-content-length': str(len(archive))}
         if description:
             headers['x-amz-archive-description'] = description
-        return self.make_request('GET', uri, headers=headers,
+        return self.make_request('POST', uri, headers=headers,
                                  data=archive, ok_responses=(201,))
 
     def delete_archive(self, vault_name, archive_id):
