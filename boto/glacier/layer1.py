@@ -23,7 +23,7 @@
 #
 
 import json
-import boto
+import boto.glacier
 from boto.connection import AWSAuthConnection
 
 boto.set_stream_logger('glacier')
@@ -39,7 +39,7 @@ class Layer1(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  account_id='-', is_secure=True, port=None,
-                 proxy=None, proxy_port=None,
+                 proxy=None, proxy_port=None, https_connection_factory=None,
                  debug=2, security_token=None, region=None):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
@@ -54,6 +54,8 @@ class Layer1(AWSAuthConnection):
         AWSAuthConnection.__init__(self, region.endpoint,
                                    aws_access_key_id, aws_secret_access_key,
                                    True, port, proxy, proxy_port, debug=debug,
+                                   https_connection_factory=\
+                                   https_connection_factory,
                                    security_token=security_token)
 
     def _required_auth_capability(self):
@@ -68,16 +70,14 @@ class Layer1(AWSAuthConnection):
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   headers=headers,
                                                   data=data)
-        body = response.read()
         if response.status in ok_responses:
-            if body:
-                boto.log.debug(body)
-                body = json.loads(body)
-            return body
+            is_json = response.getheader('Content-Type') == 'application/json'
+            body = json.loads(response.read()) if is_json else response.read()
+            return dict(response.getheaders()), body
         else:
             msg = 'Expected %s, got (%d, %s)' % (ok_responses,
                                                  response.status,
-                                                 body)
+                                                 response.read())
             # create glacier-specific exceptions
             raise BaseException(msg)
 
@@ -115,7 +115,7 @@ class Layer1(AWSAuthConnection):
             ("") for the marker returns a list of vaults starting
             from the first vault.
         """
-        return self.make_request('GET', 'vaults')
+        return self.make_request('GET', 'vaults')[1]
 
     def describe_vault(self, vault_name):
         """
@@ -134,7 +134,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('GET', uri)
+        return self.make_request('GET', uri)[1]
 
     def create_vault(self, vault_name):
         """
@@ -159,7 +159,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('PUT', uri, ok_responses=(201,))
+        return self.make_request('PUT', uri, ok_responses=(201,))[1]
 
     def delete_vault(self, vault_name):
         """
@@ -178,7 +178,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('DELETE', uri, ok_responses=(204,))
+        return self.make_request('DELETE', uri, ok_responses=(204,))[1]
 
     def get_vault_notifications(self, vault_name):
         """
@@ -189,7 +189,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s/notification-configuration' % vault_name
-        return self.make_request('GET', uri)
+        return self.make_request('GET', uri)[1]
 
     def set_vault_notifications(self, vault_name, notification_config):
         """
@@ -217,7 +217,7 @@ class Layer1(AWSAuthConnection):
         uri = 'vaults/%s/notification-configuration' % vault_name
         json_config = json.dumps(notification_config)
         return self.make_request('PUT', uri, data=json_config,
-                                 ok_responses=(204,))
+                                 ok_responses=(204,))[1]
 
     def delete_vault_notifications(self, vault_name):
         """
@@ -228,7 +228,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s/notification-configuration' % vault_name
-        return self.make_request('DELETE', uri, ok_responses=(204,))
+        return self.make_request('DELETE', uri, ok_responses=(204,))[1]
 
     # Jobs
 
@@ -267,7 +267,7 @@ class Layer1(AWSAuthConnection):
             specified, jobs with all status codes are returned.
         """
         uri = 'vaults/%s/jobs' % vault_name
-        return self.make_request('GET', uri)
+        return self.make_request('GET', uri)[1]
 
     def describe_job(self, vault_name, job_id):
         """
@@ -284,7 +284,7 @@ class Layer1(AWSAuthConnection):
         :param job_id: The ID of the job.
         """
         uri = 'vaults/%s/jobs/%s' % (vault_name, job_id)
-        return self.make_request('GET', uri, ok_responses=(201,))
+        return self.make_request('GET', uri, ok_responses=(200,))[1]
 
     def initiate_job(self, vault_name, job_data):
         """
@@ -324,9 +324,9 @@ class Layer1(AWSAuthConnection):
         uri = 'vaults/%s/jobs' % vault_name
         json_job_data = json.dumps(job_data)
         return self.make_request('POST', uri, data=json_job_data,
-                                 ok_responses=(202,))
+                                 ok_responses=(202,))[1]
 
-    def get_job_output(self, vault_name, job_id):
+    def get_job_output(self, vault_name, job_id, byte_range=None):
         """
         This operation downloads the output of the job you initiated
         using Initiate a Job. Depending on the job type
@@ -346,9 +346,21 @@ class Layer1(AWSAuthConnection):
 
         :type job_id: str
         :param job_id: The ID of the job.
+        
+        :type byte_range: tuple
+        :param range: A tuple of integer specifying the slice (in bytes) 
+            of the archive you want to receive
         """
         uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
-        return self.make_request('GET', uri)
+        headers = None
+        if byte_range:
+            headers = { 'Range': 'bytes=%s-%s' % (byte_range[0], byte_range[1]) }
+        header, body = self.make_request('GET', uri, headers=headers, 
+                                     ok_responses=(200, 206))
+        checksum = header.get('x-amz-sha256-tree-hash')
+        # TODO not sure if we want to verify checksum in this abstraction level
+        # and do a retry?
+        return (checksum, body)
 
     # Archives
 
@@ -399,4 +411,4 @@ class Layer1(AWSAuthConnection):
         :param archive_id: The ID for the archive to be deleted.
         """
         uri = 'vaults/%s/archives/%s' % (vault_name, archive_id)
-        return self.make_request('DELETE', uri, ok_responses=(204,))
+        return self.make_request('DELETE', uri, ok_responses=(204,))[1]
