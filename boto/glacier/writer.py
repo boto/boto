@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2012 Thomas Parslow http://almostobsolete.net/
+# Some code from Urban Skudnik urban.skudnik@gmail.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -36,15 +37,28 @@ def chunk_hashes(str):
   chunks = [str[i*chunk:(i+1)*chunk] for i in range(chunk_count)]
   return [hashlib.sha256(x).digest() for x in chunks]
 
-def tree_hash(hashes):
-  """
-  Given a hash of each 1MB chunk (from chunk_hashes) this will hash
-  together adjacent hashes until it ends up with one big one. So a
-  tree of hashes.
-  """
-  while len(hashes) > 1:
-      hashes = [hashlib.sha256("".join(hashes[i:i+2])).digest() for i in range(0, len(hashes),2)]
-  return hashes[0]
+def tree_hash(fo):
+    """
+    Given a hash of each 1MB chunk (from chunk_hashes) this will hash
+    together adjacent hashes until it ends up with one big one. So a
+    tree of hashes.
+    """
+    hashes = []
+    hashes.extend(fo)
+    while len(hashes) > 1:
+        new_hashes = []
+        while True:
+            if len(hashes) > 1:
+                first = hashes.pop(0)
+                second = hashes.pop(0)
+                new_hashes.append(hashlib.sha256(first + second).digest())
+            elif len(hashes) == 1:
+                only = hashes.pop(0)
+                new_hashes.append(only)
+            else:
+                break
+        hashes.extend(new_hashes)
+    return hashes[0]
 
 def bytes_to_hex(str):
   return ''.join( [ "%02x" % ord( x ) for x in str] ).strip()

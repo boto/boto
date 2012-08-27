@@ -27,7 +27,7 @@ import urllib
 import json
 
 class Vault(object):
-    DefaultPartSize = 128*1024*1024 #128MB
+    DefaultPartSize = 4*1024*1024 #128MB
 
     def __init__(self, layer1, name):
         self.layer1 = layer1
