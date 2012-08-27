@@ -1164,6 +1164,8 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
+        if headers is None:
+            headers = {}
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
