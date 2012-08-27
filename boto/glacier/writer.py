@@ -43,7 +43,7 @@ def tree_hash(hashes):
   tree of hashes.
   """
   while len(hashes) > 1:
-      hashes = [hashlib.sha256("".join(h[i:i+1])).digest() for i in range(i,2)]
+      hashes = [hashlib.sha256("".join(hashes[i:i+2])).digest() for i in range(0, len(hashes),2)]
   return hashes[0]
 
 def bytes_to_hex(str):
@@ -75,7 +75,7 @@ class Writer(object):
       buf = "".join(self.buffer)
       # Put back any data remaining over the part size into the
       # buffer
-      if len(buf) < self.part_size:
+      if len(buf) > self.part_size:
           self.buffer = [buf[self.part_size:]]
           self.buffer_size = len(self.buffer[0])
       else:
@@ -101,6 +101,8 @@ class Writer(object):
 
   def write(self, str):
       assert not self.closed, "Tried to write to a Writer that is already closed!"
+      if str == "":
+          return
       self.buffer.append(str)
       self.buffer_size += len(str)
       while self.buffer_size > self.part_size:

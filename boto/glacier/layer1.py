@@ -27,7 +27,7 @@ import boto
 from boto.connection import AWSAuthConnection
 from .exceptions import UnexpectedHTTPResponseError
 
-boto.set_stream_logger('glacier')
+#boto.set_stream_logger('glacier')
 
 class Layer1(AWSAuthConnection):
 

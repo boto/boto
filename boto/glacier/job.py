@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 import urllib
+import json
 
 class Job(object):
     def __init__(self, vault, job_id):
@@ -52,6 +53,6 @@ class Job(object):
         headers = {}
         if range_from is not None or range_to is not None:
             assert range_from is not None and range_to is not None, "If you specify one of range_from or range_to you must specify the other"
-            headers["Range"] = "bytes %d-%d" % (range_from, range_to)
+            headers["Range"] = "bytes=%d-%d" % (range_from, range_to)
         response = self.make_request("GET", "output", headers=headers)
         return response
