@@ -31,19 +31,19 @@ boto.set_stream_logger('glacier')
 
 class Layer1(AWSAuthConnection):
 
-    DefaultRegionName = 'us-east-1'
-    """The default region to connect to."""
-
     Version = '2012-06-01'
     """Glacier API version."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  account_id='-', is_secure=True, port=None,
-                 proxy=None, proxy_port=None, https_connection_factory=None,
-                 debug=2, security_token=None, region=None):
+                 proxy=None, proxy_port=None,
+                 proxy_user=None, proxy_pass=None, debug=2,
+                 https_connection_factory=None, path='/',
+                 provider='aws', security_token=None,
+                 suppress_consec_slashes=True,
+                 region=None, region_name='us-east-1'):
+
         if not region:
-            region_name = boto.config.get('DynamoDB', 'region',
-                                          self.DefaultRegionName)
             for reg in boto.glacier.regions():
                 if reg.name == region_name:
                     region = reg
@@ -53,10 +53,11 @@ class Layer1(AWSAuthConnection):
         self.account_id = account_id
         AWSAuthConnection.__init__(self, region.endpoint,
                                    aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port, debug=debug,
-                                   https_connection_factory=\
+                                   True, port, proxy, proxy_port,
+                                   proxy_user, proxy_pass, debug,
                                    https_connection_factory,
-                                   security_token=security_token)
+                                   path, provider, security_token,
+                                   suppress_consec_slashes)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -346,16 +347,16 @@ class Layer1(AWSAuthConnection):
 
         :type job_id: str
         :param job_id: The ID of the job.
-        
+
         :type byte_range: tuple
-        :param range: A tuple of integer specifying the slice (in bytes) 
+        :param range: A tuple of integer specifying the slice (in bytes)
             of the archive you want to receive
         """
         uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
         headers = None
         if byte_range:
             headers = { 'Range': 'bytes=%s-%s' % (byte_range[0], byte_range[1]) }
-        header, body = self.make_request('GET', uri, headers=headers, 
+        header, body = self.make_request('GET', uri, headers=headers,
                                      ok_responses=(200, 206))
         checksum = header.get('x-amz-sha256-tree-hash')
         # TODO not sure if we want to verify checksum in this abstraction level
