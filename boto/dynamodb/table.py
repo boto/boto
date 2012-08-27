@@ -407,7 +407,8 @@ class Table(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: generator
+        :return: A TableGenerator (generator) object which will iterate over all results
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         return self.layer2.scan(self, scan_filter, attributes_to_get,
                                 request_limit, max_results, count,
