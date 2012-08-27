@@ -163,8 +163,8 @@ class Provider(object):
     def __init__(self, name, access_key=None, secret_key=None,
                  security_token=None):
         self.host = None
-        self.access_key = access_key
-        self.secret_key = secret_key
+        self._access_key = access_key
+        self._secret_key = secret_key
         self.security_token = security_token
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
@@ -180,27 +180,51 @@ class Provider(object):
     def get_credentials(self, access_key=None, secret_key=None):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
-            self.access_key = access_key
+            self._access_key = access_key
         elif access_key_name.upper() in os.environ:
-            self.access_key = os.environ[access_key_name.upper()]
+            self._access_key = os.environ[access_key_name.upper()]
         elif config.has_option('Credentials', access_key_name):
-            self.access_key = config.get('Credentials', access_key_name)
+            # when the property is called, re-read the access key
+            # from the config file:
+            self._access_key = None
 
         if secret_key is not None:
-            self.secret_key = secret_key
+            self._secret_key = secret_key
         elif secret_key_name.upper() in os.environ:
-            self.secret_key = os.environ[secret_key_name.upper()]
+            self._secret_key = os.environ[secret_key_name.upper()]
         elif config.has_option('Credentials', secret_key_name):
-            self.secret_key = config.get('Credentials', secret_key_name)
+            # when the property is called, re-read the secret access key
+            # from the config file:
+            self._secret_key = None
 
-        if ((self.access_key is None or self.secret_key is None) and
+        if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
             self._populate_keys_from_metadata_server()
 
-        if isinstance(self.secret_key, unicode):
+        if isinstance(self._secret_key, unicode):
             # the secret key must be bytes and not unicode to work
             #  properly with hmac.new (see http://bugs.python.org/issue5285)
-            self.secret_key = str(self.secret_key)
+            self._secret_key = str(self.secret_key)
+
+    def read_access_key_from_config(self):
+        access_key_name, secret_key_name = self.CredentialMap[self.name]
+        return config.get('Credentials', access_key_name)
+
+    def read_secret_key_from_config(self):
+        access_key_name, secret_key_name = self.CredentialMap[self.name]
+        return config.get('Credentials', secret_key_name)
+
+    @property
+    def access_key(self):
+        if self._access_key:
+            return self._access_key
+        return self.read_access_key_from_config()
+
+    @property
+    def secret_key(self):
+        if self._secret_key:
+            return self._secret_key
+        return self.read_secret_key_from_config()
 
     def _populate_keys_from_metadata_server(self):
         # get_instance_metadata is imported here because of a circular
@@ -211,10 +235,10 @@ class Provider(object):
         # I'm assuming there's only one role on the instance profile.
         if metadata and 'iam' in metadata:
             security = metadata['iam']['security-credentials'].values()[0]
-            if self.access_key is None:
-                self.access_key = security['AccessKeyId']
-            if self.secret_key is None:
-                self.secret_key = security['SecretAccessKey']
+            if self._access_key is None:
+                self._access_key = security['AccessKeyId']
+            if self._secret_key is None:
+                self._secret_key = security['SecretAccessKey']
             if self.security_token is None:
                 self.security_token = security['Token']
 
