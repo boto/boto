@@ -116,10 +116,10 @@ class Writer(object):
                   "x-amz-sha256-tree-hash": bytes_to_hex(tree_hash(self.tree_hashes)),
                   "x-amz-archive-size": str(self.uploaded_size)
                 }
-        response = self.make_request("POST", headers, ok_responses=(201,))
-        self.archive_id = response.getheader("x-amz-archive-id")
-        self.closed = True
+      response = self.make_request("POST", headers, ok_responses=(201,))
+      self.archive_id = response.getheader("x-amz-archive-id")
+      self.closed = True
 
-    def get_archive_id(self):
-        self.close()
-        return self.archive_id
+  def get_archive_id(self):
+      self.close()
+      return self.archive_id
