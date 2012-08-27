@@ -68,13 +68,10 @@ class Layer1(AWSAuthConnection):
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   headers=headers,
                                                   data=data)
-        body = response.read()
         if response.status in ok_responses:
-            if body:
-                boto.log.debug(body)
-                body = json.loads(body)
-            return body
+            return response
         else:
+            body = response.read()
             msg = 'Expected %s, got (%d, %s)' % (ok_responses,
                                                  response.status,
                                                  body)
