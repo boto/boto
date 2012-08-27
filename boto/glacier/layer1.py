@@ -25,9 +25,9 @@
 import json
 import boto
 from boto.connection import AWSAuthConnection
+from .exceptions import UnexpectedHTTPResponseError
 
 boto.set_stream_logger('glacier')
-
 
 class Layer1(AWSAuthConnection):
 
@@ -40,7 +40,7 @@ class Layer1(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  account_id='-', is_secure=True, port=None,
                  proxy=None, proxy_port=None,
-                 debug=2, security_token=None, region=None):
+                 debug=0, security_token=None, region=None):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -53,7 +53,7 @@ class Layer1(AWSAuthConnection):
         self.account_id = account_id
         AWSAuthConnection.__init__(self, region.endpoint,
                                    aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port, debug=debug,
+                                   is_secure, port, proxy, proxy_port, debug=debug,
                                    security_token=security_token)
 
     def _required_auth_capability(self):
@@ -71,12 +71,8 @@ class Layer1(AWSAuthConnection):
         if response.status in ok_responses:
             return response
         else:
-            body = response.read()
-            msg = 'Expected %s, got (%d, %s)' % (ok_responses,
-                                                 response.status,
-                                                 body)
             # create glacier-specific exceptions
-            raise BaseException(msg)
+            raise UnexpectedHTTPResponseError(ok_responses, response)
 
     # Vaults
 
