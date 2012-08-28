@@ -378,17 +378,20 @@ class Layer1(AWSAuthConnection):
         :param range: A tuple of integers specifying the slice (in bytes)
             of the archive you want to receive
         """
-        uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
+        response_headers = [('x-amz-sha256-tree-hash', 'TreeHash'),
+                            ('Content-Range': 'ContentRange'),
+                            ('Content-Type': 'ContentType')]
         headers = None
         if byte_range:
             headers = {'Range': 'bytes=%d-%d' % (byte_range[0],
                                                  byte_range[1])}
-        header, body = self.make_request('GET', uri, headers=headers,
-                                     ok_responses=(200, 206))
-        checksum = header.get('x-amz-sha256-tree-hash')
+        uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
+        response = self.make_request('GET', uri, headers=headers,
+                                     ok_responses=(200, 206),
+                                     response_headers=response_headers)
         # TODO not sure if we want to verify checksum in this abstraction level
         # and do a retry?
-        return (checksum, body)
+        return response
 
     # Archives
 
