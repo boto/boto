@@ -69,8 +69,7 @@ class Vault(object):
             should be written.
         """
         response = self.layer1.initiate_multipart_upload(self.name,
-                                                         part_size,
-                                                         description)
+                                                         part_size)
         return Writer(self, response['UploadId'], part_size=part_size)
 
     def create_archive_from_file(self, file=None, file_obj=None):
@@ -89,7 +88,7 @@ class Vault(object):
         """
         if not file_obj:
             file_obj = open(file, "rb")
-        writer = self.create_archive_writer(archive_name)
+        writer = self.create_archive_writer()
         while True:
             data = file_obj.read(1024 * 1024 * 4)
             if not data:

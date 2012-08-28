@@ -379,8 +379,8 @@ class Layer1(AWSAuthConnection):
             of the archive you want to receive
         """
         response_headers = [('x-amz-sha256-tree-hash', 'TreeHash'),
-                            ('Content-Range': 'ContentRange'),
-                            ('Content-Type': 'ContentType')]
+                            ('Content-Range', 'ContentRange'),
+                            ('Content-Type', 'ContentType')]
         headers = None
         if byte_range:
             headers = {'Range': 'bytes=%d-%d' % (byte_range[0],
@@ -470,7 +470,7 @@ class Layer1(AWSAuthConnection):
         headers = {'x-amz-part-size': str(part_size)}
         if description:
             headers['x-amz-archive-description'] = description
-        uri = 'vaults/%s/%s/multipart-uploads' % vault_name
+        uri = 'vaults/%s/multipart-uploads' % vault_name
         response = self.make_request('POST', uri, headers=headers,
                                      ok_responses=(201,),
                                      response_headers=response_headers)
@@ -506,8 +506,8 @@ class Layer1(AWSAuthConnection):
         response_headers = [('x-amz-archive-id', 'ArchiveId'),
                             ('Location', 'Location')]
         headers = {'x-amz-sha256-tree-hash': sha256_treehash,
-                   'x-amz-archive-size': str(part_size)}
-        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+                   'x-amz-archive-size': str(archive_size)}
+        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         response = self.make_request('POST', uri, headers=headers,
                                      ok_responses=(201,),
                                      response_headers=response_headers)
@@ -588,7 +588,7 @@ class Layer1(AWSAuthConnection):
         return self.make_request('GET', uri, params=params)
 
     def upload_part(self, vault_name, upload_id, linear_hash,
-                    treehash, range, part_data):
+                    tree_hash, byte_range, part_data):
         """
         Lists in-progress multipart uploads for the specified vault.
 
@@ -608,8 +608,8 @@ class Layer1(AWSAuthConnection):
         :param upload_id: The unique ID associated with this upload
             operation.
 
-        :type range: tuple of ints
-        :param range: Identfies the range of bytes in the assembled
+        :type byte_range: tuple of ints
+        :param byte_range: Identfies the range of bytes in the assembled
             archive that will be uploaded in this part.
 
         :type part_data: bytes
@@ -617,10 +617,10 @@ class Layer1(AWSAuthConnection):
         """
         headers = {'x-amz-content-sha256': linear_hash,
                    'x-amz-sha256-tree-hash': tree_hash,
-                   'Content-Range': 'bytes=%d-%d' % (byte_range[0],
+                   'Content-Range': 'bytes %d-%d/*' % (byte_range[0],
                                                      byte_range[1])}
         response_headers = [('x-amz-sha256-tree-hash', 'TreeHash')]
-        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('PUT', uri, headers=headers,
                                  data=part_data, ok_responses=(204,),
                                  response_headers=response_headers)
