@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -87,6 +87,27 @@ class Bootstrap(ScriptBase):
                     time.sleep(2)
             if update.find(':') >= 0:
                 method, version = update.split(':')
+
+                #--
+                #-- Determine whether we have a local branch matching "version"
+                #-- If not, create it based on the remote branch
+                #--
+                swd = os.getcwd()
+                os.chdir(location)
+                branch_info = os.popen('git branch')
+                branch_info = branch_info.read()
+                branches = branch_info.split("\n")
+                have_branch = False
+                for branch in branches:
+                    branch = branch.replace('*','')
+                    branch = branch.strip()
+                    if branch:
+                        if branch == version:
+                            have_branch = True
+                            break
+                if not have_branch:
+                    self.run('git branch --track %s origin/%s' % (version, version), cwd=location)
+                os.chdir(swd)
             else:
                 version = 'master'
             self.run('git checkout %s' % version, cwd=location)
