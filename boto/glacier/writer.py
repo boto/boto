@@ -79,7 +79,6 @@ class Writer(object):
         self.buffer_size = 0
         self.uploaded_size = 0
         self.buffer = []
-        self.vault = vault
         self.tree_hashes = []
         self.archive_location = None
         self.closed = False
@@ -100,14 +99,14 @@ class Writer(object):
         part_tree_hash = tree_hash(chunk_hashes(part))
         self.tree_hashes.append(part_tree_hash)
 
-        tree_hash = bytes_to_hex(part_tree_hash)
+        hex_tree_hash = bytes_to_hex(part_tree_hash)
         linear_hash = hashlib.sha256(part).hexdigest()
         content_range = (self.uploaded_size,
                          (self.uploaded_size+len(part))-1)
         response = self.vault.layer1.upload_part(self.vault.name,
                                                  self.upload_id,
                                                  linear_hash,
-                                                 tree_hash,
+                                                 hex_tree_hash,
                                                  content_range, part)
         self.uploaded_size += len(part)
 
@@ -126,8 +125,10 @@ class Writer(object):
         if self.buffer_size > 0:
             self.send_part()
         # Complete the multiplart glacier upload
-        tree_hash = bytes_to_hex(tree_hash(self.tree_hashes))
-        response = self.vault.layer1.complete_multipart_upload(tree_hash,
+        hex_tree_hash = bytes_to_hex(tree_hash(self.tree_hashes))
+        response = self.vault.layer1.complete_multipart_upload(self.vault.name,
+                                                               self.upload_id,
+                                                               hex_tree_hash,
                                                                self.uploaded_size)
         self.archive_id = response['ArchiveId']
         self.closed = True
