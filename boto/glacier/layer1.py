@@ -379,8 +379,8 @@ class Layer1(AWSAuthConnection):
             of the archive you want to receive
         """
         response_headers = [('x-amz-sha256-tree-hash', 'TreeHash'),
-                            ('Content-Range': 'ContentRange'),
-                            ('Content-Type': 'ContentType')]
+                            ('Content-Range', 'ContentRange'),
+                            ('Content-Type', 'ContentType')]
         headers = None
         if byte_range:
             headers = {'Range': 'bytes=%d-%d' % (byte_range[0],
