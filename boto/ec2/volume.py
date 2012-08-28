@@ -231,6 +231,15 @@ class Volume(TaggedEC2Object):
 
 
 class AttachmentSet(object):
+    """
+    Represents an EBS attachmentset.
+
+    :ivar id: The unique ID of the volume.
+    :ivar instance_id: The unique ID of the attached instance
+    :ivar status: The status of the attachment
+    :ivar attach_time: Attached since
+    :ivar device: The device the instance has mapped
+    """
 
     def __init__(self):
         self.id = None
