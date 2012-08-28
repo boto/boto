@@ -64,18 +64,31 @@ class Layer1(AWSAuthConnection):
         return ['hmac-v4']
 
     def make_request(self, verb, resource, headers=None,
-                     data='', ok_responses=(200,)):
+                     data='', ok_responses=(200,), params=None,
+                     response_headers=None):
         if headers is None:
             headers = {}
         headers['x-amz-glacier-version'] = self.Version
         uri = '/%s/%s' % (self.account_id, resource)
+        if params:
+            param_list = []
+            for key, value in params:
+                params_list.append('%s=%s' % (urllib.quote(key),
+                                              urllib.quote(value)))
+            uri += '?' + '&'.join(param_list)
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   headers=headers,
                                                   data=data)
         if response.status in ok_responses:
-            is_json = response.getheader('Content-Type') == 'application/json'
-            body = json.loads(response.read()) if is_json else response.read()
-            return dict(response.getheaders()), body
+            if response.getheader('Content-Type') == 'application/json':
+                body = json.loads(response.read())
+            else:
+                body = {'Response': response.read()}
+            body['RequestId'] = response.getheader('x-amzn-requestid')
+            if response_headers:
+                for header_name, item_name in response_headers:
+                    body[item_name] = response.getheader(header_name)
+            return body
         else:
             # create glacier-specific exceptions
             raise UnexpectedHTTPResponseError(ok_responses, response)
@@ -114,7 +127,12 @@ class Layer1(AWSAuthConnection):
             ("") for the marker returns a list of vaults starting
             from the first vault.
         """
-        return self.make_request('GET', 'vaults')[1]
+        params = {}
+        if limit:
+            params['limit': limit]
+        if marker:
+            params['marker': marker]
+        return self.make_request('GET', 'vaults', params=params)
 
     def describe_vault(self, vault_name):
         """
@@ -133,7 +151,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('GET', uri)[1]
+        return self.make_request('GET', uri)
 
     def create_vault(self, vault_name):
         """
@@ -158,7 +176,8 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('PUT', uri, ok_responses=(201,))[1]
+        return self.make_request('PUT', uri, ok_responses=(201,),
+                                 response_headers=[('Location', 'Location')])
 
     def delete_vault(self, vault_name):
         """
@@ -177,7 +196,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s' % vault_name
-        return self.make_request('DELETE', uri, ok_responses=(204,))[1]
+        return self.make_request('DELETE', uri, ok_responses=(204,))
 
     def get_vault_notifications(self, vault_name):
         """
@@ -188,7 +207,7 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s/notification-configuration' % vault_name
-        return self.make_request('GET', uri)[1]
+        return self.make_request('GET', uri)
 
     def set_vault_notifications(self, vault_name, notification_config):
         """
@@ -216,7 +235,7 @@ class Layer1(AWSAuthConnection):
         uri = 'vaults/%s/notification-configuration' % vault_name
         json_config = json.dumps(notification_config)
         return self.make_request('PUT', uri, data=json_config,
-                                 ok_responses=(204,))[1]
+                                 ok_responses=(204,))
 
     def delete_vault_notifications(self, vault_name):
         """
@@ -227,12 +246,12 @@ class Layer1(AWSAuthConnection):
         :param vault_name: The name of the new vault
         """
         uri = 'vaults/%s/notification-configuration' % vault_name
-        return self.make_request('DELETE', uri, ok_responses=(204,))[1]
+        return self.make_request('DELETE', uri, ok_responses=(204,))
 
     # Jobs
 
-    def list_jobs(self, vault_name, completed=None, limit=None,
-                  marker=None, status_code=None):
+    def list_jobs(self, vault_name, completed=None, status_code=None,
+                  limit=None, marker=None):
         """
         This operation lists jobs for a vault including jobs that are
         in-progress and jobs that have recently finished.
@@ -247,6 +266,11 @@ class Layer1(AWSAuthConnection):
             uncompleted jobs will be returned.  If no value is
             passed, all jobs will be returned.
 
+        :type status_code: string
+        :param status_code: Specifies the type of job status to return.
+            Valid values are: InProgress|Succeeded|Failed.  If not
+            specified, jobs with all status codes are returned.
+
         :type limit: int
         :param limit: The maximum number of items returned in the
             response. If you don't specify a value, the List Jobs
@@ -260,13 +284,14 @@ class Layer1(AWSAuthConnection):
             continuing the pagination of results started in a previous
             List Jobs request.
 
-        :type status_code: string
-        :param status_code: Specifies the type of job status to return.
-            Valid values are: InProgress|Succeeded|Failed.  If not
-            specified, jobs with all status codes are returned.
         """
+        params = {}
+        if limit:
+            params['limit': limit]
+        if marker:
+            params['marker': marker]
         uri = 'vaults/%s/jobs' % vault_name
-        return self.make_request('GET', uri)[1]
+        return self.make_request('GET', uri, params=params)
 
     def describe_job(self, vault_name, job_id):
         """
@@ -283,7 +308,7 @@ class Layer1(AWSAuthConnection):
         :param job_id: The ID of the job.
         """
         uri = 'vaults/%s/jobs/%s' % (vault_name, job_id)
-        return self.make_request('GET', uri, ok_responses=(200,))[1]
+        return self.make_request('GET', uri, ok_responses=(200,))
 
     def initiate_job(self, vault_name, job_data):
         """
@@ -321,9 +346,12 @@ class Layer1(AWSAuthConnection):
               archive-retrieval|inventory-retrieval
         """
         uri = 'vaults/%s/jobs' % vault_name
+        response_headers = [('x-amz-job-id', 'JobId'),
+                            ('Location', 'Location')]
         json_job_data = json.dumps(job_data)
         return self.make_request('POST', uri, data=json_job_data,
-                                 ok_responses=(202,))[1]
+                                 ok_responses=(202,),
+                                 response_headers=response_headers)
 
     def get_job_output(self, vault_name, job_id, byte_range=None):
         """
@@ -347,13 +375,14 @@ class Layer1(AWSAuthConnection):
         :param job_id: The ID of the job.
 
         :type byte_range: tuple
-        :param range: A tuple of integer specifying the slice (in bytes)
+        :param range: A tuple of integers specifying the slice (in bytes)
             of the archive you want to receive
         """
         uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
         headers = None
         if byte_range:
-            headers = { 'Range': 'bytes=%s-%s' % (byte_range[0], byte_range[1]) }
+            headers = {'Range': 'bytes=%d-%d' % (byte_range[0],
+                                                 byte_range[1])}
         header, body = self.make_request('GET', uri, headers=headers,
                                      ok_responses=(200, 206))
         checksum = header.get('x-amz-sha256-tree-hash')
@@ -410,4 +439,185 @@ class Layer1(AWSAuthConnection):
         :param archive_id: The ID for the archive to be deleted.
         """
         uri = 'vaults/%s/archives/%s' % (vault_name, archive_id)
-        return self.make_request('DELETE', uri, ok_responses=(204,))[1]
+        return self.make_request('DELETE', uri, ok_responses=(204,))
+
+    # Multipart
+
+    def initiate_multipart_upload(self, vault_name, part_size,
+                                  description=None):
+        """
+        Initiate a multipart upload.  Amazon Glacier creates a
+        multipart upload resource and returns it's ID.  You use this
+        ID in subsequent multipart upload operations.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+
+        :type description: str
+        :param description: An optional description of the archive.
+
+        :type part_size: int
+        :param part_size: The size of each part except the last, in bytes.
+            The part size must be a multiple of 1024 KB multiplied by
+            a power of 2.  The minimum allowable part size is 1MB and the
+            maximum is 4GB.
+        """
+        response_headers = [('x-amz-multipart-upload-id', 'UploadId'),
+                            ('Location', 'Location')]
+        headers = {'x-amz-part-size': str(part_size)}
+        if description:
+            headers['x-amz-archive-description'] = description
+        uri = 'vaults/%s/%s/multipart-uploads' % vault_name
+        response = self.make_request('POST', uri, headers=headers,
+                                     ok_responses=(201,),
+                                     response_headers=response_headers)
+        return response
+
+    def complete_multipart_upload(self, vault_name, upload_id,
+                                  sha256_treehash, archive_size):
+        """
+        Call this to inform Amazon Glacier that all of the archive parts
+        have been uploaded and Amazon Glacier can now assemble the archive
+        from the uploaded parts.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+
+        :type upload_id: str
+        :param upload_id: The unique ID associated with this upload
+            operation.
+
+        :type sha256_treehash: str
+        :param sha256_treehash: The SHA256 tree hash of the entire
+            archive. It is the tree hash of SHA256 tree hash of the
+            individual parts. If the value you specify in the request
+            does not match the SHA256 tree hash of the final assembled
+            archive as computed by Amazon Glacier, Amazon Glacier
+            returns an error and the request fails.
+
+        :type archive_size: int
+        :param archive_size: The total size, in bytes, of the entire
+            archive. This value should be the sum of all the sizes of
+            the individual parts that you uploaded.
+        """
+        response_headers = [('x-amz-archive-id', 'ArchiveId'),
+                            ('Location', 'Location')]
+        headers = {'x-amz-sha256-tree-hash': sha256_treehash,
+                   'x-amz-archive-size': str(part_size)}
+        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        response = self.make_request('POST', uri, headers=headers,
+                                     ok_responses=(201,),
+                                     response_headers=response_headers)
+        return response
+
+    def abort_multipart_upload(self, vault_name, upload_id):
+        """
+        Call this to abort a multipart upload identified by the upload ID.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+
+        :type upload_id: str
+        :param upload_id: The unique ID associated with this upload
+            operation.
+        """
+        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        return self.make_request('DELETE', uri, ok_responses=(204,))
+
+    def list_multipart_uploads(self, vault_name, limit=None, marker=None):
+        """
+        Lists in-progress multipart uploads for the specified vault.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+
+        :type limit: int
+        :param limit: The maximum number of items returned in the
+            response. If you don't specify a value, the operation
+            returns up to 1,000 items.
+
+        :type marker: str
+        :param marker: An opaque string used for pagination. marker
+            specifies the item at which the listing should
+            begin. Get the marker value from a previous
+            response. You need only include the marker if you are
+            continuing the pagination of results started in a previous
+            request.
+        """
+        params = {}
+        if limit:
+            params['limit': limit]
+        if marker:
+            params['marker': marker]
+        uri = 'vaults/%s/%s/multipart-uploads' % vault_name
+        return self.make_request('GET', uri, params=params)
+
+    def list_parts(self, vault_name, upload_id, limit=None, marker=None):
+        """
+        Lists in-progress multipart uploads for the specified vault.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+
+        :type upload_id: str
+        :param upload_id: The unique ID associated with this upload
+            operation.
+
+        :type limit: int
+        :param limit: The maximum number of items returned in the
+            response. If you don't specify a value, the operation
+            returns up to 1,000 items.
+
+        :type marker: str
+        :param marker: An opaque string used for pagination. marker
+            specifies the item at which the listing should
+            begin. Get the marker value from a previous
+            response. You need only include the marker if you are
+            continuing the pagination of results started in a previous
+            request.
+        """
+        params = {}
+        if limit:
+            params['limit': limit]
+        if marker:
+            params['marker': marker]
+        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        return self.make_request('GET', uri, params=params)
+
+    def upload_part(self, vault_name, upload_id, linear_hash,
+                    treehash, range, part_data):
+        """
+        Lists in-progress multipart uploads for the specified vault.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+
+        :type linear_hash: str
+        :param linear_hash: The SHA256 checksum (a linear hash) of the
+            payload.
+
+        :type tree_hash: str
+        :param tree_hash: The user-computed SHA256 tree hash of the
+            payload.  For more information on computing the
+            tree hash, see http://goo.gl/u7chF.
+
+        :type upload_id: str
+        :param upload_id: The unique ID associated with this upload
+            operation.
+
+        :type range: tuple of ints
+        :param range: Identfies the range of bytes in the assembled
+            archive that will be uploaded in this part.
+
+        :type part_data: bytes
+        :param part_data: The data to be uploaded for the part
+        """
+        headers = {'x-amz-content-sha256': linear_hash,
+                   'x-amz-sha256-tree-hash': tree_hash,
+                   'Content-Range': 'bytes=%d-%d' % (byte_range[0],
+                                                     byte_range[1])}
+        response_headers = [('x-amz-sha256-tree-hash', 'TreeHash')]
+        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        return self.make_request('PUT', uri, headers=headers,
+                                 data=part_data, ok_responses=(204,),
+                                 response_headers=response_headers)

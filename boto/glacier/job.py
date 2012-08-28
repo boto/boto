@@ -23,36 +23,55 @@
 import urllib
 import json
 
+
 class Job(object):
-    def __init__(self, vault, job_id):
+
+    ResponseDataElements = (('Action', 'action', None),
+                            ('ArchiveId', 'archive_id', None),
+                            ('ArchiveSizeInBytes', 'archive_size', 0),
+                            ('Completed', 'completed', False),
+                            ('CompletionDate', 'completion_date', None),
+                            ('CreationDate', 'creation_date', None),
+                            ('InventorySizeInBytes', 'inventory_size', 0),
+                            ('JobDescription', 'description', None),
+                            ('JobId', 'id', None),
+                            ('SHA256TreeHash', 'sha256_treehash', None),
+                            ('SNSTopic', 'sns_topic', None),
+                            ('StatusCode', 'status_code', None),
+                            ('StatusMessage', 'status_message', None),
+                            ('VaultARN', 'arn', None))
+
+    def __init__(self, vault, response_data=None):
         self.vault = vault
-        self.job_id = job_id
+        if response_data:
+            for response_name, attr_name, default in self.ResponseDataElements:
+                setattr(self, attr_name, response_data[response_name])
+        else:
+            for response_name, attr_name, default in self.ResponseDataElements:
+                setattr(self, attr_name, default)
 
-    def make_request(self, verb, resource, headers=None,
-                   data='', ok_responses=(200,)):
-        resource = "jobs/%s/%s" % (urllib.quote(self.job_id), resource)
-        return self.vault.make_request(verb,resource, headers, data,ok_responses)
+    def __repr__(self):
+        return 'Job(%s)' % self.arn
 
-    def get_output(self, range_from=None, range_to=None):
+    def get_output(self, byte_range=None):
         """
-        Get the output of a job. In the case of an archive retrieval
-        job this will be the data of the archive itself.
+        This operation downloads the output of the job.  Depending on
+        the job type you specified when you initiated the job, the
+        output will be either the content of an archive or a vault
+        inventory.
 
-        Optionally, a range can be specified to only get a part of the data.
+        You can download all the job output or download a portion of
+        the output by specifying a byte range. In the case of an
+        archive retrieval job, depending on the byte range you
+        specify, Amazon Glacier returns the checksum for the portion
+        of the data. You can compute the checksum on the client and
+        verify that the values match to ensure the portion you
+        downloaded is the correct data.
 
-        
-        :type range_from: int
-        :param range_from: The first byte to get
-
-        :type range_to: int
-        :param range_to: The last byte to get
-
-        :rtype: :class:`boto.connection.HttpResponse
-        :return: A response object from which the output can be read.
+        :type byte_range: tuple
+        :param range: A tuple of integer specifying the slice (in bytes)
+            of the archive you want to receive
         """
-        headers = {}
-        if range_from is not None or range_to is not None:
-            assert range_from is not None and range_to is not None, "If you specify one of range_from or range_to you must specify the other"
-            headers["Range"] = "bytes=%d-%d" % (range_from, range_to)
-        response = self.make_request("GET", "output", headers=headers)
-        return response
+        return self.vault.layer1.get_job_output(self.vault.name,
+                                                self.id,
+                                                byte_range)

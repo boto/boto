@@ -31,15 +31,24 @@ class Vault(object):
 
     DefaultPartSize = 4 * 1024 * 1024  #128MB
 
-    def __init__(self, layer1, name):
-        self.layer1 = layer1
-        self.name = name
+    ResponseDataElements = (('VaultName', 'name', None),
+                            ('VaultARN', 'arn', None),
+                            ('CreationDate', 'creation_date', None),
+                            ('LastInventoryDate', 'last_inventory_date', None),
+                            ('SizeInBytes', 'size', 0),
+                            ('NumberOfArchives', 'number_of_archives', 0))
 
-    def make_request(self, verb, resource, headers=None,
-                   data='', ok_responses=(200,)):
-        resource = "vaults/%s/%s" % (urllib.quote(self.name), resource)
-        return self.layer1.make_request(verb,resource, headers,
-                                        data,ok_responses)
+    def __init__(self, layer1, response_data=None):
+        self.layer1 = layer1
+        if response_data:
+            for response_name, attr_name, default in self.ResponseDataElements:
+                setattr(self, attr_name, response_data[response_name])
+        else:
+            for response_name, attr_name, default in self.ResponseDataElements:
+                setattr(self, attr_name, default)
+
+    def __repr__(self):
+        return 'Vault("%s")' % self.arn
 
     def create_archive_writer(self, part_size=DefaultPartSize):
         """
@@ -59,14 +68,10 @@ class Vault(object):
         :return: A Writer object that to which the archive data
             should be written.
         """
-
-        headers = {
-                    "x-amz-part-size": str(part_size)
-                  }
-        response = self.make_request("POST", "multipart-uploads",
-                                     headers=headers, ok_responses=(201,))
-        upload_id = response.getheader("x-amz-multipart-upload-id")
-        return Writer(self, upload_id, part_size=part_size)
+        response = self.layer1.initiate_multipart_upload(self.name,
+                                                         part_size,
+                                                         description)
+        return Writer(self, response['UploadId'], part_size=part_size)
 
     def create_archive_from_file(self, file=None, file_obj=None):
         """
@@ -93,7 +98,8 @@ class Vault(object):
         writer.close()
         return writer.get_archive_id()
 
-    def retrieve_archive(self, archive_name, sns_topic=None, description=None):
+    def retrieve_archive(self, archive_name, sns_topic=None,
+                         description=None, format='JSON'):
         """
         Initiate a archive retrieval job to download the data from an
         archive. You will need to wait for the notification from
@@ -103,21 +109,31 @@ class Vault(object):
         :type archive_name: str
         :param archive_name: The name of the archive
 
-        :rtype: :class:`boto.glaicer.job.Job`
+        :type description: str
+        :param description: An optional description for the job.
+
+        :type sns_topic: str
+        :param sns_topic: The Amazon SNS topic ARN where Amazon Glacier
+            sends notification when the job is completed and the output
+            is ready for you to download.
+
+        :type format: str
+        :param format: Specify the output format.  Valid values are:
+            CSV|JSON.  Default is JSON.
+
+        :rtype: :class:`boto.glacier.job.Job`
         :return: A Job object representing the retrieval job.
         """
-        params = {"Type": "archive-retrieval", "ArchiveId": archive_name}
+        job_data = {'Type': 'archive-retrieval',
+                    'ArchiveId': archive_name,
+                    'Format': format}
         if sns_topic is not None:
-            params["SNSTopic"] = sns_topic
+            job_data['SNSTopic'] = sns_topic
         if description is not None:
-            params["Description"] = description
+            job_data['Description'] = description
 
-        response = self.make_request("POST", "jobs", None,
-                                     json.dumps(params),
-                                     ok_responses=(202,))
-        job_id = response.getheader("x-amz-job-id")
-        job = Job(self, job_id)
-        return job
+        response = self.layer1.initiate_job(self.name, job_data)
+        return response['JobId']
 
     def get_job(self, job_id):
         """
@@ -129,4 +145,28 @@ class Vault(object):
         :rtype: :class:`boto.glaicer.job.Job`
         :return: A Job object representing the job.
         """
-        return Job(self, job_id)
+        response_data = self.layer1.describe_job(job_id)
+        return Job(self, response_data)
+
+    def list_jobs(self, completed=None, status_code=None):
+        """
+        Return a list of Job objects related to this vault.
+
+        :type completed: boolean
+        :param completed: Specifies the state of the jobs to return.
+            If a value of True is passed, only completed jobs will
+            be returned.  If a value of False is passed, only
+            uncompleted jobs will be returned.  If no value is
+            passed, all jobs will be returned.
+
+        :type status_code: string
+        :param status_code: Specifies the type of job status to return.
+            Valid values are: InProgress|Succeeded|Failed.  If not
+            specified, jobs with all status codes are returned.
+
+        :rtype: list of :class:`boto.glaicer.job.Job`
+        :return: A list of Job objects related to this vault.
+        """
+        response_data = self.layer1.list_jobs(self.name, completed,
+                                              status_code)
+        return [Job(self, jd) for jd in response_data['JobList']]

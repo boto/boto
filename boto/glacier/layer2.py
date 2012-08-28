@@ -33,15 +33,29 @@ class Layer2(object):
     def __init__(self, *args, **kwargs):
         self.layer1 = Layer1(*args, **kwargs)
 
+    def create_vault(self, name):
+        return self.layer1.create_vault(name)
+
     def get_vault(self, name):
         """
         Get an object representing a named vault from Glacier. This
         operation does not check if the vault actually exists.
 
-        :type name: syr
+        :type name: str
         :param name: The name of the vault
 
-        :rtype: :class:`boto.glaicer.vault.Vault`
-        :return: A Valut object representing the vault.
+        :rtype: :class:`boto.glacier.vault.Vault`
+        :return: A Vault object representing the vault.
         """
-        return Vault(self.layer1, name)
+        response_data = self.layer1.describe_vault(name)
+        return Vault(self.layer1, response_data)
+
+    def list_vaults(self):
+        """
+        Return a list of all vaults associated with the account ID.
+
+        :rtype: List of :class:`boto.glacier.vault.Vault`
+        :return: A list of Vault objects.
+        """
+        response_data = self.layer1.list_vaults()
+        return [Vault(self.layer1, rd) for rd in response_data['VaultList']]
