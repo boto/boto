@@ -25,8 +25,9 @@
 import json
 import boto.glacier
 from boto.connection import AWSAuthConnection
+from .exceptions import UnexpectedHTTPResponseError
 
-boto.set_stream_logger('glacier')
+#boto.set_stream_logger('glacier')
 
 
 class Layer1(AWSAuthConnection):
@@ -76,11 +77,8 @@ class Layer1(AWSAuthConnection):
             body = json.loads(response.read()) if is_json else response.read()
             return dict(response.getheaders()), body
         else:
-            msg = 'Expected %s, got (%d, %s)' % (ok_responses,
-                                                 response.status,
-                                                 response.read())
             # create glacier-specific exceptions
-            raise BaseException(msg)
+            raise UnexpectedHTTPResponseError(ok_responses, response)
 
     # Vaults
 
