@@ -83,8 +83,8 @@ class Layer1(AWSAuthConnection):
             if response.getheader('Content-Type') == 'application/json':
                 body = json.loads(response.read())
             else:
-                body = {'Response': response.read()}
-            body['RequestId'] = response.getheader('x-amzn-requestid')
+                body = {u'Response': response.read()}
+            body[u'RequestId'] = response.getheader('x-amzn-requestid')
             if response_headers:
                 for header_name, item_name in response_headers:
                     body[item_name] = response.getheader(header_name)
@@ -177,7 +177,7 @@ class Layer1(AWSAuthConnection):
         """
         uri = 'vaults/%s' % vault_name
         return self.make_request('PUT', uri, ok_responses=(201,),
-                                 response_headers=[('Location', 'Location')])
+                                 response_headers=[('uLocation', 'uLocation')])
 
     def delete_vault(self, vault_name):
         """
@@ -346,8 +346,8 @@ class Layer1(AWSAuthConnection):
               archive-retrieval|inventory-retrieval
         """
         uri = 'vaults/%s/jobs' % vault_name
-        response_headers = [('x-amz-job-id', 'JobId'),
-                            ('Location', 'Location')]
+        response_headers = [('x-amz-job-id', u'JobId'),
+                            ('Location', u'Location')]
         json_job_data = json.dumps(job_data)
         return self.make_request('POST', uri, data=json_job_data,
                                  ok_responses=(202,),
@@ -378,9 +378,9 @@ class Layer1(AWSAuthConnection):
         :param range: A tuple of integers specifying the slice (in bytes)
             of the archive you want to receive
         """
-        response_headers = [('x-amz-sha256-tree-hash', 'TreeHash'),
-                            ('Content-Range', 'ContentRange'),
-                            ('Content-Type', 'ContentType')]
+        response_headers = [('x-amz-sha256-tree-hash', u'TreeHash'),
+                            ('Content-Range', u'ContentRange'),
+                            ('Content-Type', u'ContentType')]
         headers = None
         if byte_range:
             headers = {'Range': 'bytes=%d-%d' % (byte_range[0],
@@ -465,8 +465,8 @@ class Layer1(AWSAuthConnection):
             a power of 2.  The minimum allowable part size is 1MB and the
             maximum is 4GB.
         """
-        response_headers = [('x-amz-multipart-upload-id', 'UploadId'),
-                            ('Location', 'Location')]
+        response_headers = [('x-amz-multipart-upload-id', u'UploadId'),
+                            ('Location', u'Location')]
         headers = {'x-amz-part-size': str(part_size)}
         if description:
             headers['x-amz-archive-description'] = description
@@ -503,8 +503,8 @@ class Layer1(AWSAuthConnection):
             archive. This value should be the sum of all the sizes of
             the individual parts that you uploaded.
         """
-        response_headers = [('x-amz-archive-id', 'ArchiveId'),
-                            ('Location', 'Location')]
+        response_headers = [('x-amz-archive-id', u'ArchiveId'),
+                            ('Location', u'Location')]
         headers = {'x-amz-sha256-tree-hash': sha256_treehash,
                    'x-amz-archive-size': str(archive_size)}
         uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
@@ -619,7 +619,7 @@ class Layer1(AWSAuthConnection):
                    'x-amz-sha256-tree-hash': tree_hash,
                    'Content-Range': 'bytes=%d-%d' % (byte_range[0],
                                                      byte_range[1])}
-        response_headers = [('x-amz-sha256-tree-hash', 'TreeHash')]
+        response_headers = [('x-amz-sha256-tree-hash', u'TreeHash')]
         uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('PUT', uri, headers=headers,
                                  data=part_data, ok_responses=(204,),
