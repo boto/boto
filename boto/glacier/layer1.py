@@ -422,6 +422,9 @@ class Layer1(AWSAuthConnection):
         :type description: str
         :param description: An optional description of the archive.
         """
+        response_headers = [('x-amz-archive-id', u'ArchiveId'),
+                            ('Location', u'Location'),
+                            ('x-amz-sha256-tree-hash', u'TreeHash')]
         uri = 'vaults/%s/archives' % vault_name
         headers = {'x-amz-content-sha256': linear_hash,
                    'x-amz-sha256-tree-hash': tree_hash,
@@ -429,7 +432,8 @@ class Layer1(AWSAuthConnection):
         if description:
             headers['x-amz-archive-description'] = description
         return self.make_request('POST', uri, headers=headers,
-                                 data=archive, ok_responses=(201,))
+                                 data=archive, ok_responses=(201,),
+                                 response_headers=response_headers)
 
     def delete_archive(self, vault_name, archive_id):
         """

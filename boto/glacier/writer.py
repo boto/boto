@@ -100,14 +100,14 @@ class Writer(object):
         part_tree_hash = tree_hash(chunk_hashes(part))
         self.tree_hashes.append(part_tree_hash)
 
-        tree_hash = bytes_to_hex(part_tree_hash)
+        hex_tree_hash = bytes_to_hex(part_tree_hash)
         linear_hash = hashlib.sha256(part).hexdigest()
         content_range = (self.uploaded_size,
                          (self.uploaded_size+len(part))-1)
         response = self.vault.layer1.upload_part(self.vault.name,
                                                  self.upload_id,
                                                  linear_hash,
-                                                 tree_hash,
+                                                 hex_tree_hash,
                                                  content_range, part)
         self.uploaded_size += len(part)
 

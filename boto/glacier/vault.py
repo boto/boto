@@ -50,16 +50,14 @@ class Vault(object):
     def __repr__(self):
         return 'Vault("%s")' % self.arn
 
-    def create_archive_writer(self, part_size=DefaultPartSize):
+    def create_archive_writer(self, part_size=DefaultPartSize,
+                              description=None):
         """
         Create a new archive and begin a multi-part upload to it.
         Returns a file-like object to which the data for the archive
         can be written. Once all the data is written the file-like
         object should be closed, you can then call the get_archive_id
         method on it to get the ID of the created archive.
-
-        :type archive_name: str
-        :param archive_name: The name of the archive
 
         :type part_size: int
         :param part_size: The part size for the multipart upload.
@@ -89,7 +87,7 @@ class Vault(object):
         """
         if not file_obj:
             file_obj = open(file, "rb")
-        writer = self.create_archive_writer(archive_name)
+        writer = self.create_archive_writer()
         while True:
             data = file_obj.read(1024 * 1024 * 4)
             if not data:
