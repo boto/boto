@@ -123,6 +123,7 @@ class BatchList(list):
 
     def __init__(self, layer2):
         list.__init__(self)
+        self.unprocessed = None
         self.layer2 = layer2
 
     def add_batch(self, table, keys, attributes_to_get=None):
@@ -150,8 +151,43 @@ class BatchList(list):
         """
         self.append(Batch(table, keys, attributes_to_get))
 
+    def resubmit(self):
+        """
+        Resubmit the batch to get the next result set. The request object is
+        rebuild from scratch meaning that all batch added between ``submit``
+        and ``resubmit`` will be lost.
+        """
+        del self[:]
+
+        if not self.unprocessed:
+            return None
+
+        for table_name, table_req in self.unprocessed.iteritems():
+            table_keys = table_req['Keys']
+            table = self.layer2.get_table(table_name)
+
+            keys = []
+            for key in table_keys:
+                h = key['HashKeyElement']
+                r = None
+                if 'RangeKeyElement' in key:
+                    r = key['RangeKeyElement']
+                keys.append((h, r))
+
+            attributes_to_get = None
+            if 'AttributesToGet' in table_req:
+                attributes_to_get = table_req['AttributesToGet']
+
+            self.add_batch(table, keys, attributes_to_get=attributes_to_get)
+
+        return self.submit()
+
+
     def submit(self):
-        return self.layer2.batch_get_item(self)
+        res = self.layer2.batch_get_item(self)
+        if 'UnprocessedKeys' in res:
+            self.unprocessed = res['UnprocessedKeys']
+        return res
 
     def to_dict(self):
         """
