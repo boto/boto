@@ -58,14 +58,14 @@ def regions():
 def connect_to_region(region_name, **kw_params):
     """
     Given a valid region name, return a
-    :class:`boto.ec2.connection.EC2Connection`.
+    :class:`boto.rds.RDSConnection`.
     Any additional parameters after the region_name are passed on to
     the connect method of the region object.
 
     :type: str
     :param region_name: The name of the region to connect to.
 
-    :rtype: :class:`boto.ec2.connection.EC2Connection` or ``None``
+    :rtype: :class:`boto.rds.RDSConnection` or ``None``
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
@@ -138,16 +138,43 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBInstances', params,
                              [('DBInstance', DBInstance)])
 
-    def create_dbinstance(self, id, allocated_storage, instance_class,
-                          master_username, master_password, port=3306,
-                          engine='MySQL5.1', db_name=None, param_group=None,
-                          security_groups=None, availability_zone=None,
+    def create_dbinstance(self, 
+                          id, 
+                          allocated_storage, 
+                          instance_class,
+                          master_username, 
+                          master_password, 
+                          port=3306,
+                          engine='MySQL5.1', 
+                          db_name=None, 
+                          param_group=None,
+                          security_groups=None, 
+                          availability_zone=None,
                           preferred_maintenance_window=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
                           multi_az=False,
                           engine_version=None,
-                          auto_minor_version_upgrade=True):
+                          auto_minor_version_upgrade=True,
+                          character_set_name = None,
+                          db_subnet_group_name = None,
+                          license_model = None,
+                          option_group_name = None,
+                          ):
+        # API version: 2012-04-23
+        # Parameter notes:
+        # =================
+        # id should be db_instance_identifier according to API docs but has been left
+        # id for backwards compatibility
+        #
+        # security_groups should be db_security_groups according to API docs but has been left
+        # security_groups for backwards compatibility
+        #
+        # master_password should be master_user_password according to API docs but has been left
+        # master_password for backwards compatibility
+        #
+        # instance_class should be db_instance_class according to API docs but has been left
+        # instance_class for backwards compatibility
         """
         Create a new DBInstance.
 
@@ -159,7 +186,16 @@ class RDSConnection(AWSQueryConnection):
 
         :type allocated_storage: int
         :param allocated_storage: Initially allocated storage size, in GBs.
-                                  Valid values are [5-1024]
+                                  Valid values are depending on the engine value.
+
+                                  * MySQL = 5--1024
+                                  * oracle-se1 = 10--1024
+                                  * oracle-se = 10--1024
+                                  * oracle-ee = 10--1024
+                                  * sqlserver-ee = 200--1024
+                                  * sqlserver-se = 200--1024
+                                  * sqlserver-ex = 30--1024
+                                  * sqlserver-web = 30--1024
 
         :type instance_class: str
         :param instance_class: The compute and memory capacity of
@@ -173,24 +209,68 @@ class RDSConnection(AWSQueryConnection):
                                * db.m2.4xlarge
 
         :type engine: str
-        :param engine: Name of database engine. Must be MySQL5.1 for now.
+        :param engine: Name of database engine. Defaults to MySQL but can be;
+
+                       * MySQL
+                       * oracle-se1
+                       * oracle-se
+                       * oracle-ee
+                       * sqlserver-ee
+                       * sqlserver-se
+                       * sqlserver-ex
+                       * sqlserver-web
 
         :type master_username: str
         :param master_username: Name of master user for the DBInstance.
-                                Must be 1-15 alphanumeric characters, first
-                                must be a letter.
+                                
+                                * MySQL must be;
+                                  - 1--16 alphanumeric characters
+                                  - first character must be a letter
+                                  - cannot be a reserved MySQL word
+
+                                * Oracle must be:
+                                  - 1--30 alphanumeric characters
+                                  - first character must be a letter
+                                  - cannot be a reserved Oracle word
+
+                                * SQL Server must be:
+                                  - 1--128 alphanumeric characters
+                                  - first character must be a letter
+                                  - cannot be a reserver SQL Server word
 
         :type master_password: str
         :param master_password: Password of master user for the DBInstance.
-                                Must be 4-16 alphanumeric characters.
+
+                                * MySQL must be 8--41 alphanumeric characters
+
+                                * Oracle must be 8--30 alphanumeric characters
+
+                                * SQL Server must be 8--128 alphanumeric characters.
 
         :type port: int
         :param port: Port number on which database accepts connections.
-                     Valid values [1115-65535].  Defaults to 3306.
+                     Valid values [1115-65535].  
+
+                     * MySQL defaults to 3306
+
+                     * Oracle defaults to 1521
+
+                     * SQL Server defaults to 1433 and _cannot_ be 1434 or 3389
 
         :type db_name: str
-        :param db_name: Name of a database to create when the DBInstance
-                        is created.  Default is to create no databases.
+        :param db_name: * MySQL:
+                          Name of a database to create when the DBInstance
+                          is created. Default is to create no databases.
+
+                          Must contain 1--64 alphanumeric characters and cannot
+                          be a reserved MySQL word.
+
+                        * Oracle:
+                          The Oracle System ID (SID) of the created DB instances. 
+                          Default is ORCL. Cannot be longer than 8 characters.
+
+                        * SQL Server:
+                          Not applicable and must be None.
 
         :type param_group: str
         :param param_group: Name of DBParameterGroup to associate with
@@ -225,8 +305,18 @@ class RDSConnection(AWSQueryConnection):
         :param multi_az: If True, specifies the DB Instance will be
                          deployed in multiple availability zones.
 
+                         For Microsoft SQL Server, must be set to false. You cannot set 
+                         the AvailabilityZone parameter if the MultiAZ parameter is 
+                         set to true.
+
         :type engine_version: str
-        :param engine_version: Version number of the database engine to use.
+        :param engine_version: The version number of the database engine to use.
+
+                               * MySQL format example: 5.1.42
+
+                               * Oracle format example: 11.2.0.2.v2
+
+                               * SQL Server format example: 10.50.2789.0.v1
 
         :type auto_minor_version_upgrade: bool
         :param auto_minor_version_upgrade: Indicates that minor engine
@@ -234,24 +324,78 @@ class RDSConnection(AWSQueryConnection):
                                            automatically to the Read Replica
                                            during the maintenance window.
                                            Default is True.
+        :type character_set_name: str
+        :param character_set_name: For supported engines, indicates that the DB Instance 
+                                   should be associated with the specified CharacterSet.
+                          
+        :type db_subnet_group_name: str
+        :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
+                                     If there is no DB Subnet Group, then it is a non-VPC DB 
+                                     instance.
+
+        :type license_model: str
+        :param license_model: License model information for this DB Instance.
+
+                              Valid values are;
+                              - license-included
+                              - bring-your-own-license
+                              - general-public-license
+
+                              All license types are not supported on all engines.
+
+        :type option_group_name: str
+        :param option_group_name: Indicates that the DB Instance should be associated 
+                                  with the specified option group.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
-        params = {'DBInstanceIdentifier': id,
+        # boto argument alignment with AWS API parameter names:
+        # =====================================================
+        # arg => AWS parameter
+        # allocated_storage => AllocatedStorage
+        # auto_minor_version_update => AutoMinorVersionUpgrade
+        # availability_zone => AvailabilityZone
+        # backup_retention_period => BackupRetentionPeriod
+        # character_set_name => CharacterSetName
+        # db_instance_class => DBInstanceClass
+        # db_instance_identifier => DBInstanceIdentifier
+        # db_name => DBName
+        # db_parameter_group_name => DBParameterGroupName
+        # db_security_groups => DBSecurityGroups.member.N
+        # db_subnet_group_name => DBSubnetGroupName
+        # engine => Engine
+        # engine_version => EngineVersion
+        # license_model => LicenseModel
+        # master_username => MasterUsername
+        # master_user_password => MasterUserPassword
+        # multi_az => MultiAZ
+        # option_group_name => OptionGroupName
+        # port => Port
+        # preferred_backup_window => PreferredBackupWindow
+        # preferred_maintenance_window => PreferredMaintenanceWindow
+        params = {
                   'AllocatedStorage': allocated_storage,
+                  'AutoMinorVersionUpgrade': str(auto_minor_version_upgrade).lower() if auto_minor_version_upgrade else None,
+                  'AvailabilityZone': availability_zone,
+                  'BackupRetentionPeriod': backup_retention_period,
+                  'CharacterSetName': character_set_name,
                   'DBInstanceClass': instance_class,
+                  'DBInstanceIdentifier': id,
+                  'DBName': db_name,
+                  'DBParameterGroupName': param_group,
+                  'DBSubnetGroupName': db_subnet_group_name,
                   'Engine': engine,
+                  'EngineVersion': engine_version,
+                  'LicenseModel': license_model,
                   'MasterUsername': master_username,
                   'MasterUserPassword': master_password,
+                  'MultiAZ': str(multi_az).lower() if multi_az else None,
+                  'OptionGroupName': option_group_name,
                   'Port': port,
-                  'MultiAZ': str(multi_az).lower(),
-                  'AutoMinorVersionUpgrade':
-                      str(auto_minor_version_upgrade).lower()}
-        if db_name:
-            params['DBName'] = db_name
-        if param_group:
-            params['DBParameterGroupName'] = param_group
+                  'PreferredBackupWindow': preferred_backup_window,
+                  'PreferredMaintenanceWindow': preferred_maintenance_window,
+                  }
         if security_groups:
             l = []
             for group in security_groups:
@@ -260,16 +404,10 @@ class RDSConnection(AWSQueryConnection):
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'DBSecurityGroups.member')
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
-        if preferred_maintenance_window:
-            params['PreferredMaintenanceWindow'] = preferred_maintenance_window
-        if backup_retention_period is not None:
-            params['BackupRetentionPeriod'] = backup_retention_period
-        if preferred_backup_window:
-            params['PreferredBackupWindow'] = preferred_backup_window
-        if engine_version:
-            params['EngineVersion'] = engine_version
+
+        # Remove any params set to None
+        for k, v in params.items():
+          if not v: del(params[k])
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 

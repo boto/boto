@@ -43,7 +43,7 @@ RegionData = {
 
 def regions():
     """
-    Get all available regions for the SDB service.
+    Get all available regions for the ELB service.
 
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances

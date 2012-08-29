@@ -315,7 +315,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parameter_names = sorted(http_request.params.keys())
         pairs = []
         for pname in parameter_names:
-            pval = http_request.params[pname].encode('utf-8')
+            pval = str(http_request.params[pname]).encode('utf-8')
             pairs.append(urllib.quote(pname, safe='') + '=' +
                          urllib.quote(pval, safe='-_~'))
         return '&'.join(pairs)
@@ -323,7 +323,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
     def canonical_query_string(self, http_request):
         l = []
         for param in http_request.params:
-            value = http_request.params[param]
+            value = str(http_request.params[param])
             l.append('%s=%s' % (urllib.quote(param, safe='/~'),
                                 urllib.quote(value, safe='/~')))
         l = sorted(l)

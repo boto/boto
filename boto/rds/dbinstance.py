@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -24,9 +24,29 @@ from boto.rds.parametergroup import ParameterGroup
 
 class DBInstance(object):
     """
-    Represents a RDS  DBInstance
+    Represents a RDS DBInstance
+
+    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBInstance.html
+    :ivar connection: connection
+    :ivar id: The name and identifier of the DBInstance
+    :ivar create_time: The date and time of creation
+    :ivar engine: The database engine being used
+    :ivar status: The status of the database in a string. e.g. "available"
+    :ivar allocated_storage: The size of the disk in gigabytes (int).
+    :ivar endpoint: A tuple that describes the hostname and port of the instance. This is only available when the database is in status "available".
+    :ivar instance_class: Contains the name of the compute and memory capacity class of the DB Instance.
+    :ivar master_username: The username that is set as master username at creation time.
+    :ivar parameter_group: Provides the list of DB Parameter Groups applied to this DB Instance.
+    :ivar security_group: Provides List of DB Security Group elements containing only DBSecurityGroup.Name and DBSecurityGroup.Status subelements.
+    :ivar availability_zone: Specifies the name of the Availability Zone the DB Instance is located in.
+    :ivar backup_retention_period: Specifies the number of days for which automatic DB Snapshots are retained.
+    :ivar preferred_backup_window: Specifies the daily time range during which automated backups are created if automated backups are enabled, as determined by the backup_retention_period.
+    :ivar preferred_maintenance_window: Specifies the weekly time range (in UTC) during which system maintenance can occur. (string)
+    :ivar latest_restorable_time: Specifies the latest time to which a database can be restored with point-in-time restore. TODO: type?
+    :ivar multi_az: Boolean that specifies if the DB Instance is a Multi-AZ deployment.
+    :ivar pending_modified_values: Specifies that changes to the DB Instance are pending. This element is only included when changes are pending. Specific changes are identified by subelements.
     """
-    
+
     def __init__(self, connection=None, id=None):
         self.connection = connection
         self.id = id
@@ -112,10 +132,10 @@ class DBInstance(object):
     def snapshot(self, snapshot_id):
         """
         Create a new DB snapshot of this DBInstance.
-        
+
         :type identifier: string
         :param identifier: The identifier for the DBSnapshot
-        
+
         :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
         :return: The newly created DBSnapshot
         """
@@ -124,7 +144,7 @@ class DBInstance(object):
     def reboot(self):
         """
         Reboot this DBInstance
-        
+
         :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
         :return: The newly created DBSnapshot
         """
@@ -210,7 +230,7 @@ class DBInstance(object):
                                apply_immediately is True.
 
                                Valid values are:
-                               
+
                                * db.m1.small
                                * db.m1.large
                                * db.m1.xlarge
@@ -252,7 +272,7 @@ class DBInstance(object):
                                                  preferred_backup_window,
                                                  multi_az,
                                                  apply_immediately)
-        
+
 class PendingModifiedValues(dict):
 
     def startElement(self, name, attrs, connection):

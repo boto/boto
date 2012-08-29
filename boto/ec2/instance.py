@@ -1,5 +1,6 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -15,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -33,6 +34,82 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.group import Group
 import base64
 
+
+class InstanceState(object):
+    """
+    The state of the instance.
+
+    :ivar code: The low byte represents the state. The high byte is an
+        opaque internal value and should be ignored.  Valid values:
+
+        * 0 (pending)
+        * 16 (running)
+        * 32 (shutting-down)
+        * 48 (terminated)
+        * 64 (stopping)
+        * 80 (stopped)
+
+    :ivar name: The name of the state of the instance.  Valid values:
+
+        * "pending"
+        * "running"
+        * "shutting-down"
+        * "terminated"
+        * "stopping"
+        * "stopped"
+    """
+    def __init__(self, code=0, name=None):
+        self.code = code
+        self.name = name
+
+    def __repr__(self):
+        return '%s(%d)' % (self.name, self.code)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'code':
+            self.code = int(value)
+        elif name == 'name':
+            self.name = value
+        else:
+            setattr(self, name, value)
+
+
+class InstancePlacement(object):
+    """
+    The location where the instance launched.
+
+    :ivar zone: The Availability Zone of the instance.
+    :ivar group_name: The name of the placement group the instance is
+        in (for cluster compute instances).
+    :ivar tenancy: The tenancy of the instance (if the instance is
+        running within a VPC). An instance with a tenancy of dedicated
+        runs on single-tenant hardware.
+    """
+    def __init__(self, zone=None, group_name=None, tenancy=None):
+        self.zone = zone
+        self.group_name = group_name
+        self.tenancy = tenancy
+
+    def __repr__(self):
+        return self.zone
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'availabilityZone':
+            self.zone = value
+        elif name == 'groupName':
+            self.group_name = value
+        elif name == 'tenancy':
+            self.tenancy = value
+        else:
+            setattr(self, name, value)
+
+
 class Reservation(EC2Object):
     """
     Represents a Reservation response object.
@@ -44,7 +121,6 @@ class Reservation(EC2Object):
     :ivar instances: A list of Instance objects launched in this
                      Reservation.
     """
-    
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.id = None
@@ -76,7 +152,8 @@ class Reservation(EC2Object):
     def stop_all(self):
         for instance in self.instances:
             instance.stop()
-            
+
+
 class Instance(TaggedEC2Object):
     """
     Represents an instance.
@@ -86,13 +163,23 @@ class Instance(TaggedEC2Object):
                   groups associated with the instance.
     :ivar public_dns_name: The public dns name of the instance.
     :ivar private_dns_name: The private dns name of the instance.
-    :ivar state: The string representation of the instances current state.
-    :ivar state_code: An integer representation of the instances current state.
+    :ivar state: The string representation of the instance's current state.
+    :ivar state_code: An integer representation of the instance's
+        current state.
+    :ivar previous_state: The string representation of the instance's
+        previous state.
+    :ivar previous_state_code: An integer representation of the
+        instance's current state.
     :ivar key_name: The name of the SSH key associated with the instance.
     :ivar instance_type: The type of instance (e.g. m1.small).
     :ivar launch_time: The time the instance was launched.
     :ivar image_id: The ID of the AMI used to launch this instance.
     :ivar placement: The availability zone in which the instance is running.
+    :ivar placement_group: The name of the placement group the instance
+        is in (for cluster compute instances).
+    :ivar placement_tenancy: The tenancy of the instance, if the instance
+        is running within a VPC.  An instance with a tenancy of dedicated
+        runs on a single-tenant hardware.
     :ivar kernel: The kernel associated with the instance.
     :ivar ramdisk: The ramdisk associated with the instance.
     :ivar architecture: The architecture of the image (i386|x86_64).
@@ -115,23 +202,22 @@ class Instance(TaggedEC2Object):
     :ivar groups: List of security Groups associated with the instance.
     :ivar interfaces: List of Elastic Network Interfaces associated with
         this instance.
+    :ivar ebs_optimized: Whether instance is using optimized EBS volumes
+        or not.
+    :ivar instance_profile: A Python dict containing the instance
+        profile id and arn associated with this instance.
     """
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
         self.dns_name = None
         self.public_dns_name = None
         self.private_dns_name = None
-        self.state = None
-        self.state_code = None
         self.key_name = None
-        self.shutdown_state = None
-        self.previous_state = None
         self.instance_type = None
         self.launch_time = None
         self.image_id = None
-        self.placement = None
         self.kernel = None
         self.ramdisk = None
         self.product_codes = ProductCodes()
@@ -158,9 +244,49 @@ class Instance(TaggedEC2Object):
         self.hypervisor = None
         self.virtualization_type = None
         self.architecture = None
+        self.instance_profile = None
+        self._previous_state = None
+        self._state = InstanceState()
+        self._placement = InstancePlacement()
 
     def __repr__(self):
         return 'Instance:%s' % self.id
+
+    @property
+    def state(self):
+        return self._state.name
+
+    @property
+    def state_code(self):
+        return self._state.code
+
+    @property
+    def previous_state(self):
+        if self._previous_state:
+            return self._previous_state.name
+        return None
+
+    @property
+    def previous_state_code(self):
+        if self._previous_state:
+            return self._previous_state.code
+        return 0
+
+    @property
+    def state(self):
+        return self._state.name
+
+    @property
+    def placement(self):
+        return self._placement.zone
+
+    @property
+    def placement_group(self):
+        return self._placement.group_name
+
+    @property
+    def placement_tenancy(self):
+        return self._placement.tenancy
 
     def startElement(self, name, attrs, connection):
         retval = TaggedEC2Object.startElement(self, name, attrs, connection)
@@ -187,6 +313,15 @@ class Instance(TaggedEC2Object):
         elif name == 'iamInstanceProfile':
             self.instance_profile = SubParse('iamInstanceProfile')
             return self.instance_profile
+        elif name == 'currentState':
+            return self._state
+        elif name == 'previousState':
+            self._previous_state = InstanceState()
+            return self._previous_state
+        elif name == 'instanceState':
+            return self._state
+        elif name == 'placement':
+            return self._placement
         return None
 
     def endElement(self, name, value, connection):
@@ -203,8 +338,6 @@ class Instance(TaggedEC2Object):
             self.key_name = value
         elif name == 'amiLaunchIndex':
             self.ami_launch_index = value
-        elif name == 'shutdownState':
-            self.shutdown_state = value
         elif name == 'previousState':
             self.previous_state = value
         elif name == 'name':
@@ -223,12 +356,8 @@ class Instance(TaggedEC2Object):
             self.root_device_type = value
         elif name == 'launchTime':
             self.launch_time = value
-        elif name == 'availabilityZone':
-            self.placement = value
         elif name == 'platform':
             self.platform = value
-        elif name == 'placement':
-            pass
         elif name == 'kernelId':
             self.kernel = value
         elif name == 'ramdiskId':
@@ -268,6 +397,8 @@ class Instance(TaggedEC2Object):
             self.virtualization_type = value
         elif name == 'architecture':
             self.architecture = value
+        elif name == 'ebsOptimized':
+            self.ebs_optimized = (value == 'true')
         else:
             setattr(self, name, value)
 
@@ -310,7 +441,7 @@ class Instance(TaggedEC2Object):
 
         :type force: bool
         :param force: Forces the instance to stop
-        
+
         :rtype: list
         :return: A list of the instances stopped
         """
@@ -358,12 +489,20 @@ class Instance(TaggedEC2Object):
 
         :type attribute: string
         :param attribute: The attribute you need information about
-                          Valid choices are:
-                          instanceType|kernel|ramdisk|userData|
-                          disableApiTermination|
-                          instanceInitiatedShutdownBehavior|
-                          rootDeviceName|blockDeviceMapping
-                          sourceDestCheck|groupSet
+            Valid choices are:
+
+            * instanceType
+            * kernel
+            * ramdisk
+            * userData
+            * disableApiTermination
+            * instanceInitiatedShutdownBehavior
+            * rootDeviceName
+            * blockDeviceMapping
+            * productCodes
+            * sourceDestCheck
+            * groupSet
+            * ebsOptimized
 
         :rtype: :class:`boto.ec2.image.InstanceAttribute`
         :return: An InstanceAttribute object representing the value of the
@@ -378,16 +517,15 @@ class Instance(TaggedEC2Object):
         :type attribute: string
         :param attribute: The attribute you wish to change.
 
-                          * AttributeName - Expected value (default)
-                          * InstanceType - A valid instance type (m1.small)
-                          * Kernel - Kernel ID (None)
-                          * Ramdisk - Ramdisk ID (None)
-                          * UserData - Base64 encoded String (None)
-                          * DisableApiTermination - Boolean (true)
-                          * InstanceInitiatedShutdownBehavior - stop|terminate
-                          * RootDeviceName - device name (None)
-                          * SourceDestCheck - Boolean (true)
-                          * GroupSet - Set of Security Groups or IDs
+            * instanceType - A valid instance type (m1.small)
+            * kernel - Kernel ID (None)
+            * ramdisk - Ramdisk ID (None)
+            * userData - Base64 encoded String (None)
+            * disableApiTermination - Boolean (true)
+            * instanceInitiatedShutdownBehavior - stop|terminate
+            * sourceDestCheck - Boolean (true)
+            * groupSet - Set of Security Groups or IDs
+            * ebsOptimized - Boolean (false)
 
         :type value: string
         :param value: The new value for the attribute
@@ -411,6 +549,7 @@ class Instance(TaggedEC2Object):
         """
         return self.connection.reset_instance_attribute(self.id, attribute)
 
+
 class ConsoleOutput:
 
     def __init__(self, parent=None):
@@ -432,10 +571,12 @@ class ConsoleOutput:
         else:
             setattr(self, name, value)
 
+
 class InstanceAttribute(dict):
 
     ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
-                   'disableApiTermination', 'instanceInitiatedShutdownBehavior',
+                   'disableApiTermination',
+                   'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',
                    'groupSet']
 
@@ -461,9 +602,14 @@ class InstanceAttribute(dict):
         elif name == 'requestId':
             self.request_id = value
         elif name == 'value':
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
             self._current_value = value
         elif name in self.ValidValues:
             self[name] = self._current_value
+
 
 class SubParse(dict):
 
@@ -477,4 +623,3 @@ class SubParse(dict):
     def endElement(self, name, value, connection):
         if name != self.section:
             self[name] = value
-            

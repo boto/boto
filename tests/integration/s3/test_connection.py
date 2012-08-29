@@ -52,8 +52,7 @@ class S3ConnectionTest (unittest.TestCase):
         bucket.enable_logging(target_bucket=logging_bucket, target_prefix=bucket.name)
         bucket.disable_logging()
         c.delete_bucket(logging_bucket)
-        k = bucket.new_key()
-        k.name = 'foobar'
+        k = bucket.new_key('foobar')
         s1 = 'This is a test of file upload and download'
         s2 = 'This is a second string to test file upload and download'
         k.set_contents_from_string(s1)
@@ -129,8 +128,7 @@ class S3ConnectionTest (unittest.TestCase):
         k = bucket.lookup('notthere')
         assert k == None
         # try some metadata stuff
-        k = bucket.new_key()
-        k.name = 'has_metadata'
+        k = bucket.new_key('has_metadata')
         mdkey1 = 'meta1'
         mdval1 = 'This is the first metadata value'
         k.set_metadata(mdkey1, mdval1)
@@ -146,8 +144,7 @@ class S3ConnectionTest (unittest.TestCase):
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
         assert k.get_metadata(mdkey3) == mdval3
-        k = bucket.new_key()
-        k.name = 'has_metadata'
+        k = bucket.new_key('has_metadata')
         k.get_contents_as_string()
         assert k.get_metadata(mdkey1) == mdval1
         assert k.get_metadata(mdkey2) == mdval2
@@ -162,8 +159,7 @@ class S3ConnectionTest (unittest.TestCase):
         num_keys = len(rs)
         assert num_iter == num_keys
         # try a key with a funny character
-        k = bucket.new_key()
-        k.name = 'testnewline\n'
+        k = bucket.new_key('testnewline\n')
         k.set_contents_from_string('This is a test')
         rs = bucket.get_all_keys()
         assert len(rs) == num_keys + 1

@@ -23,40 +23,60 @@
 """
 Tests for Layer1 of DynamoDB
 """
-
-import unittest
 import time
+import base64
+
+from tests.unit import unittest
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.exceptions import DynamoDBValidationError
 from boto.dynamodb.layer1 import Layer1
-from boto.sts.credentials import Credentials
 
 
-class DynamoDBLayer1Test (unittest.TestCase):
+class DynamoDBLayer1Test(unittest.TestCase):
     dynamodb = True
+
+    def setUp(self):
+        self.dynamodb = Layer1()
+        self.table_name = 'test-%d' % int(time.time())
+        self.hash_key_name = 'forum_name'
+        self.hash_key_type = 'S'
+        self.range_key_name = 'subject'
+        self.range_key_type = 'S'
+        self.read_units = 5
+        self.write_units = 5
+        self.schema = {'HashKeyElement': {'AttributeName': self.hash_key_name,
+                                          'AttributeType': self.hash_key_type},
+                       'RangeKeyElement': {'AttributeName': self.range_key_name,
+                                           'AttributeType': self.range_key_type}}
+        self.provisioned_throughput = {'ReadCapacityUnits': self.read_units,
+                                       'WriteCapacityUnits': self.write_units}
+
+    def tearDown(self):
+        pass
+
+    def create_table(self, table_name, schema, provisioned_throughput):
+        result = self.dynamodb.create_table(table_name, schema, provisioned_throughput)
+        self.addCleanup(self.dynamodb.delete_table, table_name)
+        return result
 
     def test_layer1_basic(self):
         print '--- running DynamoDB Layer1 tests ---'
 
-        c = Layer1()
+        c = self.dynamodb
 
         # First create a table
-        table_name = 'test-%d' % int(time.time())
-        hash_key_name = 'forum_name'
-        hash_key_type = 'S'
-        range_key_name = 'subject'
-        range_key_type = 'S'
-        read_units = 5
-        write_units = 5
-        schema = {'HashKeyElement': {'AttributeName': hash_key_name,
-                                     'AttributeType': hash_key_type},
-                  'RangeKeyElement': {'AttributeName': range_key_name,
-                                      'AttributeType': range_key_type}}
-        provisioned_throughput = {'ReadCapacityUnits': read_units,
-                                  'WriteCapacityUnits': write_units}
+        table_name = self.table_name
+        hash_key_name = self.hash_key_name
+        hash_key_type = self.hash_key_type
+        range_key_name = self.range_key_name
+        range_key_type = self.range_key_type
+        read_units = self.read_units
+        write_units = self.write_units
+        schema = self.schema
+        provisioned_throughput = self.provisioned_throughput
 
-        result = c.create_table(table_name, schema, provisioned_throughput)
+        result = self.create_table(table_name, schema, provisioned_throughput)
         assert result['TableDescription']['TableName'] == table_name
         result_schema = result['TableDescription']['KeySchema']
         assert result_schema['HashKeyElement']['AttributeName'] == hash_key_name
@@ -209,9 +229,38 @@ class DynamoDBLayer1Test (unittest.TestCase):
         result = c.delete_item(table_name, key=key2)
         result = c.delete_item(table_name, key=key3)
 
-        # Now delete the table
-        result = c.delete_table(table_name)
-        assert result['TableDescription']['TableStatus'] == 'DELETING'
-
         print '--- tests completed ---'
 
+    def test_binary_attributes(self):
+        c = self.dynamodb
+        result = self.create_table(self.table_name, self.schema,
+                                   self.provisioned_throughput)
+        # Wait for table to become active
+        result = c.describe_table(self.table_name)
+        while result['Table']['TableStatus'] != 'ACTIVE':
+            time.sleep(5)
+            result = c.describe_table(self.table_name)
+
+        # Put an item
+        item1_key = 'Amazon DynamoDB'
+        item1_range = 'DynamoDB Thread 1'
+        item1_data = {
+            self.hash_key_name: {self.hash_key_type: item1_key},
+            self.range_key_name: {self.range_key_type: item1_range},
+            'Message': {'S': 'DynamoDB thread 1 message text'},
+            'LastPostedBy': {'S': 'User A'},
+            'Views': {'N': '0'},
+            'Replies': {'N': '0'},
+            'BinaryData': {'B': base64.b64encode(bytes('\x01\x02\x03\x04'))},
+            'Answered': {'N': '0'},
+            'Tags': {'SS': ["index", "primarykey", "table"]},
+            'LastPostDateTime':  {'S': '12/9/2011 11:36:03 PM'}
+        }
+        result = c.put_item(self.table_name, item1_data)
+
+        # Now do a consistent read and check results
+        key1 = {'HashKeyElement': {self.hash_key_type: item1_key},
+               'RangeKeyElement': {self.range_key_type: item1_range}}
+        result = c.get_item(self.table_name, key=key1, consistent_read=True)
+        self.assertEqual(result['Item']['BinaryData'],
+                         {'B': base64.b64encode(bytes('\x01\x02\x03\x04'))})

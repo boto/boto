@@ -194,6 +194,7 @@ class FPSConnection(AWSQueryConnection):
         return self.get_object(action, kw, response)
 
     @needs_caller_key
+    @needs_caller_reference
     @requires(['returnURL', 'pipelineName'])
     def cbui_url(self, **kw):
         """Generate a signed URL for the Co-Branded service API given
