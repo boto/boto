@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2012 Thomas Parslow http://almostobsolete.net/
-# Some code from Urban Skudnik urban.skudnik@gmail.com
+# Tree hash implementation from Aaron Brady bradya@gmail.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
