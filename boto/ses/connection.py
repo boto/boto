@@ -58,12 +58,6 @@ class SESConnection(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['ses']
 
-    def _credentials_expired(self, response):
-        if response.status != 403:
-            return False
-        error = BotoServerError('', '', body=response.read())
-        return error.error_code == 'InvalidClientTokenId'
-
     def _build_list_params(self, params, items, label):
         """Add an AWS API-compatible parameter list to a dictionary.
 
