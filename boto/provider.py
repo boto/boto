@@ -266,12 +266,9 @@ class Provider(object):
         # I'm assuming there's only one role on the instance profile.
         if metadata and 'iam' in metadata:
             security = metadata['iam']['security-credentials'].values()[0]
-            if self._access_key is None:
-                self._access_key = security['AccessKeyId']
-            if self._secret_key is None:
-                self._secret_key = security['SecretAccessKey']
-            if self._security_token is None:
-                self._security_token = security['Token']
+            self._access_key = security['AccessKeyId']
+            self._secret_key = security['SecretAccessKey']
+            self._security_token = security['Token']
             expires_at = security['Expiration']
             self._credential_expiry_time = datetime.strptime(
                 expires_at, "%Y-%m-%dT%H:%M:%SZ")
