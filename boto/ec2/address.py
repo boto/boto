@@ -19,13 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Represents an EC2 Elastic IP Address
-"""
 
 from boto.ec2.ec2object import EC2Object
 
 class Address(EC2Object):
+    """
+    Represents an EC2 Elastic IP Address
+
+    :ivar public_ip: The Elastic IP address.
+    :ivar instance_id: The instance the address is associated with (if any).
+    :ivar domain: Indicates whether the address is a EC2 address or a VPC address (standard|vpc).
+    :ivar allocation_id: The allocation ID for the address (VPC addresses only).
+    :ivar association_id: The association ID for the address (VPC addresses only).
+    """
 
     def __init__(self, connection=None, public_ip=None, instance_id=None):
         EC2Object.__init__(self, connection)
@@ -54,14 +60,26 @@ class Address(EC2Object):
             setattr(self, name, value)
 
     def release(self):
+        """
+        Free up this Elastic IP address.
+        :see: :meth:`boto.ec2.connection.EC2Connection.release_address`
+        """
         return self.connection.release_address(self.public_ip)
 
     delete = release
 
     def associate(self, instance_id):
+        """
+        Associate this Elastic IP address with a currently running instance.
+        :see: :meth:`boto.ec2.connection.EC2Connection.associate_address`
+        """
         return self.connection.associate_address(instance_id, self.public_ip)
 
     def disassociate(self):
+        """
+        Disassociate this Elastic IP address from a currently running instance.
+        :see: :meth:`boto.ec2.connection.EC2Connection.disassociate_address`
+        """
         return self.connection.disassociate_address(self.public_ip)
 
 
