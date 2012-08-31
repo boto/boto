@@ -27,12 +27,15 @@ This class encapsulates the provider-specific header differences.
 """
 
 import os
+from datetime import datetime
+
 import boto
 from boto import config
 from boto.gs.acl import ACL
 from boto.gs.acl import CannedACLStrings as CannedGSACLStrings
 from boto.s3.acl import CannedACLStrings as CannedS3ACLStrings
 from boto.s3.acl import Policy
+
 
 HEADER_PREFIX_KEY = 'header_prefix'
 METADATA_PREFIX_KEY = 'metadata_prefix'
@@ -172,10 +175,61 @@ class Provider(object):
         self.get_credentials(access_key, secret_key)
         self.configure_headers()
         self.configure_errors()
+        self._credential_expiry_time = None
         # allow config file to override default host
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):
             self.host = config.get('Credentials', host_opt_name)
+
+    def get_access_key(self):
+        if self._credentials_need_refresh():
+            self._populate_keys_from_metadata_server()
+        return self._access_key
+
+    def set_access_key(self, value):
+        self._access_key = value
+
+    access_key = property(get_access_key, set_access_key)
+
+    def get_secret_key(self):
+        if self._credentials_need_refresh():
+            self._populate_keys_from_metadata_server()
+        return self._secret_key
+
+    def set_secret_key(self, value):
+        self._secret_key = value
+
+    secret_key = property(get_secret_key, set_secret_key)
+
+    def get_security_token(self):
+        if self._credentials_need_refresh():
+            self._populate_keys_from_metadata_server()
+        return self._security_token
+
+    def set_security_token(self, value):
+        self._security_token = value
+
+    security_token = property(get_security_token, set_security_token)
+
+    def _credentials_need_refresh(self):
+        if self._credential_expiry_time is None:
+            return False
+        else:
+            # The credentials should be refreshed if they're going to expire
+            # in less than 5 minutes.
+            delta = self._credential_expiry_time - datetime.now()
+            # python2.6 does not have timedelta.total_seconds() so we have
+            # to calculate this ourselves.  This is straight from the
+            # datetime docs.
+            seconds_left = (
+                (delta.microseconds + (delta.seconds + delta.days * 24 * 3600)
+                 * 10**6) / 10**6)
+            if seconds_left < (5 * 60):
+                boto.log.debug("Credentials need to be refreshed.")
+                return True
+            else:
+                return False
+
 
     def get_credentials(self, access_key=None, secret_key=None):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
@@ -193,11 +247,11 @@ class Provider(object):
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
 
-        if ((self.access_key is None or self.secret_key is None) and
+        if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
             self._populate_keys_from_metadata_server()
 
-        if isinstance(self.secret_key, unicode):
+        if isinstance(self._secret_key, unicode):
             # the secret key must be bytes and not unicode to work
             #  properly with hmac.new (see http://bugs.python.org/issue5285)
             self.secret_key = str(self.secret_key)
@@ -205,18 +259,24 @@ class Provider(object):
     def _populate_keys_from_metadata_server(self):
         # get_instance_metadata is imported here because of a circular
         # dependency.
+        boto.log.debug("Retrieving credentials from metadata server.")
         from boto.utils import get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
         metadata = get_instance_metadata(timeout=timeout, num_retries=1)
         # I'm assuming there's only one role on the instance profile.
         if metadata and 'iam' in metadata:
             security = metadata['iam']['security-credentials'].values()[0]
-            if self.access_key is None:
-                self.access_key = security['AccessKeyId']
-            if self.secret_key is None:
-                self.secret_key = security['SecretAccessKey']
-            if self.security_token is None:
-                self.security_token = security['Token']
+            if self._access_key is None:
+                self._access_key = security['AccessKeyId']
+            if self._secret_key is None:
+                self._secret_key = security['SecretAccessKey']
+            if self._security_token is None:
+                self._security_token = security['Token']
+            expires_at = security['Expiration']
+            self._credential_expiry_time = datetime.strptime(
+                expires_at, "%Y-%m-%dT%H:%M:%SZ")
+            boto.log.debug("Retrieved credentials will expire in %s at: %s",
+                           self._credential_expiry_time - datetime.now(), expires_at)
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]
