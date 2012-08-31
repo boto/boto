@@ -31,6 +31,9 @@ class Address(EC2Object):
     :ivar domain: Indicates whether the address is a EC2 address or a VPC address (standard|vpc).
     :ivar allocation_id: The allocation ID for the address (VPC addresses only).
     :ivar association_id: The association ID for the address (VPC addresses only).
+    :ivar network_interface_id: The network interface (if any) that the address is associated with (VPC addresses only).
+    :ivar network_interface_owner_id: The owner IID (VPC addresses only).
+    :ivar private_ip_address: The private IP address associated with the Elastic IP address (VPC addresses only).
     """
 
     def __init__(self, connection=None, public_ip=None, instance_id=None):
@@ -41,6 +44,9 @@ class Address(EC2Object):
         self.domain = None
         self.allocation_id = None
         self.association_id = None
+        self.network_interface_id = None
+        self.network_interface_owner_id = None
+        self.private_ip_address = None
 
     def __repr__(self):
         return 'Address:%s' % self.public_ip
@@ -56,6 +62,12 @@ class Address(EC2Object):
             self.allocation_id = value
         elif name == 'associationId':
             self.association_id = value
+        elif name == 'networkInterfaceId':
+            self.network_interface_id = value
+        elif name == 'networkInterfaceOwnerId':
+            self.network_interface_owner_id = value
+        elif name == 'privateIpAddress':
+            self.private_ip_address = value
         else:
             setattr(self, name, value)
 
