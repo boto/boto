@@ -15,17 +15,28 @@ class TestProvider(unittest.TestCase):
         self.metadata_patch = mock.patch('boto.utils.get_instance_metadata')
         self.config_patch = mock.patch('boto.provider.config.get',
                                        self.get_config)
+        self.has_config_patch = mock.patch('boto.provider.config.has_option',
+                                           self.has_config)
         self.environ_patch = mock.patch('os.environ', self.environ)
 
         self.get_instance_metadata = self.metadata_patch.start()
         self.config_patch.start()
+        self.has_config_patch.start()
         self.environ_patch.start()
 
 
     def tearDown(self):
         self.metadata_patch.stop()
         self.config_patch.stop()
+        self.has_config_patch.stop()
         self.environ_patch.stop()
+
+    def has_config(self, section_name, key):
+        try:
+            self.config[section_name][key]
+            return True
+        except KeyError:
+            return False
 
     def get_config(self, section_name, key):
         try:
