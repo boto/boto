@@ -47,6 +47,7 @@ class SearchResults(object):
         self.docs = attrs['hits']['hit']
         self.start = attrs['hits']['start']
         self.rank = attrs['rank']
+        self.facets = attrs.get('facets')
         self.match_expression = attrs['match-expr']
         self.query = attrs['query']
         self.search_service = attrs['search_service']
