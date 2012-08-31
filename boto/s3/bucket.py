@@ -692,7 +692,7 @@ class Bucket(object):
         # make sure storage_class_header key exists before accessing it
         if provider.storage_class_header and storage_class:
             headers[provider.storage_class_header] = storage_class
-        if metadata:
+        if metadata is not None:
             headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata, provider)
         elif not query_args: # Can't use this header with multi-part copy.
