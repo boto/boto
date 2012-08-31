@@ -64,7 +64,10 @@ class Address(EC2Object):
         Free up this Elastic IP address.
         :see: :meth:`boto.ec2.connection.EC2Connection.release_address`
         """
-        return self.connection.release_address(self.public_ip)
+        if self.allocation_id:
+            return self.connection.release_address(None, self.allocation_id)
+        else:
+            return self.connection.release_address(self.public_ip)
 
     delete = release
 
@@ -80,6 +83,9 @@ class Address(EC2Object):
         Disassociate this Elastic IP address from a currently running instance.
         :see: :meth:`boto.ec2.connection.EC2Connection.disassociate_address`
         """
-        return self.connection.disassociate_address(self.public_ip)
+        if self.association_id:
+            return self.connection.disassociate_address(None, self.association_id)
+        else:
+            return self.connection.disassociate_address(self.public_ip)
 
 
