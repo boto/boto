@@ -325,7 +325,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for param in http_request.params:
             value = str(http_request.params[param])
             l.append('%s=%s' % (urllib.quote(param, safe='/~'),
-                                urllib.quote(value, safe='/~')))
+                                urllib.quote(value, safe='~')))
         l = sorted(l)
         return '&'.join(l)
 
