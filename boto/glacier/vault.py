@@ -22,9 +22,11 @@
 #
 
 from .job import Job
-from .writer import Writer
-import urllib
+from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash
+import hashlib
 import json
+import os.path
+import urllib
 
 
 class Vault(object):
@@ -42,13 +44,51 @@ class Vault(object):
         self.layer1 = layer1
         if response_data:
             for response_name, attr_name, default in self.ResponseDataElements:
-                setattr(self, attr_name, response_data[response_name])
+                value = response_data[response_name]
+                if isinstance(value, unicode):
+                    value.encode('utf8')
+                setattr(self, attr_name, value)
         else:
             for response_name, attr_name, default in self.ResponseDataElements:
                 setattr(self, attr_name, default)
 
     def __repr__(self):
         return 'Vault("%s")' % self.arn
+
+    def upload_archive(self, filename):
+        """
+        Adds an archive to a vault. For archives greater than 100MB the 
+        multipart upload will be used.
+
+        :type file: str
+        :param file: A filename to upload
+
+        :rtype: str
+        :return: The archive id of the newly created archive
+        """
+        megabyte = 1024 * 1024
+        if os.path.getsize(filename) > 100 * megabyte:
+            return self.create_archive_from_file(filename)
+        return self.upload_archive_single_operation(filename)
+
+    def upload_archive_single_operation(self, filename):
+        """
+        Adds an archive to a vault in a single operation. It's recommended for
+        archives less than 100MB
+        :type file: str
+        :param file: A filename to upload
+
+        :rtype: str
+        :return: The archive id of the newly created archive
+        """
+        archive = ''
+        with open(filename, 'rb') as fd:
+            archive = fd.read()
+        linear_hash = hashlib.sha256(archive).hexdigest()
+        hex_tree_hash  = bytes_to_hex(tree_hash(chunk_hashes(archive)))
+        response = self.layer1.upload_archive(self.name, archive, linear_hash,
+                                              hex_tree_hash)
+        return response['ArchiveId']
 
     def create_archive_writer(self, part_size=DefaultPartSize,
                               description=None):
@@ -87,6 +127,7 @@ class Vault(object):
         """
         if not file_obj:
             file_obj = open(file, "rb")
+
         writer = self.create_archive_writer()
         while True:
             data = file_obj.read(1024 * 1024 * 4)
