@@ -177,7 +177,7 @@ class Layer1(AWSAuthConnection):
         """
         uri = 'vaults/%s' % vault_name
         return self.make_request('PUT', uri, ok_responses=(201,),
-                                 response_headers=[('uLocation', 'uLocation')])
+                                 response_headers=[(u'Location', u'Location')])
 
     def delete_vault(self, vault_name):
         """
