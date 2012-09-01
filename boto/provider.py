@@ -172,10 +172,10 @@ class Provider(object):
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
+        self._credential_expiry_time = None
         self.get_credentials(access_key, secret_key)
         self.configure_headers()
         self.configure_errors()
-        self._credential_expiry_time = None
         # allow config file to override default host
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):

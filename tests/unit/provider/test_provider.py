@@ -129,6 +129,7 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'first_access_key')
         self.assertEqual(p.secret_key, 'first_secret_key')
         self.assertEqual(p.security_token, 'first_token')
+        self.assertIsNotNone(p._credential_expiry_time)
 
         # Now set the expiration to something in the past.
         expired = now - timedelta(seconds=20)
