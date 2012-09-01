@@ -21,46 +21,61 @@
 # IN THE SOFTWARE.
 #
 
+
 class CORSRule(object):
     """
     CORS rule for a bucket.
 
-    :ivar allowed_method: The HTTP method.
+    :ivar id: A unique identifier for the rule.  The ID value can be
+        up to 255 characters long.  The IDs help you find a rule in
+        the configuration.
 
-    :ivar allowed_origin: A single wildcarded domain name or a list
-        of non-wildcarded domain names.
+    :ivar allowed_methods: An HTTP method that you want to allow the
+        origin to execute.  Each CORSRule must identify at least one
+        origin and one method. Valid values are:
+        GET|PUT|HEAD|POST|DELETE
 
-    :ivar id: Optional unique identifier for the rule. The value
-        cannot be longer than 255 characters.
+    :ivar allowed_origin: An origin that you want to allow cross-domain
+        requests from. This can contain at most one * wild character.
+        Each CORSRule must identify at least one origin and one method.
+        The origin value can include at most one '*' wild character.
+        For example, "http://*.example.com". You can also specify
+        only * as the origin value allowing all origins cross-domain access.
 
-    :ivar max_age_seconds: An integer which alters the caching
-        behavior for the pre-flight request.
+    :ivar allowed_header: Specifies which headers are allowed in a
+        pre-flight OPTIONS request via the
+        Access-Control-Request-Headers header. Each header name
+        specified in the Access-Control-Request-Headers header must
+        have a corresponding entry in the rule. Amazon S3 will send
+        only the allowed headers in a response that were requested.
+        This can contain at most one * wild character.
 
-    :ivar expose_header: Enables teh browser to read this header.
+    :ivar max_age_seconds: The time in seconds that your browser is to
+        cache the preflight response for the specified resource.
 
-    :ivar allowed_header: Unsed in response to a preflight request
-        to indicate which HTTP headers can be used when making the
-        actual request.
-    """
+    :ivar expose_header: One or more headers in the response that you
+        want customers to be able to access from their applications
+        (for example, from a JavaScript XMLHttpRequest object).  You
+        add one ExposeHeader element in the rule for each header.
+        """
 
-    ValidMethods = ('GET', 'PUT', 'HEAD', 'POST', 'DELETE')
-
-    def __init__(self, allowed_method, allowed_origin,
-                 id=None, max_age_seconds=None, expose_header=None,
-                 allowed_header=None):
-        if allowed_method not in self.ValidMethods:
-            msg = 'allowed_method must be one of: %s' % self.ValidMethods
-            raise ValueError(msg)
-        if not isinstance(allowed_origin, (list, tuple)):
-            if allowed_origin is None:
-                allowed_origin = []
-            else:
-                allowed_origin = [allowed_origin]
+    def __init__(self, allowed_method=None, allowed_origin=None,
+                 id=None, allowed_header=None, max_age_seconds=None,
+                 expose_header=None):
+        if allowed_method is None:
+            allowed_method = []
+        self.allowed_method = allowed_method
+        if allowed_origin is None:
+            allowed_origin = []
         self.allowed_origin = allowed_origin
         self.id = id
-        self.max_age_seconds = max_age_seconds
-        self.expose_header = expose_header
+        if allowed_header is None:
+            allowed_header = []
         self.allowed_header = allowed_header
+        self.max_age_seconds = max_age_seconds
+        if expose_header is None:
+            expose_header = []
+        self.expose_header = expose_header
 
     def __repr__(self):
         return '<Rule: %s>' % self.id
@@ -72,29 +87,33 @@ class CORSRule(object):
         if name == 'ID':
             self.id = value
         elif name == 'AllowedMethod':
-            self.allowed_method = value
+            self.allowed_method.append(value)
         elif name == 'AllowedOrigin':
             self.allowed_origin.append(value)
         elif name == 'AllowedHeader':
-            self.allowed_header = value
+            self.allowed_header.append(value)
         elif name == 'MaxAgeSeconds':
             self.max_age_seconds = int(value)
         elif name == 'ExposeHeader':
-            self.expose_header = value
+            self.expose_header.append(value)
         else:
             setattr(self, name, value)
 
     def to_xml(self):
         s = '<CORSRule>'
+        for allowed_method in self.allowed_method:
+            s += '<AllowedMethod>%s</AllowedMethod>' % allowed_method
         for allowed_origin in self.allowed_origin:
             s += '<AllowedOrigin>%s</AllowedOrigin>' % allowed_origin
-        s += '<AllowedMethod>%s</AllowedMethod>' % self.allowed_method
+        for allowed_header in self.allowed_header:
+            s += '<AllowedHeader>%s</AllowedHeader>' % allowed_header
+        for expose_header in self.expose_header:
+            s += '<ExposeHeader>%s</ExposeHeader>' % expose_header
         if self.max_age_seconds:
             s += '<MaxAgeSeconds>%d</MaxAgeSeconds>' % self.max_age_seconds
-        if self.expose_header:
-            s += '<ExposeHeader>%s</ExposeHeader>' % self.expose_header
-        if self.allow_header:
-            s += '<AllowHeader>%s</AllowHeader>' % self.allow_header
+        if self.id:
+            s += '<ID>%s</ID>' % self.id
+        s += '</CORSRule>'
         return s
 
 
@@ -124,35 +143,68 @@ class CORSConfiguration(list):
         s += '</CORSConfiguration>'
         return s
 
-    def add_rule(self, id, prefix, status, expiration):
+    def add_rule(self, allowed_method, allowed_origin,
+                 id=None, allowed_header=None, max_age_seconds=None,
+                 expose_header=None):
         """
         Add a rule to this CORS configuration.  This only adds
         the rule to the local copy.  To install the new rule(s) on
         the bucket, you need to pass this CORS config object
-        to the configure_cors method of the Bucket object.
+        to the set_cors method of the Bucket object.
 
-        :type allowed_method: str
-        :param allowed_method: The HTTP method.
+        :type allowed_methods: list of str
+        :param allowed_methods: An HTTP method that you want to allow the
+            origin to execute.  Each CORSRule must identify at least one
+            origin and one method. Valid values are:
+            GET|PUT|HEAD|POST|DELETE
 
-        :type allowed_origin: str or list of str
-        :param allowed_origin: A single wildcarded domain name or a list
-            of non-wildcarded domain names.
+        :type allowed_origin: list of str
+        :param allowed_origin: An origin that you want to allow cross-domain
+            requests from. This can contain at most one * wild character.
+            Each CORSRule must identify at least one origin and one method.
+            The origin value can include at most one '*' wild character.
+            For example, "http://*.example.com". You can also specify
+            only * as the origin value allowing all origins
+            cross-domain access.
 
         :type id: str
-        :iparam id: Optional unique identifier for the rule. The value
-            cannot be longer than 255 characters.
+        :param id: A unique identifier for the rule.  The ID value can be
+            up to 255 characters long.  The IDs help you find a rule in
+            the configuration.
+
+        :type allowed_header: list of str
+        :param allowed_header: Specifies which headers are allowed in a
+            pre-flight OPTIONS request via the
+            Access-Control-Request-Headers header. Each header name
+            specified in the Access-Control-Request-Headers header must
+            have a corresponding entry in the rule. Amazon S3 will send
+            only the allowed headers in a response that were requested.
+            This can contain at most one * wild character.
 
         :type max_age_seconds: int
-        :param max_age_seconds: An integer which alters the caching
-            behavior for the pre-flight request.
+        :param max_age_seconds: The time in seconds that your browser is to
+            cache the preflight response for the specified resource.
 
-        :type expose_header: str
-        :param expose_header: Enables the browser to read this header.
-
-        :type allowed_header: str
-        :param allowed_header: Unsed in response to a preflight request
-            to indicate which HTTP headers can be used when making the
-            actual request.
+        :type expose_header: list of str
+        :param expose_header: One or more headers in the response that you
+            want customers to be able to access from their applications
+            (for example, from a JavaScript XMLHttpRequest object).  You
+            add one ExposeHeader element in the rule for each header.
         """
-        rule = CORSRule(id, prefix, status, expiration)
+        if not isinstance(allowed_method, (list, tuple)):
+            allowed_method = [allowed_method]
+        if not isinstance(allowed_origin, (list, tuple)):
+            allowed_origin = [allowed_origin]
+        if not isinstance(allowed_origin, (list, tuple)):
+            if allowed_origin is None:
+                allowed_origin = []
+            else:
+                allowed_origin = [allowed_origin]
+        if not isinstance(expose_header, (list, tuple)):
+            if expose_header is None:
+                expose_header = []
+            else:
+                expose_header = [expose_header]
+        rule = CORSRule(allowed_method, allowed_origin, id, allowed_header,
+                        max_age_seconds, expose_header)
         self.append(rule)

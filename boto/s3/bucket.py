@@ -92,16 +92,6 @@ class Bucket(object):
 
     WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
 
-    CORSBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <CORSConfiguration
-      <CORSRule>
-        <AllowedOrigin>%s</AllowedOrigin>
-        <AllowedMethod>%s</AllowedMethod>
-        <MaxAgeSeconds>%d</MaxAgeSeconds>
-        <ExposeHeader>%s</ExposeHeader>
-      </CORSRule>
-    </CORSConfiguration>"""
-
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
 
@@ -1366,15 +1356,16 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def configure_cors(self, cors_config, headers=None):
+    def set_cors_xml(self, cors_xml, headers=None):
         """
-        Configure CORS for this bucket.
+        Set the CORS (Cross-Origin Resource Sharing) for a bucket.
 
-        :type cors_config: :class:`boto.s3.cors.CORSConfiguration`
-        :param cors_config: The CORS configuration you want
-            to configure for this bucket.
+        :type cors_xml: str
+        :param cors_xml: The XML document describing your desired
+            CORS configuration.  See the S3 documentation for details
+            of the exact syntax required.
         """
-        fp = StringIO.StringIO(cors_config.to_xml())
+        fp = StringIO.StringIO(cors_xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1391,7 +1382,33 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def get_cors_config(self, headers=None):
+    def set_cors(self, cors_config, headers=None):
+        """
+        Set the CORS for this bucket given a boto CORSConfiguration
+        object.
+
+        :type cors_config: :class:`boto.s3.cors.CORSConfiguration`
+        :param cors_config: The CORS configuration you want
+            to configure for this bucket.
+        """
+        return self.set_cors_xml(cors_config.to_xml())
+
+    def get_cors_xml(self, headers=None):
+        """
+        Returns the current CORS configuration on the bucket as an
+        XML document.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='cors', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            return body
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_cors(self, headers=None):
         """
         Returns the current CORS configuration on the bucket.
 
@@ -1399,20 +1416,13 @@ class Bucket(object):
         :returns: A CORSConfiguration object that describes all current
             CORS rules in effect for the bucket.
         """
-        response = self.connection.make_request('GET', self.name,
-                query_args='cors', headers=headers)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            cors = CORSConfiguration()
-            h = handler.XmlHandler(cors, self)
-            xml.sax.parseString(body, h)
-            return cors
-        else:
-            raise self.connection.provider.storage_response_error(
-                response.status, response.reason, body)
+        body = self.get_cors_xml(headers)
+        cors = CORSConfiguration()
+        h = handler.XmlHandler(cors, self)
+        xml.sax.parseString(body, h)
+        return cors
 
-    def delete_cors_configuration(self, headers=None):
+    def delete_cors(self, headers=None):
         """
         Removes all CORS configuration from the bucket.
         """
