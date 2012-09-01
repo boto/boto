@@ -103,7 +103,7 @@ class Writer(object):
         hex_tree_hash = bytes_to_hex(part_tree_hash)
         linear_hash = hashlib.sha256(part).hexdigest()
         content_range = (self.uploaded_size,
-                         (self.uploaded_size+len(part))-1)
+                         (self.uploaded_size + len(part)) - 1)
         response = self.vault.layer1.upload_part(self.vault.name,
                                                  self.upload_id,
                                                  linear_hash,
@@ -126,9 +126,10 @@ class Writer(object):
         if self.buffer_size > 0:
             self.send_part()
         # Complete the multiplart glacier upload
-        hash = bytes_to_hex(tree_hash(self.tree_hashes))
+        hex_tree_hash = bytes_to_hex(tree_hash(self.tree_hashes))
         response = self.vault.layer1.complete_multipart_upload(self.vault.name,
-                                                               self.upload_id, hash,
+                                                               self.upload_id,
+                                                               hex_tree_hash,
                                                                self.uploaded_size)
         self.archive_id = response['ArchiveId']
         self.closed = True
