@@ -383,8 +383,7 @@ class Layer1(AWSAuthConnection):
                             ('Content-Type', u'ContentType')]
         headers = None
         if byte_range:
-            headers = {'Range': 'bytes=%d-%d' % (byte_range[0],
-                                                 byte_range[1])}
+            headers = {'Range': 'bytes=%d-%d' % byte_range}
         uri = 'vaults/%s/jobs/%s/output' % (vault_name, job_id)
         response = self.make_request('GET', uri, headers=headers,
                                      ok_responses=(200, 206),
@@ -621,8 +620,7 @@ class Layer1(AWSAuthConnection):
         """
         headers = {'x-amz-content-sha256': linear_hash,
                    'x-amz-sha256-tree-hash': tree_hash,
-                   'Content-Range': 'bytes=%d-%d' % (byte_range[0],
-                                                     byte_range[1])}
+                   'Content-Range': 'bytes %d-%d/*' % byte_range}
         response_headers = [('x-amz-sha256-tree-hash', u'TreeHash')]
         uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('PUT', uri, headers=headers,

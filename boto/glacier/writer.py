@@ -126,8 +126,9 @@ class Writer(object):
         if self.buffer_size > 0:
             self.send_part()
         # Complete the multiplart glacier upload
-        tree_hash = bytes_to_hex(tree_hash(self.tree_hashes))
-        response = self.vault.layer1.complete_multipart_upload(tree_hash,
+        hash = bytes_to_hex(tree_hash(self.tree_hashes))
+        response = self.vault.layer1.complete_multipart_upload(self.vault.name,
+                                                               self.upload_id, hash,
                                                                self.uploaded_size)
         self.archive_id = response['ArchiveId']
         self.closed = True
