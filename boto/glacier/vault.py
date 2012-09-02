@@ -46,7 +46,7 @@ class Vault(object):
             for response_name, attr_name, default in self.ResponseDataElements:
                 value = response_data[response_name]
                 if isinstance(value, unicode):
-                    value.encode('utf8')
+                    value = value.encode('utf8')
                 setattr(self, attr_name, value)
         else:
             for response_name, attr_name, default in self.ResponseDataElements:
