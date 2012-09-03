@@ -250,11 +250,7 @@ class Provider(object):
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
             self._populate_keys_from_metadata_server()
-
-        if isinstance(self._secret_key, unicode):
-            # the secret key must be bytes and not unicode to work
-            #  properly with hmac.new (see http://bugs.python.org/issue5285)
-            self.secret_key = str(self.secret_key)
+        self._secret_key = self._convert_key_to_str(self._secret_key)
 
     def _populate_keys_from_metadata_server(self):
         # get_instance_metadata is imported here because of a circular
@@ -267,13 +263,20 @@ class Provider(object):
         if metadata and 'iam' in metadata:
             security = metadata['iam']['security-credentials'].values()[0]
             self._access_key = security['AccessKeyId']
-            self._secret_key = security['SecretAccessKey']
+            self._secret_key = self._convert_key_to_str(security['SecretAccessKey'])
             self._security_token = security['Token']
             expires_at = security['Expiration']
             self._credential_expiry_time = datetime.strptime(
                 expires_at, "%Y-%m-%dT%H:%M:%SZ")
             boto.log.debug("Retrieved credentials will expire in %s at: %s",
                            self._credential_expiry_time - datetime.now(), expires_at)
+
+    def _convert_key_to_str(self, key):
+        if isinstance(key, unicode):
+            # the secret key must be bytes and not unicode to work
+            #  properly with hmac.new (see http://bugs.python.org/issue5285)
+            return str(key)
+        return key
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]
