@@ -62,6 +62,7 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
             parameters=[('KeyName', 'myKeyName')],
+            tags=[('TagKey', 'TagValue')],
             notification_arns=['arn:notify1', 'arn:notify2'],
             disable_rollback=True,
             timeout_in_minutes=20, capabilities=['CAPABILITY_IAM']
@@ -78,6 +79,8 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
             'NotificationARNs.member.2': 'arn:notify2',
             'Parameters.member.1.ParameterKey': 'KeyName',
             'Parameters.member.1.ParameterValue': 'myKeyName',
+            'Tags.member.1.Key': 'TagKey',
+            'Tags.member.1.Value': 'TagValue',
             'StackName': 'stack_name',
             'Version': '2010-05-15',
             'TimeoutInMinutes': 20,
@@ -125,6 +128,7 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
             parameters=[('KeyName', 'myKeyName')],
+            tags=[('TagKey', 'TagValue')],
             notification_arns=['arn:notify1', 'arn:notify2'],
             disable_rollback=True,
             timeout_in_minutes=20
@@ -137,6 +141,8 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             'NotificationARNs.member.2': 'arn:notify2',
             'Parameters.member.1.ParameterKey': 'KeyName',
             'Parameters.member.1.ParameterValue': 'myKeyName',
+            'Tags.member.1.Key': 'TagKey',
+            'Tags.member.1.Value': 'TagValue',
             'StackName': 'stack_name',
             'Version': '2010-05-15',
             'TimeoutInMinutes': 20,
@@ -387,6 +393,12 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
                       <OutputKey>ServerURL</OutputKey>
                     </member>
                   </Outputs>
+                  <Tags>
+                    <member>
+                      <Key>MyTagKey</Key>
+                      <Value>MyTagValue</Value>
+                    </member>
+                  </Tags>
                 </member>
               </Stacks>
             </DescribeStacksResult>
@@ -421,6 +433,10 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
 
         self.assertEqual(len(stack.capabilities), 1)
         self.assertEqual(stack.capabilities[0].value, 'CAPABILITY_IAM')
+
+        self.assertEqual(len(stack.tags), 1)
+        self.assertEqual(stack.tags[0].key, 'MyTagKey')
+        self.assertEqual(stack.tags[0].value, 'MyTagValue')
 
         self.assert_request_parameters({
             'Action': 'DescribeStacks',
