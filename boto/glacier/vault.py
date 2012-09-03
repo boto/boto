@@ -24,14 +24,12 @@
 from .job import Job
 from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash
 import hashlib
-import json
 import os.path
-import urllib
 
 
 class Vault(object):
 
-    DefaultPartSize = 4 * 1024 * 1024  #128MB
+    DefaultPartSize = 4 * 1024 * 1024  # 128MB
 
     ResponseDataElements = (('VaultName', 'name', None),
                             ('VaultARN', 'arn', None),
@@ -57,7 +55,7 @@ class Vault(object):
 
     def upload_archive(self, filename):
         """
-        Adds an archive to a vault. For archives greater than 100MB the 
+        Adds an archive to a vault. For archives greater than 100MB the
         multipart upload will be used.
 
         :type file: str
@@ -173,6 +171,15 @@ class Vault(object):
 
         response = self.layer1.initiate_job(self.name, job_data)
         return response['JobId']
+
+    def delete_archive(self, archive_id):
+        """
+        This operation deletes an archive from the vault.
+
+        :type archive_id: str
+        :param archive_id: The ID for the archive to be deleted.
+        """
+        return self.layer1.delete_archive(self.name, archive_id)
 
     def get_job(self, job_id):
         """
