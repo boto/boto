@@ -31,22 +31,22 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    from boto.glacier.layer1 import Layer1
+    from boto.glacier.layer2 import Layer2
     return [RegionInfo(name='us-east-1',
                        endpoint='glacier.us-east-1.amazonaws.com',
-                       connection_cls=Layer1),
+                       connection_cls=Layer2),
             RegionInfo(name='us-west-1',
                        endpoint='glacier.us-west-1.amazonaws.com',
-                       connection_cls=Layer1),
+                       connection_cls=Layer2),
             RegionInfo(name='us-west-2',
                        endpoint='glacier.us-west-2.amazonaws.com',
-                       connection_cls=Layer1),
+                       connection_cls=Layer2),
             RegionInfo(name='ap-northeast-1',
                        endpoint='glacier.ap-northeast-1.amazonaws.com',
-                       connection_cls=Layer1),
+                       connection_cls=Layer2),
             RegionInfo(name='eu-west-1',
                        endpoint='glacier.eu-west-1.amazonaws.com',
-                       connection_cls=Layer1),
+                       connection_cls=Layer2),
             ]
 
 
