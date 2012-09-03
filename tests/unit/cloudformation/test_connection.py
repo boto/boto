@@ -62,7 +62,7 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
             parameters=[('KeyName', 'myKeyName')],
-            tags=[('TagKey', 'TagValue')],
+            tags={'TagKey': 'TagValue'},
             notification_arns=['arn:notify1', 'arn:notify2'],
             disable_rollback=True,
             timeout_in_minutes=20, capabilities=['CAPABILITY_IAM']
@@ -128,7 +128,7 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
             parameters=[('KeyName', 'myKeyName')],
-            tags=[('TagKey', 'TagValue')],
+            tags={'TagKey': 'TagValue'},
             notification_arns=['arn:notify1', 'arn:notify2'],
             disable_rollback=True,
             timeout_in_minutes=20
@@ -435,8 +435,7 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.capabilities[0].value, 'CAPABILITY_IAM')
 
         self.assertEqual(len(stack.tags), 1)
-        self.assertEqual(stack.tags[0].key, 'MyTagKey')
-        self.assertEqual(stack.tags[0].value, 'MyTagValue')
+        self.assertEqual(stack.tags['MyTagKey'], 'MyTagValue')
 
         self.assert_request_parameters({
             'Action': 'DescribeStacks',
