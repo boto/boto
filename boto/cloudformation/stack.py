@@ -12,6 +12,7 @@ class Stack:
         self.outputs = []
         self.parameters = []
         self.capabilities = []
+        self.tags = []
         self.stack_id = None
         self.stack_status = None
         self.stack_name = None
@@ -28,6 +29,9 @@ class Stack:
         elif name == "Capabilities":
             self.capabilities = ResultSet([('member', Capability)])
             return self.capabilities
+        elif name == "Tags":
+            self.tags = ResultSet([('member', Tag)])
+            return self.tags
         else:
             return None
 
@@ -182,6 +186,26 @@ class Capability:
 
     def __repr__(self):
         return "Capability:\"%s\"" % (self.value)
+
+class Tag:
+    def __init__(self, connection=None):
+        self.connection = None
+        self.key = None
+        self.value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == "Key":
+            self.key = value
+        elif name == "Value":
+            self.value = value
+        else:
+            setattr(self, name, value)
+
+    def __repr__(self):
+        return "Tag:\"%s\"=\"%s\"" % (self.key, self.value)
 
 class StackResource:
     def __init__(self, connection=None):
