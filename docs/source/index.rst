@@ -61,6 +61,7 @@ Currently Supported Services
 * **Storage**
 
   * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
+  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
   * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 
 * **Workforce**
