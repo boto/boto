@@ -156,7 +156,7 @@ class Layer1(AWSQueryConnection):
         if auto_create_application:
             params['AutoCreateApplication'] = self.encode_bool(
                 auto_create_application)
-        return self.get_response('CreateApplicationVersion', params)
+        return self._get_response('CreateApplicationVersion', params)
 
     def create_configuration_template(self, application_name, template_name,
                                       solution_stack_name=None,
@@ -237,7 +237,7 @@ class Layer1(AWSQueryConnection):
             self._build_list_params(params, option_settings,
                                    'OptionSettings.member',
                                    ('Namespace', 'OptionName', 'Value'))
-        return self.get_response('CreateConfigurationTemplate', params)
+        return self._get_response('CreateConfigurationTemplate', params)
 
     def create_environment(self, application_name, environment_name,
                            version_label=None, template_name=None,
@@ -1147,10 +1147,7 @@ class Layer1(AWSQueryConnection):
             params['TemplateName'] = template_name
         if environment_name:
             params['EnvironmentName'] = environment_name
-<<<<<<< HEAD
         return self._get_response('ValidateConfigurationSettings', params)
-=======
-        return self.get_response('ValidateConfigurationSettings', params)
 
     def encode_bool(self, v):
         v = bool(v)
@@ -1172,4 +1169,3 @@ class Layer1(AWSQueryConnection):
             for key, value in zip(tuple_names, user_value):
                 full_key = '%s.%s' % (current_prefix, key)
                 params[full_key] = value
->>>>>>> 78630fc... Bug fix for ConfigurationOptionSettings

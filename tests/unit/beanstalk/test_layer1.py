@@ -85,6 +85,7 @@ class TestCreateApplicationVersion(AWSMockServiceTestCase):
             'AutoCreateApplication': 'true',
             'SourceBundle.S3Bucket': 'mybucket',
             'SourceBundle.S3Key': 'mykey',
+            'VersionLabel': 'version1',
             'AWSAccessKeyId': 'aws_access_key_id',
         }, ignore_params_values=['Timestamp'])
         self.assertEqual(app_version['ApplicationName'], 'application1')
