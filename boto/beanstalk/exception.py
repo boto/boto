@@ -20,8 +20,6 @@ def simple(e):
 class SimpleException(BotoServerError):
     def __init__(self, e, err):
         super(SimpleException, self).__init__(e.status, e.reason, e.body)
-
-        # fix params super isn't setting right
         self.body = e.error_message
         self.request_id = err['RequestId']
         self.error_code = err['Error']['Code']
@@ -33,10 +31,9 @@ class SimpleException(BotoServerError):
         return self.__class__.__name__ + ': ' + self.error_message
 
 
-# general api exception
 class ValidationError(SimpleException): pass
 
-# common beanstalk exceptions
+# Common beanstalk exceptions.
 class IncompleteSignature(SimpleException): pass
 class InternalFailure(SimpleException): pass
 class InvalidAction(SimpleException): pass
@@ -53,7 +50,8 @@ class RequestExpired(SimpleException): pass
 class ServiceUnavailable(SimpleException): pass
 class Throttling(SimpleException): pass
 
-# action specific exceptions
+
+# Action specific exceptions.
 class TooManyApplications(SimpleException): pass
 class InsufficientPrivileges(SimpleException): pass
 class S3LocationNotInServiceRegion(SimpleException): pass

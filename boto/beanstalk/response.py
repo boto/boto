@@ -1,11 +1,9 @@
-#
-# classify responses from layer1 and strict type values
-#
+"""Classify responses from layer1 and strict type values."""
 from datetime import datetime
 
 
-# for __repr__
 class BaseObject(object):
+
     def __repr__(self):
         result = self.__class__.__name__ + '{ '
         counter = 0
@@ -18,8 +16,9 @@ class BaseObject(object):
             result += self._repr_by_type(value)
         result += ' }'
         return result
+
     def _repr_by_type(self, value):
-        # everything is either a 'Response', 'list', or 'None/str/int/bool'
+        # Everything is either a 'Response', 'list', or 'None/str/int/bool'.
         result = ''
         if isinstance(value, Response):
             result += value.__repr__()
@@ -28,18 +27,18 @@ class BaseObject(object):
         else:
             result += str(value)
         return result
+
     def _repr_list(self, array):
         result = '['
         for value in array:
             result += ' ' + self._repr_by_type(value) + ','
-        # if trailing comma replace with space
+        # Check for trailing comma with a space.
         if len(result) > 1:
             result = result[:-1] + ' '
         result += ']'
         return result
 
 
-# all responses inherit from here
 class Response(BaseObject):
     def __init__(self, response):
         super(Response, self).__init__()
@@ -49,6 +48,7 @@ class Response(BaseObject):
         else:
             self.response_metadata = None
 
+
 class ResponseMetadata(BaseObject):
     def __init__(self, response):
         super(ResponseMetadata, self).__init__()
@@ -56,7 +56,6 @@ class ResponseMetadata(BaseObject):
         self.request_id = str(response['RequestId'])
 
 
-# responses consist of strings/ints/bools and these response objects (and lists of formentioned)
 class ApplicationDescription(BaseObject):
     def __init__(self, response):
         super(ApplicationDescription, self).__init__()
@@ -76,6 +75,7 @@ class ApplicationDescription(BaseObject):
                 version = str(member)
                 self.versions.append(version)
 
+
 class ApplicationVersionDescription(BaseObject):
     def __init__(self, response):
         super(ApplicationVersionDescription, self).__init__()
@@ -90,11 +90,13 @@ class ApplicationVersionDescription(BaseObject):
             self.source_bundle = None
         self.version_label = str(response['VersionLabel'])
 
+
 class AutoScalingGroup(BaseObject):
     def __init__(self, response):
         super(AutoScalingGroup, self).__init__()
 
         self.name = str(response['Name'])
+
 
 class ConfigurationOptionDescription(BaseObject):
     def __init__(self, response):
@@ -119,6 +121,7 @@ class ConfigurationOptionDescription(BaseObject):
                 self.value_options.append(value_option)
         self.value_type = str(response['ValueType'])
 
+
 class ConfigurationOptionSetting(BaseObject):
     def __init__(self, response):
         super(ConfigurationOptionSetting, self).__init__()
@@ -126,6 +129,7 @@ class ConfigurationOptionSetting(BaseObject):
         self.namespace = str(response['Namespace'])
         self.option_name = str(response['OptionName'])
         self.value = str(response['Value'])
+
 
 class ConfigurationSettingsDescription(BaseObject):
     def __init__(self, response):
@@ -144,6 +148,7 @@ class ConfigurationSettingsDescription(BaseObject):
                 self.option_settings.append(option_setting)
         self.solution_stack_name = str(response['SolutionStackName'])
         self.template_name = str(response['TemplateName'])
+
 
 class EnvironmentDescription(BaseObject):
     def __init__(self, response):
@@ -167,6 +172,7 @@ class EnvironmentDescription(BaseObject):
         self.template_name = str(response['TemplateName'])
         self.version_label = str(response['VersionLabel'])
 
+
 class EnvironmentInfoDescription(BaseObject):
     def __init__(self, response):
         EnvironmentInfoDescription(Response, self).__init__()
@@ -175,6 +181,7 @@ class EnvironmentInfoDescription(BaseObject):
         self.info_type = str(response['InfoType'])
         self.message = str(response['Message'])
         self.sample_timestamp = datetime.fromtimestamp(response['SampleTimestamp'])
+
 
 class EnvironmentResourceDescription(BaseObject):
     def __init__(self, response):
@@ -207,6 +214,7 @@ class EnvironmentResourceDescription(BaseObject):
                 trigger = Trigger(member)
                 self.triggers.append(trigger)
 
+
 class EnvironmentResourcesDescription(BaseObject):
     def __init__(self, response):
         super(EnvironmentResourcesDescription, self).__init__()
@@ -215,6 +223,7 @@ class EnvironmentResourcesDescription(BaseObject):
             self.load_balancer = LoadBalancerDescription(response['LoadBalancer'])
         else:
             self.load_balancer = None
+
 
 class EventDescription(BaseObject):
     def __init__(self, response):
@@ -229,17 +238,20 @@ class EventDescription(BaseObject):
         self.template_name = str(response['TemplateName'])
         self.version_label = str(response['VersionLabel'])
 
+
 class Instance(BaseObject):
     def __init__(self, response):
         super(Instance, self).__init__()
 
         self.id = str(response['Id'])
 
+
 class LaunchConfiguration(BaseObject):
     def __init__(self, response):
         super(LaunchConfiguration, self).__init__()
 
         self.name = str(response['Name'])
+
 
 class Listener(BaseObject):
     def __init__(self, response):
@@ -248,11 +260,13 @@ class Listener(BaseObject):
         self.port = int(response['Port']) if response['Port'] else None
         self.protocol = str(response['Protocol'])
 
+
 class LoadBalancer(BaseObject):
     def __init__(self, response):
         super(LoadBalancer, self).__init__()
 
         self.name = str(response['Name'])
+
 
 class LoadBalancerDescription(BaseObject):
     def __init__(self, response):
@@ -266,12 +280,14 @@ class LoadBalancerDescription(BaseObject):
                 self.listeners.append(listener)
         self.load_balancer_name = str(response['LoadBalancerName'])
 
+
 class OptionRestrictionRegex(BaseObject):
     def __init__(self, response):
         super(OptionRestrictionRegex, self).__init__()
 
         self.label = response['Label']
         self.pattern = response['Pattern']
+
 
 class SolutionStackDescription(BaseObject):
     def __init__(self, response):
@@ -284,6 +300,7 @@ class SolutionStackDescription(BaseObject):
                 self.permitted_file_types.append(permitted_file_type)
         self.solution_stack_name = str(response['SolutionStackName'])
 
+
 class S3Location(BaseObject):
     def __init__(self, response):
         super(S3Location, self).__init__()
@@ -291,11 +308,13 @@ class S3Location(BaseObject):
         self.s3_bucket = str(response['S3Bucket'])
         self.s3_key = str(response['S3Key'])
 
+
 class Trigger(BaseObject):
     def __init__(self, response):
         super(Trigger, self).__init__()
 
         self.name = str(response['Name'])
+
 
 class ValidationMessage(BaseObject):
     def __init__(self, response):
@@ -307,7 +326,7 @@ class ValidationMessage(BaseObject):
         self.severity = str(response['Severity'])
 
 
-# these are the response objects layer2 uses, one for each layer1 api call
+# These are the response objects layer2 uses, one for each layer1 api call.
 class CheckDNSAvailabilityResponse(Response):
     def __init__(self, response):
         response = response['CheckDNSAvailabilityResponse']
@@ -316,8 +335,12 @@ class CheckDNSAvailabilityResponse(Response):
         response = response['CheckDNSAvailabilityResult']
         self.fully_qualified_cname = str(response['FullyQualifiedCNAME'])
         self.available = bool(response['Available'])
-# our naming convension produces this class name but api names it with more capitals
+
+
+# Our naming convension produces this class name but api names it with more
+# capitals.
 class CheckDnsAvailabilityResponse(CheckDNSAvailabilityResponse): pass
+
 
 class CreateApplicationResponse(Response):
     def __init__(self, response):
@@ -330,6 +353,7 @@ class CreateApplicationResponse(Response):
         else:
             self.application = None
 
+
 class CreateApplicationVersionResponse(Response):
     def __init__(self, response):
         response = response['CreateApplicationVersionResponse']
@@ -340,6 +364,7 @@ class CreateApplicationVersionResponse(Response):
             self.application_version = ApplicationVersionDescription(response['ApplicationVersion'])
         else:
             self.application_version = None
+
 
 class CreateConfigurationTemplateResponse(Response):
     def __init__(self, response):
@@ -360,6 +385,7 @@ class CreateConfigurationTemplateResponse(Response):
                 self.option_settings.append(option_setting)
         self.solution_stack_name = str(response['SolutionStackName'])
         self.template_name = str(response['TemplateName'])
+
 
 class CreateEnvironmentResponse(Response):
     def __init__(self, response):
@@ -385,6 +411,7 @@ class CreateEnvironmentResponse(Response):
         self.template_name = str(response['TemplateName'])
         self.version_label = str(response['VersionLabel'])
 
+
 class CreateStorageLocationResponse(Response):
     def __init__(self, response):
         response = response['CreateStorageLocationResponse']
@@ -393,25 +420,30 @@ class CreateStorageLocationResponse(Response):
         response = response['CreateStorageLocationResult']
         self.s3_bucket = str(response['S3Bucket'])
 
+
 class DeleteApplicationResponse(Response):
     def __init__(self, response):
         response = response['DeleteApplicationResponse']
         super(DeleteApplicationResponse, self).__init__(response)
+
 
 class DeleteApplicationVersionResponse(Response):
     def __init__(self, response):
         response = response['DeleteApplicationVersionResponse']
         super(DeleteApplicationVersionResponse, self).__init__(response)
 
+
 class DeleteConfigurationTemplateResponse(Response):
     def __init__(self, response):
         response = response['DeleteConfigurationTemplateResponse']
         super(DeleteConfigurationTemplateResponse, self).__init__(response)
 
+
 class DeleteEnvironmentConfigurationResponse(Response):
     def __init__(self, response):
         response = response['DeleteEnvironmentConfigurationResponse']
         super(DeleteEnvironmentConfigurationResponse, self).__init__(response)
+
 
 class DescribeApplicationVersionsResponse(Response):
     def __init__(self, response):
@@ -425,6 +457,7 @@ class DescribeApplicationVersionsResponse(Response):
                 application_version = ApplicationVersionDescription(member)
                 self.application_versions.append(application_version)
 
+
 class DescribeApplicationsResponse(Response):
     def __init__(self, response):
         response = response['DescribeApplicationsResponse']
@@ -436,6 +469,7 @@ class DescribeApplicationsResponse(Response):
             for member in response['Applications']:
                 application = ApplicationDescription(member)
                 self.applications.append(application)
+
 
 class DescribeConfigurationOptionsResponse(Response):
     def __init__(self, response):
@@ -450,6 +484,7 @@ class DescribeConfigurationOptionsResponse(Response):
                 self.options.append(option)
         self.solution_stack_name = str(response['SolutionStackName'])
 
+
 class DescribeConfigurationSettingsResponse(Response):
     def __init__(self, response):
         response = response['DescribeConfigurationSettingsResponse']
@@ -462,6 +497,7 @@ class DescribeConfigurationSettingsResponse(Response):
                 configuration_setting = ConfigurationSettingsDescription(member)
                 self.configuration_settings.append(configuration_setting)
 
+
 class DescribeEnvironmentResourcesResponse(Response):
     def __init__(self, response):
         response = response['DescribeEnvironmentResourcesResponse']
@@ -472,6 +508,7 @@ class DescribeEnvironmentResourcesResponse(Response):
             self.environment_resources = EnvironmentResourceDescription(response['EnvironmentResources'])
         else:
             self.environment_resources = None
+
 
 class DescribeEnvironmentsResponse(Response):
     def __init__(self, response):
@@ -485,6 +522,7 @@ class DescribeEnvironmentsResponse(Response):
                 environment = EnvironmentDescription(member)
                 self.environments.append(environment)
 
+
 class DescribeEventsResponse(Response):
     def __init__(self, response):
         response = response['DescribeEventsResponse']
@@ -497,6 +535,7 @@ class DescribeEventsResponse(Response):
                 event = EventDescription(member)
                 self.events.append(event)
         self.next_tokent = str(response['NextToken'])
+
 
 class ListAvailableSolutionStacksResponse(Response):
     def __init__(self, response):
@@ -515,20 +554,24 @@ class ListAvailableSolutionStacksResponse(Response):
                 solution_stack = str(member)
                 self.solution_stacks.append(solution_stack)
 
+
 class RebuildEnvironmentResponse(Response):
     def __init__(self, response):
         response = response['RebuildEnvironmentResponse']
         super(RebuildEnvironmentResponse, self).__init__(response)
+
 
 class RequestEnvironmentInfoResponse(Response):
     def __init__(self, response):
         response = response['RequestEnvironmentInfoResponse']
         super(RequestEnvironmentInfoResponse, self).__init__(response)
 
+
 class RestartAppServerResponse(Response):
     def __init__(self, response):
         response = response['RestartAppServerResponse']
         super(RestartAppServerResponse, self).__init__(response)
+
 
 class RetrieveEnvironmentInfoResponse(Response):
     def __init__(self, response):
@@ -542,11 +585,15 @@ class RetrieveEnvironmentInfoResponse(Response):
                 environment_info = EnvironmentInfoDescription(member)
                 self.environment_info.append(environment_info)
 
+
 class SwapEnvironmentCNAMEsResponse(Response):
     def __init__(self, response):
         response = response['SwapEnvironmentCNAMEsResponse']
         super(SwapEnvironmentCNAMEsResponse, self).__init__(response)
+
+
 class SwapEnvironmentCnamesResponse(SwapEnvironmentCNAMEsResponse): pass
+
 
 class TerminateEnvironmentResponse(Response):
     def __init__(self, response):
@@ -571,7 +618,8 @@ class TerminateEnvironmentResponse(Response):
         self.status = str(response['Status'])
         self.template_name = str(response['TemplateName'])
         self.version_label = str(response['VersionLabel'])
-        
+
+
 class UpdateApplicationResponse(Response):
     def __init__(self, response):
         response = response['UpdateApplicationResponse']
@@ -583,6 +631,7 @@ class UpdateApplicationResponse(Response):
         else:
             self.application = None
 
+
 class UpdateApplicationVersionResponse(Response):
     def __init__(self, response):
         response = response['UpdateApplicationVersionResponse']
@@ -593,6 +642,7 @@ class UpdateApplicationVersionResponse(Response):
             self.application_version = ApplicationVersionDescription(response['ApplicationVersion'])
         else:
             self.application_version = None
+
 
 class UpdateConfigurationTemplateResponse(Response):
     def __init__(self, response):
@@ -613,6 +663,7 @@ class UpdateConfigurationTemplateResponse(Response):
                 self.option_settings.append(option_setting)
         self.solution_stack_name = str(response['SolutionStackName'])
         self.template_name = str(response['TemplateName'])
+
 
 class UpdateEnvironmentResponse(Response):
     def __init__(self, response):
@@ -637,6 +688,7 @@ class UpdateEnvironmentResponse(Response):
         self.status = str(response['Status'])
         self.template_name = str(response['TemplateName'])
         self.version_label = str(response['VersionLabel'])
+
 
 class ValidateConfigurationSettingsResponse(Response):
     def __init__(self, response):
