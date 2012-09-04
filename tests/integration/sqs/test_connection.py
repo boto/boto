@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -31,7 +31,10 @@ from boto.sqs.connection import SQSConnection
 from boto.sqs.message import MHMessage
 from boto.exception import SQSError
 
-class SQSConnectionTest (unittest.TestCase):
+
+class SQSConnectionTest(unittest.TestCase):
+
+    sqs = True
 
     def test_1_basic(self):
         print '--- running SQSConnection tests ---'
@@ -40,24 +43,24 @@ class SQSConnectionTest (unittest.TestCase):
         num_queues = 0
         for q in rs:
             num_queues += 1
-    
+
         # try illegal name
         try:
             queue = c.create_queue('bad*queue*name')
             self.fail('queue name should have been bad')
         except SQSError:
             pass
-        
+
         # now create one that should work and should be unique (i.e. a new one)
         queue_name = 'test%d' % int(time.time())
         timeout = 60
         queue = c.create_queue(queue_name, timeout)
         time.sleep(60)
-        rs  = c.get_all_queues()
+        rs = c.get_all_queues()
         i = 0
         for q in rs:
             i += 1
-        assert i == num_queues+1
+        assert i == num_queues + 1
         assert queue.count_slow() == 0
 
         # check the visibility timeout
@@ -81,7 +84,7 @@ class SQSConnectionTest (unittest.TestCase):
         time.sleep(60)
         t = queue.get_timeout()
         assert t == timeout, '%d != %d' % (t, timeout)
-    
+
         # now add a message
         message_body = 'This is a test\n'
         message = queue.new_message(message_body)
@@ -130,12 +133,12 @@ class SQSConnectionTest (unittest.TestCase):
         queue = c.create_queue(queue_name, timeout)
         queue.set_message_class(MHMessage)
         time.sleep(30)
-        
+
         # now add a couple of messages
         message = queue.new_message()
         message['foo'] = 'bar'
         queue.write(message)
-        message_body = {'fie' : 'baz', 'foo' : 'bar'}
+        message_body = {'fie': 'baz', 'foo': 'bar'}
         message = queue.new_message(body=message_body)
         queue.write(message)
         time.sleep(30)
@@ -147,4 +150,3 @@ class SQSConnectionTest (unittest.TestCase):
         c.delete_queue(queue, True)
 
         print '--- tests completed ---'
-    
