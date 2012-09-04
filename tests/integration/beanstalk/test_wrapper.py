@@ -3,7 +3,7 @@ import random
 import time
 from functools import partial
 
-from boto.beanstalk.layer2 import Layer2
+from boto.beanstalk.wrapper import Layer1Wrapper
 import boto.beanstalk.response as response
 
 
@@ -14,7 +14,7 @@ class BasicSuite(unittest.TestCase):
         self.app_version = 'version-' + self.random_id
         self.template = 'template-' + self.random_id
         self.environment = 'environment-' + self.random_id
-        self.beanstalk = Layer2()
+        self.beanstalk = Layer1Wrapper()
 
 
 class MiscSuite(BasicSuite):
@@ -129,7 +129,7 @@ class TestsWithEnvironment(unittest.TestCase):
         cls.environment = 'environment-' + cls.random_id
         cls.template = 'template-' + cls.random_id
 
-        cls.beanstalk = Layer2()
+        cls.beanstalk = Layer1Wrapper()
         cls.beanstalk.create_application(application_name=cls.app_name)
         cls.beanstalk.create_configuration_template(
             application_name=cls.app_name, template_name=cls.template,

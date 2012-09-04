@@ -1,6 +1,4 @@
-#
-# wraps layer1 api methods in order to convert layer1 dict responses to response objects
-#
+"""Wraps layer1 api methods and converts layer1 dict responses to objects."""
 from boto.beanstalk.layer1 import Layer1
 import boto.beanstalk.response
 from boto.exception import BotoServerError
@@ -13,16 +11,14 @@ def beanstalk_wrapper(func, name):
             response = func(*args, **kwargs)
         except BotoServerError, e:
             raise exception.simple(e)
-        # turn 'this_is_a_function_name' into 'ThisIsAFunctionNameResponse'
+        # Turn 'this_is_a_function_name' into 'ThisIsAFunctionNameResponse'.
         cls_name = ''.join([part.capitalize() for part in name.split('_')]) + 'Response'
         cls = getattr(boto.beanstalk.response, cls_name)
-
-        # return class instead
         return cls(response)
     return _wrapped_low_level_api
 
 
-class Layer2(object):
+class Layer1Wrapper(object):
     def __init__(self, *args, **kwargs):
         self.api = Layer1(*args, **kwargs)
 
