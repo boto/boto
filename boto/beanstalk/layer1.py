@@ -54,8 +54,7 @@ class Layer1(AWSQueryConnection):
                                     security_token)
 
     def _required_auth_capability(self):
-        # TODO: figure out what's needed here.
-        return ['ec2']
+        return ['sign-v2']
 
     def _encode_bool(self, v):
         v = bool(v)
