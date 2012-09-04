@@ -599,6 +599,23 @@ def connect_cloudsearch(aws_access_key_id=None,
                   **kwargs)
 
 
+def connect_beanstalk(aws_access_key_id=None,
+                      aws_secret_access_key=None,
+                      **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.beanstalk.layer1.Layer1`
+    :return: A connection to Amazon's Elastic Beanstalk service
+    """
+    from boto.beanstalk.layer1 import Layer1
+    return Layer1(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True):
