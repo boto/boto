@@ -83,7 +83,7 @@ class Layer1(AWSAuthConnection):
             if response.getheader('Content-Type') == 'application/json':
                 body = json.loads(response.read())
             else:
-                body = {u'Response': response.read()}
+                body = {'Response': response}
             body[u'RequestId'] = response.getheader('x-amzn-requestid')
             if response_headers:
                 for header_name, item_name in response_headers:
