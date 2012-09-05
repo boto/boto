@@ -136,7 +136,7 @@ class Vault(object):
         return writer.get_archive_id()
 
     def retrieve_archive(self, archive_name, sns_topic=None,
-                         description=None, format='JSON'):
+                         description=None):
         """
         Initiate a archive retrieval job to download the data from an
         archive. You will need to wait for the notification from
@@ -154,16 +154,11 @@ class Vault(object):
             sends notification when the job is completed and the output
             is ready for you to download.
 
-        :type format: str
-        :param format: Specify the output format.  Valid values are:
-            CSV|JSON.  Default is JSON.
-
         :rtype: :class:`boto.glacier.job.Job`
         :return: A Job object representing the retrieval job.
         """
         job_data = {'Type': 'archive-retrieval',
-                    'ArchiveId': archive_name,
-                    'Format': format}
+                    'ArchiveId': archive_name}
         if sns_topic is not None:
             job_data['SNSTopic'] = sns_topic
         if description is not None:
@@ -191,7 +186,7 @@ class Vault(object):
         :rtype: :class:`boto.glaicer.job.Job`
         :return: A Job object representing the job.
         """
-        response_data = self.layer1.describe_job(job_id)
+        response_data = self.layer1.describe_job(self.name, job_id)
         return Job(self, response_data)
 
     def list_jobs(self, completed=None, status_code=None):
