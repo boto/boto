@@ -784,10 +784,6 @@ class AWSAuthConnection(object):
             num_retries = override_num_retries
         i = 0
         connection = self.get_http_connection(request.host, self.is_secure)
-        # The original headers/params are stored so that we can restore them
-        # if credentials are refreshed.
-        original_headers = request.headers.copy()
-        original_params = request.params.copy()
         while i <= num_retries:
             # Use binary exponential backoff to desynchronize client requests
             next_sleep = random.random() * (2 ** i)
@@ -822,13 +818,6 @@ class AWSAuthConnection(object):
                     msg += 'Retrying in %3.1f seconds' % next_sleep
                     boto.log.debug(msg)
                     body = response.read()
-                elif self._credentials_expired(response):
-                    # The same request object is used so the security token and
-                    # access key params are cleared because they are no longer
-                    # valid.
-                    request.params = original_params.copy()
-                    request.headers = original_headers.copy()
-                    self._renew_credentials()
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
                     self.put_http_connection(request.host, self.is_secure,
@@ -870,25 +859,6 @@ class AWSAuthConnection(object):
         else:
             msg = 'Please report this exception as a Boto Issue!'
             raise BotoClientError(msg)
-
-    def _credentials_expired(self, response):
-        # It is possible that we could be using temporary credentials that are
-        # now expired.  We want to detect when this happens so that we can
-        # refresh the credentials.  Subclasses can override this method and
-        # determine whether or not the response indicates that the credentials
-        # are invalid.  If this method returns True, the credentials will be
-        # renewed.
-        if response.status != 403:
-            return False
-        error = BotoServerError('', '', body=response.read())
-        return error.error_code == 'ExpiredToken'
-
-    def _renew_credentials(self):
-        # By resetting the provider with a new provider, this will trigger the
-        # lookup process for finding the new set of credentials.
-        boto.log.debug("Refreshing credentials.")
-        self.provider = Provider(self._provider_type)
-        self._auth_handler.update_provider(self.provider)
 
     def build_base_http_request(self, method, path, auth_path,
                                 params=None, headers=None, data='', host=None):

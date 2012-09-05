@@ -95,16 +95,6 @@ class EC2Connection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['ec2']
 
-    def _credentials_expired(self, response):
-        if response.status != 400:
-            return False
-        error = EC2ResponseError('', '', body=response.read())
-        if error.errors is not None:
-            for code, message in error.errors:
-                if code == 'RequestExpired':
-                    return True
-        return False
-
     def get_params(self):
         """
         Returns a dictionary containing the value of of all of the keyword

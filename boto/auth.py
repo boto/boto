@@ -96,13 +96,18 @@ class HmacKeys(object):
         else:
             return 'HmacSHA1'
 
-    def sign_string(self, string_to_sign):
+    def _get_hmac(self):
         if self._hmac_256:
-            hmac = self._hmac_256.copy()
+            digestmod = sha256
         else:
-            hmac = self._hmac.copy()
-        hmac.update(string_to_sign)
-        return base64.encodestring(hmac.digest()).strip()
+            digestmod = sha
+        return hmac.new(self._provider.secret_key,
+                        digestmod=digestmod)
+
+    def sign_string(self, string_to_sign):
+        new_hmac = self._get_hmac()
+        new_hmac.update(string_to_sign)
+        return base64.encodestring(new_hmac.digest()).strip()
 
     def __getstate__(self):
         pickled_dict = copy.copy(self.__dict__)
@@ -487,7 +492,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_0')
-        hmac = self._hmac.copy()
+        hmac = self._get_hmac()
         s = params['Action'] + params['Timestamp']
         hmac.update(s)
         keys = params.keys()
@@ -510,7 +515,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
-        hmac = self._hmac.copy()
+        hmac = self._get_hmac()
         keys = params.keys()
         keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
@@ -533,12 +538,8 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
     def _calc_signature(self, params, verb, path, server_name):
         boto.log.debug('using _calc_signature_2')
         string_to_sign = '%s\n%s\n%s\n' % (verb, server_name.lower(), path)
-        if self._hmac_256:
-            hmac = self._hmac_256.copy()
-            params['SignatureMethod'] = 'HmacSHA256'
-        else:
-            hmac = self._hmac.copy()
-            params['SignatureMethod'] = 'HmacSHA1'
+        hmac = self._get_hmac()
+        params['SignatureMethod'] = self.algorithm()
         if self._provider.security_token:
             params['SecurityToken'] = self._provider.security_token
         keys = sorted(params.keys())

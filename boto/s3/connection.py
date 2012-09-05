@@ -172,12 +172,6 @@ class S3Connection(AWSAuthConnection):
         else:
             return ['s3']
 
-    def _credentials_expired(self, response):
-        if response.status != 400:
-            return False
-        error = S3ResponseError('', '', body=response.read())
-        return error.error_code == 'ExpiredToken'
-
     def __iter__(self):
         for bucket in self.get_all_buckets():
             yield bucket

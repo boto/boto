@@ -59,12 +59,6 @@ class SQSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['sqs']
 
-    def _credentials_expired(self, response):
-        if response.status != 401:
-            return False
-        error = BotoServerError('', '', body=response.read())
-        return error.error_code == 'InvalidAccessKeyId'
-
     def create_queue(self, queue_name, visibility_timeout=None):
         """
         Create an SQS Queue.
