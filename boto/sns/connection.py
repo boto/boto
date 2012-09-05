@@ -57,16 +57,6 @@ class SNSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['sns']
 
-    def _credentials_expired(self, response):
-        if response.status != 403:
-            return False
-        try:
-            parsed = json.loads(response.read())
-            return parsed['Error']['Code'] == 'ExpiredToken'
-        except Exception:
-            return False
-        return False
-
     def get_all_topics(self, next_token=None):
         """
         :type next_token: string

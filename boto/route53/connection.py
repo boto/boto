@@ -66,12 +66,6 @@ class Route53Connection(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['route53']
 
-    def _credentials_expired(self, response):
-        if response.status != 403:
-            return False
-        error = exception.DNSServerError('', '', body=response.read())
-        return error.error_code == 'InvalidClientTokenId'
-
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
