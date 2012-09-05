@@ -1,6 +1,7 @@
 # Copyright (c) 2010 Spotify AB
-# Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2011 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -28,7 +29,7 @@ service from AWS.
 from connection import EmrConnection
 from step import Step, StreamingStep, JarStep
 from bootstrap_action import BootstrapAction
-from boto.ec2.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo
 
 
 def regions():

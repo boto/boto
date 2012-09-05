@@ -1,4 +1,4 @@
-# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -45,6 +45,7 @@ def regions():
             SQSRegionInfo(name='ap-southeast-1',
                           endpoint='ap-southeast-1.queue.amazonaws.com')
             ]
+
 
 def connect_to_region(region_name, **kw_params):
     for region in regions():

@@ -22,19 +22,19 @@
 # IN THE SOFTWARE.
 
 """
-Check that all of the certs on SQS endpoints validate.
+Check that all of the certs on all service endpoints validate.
 """
 
 import unittest
-import boto.sqs
+import boto.cloudformation
 
 
-class SQSCertVerificationTest(unittest.TestCase):
+class CertVerificationTest(unittest.TestCase):
 
-    sqs = True
+    cloudformation = True
     ssl = True
 
     def test_certs(self):
-        for region in boto.sqs.regions():
+        for region in boto.cloudformation.regions():
             c = region.connect()
-            c.get_all_queues()
+            c.describe_stacks()

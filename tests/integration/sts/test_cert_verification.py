@@ -26,15 +26,15 @@ Check that all of the certs on all service endpoints validate.
 """
 
 import unittest
-import time
-import boto.ec2.autoscale
+import boto.sts
 
 
 class CertVerificationTest(unittest.TestCase):
 
-    rds = True
+    sts = True
+    ssl = True
 
     def test_certs(self):
-        for region in boto.ec2.autoscale.regions():
+        for region in boto.sts.regions():
             c = region.connect()
-            c.get_all_groups()
+            c.get_session_token()

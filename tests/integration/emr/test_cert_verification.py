@@ -26,13 +26,13 @@ Check that all of the certs on all EMR endpoints validate.
 """
 
 import unittest
-import time
 import boto.emr
 
 
 class EMRCertVerificationTest(unittest.TestCase):
 
     emr = True
+    ssl = True
 
     def test_certs(self):
         for region in boto.emr.regions():
