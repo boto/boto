@@ -154,7 +154,7 @@ class Layer1(AWSQueryConnection):
             params['SourceBundle.S3Bucket'] = s3_bucket
             params['SourceBundle.S3Key'] = s3_key
         if auto_create_application:
-            params['AutoCreateApplication'] = self.encode_bool(
+            params['AutoCreateApplication'] = self._encode_bool(
                 auto_create_application)
         return self._get_response('CreateApplicationVersion', params)
 
@@ -646,7 +646,7 @@ class Layer1(AWSQueryConnection):
             self.build_list_params(params, environment_names,
                                    'EnvironmentNames.member')
         if include_deleted:
-            params['IncludeDeleted'] = self.encode_bool(include_deleted)
+            params['IncludeDeleted'] = self._encode_bool(include_deleted)
         if included_deleted_back_to:
             params['IncludedDeletedBackTo'] = included_deleted_back_to
         return self._get_response('DescribeEnvironments', params)
@@ -1148,10 +1148,6 @@ class Layer1(AWSQueryConnection):
         if environment_name:
             params['EnvironmentName'] = environment_name
         return self._get_response('ValidateConfigurationSettings', params)
-
-    def encode_bool(self, v):
-        v = bool(v)
-        return {True: "true", False: "false"}[v]
 
     def _build_list_params(self, params, user_values, prefix, tuple_names):
         # For params such as the ConfigurationOptionSettings,
