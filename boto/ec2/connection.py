@@ -25,6 +25,7 @@
 Represents a connection to the EC2 service.
 """
 
+import re
 import base64
 import warnings
 from datetime import datetime
@@ -1535,8 +1536,19 @@ class EC2Connection(AWSQueryConnection):
             self.build_list_params(params, volume_ids, 'VolumeId')
         if filters:
             self.build_filter_params(params, filters)
-        return self.get_list('DescribeVolumes', params,
+
+        try:
+            return self.get_list('DescribeVolumes', params,
                              [('item', Volume)], verb='POST')
+	except EC2ResponseError as error:
+	
+	    # There are cases where the volume is simply not found
+	    # when using the volume_id argument. Handle these
+	    # gracefully instead of logging errors and croaking.
+	    if error.error_code == "InvalidVolume.NotFound":
+		    return ResultSet()
+	    else:
+	            raise
 
     def get_all_volume_status(self, volume_ids=None,
                               max_results=None, next_token=None,
