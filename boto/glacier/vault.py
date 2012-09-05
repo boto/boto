@@ -186,7 +186,7 @@ class Vault(object):
         :rtype: :class:`boto.glaicer.job.Job`
         :return: A Job object representing the job.
         """
-        response_data = self.layer1.describe_job(job_id)
+        response_data = self.layer1.describe_job(self.name, job_id)
         return Job(self, response_data)
 
     def list_jobs(self, completed=None, status_code=None):
