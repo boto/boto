@@ -26,6 +26,7 @@ import json
 import boto.glacier
 from boto.connection import AWSAuthConnection
 from .exceptions import UnexpectedHTTPResponseError
+from .response import GlacierResponse
 
 #boto.set_stream_logger('glacier')
 
@@ -80,15 +81,7 @@ class Layer1(AWSAuthConnection):
                                                   headers=headers,
                                                   data=data)
         if response.status in ok_responses:
-            if response.getheader('Content-Type') == 'application/json':
-                body = json.loads(response.read())
-            else:
-                body = {'Response': response}
-            body[u'RequestId'] = response.getheader('x-amzn-requestid')
-            if response_headers:
-                for header_name, item_name in response_headers:
-                    body[item_name] = response.getheader(header_name)
-            return body
+            return GlacierResponse(response, response_headers)
         else:
             # create glacier-specific exceptions
             raise UnexpectedHTTPResponseError(ok_responses, response)
