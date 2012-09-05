@@ -37,6 +37,7 @@ import sys
 import urllib
 import time
 import datetime
+import copy
 from email.utils import formatdate
 
 from boto.auth_handler import AuthHandler
@@ -102,6 +103,16 @@ class HmacKeys(object):
             hmac = self._hmac.copy()
         hmac.update(string_to_sign)
         return base64.encodestring(hmac.digest()).strip()
+
+    def __getstate__(self):
+        pickled_dict = copy.copy(self.__dict__)
+        del pickled_dict['_hmac']
+        del pickled_dict['_hmac_256']
+        return pickled_dict
+
+    def __setstate__(self, dct):
+        self.__dict__ = dct
+        self.update_provider(self._provider)
 
 
 class AnonAuthHandler(AuthHandler, HmacKeys):

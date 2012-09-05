@@ -55,6 +55,7 @@ import sys
 import time
 import urllib, urlparse
 import xml.sax
+import copy
 
 import auth
 import auth_handler
@@ -236,6 +237,15 @@ class ConnectionPool(object):
         ConnectionPool.STALE_DURATION = \
             config.getfloat('Boto', 'connection_stale_duration',
                             ConnectionPool.STALE_DURATION)
+
+    def __getstate__(self):
+        pickled_dict = copy.copy(self.__dict__)
+        pickled_dict['host_to_pool'] = {}
+        del pickled_dict['mutex']
+        return pickled_dict
+
+    def __setstate__(self, dct):
+        self.__init__()
 
     def size(self):
         """
