@@ -409,7 +409,8 @@ class AWSAuthConnection(object):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, path='/',
                  provider='aws', security_token=None,
-                 suppress_consec_slashes=True):
+                 suppress_consec_slashes=True,
+                 validate_certs=True):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -446,6 +447,10 @@ class AWSAuthConnection(object):
         :type suppress_consec_slashes: bool
         :param suppress_consec_slashes: If provided, controls whether
             consecutive slashes will be suppressed in key paths.
+
+        :type validate_certs: bool
+        :param validate_certs: Controls whether SSL certificates
+            will be validated or not.  Defaults to True.
         """
         self.suppress_consec_slashes = suppress_consec_slashes
         self.num_retries = 6
@@ -456,7 +461,8 @@ class AWSAuthConnection(object):
         # Whether or not to validate server certificates.  At some point in the
         # future, the default should be flipped to true.
         self.https_validate_certificates = config.getbool(
-                'Boto', 'https_validate_certificates', True)
+            'Boto', 'https_validate_certificates',
+            validate_certs)
         if self.https_validate_certificates and not HAVE_HTTPS_CONNECTION:
             raise BotoClientError(
                     "SSL server certificate validation is enabled in boto "
@@ -925,6 +931,7 @@ class AWSAuthConnection(object):
         boto.log.debug('closing all HTTP connections')
         self._connection = None  # compat field
 
+
 class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''
@@ -933,13 +940,15 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, path='/', security_token=None):
+                 https_connection_factory=None, path='/', security_token=None,
+                 validate_certs=True):
         AWSAuthConnection.__init__(self, host, aws_access_key_id,
                                    aws_secret_access_key,
                                    is_secure, port, proxy,
                                    proxy_port, proxy_user, proxy_pass,
                                    debug, https_connection_factory, path,
-                                   security_token=security_token)
+                                   security_token=security_token,
+                                   validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return []
