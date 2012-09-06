@@ -75,4 +75,4 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
                                body=self.job_content)
         response = self.service_connection.get_job_output(self.vault_name,
                                                          'example-job-id')
-        self.assertEqual(self.job_content, response['Response'])
+        self.assertEqual(self.job_content, response.read())
