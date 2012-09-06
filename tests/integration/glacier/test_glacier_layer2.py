@@ -37,6 +37,10 @@ class GlaicerTest (unittest.TestCase):
     def tearDown(self):
         self.vault.delete()
 
+
+    def test_vault_name(self):
+        assert self.vault.name == self.vault_name
+
     ## Once you write to a vault you can't delete it for a few hours,
     ## so this test doesn't work so well.
     # def test_upload_vault(self):
