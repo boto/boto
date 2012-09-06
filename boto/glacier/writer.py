@@ -76,61 +76,62 @@ class Writer(object):
         self.vault = vault
         self.upload_id = upload_id
         self.part_size = part_size
-        self.buffer_size = 0
-        self.uploaded_size = 0
-        self.buffer = []
-        self.vault = vault
-        self.tree_hashes = []
+        
+        self._buffer_size = 0
+        self._uploaded_size = 0
+        self._buffer = []
+        self._tree_hashes = []
+        
         self.archive_location = None
         self.closed = False
 
     def send_part(self):
-        buf = "".join(self.buffer)
+        buf = "".join(self._buffer)
         # Put back any data remaining over the part size into the
         # buffer
         if len(buf) > self.part_size:
-            self.buffer = [buf[self.part_size:]]
-            self.buffer_size = len(self.buffer[0])
+            self._buffer = [buf[self.part_size:]]
+            self._buffer_size = len(self._buffer[0])
         else:
-            self.buffer = []
-            self.buffer_size = 0
+            self._buffer = []
+            self._buffer_size = 0
         # The part we will send
         part = buf[:self.part_size]
         # Create a request and sign it
         part_tree_hash = tree_hash(chunk_hashes(part))
-        self.tree_hashes.append(part_tree_hash)
+        self._tree_hashes.append(part_tree_hash)
 
         hex_tree_hash = bytes_to_hex(part_tree_hash)
         linear_hash = hashlib.sha256(part).hexdigest()
-        content_range = (self.uploaded_size,
-                         (self.uploaded_size + len(part)) - 1)
+        content_range = (self._uploaded_size,
+                         (self._uploaded_size + len(part)) - 1)
         response = self.vault.layer1.upload_part(self.vault.name,
                                                  self.upload_id,
                                                  linear_hash,
                                                  hex_tree_hash,
                                                  content_range, part)
-        self.uploaded_size += len(part)
+        self._uploaded_size += len(part)
 
     def write(self, str):
         assert not self.closed, "Tried to write to a Writer that is already closed!"
         if str == "":
             return
-        self.buffer.append(str)
-        self.buffer_size += len(str)
-        while self.buffer_size > self.part_size:
+        self._buffer.append(str)
+        self._buffer_size += len(str)
+        while self._buffer_size > self.part_size:
             self.send_part()
 
     def close(self):
         if self.closed:
             return
-        if self.buffer_size > 0:
+        if self._buffer_size > 0:
             self.send_part()
         # Complete the multiplart glacier upload
-        hex_tree_hash = bytes_to_hex(tree_hash(self.tree_hashes))
+        hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
         response = self.vault.layer1.complete_multipart_upload(self.vault.name,
                                                                self.upload_id,
                                                                hex_tree_hash,
-                                                               self.uploaded_size)
+                                                               self._uploaded_size)
         self.archive_id = response['ArchiveId']
         self.closed = True
 
