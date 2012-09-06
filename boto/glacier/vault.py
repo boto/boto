@@ -53,6 +53,12 @@ class Vault(object):
     def __repr__(self):
         return 'Vault("%s")' % self.arn
 
+    def delete(self):
+        """
+        Delete's this vault. WARNING!
+        """
+        self.layer1.delete_vault(self.name)
+        
     def upload_archive(self, filename):
         """
         Adds an archive to a vault. For archives greater than 100MB the
@@ -67,9 +73,9 @@ class Vault(object):
         megabyte = 1024 * 1024
         if os.path.getsize(filename) > 100 * megabyte:
             return self.create_archive_from_file(filename)
-        return self.upload_archive_single_operation(filename)
+        return self._upload_archive_single_operation(filename)
 
-    def upload_archive_single_operation(self, filename):
+    def _upload_archive_single_operation(self, filename):
         """
         Adds an archive to a vault in a single operation. It's recommended for
         archives less than 100MB
@@ -135,7 +141,7 @@ class Vault(object):
         writer.close()
         return writer.get_archive_id()
 
-    def retrieve_archive(self, archive_name, sns_topic=None,
+    def retrieve_archive(self, archive_id, sns_topic=None,
                          description=None):
         """
         Initiate a archive retrieval job to download the data from an
@@ -143,8 +149,8 @@ class Vault(object):
         Amazon (via SNS) before you can actually download the data,
         this takes around 4 hours.
 
-        :type archive_name: str
-        :param archive_name: The name of the archive
+        :type archive_id: str
+        :param archive_id: The id of the archive
 
         :type description: str
         :param description: An optional description for the job.
@@ -158,7 +164,7 @@ class Vault(object):
         :return: A Job object representing the retrieval job.
         """
         job_data = {'Type': 'archive-retrieval',
-                    'ArchiveId': archive_name}
+                    'ArchiveId': archive_id}
         if sns_topic is not None:
             job_data['SNSTopic'] = sns_topic
         if description is not None:
@@ -187,6 +193,7 @@ class Vault(object):
         :return: A Job object representing the job.
         """
         response_data = self.layer1.describe_job(self.name, job_id)
+        print response_data
         return Job(self, response_data)
 
     def list_jobs(self, completed=None, status_code=None):

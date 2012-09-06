@@ -31,9 +31,19 @@ class Layer2(object):
     """
 
     def __init__(self, *args, **kwargs):
-        self.layer1 = Layer1(*args, **kwargs)
+        # Accept a passed in layer1, mainly to allow easier testing
+        if "layer1" in kwargs:
+            self.layer1 = kwargs["layer1"]
+        else:
+            self.layer1 = Layer1(*args, **kwargs)
 
     def create_vault(self, name):
+        """
+        Create a new vault.
+
+        :type name: str
+        :param name: The name of the vault
+        """
         return self.layer1.create_vault(name)
 
     def get_vault(self, name):
