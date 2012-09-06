@@ -58,7 +58,7 @@ class Vault(object):
         Delete's this vault. WARNING!
         """
         self.layer1.delete_vault(self.name)
-        
+
     def upload_archive(self, filename):
         """
         Adds an archive to a vault. For archives greater than 100MB the

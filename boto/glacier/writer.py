@@ -76,12 +76,12 @@ class Writer(object):
         self.vault = vault
         self.upload_id = upload_id
         self.part_size = part_size
-        
+
         self._buffer_size = 0
         self._uploaded_size = 0
         self._buffer = []
         self._tree_hashes = []
-        
+
         self.archive_location = None
         self.closed = False
 
