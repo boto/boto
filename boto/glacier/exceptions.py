@@ -22,6 +22,12 @@
 #
 import json
 
+
+class ZeroLengthFileError(Exception):
+    def __init__(self, filename = None):
+        if filename is not None:
+            self.filename = filename
+
 class UnexpectedHTTPResponseError(Exception):
     def __init__(self, expected_responses, response):
         self.status = response.status
