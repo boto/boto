@@ -34,7 +34,16 @@ class Layer2(object):
         self.layer1 = Layer1(*args, **kwargs)
 
     def create_vault(self, name):
-        return self.layer1.create_vault(name)
+        """Creates a vault.
+
+        :type name: str
+        :param name: The name of the vault
+
+        :rtype: :class:`boto.glacier.vault.Vault`
+        :return: A Vault object representing the vault.
+        """
+        self.layer1.create_vault(name)
+        return self.get_vault(name)
 
     def get_vault(self, name):
         """
