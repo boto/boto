@@ -22,21 +22,26 @@
 #
 import json
 
-class UnexpectedHTTPResponseError(Exception):
-    def __init__(self, expected_responses, response):
-        self.status = response.status
-        self.body = response.read()
-        self.code = None
-        try:
-            body = json.loads(self.body)
-            self.code = body["code"]
-            msg = 'Expected %s, got ' % expected_responses
-            msg += '(%d, code=%s, message=%s)' % (expected_responses,
-                                                  response.status,
-                                                  self.code,
-                                                  body["message"])
-        except:
-            msg = 'Expected %s, got (%d, %s)' % (expected_responses,
-                                                 response.status,
-                                                 self.body)
-        super(UnexpectedHTTPResponseError, self).__init__(msg)
+class GlacierResponse(dict):
+    """
+    Represents a response from Glacier layer1. It acts as a dictionary
+    containing the combined keys received via JSON in the body (if
+    supplied) and headers.
+    """
+    def __init__(self, http_response, response_headers):
+        self.http_response = http_response
+        self.status = http_response.status
+        self[u'RequestId'] = http_response.getheader('x-amzn-requestid')
+        if response_headers:
+            for header_name, item_name in response_headers:
+                self[item_name] = http_response.getheader(header_name)
+        if http_response.getheader('Content-Type') == 'application/json':
+            body = json.loads(http_response.read())
+            self.update(body)
+        size = http_response.getheader('Content-Length', None)
+        if size is not None:
+            self.size = size
+        
+    def read(self, amt=None):
+        "Reads and returns the response body, or up to the next amt bytes."
+        return self.http_response.read(amt)
