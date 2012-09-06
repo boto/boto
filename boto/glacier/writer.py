@@ -28,15 +28,17 @@ import math
 import json
 
 
-def chunk_hashes(str):
-    """
-    Break up the byte-string into 1MB chunks and return sha256 hashes
-    for each.
-    """
-    chunk = 1024 * 1024
-    chunk_count = int(math.ceil(len(str) / float(chunk)))
-    chunks = [str[i * chunk:(i + 1) * chunk] for i in range(chunk_count)]
-    return [hashlib.sha256(x).digest() for x in chunks]
+_ONE_MEGABYTE = 1024 * 1024
+
+
+def chunk_hashes(bytestring, chunk_size=_ONE_MEGABYTE):
+    chunk_count = int(math.ceil(len(bytestring) / float(chunk_size)))
+    hashes = []
+    for i in xrange(chunk_count):
+        start = i * chunk_size
+        end = (i + 1) * chunk_size
+        hashes.append(hashlib.sha256(bytestring[start:end]).digest())
+    return hashes
 
 
 def tree_hash(fo):
