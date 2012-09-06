@@ -71,6 +71,7 @@ class TestGlacierLayer2Connection(GlacierLayer2Base):
         self.layer2 = Layer2(layer1=self.mock_layer1)
                            
     def test_create_vault(self):
+        self.mock_layer1.describe_vault.return_value = FIXTURE_VAULT
         self.layer2.create_vault("My Vault")
         self.mock_layer1.create_vault.assert_called_with("My Vault")
 
