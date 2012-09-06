@@ -103,6 +103,11 @@ class CloudWatchConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint)
         self.region = region
 
+        # Ugly hack to get around both a bug in Python and a
+        # misconfigured SSL cert for the eu-west-1 endpoint
+        if self.region.name == 'eu-west-1':
+            validate_certs = False
+
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,

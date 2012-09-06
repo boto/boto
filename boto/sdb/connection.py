@@ -86,7 +86,7 @@ class SDBConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 converter=None, security_token=None):
+                 converter=None, security_token=None, validate_certs=True):
         """
         For any keywords that aren't documented, refer to the parent class,
         :py:class:`boto.connection.AWSAuthConnection`. You can avoid having
@@ -117,7 +117,8 @@ class SDBConnection(AWSQueryConnection):
                                     proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token=security_token)
+                                    security_token=security_token,
+                                    validate_certs=validate_certs)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item

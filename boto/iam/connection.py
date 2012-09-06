@@ -42,13 +42,14 @@ class IAMConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='iam.amazonaws.com',
                  debug=0, https_connection_factory=None,
-                 path='/', security_token=None):
+                 path='/', security_token=None, validate_certs=True):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory,
-                                    path, security_token)
+                                    path, security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['iam']

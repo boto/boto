@@ -155,7 +155,8 @@ class S3Connection(AWSAuthConnection):
                  host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
-                 suppress_consec_slashes=True, anon=False):
+                 suppress_consec_slashes=True, anon=False,
+                 validate_certs=None):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
@@ -164,7 +165,8 @@ class S3Connection(AWSAuthConnection):
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
                 path=path, provider=provider, security_token=security_token,
-                suppress_consec_slashes=suppress_consec_slashes)
+                suppress_consec_slashes=suppress_consec_slashes,
+                validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         if self.anon:
