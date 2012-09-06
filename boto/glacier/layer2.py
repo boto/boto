@@ -34,7 +34,35 @@ class Layer2(object):
         self.layer1 = Layer1(*args, **kwargs)
 
     def create_vault(self, name):
-        return self.layer1.create_vault(name)
+        """Creates a vault.
+
+        :type name: str
+        :param name: The name of the vault
+
+        :rtype: :class:`boto.glacier.vault.Vault`
+        :return: A Vault object representing the vault.
+        """
+        self.layer1.create_vault(name)
+        return self.get_vault(name)
+
+    def delete_vault(self, name):
+        """Delete a vault.
+
+        This operation deletes a vault. Amazon Glacier will delete a
+        vault only if there are no archives in the vault as per the
+        last inventory and there have been no writes to the vault
+        since the last inventory. If either of these conditions is not
+        satisfied, the vault deletion fails (that is, the vault is not
+        removed) and Amazon Glacier returns an error.
+
+        This operation is idempotent, you can send the same request
+        multiple times and it has no further effect after the first
+        time Amazon Glacier delete the specified vault.
+
+        :type vault_name: str
+        :param vault_name: The name of the vault to delete.
+        """
+        return self.layer1.delete_vault(name)
 
     def get_vault(self, name):
         """
