@@ -45,7 +45,6 @@ class Job(object):
         self.vault = vault
         if response_data:
             for response_name, attr_name, default in self.ResponseDataElements:
-                print response_name, attr_name
                 setattr(self, attr_name, response_data[response_name])
         else:
             for response_name, attr_name, default in self.ResponseDataElements:

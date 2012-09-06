@@ -193,7 +193,6 @@ class Vault(object):
         :return: A Job object representing the job.
         """
         response_data = self.layer1.describe_job(self.name, job_id)
-        print response_data
         return Job(self, response_data)
 
     def list_jobs(self, completed=None, status_code=None):
