@@ -307,6 +307,9 @@ class Layer1(AWSAuthConnection):
         :param request_items: A Python version of the RequestItems
             data structure defined by DynamoDB.
         """
+        # If the list is empty, return empty response
+        if not request_items:
+            return {}
         data = {'RequestItems': request_items}
         json_input = json.dumps(data)
         return self.make_request('BatchGetItem', json_input,

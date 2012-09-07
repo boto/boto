@@ -195,7 +195,9 @@ class BatchList(list):
         """
         d = {}
         for batch in self:
-            d[batch.table.name] = batch.to_dict()
+            b = batch.to_dict()
+            if b['Keys']:
+                d[batch.table.name] = b
         return d
 
 class BatchWriteList(list):
