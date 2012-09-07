@@ -250,7 +250,7 @@ class Constraint(object):
     def get_attributes(self):
         pairs = zip(self.attribute_names, self.attribute_values)
         attrs = ' '.join(
-            '%s="%d"' % (name, value)
+            '%s="%s"' % (name, value)
             for (name, value) in pairs
             if value is not None
             )
