@@ -119,11 +119,12 @@ class Snapshot(TaggedEC2Object):
         """
         Create a new EBS Volume from this Snapshot
 
-        :type size: int
-        :param size: The size of the new volume, in GiB
-
         :type zone: string or :class:`boto.ec2.zone.Zone`
         :param zone: The availability zone in which the Volume will be created.
+
+        :type size: int
+        :param size: The size of the new volume, in GiB. (optional). Defaults to
+            the size of the snapshot.
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
