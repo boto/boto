@@ -26,10 +26,12 @@ from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash
 import hashlib
 import os.path
 
+_MEGABYTE = 1024 * 1024
 
 class Vault(object):
 
-    DefaultPartSize = 4 * 1024 * 1024  # 128MB
+    DefaultPartSize = 4 * _MEGABYTE
+    SingleOperationThreshold = 100 * _MEGABYTE
 
     ResponseDataElements = (('VaultName', 'name', None),
                             ('VaultARN', 'arn', None),
@@ -70,8 +72,7 @@ class Vault(object):
         :rtype: str
         :return: The archive id of the newly created archive
         """
-        megabyte = 1024 * 1024
-        if os.path.getsize(filename) > 100 * megabyte:
+        if os.path.getsize(filename) > self.SingleOperationThreshold:
             return self.create_archive_from_file(filename)
         return self._upload_archive_single_operation(filename)
 
@@ -134,7 +135,7 @@ class Vault(object):
 
         writer = self.create_archive_writer()
         while True:
-            data = file_obj.read(1024 * 1024 * 4)
+            data = file_obj.read(self.DefaultPartSize)
             if not data:
                 break
             writer.write(data)
