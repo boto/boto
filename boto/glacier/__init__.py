@@ -54,4 +54,11 @@ def connect_to_region(region_name, **kw_params):
     for region in regions():
         if region.name == region_name:
             return region.connect(**kw_params)
+
+    # fall back to a reasonable default.
+    region_name='us-east-1'
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+
     return None
