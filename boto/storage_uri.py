@@ -193,6 +193,15 @@ class BucketStorageUri(StorageUri):
 
     delim = '/'
 
+    # The fields a user can set, other than custom metadata fields (i.e., those
+    # beginning with a provider-specific prefix like x-goog-meta).
+    _base_user_settable_fields = set(["cache-control", "content-disposition",
+                                      "content-encoding", "content-language",
+                                      "content-md5", "content-type"])
+    _underscore_base_user_settable_fields = set()
+    for f in _base_user_settable_fields:
+      _underscore_base_user_settable_fields.add(f.replace('-', '_'))
+
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=0, connection_args=None, suppress_consec_slashes=True):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
@@ -452,7 +461,7 @@ class BucketStorageUri(StorageUri):
 
     def set_def_canned_acl(self, acl_str, validate=True, headers=None,
                        version_id=None):
-        """sets or updates a bucket's default object acl to a predefined 
+        """sets or updates a bucket's default object acl to a predefined
            (canned) value"""
         if not self.object_name:
             raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
@@ -503,6 +512,12 @@ class BucketStorageUri(StorageUri):
     def get_website_config(self, validate=None, headers=None):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_website_configuration_with_xml(headers)
+
+    def set_metadata(self, metadata_plus, metadata_minus, preserve_acl, headers=None):
+        return self.get_key(False).set_remote_metadata(metadata_plus,
+                                                       metadata_minus,
+                                                       preserve_acl,
+                                                       headers=headers)
 
 
 class FileStorageUri(StorageUri):

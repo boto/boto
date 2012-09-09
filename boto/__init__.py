@@ -40,6 +40,11 @@ Version = __version__  # for backware compatibility
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
 config = Config()
 
+# The object metadata fields a user can set, other than custom metadata fields
+# (i.e., those beginning with a provider-specific prefix like x-amz-meta).
+base_user_settable_fields = set(["cache-control", "content-disposition",
+                                 "content-encoding", "content-language",
+                                 "content-md5", "content-type"])
 
 def init_logging():
     for file in BotoConfigLocations:
