@@ -23,6 +23,7 @@
 
 from .job import Job
 from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash
+from .exceptions import ZeroLengthFileError
 import hashlib
 import os.path
 
@@ -71,7 +72,10 @@ class Vault(object):
         :return: The archive id of the newly created archive
         """
         megabyte = 1024 * 1024
-        if os.path.getsize(filename) > 100 * megabyte:
+        filesize = os.path.getsize(filename)
+        if filesize == 0:
+            raise ZeroLengthFileError(filename)
+        if filesize > 100 * megabyte:
             return self.create_archive_from_file(filename)
         return self._upload_archive_single_operation(filename)
 
@@ -88,6 +92,8 @@ class Vault(object):
         archive = ''
         with open(filename, 'rb') as fd:
             archive = fd.read()
+        if archive == '':
+            raise ZeroLengthFileError(filename)
         linear_hash = hashlib.sha256(archive).hexdigest()
         hex_tree_hash  = bytes_to_hex(tree_hash(chunk_hashes(archive)))
         response = self.layer1.upload_archive(self.name, archive, linear_hash,
@@ -133,11 +139,17 @@ class Vault(object):
             file_obj = open(file, "rb")
 
         writer = self.create_archive_writer()
+        got_data = False
         while True:
             data = file_obj.read(1024 * 1024 * 4)
             if not data:
                 break
+            got_data = True
             writer.write(data)
+        if got_data == False and file is None:
+            raise ZeroLengthFileError()
+        elif got_data == False and file is not None:
+            raise ZeroLengthFileError(file)
         writer.close()
         return writer.get_archive_id()
 

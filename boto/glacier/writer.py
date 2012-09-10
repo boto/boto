@@ -26,6 +26,7 @@ import urllib
 import hashlib
 import math
 import json
+from .exceptions import ZeroLengthFileError
 
 
 def chunk_hashes(str):
@@ -126,6 +127,10 @@ class Writer(object):
             return
         if self._buffer_size > 0:
             self.send_part()
+        if self.uploaded_size == 0:
+            self.vault.layer_1.abort_multipart_upload(self.vault_name,
+                                                      self.upload_id)
+            raise ZeroLengthFileError()
         # Complete the multiplart glacier upload
         hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
         response = self.vault.layer1.complete_multipart_upload(self.vault.name,
