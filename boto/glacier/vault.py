@@ -22,7 +22,8 @@
 #
 
 from .job import Job
-from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash
+from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash, \
+        compute_hashes_from_fileobj
 import hashlib
 import os.path
 
@@ -86,13 +87,10 @@ class Vault(object):
         :rtype: str
         :return: The archive id of the newly created archive
         """
-        archive = ''
-        with open(filename, 'rb') as fd:
-            archive = fd.read()
-        linear_hash = hashlib.sha256(archive).hexdigest()
-        hex_tree_hash  = bytes_to_hex(tree_hash(chunk_hashes(archive)))
-        response = self.layer1.upload_archive(self.name, archive, linear_hash,
-                                              hex_tree_hash)
+        with open(filename, 'rb') as fileobj:
+            linear_hash, tree_hash = compute_hashes_from_fileobj(fileobj)
+        response = self.layer1.upload_archive(self.name, open(filename), linear_hash,
+                                              tree_hash)
         return response['ArchiveId']
 
     def create_archive_writer(self, part_size=DefaultPartSize,
