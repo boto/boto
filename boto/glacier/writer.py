@@ -65,6 +65,33 @@ def tree_hash(fo):
     return hashes[0]
 
 
+def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
+    """Compute the linear and tree hash from a fileobj.
+
+    This function will compute the linear/tree hash of a fileobj
+    in a single pass through the fileobj.
+
+    :param fileobj: A file like object.
+
+    :param chunk_size: The size of the chunks to use for the tree
+        hash.  This is also the buffer size used to read from
+        `fileobj`.
+
+    :rtype: tuple
+    :return: A tuple of (linear_hash, tree_hash).  Both hashes
+        are returned in hex.
+
+    """
+    linear_hash = hashlib.sha256()
+    chunks = []
+    chunk = fileobj.read(chunk_size)
+    while chunk:
+        linear_hash.update(chunk)
+        chunks.append(hashlib.sha256(chunk).digest())
+        chunk = fileobj.read(chunk_size)
+    return linear_hash.hexdigest(), bytes_to_hex(tree_hash(chunks))
+
+
 def bytes_to_hex(str):
     return ''.join(["%02x" % ord(x) for x in str]).strip()
 
