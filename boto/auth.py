@@ -350,6 +350,12 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return http_request.path
 
     def payload(self, http_request):
+        body = http_request.body
+        # If the body is a file like object, we can use
+        # boto.utils.compute_hash, which will avoid reading
+        # the entire body into memory.
+        if hasattr(body, 'seek') and hasattr(body, 'read'):
+            return boto.utils.compute_hash(body, hash_algorithm=sha256)[0]
         return sha256(http_request.body).hexdigest()
 
     def canonical_request(self, http_request):

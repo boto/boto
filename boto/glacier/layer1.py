@@ -22,13 +22,13 @@
 # IN THE SOFTWARE.
 #
 
+import os
 import json
+
 import boto.glacier
 from boto.connection import AWSAuthConnection
 from .exceptions import UnexpectedHTTPResponseError
 from .response import GlacierResponse
-
-#boto.set_stream_logger('glacier')
 
 
 class Layer1(AWSAuthConnection):
@@ -418,9 +418,15 @@ class Layer1(AWSAuthConnection):
                             ('Location', u'Location'),
                             ('x-amz-sha256-tree-hash', u'TreeHash')]
         uri = 'vaults/%s/archives' % vault_name
+        try:
+            content_length = str(len(archive))
+        except TypeError:
+            # If a file like object is provided, try to retrieve
+            # the file size via fstat.
+            content_length = str(os.fstat(archive.fileno()).st_size)
         headers = {'x-amz-content-sha256': linear_hash,
                    'x-amz-sha256-tree-hash': tree_hash,
-                   'x-amz-content-length': str(len(archive))}
+                   'Content-Length': content_length}
         if description:
             headers['x-amz-archive-description'] = description
         return self.make_request('POST', uri, headers=headers,
