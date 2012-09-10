@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -114,7 +114,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
 
         # Test a few corner cases with new_item
-        
+
         # Try supplying a hash_key as an arg and as an item in attrs
         item1_attrs[self.hash_key_name] = 'foo'
         foobar_item = table.new_item(item1_key, item1_range, item1_attrs)
@@ -319,6 +319,12 @@ class DynamoDBLayer2Test (unittest.TestCase):
         response = batch_list.submit()
         assert len(response['Responses'][table.name]['Items']) == 2
 
+        # Try an empty batch get
+        batch_list = c.new_batch_list()
+        batch_list.add_batch(table, [])
+        response = batch_list.submit()
+        assert response == {}
+
         # Try a few batch write operations
         item4_key = 'Amazon S3'
         item4_range = 'S3 Thread 2'
@@ -353,7 +359,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         batch_list.add_batch(table, deletes=[(item4_key, item4_range),
                                              (item5_key, item5_range)])
         response = batch_list.submit()
-        
+
 
         # Try queries
         results = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))
@@ -361,7 +367,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         for item in results:
             n += 1
         assert n == 2
-        
+
         # Try scans
         results = table.scan({'Tags': CONTAINS('table')})
         n = 0
@@ -380,7 +386,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         # some additional checks here would be useful
         assert ret_vals['Attributes'][self.hash_key_name] == item2_key
         assert ret_vals['Attributes'][self.range_key_name] == item2_range
-        
+
         item3.delete()
         table2_item1.delete()
         print '--- tests completed ---'
