@@ -27,7 +27,7 @@ from boto.dynamodb.item import Item
 from boto.dynamodb import exceptions as dynamodb_exceptions
 import time
 
-class TableBatchGenerator:
+class TableBatchGenerator(object):
     """
     A low-level generator used to page through results from
     batch_get_item operations.
