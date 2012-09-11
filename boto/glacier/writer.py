@@ -142,7 +142,8 @@ class Writer(object):
         self._uploaded_size += len(part)
 
     def write(self, str):
-        assert not self.closed, "Tried to write to a Writer that is already closed!"
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
         if str == "":
             return
         self._buffer.append(str)
