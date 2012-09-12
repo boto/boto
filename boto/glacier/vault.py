@@ -171,6 +171,34 @@ class Vault(object):
 
         response = self.layer1.initiate_job(self.name, job_data)
         return response['JobId']
+        
+    def retrieve_inventory(self, sns_topic=None,
+                         description=None):
+        """
+        Initiate a inventory retrieval job to list the items in the
+        vault. You will need to wait for the notification from
+        Amazon (via SNS) before you can actually download the data,
+        this takes around 4 hours.
+
+        :type description: str
+        :param description: An optional description for the job.
+
+        :type sns_topic: str
+        :param sns_topic: The Amazon SNS topic ARN where Amazon Glacier
+            sends notification when the job is completed and the output
+            is ready for you to download.
+
+        :rtype: :class:`boto.glacier.job.Job`
+        :return: A Job object representing the retrieval job.
+        """
+        job_data = {'Type': 'inventory-retrieval'}
+        if sns_topic is not None:
+            job_data['SNSTopic'] = sns_topic
+        if description is not None:
+            job_data['Description'] = description
+
+        response = self.layer1.initiate_job(self.name, job_data)
+        return response['JobId']
 
     def delete_archive(self, archive_id):
         """
