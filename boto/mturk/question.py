@@ -281,6 +281,15 @@ class RegExConstraint(Constraint):
     def __init__(self, pattern, error_text=None, flags=None):
         self.attribute_values = pattern, error_text, flags
 
+    def get_attributes(self):
+        pairs = zip(self.attribute_names, self.attribute_values)
+        attrs = ' '.join(
+            '%s="%s"' % (name, value)
+            for (name, value) in pairs
+            if value is not None
+            )
+        return attrs
+
 class NumberOfLinesSuggestion(object):
     template = '<NumberOfLinesSuggestion>%(num_lines)s</NumberOfLinesSuggestion>'
 
