@@ -27,7 +27,7 @@ from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 
-import datetime
+import time
 try:
     import simplejson as json
 except ImportError:
@@ -115,17 +115,15 @@ class Layer1(AWSAuthConnection):
                    'Content-Length': str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
-        start = datetime.datetime.now()
+        start = time.time()
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
-        end = datetime.datetime.now()
-        time = end - start
-        time = time.microseconds//1000 + time.seconds*1000
+        elapsed = (time.time() - start)*1000
         request_id = response.getheader('x-amzn-RequestId')
         boto.log.debug('RequestId: %s' % request_id)
         boto.perflog.info('%s: id=%s time=%sms',
-                          headers['X-Amz-Target'], request_id, time)
+                          headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
