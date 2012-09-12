@@ -51,11 +51,11 @@ class IAMConnection(AWSQueryConnection):
                                     path, security_token)
 
     def _required_auth_capability(self):
-        return ['iam']
-        #return ['hmac-v4']
+        #return ['iam']
+        return ['hmac-v4']
 
     def get_response(self, action, params, path='/', parent=None,
-                     verb='GET', list_marker='Set'):
+                     verb='POST', list_marker='Set'):
         """
         Utility method to handle calls to IAM and parsing of responses.
         """

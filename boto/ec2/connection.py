@@ -1374,10 +1374,10 @@ class EC2Connection(AWSQueryConnection):
         This requires one of ``public_ip`` or ``allocation_id`` depending
         on if you're associating a VPC address or a plain EC2 address.
 
-        When using an Allocation ID, make sure to pass ``None`` for ``public_ip`` 
-        as EC2 expects a single parameter and if ``public_ip`` is passed boto 
+        When using an Allocation ID, make sure to pass ``None`` for ``public_ip``
+        as EC2 expects a single parameter and if ``public_ip`` is passed boto
         will preference that instead of ``allocation_id``.
-        
+
         :type instance_id: string
         :param instance_id: The ID of the instance
 
@@ -1454,9 +1454,9 @@ class EC2Connection(AWSQueryConnection):
 
         This requires one of ``public_ip`` or ``allocation_id`` depending
         on if you're associating a VPC address or a plain EC2 address.
-        
-        When using an Allocation ID, make sure to pass ``None`` for ``public_ip`` 
-        as EC2 expects a single parameter and if ``public_ip`` is passed boto 
+
+        When using an Allocation ID, make sure to pass ``None`` for ``public_ip``
+        as EC2 expects a single parameter and if ``public_ip`` is passed boto
         will preference that instead of ``allocation_id``.
 
         :type public_ip: string
