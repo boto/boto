@@ -55,7 +55,9 @@ class NullHandler(logging.Handler):
         pass
 
 log = logging.getLogger('boto')
+perflog = logging.getLogger('boto.perf')
 log.addHandler(NullHandler())
+perflog.addHandler(NullHandler())
 init_logging()
 
 # convenience function to set logging to a particular file
