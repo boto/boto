@@ -49,6 +49,24 @@ and on Windows.  Boto requires no additional libraries or packages
 other than those that are distributed with Python.  Efforts are made
 to keep boto compatible with Python 2.5.x but no guarantees are made.
 
+************
+Installation
+************
+
+Install via `pip`_:
+
+::
+
+	$ pip install boto
+
+Install from source:
+
+::
+
+	$ git clone git://github.com/boto/boto.git
+	$ cd boto
+	$ python setup.py install
+
 **********
 ChangeLogs
 **********
@@ -102,6 +120,7 @@ Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 All rights reserved.
 
+.. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto
 .. _Online documentation: http://docs.pythonboto.org
