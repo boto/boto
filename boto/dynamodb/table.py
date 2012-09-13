@@ -50,7 +50,7 @@ class Table(object):
     :ivar schema: The Schema object associated with the table.
     """
 
-    def __init__(self, layer2, response=None):
+    def __init__(self, layer2, response):
         self.layer2 = layer2
         self._dict = {}
         self.update_from_response(response)
