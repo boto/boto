@@ -43,3 +43,30 @@ class TestGlacierLayer2(unittest.TestCase):
                          retrieved_vault.last_inventory_date)
         self.assertEqual(vault.number_of_archives,
                          retrieved_vault.number_of_archives)
+
+
+    ## Once you write to a vault you can't delete it for a few hours,
+    ## so this test doesn't work so well.
+    # def test_upload_vault_multiple_parts(self):
+    #     vault = self.layer2.create_vault(self.vault_name)
+    #     try:
+    #         writer = vault.create_archive_writer(part_size=1024*1024, description="Hello world")
+    #         # Would be nicer to write enough to splill over into a second
+    #         # part, but that takes ages!
+    #         for i in range(1200):
+    #             writer.write("X" * 1024)
+    #         writer.close()
+    #         archive_id = writer.get_archive_id()
+
+    #         job_id = vault.retrieve_archive(archive_id, description="my job")
+
+    #         # Usually at this point you;d wait for the notification via
+    #         # SNS (which takes about 5 hours)
+
+    #         job = vault.get_job(job_id)
+    #         assert job.description == "my job"
+    #         assert job.archive_size == 1024*1200
+
+    #         vault.delete_archive(archive_id)
+    #     finally:
+    #         self.layer2.delete_vault(self.vault_name)

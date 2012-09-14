@@ -26,13 +26,14 @@ try:
 except ImportError:
     import unittest
 import httplib
-
 from mock import Mock
 
 from boto.glacier.layer1 import Layer1
 from boto.glacier.layer2 import Layer2
 from boto.glacier.vault import Vault
-from boto.glacier.vault import Job
+from boto.glacier.job import Job
+from boto.glacier.response import GlacierResponse
+from boto.glacier.exceptions import HashesDoNotMatchError
 
 # Some fixture data from the Glacier docs
 FIXTURE_VAULT = {
@@ -116,6 +117,13 @@ class TestVault(GlacierLayer2Base):
         jobs = self.vault.list_jobs(False, "InProgress")
         self.mock_layer1.list_jobs.assert_called_with("examplevault", False, "InProgress")
         assert jobs[0].archive_id == "NkbByEejwEggmBz2fTHgJrg0XBoDfjP4q6iu87-TjhqG6eGoOY9Z8i1_AUyUsuhPAdTqLHy8pTl5nfCFJmDl2yEZONi5L26Omw12vcs01MNGntHEQL8MBfGlqrEXAMPLEArchiveId"
+
+class MockGlacierResponse(dict):
+    def __init__(self, body, headers):
+        self.update(headers)
+        self.body = body
+    def read(self, bytes=None):
+        return self.body
         
 class TestJob(GlacierLayer2Base):
     def setUp(self):
@@ -127,4 +135,20 @@ class TestJob(GlacierLayer2Base):
         self.mock_layer1.get_job_output.return_value = "TEST_OUTPUT"
         self.job.get_output((0,100))
         self.mock_layer1.get_job_output.assert_called_with("examplevault", "HkF9p6o7yjhFx-K3CGl6fuSm6VzW9T7esGQfco8nUXVYwS0jlb5gq1JZ55yHgt5vP54ZShjoQzQVVh7vEXAMPLEjobID", (0,100))
+        
+    def test_get_output_chunk(self):
+        response = MockGlacierResponse(
+            "A" * (1024*1024*4),
+            {"TreeHash":'381a2241f60a90202e1ded125ba7d9c98ec6d367547aea59d33c449e15ed88a9'})
+        self.mock_layer1.get_job_output.return_value = response
+        
+        data = self.job.get_output_chunk(1)
+        assert data == "A" * (1024*1024*4)
+
+    def test_get_output_chunk_bad_hash(self):
+        response = MockGlacierResponse(
+            "A" * (1024*1024*4),
+            {"TreeHash":'badhash'})
+        self.mock_layer1.get_job_output.return_value = response
+        self.assertRaises(HashesDoNotMatchError, self.job.get_output_chunk, 1)
         

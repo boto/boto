@@ -40,3 +40,7 @@ class UnexpectedHTTPResponseError(Exception):
                                                  response.status,
                                                  self.body)
         super(UnexpectedHTTPResponseError, self).__init__(msg)
+
+class HashesDoNotMatchError(Exception):
+    def __init__(self, message):
+        super(HashesDoNotMatchError, self).__init__(message)

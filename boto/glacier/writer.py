@@ -21,51 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
-import urllib
 import hashlib
-import math
-import json
 
-
-def chunk_hashes(str):
-    """
-    Break up the byte-string into 1MB chunks and return sha256 hashes
-    for each.
-    """
-    chunk = 1024 * 1024
-    chunk_count = int(math.ceil(len(str) / float(chunk)))
-    chunks = [str[i * chunk:(i + 1) * chunk] for i in range(chunk_count)]
-    return [hashlib.sha256(x).digest() for x in chunks]
-
-
-def tree_hash(fo):
-    """
-    Given a hash of each 1MB chunk (from chunk_hashes) this will hash
-    together adjacent hashes until it ends up with one big one. So a
-    tree of hashes.
-    """
-    hashes = []
-    hashes.extend(fo)
-    while len(hashes) > 1:
-        new_hashes = []
-        while True:
-            if len(hashes) > 1:
-                first = hashes.pop(0)
-                second = hashes.pop(0)
-                new_hashes.append(hashlib.sha256(first + second).digest())
-            elif len(hashes) == 1:
-                only = hashes.pop(0)
-                new_hashes.append(only)
-            else:
-                break
-        hashes.extend(new_hashes)
-    return hashes[0]
-
-
-def bytes_to_hex(str):
-    return ''.join(["%02x" % ord(x) for x in str]).strip()
-
+from .utils import chunk_hashes, tree_hash, bytes_to_hex
 
 class Writer(object):
     """
@@ -128,10 +86,8 @@ class Writer(object):
             self.send_part()
         # Complete the multiplart glacier upload
         hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
-        response = self.vault.layer1.complete_multipart_upload(self.vault.name,
-                                                               self.upload_id,
-                                                               hex_tree_hash,
-                                                               self._uploaded_size)
+        response = self.vault.layer1.complete_multipart_upload(
+            self.vault.name, self.upload_id, hex_tree_hash, self._uploaded_size)
         self.archive_id = response['ArchiveId']
         self.closed = True
 

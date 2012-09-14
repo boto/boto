@@ -23,6 +23,9 @@
 import urllib
 import json
 
+from .utils import chunk_hashes, tree_hash, bytes_to_hex
+ 
+from .exceptions import HashesDoNotMatchError, UnexpectedHTTPResponseError
 
 class Job(object):
 
@@ -53,9 +56,42 @@ class Job(object):
     def __repr__(self):
         return 'Job(%s)' % self.arn
 
+    def get_output_chunk(self, chunk_number, chunk_size=1024*1024*4):
+        """
+        This operation downloads the output of the job in chunks. You
+        should download the chunks starting from 0 and continue until
+        the you get a an empty retun.
+
+        Each chunk is downloaded in full and the hash checked before
+        it is returned. Chunk size can be specified but must be a
+        multiple of 1MB.
+
+        :type chunk_number: int
+        :param chunk_number: The number of the chunk to download,
+            starting with 0.
+            
+        :type chunk_size: int
+        :param chunk_size: Size of the chunk to download, must be a
+           multiple of 1MB.
+        """
+        try:
+            response = self.get_output((chunk_number*chunk_size, (chunk_number*(chunk_number+1))-1))
+        except UnexpectedHTTPResponseError, e:
+            if e.status == 400 and e.code == "InvalidParameterValueException":
+                # This just means that we specified a range beyond the
+                # end of the output. Return an empty string to
+                # indicate end of file.
+                return ""
+            else:
+                raise
+        data = response.read()
+        if response["TreeHash"] != bytes_to_hex(tree_hash(chunk_hashes(data))):
+            raise HashesDoNotMatchError("Hashes do not match in downloaded chunk")
+        return data
+
     def get_output(self, byte_range=None):
         """
-        This operation downloads the output of the job.  Depending on
+        This operation downloads the output of the job. Depending on
         the job type you specified when you initiated the job, the
         output will be either the content of an archive or a vault
         inventory.
@@ -69,8 +105,9 @@ class Job(object):
         downloaded is the correct data.
 
         :type byte_range: tuple
-        :param range: A tuple of integer specifying the slice (in bytes)
-            of the archive you want to receive
+        :param range: A tuple of integer specifying the slice (in
+            bytes, as an inclusive range) of the archive you want to
+            receive.
         """
         return self.vault.layer1.get_job_output(self.vault.name,
                                                 self.id,
