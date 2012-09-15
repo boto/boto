@@ -34,8 +34,8 @@ class Batch(object):
         list should be a tuple consisting of (hash_key, range_key).  If
         the schema for the table contains only a HashKey, each element
         in the list should be a scalar value of the appropriate type
-        for the table schema. NOTE: The maximum number of items that 
-        can be retrieved for a single operation is 100. Also, the 
+        for the table schema. NOTE: The maximum number of items that
+        can be retrieved for a single operation is 100. Also, the
         number of items retrieved is constrained by a 1 MB size limit.
 
     :ivar attributes_to_get: A list of attribute names.
@@ -140,8 +140,8 @@ class BatchList(list):
             list should be a tuple consisting of (hash_key, range_key).  If
             the schema for the table contains only a HashKey, each element
             in the list should be a scalar value of the appropriate type
-            for the table schema. NOTE: The maximum number of items that 
-            can be retrieved for a single operation is 100. Also, the 
+            for the table schema. NOTE: The maximum number of items that
+            can be retrieved for a single operation is 100. Also, the
             number of items retrieved is constrained by a 1 MB size limit.
 
         :type attributes_to_get: list
@@ -156,6 +156,8 @@ class BatchList(list):
         Resubmit the batch to get the next result set. The request object is
         rebuild from scratch meaning that all batch added between ``submit``
         and ``resubmit`` will be lost.
+
+        Note: This method is experimental and subject to changes in future releases
         """
         del self[:]
 
