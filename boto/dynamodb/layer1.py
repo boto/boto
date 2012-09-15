@@ -96,9 +96,6 @@ class Layer1(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port,
                                    debug=debug, security_token=security_token)
         self.throughput_exceeded_events = 0
-        self.request_id = None
-        self.instrumentation = {'times': [], 'ids': []}
-        self.do_instrumentation = False
 
     def _get_session_token(self):
         self.provider = Provider(self._provider_type)
@@ -118,16 +115,15 @@ class Layer1(AWSAuthConnection):
                    'Content-Length': str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
-        if self.do_instrumentation:
-            start = time.time()
+        start = time.time()
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
-        self.request_id = response.getheader('x-amzn-RequestId')
-        boto.log.debug('RequestId: %s' % self.request_id)
-        if self.do_instrumentation:
-            self.instrumentation['times'].append(time.time() - start)
-            self.instrumentation['ids'].append(self.request_id)
+        elapsed = (time.time() - start)*1000
+        request_id = response.getheader('x-amzn-RequestId')
+        boto.log.debug('RequestId: %s' % request_id)
+        boto.perflog.info('%s: id=%s time=%sms',
+                          headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
