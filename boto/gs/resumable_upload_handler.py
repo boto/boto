@@ -408,6 +408,13 @@ class ResumableUploadHandler(object):
                   bytes_to_go = server_end + 1
                   while bytes_to_go:
                     chunk = fp.read(min(key.BufferSize, bytes_to_go))
+                    if not chunk:
+                      raise ResumableUploadException(
+                          'Hit end of file during resumable upload md5 catchup.'
+                          ' This should not happen under\bnormal circumstances,'
+                          ' as it indicates the server has more bytes of this'
+                          ' transfer\nthan the current file size. Restarting'
+                          ' upload.', ResumableTransferDisposition.START_OVER)
                     md5sum.update(chunk)
                     bytes_to_go -= len(chunk)
 
