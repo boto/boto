@@ -176,6 +176,9 @@ class AutoScaleConnection(AWSQueryConnection):
             if as_group.load_balancers:
                 self.build_list_params(params, as_group.load_balancers,
                                        'LoadBalancerNames')
+            if as_group.tags:
+                for i, tag in enumerate(as_group.tags):
+                    tag.build_params(params, i + 1)
         return self.get_object(op, params, Request)
 
     def create_auto_scaling_group(self, as_group):
@@ -632,16 +635,21 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def put_notification_configuration(self, autoscale_group, topic, notification_types):
         """
-        Configures an Auto Scaling group to send notifications when specified events take place.
+        Configures an Auto Scaling group to send notifications when
+        specified events take place.
 
-        :type as_group: str or :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
-        :param as_group: The Auto Scaling group to put notification configuration on.
+        :type as_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param as_group: The Auto Scaling group to put notification
+            configuration on.
 
         :type topic: str
-        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple Notification Service (SNS) topic.
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple
+            Notification Service (SNS) topic.
 
         :type notification_types: list
-        :param notification_types: The type of events that will trigger the notification.
+        :param notification_types: The type of events that will trigger
+            the notification.
         """
 
         name = autoscale_group
