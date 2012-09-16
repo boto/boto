@@ -170,7 +170,7 @@ class Vault(object):
             job_data['Description'] = description
 
         response = self.layer1.initiate_job(self.name, job_data)
-        return response['JobId']
+        return self.get_job(response['JobId'])
         
     def retrieve_inventory(self, sns_topic=None,
                          description=None):
