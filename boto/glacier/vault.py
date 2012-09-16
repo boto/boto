@@ -29,6 +29,7 @@ import os.path
 
 _MEGABYTE = 1024 * 1024
 
+
 class Vault(object):
 
     DefaultPartSize = 4 * _MEGABYTE
@@ -89,8 +90,8 @@ class Vault(object):
         """
         with open(filename, 'rb') as fileobj:
             linear_hash, tree_hash = compute_hashes_from_fileobj(fileobj)
-        response = self.layer1.upload_archive(self.name, open(filename), linear_hash,
-                                              tree_hash)
+        response = self.layer1.upload_archive(self.name, open(filename),
+                                              linear_hash, tree_hash)
         return response['ArchiveId']
 
     def create_archive_writer(self, part_size=DefaultPartSize,
@@ -171,7 +172,7 @@ class Vault(object):
 
         response = self.layer1.initiate_job(self.name, job_data)
         return self.get_job(response['JobId'])
-        
+
     def retrieve_inventory(self, sns_topic=None,
                          description=None):
         """
