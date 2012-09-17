@@ -458,8 +458,10 @@ class AWSAuthConnection(object):
         if config.has_option('Boto', 'is_secure'):
             is_secure = config.getboolean('Boto', 'is_secure')
         self.is_secure = is_secure
-        # Whether or not to validate server certificates.  At some point in the
-        # future, the default should be flipped to true.
+        # Whether or not to validate server certificates.
+        # The default is now to validate certificates.  This can be
+        # overridden in the boto config file are by passing an
+        # explicit validate_certs parameter to the class constructor.
         self.https_validate_certificates = config.getbool(
             'Boto', 'https_validate_certificates',
             validate_certs)
