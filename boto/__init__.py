@@ -61,7 +61,7 @@ perflog.addHandler(NullHandler())
 init_logging()
 
 # convenience function to set logging to a particular file
-def _set_logger_handler(name, filepath, level, format_string, fh):
+def _set_logger_handler(name, level, format_string, fh):
     if not format_string:
         format_string = "%(asctime)s %(name)s [%(levelname)s]:%(message)s"
     logger = logging.getLogger(name)
@@ -73,12 +73,12 @@ def _set_logger_handler(name, filepath, level, format_string, fh):
 
 def set_file_logger(name, filepath, level=logging.INFO, format_string=None):
     fh = logging.FileHandler(filepath)
-    _set_logger_handler(name, filepath, level, format_string, fh)
+    _set_logger_handler(name, level, format_string, fh)
 
 
 def set_stream_logger(name, level=logging.DEBUG, format_string=None):
     fh = logging.StreamHandler()
-    _set_logger_handler(name, filepath, level, format_string, fh)
+    _set_logger_handler(name, level, format_string, fh)
 
 
 def connect_sqs(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
