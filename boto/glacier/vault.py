@@ -90,8 +90,9 @@ class Vault(object):
         """
         with open(filename, 'rb') as fileobj:
             linear_hash, tree_hash = compute_hashes_from_fileobj(fileobj)
-        response = self.layer1.upload_archive(self.name, open(filename),
-                                              linear_hash, tree_hash)
+            fileobj.seek(0)
+            response = self.layer1.upload_archive(self.name, fileobj,
+                                                  linear_hash, tree_hash)
         return response['ArchiveId']
 
     def create_archive_writer(self, part_size=DefaultPartSize,
