@@ -40,3 +40,7 @@ class UnexpectedHTTPResponseError(Exception):
                                                  response.status,
                                                  self.body)
         super(UnexpectedHTTPResponseError, self).__init__(msg)
+
+
+class UploadArchiveError(Exception):
+    pass
