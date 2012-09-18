@@ -123,9 +123,9 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
+            params['marker'] = marker
         return self.make_request('GET', 'vaults', params=params)
 
     def describe_vault(self, vault_name):
@@ -281,9 +281,9 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
+            params['marker'] = marker
         uri = 'vaults/%s/jobs' % vault_name
         return self.make_request('GET', uri, params=params)
 
@@ -552,9 +552,9 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
+            params['marker'] = marker
         uri = 'vaults/%s/%s/multipart-uploads' % vault_name
         return self.make_request('GET', uri, params=params)
 
@@ -584,9 +584,9 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
+            params['marker'] = marker
         uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('GET', uri, params=params)
 
