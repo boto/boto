@@ -24,6 +24,7 @@
 
 import os
 import json
+import urllib
 
 import boto.glacier
 from boto.connection import AWSAuthConnection
@@ -74,8 +75,8 @@ class Layer1(AWSAuthConnection):
         if params:
             param_list = []
             for key, value in params:
-                params_list.append('%s=%s' % (urllib.quote(key),
-                                              urllib.quote(value)))
+                param_list.append('%s=%s' % (urllib.quote(key),
+                                             urllib.quote(value)))
             uri += '?' + '&'.join(param_list)
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   headers=headers,
@@ -122,9 +123,9 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
+            params['marker'] = marker
         return self.make_request('GET', 'vaults', params=params)
 
     def describe_vault(self, vault_name):
@@ -280,9 +281,9 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
+            params['marker'] = marker
         uri = 'vaults/%s/jobs' % vault_name
         return self.make_request('GET', uri, params=params)
 
@@ -381,8 +382,6 @@ class Layer1(AWSAuthConnection):
         response = self.make_request('GET', uri, headers=headers,
                                      ok_responses=(200, 206),
                                      response_headers=response_headers)
-        # TODO not sure if we want to verify checksum in this abstraction level
-        # and do a retry?
         return response
 
     # Archives
@@ -526,7 +525,7 @@ class Layer1(AWSAuthConnection):
         :param upload_id: The unique ID associated with this upload
             operation.
         """
-        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('DELETE', uri, ok_responses=(204,))
 
     def list_multipart_uploads(self, vault_name, limit=None, marker=None):
@@ -551,10 +550,10 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
-        uri = 'vaults/%s/%s/multipart-uploads' % vault_name
+            params['marker'] = marker
+        uri = 'vaults/%s/multipart-uploads' % vault_name
         return self.make_request('GET', uri, params=params)
 
     def list_parts(self, vault_name, upload_id, limit=None, marker=None):
@@ -583,10 +582,10 @@ class Layer1(AWSAuthConnection):
         """
         params = {}
         if limit:
-            params['limit': limit]
+            params['limit'] = limit
         if marker:
-            params['marker': marker]
-        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+            params['marker'] = marker
+        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('GET', uri, params=params)
 
     def upload_part(self, vault_name, upload_id, linear_hash,
