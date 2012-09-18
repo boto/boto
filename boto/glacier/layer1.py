@@ -76,7 +76,7 @@ class Layer1(AWSAuthConnection):
             param_list = []
             for key, value in params:
                 param_list.append('%s=%s' % (urllib.quote(key),
-                                              urllib.quote(value)))
+                                             urllib.quote(value)))
             uri += '?' + '&'.join(param_list)
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   headers=headers,
@@ -382,8 +382,6 @@ class Layer1(AWSAuthConnection):
         response = self.make_request('GET', uri, headers=headers,
                                      ok_responses=(200, 206),
                                      response_headers=response_headers)
-        # TODO not sure if we want to verify checksum in this abstraction level
-        # and do a retry?
         return response
 
     # Archives
