@@ -24,6 +24,7 @@
 
 import os
 import json
+import urllib
 
 import boto.glacier
 from boto.connection import AWSAuthConnection
