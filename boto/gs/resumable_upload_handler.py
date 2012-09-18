@@ -205,7 +205,13 @@ class ResumableUploadHandler(object):
         """
         resp = self._query_server_state(conn, file_length)
         if resp.status == 200:
-            return (0, file_length)  # Completed upload.
+            # To handle the boundary condition where the server has the complete
+            # file, we return (server_start, file_length-1). That way the
+            # calling code can always simply read up through server_end. (If we
+            # didn't handle this boundary condition here, the caller would have
+            # to check whether server_end == file_length and read one fewer byte
+            # in that case.)
+            return (0, file_length - 1)  # Completed upload.
         if resp.status != 308:
             # This means the server didn't have any state for the given
             # upload ID, which can happen (for example) if the caller saved
@@ -327,9 +333,13 @@ class ResumableUploadHandler(object):
         # 'bytes 0-0/1' would actually mean you're sending a 1-byte file).
         put_headers = {}
         if file_length:
-            range_header = self._build_content_range_header(
-                '%d-%d' % (total_bytes_uploaded, file_length - 1),
-                file_length)
+            if total_bytes_uploaded == file_length:
+                range_header = self._build_content_range_header(
+                    '*', file_length)
+            else:
+                range_header = self._build_content_range_header(
+                    '%d-%d' % (total_bytes_uploaded, file_length - 1),
+                    file_length)
             put_headers['Content-Range'] = range_header
         # Set Content-Length to the total bytes we'll send with this PUT.
         put_headers['Content-Length'] = str(file_length - total_bytes_uploaded)
@@ -405,18 +415,21 @@ class ResumableUploadHandler(object):
                   # uploaded to ensure we get a complete hash in the end.
                   print 'Catching up md5 for resumed upload'
                   fp.seek(0)
+                  # Read local file's bytes through position server has. For
+                  # example, if server has (0, 3) we want to read 3-0+1=4 bytes.
                   bytes_to_go = server_end + 1
                   while bytes_to_go:
-                    chunk = fp.read(min(key.BufferSize, bytes_to_go))
-                    if not chunk:
-                      raise ResumableUploadException(
-                          'Hit end of file during resumable upload md5 catchup.'
-                          ' This should not happen under\bnormal circumstances,'
-                          ' as it indicates the server has more bytes of this'
-                          ' transfer\nthan the current file size. Restarting'
-                          ' upload.', ResumableTransferDisposition.START_OVER)
-                    md5sum.update(chunk)
-                    bytes_to_go -= len(chunk)
+                      chunk = fp.read(min(key.BufferSize, bytes_to_go))
+                      if not chunk:
+                          raise ResumableUploadException(
+                              'Hit end of file during resumable upload md5 '
+                              'catchup. This should not happen under\n'
+                              'normal circumstances, as it indicates the '
+                              'server has more bytes of this transfer\nthan'
+                              ' the current file size. Restarting upload.',
+                              ResumableTransferDisposition.START_OVER)
+                      md5sum.update(chunk)
+                      bytes_to_go -= len(chunk)
 
                 if conn.debug >= 1:
                     print 'Resuming transfer.'
@@ -433,17 +446,7 @@ class ResumableUploadHandler(object):
         if self.upload_start_point is None:
             self.upload_start_point = server_end
 
-        if server_end == file_length:
-            # Boundary condition: complete file was already uploaded (e.g.,
-            # user interrupted a previous upload attempt after the upload
-            # completed but before the gsutil tracker file was deleted). Set
-            # total_bytes_uploaded to server_end so we'll attempt to upload
-            # no more bytes but will still make final HTTP request and get
-            # back the response (which contains the etag we need to compare
-            # at the end).
-            total_bytes_uploaded = server_end
-        else:
-            total_bytes_uploaded = server_end + 1
+        total_bytes_uploaded = server_end + 1
         fp.seek(total_bytes_uploaded)
         conn = key.bucket.connection
 
