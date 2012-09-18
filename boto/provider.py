@@ -217,7 +217,7 @@ class Provider(object):
         else:
             # The credentials should be refreshed if they're going to expire
             # in less than 5 minutes.
-            delta = self._credential_expiry_time - datetime.now()
+            delta = self._credential_expiry_time - datetime.utcnow()
             # python2.6 does not have timedelta.total_seconds() so we have
             # to calculate this ourselves.  This is straight from the
             # datetime docs.
