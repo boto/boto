@@ -75,7 +75,7 @@ class Layer1(AWSAuthConnection):
         if params:
             param_list = []
             for key, value in params:
-                params_list.append('%s=%s' % (urllib.quote(key),
+                param_list.append('%s=%s' % (urllib.quote(key),
                                               urllib.quote(value)))
             uri += '?' + '&'.join(param_list)
         response = AWSAuthConnection.make_request(self, verb, uri,
