@@ -22,9 +22,8 @@
 #
 
 from .job import Job
-from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash, \
-        compute_hashes_from_fileobj
-import hashlib
+from .writer import Writer, compute_hashes_from_fileobj
+from .concurrent import ConcurrentUploader
 import os.path
 
 _MEGABYTE = 1024 * 1024
@@ -116,13 +115,13 @@ class Vault(object):
                                                          description)
         return Writer(self, response['UploadId'], part_size=part_size)
 
-    def create_archive_from_file(self, file=None, file_obj=None):
+    def create_archive_from_file(self, filename=None, file_obj=None):
         """
         Create a new archive and upload the data from the given file
         or file-like object.
 
-        :type file: str
-        :param file: A filename to upload
+        :type filename: str
+        :param filename: A filename to upload
 
         :type file_obj: file
         :param file_obj: A file-like object to upload
@@ -131,7 +130,7 @@ class Vault(object):
         :return: The archive id of the newly created archive
         """
         if not file_obj:
-            file_obj = open(file, "rb")
+            file_obj = open(filename, "rb")
 
         writer = self.create_archive_writer()
         while True:
@@ -141,6 +140,30 @@ class Vault(object):
             writer.write(data)
         writer.close()
         return writer.get_archive_id()
+
+    def concurrent_create_archive_from_file(self, filename):
+        """
+        Create a new archive from a file and upload the given
+        file.
+
+        This is a convenience method around the
+        :class:`boto.glacier.concurrent.ConcurrentUploader`
+        class.  This method will perform a multipart upload
+        and upload the parts of the file concurrently.
+
+        :type filename: str
+        :param filename: A filename to upload
+
+        :raises: `boto.glacier.exception.UploadArchiveError` is an error
+            occurs during the upload process.
+
+        :rtype: str
+        :return: The archive id of the newly created archive
+
+        """
+        uploader = ConcurrentUploader(self.layer1, self.name)
+        archive_id = uploader.upload(filename)
+        return archive_id
 
     def retrieve_archive(self, archive_id, sns_topic=None,
                          description=None):
@@ -175,7 +198,7 @@ class Vault(object):
         return self.get_job(response['JobId'])
 
     def retrieve_inventory(self, sns_topic=None,
-                         description=None):
+                           description=None):
         """
         Initiate a inventory retrieval job to list the items in the
         vault. You will need to wait for the notification from
