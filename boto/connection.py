@@ -890,7 +890,12 @@ class AWSAuthConnection(object):
         """Makes a request to the server, with stock multiple-retry logic."""
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     {}, headers, data, host)
-        return self._mexe(http_request, sender, override_num_retries)
+        start = time.time()
+        res = self._mexe(http_request, sender, override_num_retries)
+        elapsed = (time.time() - start)*1000
+        boto.perflog.info('%s %s:%s sender=%s time=%sms',
+                          method, host or self.host, path, sender, int(elapsed))
+        return res
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,
@@ -929,7 +934,13 @@ class AWSQueryConnection(AWSAuthConnection):
             http_request.params['Action'] = action
         if self.APIVersion:
             http_request.params['Version'] = self.APIVersion
-        return self._mexe(http_request)
+
+        start = time.time()
+        res = self._mexe(http_request)
+        elapsed = (time.time() - start)*1000
+        boto.perflog.info('%s %s %s:%s time=%sms',
+            action, verb, self.host, path, int(elapsed))
+        return res
 
     def build_list_params(self, params, items, label):
         if isinstance(items, str):
