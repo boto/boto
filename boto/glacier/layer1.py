@@ -525,7 +525,7 @@ class Layer1(AWSAuthConnection):
         :param upload_id: The unique ID associated with this upload
             operation.
         """
-        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('DELETE', uri, ok_responses=(204,))
 
     def list_multipart_uploads(self, vault_name, limit=None, marker=None):
@@ -553,7 +553,7 @@ class Layer1(AWSAuthConnection):
             params['limit'] = limit
         if marker:
             params['marker'] = marker
-        uri = 'vaults/%s/%s/multipart-uploads' % vault_name
+        uri = 'vaults/%s/multipart-uploads' % vault_name
         return self.make_request('GET', uri, params=params)
 
     def list_parts(self, vault_name, upload_id, limit=None, marker=None):
@@ -585,7 +585,7 @@ class Layer1(AWSAuthConnection):
             params['limit'] = limit
         if marker:
             params['marker'] = marker
-        uri = 'vaults/%s/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
         return self.make_request('GET', uri, params=params)
 
     def upload_part(self, vault_name, upload_id, linear_hash,
