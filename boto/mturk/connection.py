@@ -173,8 +173,8 @@ class MTurkConnection(AWSQueryConnection):
             question_param = question
         elif isinstance(question, ExternalQuestion):
             question_param = question
-		elif isinstance(question, HTMLQuestion):
-			question_param = question
+        elif isinstance(question, HTMLQuestion):
+            question_param = question
         
         # Handle basic required arguments and set up params dict
         params = {'Question': question_param.get_as_xml(),
