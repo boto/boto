@@ -33,6 +33,9 @@ class Stack(object):
         elif name == "Tags":
             self.tags = Tag()
             return self.tags
+        elif name == 'NotificationARNs':
+            self.notification_arns = ResultSet([('member', NotificationARN)])
+            return self.notification_arns
         else:
             return None
 
@@ -43,8 +46,6 @@ class Stack(object):
             self.description = value
         elif name == "DisableRollback":
             self.disable_rollback = bool(value)
-        elif name == "NotificationARNs":
-            self.notification_arns = value
         elif name == 'StackId':
             self.stack_id = value
         elif name == 'StackName':
@@ -210,6 +211,21 @@ class Tag(dict):
             self[self._current_key] = value
         else:
             setattr(self, name, value)
+
+
+class NotificationARN(object):
+    def __init__(self, connection=None):
+        self.connection = None
+        self.value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        self.value = value
+
+    def __repr__(self):
+        return "NotificationARN:\"%s\"" % (self.value)
 
 
 class StackResource(object):
