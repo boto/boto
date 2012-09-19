@@ -22,6 +22,7 @@
 #
 import json
 
+
 class UnexpectedHTTPResponseError(Exception):
     def __init__(self, expected_responses, response):
         self.status = response.status
@@ -31,11 +32,10 @@ class UnexpectedHTTPResponseError(Exception):
             body = json.loads(self.body)
             self.code = body["code"]
             msg = 'Expected %s, got ' % expected_responses
-            msg += '(%d, code=%s, message=%s)' % (expected_responses,
-                                                  response.status,
+            msg += '(%d, code=%s, message=%s)' % (response.status,
                                                   self.code,
                                                   body["message"])
-        except:
+        except Exception:
             msg = 'Expected %s, got (%d, %s)' % (expected_responses,
                                                  response.status,
                                                  self.body)
@@ -43,4 +43,12 @@ class UnexpectedHTTPResponseError(Exception):
 
 
 class UploadArchiveError(Exception):
+    pass
+
+
+class DownloadArchiveError(Exception):
+    pass
+
+
+class TreeHashDoesNotMatchError(DownloadArchiveError):
     pass
