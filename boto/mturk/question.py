@@ -129,7 +129,7 @@ class Application(object):
 
 class HTMLQuestion(ValidatingXML):
     schema_url = 'http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd'
-    template = '<HTMLQuestion xmlns=\"%(schema_url)s\"><HTMLContent><![CDATA[<!DOCTYPE html>%(html_form)s]]></HTMLContent><FrameHeight>%(frame_height)s</FrameHeight></HTMLQuestion>'
+    template = '<HTMLQuestion xmlns=\"%(schema_url)s\"><HTMLContent><![CDATA[<!DOCTYPE html>%%(html_form)s]]></HTMLContent><FrameHeight>%%(frame_height)s</FrameHeight></HTMLQuestion>' % vars()
 
     def __init__(self, html_form, frame_height):
         self.html_form = html_form
