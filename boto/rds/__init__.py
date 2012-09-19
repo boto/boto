@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2012 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -39,7 +39,7 @@ def regions():
     :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
     """
     return [RDSRegionInfo(name='us-east-1',
-                          endpoint='rds.us-east-1.amazonaws.com'),
+                          endpoint='rds.amazonaws.com'),
             RDSRegionInfo(name='eu-west-1',
                           endpoint='rds.eu-west-1.amazonaws.com'),
             RDSRegionInfo(name='us-west-1',
@@ -87,7 +87,7 @@ class RDSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         if not region:
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -98,7 +98,8 @@ class RDSConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token)
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['rds']
@@ -138,17 +139,17 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBInstances', params,
                              [('DBInstance', DBInstance)])
 
-    def create_dbinstance(self, 
-                          id, 
-                          allocated_storage, 
+    def create_dbinstance(self,
+                          id,
+                          allocated_storage,
                           instance_class,
-                          master_username, 
-                          master_password, 
+                          master_username,
+                          master_password,
                           port=3306,
-                          engine='MySQL5.1', 
-                          db_name=None, 
+                          engine='MySQL5.1',
+                          db_name=None,
                           param_group=None,
-                          security_groups=None, 
+                          security_groups=None,
                           availability_zone=None,
                           preferred_maintenance_window=None,
                           backup_retention_period=None,
@@ -222,7 +223,7 @@ class RDSConnection(AWSQueryConnection):
 
         :type master_username: str
         :param master_username: Name of master user for the DBInstance.
-                                
+
                                 * MySQL must be;
                                   - 1--16 alphanumeric characters
                                   - first character must be a letter
@@ -249,7 +250,7 @@ class RDSConnection(AWSQueryConnection):
 
         :type port: int
         :param port: Port number on which database accepts connections.
-                     Valid values [1115-65535].  
+                     Valid values [1115-65535].
 
                      * MySQL defaults to 3306
 
@@ -266,7 +267,7 @@ class RDSConnection(AWSQueryConnection):
                           be a reserved MySQL word.
 
                         * Oracle:
-                          The Oracle System ID (SID) of the created DB instances. 
+                          The Oracle System ID (SID) of the created DB instances.
                           Default is ORCL. Cannot be longer than 8 characters.
 
                         * SQL Server:
@@ -305,8 +306,8 @@ class RDSConnection(AWSQueryConnection):
         :param multi_az: If True, specifies the DB Instance will be
                          deployed in multiple availability zones.
 
-                         For Microsoft SQL Server, must be set to false. You cannot set 
-                         the AvailabilityZone parameter if the MultiAZ parameter is 
+                         For Microsoft SQL Server, must be set to false. You cannot set
+                         the AvailabilityZone parameter if the MultiAZ parameter is
                          set to true.
 
         :type engine_version: str
@@ -325,12 +326,12 @@ class RDSConnection(AWSQueryConnection):
                                            during the maintenance window.
                                            Default is True.
         :type character_set_name: str
-        :param character_set_name: For supported engines, indicates that the DB Instance 
+        :param character_set_name: For supported engines, indicates that the DB Instance
                                    should be associated with the specified CharacterSet.
-                          
+
         :type db_subnet_group_name: str
         :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
-                                     If there is no DB Subnet Group, then it is a non-VPC DB 
+                                     If there is no DB Subnet Group, then it is a non-VPC DB
                                      instance.
 
         :type license_model: str
@@ -344,7 +345,7 @@ class RDSConnection(AWSQueryConnection):
                               All license types are not supported on all engines.
 
         :type option_group_name: str
-        :param option_group_name: Indicates that the DB Instance should be associated 
+        :param option_group_name: Indicates that the DB Instance should be associated
                                   with the specified option group.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
@@ -989,24 +990,24 @@ class RDSConnection(AWSQueryConnection):
                                            auto_minor_version_upgrade=None):
         """
         Create a new DBInstance from a DB snapshot.
-    
+
         :type identifier: string
         :param identifier: The identifier for the DBSnapshot
-    
+
         :type instance_id: string
         :param instance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
-    
+
         :type instance_class: str
         :param instance_class: The compute and memory capacity of the
                                DBInstance.  Valid values are:
                                db.m1.small | db.m1.large | db.m1.xlarge |
                                db.m2.2xlarge | db.m2.4xlarge
-    
+
         :type port: int
         :param port: Port number on which database accepts connections.
                      Valid values [1115-65535].  Defaults to 3306.
-    
+
         :type availability_zone: str
         :param availability_zone: Name of the availability zone to place
                                   DBInstance into.
@@ -1022,7 +1023,7 @@ class RDSConnection(AWSQueryConnection):
                                            automatically to the Read Replica
                                            during the maintenance window.
                                            Default is the API default.
-    
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """

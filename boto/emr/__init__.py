@@ -1,4 +1,7 @@
 # Copyright (c) 2010 Spotify AB
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -26,5 +29,42 @@ service from AWS.
 from connection import EmrConnection
 from step import Step, StreamingStep, JarStep
 from bootstrap_action import BootstrapAction
+from boto.regioninfo import RegionInfo
 
 
+def regions():
+    """
+    Get all available regions for the Amazon Elastic MapReduce service.
+
+    :rtype: list
+    :return: A list of :class:`boto.regioninfo.RegionInfo`
+    """
+    return [RegionInfo(name='us-east-1',
+                       endpoint='elasticmapreduce.us-east-1.amazonaws.com',
+                       connection_cls=EmrConnection),
+            RegionInfo(name='us-west-1',
+                       endpoint='us-west-1.elasticmapreduce.amazonaws.com',
+                       connection_cls=EmrConnection),
+            RegionInfo(name='us-west-2',
+                       endpoint='us-west-2.elasticmapreduce.amazonaws.com',
+                       connection_cls=EmrConnection),
+            RegionInfo(name='ap-northeast-1',
+                       endpoint='ap-northeast-1.elasticmapreduce.amazonaws.com',
+                       connection_cls=EmrConnection),
+            RegionInfo(name='ap-southeast-1',
+                       endpoint='ap-southeast-1.elasticmapreduce.amazonaws.com',
+                       connection_cls=EmrConnection),
+            RegionInfo(name='eu-west-1',
+                       endpoint='eu-west-1.elasticmapreduce.amazonaws.com',
+                       connection_cls=EmrConnection),
+            RegionInfo(name='sa-east-1',
+                       endpoint='sa-east-1.elasticmapreduce.amazonaws.com',
+                       connection_cls=EmrConnection),
+            ]
+
+
+def connect_to_region(region_name, **kw_params):
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None

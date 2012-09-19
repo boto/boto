@@ -43,7 +43,7 @@ class SESConnection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -53,7 +53,8 @@ class SESConnection(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port,
                                    proxy_user, proxy_pass, debug,
                                    https_connection_factory, path,
-                                   security_token=security_token)
+                                   security_token=security_token,
+                                   validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['ses']

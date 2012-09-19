@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # Copyright (c) 2010 Google
 # Copyright (c) 2008 rPath, Inc.
 # Copyright (c) 2009 The Echo Nest Corporation
@@ -53,7 +54,8 @@ import re
 import socket
 import sys
 import time
-import urllib, urlparse
+import urllib
+import urlparse
 import xml.sax
 import copy
 
@@ -88,10 +90,11 @@ except ImportError:
 ON_APP_ENGINE = all(key in os.environ for key in (
     'USER_IS_ADMIN', 'CURRENT_VERSION_ID', 'APPLICATION_ID'))
 
-PORTS_BY_SECURITY = { True: 443, False: 80 }
+PORTS_BY_SECURITY = {True: 443,
+                     False: 80}
 
-DEFAULT_CA_CERTS_FILE = os.path.join(
-        os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
+DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
+
 
 class HostConnectionPool(object):
 
@@ -171,7 +174,7 @@ class HostConnectionPool(object):
         state we care about isn't available in any public methods.
         """
         if ON_APP_ENGINE:
-            # Google App Engine implementation of HTTPConnection doesn't contain
+            # Google AppEngine implementation of HTTPConnection doesn't contain
             # _HTTPConnection__response attribute. Moreover, it's not possible
             # to determine if given connection is ready. Reusing connections
             # simply doesn't make sense with App Engine urlfetch service.
@@ -197,6 +200,7 @@ class HostConnectionPool(object):
         (_conn, return_time) = pair
         now = time.time()
         return return_time + ConnectionPool.STALE_DURATION < now
+
 
 class ConnectionPool(object):
 
@@ -298,6 +302,7 @@ class ConnectionPool(object):
                     del self.host_to_pool[host]
                 self.last_clean_time = now
 
+
 class HTTPRequest(object):
 
     def __init__(self, method, protocol, host, port, path, auth_path,
@@ -315,26 +320,26 @@ class HTTPRequest(object):
 
         :type port: int
         :param port: port on which the request is being sent. Zero means unset,
-                     in which case default port will be chosen.
+            in which case default port will be chosen.
 
         :type path: string
         :param path: URL path that is being accessed.
 
         :type auth_path: string
         :param path: The part of the URL path used when creating the
-                     authentication string.
+            authentication string.
 
         :type params: dict
-        :param params: HTTP url query parameters, with key as name of the param,
-                       and value as value of param.
+        :param params: HTTP url query parameters, with key as name of
+            the param, and value as value of param.
 
         :type headers: dict
         :param headers: HTTP headers, with key as name of the header and value
-                        as value of header.
+            as value of header.
 
         :type body: string
         :param body: Body of the HTTP request. If not present, will be None or
-                     empty string ('').
+            empty string ('').
         """
         self.method = method
         self.protocol = protocol
@@ -408,12 +413,14 @@ class HTTPResponse(httplib.HTTPResponse):
 
 
 class AWSAuthConnection(object):
-    def __init__(self, host, aws_access_key_id=None, aws_secret_access_key=None,
+    def __init__(self, host, aws_access_key_id=None,
+                 aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, path='/',
                  provider='aws', security_token=None,
-                 suppress_consec_slashes=True):
+                 suppress_consec_slashes=True,
+                 validate_certs=True):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -430,9 +437,8 @@ class AWSAuthConnection(object):
 
         :type https_connection_factory: list or tuple
         :param https_connection_factory: A pair of an HTTP connection
-                                         factory and the exceptions to catch.
-                                         The factory should have a similar
-                                         interface to L{httplib.HTTPSConnection}.
+            factory and the exceptions to catch.  The factory should have
+            a similar interface to L{httplib.HTTPSConnection}.
 
         :param str proxy: Address/hostname for a proxy server
 
@@ -451,6 +457,10 @@ class AWSAuthConnection(object):
         :type suppress_consec_slashes: bool
         :param suppress_consec_slashes: If provided, controls whether
             consecutive slashes will be suppressed in key paths.
+
+        :type validate_certs: bool
+        :param validate_certs: Controls whether SSL certificates
+            will be validated or not.  Defaults to True.
         """
         self.suppress_consec_slashes = suppress_consec_slashes
         self.num_retries = 6
@@ -458,10 +468,13 @@ class AWSAuthConnection(object):
         if config.has_option('Boto', 'is_secure'):
             is_secure = config.getboolean('Boto', 'is_secure')
         self.is_secure = is_secure
-        # Whether or not to validate server certificates.  At some point in the
-        # future, the default should be flipped to true.
+        # Whether or not to validate server certificates.
+        # The default is now to validate certificates.  This can be
+        # overridden in the boto config file are by passing an
+        # explicit validate_certs parameter to the class constructor.
         self.https_validate_certificates = config.getbool(
-                'Boto', 'https_validate_certificates', False)
+            'Boto', 'https_validate_certificates',
+            validate_certs)
         if self.https_validate_certificates and not HAVE_HTTPS_CONNECTION:
             raise BotoClientError(
                     "SSL server certificate validation is enabled in boto "
@@ -717,7 +730,8 @@ class AWSAuthConnection(object):
             # been generated by the socket library
             raise socket.error(-71,
                                "Error talking to HTTP proxy %s:%s: %s (%s)" %
-                               (self.proxy, self.proxy_port, resp.status, resp.reason))
+                               (self.proxy, self.proxy_port,
+                                resp.status, resp.reason))
 
         # We can safely close the response, it duped the original socket
         resp.close()
@@ -899,6 +913,7 @@ class AWSAuthConnection(object):
         boto.log.debug('closing all HTTP connections')
         self._connection = None  # compat field
 
+
 class AWSQueryConnection(AWSAuthConnection):
 
     APIVersion = ''
@@ -907,13 +922,15 @@ class AWSQueryConnection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
-                 https_connection_factory=None, path='/', security_token=None):
+                 https_connection_factory=None, path='/', security_token=None,
+                 validate_certs=True):
         AWSAuthConnection.__init__(self, host, aws_access_key_id,
                                    aws_secret_access_key,
                                    is_secure, port, proxy,
                                    proxy_port, proxy_user, proxy_pass,
                                    debug, https_connection_factory, path,
-                                   security_token=security_token)
+                                   security_token=security_token,
+                                   validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return []

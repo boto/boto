@@ -91,7 +91,7 @@ class CloudWatchConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
@@ -103,13 +103,19 @@ class CloudWatchConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint)
         self.region = region
 
+        # Ugly hack to get around both a bug in Python and a
+        # misconfigured SSL cert for the eu-west-1 endpoint
+        if self.region.name == 'eu-west-1':
+            validate_certs = False
+
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token)
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['ec2']
