@@ -36,13 +36,23 @@ class AWSMockServiceTestCase(unittest.TestCase):
         self.actual_request = request
         return self.original_mexe(request, *args, **kwargs)
 
-    def create_response(self, status_code, reason='', body=None):
+    def create_response(self, status_code, reason='', header=[], body=None):
         if body is None:
             body = self.default_body()
         response = Mock(spec=httplib.HTTPResponse)
         response.status = status_code
         response.read.return_value = body
         response.reason = reason
+
+        response.getheaders.return_value = header
+        def overwrite_header(arg, default=None):
+            header_dict = dict(header)
+            if header_dict.has_key(arg):
+                return header_dict[arg]
+            else:
+                return default
+        response.getheader.side_effect = overwrite_header
+        
         return response
 
     def assert_request_parameters(self, params, ignore_params_values=None):
@@ -57,8 +67,8 @@ class AWSMockServiceTestCase(unittest.TestCase):
                 del request_params[param]
         self.assertDictEqual(request_params, params)
 
-    def set_http_response(self, status_code, reason='', body=None):
-        http_response = self.create_response(status_code, reason, body)
+    def set_http_response(self, status_code, reason='', header=[], body=None):
+        http_response = self.create_response(status_code, reason, header, body)
         self.https_connection.getresponse.return_value = http_response
 
     def default_body(self):

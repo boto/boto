@@ -850,14 +850,18 @@ def compute_md5(fp, buf_size=8192, size=None):
              plain digest as the second element and the data size as
              the third element.
     """
-    m = md5()
+    return compute_hash(fp, buf_size, size, hash_algorithm=md5)
+
+
+def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
+    hash_obj = hash_algorithm()
     spos = fp.tell()
     if size and size < buf_size:
         s = fp.read(size)
     else:
         s = fp.read(buf_size)
     while s:
-        m.update(s)
+        hash_obj.update(s)
         if size:
             size -= len(s)
             if size <= 0:
@@ -866,11 +870,11 @@ def compute_md5(fp, buf_size=8192, size=None):
             s = fp.read(size)
         else:
             s = fp.read(buf_size)
-    hex_md5 = m.hexdigest()
-    base64md5 = base64.encodestring(m.digest())
-    if base64md5[-1] == '\n':
-        base64md5 = base64md5[0:-1]
+    hex_digest = hash_obj.hexdigest()
+    base64_digest = base64.encodestring(hash_obj.digest())
+    if base64_digest[-1] == '\n':
+        base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.
     data_size = fp.tell() - spos
     fp.seek(spos)
-    return (hex_md5, base64md5, data_size)
+    return (hex_digest, base64_digest, data_size)
