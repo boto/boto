@@ -115,7 +115,8 @@ class Vault(object):
                                                          description)
         return Writer(self, response['UploadId'], part_size=part_size)
 
-    def create_archive_from_file(self, filename=None, file_obj=None):
+    def create_archive_from_file(self, filename=None, file_obj=None,
+                                 description=None):
         """
         Create a new archive and upload the data from the given file
         or file-like object.
@@ -132,7 +133,7 @@ class Vault(object):
         if not file_obj:
             file_obj = open(filename, "rb")
 
-        writer = self.create_archive_writer()
+        writer = self.create_archive_writer(description=description)
         while True:
             data = file_obj.read(self.DefaultPartSize)
             if not data:
