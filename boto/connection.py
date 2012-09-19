@@ -900,10 +900,13 @@ class AWSAuthConnection(object):
                            path, auth_path, params, headers, data)
 
     def make_request(self, method, path, headers=None, data='', host=None,
-                     auth_path=None, sender=None, override_num_retries=None):
+                     auth_path=None, sender=None, override_num_retries=None,
+                     params=None):
         """Makes a request to the server, with stock multiple-retry logic."""
+        if params is None:
+            params = {}
         http_request = self.build_base_http_request(method, path, auth_path,
-                                                    {}, headers, data, host)
+                                                    params, headers, data, host)
         return self._mexe(http_request, sender, override_num_retries)
 
     def close(self):

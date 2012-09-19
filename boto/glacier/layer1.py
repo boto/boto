@@ -72,13 +72,8 @@ class Layer1(AWSAuthConnection):
             headers = {}
         headers['x-amz-glacier-version'] = self.Version
         uri = '/%s/%s' % (self.account_id, resource)
-        if params:
-            param_list = []
-            for key, value in params:
-                param_list.append('%s=%s' % (urllib.quote(key),
-                                             urllib.quote(value)))
-            uri += '?' + '&'.join(param_list)
         response = AWSAuthConnection.make_request(self, verb, uri,
+                                                  params=params,
                                                   headers=headers,
                                                   data=data)
         if response.status in ok_responses:
@@ -284,6 +279,10 @@ class Layer1(AWSAuthConnection):
             params['limit'] = limit
         if marker:
             params['marker'] = marker
+        if status_code:
+            params['statuscode'] = status_code
+        if completed is not None:
+            params['completed'] = 'true' if completed else 'false'
         uri = 'vaults/%s/jobs' % vault_name
         return self.make_request('GET', uri, params=params)
 
