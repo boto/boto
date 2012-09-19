@@ -127,6 +127,20 @@ class Application(object):
         class_ = self.__class__.__name__
         return self.template % vars()
 
+class HTMLQuestion(ValidatingXML):
+    schema_url = 'http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd'
+    template = '<HTMLQuestion xmlns=\"%(schema_url)s\"><HTMLContent><![CDATA[<!DOCTYPE html>%(html_form)s]]></HTMLContent><FrameHeight>%(frame_height)s</FrameHeight></HTMLQuestion>'
+
+    def __init__(self, html_form, frame_height):
+        self.html_form = html_form
+        self.frame_height = frame_height
+
+    def get_as_params(self, label="HTMLQuestion"):
+        return {label, self.get_as_xml()}
+
+    def get_as_xml(self):
+        return self.template % vars(self)
+
 class JavaApplet(Application):
     def __init__(self, path, filename, *args, **kwargs):
         self.path = path
