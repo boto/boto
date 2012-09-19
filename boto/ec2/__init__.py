@@ -58,3 +58,21 @@ def connect_to_region(region_name, **kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
     return None
+
+
+def get_region(region_name, **kw_params):
+    """
+    Find and return a :class:`boto.ec2.regioninfo.RegionInfo` object
+    given a region name.
+
+    :type: str
+    :param: The name of the region.
+
+    :rtype: :class:`boto.ec2.regioninfo.RegionInfo`
+    :return: The RegionInfo object for the given region or None if
+             an invalid region name is provided.
+    """
+    for region in regions(**kw_params):
+        if region.name == region_name:
+            return region
+    return None
