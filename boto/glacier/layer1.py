@@ -279,6 +279,10 @@ class Layer1(AWSAuthConnection):
             params['limit'] = limit
         if marker:
             params['marker'] = marker
+        if status_code:
+            params['statuscode'] = status_code
+        if completed is not None:
+            params['completed'] = 'true' if completed else 'false'
         uri = 'vaults/%s/jobs' % vault_name
         return self.make_request('GET', uri, params=params)
 
