@@ -1,8 +1,8 @@
 ####
 boto
 ####
-boto 2.5.2
-21-Jun-2012
+boto 2.6.0
+19-Sep-2012
 
 .. image:: https://secure.travis-ci.org/boto/boto.png?branch=develop
         :target: https://secure.travis-ci.org/boto/boto
@@ -14,30 +14,42 @@ Introduction
 Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
 
-* Simple Storage Service (S3)
-* SimpleQueue Service (SQS)
-* Elastic Compute Cloud (EC2)
-* Mechanical Turk
-* SimpleDB
-* CloudFront
-* CloudWatch
-* AutoScale
-* Elastic Load Balancer (ELB)
-* Virtual Private Cloud (VPC)
-* Elastic Map Reduce (EMR)
-* Relational Data Service (RDS)
-* Simple Notification Server (SNS)
-* Google Storage
-* Identity and Access Management (IAM)
-* Route53 DNS Service (route53)
-* Simple Email Service (SES)
-* Flexible Payment Service (FPS)
-* CloudFormation
-* Amazon DynamoDB
-* Amazon SimpleWorkflow
-* CloudSearch
-* Marketplace Web Services
-* Glacier
+* Compute
+  * Amazon Elastic Compute Cloud (EC2)
+  * Amazon Elastic Map Reduce (EMR)
+  * AutoScaling
+  * Elastic Load Balancing (ELB)
+* Content Delivery
+  * Amazon CloudFront
+* Database
+  * Amazon Relational Data Service (RDS)
+  * Amazon DynamoDB
+  * Amazon SimpleDB
+* Deployment and Management
+  * AWS Identity and Access Management (IAM)
+  * Amazon CloudWatch
+  * AWS Elastic Beanstalk
+  * AWS CloudFormation
+* Application Services
+  * Amazon CloudSearch
+  * Amazon Simple Workflow Service (SWF)
+  * Amazon Simple Queue Service (SQS)
+  * Amazon Simple Notification Server (SNS)
+  * Amazon Simple Email Service (SES)
+* Networking
+  * Amazon Route53
+  * Amazon Virtual Private Cloud (VPC)
+* Payments and Billing
+  * Amazon Flexible Payment Service (FPS)
+* Storage
+  * Amazon Simple Storage Service (S3)
+  * Amazon Glacier
+  * Amazon Elastic Block Store (EBS)
+  * Google Cloud Storage
+* Workforce
+  * Amazon Mechanical Turk
+* Other
+  * Marketplace Web Services
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
