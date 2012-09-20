@@ -21,10 +21,58 @@
 # IN THE SOFTWARE.
 #
 
+from boto.dynamodb.batch import BatchList
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb import exceptions as dynamodb_exceptions
 import time
+
+class TableBatchGenerator(object):
+    """
+    A low-level generator used to page through results from
+    batch_get_item operations.
+
+    :ivar consumed_units: An integer that holds the number of
+        ConsumedCapacityUnits accumulated thus far for this
+        generator.
+    """
+
+    def __init__(self, table, keys, attributes_to_get=None):
+        self.table = table
+        self.keys = keys
+        self.consumed_units = 0
+        self.attributes_to_get = attributes_to_get
+
+    def _queue_unprocessed(self, res):
+        if not u'UnprocessedKeys' in res:
+            return
+        if not self.table.name in res[u'UnprocessedKeys']:
+            return
+
+        keys = res[u'UnprocessedKeys'][self.table.name][u'Keys']
+
+        for key in keys:
+            h = key[u'HashKeyElement']
+            r = key[u'RangeKeyElement'] if u'RangeKeyElement' in key else None
+            self.keys.append((h, r))
+
+    def __iter__(self):
+        while self.keys:
+            # Build the next batch
+            batch = BatchList(self.table.layer2)
+            batch.add_batch(self.table, self.keys[:100], self.attributes_to_get)
+            res = batch.submit()
+
+            # parse the results
+            if not self.table.name in res[u'Responses']:
+                continue
+            self.consumed_units += res[u'Responses'][self.table.name][u'ConsumedCapacityUnits']
+            for elem in res[u'Responses'][self.table.name][u'Items']:
+                yield elem
+
+            # re-queue un processed keys
+            self.keys = self.keys[100:]
+            self._queue_unprocessed(res)
 
 
 class Table(object):
@@ -50,7 +98,7 @@ class Table(object):
     :ivar schema: The Schema object associated with the table.
     """
 
-    def __init__(self, layer2, response=None):
+    def __init__(self, layer2, response):
         self.layer2 = layer2
         self._dict = {}
         self.update_from_response(response)
@@ -407,8 +455,36 @@ class Table(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :rtype: generator
+        :return: A TableGenerator (generator) object which will iterate over all results
+        :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         return self.layer2.scan(self, scan_filter, attributes_to_get,
                                 request_limit, max_results, count,
                                 exclusive_start_key, item_class=item_class)
+
+    def batch_get_item(self, keys, attributes_to_get=None):
+        """
+        Return a set of attributes for a multiple items from a single table
+        using their primary keys. This abstraction removes the 100 Items per
+        batch limitations as well as the "UnprocessedKeys" logic.
+
+        :type keys: list
+        :param keys: A list of scalar or tuple values.  Each element in the
+            list represents one Item to retrieve.  If the schema for the
+            table has both a HashKey and a RangeKey, each element in the
+            list should be a tuple consisting of (hash_key, range_key).  If
+            the schema for the table contains only a HashKey, each element
+            in the list should be a scalar value of the appropriate type
+            for the table schema. NOTE: The maximum number of items that
+            can be retrieved for a single operation is 100. Also, the
+            number of items retrieved is constrained by a 1 MB size limit.
+
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+
+        :return: A TableBatchGenerator (generator) object which will iterate over all results
+        :rtype: :class:`boto.dynamodb.table.TableBatchGenerator`
+        """
+        return TableBatchGenerator(self, keys, attributes_to_get)

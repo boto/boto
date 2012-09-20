@@ -24,11 +24,9 @@ import xml.sax
 import time
 import uuid
 import urllib
-from xml.etree import ElementTree
 
 import boto
 from boto.connection import AWSAuthConnection
-from boto.exception import XMLParseError
 from boto import handler
 from boto.resultset import ResultSet
 import boto.jsonresponse
@@ -59,27 +57,16 @@ class Route53Connection(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  port=None, proxy=None, proxy_port=None,
-                 host=DefaultHost, debug=0, security_token=None):
+                 host=DefaultHost, debug=0, security_token=None,
+                 validate_certs=True):
         AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
                                    True, port, proxy, proxy_port, debug=debug,
-                                   security_token=security_token)
+                                   security_token=security_token,
+                                   validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['route53']
-
-    def _credentials_expired(self, response):
-        if response.status != 403:
-            return False
-        try:
-            for event, node in ElementTree.iterparse(response,
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'InvalidClientTokenId':
-                        return True
-        except XMLParseError:
-            return False
-        return False
 
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:

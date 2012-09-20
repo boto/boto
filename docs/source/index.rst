@@ -61,6 +61,7 @@ Currently Supported Services
 * **Storage**
 
   * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
+  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
   * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 
 * **Workforce**
@@ -71,6 +72,7 @@ Additional Resources
 --------------------
 
 * :doc:`Boto Config Tutorial <boto_config_tut>`
+* :doc:`Contributing to Boto <contributing>`
 * `Boto Source Repository`_
 * `Boto Issue Tracker`_
 * `Boto Twitter`_
@@ -108,6 +110,8 @@ Additional Resources
    ref/sns
    ses_tut
    ref/ses
+   cloudsearch_tut
+   ref/cloudsearch
    cloudwatch_tut
    ref/cloudwatch
    ref/route53

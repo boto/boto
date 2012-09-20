@@ -43,7 +43,7 @@ RegionData = {
 
 def regions():
     """
-    Get all available regions for the SDB service.
+    Get all available regions for the ELB service.
 
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
@@ -79,13 +79,13 @@ class ELBConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'elb_version', '2011-11-15')
     DefaultRegionName = boto.config.get('Boto', 'elb_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'elb_region_endpoint',
-                                            'elasticloadbalancing.amazonaws.com')
+                                            'elasticloadbalancing.us-east-1.amazonaws.com')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=False, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
@@ -102,7 +102,8 @@ class ELBConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token)
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['ec2']

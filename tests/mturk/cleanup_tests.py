@@ -1,6 +1,7 @@
 import itertools
 
 from _init_environment import SetHostMTurkConnection
+from _init_environment import config_environment
 
 def description_filter(substring):
 	return lambda hit: substring in hit.Title
@@ -17,6 +18,7 @@ def dispose_hit(hit):
 
 def cleanup():
 	"""Remove any boto test related HIT's"""
+        config_environment()
 
 	global conn
 	

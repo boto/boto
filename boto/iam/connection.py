@@ -19,7 +19,10 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 import boto
 import boto.jsonresponse
@@ -34,7 +37,6 @@ ASSUME_ROLE_POLICY_DOCUMENT = json.dumps({
                    'Action': ['sts:AssumeRole']}]})
 
 
-
 class IAMConnection(AWSQueryConnection):
 
     APIVersion = '2010-05-08'
@@ -43,19 +45,21 @@ class IAMConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='iam.amazonaws.com',
                  debug=0, https_connection_factory=None,
-                 path='/', security_token=None):
+                 path='/', security_token=None, validate_certs=True):
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory,
-                                    path, security_token)
+                                    path, security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
-        return ['iam']
+        #return ['iam']
+        return ['hmac-v4']
 
     def get_response(self, action, params, path='/', parent=None,
-                     verb='GET', list_marker='Set'):
+                     verb='POST', list_marker='Set'):
         """
         Utility method to handle calls to IAM and parsing of responses.
         """
@@ -673,7 +677,7 @@ class IAMConnection(AWSQueryConnection):
     # Server Certificates
     #
 
-    def get_all_server_certs(self, path_prefix='/',
+    def list_server_certs(self, path_prefix='/',
                              marker=None, max_items=None):
         """
         Lists the server certificates that have the specified path prefix.
@@ -704,6 +708,10 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('ListServerCertificates',
                                  params,
                                  list_marker='ServerCertificateMetadataList')
+
+    # Preserves backwards compatibility.
+    # TODO: Look into deprecating this eventually?
+    get_all_server_certs = list_server_certs
 
     def update_server_cert(self, cert_name, new_cert_name=None,
                            new_path=None):
