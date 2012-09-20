@@ -31,6 +31,7 @@ Currently Supported Services
 * **Deployment and Management**
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
 
 * **Identity & Access**
 
@@ -134,4 +135,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
