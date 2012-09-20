@@ -33,7 +33,7 @@ class SQSConnection(AWSQueryConnection):
     A Connection to the SQS Service.
     """
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'sqs.us-east-1.amazonaws.com'
+    DefaultRegionEndpoint = 'queue.amazonaws.com'
     APIVersion = '2011-10-01'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
@@ -402,8 +402,3 @@ class SQSConnection(AWSQueryConnection):
         """
         params = {'Label': label}
         return self.get_status('RemovePermission', params, queue.id)
-
-
-
-
-
