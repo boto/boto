@@ -15,40 +15,59 @@ Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
 
 * Compute
+
   * Amazon Elastic Compute Cloud (EC2)
   * Amazon Elastic Map Reduce (EMR)
   * AutoScaling
   * Elastic Load Balancing (ELB)
+
 * Content Delivery
+
   * Amazon CloudFront
+
 * Database
+
   * Amazon Relational Data Service (RDS)
   * Amazon DynamoDB
   * Amazon SimpleDB
+
 * Deployment and Management
+
   * AWS Identity and Access Management (IAM)
   * Amazon CloudWatch
   * AWS Elastic Beanstalk
   * AWS CloudFormation
+
 * Application Services
+
   * Amazon CloudSearch
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS)
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
+
 * Networking
+
   * Amazon Route53
   * Amazon Virtual Private Cloud (VPC)
+
 * Payments and Billing
+
   * Amazon Flexible Payment Service (FPS)
+
 * Storage
+
   * Amazon Simple Storage Service (S3)
   * Amazon Glacier
   * Amazon Elastic Block Store (EBS)
   * Google Cloud Storage
+
 * Workforce
+
   * Amazon Mechanical Turk
+
 * Other
+
   * Marketplace Web Services
 
 The goal of boto is to support the full breadth and depth of Amazon
