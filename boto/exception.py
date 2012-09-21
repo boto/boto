@@ -26,9 +26,14 @@ Exception classes - Subclassing allows you to check for specific errors
 """
 import base64
 import xml.sax
+
+try:
+    import json
+except:
+    import simplejson as json
+
 from boto import handler
 from boto.resultset import ResultSet
-
 
 class BotoClientError(StandardError):
     """
@@ -77,21 +82,32 @@ class BotoServerError(StandardError):
         self.request_id = None
         self.error_code = None
         self.error_message = None
+        self.error_type = None
         self.box_usage = None
 
         # Attempt to parse the error response. If body isn't present,
         # then just ignore the error response.
         if self.body:
+            # The error body might be XML or it might be JSON.
+            # Try to parse XMl first. If that fails, try to parse JSON as well.
+            # If that also fails, just set the string.
             try:
                 h = handler.XmlHandler(self, self)
                 xml.sax.parseString(self.body, h)
             except (TypeError, xml.sax.SAXParseException), pe:
-                # Remove unparsable message body so we don't include garbage
-                # in exception. But first, save self.body in self.error_message
-                # because occasionally we get error messages from Eucalyptus
-                # that are just text strings that we want to preserve.
-                self.error_message = self.body
-                self.body = None
+                try:
+                    # Now try to parse JSON
+                    # On success, remove self.body to we don't include JSON in
+                    # the exception.
+                    self._parseJSONBody(self.body)
+                    self.body = None
+                except:
+                    # Remove unparsable message body so we don't include garbage
+                    # in exception. But first, save self.body in self.error_message
+                    # because occasionally we get error messages from Eucalyptus
+                    # that are just text strings that we want to preserve.
+                    self.error_message = self.body
+                    self.body = None
 
     def __getattr__(self, name):
         if name == 'message':
@@ -121,6 +137,37 @@ class BotoServerError(StandardError):
         elif name == 'BoxUsage':
             self.box_usage = value
         return None
+
+    def _parseJSONBody(self, body):
+        """
+        Parse the errormessage and put values into error_message, error_code, request_id, sender and type
+
+        :ivar message: the raw JSON error message from AWS
+
+             {
+               u'RequestId': u'b6b4b759-03ca-11e2-a362-59b8dbfff4cd',
+               u'Error':
+                 {
+                   u'Message': u'Parameter InstanceType must be a valid EC2 instance type.',
+                   u'Code': u'ValidationError',
+                   u'Type': u'Sender'
+                 }
+             }
+
+        """
+        # Possibly throws ValueError, but is caught by caller
+        construct = json.loads(body)
+
+        if 'RequestId' in construct:
+            self.request_id = construct['RequestId']
+        if 'Error' in construct:
+            if 'Message' in construct['Error']:
+                self.error_message = construct['Error']['Message']
+            if 'Code' in construct['Error']:
+                self.error_code = construct['Error']['Code']
+            if 'Type' in construct['Error']:
+                self.error_type = construct['Error']['Type']
+
 
     def _cleanupParsedProperties(self):
         self.request_id = None
