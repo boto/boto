@@ -132,6 +132,8 @@ Boto releases can be found on the `Python Cheese Shop`_.
 Join our IRC channel `#boto` on FreeNode.
 Webchat IRC channel: http://webchat.freenode.net/?channels=boto
 
+Join the `boto-users Google Group`_.
+
 *************************
 Getting Started with Boto
 *************************
@@ -160,3 +162,4 @@ All rights reserved.
 .. _this: http://code.google.com/p/boto/wiki/BotoConfig
 .. _gitflow: http://nvie.com/posts/a-successful-git-branching-model/
 .. _neo: https://github.com/boto/boto/tree/neo
+.. _boto-users Google Group: https://groups.google.com/forum/?fromgroups#!forum/boto-users
