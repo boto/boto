@@ -560,27 +560,42 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
         return self.get_list('DescribeDhcpOptions', params, [('item', DhcpOptions)])
 
-    def create_dhcp_options(self, vpc_id, cidr_block, availability_zone=None):
+    def create_dhcp_options(self, dhcpoptionset):
         """
-        Create a new DhcpOption
+        Create a new DhcpOptions set
 
-        :type vpc_id: str
-        :param vpc_id: The ID of the VPC where you want to create the subnet.
+        :type dhcpoptionset: list of tuples
+        :param dhcpoptionset: A list of tuples containing dhcpoptions.
+                        Each tuple consists of a dhcpoptions key and a
+                        dhcpoptions value or list.
+                        Possible dhcpoptions keys are:
 
-        :type cidr_block: str
-        :param cidr_block: The CIDR block you want the subnet to cover.
-
-        :type availability_zone: str
-        :param availability_zone: The AZ you want the subnet in
+                        - *domain-name*, the DNS domain name
+                        - *domain-name-servers*, a list of domain name servers
+                        - *ntp-servers*, a list of NTP servers
+                        - *netbios-name-servers*, a list of NetBIOS servers
+                        - *netbios-node-type*, the NetBIOS node type
 
         :rtype: The newly created DhcpOption
         :return: A :class:`boto.vpc.customergateway.DhcpOption` object
         """
-        params = {'VpcId' : vpc_id,
-                  'CidrBlock' : cidr_block}
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDhcpOption', params, DhcpOptions)
+
+        params={}
+        i = 1
+        for name in dhcpoptionset:
+            aws_name = name
+            aws_name = name.replace('_', '-')
+            params['DhcpConfiguration.%d.Key' % i] = aws_name
+            value = dhcpoptionset[name]
+            if not isinstance(value, list):
+                value = [value]
+            j = 1
+            for v in value:
+                params['DhcpConfiguration.%d.Value.%d' % (i,j)] = v
+                j += 1
+            i += 1
+                  
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 
     def delete_dhcp_options(self, dhcp_options_id):
         """
