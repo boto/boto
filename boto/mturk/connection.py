@@ -62,6 +62,10 @@ class MTurkConnection(AWSQueryConnection):
 
     def get_account_balance(self):
         """
+        import pdb; pdb.set_trace()
+		rtions of the Software.
+#
+
         """
         params = {}
         return self._process_request('GetAccountBalance', params,
@@ -611,7 +615,7 @@ class MTurkConnection(AWSQueryConnection):
     def get_qualifications_for_qualification_type(self, qualification_type_id):
         params = {'QualificationTypeId' : qualification_type_id }
         return self._process_request('GetQualificationsForQualificationType', params,
-                                     [('QualificationType', QualificationType),])
+                                     [('Qualification', Qualification),])
 
     def update_qualification_type(self, qualification_type_id,
                                   description=None,
