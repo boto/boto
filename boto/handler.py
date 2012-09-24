@@ -42,5 +42,3 @@ class XmlHandler(xml.sax.ContentHandler):
 
     def characters(self, content):
         self.current_text += content
-            
-
