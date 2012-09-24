@@ -23,6 +23,7 @@
 import boto
 import os
 import sys
+from boto.s3.deletemarker import DeleteMarker
 from boto.exception import BotoClientError
 from boto.exception import InvalidUriError
 
@@ -69,7 +70,9 @@ class StorageUri(object):
                                   'can happen if the URI refers to a non-'
                                   'existent object or if you meant to\noperate '
                                   'on a directory (e.g., leaving off -R option '
-                                  'on gsutil cp, mv, or ls of a\nbucket)' %
+                                  'on gsutil cp, mv, or ls of a\nbucket). If a '
+                                  'version-ful object was specified, you may '
+                                  'have neglected to\nuse a -v flag.' %
                                   (level, uri))
 
     def _check_bucket_uri(self, function_name):
@@ -145,11 +148,17 @@ class StorageUri(object):
         return bucket.delete_key(self.object_name, headers, version_id,
                                  mfa_token)
 
-    def list_bucket(self, prefix='', delimiter='', headers=None):
+    def list_bucket(self, prefix='', delimiter='', headers=None,
+                    all_versions=False):
         self._check_bucket_uri('list_bucket')
-        return self.get_bucket(headers=headers).list(prefix=prefix,
-                                                     delimiter=delimiter,
-                                                     headers=headers)
+        bucket = self.get_bucket(headers=headers)
+        if all_versions:
+            return (v for v in bucket.list_versions(
+                prefix=prefix, delimiter=delimiter, headers=headers)
+                    if not isinstance(v, DeleteMarker))
+        else:
+            return bucket.list(prefix=prefix, delimiter=delimiter,
+                               headers=headers)
 
     def get_all_keys(self, validate=False, headers=None, prefix=None):
         bucket = self.get_bucket(validate, headers)
@@ -221,7 +230,8 @@ class BucketStorageUri(StorageUri):
     capabilities = set([]) # A set of additional capabilities.
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=0, connection_args=None, suppress_consec_slashes=True):
+                 debug=0, connection_args=None, suppress_consec_slashes=True,
+                 version_id=None, generation=None, meta_generation=None):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -238,6 +248,9 @@ class BucketStorageUri(StorageUri):
             https_connection_factory).
         @param suppress_consec_slashes: If provided, controls whether
             consecutive slashes will be suppressed in key paths.
+        @param version_id: Object version id (S3-specific).
+        @param generation: Object generation number (GCS-specific).
+        @param meta_generation: Object meta-generation number (GCS-specific).
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
@@ -257,6 +270,34 @@ class BucketStorageUri(StorageUri):
         else:
             self.uri = ('%s://' % self.scheme)
         self.debug = debug
+
+        self.version_id = version_id
+        self.generation = generation and int(generation)
+        self.meta_generation = meta_generation and int(meta_generation)
+
+    def get_key(self, validate=False, headers=None, version_id=None):
+        self._check_object_uri('get_key')
+        bucket = self.get_bucket(validate, headers)
+        if self.get_provider().name == 'aws':
+            key = bucket.get_key(self.object_name, headers,
+                                 version_id=(version_id or self.version_id))
+        elif self.get_provider().name == 'google':
+            key = bucket.get_key(self.object_name, headers,
+                                 generation=self.generation)
+        self.check_response(key, 'key', self.uri)
+        return key
+
+    def delete_key(self, validate=False, headers=None, version_id=None,
+                   mfa_token=None):
+        self._check_object_uri('delete_key')
+        bucket = self.get_bucket(validate, headers)
+        if self.get_provider().name == 'aws':
+            version_id = version_id or self.version_id
+            return bucket.delete_key(self.object_name, headers, version_id,
+                                     mfa_token)
+        elif self.get_provider().name == 'google':
+            return bucket.delete_key(self.object_name, headers,
+                                     generation=self.generation)
 
     def clone_replace_name(self, new_name):
         """Instantiate a BucketStorageUri from the current BucketStorageUri,
@@ -278,7 +319,11 @@ class BucketStorageUri(StorageUri):
         # This works for both bucket- and object- level ACLs (former passes
         # key_name=None):
         key_name = self.object_name or ''
-        acl = bucket.get_acl(key_name, headers, version_id)
+        if self.get_provider().name == 'aws':
+            version_id = version_id or self.version_id
+            acl = bucket.get_acl(key_name, headers, version_id)
+        else:
+            acl = bucket.get_acl(key_name, headers, generation=self.generation)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
@@ -436,8 +481,13 @@ class BucketStorageUri(StorageUri):
         """sets or updates a bucket's acl"""
         self._check_bucket_uri('set_acl')
         key_name = key_name or self.object_name or ''
-        self.get_bucket(validate, headers).set_acl(acl_or_str, key_name,
-                                                   headers, version_id)
+        bucket = self.get_bucket(validate, headers)
+        if self.generation:
+          bucket.set_acl(
+              acl_or_str, key_name, headers, generation=self.generation)
+        else:
+          version_id = version_id or self.version_id
+          bucket.set_acl(acl_or_str, key_name, headers, version_id)
 
     def set_def_acl(self, acl_or_str, key_name='', validate=False,
                     headers=None, version_id=None):
@@ -513,16 +563,27 @@ class BucketStorageUri(StorageUri):
     def copy_key(self, src_bucket_name, src_key_name, metadata=None,
                  src_version_id=None, storage_class='STANDARD',
                  preserve_acl=False, encrypt_key=False, headers=None,
-                 query_args=None):
+                 query_args=None, src_generation=None):
         self._check_object_uri('copy_key')
         dst_bucket = self.get_bucket(validate=False, headers=headers)
-        dst_bucket.copy_key(new_key_name=self.object_name,
-                            src_bucket_name=src_bucket_name,
-                            src_key_name=src_key_name, metadata=metadata,
-                            src_version_id=src_version_id,
-                            storage_class=storage_class,
-                            preserve_acl=preserve_acl, encrypt_key=encrypt_key,
-                            headers=headers, query_args=query_args)
+        if src_generation:
+          dst_bucket.copy_key(new_key_name=self.object_name,
+                              src_bucket_name=src_bucket_name,
+                              src_key_name=src_key_name, metadata=metadata,
+                              storage_class=storage_class,
+                              preserve_acl=preserve_acl,
+                              encrypt_key=encrypt_key,
+                              headers=headers, query_args=query_args,
+                              src_generation=src_generation)
+        else:
+          dst_bucket.copy_key(new_key_name=self.object_name,
+                              src_bucket_name=src_bucket_name,
+                              src_key_name=src_key_name, metadata=metadata,
+                              src_version_id=src_version_id,
+                              storage_class=storage_class,
+                              preserve_acl=preserve_acl,
+                              encrypt_key=encrypt_key,
+                              headers=headers, query_args=query_args)
 
     def enable_logging(self, target_bucket, target_prefix=None, validate=False,
                        headers=None, version_id=None):
@@ -546,6 +607,22 @@ class BucketStorageUri(StorageUri):
     def get_website_config(self, validate=False, headers=None):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_website_configuration_with_xml(headers)
+
+    def get_versioning_config(self, headers=None):
+        bucket = self.get_bucket(False, headers)
+        return bucket.get_versioning_status(headers)
+
+    def configure_versioning(self, enabled, headers=None):
+        self._check_bucket_uri('configure_versioning')
+        bucket = self.get_bucket(False, headers)
+        return bucket.configure_versioning(enabled, headers)
+
+    def set_metadata(self, metadata_plus, metadata_minus, preserve_acl,
+                     headers=None):
+        return self.get_key(False).set_remote_metadata(metadata_plus,
+                                                       metadata_minus,
+                                                       preserve_acl,
+                                                       headers=headers)
 
 
 class FileStorageUri(StorageUri):

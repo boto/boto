@@ -47,6 +47,18 @@ class Key(object):
 
     BufferSize = 8192
 
+    # The object metadata fields a user can set, other than custom metadata
+    # fields (i.e., those beginning with a provider-specific prefix like
+    # x-amz-meta).
+    base_user_settable_fields = set(["cache-control", "content-disposition",
+                                    "content-encoding", "content-language",
+                                    "content-md5", "content-type"])
+    _underscore_base_user_settable_fields = set()
+    for f in base_user_settable_fields:
+      _underscore_base_user_settable_fields.add(f.replace('-', '_'))
+
+
+
     def __init__(self, bucket=None, name=None):
         self.bucket = bucket
         self.name = name
@@ -1164,13 +1176,22 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
+        self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                torrent=torrent, version_id=version_id,
+                                override_num_retries=override_num_retries,
+                                response_headers=response_headers,
+                                query_args=None)
+
+    def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None, query_args=None):
         if headers is None:
             headers = {}
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
 
-        query_args = []
+        query_args = query_args or []
         if torrent:
             query_args.append('torrent')
             m = None
@@ -1471,3 +1492,60 @@ class Key(object):
         policy.acl.add_user_grant(permission, user_id,
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
+
+    def _normalize_metadata(self, metadata):
+        if type(metadata) == set:
+            norm_metadata = set()
+            for k in metadata:
+                norm_metadata.add(k.lower())
+        else:
+            norm_metadata = {}
+            for k in metadata:
+                norm_metadata[k.lower()] = metadata[k]
+        return norm_metadata
+
+    def _get_remote_metadata(self, headers=None):
+        """
+        Extracts metadata from existing URI into a dict, so we can
+        overwrite/delete from it to form the new set of metadata to apply to a
+        key.
+        """
+        metadata = {}
+        for underscore_name in self._underscore_base_user_settable_fields:
+            if hasattr(self, underscore_name):
+                value = getattr(self, underscore_name)
+                if value:
+                    # Generate HTTP field name corresponding to "_" named field.
+                    field_name = underscore_name.replace('_', '-')
+                    metadata[field_name.lower()] = value
+        # self.metadata contains custom metadata, which are all user-settable.
+        prefix = self.provider.metadata_prefix
+        for underscore_name in self.metadata:
+            field_name = underscore_name.replace('_', '-')
+            metadata['%s%s' % (prefix, field_name.lower())] = (
+                self.metadata[underscore_name])
+        return metadata
+
+    def set_remote_metadata(self, metadata_plus, metadata_minus, preserve_acl,
+                            headers=None):
+        metadata_plus = self._normalize_metadata(metadata_plus)
+        metadata_minus = self._normalize_metadata(metadata_minus)
+        metadata = self._get_remote_metadata()
+        metadata.update(metadata_plus)
+        for h in metadata_minus:
+            if h in metadata:
+                del metadata[h]
+        src_bucket = self.bucket
+        # Boto prepends the meta prefix when adding headers, so strip prefix in
+        # metadata before sending back in to copy_key() call.
+        rewritten_metadata = {}
+        for h in metadata:
+            if (h.startswith('x-goog-meta-') or h.startswith('x-amz-meta-')):
+                rewritten_h = (h.replace('x-goog-meta-', '')
+                               .replace('x-amz-meta-', ''))
+            else:
+                rewritten_h = h
+            rewritten_metadata[rewritten_h] = metadata[h]
+        metadata = rewritten_metadata
+        src_bucket.copy_key(self.name, self.bucket.name, self.name,
+                            metadata=metadata, preserve_acl=preserve_acl)
