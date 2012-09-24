@@ -1152,8 +1152,8 @@ class Layer1(AWSAuthConnection):
         return self.make_request('CountOpenWorkflowExecutions', json_input)
 
     def list_open_workflow_executions(self, domain,
+                                      oldest_date,
                                       latest_date=None,
-                                      oldest_date=None,
                                       tag=None,
                                       workflow_id=None,
                                       workflow_name=None,
