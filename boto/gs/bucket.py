@@ -34,8 +34,12 @@ import xml.sax
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
+VERSIONING_ARG = 'versioning'
 
 class Bucket(S3Bucket):
+    VersioningBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                     '<VersioningConfiguration><Status>%s</Status>'
+                     '</VersioningConfiguration>')
     WebsiteBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                    '<WebsiteConfiguration>%s%s</WebsiteConfiguration>')
     WebsiteMainPageFragment = '<MainPageSuffix>%s</MainPageSuffix>'
@@ -386,3 +390,29 @@ class Bucket(S3Bucket):
 
     def delete_website_configuration(self, headers=None):
         self.configure_website(headers=headers)
+
+    def get_versioning_configuration(self, headers=None):
+        """
+        Returns the current status of versioning configuration on the bucket.
+
+        :rtype: boolean
+        :returns: boolean indicating whether or not versioning is enabled.
+        """
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='versioning',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                    response.status, response.reason, body)
+        resp_json = boto.jsonresponse.Element()
+        boto.jsonresponse.XmlHandler(resp_json, None).parse(body)
+        return ('Status' in resp_json) and (resp_json['Status'] == 'Enabled')
+
+    def configure_versioning(self, enabled, headers=None):
+        if enabled == True:
+            req_body = self.VersioningBody % ('Enabled')
+        else:
+            req_body = self.VersioningBody % ('Suspended')
+        self.set_subresource('versioning', req_body, headers=headers)

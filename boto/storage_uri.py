@@ -547,6 +547,14 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_website_configuration_with_xml(headers)
 
+    def get_versioning_config(self, headers=None):
+        bucket = self.get_bucket(False, headers)
+        return bucket.get_versioning_configuration(headers)
+
+    def configure_versioning(self, enabled, headers=None):
+        self._check_bucket_uri('configure_versioning')
+        bucket = self.get_bucket(False, headers)
+        return bucket.configure_versioning(enabled, headers)
 
 class FileStorageUri(StorageUri):
     """
