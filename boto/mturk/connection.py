@@ -609,7 +609,7 @@ class MTurkConnection(AWSQueryConnection):
     def get_qualifications_for_qualification_type(self, qualification_type_id):
         params = {'QualificationTypeId' : qualification_type_id }
         return self._process_request('GetQualificationsForQualificationType', params,
-                                     [('QualificationType', QualificationType),])
+                                     [('Qualification', Qualification),])
 
     def update_qualification_type(self, qualification_type_id,
                                   description=None,
