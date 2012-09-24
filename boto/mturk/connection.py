@@ -30,7 +30,6 @@ import boto.mturk.notification
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
-from boto.mturk.question import QuestionForm, ExternalQuestion, HTMLQuestion
 
 class MTurkRequestError(EC2ResponseError):
     "Error for MTurk Requests"
@@ -172,8 +171,6 @@ class MTurkConnection(AWSQueryConnection):
         if isinstance(question, QuestionForm):
             question_param = question
         elif isinstance(question, ExternalQuestion):
-            question_param = question
-        elif isinstance(question, HTMLQuestion):
             question_param = question
         
         # Handle basic required arguments and set up params dict
