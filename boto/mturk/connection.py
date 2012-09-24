@@ -62,10 +62,6 @@ class MTurkConnection(AWSQueryConnection):
 
     def get_account_balance(self):
         """
-        import pdb; pdb.set_trace()
-		rtions of the Software.
-#
-
         """
         params = {}
         return self._process_request('GetAccountBalance', params,
