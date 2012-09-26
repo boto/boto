@@ -22,7 +22,7 @@
 #
 
 from .layer1 import Layer1
-from .vault import Vault
+from . import vault
 
 
 class Layer2(object):
@@ -80,7 +80,7 @@ class Layer2(object):
         :return: A Vault object representing the vault.
         """
         response_data = self.layer1.describe_vault(name)
-        return Vault(self.layer1, response_data)
+        return vault.Vault(self.layer1, response_data)
 
     def list_vaults(self):
         """
@@ -90,4 +90,4 @@ class Layer2(object):
         :return: A list of Vault objects.
         """
         response_data = self.layer1.list_vaults()
-        return [Vault(self.layer1, rd) for rd in response_data['VaultList']]
+        return [vault.Vault(self.layer1, rd) for rd in response_data['VaultList']]

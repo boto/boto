@@ -21,8 +21,8 @@
 # IN THE SOFTWARE.
 #
 
-from .job import Job
-from .writer import Writer, bytes_to_hex, chunk_hashes, tree_hash
+from . import job 
+from . import writer
 import hashlib
 import os.path
 
@@ -89,7 +89,7 @@ class Vault(object):
         with open(filename, 'rb') as fd:
             archive = fd.read()
         linear_hash = hashlib.sha256(archive).hexdigest()
-        hex_tree_hash  = bytes_to_hex(tree_hash(chunk_hashes(archive)))
+        hex_tree_hash  = writer.bytes_to_hex(writer.tree_hash(writer.chunk_hashes(archive)))
         response = self.layer1.upload_archive(self.name, archive, linear_hash,
                                               hex_tree_hash)
         return response['ArchiveId']
@@ -113,7 +113,7 @@ class Vault(object):
         response = self.layer1.initiate_multipart_upload(self.name,
                                                          part_size,
                                                          description)
-        return Writer(self, response['UploadId'], part_size=part_size)
+        return writer.Writer(self, response['UploadId'], part_size=part_size)
 
     def create_archive_from_file(self, file=None, file_obj=None):
         """
@@ -221,7 +221,7 @@ class Vault(object):
         :return: A Job object representing the job.
         """
         response_data = self.layer1.describe_job(self.name, job_id)
-        return Job(self, response_data)
+        return job.Job(self, response_data)
 
     def list_jobs(self, completed=None, status_code=None):
         """
@@ -244,4 +244,4 @@ class Vault(object):
         """
         response_data = self.layer1.list_jobs(self.name, completed,
                                               status_code)
-        return [Job(self, jd) for jd in response_data['JobList']]
+        return [job.Job(self, jd) for jd in response_data['JobList']]
