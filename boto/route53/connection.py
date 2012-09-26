@@ -20,18 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+
 import xml.sax
-import time
 import uuid
 import urllib
-
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
-from boto.resultset import ResultSet
 import boto.jsonresponse
 import exception
-import hostedzone
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
@@ -186,10 +183,10 @@ class Route53Connection(AWSAuthConnection):
                   'caller_ref': caller_ref,
                   'comment': comment,
                   'xmlns': self.XMLNameSpace}
-        xml = HZXML % params
+        xml_body = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
-                                     {'Content-Type': 'text/xml'}, xml)
+                                     {'Content-Type': 'text/xml'}, xml_body)
         body = response.read()
         boto.log.debug(body)
         if response.status == 201:
