@@ -8,3 +8,6 @@ dist/
 MANIFEST
 .DS_Store
 .idea
+.tox
+.coverage
+*flymake.py

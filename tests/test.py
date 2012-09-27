@@ -20,132 +20,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-do the unit tests!
-"""
-
 import logging
 import sys
 import unittest
-import getopt
 
-from sqs.test_connection import SQSConnectionTest
-from s3.test_connection import S3ConnectionTest
-from s3.test_versioning import S3VersionTest
-from s3.test_mfa import S3MFATest
-from s3.test_encryption import S3EncryptionTest
-from s3.test_bucket import S3BucketTest
-from s3.test_key import S3KeyTest
-from s3.test_multidelete import S3MultiDeleteTest
-from s3.test_multipart import S3MultiPartUploadTest
-from s3.test_gsconnection import GSConnectionTest
-from s3.test_https_cert_validation import CertValidationTest
-from s3.test_resumable_downloads import ResumableDownloadTests
-from s3.test_resumable_uploads import ResumableUploadTests
-from ec2.test_connection import EC2ConnectionTest
-from ec2.elb.test_connection import ELBConnectionTest
-from ec2.cloudwatch.test_connection import CloudWatchConnectionTest
-from autoscale.test_connection import AutoscaleConnectionTest
-from sdb.test_connection import SDBConnectionTest
-from cloudfront.test_signed_urls import CloudfrontSignedUrlsTest
-from dynamodb.test_layer1 import DynamoDBLayer1Test
-from dynamodb.test_layer2 import DynamoDBLayer2Test
-from sts.test_session_token import SessionTokenTest
-from swf.test_layer1 import SimpleWorkflowLayer1Test
-from swf.test_layer1_workflow_execution import SwfL1WorkflowExecutionTest
+from nose.core import run
+import argparse
 
-def usage():
-    print "test.py  [-t testsuite] [-v verbosity]"
-    print "    -t   run specific testsuite (s3|ssl|s3mfa|gs|sqs|ec2|sdb|dynamodb|dynamodbL1|dynamodbL2|sts|all)"
-    print "    -v   verbosity (0|1|2)"
 
 def main():
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "ht:v:",
-                                   ["help", "testsuite", "verbosity"])
-    except:
-        usage()
-        sys.exit(2)
-    testsuite = "all"
-    verbosity = 1
-    for o, a in opts:
-        if o in ("-h", "--help"):
-            usage()
-            sys.exit()
-        if o in ("-t", "--testsuite"):
-            testsuite = a
-        if o in ("-v", "--verbosity"):
-            verbosity = int(a)
-    if len(args) != 0:
-        usage()
-        sys.exit()
-    try:
-        tests = suite(testsuite)
-    except ValueError:
-        usage()
-        sys.exit()
-    if verbosity > 1:
-        logging.basicConfig(level=logging.DEBUG)
-    unittest.TextTestRunner(verbosity=verbosity).run(tests)
-
-def suite(testsuite="all"):
-    tests = unittest.TestSuite()
-    if testsuite == "all":
-        tests.addTest(unittest.makeSuite(SQSConnectionTest))
-        tests.addTest(unittest.makeSuite(S3ConnectionTest))
-        tests.addTest(unittest.makeSuite(EC2ConnectionTest))
-        tests.addTest(unittest.makeSuite(SDBConnectionTest))
-        tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
-        tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
-        tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
-        tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
-    elif testsuite == "s3":
-        tests.addTest(unittest.makeSuite(S3ConnectionTest))
-        tests.addTest(unittest.makeSuite(S3BucketTest))
-        tests.addTest(unittest.makeSuite(S3KeyTest))
-        tests.addTest(unittest.makeSuite(S3MultiPartUploadTest))
-        tests.addTest(unittest.makeSuite(S3VersionTest))
-        tests.addTest(unittest.makeSuite(S3EncryptionTest))
-        tests.addTest(unittest.makeSuite(S3MultiDeleteTest))
-    elif testsuite == "ssl":
-        tests.addTest(unittest.makeSuite(CertValidationTest))
-    elif testsuite == "s3mfa":
-        tests.addTest(unittest.makeSuite(S3MFATest))
-    elif testsuite == "gs":
-        tests.addTest(unittest.makeSuite(GSConnectionTest))
-        tests.addTest(unittest.makeSuite(ResumableDownloadTests))
-        tests.addTest(unittest.makeSuite(ResumableUploadTests))
-    elif testsuite == "sqs":
-        tests.addTest(unittest.makeSuite(SQSConnectionTest))
-    elif testsuite == "ec2":
-        tests.addTest(unittest.makeSuite(EC2ConnectionTest))
-        tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
-        tests.addTest(unittest.makeSuite(ELBConnectionTest))
-        tests.addTest(unittest.makeSuite(CloudWatchConnectionTest))
-    elif testsuite == "autoscale":
-        tests.addTest(unittest.makeSuite(AutoscaleConnectionTest))
-    elif testsuite == "sdb":
-        tests.addTest(unittest.makeSuite(SDBConnectionTest))
-    elif testsuite == "cloudfront":
-        tests.addTest(unittest.makeSuite(CloudfrontSignedUrlsTest))
-    elif testsuite == "dynamodb":
-        tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
-        tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
-    elif testsuite == "dynamodbL1":
-        tests.addTest(unittest.makeSuite(DynamoDBLayer1Test))
-    elif testsuite == "dynamodbL2":
-        tests.addTest(unittest.makeSuite(DynamoDBLayer2Test))
-    elif testsuite == "sts":
-        tests.addTest(unittest.makeSuite(SessionTokenTest))
-    elif testsuite == "swf":
-        tests.addTest(unittest.makeSuite(SimpleWorkflowLayer1Test))
-        tests.addTest(unittest.makeSuite(SwfL1WorkflowExecutionTest))
-    elif testsuite == "swfL1":
-        tests.addTest(unittest.makeSuite(SimpleWorkflowLayer1Test))
-        tests.addTest(unittest.makeSuite(SwfL1WorkflowExecutionTest))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--service-tests', action="append", default=[],
+                        help="Run tests for a given service.  This will "
+                        "run any test tagged with the specified value, "
+                        "e.g -t s3 -t ec2")
+    known_args, remaining_args = parser.parse_known_args()
+    attribute_args = []
+    for service_attribute in known_args.service_tests:
+        attribute_args.extend(['-a', '!notdefault,' +service_attribute])
+    if not attribute_args:
+        # If the user did not specify any filtering criteria, we at least
+        # will filter out any test tagged 'notdefault'.
+        attribute_args = ['-a', '!notdefault']
+    all_args = [__file__] + attribute_args + remaining_args
+    print "nose command:", ' '.join(all_args)
+    if run(argv=all_args):
+        # run will return True is all the tests pass.  We want
+        # this to equal a 0 rc
+        return 0
     else:
-        raise ValueError("Invalid choice.")
-    return tests
+        return 1
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

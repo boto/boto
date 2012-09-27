@@ -1,5 +1,7 @@
 # Copyright (c) 2009-2011 Reza Lotun http://reza.lotun.name/
 # Copyright (c) 2011 Jann Kleen
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -32,9 +34,12 @@ from boto.connection import AWSQueryConnection
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
-from boto.ec2.autoscale.group import AutoScalingGroup, ProcessType
+from boto.ec2.autoscale.group import AutoScalingGroup
+from boto.ec2.autoscale.group import ProcessType
 from boto.ec2.autoscale.activity import Activity
-from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes, ScalingPolicy
+from boto.ec2.autoscale.policy import AdjustmentType
+from boto.ec2.autoscale.policy import MetricCollectionTypes
+from boto.ec2.autoscale.policy import ScalingPolicy
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
@@ -85,7 +90,7 @@ def connect_to_region(region_name, **kw_params):
 class AutoScaleConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'autoscale_version', '2011-01-01')
     DefaultRegionEndpoint = boto.config.get('Boto', 'autoscale_endpoint',
-                                            'autoscaling.amazonaws.com')
+                                            'autoscaling.us-east-1.amazonaws.com')
     DefaultRegionName = boto.config.get('Boto', 'autoscale_region_name',
                                         'us-east-1')
 
@@ -93,7 +98,7 @@ class AutoScaleConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         """
         Init method to create a new connection to the AutoScaling service.
 
@@ -111,10 +116,11 @@ class AutoScaleConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path=path,
-                                    security_token=security_token)
+                                    security_token=security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_list_params(self, params, items, label):
         """
@@ -135,15 +141,15 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         # different from EC2 list params
         for i in xrange(1, len(items) + 1):
-            if isinstance(items[i-1], dict):
-                for k, v in items[i-1].iteritems():
+            if isinstance(items[i - 1], dict):
+                for k, v in items[i - 1].iteritems():
                     if isinstance(v, dict):
                         for kk, vv in v.iteritems():
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v
-            elif isinstance(items[i-1], basestring):
-                params['%s.member.%d' % (label, i)] = items[i-1]
+            elif isinstance(items[i - 1], basestring):
+                params['%s.member.%d' % (label, i)] = items[i - 1]
 
     def _update_group(self, op, as_group):
         params = {'AutoScalingGroupName': as_group.name,
@@ -171,6 +177,9 @@ class AutoScaleConnection(AWSQueryConnection):
             if as_group.load_balancers:
                 self.build_list_params(params, as_group.load_balancers,
                                        'LoadBalancerNames')
+            if as_group.tags:
+                for i, tag in enumerate(as_group.tags):
+                    tag.build_params(params, i + 1)
         return self.get_object(op, params, Request)
 
     def create_auto_scaling_group(self, as_group):
@@ -428,7 +437,7 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :rtype: list
         :returns: List of
-            :class:`boto.ec2.autoscale.activity.Activity` objects.
+            :class:`boto.ec2.autoscale.instance.Instance` objects.
         """
         params = {}
         if instance_ids:
@@ -625,6 +634,34 @@ class AutoScaleConnection(AWSQueryConnection):
             params['HonorCooldown'] = honor_cooldown
         return self.get_status('ExecutePolicy', params)
 
+    def put_notification_configuration(self, autoscale_group, topic, notification_types):
+        """
+        Configures an Auto Scaling group to send notifications when
+        specified events take place.
+
+        :type as_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param as_group: The Auto Scaling group to put notification
+            configuration on.
+
+        :type topic: str
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple
+            Notification Service (SNS) topic.
+
+        :type notification_types: list
+        :param notification_types: The type of events that will trigger
+            the notification.
+        """
+
+        name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': name,
+                  'TopicARN': topic}
+        self.build_list_params(params, notification_types, 'NotificationTypes')
+        return self.get_status('PutNotificationConfiguration', params)
+
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):
         """
@@ -690,7 +727,7 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         params = {}
         for i, tag in enumerate(tags):
-            tag.build_params(params, i+1)
+            tag.build_params(params, i + 1)
         return self.get_status('CreateOrUpdateTags', params, verb='POST')
 
     def delete_tags(self, tags):
@@ -702,5 +739,5 @@ class AutoScaleConnection(AWSQueryConnection):
         """
         params = {}
         for i, tag in enumerate(tags):
-            tag.build_params(params, i+1)
+            tag.build_params(params, i + 1)
         return self.get_status('DeleteTags', params, verb='POST')

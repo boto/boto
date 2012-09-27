@@ -20,13 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import base64
 
 from boto.dynamodb.layer1 import Layer1
 from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
-from boto.dynamodb.types import get_dynamodb_type, dynamize_value, convert_num
+from boto.dynamodb.types import get_dynamodb_type, dynamize_value, \
+        convert_num, convert_binary
 
 
 def item_object_hook(dct):
@@ -45,7 +47,12 @@ def item_object_hook(dct):
         return set(dct['SS'])
     if 'NS' in dct:
         return set(map(convert_num, dct['NS']))
+    if 'B' in dct:
+        return base64.b64decode(dct['B'])
+    if 'BS' in dct:
+        return set(map(convert_binary, dct['BS']))
     return dct
+
 
 def table_generator(tgen):
     """
@@ -76,7 +83,7 @@ def table_generator(tgen):
             yield tgen.item_class(tgen.table, attrs=item)
             n += 1
 
-                
+
 class TableGenerator:
     """
     This is an object that wraps up the table_generator function.
@@ -105,10 +112,12 @@ class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 debug=0, session_token=None, region=None):
+                 debug=0, security_token=None, region=None,
+                 validate_certs=True):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
-                             debug, session_token, region)
+                             debug, security_token, region,
+                             validate_certs=validate_certs)
 
     def dynamize_attribute_updates(self, pending_updates):
         """

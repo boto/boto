@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,7 +28,7 @@ class ParameterGroup(dict):
         self.description = None
         self.engine = None
         self._current_param = None
-        
+
     def __repr__(self):
         return 'ParameterGroup:%s' % self.name
 
@@ -60,7 +60,7 @@ class ParameterGroup(dict):
     def get_params(self):
         pg = self.connection.get_all_dbparameters(self.name)
         self.update(pg)
-    
+
     def add_param(self, name, value, apply_method):
         param = Parameter()
         param.name = name
@@ -79,12 +79,12 @@ class Parameter(object):
     ValidSources = ['user', 'system', 'engine-default']
     ValidApplyTypes = ['static', 'dynamic']
     ValidApplyMethods = ['immediate', 'pending-reboot']
-    
+
     def __init__(self, group=None, name=None):
         self.group = group
         self.name = name
         self._value = None
-        self.type = str
+        self.type = 'string'
         self.source = None
         self.is_modifiable = True
         self.description = None
@@ -163,7 +163,7 @@ class Parameter(object):
                 self._value = False
         else:
             raise ValueError('value must be boolean')
-        
+
     def set_value(self, value):
         if self.type == 'string':
             self._set_string_value(value)
