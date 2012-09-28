@@ -521,6 +521,7 @@ class EC2Connection(AWSQueryConnection):
                       disable_api_termination=False,
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
+                      secondary_private_ip_addresses=None,
                       placement_group=None, client_token=None,
                       security_group_ids=None,
                       additional_info=None, instance_profile_name=None,
@@ -592,6 +593,11 @@ class EC2Connection(AWSQueryConnection):
             specific available IP address from the subnet (e.g.,
             10.0.0.25).
 
+        :type secondary_private_ip_addresses: list
+        :param secondary_private_ip_addresses: If you're using VPC, you can
+            optionally use this parameter to assign the instance 
+	    some extra private IP addresses. e.g. ['10.0.0.26', '10.0.0.27']
+
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
             describing the EBS volumes associated  with the Image.
@@ -656,6 +662,14 @@ class EC2Connection(AWSQueryConnection):
                   'MaxCount': max_count}
         if key_name:
             params['KeyName'] = key_name
+	network_interface_prefix = ''
+        if secondary_private_ip_addresses:
+	    ip_address_count = 0
+	    network_interface_prefix = 'NetworkInterface.0.'
+	    params['%sDeviceIndex' % (network_interface_prefix,)] = 0
+	    for ip_address in secondary_private_ip_addresses:
+	       params['%sPrivateIpAddresses.%d.PrivateIpAddress' % (network_interface_prefix, ip_address_count)] = ip_address
+               ip_address_count = ip_address_count + 1
         if security_group_ids:
             l = []
             for group in security_group_ids:
@@ -663,7 +677,7 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group.id)
                 else:
                     l.append(group)
-            self.build_list_params(params, l, 'SecurityGroupId')
+            self.build_list_params(params, l, '%sSecurityGroupId' % (network_interface_prefix,))
         if security_groups:
             l = []
             for group in security_groups:
@@ -691,9 +705,9 @@ class EC2Connection(AWSQueryConnection):
         if monitoring_enabled:
             params['Monitoring.Enabled'] = 'true'
         if subnet_id:
-            params['SubnetId'] = subnet_id
+            params['%sSubnetId' % (network_interface_prefix,)] = subnet_id
         if private_ip_address:
-            params['PrivateIpAddress'] = private_ip_address
+            params['%sPrivateIpAddress' % (network_interface_prefix,)] = private_ip_address
         if block_device_map:
             block_device_map.build_list_params(params)
         if disable_api_termination:
@@ -959,11 +973,11 @@ class EC2Connection(AWSQueryConnection):
         :param end_time: An indication of how far forward to provide price
             changes for.  An ISO8601 DateTime string.
 
-        :type instance_type: str
-        :param instance_type: Filter responses to a particular instance type.
+        :type instance_type: str or list
+        :param instance_type: Filter responses to a particular (list of) instance types.
 
-        :type product_description: str
-        :param product_description: Filter responses to a particular platform.
+        :type product_description: str or list
+        :param product_description: Filter responses to a (list of) particular platforms.
             Valid values are currently:
 
             * Linux/UNIX
@@ -987,9 +1001,15 @@ class EC2Connection(AWSQueryConnection):
         if end_time:
             params['EndTime'] = end_time
         if instance_type:
-            params['InstanceType'] = instance_type
+	    if type(instance_type) == list:
+                self.build_list_params(params, instance_type, 'InstanceType')
+	    else:
+                params['InstanceType'] = instance_type
         if product_description:
-            params['ProductDescription'] = product_description
+	    if type(product_description) == list:
+                self.build_list_params(params, product_description, 'ProductDescription')
+	    else:
+                params['ProductDescription'] = product_description
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         return self.get_list('DescribeSpotPriceHistory', params,
