@@ -560,27 +560,25 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
         return self.get_list('DescribeDhcpOptions', params, [('item', DhcpOptions)])
 
-    def create_dhcp_options(self, vpc_id, cidr_block, availability_zone=None):
+    def create_dhcp_options(self, dhcp_configuration):
         """
         Create a new DhcpOption
 
-        :type vpc_id: str
-        :param vpc_id: The ID of the VPC where you want to create the subnet.
-
-        :type cidr_block: str
-        :param cidr_block: The CIDR block you want the subnet to cover.
-
-        :type availability_zone: str
-        :param availability_zone: The AZ you want the subnet in
+        :type dhcp_configuration: dict
+        :param dhcp_configuration: dictionary with an DHCP options
 
         :rtype: The newly created DhcpOption
         :return: A :class:`boto.vpc.customergateway.DhcpOption` object
         """
-        params = {'VpcId' : vpc_id,
-                  'CidrBlock' : cidr_block}
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDhcpOption', params, DhcpOptions)
+        params = {}
+        for i,key in enumerate(dhcp_configuration):
+            params["DhcpConfiguration.%d.Key" % (i+1)] = key
+            value = dhcp_configuration[key]
+            if not isinstance(value, list):
+                value = [value]
+            for j,v in enumerate(value):
+                params["DhcpConfiguration.%d.Value.%d" % (i+1,j+1)] = v
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 
     def delete_dhcp_options(self, dhcp_options_id):
         """
