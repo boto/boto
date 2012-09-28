@@ -41,7 +41,10 @@ class GlacierResponse(dict):
         size = http_response.getheader('Content-Length', None)
         if size is not None:
             self.size = size
-        
+
+    def __repr__(self):
+        return "<GlacierResponse %s>" % self.get('RequestId')
+
     def read(self, amt=None):
         "Reads and returns the response body, or up to the next amt bytes."
         return self.http_response.read(amt)
