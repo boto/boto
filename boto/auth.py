@@ -352,9 +352,9 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = ['%s:%s' % (n.lower().strip(),
-                      headers_to_sign[n].strip()) for n in headers_to_sign]
-        l = sorted(l)
+        l = sorted(['%s:%s' % (n.lower().strip(),
+                    ' '.join(headers_to_sign[n].strip().split()))
+                    for n in headers_to_sign])
         return '\n'.join(l)
 
     def signed_headers(self, headers_to_sign):
