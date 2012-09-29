@@ -372,7 +372,8 @@ class HTTPRequest(object):
             if isinstance(val, unicode):
                 self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
 
-        connection._auth_handler.add_auth(self, **kwargs)
+        region = getattr(connection, "region", None)
+        connection._auth_handler.add_auth(self, region=region, **kwargs)
 
         self.headers['User-Agent'] = UserAgent
         # I'm not sure if this is still needed, now that add_auth is
