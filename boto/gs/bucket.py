@@ -61,7 +61,7 @@ class Bucket(S3Bucket):
         :param response_headers: A dictionary containing HTTP
             headers/values that will override any headers associated
             with the stored object in the response.  See
-            http://goo.gl/EWOPb for details.
+            http://goo.gl/06N3b for details.
 
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
@@ -78,7 +78,7 @@ class Bucket(S3Bucket):
         if key:
             key.meta_generation = resp.getheader('x-goog-meta-generation')
             key.generation = resp.getheader('x-goog-generation')
-            # Sequence-based generation numbers are problematic.
+            # Sequence-based generation numbers are deprecated.
             if (resp.getheader('x-goog-generation') ==
                 resp.getheader('x-goog-sequence-number')):
               key.generation = key.meta_generation = None
@@ -108,10 +108,9 @@ class Bucket(S3Bucket):
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
                 generation=None):
-        """sets or changes a bucket's or key's acl (depending on whether a
-        key_name was passed). We include a version_id argument to support a
-        polymorphic interface for callers, however, version_id is not relevant
-        for Google Cloud Storage buckets and is therefore ignored here."""
+        """Sets or changes a bucket's or key's ACL. The generation argument can
+        be used to specify an object version, else we will modify the current
+        version."""
         key_name = key_name or ''
         query_args = STANDARD_ACL
         if generation:

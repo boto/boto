@@ -157,7 +157,7 @@ class StorageUri(object):
                 prefix=prefix, delimiter=delimiter, headers=headers)
                     if not isinstance(v, DeleteMarker))
         else:
-            return bucket.list( prefix=prefix, delimiter=delimiter,
+            return bucket.list(prefix=prefix, delimiter=delimiter,
                                headers=headers)
 
     def get_all_keys(self, validate=False, headers=None, prefix=None):
@@ -248,9 +248,9 @@ class BucketStorageUri(StorageUri):
             https_connection_factory).
         @param suppress_consec_slashes: If provided, controls whether
             consecutive slashes will be suppressed in key paths.
-        @param version_id: Object version id (optional).
-        @param generation: Object generation number (optional).
-        @param meta_generation: Object meta-generation number (optional).
+        @param version_id: Object version id (S3-specific).
+        @param generation: Object generation number (GCS-specific).
+        @param meta_generation: Object meta-generation number (GCS-specific).
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
@@ -571,7 +571,8 @@ class BucketStorageUri(StorageUri):
                               src_bucket_name=src_bucket_name,
                               src_key_name=src_key_name, metadata=metadata,
                               storage_class=storage_class,
-                              preserve_acl=preserve_acl, encrypt_key=encrypt_key,
+                              preserve_acl=preserve_acl,
+                              encrypt_key=encrypt_key,
                               headers=headers, query_args=query_args,
                               src_generation=src_generation)
         else:
