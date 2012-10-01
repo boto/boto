@@ -653,7 +653,6 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @requires(['AmazonOrderId'])
-    @structured_lists('AmazonOrderId.Id')
     @api_action('Orders', 30, 2)
     def list_order_items(self, path, response, **kw):
         """Returns order item information for an AmazonOrderId that
@@ -690,6 +689,15 @@ class MWSConnection(AWSQueryConnection):
     def get_matching_product(self, path, response, **kw):
         """Returns a list of products and their attributes, based on
            a list of ASIN values that you specify.
+        """
+        return self.post_request(path, kw, response)
+
+    @requires(['MarketplaceId', 'IdType', 'IdList'])
+    @structured_lists('IdList.Id')
+    @api_action('Products', 20, 20)
+    def get_matching_product_for_id(self, path, response, **kw):
+        """Returns a list of products and their attributes, based on
+           a list of Product IDs that you specify.
         """
         return self.post_request(path, kw, response)
 

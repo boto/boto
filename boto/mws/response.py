@@ -46,7 +46,10 @@ class DeclarativeType(object):
     def setup(self, parent, name, *args, **kw):
         self._parent = parent
         self._name = name
-        setattr(self._parent, self._name, self)
+        self._clone = self.__class__(self._hint)
+        self._clone._parent = parent
+        self._clone._name = name
+        setattr(self._parent, self._name, self._clone)
 
     def start(self, *args, **kw):
         raise NotImplemented
@@ -55,7 +58,7 @@ class DeclarativeType(object):
         raise NotImplemented
 
     def teardown(self, *args, **kw):
-        if self._value is None or self._value == []:
+        if self._value is None:
             delattr(self._parent, self._name)
         else:
             setattr(self._parent, self._name, self._value)
@@ -71,9 +74,14 @@ class Element(DeclarativeType):
 
 
 class SimpleList(DeclarativeType):
-    def setup(self, *args, **kw):
-        DeclarativeType.setup(self, *args, **kw)
+    def __init__(self, *args, **kw):
+        DeclarativeType.__init__(self, *args, **kw)
         self._value = []
+
+    def teardown(self, *args, **kw):
+        if self._value == []:
+            self._value = None
+        DeclarativeType.teardown(self, *args, **kw)
 
     def start(self, *args, **kw):
         return None
@@ -523,7 +531,9 @@ class Product(ResponseElement):
         VariationParent=ElementList(VariationRelationship),
     )
     CompetitivePricing = ElementList(CompetitivePricing)
-    SalesRankings = ElementList(SalesRank)
+    SalesRankings = Element(\
+        SalesRank=ElementList(SalesRank),
+    )
     LowestOfferListings = Element(\
         LowestOfferListing=ElementList(LowestOfferListing),
     )
@@ -543,6 +553,10 @@ class ProductsBulkOperationResponse(ResponseResultList):
 
 
 class GetMatchingProductResponse(ProductsBulkOperationResponse):
+    pass
+
+
+class GetMatchingProductForIdResult(ListMatchingProductsResult):
     pass
 
 

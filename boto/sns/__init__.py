@@ -1,4 +1,4 @@
-# Copyright (c) 2010-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2010-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -24,6 +24,7 @@
 # originally, the SNSConnection class was defined here
 from connection import SNSConnection
 from boto.regioninfo import RegionInfo
+
 
 def regions():
     """
@@ -55,14 +56,15 @@ def regions():
                        connection_cls=SNSConnection),
             ]
 
+
 def connect_to_region(region_name, **kw_params):
     """
-    Given a valid region name, return a 
+    Given a valid region name, return a
     :class:`boto.sns.connection.SNSConnection`.
 
     :type: str
     :param region_name: The name of the region to connect to.
-    
+
     :rtype: :class:`boto.sns.connection.SNSConnection` or ``None``
     :return: A connection to the given region, or None if an invalid region
              name is given
@@ -70,21 +72,4 @@ def connect_to_region(region_name, **kw_params):
     for region in regions():
         if region.name == region_name:
             return region.connect(**kw_params)
-    return None
-
-def get_region(region_name, **kw_params):
-    """
-    Find and return a :class:`boto.regioninfo.RegionInfo` object
-    given a region name.
-
-    :type: str
-    :param: The name of the region.
-
-    :rtype: :class:`boto.regioninfo.RegionInfo`
-    :return: The RegionInfo object for the given region or None if
-             an invalid region name is provided.
-    """
-    for region in regions(**kw_params):
-        if region.name == region_name:
-            return region
     return None

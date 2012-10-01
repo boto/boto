@@ -22,6 +22,7 @@
 
 import boto
 import os
+import sys
 from boto.exception import BotoClientError
 from boto.exception import InvalidUriError
 
@@ -70,6 +71,23 @@ class StorageUri(object):
                                   'on a directory (e.g., leaving off -R option '
                                   'on gsutil cp, mv, or ls of a\nbucket)' %
                                   (level, uri))
+
+    def _check_bucket_uri(self, function_name):
+        if issubclass(type(self), BucketStorageUri) and not self.bucket_name:
+            raise InvalidUriError(
+                '%s on bucket-less URI (%s)' % (function_name, self.uri))
+
+    def _check_object_uri(self, function_name):
+        if issubclass(type(self), BucketStorageUri) and not self.object_name:
+            raise InvalidUriError('%s on object-less URI (%s)' %
+                                  (function_name, self.uri))
+
+    def _warn_about_args(self, function_name, **args):
+        for arg in args:
+            if args[arg]:
+                sys.stderr.write(
+                        'Warning: %s ignores argument: %s=%s\n' %
+                        (function_name, arg, str(args[arg])))
 
     def connect(self, access_key_id=None, secret_access_key=None, **kwargs):
         """
@@ -120,65 +138,73 @@ class StorageUri(object):
         self.connection.debug = self.debug
         return self.connection
 
-    def delete_key(self, validate=True, headers=None, version_id=None,
+    def delete_key(self, validate=False, headers=None, version_id=None,
                    mfa_token=None):
-        if not self.object_name:
-            raise InvalidUriError('delete_key on object-less URI (%s)' %
-                                  self.uri)
+        self._check_object_uri('delete_key')
         bucket = self.get_bucket(validate, headers)
         return bucket.delete_key(self.object_name, headers, version_id,
                                  mfa_token)
 
-    def get_all_keys(self, validate=True, headers=None):
+    def list_bucket(self, prefix='', delimiter='', headers=None):
+        self._check_bucket_uri('list_bucket')
+        return self.get_bucket(headers=headers).list(prefix=prefix,
+                                                     delimiter=delimiter,
+                                                     headers=headers)
+
+    def get_all_keys(self, validate=False, headers=None, prefix=None):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_all_keys(headers)
 
-    def get_bucket(self, validate=True, headers=None):
-        if self.bucket_name is None:
-            raise InvalidUriError('get_bucket on bucket-less URI (%s)' %
-                                  self.uri)
+    def get_bucket(self, validate=False, headers=None):
+        self._check_bucket_uri('get_bucket')
         conn = self.connect()
         bucket = conn.get_bucket(self.bucket_name, validate, headers)
         self.check_response(bucket, 'bucket', self.uri)
         return bucket
 
-    def get_key(self, validate=True, headers=None, version_id=None):
-        if not self.object_name:
-            raise InvalidUriError('get_key on object-less URI (%s)' % self.uri)
+    def get_key(self, validate=False, headers=None, version_id=None):
+        self._check_object_uri('get_key')
         bucket = self.get_bucket(validate, headers)
         key = bucket.get_key(self.object_name, headers, version_id)
         self.check_response(key, 'key', self.uri)
         return key
 
-    def new_key(self, validate=True, headers=None):
-        if not self.object_name:
-            raise InvalidUriError('new_key on object-less URI (%s)' % self.uri)
+    def new_key(self, validate=False, headers=None):
+        self._check_object_uri('new_key')
         bucket = self.get_bucket(validate, headers)
         return bucket.new_key(self.object_name)
 
-    def get_contents_as_string(self, validate=True, headers=None, cb=None,
+    def get_contents_to_stream(self, fp, headers=None, version_id=None):
+        self._check_object_uri('get_key')
+        self._warn_about_args('get_key', validate=False)
+        key = self.get_key(None, headers)
+        self.check_response(key, 'key', self.uri)
+        return key.get_contents_to_file(fp, headers, version_id=version_id)
+
+    def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10,
+                             torrent=False, version_id=None,
+                             res_download_handler=None, response_headers=None):
+        self._check_object_uri('get_contents_to_file')
+        key = self.get_key(None, headers)
+        self.check_response(key, 'key', self.uri)
+        key.get_contents_to_file(fp, headers, cb, num_cb, torrent, version_id,
+                                 res_download_handler, response_headers)
+
+    def get_contents_as_string(self, validate=False, headers=None, cb=None,
                                num_cb=10, torrent=False, version_id=None):
-        if not self.object_name:
-            raise InvalidUriError('get_contents_as_string on object-less URI '
-                                  '(%s)' % self.uri)
+        self._check_object_uri('get_contents_as_string')
         key = self.get_key(validate, headers)
         self.check_response(key, 'key', self.uri)
         return key.get_contents_as_string(headers, cb, num_cb, torrent,
                                           version_id)
 
     def acl_class(self):
-        if self.bucket_name is None:
-            raise InvalidUriError('acl_class on bucket-less URI (%s)' %
-                                  self.uri)
         conn = self.connect()
         acl_class = conn.provider.acl_class
         self.check_response(acl_class, 'acl_class', self.uri)
         return acl_class
 
     def canned_acls(self):
-        if self.bucket_name is None:
-            raise InvalidUriError('canned_acls on bucket-less URI (%s)' %
-                                  self.uri)
         conn = self.connect()
         canned_acls = conn.provider.canned_acls
         self.check_response(canned_acls, 'canned_acls', self.uri)
@@ -192,6 +218,7 @@ class BucketStorageUri(StorageUri):
     """
 
     delim = '/'
+    capabilities = set([]) # A set of additional capabilities.
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=0, connection_args=None, suppress_consec_slashes=True):
@@ -238,70 +265,62 @@ class BucketStorageUri(StorageUri):
         @type new_name: string
         @param new_name: new object name
         """
-        if not self.bucket_name:
-            raise InvalidUriError('clone_replace_name() on bucket-less URI %s' %
-                                  self.uri)
+        self._check_bucket_uri('clone_replace_name')
         return BucketStorageUri(
             self.scheme, bucket_name=self.bucket_name, object_name=new_name,
             debug=self.debug,
             suppress_consec_slashes=self.suppress_consec_slashes)
 
-    def get_acl(self, validate=True, headers=None, version_id=None):
+    def get_acl(self, validate=False, headers=None, version_id=None):
         """returns a bucket's acl"""
-        if not self.bucket_name:
-            raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('get_acl')
         bucket = self.get_bucket(validate, headers)
         # This works for both bucket- and object- level ACLs (former passes
         # key_name=None):
-        acl = bucket.get_acl(self.object_name, headers, version_id)
+        key_name = self.object_name or ''
+        acl = bucket.get_acl(key_name, headers, version_id)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
-    def get_def_acl(self, validate=True, headers=None):
+    def get_def_acl(self, validate=False, headers=None):
         """returns a bucket's default object acl"""
-        if not self.bucket_name:
-            raise InvalidUriError('get_acl on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('get_def_acl')
         bucket = self.get_bucket(validate, headers)
         # This works for both bucket- and object- level ACLs (former passes
         # key_name=None):
-        acl = bucket.get_def_acl(self.object_name, headers)
+        acl = bucket.get_def_acl('', headers)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
-    def get_cors(self, validate=True, headers=None):
+    def get_cors(self, validate=False, headers=None):
         """returns a bucket's CORS XML"""
-        if not self.bucket_name:
-            raise InvalidUriError('get_cors on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('get_cors')
         bucket = self.get_bucket(validate, headers)
         cors = bucket.get_cors(headers)
         self.check_response(cors, 'cors', self.uri)
         return cors
 
-    def set_cors(self, cors, validate=True, headers=None):
+    def set_cors(self, cors, validate=False, headers=None):
         """sets or updates a bucket's CORS XML"""
-        if not self.bucket_name:
-            raise InvalidUriError('set_cors on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('set_cors ')
         bucket = self.get_bucket(validate, headers)
         bucket.set_cors(cors.to_xml(), headers)
 
-    def get_location(self, validate=True, headers=None):
-        if not self.bucket_name:
-            raise InvalidUriError('get_location on bucket-less URI (%s)' %
-                                  self.uri)
+    def get_location(self, validate=False, headers=None):
+        self._check_bucket_uri('get_location')
         bucket = self.get_bucket(validate, headers)
         return bucket.get_location()
 
-    def get_subresource(self, subresource, validate=True, headers=None,
+    def get_subresource(self, subresource, validate=False, headers=None,
                         version_id=None):
-        if not self.bucket_name:
-            raise InvalidUriError(
-                'get_subresource on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('get_subresource')
         bucket = self.get_bucket(validate, headers)
         return bucket.get_subresource(subresource, self.object_name, headers,
                                       version_id)
 
     def add_group_email_grant(self, permission, email_address, recursive=False,
-                              validate=True, headers=None):
+                              validate=False, headers=None):
+        self._check_bucket_uri('add_group_email_grant')
         if self.scheme != 'gs':
               raise ValueError('add_group_email_grant() not supported for %s '
                                'URIs.' % self.scheme)
@@ -321,10 +340,8 @@ class BucketStorageUri(StorageUri):
                                   '%s' % self.uri)
 
     def add_email_grant(self, permission, email_address, recursive=False,
-                        validate=True, headers=None):
-        if not self.bucket_name:
-            raise InvalidUriError('add_email_grant on bucket-less URI (%s)' %
-                                  self.uri)
+                        validate=False, headers=None):
+        self._check_bucket_uri('add_email_grant')
         if not self.object_name:
             bucket = self.get_bucket(validate, headers)
             bucket.add_email_grant(permission, email_address, recursive,
@@ -335,10 +352,8 @@ class BucketStorageUri(StorageUri):
             key.add_email_grant(permission, email_address)
 
     def add_user_grant(self, permission, user_id, recursive=False,
-                       validate=True, headers=None):
-        if not self.bucket_name:
-            raise InvalidUriError('add_user_grant on bucket-less URI (%s)' %
-                                  self.uri)
+                       validate=False, headers=None):
+        self._check_bucket_uri('add_user_grant')
         if not self.object_name:
             bucket = self.get_bucket(validate, headers)
             bucket.add_user_grant(permission, user_id, recursive, headers)
@@ -348,9 +363,7 @@ class BucketStorageUri(StorageUri):
             key.add_user_grant(permission, user_id)
 
     def list_grants(self, headers=None):
-        if not self.bucket_name:
-            raise InvalidUriError('list_grants on bucket-less URI (%s)' %
-                                  self.uri)
+        self._check_bucket_uri('list_grants ')
         bucket = self.get_bucket(headers)
         return bucket.list_grants(headers)
 
@@ -399,16 +412,12 @@ class BucketStorageUri(StorageUri):
         return False
 
     def create_bucket(self, headers=None, location='', policy=None):
-        if self.bucket_name is None:
-            raise InvalidUriError('create_bucket on bucket-less URI (%s)' %
-                                  self.uri)
+        self._check_bucket_uri('create_bucket ')
         conn = self.connect()
         return conn.create_bucket(self.bucket_name, headers, location, policy)
 
     def delete_bucket(self, headers=None):
-        if self.bucket_name is None:
-            raise InvalidUriError('delete_bucket on bucket-less URI (%s)' %
-                                  self.uri)
+        self._check_bucket_uri('delete_bucket')
         conn = self.connect()
         return conn.delete_bucket(self.bucket_name, headers)
 
@@ -422,50 +431,41 @@ class BucketStorageUri(StorageUri):
         self.check_response(provider, 'provider', self.uri)
         return provider
 
-    def set_acl(self, acl_or_str, key_name='', validate=True, headers=None,
+    def set_acl(self, acl_or_str, key_name='', validate=False, headers=None,
                 version_id=None):
         """sets or updates a bucket's acl"""
-        if not self.bucket_name:
-            raise InvalidUriError('set_acl on bucket-less URI (%s)' %
-                                  self.uri)
+        self._check_bucket_uri('set_acl')
+        key_name = key_name or self.object_name or ''
         self.get_bucket(validate, headers).set_acl(acl_or_str, key_name,
                                                    headers, version_id)
 
-    def set_def_acl(self, acl_or_str, key_name='', validate=True, headers=None,
-                version_id=None):
+    def set_def_acl(self, acl_or_str, key_name='', validate=False,
+                    headers=None, version_id=None):
         """sets or updates a bucket's default object acl"""
-        if not self.bucket_name:
-            raise InvalidUriError('set_acl on bucket-less URI (%s)' %
-                                  self.uri)
-        self.get_bucket(validate, headers).set_def_acl(acl_or_str, key_name,
-                                                   headers)
+        self._check_bucket_uri('set_def_acl')
+        self.get_bucket(validate, headers).set_def_acl(acl_or_str, '', headers)
 
-    def set_canned_acl(self, acl_str, validate=True, headers=None,
+    def set_canned_acl(self, acl_str, validate=False, headers=None,
                        version_id=None):
         """sets or updates a bucket's acl to a predefined (canned) value"""
-        if not self.object_name:
-            raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
-                                  self.uri)
+        self._check_object_uri('set_canned_acl')
+        self._warn_about_args('set_canned_acl', version_id=version_id)
         key = self.get_key(validate, headers)
         self.check_response(key, 'key', self.uri)
-        key.set_canned_acl(acl_str, headers, version_id)
+        key.set_canned_acl(acl_str, headers)
 
-    def set_def_canned_acl(self, acl_str, validate=True, headers=None,
-                       version_id=None):
-        """sets or updates a bucket's default object acl to a predefined 
+    def set_def_canned_acl(self, acl_str, validate=False, headers=None,
+                           version_id=None):
+        """sets or updates a bucket's default object acl to a predefined
            (canned) value"""
-        if not self.object_name:
-            raise InvalidUriError('set_canned_acl on object-less URI (%s)' %
-                                  self.uri)
+        self._check_bucket_uri('set_def_canned_acl ')
         key = self.get_key(validate, headers)
         self.check_response(key, 'key', self.uri)
         key.set_def_canned_acl(acl_str, headers, version_id)
 
-    def set_subresource(self, subresource, value, validate=True, headers=None,
+    def set_subresource(self, subresource, value, validate=False, headers=None,
                         version_id=None):
-        if not self.bucket_name:
-            raise InvalidUriError(
-                'set_subresource on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('set_subresource')
         bucket = self.get_bucket(validate, headers)
         bucket.set_subresource(subresource, value, self.object_name, headers,
                                version_id)
@@ -473,34 +473,77 @@ class BucketStorageUri(StorageUri):
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
                                  reduced_redundancy=False):
+        self._check_object_uri('set_contents_from_string')
         key = self.new_key(headers=headers)
-        key.set_contents_from_string(s, headers, replace, cb, num_cb, policy,
-                                     md5, reduced_redundancy)
+        if self.scheme == 'gs':
+            if reduced_redundancy:
+                sys.stderr.write('Warning: GCS does not support '
+                                 'reduced_redundancy; argument ignored by '
+                                 'set_contents_from_string')
+            key.set_contents_from_string(s, headers, replace, cb, num_cb,
+                                         policy, md5)
+        else:
+            key.set_contents_from_string(s, headers, replace, cb, num_cb,
+                                         policy, md5, reduced_redundancy)
 
-    def enable_logging(self, target_bucket, target_prefix=None, validate=True,
+    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None,
+                               num_cb=10, policy=None, md5=None, size=None,
+                               rewind=False, res_upload_handler=None):
+        self._check_object_uri('set_contents_from_file')
+        key = self.new_key(headers=headers)
+        if self.scheme == 'gs':
+            return key.set_contents_from_file(
+                    fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                    rewind=rewind, res_upload_handler=res_upload_handler)
+        else:
+            self._warn_about_args('set_contents_from_file',
+                                  res_upload_handler=res_upload_handler)
+            return key.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                              policy, md5, size=size,
+                                              rewind=rewind)
+
+    def set_contents_from_stream(self, fp, headers=None, replace=True, cb=None,
+                                 policy=None, reduced_redundancy=False):
+        self._check_object_uri('set_contents_from_stream')
+        dst_key = self.new_key(False, headers)
+        dst_key.set_contents_from_stream(fp, headers, replace, cb,
+                                         policy=policy,
+                                         reduced_redundancy=reduced_redundancy)
+
+    def copy_key(self, src_bucket_name, src_key_name, metadata=None,
+                 src_version_id=None, storage_class='STANDARD',
+                 preserve_acl=False, encrypt_key=False, headers=None,
+                 query_args=None):
+        self._check_object_uri('copy_key')
+        dst_bucket = self.get_bucket(validate=False, headers=headers)
+        dst_bucket.copy_key(new_key_name=self.object_name,
+                            src_bucket_name=src_bucket_name,
+                            src_key_name=src_key_name, metadata=metadata,
+                            src_version_id=src_version_id,
+                            storage_class=storage_class,
+                            preserve_acl=preserve_acl, encrypt_key=encrypt_key,
+                            headers=headers, query_args=query_args)
+
+    def enable_logging(self, target_bucket, target_prefix=None, validate=False,
                        headers=None, version_id=None):
-        if not self.bucket_name:
-            raise InvalidUriError(
-                'disable_logging on bucket-less URI (%s)' % self.uri)
+        self._check_bucket_uri('enable_logging')
         bucket = self.get_bucket(validate, headers)
         bucket.enable_logging(target_bucket, target_prefix, headers=headers)
 
-    def disable_logging(self, validate=True, headers=None, version_id=None):
-        if not self.bucket_name:
-            raise InvalidUriError(
-                'disable_logging on bucket-less URI (%s)' % self.uri)
+    def disable_logging(self, validate=False, headers=None, version_id=None):
+        self._check_bucket_uri('disable_logging')
         bucket = self.get_bucket(validate, headers)
         bucket.disable_logging(headers=headers)
 
     def set_website_config(self, main_page_suffix=None, error_key=None,
-                           validate=None, headers=None):
+                           validate=False, headers=None):
         bucket = self.get_bucket(validate, headers)
         if not (main_page_suffix or error_key):
             bucket.delete_website_configuration(headers)
         else:
             bucket.configure_website(main_page_suffix, error_key, headers)
 
-    def get_website_config(self, validate=None, headers=None):
+    def get_website_config(self, validate=False, headers=None):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_website_configuration_with_xml(headers)
 

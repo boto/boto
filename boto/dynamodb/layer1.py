@@ -80,7 +80,8 @@ class Layer1(AWSAuthConnection):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
-                 debug=0, security_token=None, region=None):
+                 debug=0, security_token=None, region=None,
+                 validate_certs=True):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -94,11 +95,9 @@ class Layer1(AWSAuthConnection):
                                    aws_access_key_id,
                                    aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port,
-                                   debug=debug, security_token=security_token)
+                                   debug=debug, security_token=security_token,
+                                   validate_certs=validate_certs)
         self.throughput_exceeded_events = 0
-        self.request_id = None
-        self.instrumentation = {'times': [], 'ids': []}
-        self.do_instrumentation = False
 
     def _get_session_token(self):
         self.provider = Provider(self._provider_type)
@@ -118,16 +117,15 @@ class Layer1(AWSAuthConnection):
                    'Content-Length': str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
-        if self.do_instrumentation:
-            start = time.time()
+        start = time.time()
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
-        self.request_id = response.getheader('x-amzn-RequestId')
-        boto.log.debug('RequestId: %s' % self.request_id)
-        if self.do_instrumentation:
-            self.instrumentation['times'].append(time.time() - start)
-            self.instrumentation['ids'].append(self.request_id)
+        elapsed = (time.time() - start)*1000
+        request_id = response.getheader('x-amzn-RequestId')
+        boto.log.debug('RequestId: %s' % request_id)
+        boto.perflog.info('%s: id=%s time=%sms',
+                          headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
@@ -307,6 +305,9 @@ class Layer1(AWSAuthConnection):
         :param request_items: A Python version of the RequestItems
             data structure defined by DynamoDB.
         """
+        # If the list is empty, return empty response
+        if not request_items:
+            return {}
         data = {'RequestItems': request_items}
         json_input = json.dumps(data)
         return self.make_request('BatchGetItem', json_input,

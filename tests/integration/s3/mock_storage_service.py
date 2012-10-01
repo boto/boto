@@ -396,7 +396,7 @@ class MockBucketStorageUri(object):
     def get_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, version_id=NOT_IMPL):
         return self.get_bucket().get_acl(self.object_name)
 
-    def get_def_acl(self, validate=NOT_IMPL, headers=NOT_IMPL, 
+    def get_def_acl(self, validate=NOT_IMPL, headers=NOT_IMPL,
                     version_id=NOT_IMPL):
         return self.get_bucket().get_def_acl(self.object_name)
 
@@ -409,6 +409,9 @@ class MockBucketStorageUri(object):
 
     def get_all_keys(self, validate=NOT_IMPL, headers=NOT_IMPL):
         return self.get_bucket().get_all_keys(self)
+
+    def list_bucket(self, prefix='', delimiter='', headers=NOT_IMPL):
+        return self.get_bucket().list(prefix=prefix, delimiter=delimiter)
 
     def get_bucket(self, validate=NOT_IMPL, headers=NOT_IMPL):
         return self.connect().get_bucket(self.bucket_name)
@@ -462,3 +465,43 @@ class MockBucketStorageUri(object):
     def set_subresource(self, subresource, value, validate=NOT_IMPL,
                         headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().set_subresource(subresource, value, self.object_name)
+
+    def copy_key(self, src_bucket_name, src_key_name, metadata=NOT_IMPL,
+                 src_version_id=NOT_IMPL, storage_class=NOT_IMPL,
+                 preserve_acl=NOT_IMPL, encrypt_key=NOT_IMPL, headers=NOT_IMPL,
+                 query_args=NOT_IMPL):
+        dst_bucket = self.get_bucket()
+        return dst_bucket.copy_key(new_key_name=self.object_name,
+                                   src_bucket_name=src_bucket_name,
+                                   src_key_name=src_key_name)
+
+    def set_contents_from_string(self, s, headers=NOT_IMPL, replace=NOT_IMPL,
+                                 cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
+                                 md5=NOT_IMPL, reduced_redundancy=NOT_IMPL):
+        key = self.new_key()
+        key.set_contents_from_string(s)
+
+    def set_contents_from_file(self, fp, headers=None, replace=NOT_IMPL,
+                               cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
+                               md5=NOT_IMPL, size=NOT_IMPL, rewind=NOT_IMPL,
+                               res_upload_handler=NOT_IMPL):
+        key = self.new_key()
+        return key.set_contents_from_file(fp, headers=headers)
+
+    def set_contents_from_stream(self, fp, headers=NOT_IMPL, replace=NOT_IMPL,
+                                 cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
+                                 reduced_redundancy=NOT_IMPL,
+                                 query_args=NOT_IMPL, size=NOT_IMPL):
+        dst_key.set_contents_from_stream(fp)
+
+    def get_contents_to_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL,
+                             num_cb=NOT_IMPL, torrent=NOT_IMPL,
+                             version_id=NOT_IMPL, res_download_handler=NOT_IMPL,
+                             response_headers=NOT_IMPL):
+        key = self.get_key()
+        key.get_contents_to_file(fp)
+
+    def get_contents_to_stream(self, fp, headers=NOT_IMPL, cb=NOT_IMPL,
+                               num_cb=NOT_IMPL, version_id=NOT_IMPL):
+        key = self.get_key()
+        return key.get_contents_to_file(fp)

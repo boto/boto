@@ -31,6 +31,7 @@ Currently Supported Services
 * **Deployment and Management**
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
 
 * **Identity & Access**
 
@@ -61,6 +62,7 @@ Currently Supported Services
 * **Storage**
 
   * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
+  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
   * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 
 * **Workforce**
@@ -109,6 +111,8 @@ Additional Resources
    ref/sns
    ses_tut
    ref/ses
+   cloudsearch_tut
+   ref/cloudsearch
    cloudwatch_tut
    ref/cloudwatch
    ref/route53
@@ -131,4 +135,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

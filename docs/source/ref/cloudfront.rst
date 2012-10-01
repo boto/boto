@@ -49,7 +49,7 @@ boto.cloudfront.invalidation
 boto.cloudfront.object
 ----------------------
 
-.. automodule:: boto.cloudfront.identity
+.. automodule:: boto.cloudfront.object
    :members:
    :undoc-members:
 

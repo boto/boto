@@ -38,7 +38,7 @@ class MTurkRequestError(EC2ResponseError):
 
 class MTurkConnection(AWSQueryConnection):
     
-    APIVersion = '2008-08-02'
+    APIVersion = '2012-03-25'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -110,7 +110,16 @@ class MTurkConnection(AWSQueryConnection):
         for a specified HIT type
         """
         return self._set_notification(hit_type, 'REST', url, event_types)
-        
+
+    def set_sqs_notification(self, hit_type, queue_url, event_types=None):
+        """
+        Performs a SetHITTypeNotification operation so set SQS notification
+        for a specified HIT type. Queue URL is of form:
+        https://queue.amazonaws.com/<CUSTOMER_ID>/<QUEUE_NAME> and can be
+        found when looking at the details for a Queue in the AWS Console"
+        """
+        return self._set_notification(hit_type, "SQS", queue_url, event_types)
+ 
     def _set_notification(self, hit_type, transport, destination, event_types=None):
         """
         Common SetHITTypeNotification operation to set notification for a
@@ -363,6 +372,14 @@ class MTurkConnection(AWSQueryConnection):
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('RejectAssignment', params)
+
+    def approve_rejected_assignment(self, assignment_id, feedback=None):
+        """
+        """
+        params = {'AssignmentId' : assignment_id, }
+        if feedback:
+            params['RequesterFeedback'] = feedback
+        return self._process_request('ApproveRejectedAssignment', params)
 
     def get_hit(self, hit_id, response_groups=None):
         """

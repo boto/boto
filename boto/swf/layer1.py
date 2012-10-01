@@ -90,20 +90,6 @@ class Layer1(AWSAuthConnection):
     def _required_auth_capability(self):
         return ['hmac-v3-http']
 
-    def _credentials_expired(self, response):
-        if response.status != 400:
-            return False
-        try:
-            parsed = json.loads(response.read())
-            # It seems that SWF doesn't really have a specific "Token Expired"
-            # message, but this is a best effort heuristic.
-            expected = 'com.amazon.coral.service#UnrecognizedClientException'
-            return (parsed['__type'] == expected and \
-                    'security token' in parsed['message'])
-        except Exception, e:
-            return False
-        return False
-
     def make_request(self, action, body='', object_hook=None):
         """
         :raises: ``SWFResponseError`` if response status is not 200.
@@ -1112,7 +1098,8 @@ class Layer1(AWSAuthConnection):
         return self.make_request('GetWorkflowExecutionHistory', json_input)
 
     def count_open_workflow_executions(self, domain, latest_date, oldest_date,
-                                       tag=None, workflow_id=None,
+                                       tag=None,
+                                       workflow_id=None,
                                        workflow_name=None,
                                        workflow_version=None):
         """
@@ -1165,9 +1152,10 @@ class Layer1(AWSAuthConnection):
         return self.make_request('CountOpenWorkflowExecutions', json_input)
 
     def list_open_workflow_executions(self, domain,
+                                      oldest_date,
                                       latest_date=None,
-                                      oldest_date=None,
-                                      tag=None, workflow_id=None,
+                                      tag=None,
+                                      workflow_id=None,
                                       workflow_name=None,
                                       workflow_version=None,
                                       maximum_page_size=None,
@@ -1255,7 +1243,8 @@ class Layer1(AWSAuthConnection):
                                          close_latest_date=None,
                                          close_oldest_date=None,
                                          close_status=None,
-                                         tag=None, workflow_id=None,
+                                         tag=None,
+                                         workflow_id=None,
                                          workflow_name=None,
                                          workflow_version=None):
         """
@@ -1334,6 +1323,9 @@ class Layer1(AWSAuthConnection):
         if workflow_name and workflow_version:
             data['typeFilter'] = {'name': workflow_name,
                                   'version': workflow_version}
+        if workflow_id:
+            data['executionFilter'] = {'workflowId': workflow_id}
+
         json_input = json.dumps(data)
         return self.make_request('CountClosedWorkflowExecutions', json_input)
 
@@ -1343,7 +1335,8 @@ class Layer1(AWSAuthConnection):
                                         close_latest_date=None,
                                         close_oldest_date=None,
                                         close_status=None,
-                                        tag=None, workflow_id=None,
+                                        tag=None,
+                                        workflow_id=None,
                                         workflow_name=None,
                                         workflow_version=None,
                                         maximum_page_size=None,

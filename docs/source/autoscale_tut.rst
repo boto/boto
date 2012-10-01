@@ -42,7 +42,8 @@ Like EC2 the Autoscale service has a different endpoint for each region. By
 default the US endpoint is used. To choose a specific region, instantiate the
 AutoScaleConnection object with that region's endpoint.
 
->>> ec2 = boto.connect_autoscale(host='autoscaling.eu-west-1.amazonaws.com')
+>>> import boto.ec2.autoscale
+>>> ec2 = boto.ec2.autoscale.connect_to_region('eu-west-1')
 
 Alternatively, edit your boto.cfg with the default Autoscale endpoint to use::
 
@@ -94,7 +95,8 @@ ready to associate it with our new autoscale group.
 
 >>> ag = AutoScalingGroup(group_name='my_group', load_balancers=['my-lb'],
                           availability_zones=['us-east-1a', 'us-east-1b'],
-                          launch_config=lc, min_size=4, max_size=8)
+                          launch_config=lc, min_size=4, max_size=8,
+                          connection=conn)
 >>> conn.create_auto_scaling_group(ag)
 
 We now have a new autoscaling group defined! At this point instances should be
@@ -116,14 +118,14 @@ its associated load balancer.
 
 Scaling a Group Up or Down
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-It can also be useful to scale a group up or down depending on certain criteria. 
+It can also be useful to scale a group up or down depending on certain criteria.
 For example, if the average CPU utilization of the group goes above 70%, you may
 want to scale up the number of instances to deal with demand. Likewise, you
-might want to scale down if usage drops again. 
-These rules for **how** to scale are defined by *Scaling Polices*, and the rules for
+might want to scale down if usage drops again.
+These rules for **how** to scale are defined by *Scaling Policies*, and the rules for
 **when** to scale are defined by CloudWatch *Metric Alarms*.
 
-For example, let's configure scaling for the above group based on CPU utilization. 
+For example, let's configure scaling for the above group based on CPU utilization.
 We'll say it should scale up if the average CPU usage goes above 70% and scale
 down if it goes below 40%.
 
@@ -132,6 +134,7 @@ the group (but not when to do it, we'll specify that later).
 
 We need one policy for scaling up and one for scaling down.
 
+>>> from boto.ec2.autoscale import ScalingPolicy
 >>> scale_up_policy = ScalingPolicy(
             name='scale_up', adjustment_type='ChangeInCapacity',
             as_name='my_group', scaling_adjustment=1, cooldown=180)
@@ -147,11 +150,11 @@ Let's submit them to AWS.
 
 Now that the polices have been digested by AWS, they have extra properties
 that we aren't aware of locally. We need to refresh them by requesting them
-back again. 
+back again.
 
->>> scale_up_policy = autoscale.get_all_policies(
+>>> scale_up_policy = conn.get_all_policies(
             as_group='my_group', policy_names=['scale_up'])[0]
->>> scale_down_policy = autoscale.get_all_policies(
+>>> scale_down_policy = conn.get_all_policies(
             as_group='my_group', policy_names=['scale_down'])[0]
 
 Specifically, we'll need the Amazon Resource Name (ARN) of each policy, which
@@ -170,6 +173,7 @@ Group, rather than individual instances. We express that as CloudWatch
 
 Create an alarm for when to scale up, and one for when to scale down.
 
+>>> from boto.ec2.cloudwatch import MetricAlarm
 >>> scale_up_alarm = MetricAlarm(
             name='scale_up_on_cpu', namespace='AWS/EC2',
             metric='CPUUtilization', statistic='Average',
@@ -188,4 +192,29 @@ Create an alarm for when to scale up, and one for when to scale down.
             dimensions=alarm_dimensions)
 >>> cloudwatch.create_alarm(scale_down_alarm)
 
-Auto Scaling will now create a new instance if the existing cluster averages more than 70% CPU for two minutes. Similarly, it will terminate an instance when CPU usage sits below 40%. Auto Scaling will not add or remove instances beyond the limits of the Scaling Group's 'max_size' and 'min_size' properties.
+Auto Scaling will now create a new instance if the existing cluster averages
+more than 70% CPU for two minutes. Similarly, it will terminate an instance
+when CPU usage sits below 40%. Auto Scaling will not add or remove instances
+beyond the limits of the Scaling Group's 'max_size' and 'min_size' properties.
+
+To retrieve the instances in your autoscale group:
+
+>>> ec2 = boto.connect_ec2()
+>>> conn.get_all_groups(names=['my_group'])[0]
+>>> instance_ids = [i.instance_id for i in group.instances]
+>>> reservations = ec2.get_all_instances(instance_ids)
+>>> instances = [i for i in reservations for i in r.instances]
+
+To delete your autoscale group, we first need to shutdown all the
+instances:
+
+>>> ag.shutdown_instances()
+
+Once the instances have been shutdown, you can delete the autoscale
+group:
+
+>>> ag.delete()
+
+You can also delete your launch configuration:
+
+>>> lc.delete()

@@ -10,3 +10,4 @@ MANIFEST
 .idea
 .tox
 .coverage
+*flymake.py

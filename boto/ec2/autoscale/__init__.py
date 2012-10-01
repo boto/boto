@@ -40,6 +40,7 @@ from boto.ec2.autoscale.activity import Activity
 from boto.ec2.autoscale.policy import AdjustmentType
 from boto.ec2.autoscale.policy import MetricCollectionTypes
 from boto.ec2.autoscale.policy import ScalingPolicy
+from boto.ec2.autoscale.policy import TerminationPolicies
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
@@ -90,7 +91,7 @@ def connect_to_region(region_name, **kw_params):
 class AutoScaleConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'autoscale_version', '2011-01-01')
     DefaultRegionEndpoint = boto.config.get('Boto', 'autoscale_endpoint',
-                                            'autoscaling.amazonaws.com')
+                                            'autoscaling.us-east-1.amazonaws.com')
     DefaultRegionName = boto.config.get('Boto', 'autoscale_region_name',
                                         'us-east-1')
 
@@ -98,7 +99,7 @@ class AutoScaleConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         """
         Init method to create a new connection to the AutoScaling service.
 
@@ -116,7 +117,8 @@ class AutoScaleConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path=path,
-                                    security_token=security_token)
+                                    security_token=security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -170,12 +172,18 @@ class AutoScaleConnection(AWSQueryConnection):
             params['DefaultCooldown'] = as_group.default_cooldown
         if as_group.placement_group:
             params['PlacementGroup'] = as_group.placement_group
+        if as_group.termination_policies:
+            self.build_list_params(params, as_group.termination_policies,
+                                   'TerminationPolicies')
         if op.startswith('Create'):
             # you can only associate load balancers with an autoscale
             # group at creation time
             if as_group.load_balancers:
                 self.build_list_params(params, as_group.load_balancers,
                                        'LoadBalancerNames')
+            if as_group.tags:
+                for i, tag in enumerate(as_group.tags):
+                    tag.build_params(params, i + 1)
         return self.get_object(op, params, Request)
 
     def create_auto_scaling_group(self, as_group):
@@ -356,6 +364,15 @@ class AutoScaleConnection(AWSQueryConnection):
             self.build_list_params(params, activity_ids, 'ActivityIds')
         return self.get_list('DescribeScalingActivities',
                              params, [('member', Activity)])
+
+    def get_termination_policies(self):
+        """Gets all valid termination policies.
+
+        These values can then be used as the termination_policies arg
+        when creating and updating autoscale groups.
+        """
+        return self.get_object('DescribeTerminationPolicyTypes',
+                               {}, TerminationPolicies)
 
     def delete_scheduled_action(self, scheduled_action_name,
                                 autoscale_group=None):
@@ -632,16 +649,21 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def put_notification_configuration(self, autoscale_group, topic, notification_types):
         """
-        Configures an Auto Scaling group to send notifications when specified events take place.
+        Configures an Auto Scaling group to send notifications when
+        specified events take place.
 
-        :type as_group: str or :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
-        :param as_group: The Auto Scaling group to put notification configuration on.
+        :type as_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param as_group: The Auto Scaling group to put notification
+            configuration on.
 
         :type topic: str
-        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple Notification Service (SNS) topic.
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple
+            Notification Service (SNS) topic.
 
         :type notification_types: list
-        :param notification_types: The type of events that will trigger the notification.
+        :param notification_types: The type of events that will trigger
+            the notification.
         """
 
         name = autoscale_group
