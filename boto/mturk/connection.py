@@ -110,7 +110,16 @@ class MTurkConnection(AWSQueryConnection):
         for a specified HIT type
         """
         return self._set_notification(hit_type, 'REST', url, event_types)
-        
+
+    def set_sqs_notification(self, hit_type, queue_url, event_types=None):
+        """
+        Performs a SetHITTypeNotification operation so set SQS notification
+        for a specified HIT type. Queue URL is of form:
+        https://queue.amazonaws.com/<CUSTOMER_ID>/<QUEUE_NAME> and can be
+        found when looking at the details for a Queue in the AWS Console"
+        """
+        return self._set_notification(hit_type, "SQS", queue_url, event_types)
+ 
     def _set_notification(self, hit_type, transport, destination, event_types=None):
         """
         Common SetHITTypeNotification operation to set notification for a
