@@ -164,4 +164,3 @@ class BooleanResult(object):
             self.request_id = value
         else:
             setattr(self, name, value)
-

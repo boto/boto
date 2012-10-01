@@ -34,12 +34,11 @@ import xml.sax
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
-VERSIONING_ARG = 'versioning'
 
 class Bucket(S3Bucket):
     VersioningBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-                     '<VersioningConfiguration><Status>%s</Status>'
-                     '</VersioningConfiguration>')
+                      '<VersioningConfiguration><Status>%s</Status>'
+                      '</VersioningConfiguration>')
     WebsiteBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                    '<WebsiteConfiguration>%s%s</WebsiteConfiguration>')
     WebsiteMainPageFragment = '<MainPageSuffix>%s</MainPageSuffix>'
@@ -48,18 +47,83 @@ class Bucket(S3Bucket):
     def __init__(self, connection=None, name=None, key_class=GSKey):
         super(Bucket, self).__init__(connection, name, key_class)
 
-    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None):
+    def get_key(self, key_name, headers=None, version_id=None,
+                response_headers=None, generation=None):
+        """
+        Check to see if a particular key exists within the bucket.  This
+        method uses a HEAD request to check for the existance of the key.
+        Returns: An instance of a Key object or None
+
+        :type key_name: string
+        :param key_name: The name of the key to retrieve
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response.  See
+            http://goo.gl/EWOPb for details.
+
+        :rtype: :class:`boto.s3.key.Key`
+        :returns: A Key object from this bucket.
+        """
+        query_args_l = []
+        if generation:
+            query_args_l.append('generation=%s' % generation)
+        if response_headers:
+            for rk, rv in response_headers.iteritems():
+                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+
+        key, resp = self._get_key_internal(key_name, headers,
+                                           query_args_l=query_args_l)
+        if key:
+            key.meta_generation = resp.getheader('x-goog-meta-generation')
+            key.generation = resp.getheader('x-goog-generation')
+            # Sequence-based generation numbers are problematic.
+            if (resp.getheader('x-goog-generation') ==
+                resp.getheader('x-goog-sequence-number')):
+              key.generation = key.meta_generation = None
+        return key
+
+    def copy_key(self, new_key_name, src_bucket_name, src_key_name,
+                 metadata=None, src_version_id=None, storage_class='STANDARD',
+                 preserve_acl=False, encrypt_key=False, headers=None,
+                 query_args=None, src_generation=None):
+        if src_generation:
+            headers['x-goog-copy-source-generation'] = src_generation
+        super(Bucket, self).copy_key(new_key_name, src_bucket_name,
+                                     src_key_name, metadata=metadata,
+                                     storage_class=storage_class,
+                                     preserve_acl=preserve_acl,
+                                     encrypt_key=encrypt_key, headers=headers,
+                                     query_args=query_args)
+
+    def delete_key(self, key_name, headers=None, version_id=None,
+                   mfa_token=None, generation=None):
+        query_args_l = []
+        if generation:
+            query_args_l.append('generation=%s' % generation)
+        self._delete_key_internal(key_name, headers=headers,
+                                  version_id=version_id, mfa_token=mfa_token,
+                                  query_args_l=query_args_l)
+
+    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
+                generation=None):
         """sets or changes a bucket's or key's acl (depending on whether a
         key_name was passed). We include a version_id argument to support a
         polymorphic interface for callers, however, version_id is not relevant
         for Google Cloud Storage buckets and is therefore ignored here."""
         key_name = key_name or ''
+        query_args = STANDARD_ACL
+        if generation:
+          query_args += '&generation=%d' % generation
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
-            self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers)
+            self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers,
+                             query_args=query_args)
         else:
-            self.set_canned_acl(acl_or_str, key_name, headers=headers)
+            self.set_canned_acl(acl_or_str, key_name, headers=headers,
+                                generation=generation)
 
     def set_def_acl(self, acl_or_str, key_name='', headers=None):
         """sets or changes a bucket's default object acl. The key_name argument
@@ -86,12 +150,16 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def get_acl(self, key_name='', headers=None, version_id=None):
+    def get_acl(self, key_name='', headers=None, version_id=None,
+                generation=None):
         """returns a bucket's acl. We include a version_id argument
            to support a polymorphic interface for callers, however,
            version_id is not relevant for Google Cloud Storage buckets
            and is therefore ignored here."""
-        return self.get_acl_helper(key_name, headers, STANDARD_ACL)
+        query_args = STANDARD_ACL
+        if generation:
+            query_args += '&generation=%d' % generation
+        return self.get_acl_helper(key_name, headers, query_args)
 
     def get_def_acl(self, key_name='', headers=None):
         """returns a bucket's default object acl. The key_name argument is
@@ -116,13 +184,16 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def set_canned_acl(self, acl_str, key_name='', headers=None,
-                       version_id=None):
+                       version_id=None, generation=None):
         """sets or changes a bucket's acl to a predefined (canned) value.
            We include a version_id argument to support a polymorphic
            interface for callers, however, version_id is not relevant for
            Google Cloud Storage buckets and is therefore ignored here."""
+        query_args = STANDARD_ACL
+        if generation:
+            query_args += '&generation=%d' % generation
         return self.set_canned_acl_helper(acl_str, key_name, headers,
-                                          STANDARD_ACL)
+                                          query_args=query_args)
 
     def set_def_canned_acl(self, acl_str, key_name='', headers=None):
         """sets or changes a bucket's default object acl to a predefined
@@ -391,7 +462,7 @@ class Bucket(S3Bucket):
     def delete_website_configuration(self, headers=None):
         self.configure_website(headers=headers)
 
-    def get_versioning_configuration(self, headers=None):
+    def get_versioning_status(self, headers=None):
         """
         Returns the current status of versioning configuration on the bucket.
 
@@ -408,6 +479,7 @@ class Bucket(S3Bucket):
                     response.status, response.reason, body)
         resp_json = boto.jsonresponse.Element()
         boto.jsonresponse.XmlHandler(resp_json, None).parse(body)
+        resp_json = resp_json['VersioningConfiguration']
         return ('Status' in resp_json) and (resp_json['Status'] == 'Enabled')
 
     def configure_versioning(self, enabled, headers=None):

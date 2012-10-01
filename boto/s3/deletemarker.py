@@ -54,4 +54,10 @@ class DeleteMarker:
         else:
             setattr(self, name, value)
 
-
+    @property
+    def provider(self):
+        provider = None
+        if self.bucket:
+            if self.bucket.connection:
+                provider = self.bucket.connection.provider
+        return provider

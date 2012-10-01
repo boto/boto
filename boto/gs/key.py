@@ -25,6 +25,50 @@ from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 
 class Key(S3Key):
+    generation = None
+    meta_generation = None
+
+    def endElement(self, name, value, connection):
+        if name == 'Key':
+            self.name = value
+        elif name == 'ETag':
+            self.etag = value
+        elif name == 'IsLatest':
+            if value == 'true':
+                self.is_latest = True
+            else:
+                self.is_latest = False
+        elif name == 'LastModified':
+            self.last_modified = value
+        elif name == 'Size':
+            self.size = int(value)
+        elif name == 'StorageClass':
+            self.storage_class = value
+        elif name == 'Owner':
+            pass
+        elif name == 'VersionId':
+            self.version_id = value
+        elif name == 'Generation':
+            self.generation = value
+        elif name == 'MetaGeneration':
+            self.meta_generation = value
+        else:
+            setattr(self, name, value)
+
+    def get_file(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None):
+        query_args = None
+        if self.generation:
+            query_args = ['generation=%s' % self.generation]
+        self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                override_num_retries=override_num_retries,
+                                response_headers=response_headers,
+                                query_args=query_args)
+
+    def delete(self):
+        return self.bucket.delete_key(self.name, version_id=self.version_id,
+                                      generation=self.generation)
 
     def add_email_grant(self, permission, email_address):
         """
