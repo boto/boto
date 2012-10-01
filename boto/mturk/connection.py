@@ -608,8 +608,19 @@ class MTurkConnection(AWSQueryConnection):
         return self._process_request('GetQualificationType', params,
                                      [('QualificationType', QualificationType),])
 
-    def get_qualifications_for_qualification_type(self, qualification_type_id):
-        params = {'QualificationTypeId' : qualification_type_id }
+    def get_all_qualifications_for_qual_type(self, qualification_type_id):
+        page_size = 100
+        search_qual = self.get_qualifications_for_qualification_type(qualification_type_id)
+        total_records = int(search_qual.TotalNumResults)
+        get_page_quals = lambda page: self.get_qualifications_for_qualification_type(qualification_type_id = qualification_type_id, page_size=page_size, page_number = page)
+        page_nums = self._get_pages(page_size, total_records)
+        qual_sets = itertools.imap(get_page_quals, page_nums)
+        return itertools.chain.from_iterable(qual_sets)
+
+    def get_qualifications_for_qualification_type(self, qualification_type_id, page_size=100, page_number = 1):
+        params = {'QualificationTypeId' : qualification_type_id,
+                  'PageSize': page_size,
+                  'PageNumber': page_number}
         return self._process_request('GetQualificationsForQualificationType', params,
                                      [('Qualification', Qualification),])
 
