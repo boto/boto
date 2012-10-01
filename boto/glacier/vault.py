@@ -106,6 +106,9 @@ class Vault(object):
         :type part_size: int
         :param part_size: The part size for the multipart upload.
 
+        :type description: str
+        :param description: An optional description for the archive.
+
         :rtype: :class:`boto.glaicer.writer.Writer`
         :return: A Writer object that to which the archive data
             should be written.
@@ -115,7 +118,8 @@ class Vault(object):
                                                          description)
         return Writer(self, response['UploadId'], part_size=part_size)
 
-    def create_archive_from_file(self, filename=None, file_obj=None):
+    def create_archive_from_file(self, filename=None, file_obj=None,
+                                 description=None):
         """
         Create a new archive and upload the data from the given file
         or file-like object.
@@ -126,13 +130,16 @@ class Vault(object):
         :type file_obj: file
         :param file_obj: A file-like object to upload
 
+        :type description: str
+        :param description: An optional description for the archive.
+
         :rtype: str
         :return: The archive id of the newly created archive
         """
         if not file_obj:
             file_obj = open(filename, "rb")
 
-        writer = self.create_archive_writer()
+        writer = self.create_archive_writer(description=description)
         while True:
             data = file_obj.read(self.DefaultPartSize)
             if not data:
