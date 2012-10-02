@@ -81,7 +81,7 @@ class RDSConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'rds.us-east-1.amazonaws.com'
-    APIVersion = '2011-04-01'
+    APIVersion = '2012-09-17'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -162,7 +162,7 @@ class RDSConnection(AWSQueryConnection):
                           license_model = None,
                           option_group_name = None,
                           ):
-        # API version: 2012-04-23
+        # API version: 2012-09-17
         # Parameter notes:
         # =================
         # id should be db_instance_identifier according to API docs but has been left
