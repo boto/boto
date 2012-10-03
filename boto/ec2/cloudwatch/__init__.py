@@ -391,7 +391,7 @@ class CloudWatchConnection(AWSQueryConnection):
         if state_value:
             params['StateValue'] = state_value
         return self.get_list('DescribeAlarms', params,
-                             [('MetricAlarms', MetricAlarms)])[0]
+                             [('MetricAlarms', MetricAlarms)])
 
     def describe_alarm_history(self, alarm_name=None,
                                start_date=None, end_date=None,
