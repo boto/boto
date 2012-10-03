@@ -17,7 +17,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -84,9 +84,9 @@ class S3BucketTest (unittest.TestCase):
     def test_logging(self):
         # use self.bucket as the target bucket so that teardown
         # will delete any log files that make it into the bucket
-        # automatically and all we have to do is delete the 
+        # automatically and all we have to do is delete the
         # source bucket.
-        sb_name = "src-" + self.bucket_name 
+        sb_name = "src-" + self.bucket_name
         sb = self.conn.create_bucket(sb_name)
         # grant log write perms to target bucket using canned-acl
         self.bucket.set_acl("log-delivery-write")
