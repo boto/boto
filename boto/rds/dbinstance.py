@@ -61,7 +61,8 @@ class DBInstance(object):
         a database can be restored with point-in-time restore. TODO: type?
     :ivar multi_az: Boolean that specifies if the DB Instance is a
         Multi-AZ deployment.
-    :ivar iops: The current number of provisioned IOPS for the DB Instance. Can be None if this is a standard instance
+    :ivar iops: The current number of provisioned IOPS for the DB Instance.
+        Can be None if this is a standard instance.
     :ivar pending_modified_values: Specifies that changes to the
         DB Instance are pending. This element is only included when changes
         are pending. Specific changes are identified by subelements.
