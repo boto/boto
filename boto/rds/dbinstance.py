@@ -58,7 +58,7 @@ class DBInstance(object):
     :ivar preferred_maintenance_window: Specifies the weekly time
         range (in UTC) during which system maintenance can occur. (string)
     :ivar latest_restorable_time: Specifies the latest time to which
-        a database can be restored with point-in-time restore. TODO: type?
+        a database can be restored with point-in-time restore. (string)
     :ivar multi_az: Boolean that specifies if the DB Instance is a
         Multi-AZ deployment.
     :ivar iops: The current number of provisioned IOPS for the DB Instance.
@@ -149,10 +149,7 @@ class DBInstance(object):
             if value.lower() == 'true':
                 self.multi_az = True
         elif name == 'Iops':
-            try:
-                self.iops = int(value)
-            except Exception, err:
-                self.iops = None
+            self.iops = int(value)
         else:
             setattr(self, name, value)
 
