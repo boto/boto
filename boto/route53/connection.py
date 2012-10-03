@@ -61,9 +61,9 @@ class Route53Connection(AWSAuthConnection):
                  validate_certs=True):
         AWSAuthConnection.__init__(self, host,
                                    aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port, debug=debug,
-                                   security_token=security_token,
-                                   validate_certs=validate_certs)
+                                   True, port, proxy, proxy_port, debug,
+                                   security_token,
+                                   validate_certs)
 
     def _required_auth_capability(self):
         return ['route53']

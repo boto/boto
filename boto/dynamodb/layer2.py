@@ -117,7 +117,7 @@ class Layer2(object):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
                              debug, security_token, region,
-                             validate_certs=validate_certs)
+                             validate_certs)
 
     def dynamize_attribute_updates(self, pending_updates):
         """

@@ -52,8 +52,8 @@ class SNSConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token=security_token,
-                                    validate_certs=validate_certs)
+                                    security_token,
+                                    validate_certs)
 
     def _required_auth_capability(self):
         return ['sns']

@@ -54,7 +54,7 @@ class STSConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    validate_certs=validate_certs)
+                                    validate_certs)
 
     def _required_auth_capability(self):
         return ['sign-v2']

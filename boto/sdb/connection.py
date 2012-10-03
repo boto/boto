@@ -117,8 +117,8 @@ class SDBConnection(AWSQueryConnection):
                                     proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token=security_token,
-                                    validate_certs=validate_certs)
+                                    security_token,
+                                    validate_certs)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item

@@ -115,9 +115,9 @@ class AutoScaleConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path=path,
-                                    security_token=security_token,
-                                    validate_certs=validate_certs)
+                                    https_connection_factory, path,
+                                    security_token,
+                                    validate_certs)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

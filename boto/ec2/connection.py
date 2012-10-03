@@ -91,7 +91,7 @@ class EC2Connection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs)
         if api_version:
             self.APIVersion = api_version
 

@@ -932,8 +932,8 @@ class AWSQueryConnection(AWSAuthConnection):
                                    is_secure, port, proxy,
                                    proxy_port, proxy_user, proxy_pass,
                                    debug, https_connection_factory, path,
-                                   security_token=security_token,
-                                   validate_certs=validate_certs)
+                                   security_token,
+                                   validate_certs)
 
     def _required_auth_capability(self):
         return []
