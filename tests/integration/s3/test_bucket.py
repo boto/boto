@@ -148,3 +148,13 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(response[0][0].value, 'avalue')
         self.assertEqual(response[0][1].key, 'anotherkey')
         self.assertEqual(response[0][1].value, 'anothervalue')
+
+    def test_website_configuration(self):
+        response = self.bucket.configure_website('index.html')
+        self.assertTrue(response)
+        config = self.bucket.get_website_configuration()
+        self.assertEqual(config, {'WebsiteConfiguration':
+                                  {'IndexDocument': {'Suffix': 'index.html'}}})
+        config2, xml = self.bucket.get_website_configuration_with_xml()
+        self.assertEqual(config, config2)
+        self.assertTrue('<Suffix>index.html</Suffix>' in xml, xml)
