@@ -52,7 +52,7 @@ class IAMConnection(AWSQueryConnection):
                                     proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory,
                                     path, security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs)
 
     def _required_auth_capability(self):
         #return ['iam']

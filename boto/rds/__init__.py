@@ -99,7 +99,7 @@ class RDSConnection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs)
 
     def _required_auth_capability(self):
         return ['rds']
