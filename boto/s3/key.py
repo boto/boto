@@ -433,6 +433,41 @@ class Key(object):
     def set_canned_acl(self, acl_str, headers=None):
         return self.bucket.set_canned_acl(acl_str, self.name, headers)
 
+    def get_redirect(self):
+        """Return the redirect location configured for this key.
+
+        If no redirect is configured (via set_redirect), then None
+        will be returned.
+
+        """
+        response = self.bucket.connection.make_request(
+            'GET', self.bucket.name, self.name)
+        if response.status == 200:
+            return response.getheader('x-amz-website-redirect-location')
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, response.read())
+
+    def set_redirect(self, redirect_location):
+        """Configure this key to redirect to another location.
+
+        When the bucket associated with this key is accessed from the website
+        endpoint, a 301 redirect will be issued to the specified
+        `redirect_location`.
+
+        :type redirect_location: string
+        :param redirect_location: The location to redirect.
+
+        """
+        headers = {'x-amz-website-redirect-location': redirect_location}
+        response = self.bucket.connection.make_request('PUT', self.bucket.name,
+                                                       self.name, headers)
+        if response.status == 200:
+            return True
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, response.read())
+
     def make_public(self, headers=None):
         return self.bucket.set_canned_acl('public-read', self.name, headers)
 

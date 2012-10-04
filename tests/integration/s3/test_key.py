@@ -24,12 +24,13 @@
 Some unit tests for S3 Key
 """
 
-import unittest
+from tests.unit import unittest
 import time
 import StringIO
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
+
 
 class S3KeyTest (unittest.TestCase):
     s3 = True
@@ -348,3 +349,27 @@ class S3KeyTest (unittest.TestCase):
         self.assertTrue(self.my_cb_cnt <= 1000)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
+
+    def test_website_redirects(self):
+        self.bucket.configure_website('index.html')
+        key = self.bucket.new_key('redirect-key')
+        self.assertTrue(key.set_redirect('http://www.amazon.com/'))
+        self.assertEqual(key.get_redirect(), 'http://www.amazon.com/')
+
+        self.assertTrue(key.set_redirect('http://aws.amazon.com/'))
+        self.assertEqual(key.get_redirect(), 'http://aws.amazon.com/')
+
+    def test_website_redirect_none_configured(self):
+        key = self.bucket.new_key('redirect-key')
+        key.set_contents_from_string('')
+        self.assertEqual(key.get_redirect(), None)
+
+    def test_website_redirect_with_bad_value(self):
+        self.bucket.configure_website('index.html')
+        key = self.bucket.new_key('redirect-key')
+        with self.assertRaises(key.provider.storage_response_error):
+            # Must start with a / or http
+            key.set_redirect('ftp://ftp.example.org')
+        with self.assertRaises(key.provider.storage_response_error):
+            # Must start with a / or http
+            key.set_redirect('')
