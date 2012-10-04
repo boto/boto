@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # All rights reserved.
 #
@@ -17,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -75,12 +73,12 @@ class S3KeyTest (unittest.TestCase):
         kn = self.bucket.new_key("k")
         ks = kn.get_contents_as_string()
         self.assertEqual(ks, "")
-        
+
     def test_set_contents_as_file(self):
         content="01234567890123456789"
         sfp = StringIO.StringIO(content)
 
-        # fp is set at 0 for just opened (for read) files. 
+        # fp is set at 0 for just opened (for read) files.
         # set_contents should write full content to key.
         k = self.bucket.new_key("k")
         k.set_contents_from_file(sfp)
@@ -114,7 +112,7 @@ class S3KeyTest (unittest.TestCase):
         content="01234567890123456789"
         sfp = StringIO.StringIO(content)
 
-        # fp is set at 0 for just opened (for read) files. 
+        # fp is set at 0 for just opened (for read) files.
         # set_contents should write full content to key.
         k = self.bucket.new_key("k")
         good_md5 = k.compute_md5(sfp)
@@ -153,7 +151,7 @@ class S3KeyTest (unittest.TestCase):
         k.set_contents_from_file(sfp)
         kn = self.bucket.new_key("k")
         s = kn.get_contents_as_string()
-        self.assertEqual(kn.md5, k.md5)       
+        self.assertEqual(kn.md5, k.md5)
         self.assertEqual(s, content)
 
     def test_file_callback(self):
@@ -316,7 +314,7 @@ class S3KeyTest (unittest.TestCase):
         # no more than 10 times
         # last time always 20 bytes
         sfp.seek(0)
-        self.my_cb_cnt = 0 
+        self.my_cb_cnt = 0
         self.my_cb_last = None
         k = self.bucket.new_key("k")
         k.BufferSize = 2
@@ -335,7 +333,7 @@ class S3KeyTest (unittest.TestCase):
         # no more than 1000 times
         # last time always 20 bytes
         sfp.seek(0)
-        self.my_cb_cnt = 0 
+        self.my_cb_cnt = 0
         self.my_cb_last = None
         k = self.bucket.new_key("k")
         k.BufferSize = 2
