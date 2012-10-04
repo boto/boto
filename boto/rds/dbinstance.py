@@ -58,9 +58,11 @@ class DBInstance(object):
     :ivar preferred_maintenance_window: Specifies the weekly time
         range (in UTC) during which system maintenance can occur. (string)
     :ivar latest_restorable_time: Specifies the latest time to which
-        a database can be restored with point-in-time restore. TODO: type?
+        a database can be restored with point-in-time restore. (string)
     :ivar multi_az: Boolean that specifies if the DB Instance is a
         Multi-AZ deployment.
+    :ivar iops: The current number of provisioned IOPS for the DB Instance.
+        Can be None if this is a standard instance.
     :ivar pending_modified_values: Specifies that changes to the
         DB Instance are pending. This element is only included when changes
         are pending. Specific changes are identified by subelements.
@@ -84,6 +86,7 @@ class DBInstance(object):
         self.preferred_maintenance_window = None
         self.latest_restorable_time = None
         self.multi_az = False
+        self.iops = None
         self.pending_modified_values = None
         self._in_endpoint = False
         self._port = None
@@ -145,6 +148,8 @@ class DBInstance(object):
         elif name == 'MultiAZ':
             if value.lower() == 'true':
                 self.multi_az = True
+        elif name == 'Iops':
+            self.iops = int(value)
         else:
             setattr(self, name, value)
 
@@ -217,6 +222,7 @@ class DBInstance(object):
                backup_retention_period=None,
                preferred_backup_window=None,
                multi_az=False,
+               iops=None,
                apply_immediately=False):
         """
         Modify this DBInstance.
@@ -271,6 +277,17 @@ class DBInstance(object):
         :param multi_az: If True, specifies the DB Instance will be
             deployed in multiple availability zones.
 
+        :type iops: int
+        :param iops:  The amount of IOPS (input/output operations per second) to Provisioned
+                      for the DB Instance. Can be modified at a later date.
+
+                      Must scale linearly. For every 1000 IOPS provision, you must allocated
+                      100 GB of storage space. This scales up to 1 TB / 10 000 IOPS for MySQL
+                      and Oracle. MSSQL is limited to 700 GB / 7 000 IOPS.
+
+                      If you specify a value, it must be at least 1000 IOPS and you must
+                      allocate 100 GB of storage.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -284,6 +301,7 @@ class DBInstance(object):
                                                  backup_retention_period,
                                                  preferred_backup_window,
                                                  multi_az,
+                                                 iops,
                                                  apply_immediately)
 
 
