@@ -149,7 +149,7 @@ class StorageUri(object):
                                  mfa_token)
 
     def list_bucket(self, prefix='', delimiter='', headers=None,
-                    all_versions=False, filter_delete_markers=False):
+                    all_versions=False):
         self._check_bucket_uri('list_bucket')
         bucket = self.get_bucket(headers=headers)
         if all_versions:

@@ -137,5 +137,3 @@ class MultiPartUploadListResultSet:
                                        key_marker=self.key_marker,
                                        upload_id_marker=self.upload_id_marker,
                                        headers=self.headers)
-
-    

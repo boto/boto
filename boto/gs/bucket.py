@@ -24,6 +24,7 @@ from boto import handler
 from boto.exception import InvalidAclError
 from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
+from boto.gs.bucketlistresultset import VersionedBucketListResultSet
 from boto.gs.cors import Cors
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
@@ -96,6 +97,44 @@ class Bucket(S3Bucket):
                                      preserve_acl=preserve_acl,
                                      encrypt_key=encrypt_key, headers=headers,
                                      query_args=query_args)
+
+    def list_versions(self, prefix='', delimiter='', marker='',
+                      generation_marker='', headers=None):
+        """
+        List version objects within a bucket.  This returns an
+        instance of an VersionedBucketListResultSet that automatically
+        handles all of the result paging, etc. from GCS.  You just need
+        to keep iterating until there are no more results.  Called
+        with no arguments, this will return an iterator object across
+        all keys within the bucket.
+
+        :type prefix: string
+        :param prefix: allows you to limit the listing to a particular
+            prefix.  For example, if you call the method with
+            prefix='/foo/' then the iterator will only cycle through
+            the keys that begin with the string '/foo/'.
+
+        :type delimiter: string
+        :param delimiter: can be used in conjunction with the prefix
+            to allow you to organize and browse your keys
+            hierarchically. See:
+            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
+            more details.
+
+        :type marker: string
+        :param marker: The "marker" of where you are in the result set
+
+        :type generation_marker: string
+        :param marker: The "generation marker" of where you are in the result
+            set
+
+        :rtype:
+            :class:`boto.gs.bucketlistresultset.VersionedBucketListResultSet`
+        :return: an instance of a BucketListResultSet that handles paging, etc
+        """
+        return VersionedBucketListResultSet(self, prefix, delimiter,
+                                            marker, generation_marker,
+                                            headers)
 
     def delete_key(self, key_name, headers=None, version_id=None,
                    mfa_token=None, generation=None):
