@@ -122,7 +122,7 @@ class Layer1(AWSAuthConnection):
         elapsed = (time.time() - start)*1000
         request_id = response.getheader('x-amzn-RequestId')
         boto.log.debug('RequestId: %s' % request_id)
-        boto.perflog.info('dynamodb %s: id=%s time=%sms',
+        boto.perflog.debug('dynamodb %s: id=%s time=%sms',
                           headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
