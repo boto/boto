@@ -30,8 +30,8 @@ class SWFBase(object):
         """Construct an SWF object."""
         # Set default credentials.
         for credkey in ('aws_access_key_id', 'aws_secret_access_key'):
-            cred = DEFAULT_CREDENTIALS.get(credkey)
-            setattr(self, credkey, cred)
+            if DEFAULT_CREDENTIALS.get(credkey):
+                setattr(self, credkey, DEFAULT_CREDENTIALS[credkey])
         # Override attributes with keyword args.
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
