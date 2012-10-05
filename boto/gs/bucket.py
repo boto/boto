@@ -101,7 +101,7 @@ class Bucket(S3Bucket):
     def list_versions(self, prefix='', delimiter='', marker='',
                       generation_marker='', headers=None):
         """
-        List version objects within a bucket.  This returns an
+        List versioned objects within a bucket.  This returns an
         instance of an VersionedBucketListResultSet that automatically
         handles all of the result paging, etc. from GCS.  You just need
         to keep iterating until there are no more results.  Called
@@ -118,8 +118,8 @@ class Bucket(S3Bucket):
         :param delimiter: can be used in conjunction with the prefix
             to allow you to organize and browse your keys
             hierarchically. See:
-            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
-            more details.
+            https://developers.google.com/storage/docs/reference-headers#delimiter
+            for more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
