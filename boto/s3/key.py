@@ -1492,10 +1492,6 @@ class Key(object):
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
 
-    def _is_custom_meta(self, header):
-        return (header.startswith('x-goog-meta-') or
-                header.startswith('x-amz-meta-'))
-
     def _normalize_metadata(self, metadata):
         if type(metadata) == set:
             norm_metadata = set()
