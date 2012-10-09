@@ -115,3 +115,6 @@ class TestWriter(unittest.TestCase):
         self.writer.write('1')
         self.writer.close()
         self.assertEquals(sentinel.archive_id, self.writer.get_archive_id())
+
+    def test_upload_id(self):
+        self.assertEquals(sentinel.upload_id, self.writer.upload_id)
