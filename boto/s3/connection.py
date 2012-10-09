@@ -280,6 +280,21 @@ class S3Connection(AWSAuthConnection):
             fields.append({"name": 'content-length-range',
                            "value": "0,%i" % max_content_length})
 
+        if self.provider.security_token:
+            fields.append({'name': 'x-amz-security-token',
+                           'value': self.provider.security_token})
+            conditions.append('{"x-amz-security-token": "%s"}' % self.provider.security_token)
+
+        if storage_class:
+            fields.append({'name': 'x-amz-storage-class',
+                           'value': storage_class})
+            conditions.append('{"x-amz-storage-class": "%s"}' % storage_class)
+
+        if server_side_encryption:
+            fields.append({'name': 'x-azm-server-side-encryption',
+                           'value': server_side_encryption})
+            conditions.append('{"x-azm-server-side-encryption": "%s"}' % server_side_encryption)
+
         policy = self.build_post_policy(expiration, conditions)
 
         # Add the base64-encoded policy document as the 'policy' field
@@ -289,18 +304,6 @@ class S3Connection(AWSAuthConnection):
         # Add the AWS access key as the 'AWSAccessKeyId' field
         fields.append({"name": "AWSAccessKeyId",
                        "value": self.aws_access_key_id})
-
-        if self.provider.security_token:
-            fields.append({'name': 'x-amz-security-token',
-                           'value': self.provider.security_token})
-
-        if storage_class:
-            fields.append({'name': 'x-amz-storage-class',
-                           'value': storage_class})
-
-        if server_side_encryption:
-            fields.append({'name': 'x-azm-server-side-encryption',
-                           'value': server_side_encryption})
 
         # Add signature for encoded policy document as the
         # 'signature' field
