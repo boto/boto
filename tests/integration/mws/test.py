@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-from tests.unit import unittest
+try:
+    from tests.unit import unittest
+except ImportError:
+    import unittest
 import sys
 import os
 import os.path
