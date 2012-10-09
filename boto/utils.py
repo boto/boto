@@ -85,7 +85,8 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    'uploads', 'uploadId', 'response-content-type',
                    'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
-                   'response-content-encoding', 'delete', 'lifecycle']
+                   'response-content-encoding', 'delete', 'lifecycle',
+                   'tagging']
 
 
 _first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
@@ -251,7 +252,7 @@ class LazyLoadMetadata(dict):
             val = boto.utils.retry_url(self._url + urllib.quote(resource,
                                                                 safe="/:"),
                                        num_retries=self._num_retries)
-            if val[0] == '{':
+            if val and val[0] == '{':
                 val = json.loads(val)
             else:
                 p = val.find('\n')
@@ -305,6 +306,32 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     try:
         return _get_instance_metadata('%s/%s/meta-data/' % (url, version),
                                       num_retries=num_retries)
+    except urllib2.URLError, e:
+        return None
+    finally:
+        if timeout is not None:
+            socket.setdefaulttimeout(original)
+
+def get_instance_identity(version='latest', url='http://169.254.169.254',
+                          timeout=None, num_retries=5):
+    """
+    Returns the instance identity as a nested Python dictionary.
+    """
+    iid = {}
+    base_url = 'http://169.254.169.254/latest/dynamic/instance-identity'
+    if timeout is not None:
+        original = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+    try:
+        data = retry_url(base_url, num_retries=num_retries)
+        fields = data.split('\n')
+        for field in fields:
+            val = retry_url(base_url + '/' + field + '/')
+            if val[0] == '{':
+                val = json.loads(val)
+            if field:
+                iid[field] = val
+        return iid
     except urllib2.URLError, e:
         return None
     finally:
@@ -823,14 +850,18 @@ def compute_md5(fp, buf_size=8192, size=None):
              plain digest as the second element and the data size as
              the third element.
     """
-    m = md5()
+    return compute_hash(fp, buf_size, size, hash_algorithm=md5)
+
+
+def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
+    hash_obj = hash_algorithm()
     spos = fp.tell()
     if size and size < buf_size:
         s = fp.read(size)
     else:
         s = fp.read(buf_size)
     while s:
-        m.update(s)
+        hash_obj.update(s)
         if size:
             size -= len(s)
             if size <= 0:
@@ -839,11 +870,11 @@ def compute_md5(fp, buf_size=8192, size=None):
             s = fp.read(size)
         else:
             s = fp.read(buf_size)
-    hex_md5 = m.hexdigest()
-    base64md5 = base64.encodestring(m.digest())
-    if base64md5[-1] == '\n':
-        base64md5 = base64md5[0:-1]
+    hex_digest = hash_obj.hexdigest()
+    base64_digest = base64.encodestring(hash_obj.digest())
+    if base64_digest[-1] == '\n':
+        base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.
     data_size = fp.tell() - spos
     fp.seek(spos)
-    return (hex_md5, base64md5, data_size)
+    return (hex_digest, base64_digest, data_size)

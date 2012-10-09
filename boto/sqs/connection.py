@@ -33,7 +33,7 @@ class SQSConnection(AWSQueryConnection):
     A Connection to the SQS Service.
     """
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'sqs.us-east-1.amazonaws.com'
+    DefaultRegionEndpoint = 'queue.amazonaws.com'
     APIVersion = '2011-10-01'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
@@ -42,7 +42,7 @@ class SQSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         if not region:
             region = SQSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -54,16 +54,11 @@ class SQSConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token=security_token)
+                                    security_token=security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['sqs']
-
-    def _credentials_expired(self, response):
-        if response.status != 401:
-            return False
-        error = BotoServerError('', '', body=response.read())
-        return error.error_code == 'InvalidAccessKeyId'
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """
@@ -407,8 +402,3 @@ class SQSConnection(AWSQueryConnection):
         """
         params = {'Label': label}
         return self.get_status('RemovePermission', params, queue.id)
-
-
-
-
-

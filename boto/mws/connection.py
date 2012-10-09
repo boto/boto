@@ -141,6 +141,45 @@ def requires(*groups):
     return decorator
 
 
+def exclusive(*groups):
+
+    def decorator(func):
+
+        def wrapper(*args, **kw):
+            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
+            if len(filter(hasgroup, groups)) not in (0, 1):
+                message = ' OR '.join(['+'.join(g) for g in groups])
+                message = "{0} requires either {1}" \
+                          "".format(func.action, message)
+                raise KeyError(message)
+            return func(*args, **kw)
+        message = ' OR '.join(['+'.join(g) for g in groups])
+        wrapper.__doc__ = "{0}\nEither: {1}".format(func.__doc__,
+                                                           message)
+        return add_attrs_from(func, to=wrapper)
+    return decorator
+
+
+def dependent(field, *groups):
+
+    def decorator(func):
+
+        def wrapper(*args, **kw):
+            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
+            if field in kw and 1 > len(filter(hasgroup, groups)):
+                message = ' OR '.join(['+'.join(g) for g in groups])
+                message = "{0} argument {1} requires {2}" \
+                          "".format(func.action, field, message)
+                raise KeyError(message)
+            return func(*args, **kw)
+        message = ' OR '.join(['+'.join(g) for g in groups])
+        wrapper.__doc__ = "{0}\n{1} requires: {2}".format(func.__doc__,
+                                                           field,
+                                                           message)
+        return add_attrs_from(func, to=wrapper)
+    return decorator
+
+
 def requires_some_of(*fields):
 
     def decorator(func):
@@ -567,8 +606,12 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires(['CreatedBefore', 'CreatedAfter'],
-              ['LastUpdatedBefore', 'LastUpdatedAfter'])
+    @requires(['CreatedAfter'], ['LastUpdatedAfter'])
+    @exclusive(['CreatedAfter'], ['LastUpdatedAfter'])
+    @dependent('CreatedBefore', ['CreatedAfter'])
+    @exclusive(['LastUpdatedAfter'], ['BuyerEmail'], ['SellerOrderId'])
+    @dependent('LastUpdatedBefore', ['LastUpdatedAfter'])
+    @exclusive(['CreatedAfter'], ['LastUpdatedBefore'])
     @requires(['MarketplaceId'])
     @structured_objects('OrderTotal', 'ShippingAddress',
                         'PaymentExecutionDetail')
@@ -610,7 +653,6 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @requires(['AmazonOrderId'])
-    @structured_lists('AmazonOrderId.Id')
     @api_action('Orders', 30, 2)
     def list_order_items(self, path, response, **kw):
         """Returns order item information for an AmazonOrderId that
@@ -647,6 +689,15 @@ class MWSConnection(AWSQueryConnection):
     def get_matching_product(self, path, response, **kw):
         """Returns a list of products and their attributes, based on
            a list of ASIN values that you specify.
+        """
+        return self.post_request(path, kw, response)
+
+    @requires(['MarketplaceId', 'IdType', 'IdList'])
+    @structured_lists('IdList.Id')
+    @api_action('Products', 20, 20)
+    def get_matching_product_for_id(self, path, response, **kw):
+        """Returns a list of products and their attributes, based on
+           a list of Product IDs that you specify.
         """
         return self.post_request(path, kw, response)
 

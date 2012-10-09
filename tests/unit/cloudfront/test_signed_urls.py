@@ -10,6 +10,7 @@ from boto.cloudfront.distribution import Distribution
 class CloudfrontSignedUrlsTest(unittest.TestCase):
 
     cloudfront = True
+    notdefault = True
 
     def setUp(self):
         self.pk_str = dedent("""

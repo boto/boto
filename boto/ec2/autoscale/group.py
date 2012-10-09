@@ -26,6 +26,7 @@ from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.tag import Tag
 
+
 class ProcessType(object):
     def __init__(self, connection=None):
         self.connection = connection
@@ -80,13 +81,24 @@ class EnabledMetric(object):
             self.metric = value
 
 
+class TerminationPolicies(list):
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'member':
+            self.append(value)
+
+
 class AutoScalingGroup(object):
     def __init__(self, connection=None, name=None,
                  launch_config=None, availability_zones=None,
                  load_balancers=None, default_cooldown=None,
                  health_check_type=None, health_check_period=None,
                  placement_group=None, vpc_zone_identifier=None,
-                 desired_capacity=None, min_size=None, max_size=None, **kwargs):
+                 desired_capacity=None, min_size=None, max_size=None,
+                 tags=None, **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -117,8 +129,8 @@ class AutoScalingGroup(object):
         :param health_check_type: The service you want the health status from,
             Amazon EC2 or Elastic Load Balancer.
 
-        :type launch_config: str or LaunchConfiguration
-        :param launch_config: Name of launch configuration (required).
+        :type launch_config_name: str or LaunchConfiguration
+        :param launch_config_name: Name of launch configuration (required).
 
         :type load_balancers: list
         :param load_balancers: List of load balancers.
@@ -136,11 +148,11 @@ class AutoScalingGroup(object):
         :type vpc_zone_identifier: str
         :param vpc_zone_identifier: The subnet identifier of the Virtual
             Private Cloud.
-            
+
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
-        self.name = name or kwargs.get('group_name')   # backwards compatibility
+        self.name = name or kwargs.get('group_name')   # backwards compat
         self.connection = connection
         self.min_size = int(min_size) if min_size is not None else None
         self.max_size = int(max_size) if max_size is not None else None
@@ -164,15 +176,16 @@ class AutoScalingGroup(object):
         self.autoscaling_group_arn = None
         self.vpc_zone_identifier = vpc_zone_identifier
         self.instances = None
-        self.tags = None
+        self.tags = tags or None
+        self.termination_policies = TerminationPolicies()
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
         return self.default_cooldown
-    
+
     def _set_cooldown(self, val):
         self.default_cooldown = val
-        
+
     cooldown = property(_get_cooldown, _set_cooldown)
 
     def __repr__(self):
@@ -195,6 +208,8 @@ class AutoScalingGroup(object):
         elif name == 'Tags':
             self.tags = ResultSet([('member', Tag)])
             return self.tags
+        elif name == 'TerminationPolicies':
+            return self.termination_policies
         else:
             return
 
@@ -233,8 +248,8 @@ class AutoScalingGroup(object):
         """
         Set the desired capacity for the group.
         """
-        params = {'AutoScalingGroupName' : self.name,
-                  'DesiredCapacity'      : capacity}
+        params = {'AutoScalingGroupName': self.name,
+                  'DesiredCapacity': capacity}
         req = self.connection.get_object('SetDesiredCapacity', params,
                                          Request)
         self.connection.last_request = req
@@ -261,7 +276,8 @@ class AutoScalingGroup(object):
         Delete this auto-scaling group if no instances attached or no
         scaling activities in progress.
         """
-        return self.connection.delete_auto_scaling_group(self.name, force_delete)
+        return self.connection.delete_auto_scaling_group(self.name,
+                                                         force_delete)
 
     def get_activities(self, activity_ids=None, max_records=50):
         """
@@ -269,6 +285,15 @@ class AutoScalingGroup(object):
         """
         return self.connection.get_all_activities(self, activity_ids,
                                                   max_records)
+
+    def put_notification_configuration(self, topic, notification_types):
+        """
+        Configures an Auto Scaling group to send notifications when
+        specified events take place.
+        """
+        return self.connection.put_notification_configuration(self,
+                                                              topic,
+                                                              notification_types)
 
     def suspend_processes(self, scaling_processes=None):
         """
@@ -303,4 +328,3 @@ class AutoScalingGroupMetric(object):
             self.granularity = value
         else:
             setattr(self, name, value)
-

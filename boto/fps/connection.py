@@ -63,7 +63,7 @@ def requires(*groups):
             if 1 != len(filter(hasgroup, groups)):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
-                          "".format(func.action, message)
+                          "".format(getattr(func, 'action', 'Method'), message)
                 raise KeyError(message)
             return func(*args, **kw)
         message = ' OR '.join(['+'.join(g) for g in groups])
@@ -80,16 +80,6 @@ def needs_caller_reference(func):
         return func(*args, **kw)
     wrapper.__doc__ = "{0}\nUses CallerReference, defaults " \
                       "to uuid.uuid4()".format(func.__doc__)
-    return add_attrs_from(func, to=wrapper)
-
-
-def needs_caller_key(func):
-
-    def wrapper(self, *args, **kw):
-        kw.setdefault('callerKey', self.aws_access_key_id)
-        return func(self, *args, **kw)
-    wrapper.__doc__ = "{0}\nUses callerKey, defaults to your " \
-                      "AWS Access Key ID".format(func.__doc__)
     return add_attrs_from(func, to=wrapper)
 
 
@@ -193,7 +183,7 @@ class FPSConnection(AWSQueryConnection):
         """
         return self.get_object(action, kw, response)
 
-    @needs_caller_key
+    @needs_caller_reference
     @requires(['returnURL', 'pipelineName'])
     def cbui_url(self, **kw):
         """Generate a signed URL for the Co-Branded service API given
@@ -210,6 +200,7 @@ class FPSConnection(AWSQueryConnection):
             'signatureMethod':  'HmacSHA256',
             'signatureVersion': '2',
         })
+        kw.setdefault('callerKey', self.aws_access_key_id)
 
         safestr = lambda x: x is not None and str(x) or ''
         safequote = lambda x: urllib.quote(safestr(x), safe='~')

@@ -161,7 +161,9 @@ class Image(TaggedEC2Object):
             instance_initiated_shutdown_behavior=None,
             private_ip_address=None,
             placement_group=None, security_group_ids=None,
-            additional_info=None):
+            additional_info=None, instance_profile_name=None,
+            instance_profile_arn=None, tenancy=None):
+
         """
         Runs this instance.
         
@@ -236,7 +238,21 @@ class Image(TaggedEC2Object):
 
         :type security_group_ids: 
         :param security_group_ids:
+
+        :type instance_profile_name: string
+        :param instance_profile_name: The name of an IAM instance profile to use.
+
+        :type instance_profile_arn: string
+        :param instance_profile_arn: The ARN of an IAM instance profile to use.
         
+        :type tenancy: string
+        :param tenancy: The tenancy of the instance you want to launch. An
+                        instance with a tenancy of 'dedicated' runs on
+                        single-tenant hardware and can only be launched into a
+                        VPC. Valid values are: "default" or "dedicated".
+                        NOTE: To use dedicated tenancy you MUST specify a VPC
+                        subnet-ID as well.
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
 
@@ -252,7 +268,10 @@ class Image(TaggedEC2Object):
                                              instance_initiated_shutdown_behavior,
                                              private_ip_address, placement_group, 
                                              security_group_ids=security_group_ids,
-                                             additional_info=additional_info)
+                                             additional_info=additional_info, 
+                                             instance_profile_name=instance_profile_name,
+                                             instance_profile_arn=instance_profile_arn,
+                                             tenancy=tenancy)
 
     def deregister(self, delete_snapshot=False):
         return self.connection.deregister_image(self.id, delete_snapshot)

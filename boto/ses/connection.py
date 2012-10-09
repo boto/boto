@@ -19,6 +19,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import re
 import urllib
 import base64
 
@@ -42,7 +43,7 @@ class SESConnection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -52,16 +53,11 @@ class SESConnection(AWSAuthConnection):
                                    is_secure, port, proxy, proxy_port,
                                    proxy_user, proxy_pass, debug,
                                    https_connection_factory, path,
-                                   security_token=security_token)
+                                   security_token=security_token,
+                                   validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['ses']
-
-    def _credentials_expired(self, response):
-        if response.status != 403:
-            return False
-        error = BotoServerError('', '', body=response.read())
-        return error.error_code == 'InvalidClientTokenId'
 
     def _build_list_params(self, params, items, label):
         """Add an AWS API-compatible parameter list to a dictionary.
@@ -159,6 +155,14 @@ class SESConnection(AWSAuthConnection):
             # A clearly mal-formed address.
             ExceptionToRaise = ses_exceptions.SESIllegalAddressError
             exc_reason = "Illegal address"
+        # The re.search is to distinguish from the
+        # SESAddressNotVerifiedError error above.
+        elif re.search('Identity.*is not verified', body):
+            ExceptionToRaise = ses_exceptions.SESIdentityNotVerifiedError
+            exc_reason = "Identity is not verified."
+        elif "ownership not confirmed" in body:
+            ExceptionToRaise = ses_exceptions.SESDomainNotConfirmedError
+            exc_reason = "Domain ownership is not confirmed."
         else:
             # This is either a common AWS error, or one that we don't devote
             # its own exception to.
@@ -222,11 +226,13 @@ class SESConnection(AWSAuthConnection):
         if body is not None:
             if format == "text":
                 if text_body is not None:
-                    raise Warning("You've passed in both a body and a text_body; please choose one or the other.")
+                    raise Warning("You've passed in both a body and a "
+                                  "text_body; please choose one or the other.")
                 text_body = body
             else:
                 if html_body is not None:
-                    raise Warning("You've passed in both a body and an html_body; please choose one or the other.")
+                    raise Warning("You've passed in both a body and an "
+                                  "html_body; please choose one or the other.")
                 html_body = body
 
         params = {
@@ -294,8 +300,12 @@ class SESConnection(AWSAuthConnection):
         :param destinations: A list of destinations for the message.
 
         """
+
+        if isinstance(raw_message, unicode):
+            raw_message = raw_message.encode('utf-8')
+
         params = {
-            'RawMessage.Data': base64.b64encode(raw_message.encode('utf-8')),
+            'RawMessage.Data': base64.b64encode(raw_message),
         }
 
         if source:
@@ -368,3 +378,69 @@ class SESConnection(AWSAuthConnection):
         return self._make_request('VerifyEmailAddress', {
             'EmailAddress': email_address,
         })
+
+    def verify_domain_dkim(self, domain):
+        """
+        Returns a set of DNS records, or tokens, that must be published in the
+        domain name's DNS to complete the DKIM verification process. These
+        tokens are DNS ``CNAME`` records that point to DKIM public keys hosted
+        by Amazon SES. To complete the DKIM verification process, these tokens
+        must be published in the domain's DNS.  The tokens must remain
+        published in order for Easy DKIM signing to function correctly.
+
+        After the tokens are added to the domain's DNS, Amazon SES will be able
+        to DKIM-sign email originating from that domain.  To enable or disable
+        Easy DKIM signing for a domain, use the ``SetIdentityDkimEnabled``
+        action.  For more information about Easy DKIM, go to the `Amazon SES
+        Developer Guide
+        <http://docs.amazonwebservices.com/ses/latest/DeveloperGuide>`_.
+
+        :type domain: string
+        :param domain: The domain name.
+
+        """
+        return self._make_request('VerifyDomainDkim', {
+            'Domain': domain,
+        })
+
+    def set_identity_dkim_enabled(self, identity, dkim_enabled):
+        """Enables or disables DKIM signing of email sent from an identity.
+
+        * If Easy DKIM signing is enabled for a domain name identity (e.g.,
+        * ``example.com``),
+          then Amazon SES will DKIM-sign all email sent by addresses under that
+          domain name (e.g., ``user@example.com``)
+        * If Easy DKIM signing is enabled for an email address, then Amazon SES
+          will DKIM-sign all email sent by that email address.
+
+        For email addresses (e.g., ``user@example.com``), you can only enable
+        Easy DKIM signing  if the corresponding domain (e.g., ``example.com``)
+        has been set up for Easy DKIM using the AWS Console or the
+        ``VerifyDomainDkim`` action.
+
+        :type identity: string
+        :param identity: An email address or domain name.
+
+        :type dkim_enabled: bool
+        :param dkim_enabled: Specifies whether or not to enable DKIM signing.
+
+        """
+        return self._make_request('SetIdentityDkimEnabled', {
+            'Identity': identity,
+            'DkimEnabled': 'true' if dkim_enabled else 'false'
+        })
+
+    def get_identity_dkim_attributes(self, identities):
+        """Get attributes associated with a list of verified identities.
+
+        Given a list of verified identities (email addresses and/or domains),
+        returns a structure describing identity notification attributes.
+
+        :type identities: list
+        :param identities: A list of verified identities (email addresses
+            and/or domains).
+
+        """
+        params = {}
+        self._build_list_params(params, identities, 'Identities.member')
+        return self._make_request('GetIdentityDkimAttributes', params)
