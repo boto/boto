@@ -143,12 +143,14 @@ class _Partitioner(object):
 class _Uploader(object):
     """Upload to a Glacier upload_id.
 
-    Call upload_part for each part and then close to complete the upload.
+    Call upload_part for each part (in any order) and then close to complete
+    the upload.
 
     """
-    def __init__(self, vault, upload_id, chunk_size=_ONE_MEGABYTE):
+    def __init__(self, vault, upload_id, part_size, chunk_size=_ONE_MEGABYTE):
         self.vault = vault
         self.upload_id = upload_id
+        self.part_size = part_size
         self.chunk_size = chunk_size
 
         self._uploaded_size = 0
@@ -156,28 +158,43 @@ class _Uploader(object):
 
         self.closed = False
 
-    def upload_part(self, part):
+    def _insert_tree_hash(self, index, tree_hash):
+        list_length = len(self._tree_hashes)
+        if index >= list_length:
+            self._tree_hashes.extend([None] * (list_length - index + 1))
+        self._tree_hashes[index] = tree_hash
+
+    def upload_part(self, part_index, part_data):
+        """Upload a part to Glacier.
+
+        :param part_index: part number where 0 is the first part
+        :param part_data: data to upload corresponding to this part
+
+        """
         if self.closed:
             raise ValueError("I/O operation on closed file")
         # Create a request and sign it
-        part_tree_hash = tree_hash(chunk_hashes(part, self.chunk_size))
-        self._tree_hashes.append(part_tree_hash)
+        part_tree_hash = tree_hash(chunk_hashes(part_data, self.chunk_size))
+        self._insert_tree_hash(part_index, part_tree_hash)
 
         hex_tree_hash = bytes_to_hex(part_tree_hash)
-        linear_hash = hashlib.sha256(part).hexdigest()
-        content_range = (self._uploaded_size,
-                         (self._uploaded_size + len(part)) - 1)
+        linear_hash = hashlib.sha256(part_data).hexdigest()
+        start = self.part_size * part_index
+        content_range = (start,
+                         (start + len(part_data)) - 1)
         response = self.vault.layer1.upload_part(self.vault.name,
                                                  self.upload_id,
                                                  linear_hash,
                                                  hex_tree_hash,
-                                                 content_range, part)
+                                                 content_range, part_data)
         response.read()
-        self._uploaded_size += len(part)
+        self._uploaded_size += len(part_data)
 
     def close(self):
         if self.closed:
             return
+        if None in self._tree_hashes:
+            raise RuntimeError("Some parts were not uploaded.")
         # Complete the multiplart glacier upload
         hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
         response = self.vault.layer1.complete_multipart_upload(self.vault.name,
@@ -194,14 +211,19 @@ class Writer(object):
     Archive. The data is written using the multi-part upload API.
     """
     def __init__(self, vault, upload_id, part_size, chunk_size=_ONE_MEGABYTE):
-        self.uploader = _Uploader(vault, upload_id, chunk_size)
-        self.partitioner = _Partitioner(part_size, self.uploader.upload_part)
+        self.uploader = _Uploader(vault, upload_id, part_size, chunk_size)
+        self.partitioner = _Partitioner(part_size, self._upload_part)
         self.closed = False
+        self.next_part_index = 0
 
     def write(self, data):
         if self.closed:
             raise ValueError("I/O operation on closed file")
         self.partitioner.write(data)
+
+    def _upload_part(self, part_data):
+        self.uploader.upload_part(self.next_part_index, part_data)
+        self.next_part_index += 1
 
     def close(self):
         if self.closed:
