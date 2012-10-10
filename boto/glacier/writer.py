@@ -99,10 +99,11 @@ class Writer(object):
     Presents a file-like object for writing to a Amazon Glacier
     Archive. The data is written using the multi-part upload API.
     """
-    def __init__(self, vault, upload_id, part_size):
+    def __init__(self, vault, upload_id, part_size, chunk_size=_ONE_MEGABYTE):
         self.vault = vault
         self.upload_id = upload_id
         self.part_size = part_size
+        self.chunk_size = chunk_size
 
         self._buffer_size = 0
         self._uploaded_size = 0
@@ -125,7 +126,7 @@ class Writer(object):
         # The part we will send
         part = buf[:self.part_size]
         # Create a request and sign it
-        part_tree_hash = tree_hash(chunk_hashes(part))
+        part_tree_hash = tree_hash(chunk_hashes(part, self.chunk_size))
         self._tree_hashes.append(part_tree_hash)
 
         hex_tree_hash = bytes_to_hex(part_tree_hash)
