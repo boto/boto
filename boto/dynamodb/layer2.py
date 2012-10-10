@@ -28,7 +28,7 @@ from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
 from boto.dynamodb.types import get_dynamodb_type, dynamize_value, \
-        convert_num, convert_binary, Binary
+        convert_num, convert_binary
 
 
 def item_object_hook(dct):
@@ -48,7 +48,7 @@ def item_object_hook(dct):
     if 'NS' in dct:
         return set(map(convert_num, dct['NS']))
     if 'B' in dct:
-        return Binary(base64.b64decode(dct['B']))
+        return convert_binary(dct['B'])
     if 'BS' in dct:
         return set(map(convert_binary, dct['BS']))
     return dct
