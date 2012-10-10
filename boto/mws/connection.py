@@ -408,14 +408,14 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ReportId')
+    @requires(['ReportId'])
     @api_action('Reports', 15, 60)
     def get_report(self, path, response, **kw):
         """Returns the contents of a report.
         """
         return self.post_request(path, kw, response, isXML=False)
 
-    @requires('ReportType', 'Schedule')
+    @requires(['ReportType', 'Schedule'])
     @api_action('Reports', 10, 45)
     def manage_report_schedule(self, path, response, **kw):
         """Creates, updates, or deletes a report request schedule for
@@ -450,7 +450,7 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @boolean_arguments('Acknowledged')
-    @requires('ReportIdList')
+    @requires(['ReportIdList'])
     @structured_lists('ReportIdList.Id')
     @api_action('Reports', 10, 45)
     def update_report_acknowledgements(self, path, response, **kw):
@@ -458,7 +458,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ShipFromAddress', 'InboundShipmentPlanRequestItems')
+    @requires(['ShipFromAddress', 'InboundShipmentPlanRequestItems'])
     @structured_objects('ShipFromAddress', 'InboundShipmentPlanRequestItems')
     @api_action('Inbound', 30, 0.5)
     def create_inbound_shipment_plan(self, path, response, **kw):
@@ -466,7 +466,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ShipmentId', 'InboundShipmentHeader', 'InboundShipmentItems')
+    @requires(['ShipmentId', 'InboundShipmentHeader', 'InboundShipmentItems'])
     @structured_objects('InboundShipmentHeader', 'InboundShipmentItems')
     @api_action('Inbound', 30, 0.5)
     def create_inbound_shipment(self, path, response, **kw):
@@ -474,7 +474,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ShipmentId')
+    @requires(['ShipmentId'])
     @structured_objects('InboundShipmentHeader', 'InboundShipmentItems')
     @api_action('Inbound', 30, 0.5)
     def update_inbound_shipment(self, path, response, **kw):
@@ -549,7 +549,7 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @structured_objects('Address', 'Items')
-    @requires('Address', 'Items')
+    @requires(['Address', 'Items'])
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_preview(self, path, response, **kw):
         """Returns a list of fulfillment order previews based on items
@@ -557,10 +557,11 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @structured_objects('Address', 'Items')
-    @requires('SellerFulfillmentOrderId', 'DisplayableOrderId',
-              'ShippingSpeedCategory',    'DisplayableOrderDateTime',
-              'DestinationAddress',       'DisplayableOrderComment')
+    @structured_objects('DestinationAddress', 'Items')
+    @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
+               'ShippingSpeedCategory',    'DisplayableOrderDateTime',
+               'DestinationAddress',       'DisplayableOrderComment',
+               'Items'])
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, path, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
@@ -568,7 +569,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('SellerFulfillmentOrderId')
+    @requires(['SellerFulfillmentOrderId'])
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_order(self, path, response, **kw):
         """Returns a fulfillment order based on a specified
