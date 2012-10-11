@@ -48,6 +48,35 @@ def create_mock_vault():
     return vault
 
 
+def partify(data, part_size):
+    for start in itertools.count(0, part_size):
+        part = data[start:start+part_size]
+        if part:
+            yield part
+        else:
+            return
+
+
+def calculate_mock_vault_calls(data, part_size, chunk_size):
+    upload_part_calls = []
+    data_tree_hashes = []
+    for i, data_part in enumerate(partify(data, part_size)):
+        start = i * part_size
+        end = start + len(data_part)
+        data_part_tree_hash_blob = tree_hash(
+            chunk_hashes(data_part, chunk_size))
+        data_part_tree_hash = bytes_to_hex(data_part_tree_hash_blob)
+        data_part_linear_hash = sha256(data_part).hexdigest()
+        upload_part_calls.append(
+            call.layer1.upload_part(
+                sentinel.vault_name, sentinel.upload_id,
+                data_part_linear_hash, data_part_tree_hash,
+                (start, end - 1), data_part))
+        data_tree_hashes.append(data_part_tree_hash_blob)
+
+    return upload_part_calls, data_tree_hashes
+
+
 class TestWriter(unittest.TestCase):
     def setUp(self):
         super(TestWriter, self).setUp()
@@ -58,37 +87,14 @@ class TestWriter(unittest.TestCase):
         self.writer = Writer(
             self.vault, upload_id, self.part_size, self.chunk_size)
 
-    @staticmethod
-    def partify(data, part_size):
-        for start in itertools.count(0, part_size):
-            part = data[start:start+part_size]
-            if part:
-                yield part
-            else:
-                return
-
     def check_write(self, write_list):
         for write_data in write_list:
             self.writer.write(write_data)
         self.writer.close()
 
         data = ''.join(write_list)
-
-        upload_part_calls = []
-        data_tree_hashes = []
-        for i, data_part in enumerate(self.partify(data, self.part_size)):
-            start = i * self.part_size
-            end = start + len(data_part)
-            data_part_tree_hash_blob = tree_hash(
-                chunk_hashes(data_part, self.chunk_size))
-            data_part_tree_hash = bytes_to_hex(data_part_tree_hash_blob)
-            data_part_linear_hash = sha256(data_part).hexdigest()
-            upload_part_calls.append(
-                call.layer1.upload_part(
-                    sentinel.vault_name, sentinel.upload_id,
-                    data_part_linear_hash, data_part_tree_hash,
-                    (start, end - 1), data_part))
-            data_tree_hashes.append(data_part_tree_hash_blob)
+        upload_part_calls, data_tree_hashes = calculate_mock_vault_calls(
+            data, self.part_size, self.chunk_size)
 
         self.vault.layer1.upload_part.assert_has_calls(
             upload_part_calls, any_order=True)
