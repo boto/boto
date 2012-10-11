@@ -38,17 +38,23 @@ class TestChunking(unittest.TestCase):
         self.assertEqual(len(chunks), 1)
         self.assertEqual(chunks[0], sha256('aaaa').digest())
 
+
+def create_mock_vault():
+    vault = Mock(spec=Vault)
+    vault.layer1 = Mock(spec=Layer1)
+    vault.layer1.complete_multipart_upload.return_value = dict(
+        ArchiveId=sentinel.archive_id)
+    vault.name = sentinel.vault_name
+    return vault
+
+
 class TestWriter(unittest.TestCase):
     def setUp(self):
         super(TestWriter, self).setUp()
-        self.vault = Mock(spec=Vault)
-        self.vault.layer1 = Mock(spec=Layer1)
-        self.vault.layer1.complete_multipart_upload.return_value = dict(
-            ArchiveId=sentinel.archive_id)
-        self.vault.name = sentinel.vault_name
-        upload_id = sentinel.upload_id
+        self.vault = create_mock_vault()
         self.chunk_size = 2 # power of 2
         self.part_size = 4 # power of 2
+        upload_id = sentinel.upload_id
         self.writer = Writer(
             self.vault, upload_id, self.part_size, self.chunk_size)
 
