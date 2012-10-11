@@ -240,7 +240,7 @@ class MultiPartUpload(object):
                                    query_args=query_args, size=size)
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
-                           start=None, end=None):
+                           start=None, end=None, src_version_id=None):
         """
         Copy another part of this MultiPart Upload.
 
@@ -258,6 +258,9 @@ class MultiPartUpload(object):
 
         :type end: int
         :param end: Zero-based byte offset to copy to
+
+        :type src_version_id: string
+        :param src_version_id: version_id of source object to copy from
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
@@ -269,7 +272,9 @@ class MultiPartUpload(object):
         else:
             headers = None
         return self.bucket.copy_key(self.key_name, src_bucket_name,
-                                    src_key_name, storage_class=None,
+                                    src_key_name,
+                                    src_version_id=src_version_id,
+                                    storage_class=None,
                                     headers=headers,
                                     query_args=query_args)
 
