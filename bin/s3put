@@ -83,14 +83,22 @@ SYNOPSIS
 def usage():
     print usage_string
     sys.exit()
-  
+
 def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
 
 def get_key_name(fullpath, prefix):
-    key_name = fullpath[len(prefix):]
+    if fullpath.startswith(prefix):
+        key_name = fullpath[len(prefix):]
+    else:
+        key_name = fullpath
     l = key_name.split(os.sep)
     return '/'.join(l)
+
+def expand_path(path):
+    path = os.path.expanduser(path)
+    path = os.path.expandvars(path)
+    return os.path.abspath(path)
 
 def main():
     try:
@@ -144,6 +152,7 @@ def main():
             prefix = a
             if prefix[-1] != os.sep:
                 prefix = prefix + os.sep
+            prefix = expand_path(prefix)
         if o in ('-q', '--quiet'):
             quiet = True
         if o in ('-s', '--secret_key'):
@@ -153,9 +162,7 @@ def main():
             headers[k] = v
     if len(args) != 1:
         print usage()
-    path = os.path.expanduser(args[0])
-    path = os.path.expandvars(path)
-    path = os.path.abspath(path)
+    path = expand_path(args[0])
     if bucket_name:
         c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
                             aws_secret_access_key=aws_secret_access_key)
@@ -212,4 +219,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
