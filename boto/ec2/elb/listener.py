@@ -70,7 +70,7 @@ class Listener(object):
     def get_tuple(self):
         return self.load_balancer_port, self.instance_port, self.protocol
 
-    def get_complex_tuple(self)
+    def get_complex_tuple(self):
         return self.load_balancer_port, self.instance_port, self.protocol, self.instance_protocol
 
     def __getitem__(self, key):
