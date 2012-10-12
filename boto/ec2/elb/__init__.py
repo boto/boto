@@ -219,7 +219,7 @@ class ELBConnection(AWSQueryConnection):
 
         # Handle the full listeners
         if complex_listeners:
-            for index, listener in enumerate(listeners):
+            for index, listener in enumerate(complex_listeners):
                 i = index + 1
                 protocol = listener[2].upper()
                 InstanceProtocol = listeners[3].upper()
@@ -300,7 +300,7 @@ class ELBConnection(AWSQueryConnection):
 
         # Handle the full listeners
         if complex_listeners:
-            for index, listener in enumerate(listeners):
+            for index, listener in enumerate(complex_listeners):
                 i = index + 1
                 protocol = listener[2].upper()
                 InstanceProtocol = listeners[3].upper()
