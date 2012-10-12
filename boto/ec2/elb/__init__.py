@@ -222,7 +222,7 @@ class ELBConnection(AWSQueryConnection):
             for index, listener in enumerate(complex_listeners):
                 i = index + 1
                 protocol = listener[2].upper()
-                InstanceProtocol = listeners[3].upper()
+                InstanceProtocol = listener[3].upper()
                 params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
                 params['Listeners.member.%d.InstancePort' % i] = listener[1]
                 params['Listeners.member.%d.Protocol' % i] = listener[2]
@@ -303,7 +303,7 @@ class ELBConnection(AWSQueryConnection):
             for index, listener in enumerate(complex_listeners):
                 i = index + 1
                 protocol = listener[2].upper()
-                InstanceProtocol = listeners[3].upper()
+                InstanceProtocol = listener[3].upper()
                 params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
                 params['Listeners.member.%d.InstancePort' % i] = listener[1]
                 params['Listeners.member.%d.Protocol' % i] = listener[2]
