@@ -246,7 +246,8 @@ class MultiPartUpload(object):
                                    query_args=query_args, size=size)
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
-                           start=None, end=None, src_version_id=None):
+                           start=None, end=None, src_version_id=None,
+                           headers=None):
         """
         Copy another part of this MultiPart Upload.
 
@@ -267,6 +268,9 @@ class MultiPartUpload(object):
 
         :type src_version_id: string
         :param src_version_id: version_id of source object to copy from
+
+        :type headers: dict
+        :param headers: Any headers to pass along in the request
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
@@ -274,9 +278,11 @@ class MultiPartUpload(object):
         if start is not None and end is not None:
             rng = 'bytes=%s-%s' % (start, end)
             provider = self.bucket.connection.provider
-            headers = {provider.copy_source_range_header: rng}
-        else:
-            headers = None
+            if headers is None:
+                headers = {}
+            else:
+                headers = headers.copy()
+            headers[provider.copy_source_range_header] = rng
         return self.bucket.copy_key(self.key_name, src_bucket_name,
                                     src_key_name,
                                     src_version_id=src_version_id,
