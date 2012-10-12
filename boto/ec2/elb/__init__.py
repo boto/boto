@@ -249,7 +249,7 @@ class ELBConnection(AWSQueryConnection):
         load_balancer.security_groups = security_groups
         return load_balancer
 
-    def create_load_balancer_listeners(self, name, listeners):
+    def create_load_balancer_listeners(self, name, listeners=None, complex_listeners=None):
         """
         Creates a Listener (or group of listeners) for an existing
         Load Balancer
@@ -258,26 +258,59 @@ class ELBConnection(AWSQueryConnection):
         :param name: The name of the load balancer to create the listeners for
 
         :type listeners: List of tuples
-        :param listeners: Each tuple contains three values,
+        :param listeners: Each tuple contains three or four values,
             (LoadBalancerPortNumber, InstancePortNumber, Protocol,
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
-            Protocol is a string containing either 'TCP', 'HTTP',
-            'HTTPS', or 'SSL'; SSLCertificateID is the ARN of a AWS
-            AIM certificate, and must be specified when doing HTTPS or
-            SSL.
+            Protocol is a string containing either 'TCP', 'SSL', HTTP', or
+            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            certificate, and must be specified when doing HTTPS.
+
+        :type complex_listeners: List of tuples
+        :param complex_listeners: Each tuple contains four or five values,
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
+            SSLCertificateId).
+
+            Where;
+            - LoadBalancerPortNumber and InstancePortNumber are integer 
+              values between 1 and 65535.
+            - Protocol and InstanceProtocol is a string containing either 'TCP',
+              'SSL', 'HTTP', or 'HTTPS'
+            - SSLCertificateId is the ARN of an SSL certificate loaded into
+              AWS IAM
 
         :return: The status of the request
         """
+        if not listeners and not complex_listeners:
+            # Must specify one of the two options
+            return None
+
         params = {'LoadBalancerName': name}
-        for index, listener in enumerate(listeners):
-            i = index + 1
-            protocol = listener[2].upper()
-            params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
-            params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if protocol == 'HTTPS' or protocol == 'SSL':
-                params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the simple listeners
+        if listeners:
+            for index, listener in enumerate(listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the full listeners
+        if complex_listeners:
+            for index, listener in enumerate(listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                InstanceProtocol = listeners[3].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
+
         return self.get_status('CreateLoadBalancerListeners', params)
 
     def delete_load_balancer(self, name):
