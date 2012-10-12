@@ -275,16 +275,17 @@ class DBInstance(object):
         :return: The modified db instance.
         """
         return self.connection.modify_dbinstance(self.id,
-                                                 param_group,
-                                                 security_groups,
-                                                 preferred_maintenance_window,
-                                                 master_password,
-                                                 allocated_storage,
-                                                 instance_class,
-                                                 backup_retention_period,
-                                                 preferred_backup_window,
-                                                 multi_az,
-                                                 apply_immediately)
+                                                 param_group=param_group,
+                                                 security_groups=security_groups,
+                                                 preferred_maintenance_window=preferred_maintenance_window,
+                                                 master_password=master_password,
+                                                 allocated_storage=allocated_storage,
+                                                 instance_class=instance_class,
+                                                 backup_retention_period=backup_retention_period,
+                                                 preferred_backup_window=preferred_backup_window,
+                                                 multi_az=multi_az,
+                                                 iops=iops,
+                                                 apply_immediately=apply_immediately)
 
 
 class PendingModifiedValues(dict):
