@@ -91,6 +91,7 @@ class DBInstance(object):
         self._in_endpoint = False
         self._port = None
         self._address = None
+        self._arn = None
 
     def __repr__(self):
         return 'DBInstance:%s' % self.id
@@ -303,6 +304,35 @@ class DBInstance(object):
                                                  multi_az,
                                                  iops,
                                                  apply_immediately)
+
+    @property
+    def arn(self):
+
+        # Current RDS-API does not supply the ARN (Amazon Resource Name) for
+        # database instances. However, new functionality like tags for RDS
+        # resources, works with ARN's. This getter for DBInstance.arn gets
+        # the account-id from IAM, and creates an ARN for this DBInstance. If
+        # the Amazon-API does supply the ARN in the future, this code should
+        # be compatible (and could be removed, after renaming DBInstance._arn
+        # to DBInstance.arn
+
+        if self._arn is None:
+            import boto
+            iam = boto.connect_iam(
+                    self.connection.aws_access_key_id,
+                    self.connection.aws_secret_access_key)
+            if iam:
+                user = iam.get_user()
+                if user:
+                    account_id = user.arn.split(':')[4]
+                    self.arn = ('arn:aws:rds:%s:%s:db:%s' %
+                            (self.connection.region.name, account_id, self.id))
+
+        return self._arn
+
+    @arn.setter
+    def arn(self, value):
+        self._arn = value
 
 
 class PendingModifiedValues(dict):
