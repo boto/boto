@@ -249,9 +249,17 @@ class TestRangeStringParsing(unittest.TestCase):
         self.assertEquals(
             Vault._range_string_to_part_index('0-3', 4), 0)
 
+    def test_range_one_too_big(self):
+        # Off-by-one bug in Amazon's Glacier implementation
+        # See: https://forums.aws.amazon.com/thread.jspa?threadID=106866&tstart=0
+        # Workaround is to assume that if a (start, end] range appears to be
+        # returned then that is what it is.
+        self.assertEquals(
+            Vault._range_string_to_part_index('0-4', 4), 0)
+
     def test_range_too_big(self):
         self.assertRaises(
-            AssertionError, Vault._range_string_to_part_index, '0-4', 4)
+            AssertionError, Vault._range_string_to_part_index, '0-5', 4)
 
     def test_range_start_mismatch(self):
         self.assertRaises(
