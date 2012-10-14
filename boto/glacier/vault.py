@@ -180,6 +180,13 @@ class Vault(object):
         start, inside_end = [int(value) for value in range_string.split('-')]
         end = inside_end + 1
         length = end - start
+        if length == part_size + 1:
+            # Off-by-one bug in Amazon's Glacier implementation
+            # See: https://forums.aws.amazon.com/thread.jspa?threadID=106866&tstart=0
+            # Workaround: since part_size is too big by one byte, adjust it
+            end -= 1
+            inside_end -= 1
+            length -= 1
         assert not (start % part_size), (
             "upload part start byte is not on a part boundary")
         assert (length <= part_size), "upload part is bigger than part size"
