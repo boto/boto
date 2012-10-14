@@ -519,6 +519,11 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     SignatureVersion = 1
     capability = ['sign-v1', 'mturk']
 
+    def __init__(self, *args, **kw):
+        QuerySignatureHelper.__init__(self, *args, **kw)
+        AuthHandler.__init__(self, *args, **kw)
+        self._hmac_256 = None
+
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
         hmac = self._get_hmac()
