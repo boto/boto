@@ -29,7 +29,7 @@ class Question(object):
         del self.self
 
     def get_as_params(self, label='Question'):
-        return { label : self.get_as_xml() }
+        return {label: self.get_as_xml()}
 
     def get_as_xml(self):
         items = [
@@ -70,7 +70,7 @@ class ExternalQuestion(ValidatingXML):
         self.frame_height = frame_height
     
     def get_as_params(self, label='ExternalQuestion'):
-        return { label : self.get_as_xml() }
+        return {label: self.get_as_xml()}
     
     def get_as_xml(self):
         return self.template % vars(self)
@@ -136,7 +136,7 @@ class HTMLQuestion(ValidatingXML):
         self.frame_height = frame_height
 
     def get_as_params(self, label="HTMLQuestion"):
-        return {label, self.get_as_xml()}
+        return {label: self.get_as_xml()}
 
     def get_as_xml(self):
         return self.template % vars(self)
@@ -181,7 +181,7 @@ class Overview(OrderedContent):
     template = '<Overview>%(content)s</Overview>'
 
     def get_as_params(self, label='Overview'):
-        return { label : self.get_as_xml() }
+        return {label: self.get_as_xml()}
     
     def get_as_xml(self):
         content = super(Overview, self).get_as_xml()
