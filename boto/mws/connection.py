@@ -65,7 +65,7 @@ def structured_lists(*fields):
                         kw[newkey + str(i + 1)] = kw[key][i]
                     kw.pop(key)
             return func(self, *args, **kw)
-        wrapper.__doc__ = "{}\nLists: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nLists: {1}".format(func.__doc__,
                                                  ', '.join(fields))
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -77,7 +77,7 @@ def http_body(field):
 
         def wrapper(*args, **kw):
             if filter(lambda x: not x in kw, (field, 'content_type')):
-                message = "{} requires {} and content_type arguments for " \
+                message = "{0} requires {1} and content_type arguments for " \
                           "building HTTP body".format(func.action, field)
                 raise KeyError(message)
             kw['body'] = kw.pop(field)
@@ -86,8 +86,8 @@ def http_body(field):
                 'Content-MD5':  content_md5(kw['body']),
             }
             return func(*args, **kw)
-        wrapper.__doc__ = "{}\nRequired HTTP Body: " \
-                          "{}".format(func.__doc__, field)
+        wrapper.__doc__ = "{0}\nRequired HTTP Body: " \
+                          "{1}".format(func.__doc__, field)
         return add_attrs_from(func, to=wrapper)
     return decorator
 
@@ -116,7 +116,7 @@ def structured_objects(*fields):
             for field in filter(kw.has_key, fields):
                 destructure_object(kw.pop(field), into=kw, prefix=field)
             return func(*args, **kw)
-        wrapper.__doc__ = "{}\nObjects: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nObjects: {1}".format(func.__doc__,
                                                    ', '.join(fields))
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -130,12 +130,51 @@ def requires(*groups):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if 1 != len(filter(hasgroup, groups)):
                 message = ' OR '.join(['+'.join(g) for g in groups])
-                message = "{} requires {} argument(s)" \
+                message = "{0} requires {1} argument(s)" \
                           "".format(func.action, message)
                 raise KeyError(message)
             return func(*args, **kw)
         message = ' OR '.join(['+'.join(g) for g in groups])
-        wrapper.__doc__ = "{}\nRequired: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
+                                                           message)
+        return add_attrs_from(func, to=wrapper)
+    return decorator
+
+
+def exclusive(*groups):
+
+    def decorator(func):
+
+        def wrapper(*args, **kw):
+            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
+            if len(filter(hasgroup, groups)) not in (0, 1):
+                message = ' OR '.join(['+'.join(g) for g in groups])
+                message = "{0} requires either {1}" \
+                          "".format(func.action, message)
+                raise KeyError(message)
+            return func(*args, **kw)
+        message = ' OR '.join(['+'.join(g) for g in groups])
+        wrapper.__doc__ = "{0}\nEither: {1}".format(func.__doc__,
+                                                           message)
+        return add_attrs_from(func, to=wrapper)
+    return decorator
+
+
+def dependent(field, *groups):
+
+    def decorator(func):
+
+        def wrapper(*args, **kw):
+            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
+            if field in kw and 1 > len(filter(hasgroup, groups)):
+                message = ' OR '.join(['+'.join(g) for g in groups])
+                message = "{0} argument {1} requires {2}" \
+                          "".format(func.action, field, message)
+                raise KeyError(message)
+            return func(*args, **kw)
+        message = ' OR '.join(['+'.join(g) for g in groups])
+        wrapper.__doc__ = "{0}\n{1} requires: {2}".format(func.__doc__,
+                                                           field,
                                                            message)
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -147,11 +186,11 @@ def requires_some_of(*fields):
 
         def wrapper(*args, **kw):
             if not filter(kw.has_key, fields):
-                message = "{} requires at least one of {} argument(s)" \
+                message = "{0} requires at least one of {1} argument(s)" \
                           "".format(func.action, ', '.join(fields))
                 raise KeyError(message)
             return func(*args, **kw)
-        wrapper.__doc__ = "{}\nSome Required: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nSome Required: {1}".format(func.__doc__,
                                                          ', '.join(fields))
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -165,7 +204,7 @@ def boolean_arguments(*fields):
             for field in filter(lambda x: isinstance(kw.get(x), bool), fields):
                 kw[field] = str(kw[field]).lower()
             return func(*args, **kw)
-        wrapper.__doc__ = "{}\nBooleans: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nBooleans: {1}".format(func.__doc__,
                                                     ', '.join(fields))
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -184,8 +223,8 @@ def api_action(section, quota, restore, *api):
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
             if kw[accesskey] is None:
-                message = "{} requires {} argument. Set the " \
-                          "MWSConnection.{} attribute?" \
+                message = "{0} requires {1} argument. Set the " \
+                          "MWSConnection.{2} attribute?" \
                           "".format(action, accesskey, accesskey)
                 raise KeyError(message)
             kw['Action'] = action
@@ -193,9 +232,9 @@ def api_action(section, quota, restore, *api):
             return func(self, path, response, *args, **kw)
         for attr in decorated_attrs:
             setattr(wrapper, attr, locals().get(attr))
-        wrapper.__doc__ = "MWS {}/{} API call; quota={} restore={:.2f}\n" \
-                          "{}".format(action, version, quota, restore,
-                                      func.__doc__)
+        wrapper.__doc__ = "MWS {0}/{1} API call; quota={2} restore={3:.2f}\n" \
+                          "{4}".format(action, version, quota, restore,
+                                       func.__doc__)
         return wrapper
     return decorator
 
@@ -291,9 +330,9 @@ class MWSConnection(AWSQueryConnection):
     def get_service_status(self, **kw):
         """Instruct the user on how to get service status.
         """
-        message = "Use {}.get_(section)_service_status(), " \
+        message = "Use {0}.get_(section)_service_status(), " \
                   "where (section) is one of the following: " \
-                  "{}".format(self.__class__.__name__,
+                  "{1}".format(self.__class__.__name__,
                       ', '.join(map(str.lower, api_version_path.keys())))
         raise AttributeError(message)
 
@@ -567,8 +606,12 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires(['CreatedBefore', 'CreatedAfter'],
-              ['LastUpdatedBefore', 'LastUpdatedAfter'])
+    @requires(['CreatedAfter'], ['LastUpdatedAfter'])
+    @exclusive(['CreatedAfter'], ['LastUpdatedAfter'])
+    @dependent('CreatedBefore', ['CreatedAfter'])
+    @exclusive(['LastUpdatedAfter'], ['BuyerEmail'], ['SellerOrderId'])
+    @dependent('LastUpdatedBefore', ['LastUpdatedAfter'])
+    @exclusive(['CreatedAfter'], ['LastUpdatedBefore'])
     @requires(['MarketplaceId'])
     @structured_objects('OrderTotal', 'ShippingAddress',
                         'PaymentExecutionDetail')
@@ -587,8 +630,8 @@ class MWSConnection(AWSQueryConnection):
             'SellerOrderId': toggle.union(['BuyerEmail']),
         }.items():
             if do in kw and filter(kw.has_key, dont):
-                message = "Don't include {} when specifying " \
-                          "{}".format(' or '.join(dont), do)
+                message = "Don't include {0} when specifying " \
+                          "{1}".format(' or '.join(dont), do)
                 raise AssertionError(message)
         return self.post_request(path, kw, response)
 
@@ -610,7 +653,6 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @requires(['AmazonOrderId'])
-    @structured_lists('AmazonOrderId.Id')
     @api_action('Orders', 30, 2)
     def list_order_items(self, path, response, **kw):
         """Returns order item information for an AmazonOrderId that
@@ -647,6 +689,15 @@ class MWSConnection(AWSQueryConnection):
     def get_matching_product(self, path, response, **kw):
         """Returns a list of products and their attributes, based on
            a list of ASIN values that you specify.
+        """
+        return self.post_request(path, kw, response)
+
+    @requires(['MarketplaceId', 'IdType', 'IdList'])
+    @structured_lists('IdList.Id')
+    @api_action('Products', 20, 20)
+    def get_matching_product_for_id(self, path, response, **kw):
+        """Returns a list of products and their attributes, based on
+           a list of Product IDs that you specify.
         """
         return self.post_request(path, kw, response)
 

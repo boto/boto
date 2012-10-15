@@ -30,8 +30,9 @@ class Condition(object):
     is to test if something is a Condition instance or not.
     """
 
-    pass
-
+    def __eq__(self, other):
+        if isinstance(other, Condition):
+            return self.to_dict() == other.to_dict()
 
 class ConditionNoArgs(Condition):
     """
@@ -79,6 +80,23 @@ class ConditionTwoArgs(Condition):
     def to_dict(self):
         values = (self.v1, self.v2)
         return {'AttributeValueList': [dynamize_value(v) for v in values],
+                'ComparisonOperator': self.__class__.__name__}
+
+
+class ConditionSeveralArgs(Condition):
+    """
+    Abstract class for conditions that require several argument (ex: IN).
+    """
+
+    def __init__(self, values):
+        self.values = values
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__,
+                               ', '.join(self.values))
+
+    def to_dict(self):
+        return {'AttributeValueList': [dynamize_value(v) for v in self.values],
                 'ComparisonOperator': self.__class__.__name__}
 
 
@@ -137,7 +155,7 @@ class BEGINS_WITH(ConditionOneArg):
     pass
 
 
-class IN(ConditionOneArg):
+class IN(ConditionSeveralArgs):
 
     pass
 

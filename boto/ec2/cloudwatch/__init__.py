@@ -91,7 +91,7 @@ class CloudWatchConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
@@ -103,13 +103,19 @@ class CloudWatchConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint)
         self.region = region
 
+        # Ugly hack to get around both a bug in Python and a
+        # misconfigured SSL cert for the eu-west-1 endpoint
+        if self.region.name == 'eu-west-1':
+            validate_certs = False
+
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token)
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['ec2']
@@ -223,6 +229,17 @@ class CloudWatchConnection(AWSQueryConnection):
                            is either a scalar value or an iterator
                            of values to be associated with that
                            dimension.
+
+        :type unit: string
+        :param unit: The unit for the metric.  Value values are:
+            Seconds | Microseconds | Milliseconds | Bytes | Kilobytes |
+            Megabytes | Gigabytes | Terabytes | Bits | Kilobits |
+            Megabits | Gigabits | Terabits | Percent | Count |
+            Bytes/Second | Kilobytes/Second | Megabytes/Second |
+            Gigabytes/Second | Terabytes/Second | Bits/Second |
+            Kilobits/Second | Megabits/Second | Gigabits/Second |
+            Terabits/Second | Count/Second | None
+
         :rtype: list
         """
         params = {'Period': period,
@@ -233,6 +250,8 @@ class CloudWatchConnection(AWSQueryConnection):
         self.build_list_params(params, statistics, 'Statistics.member.%d')
         if dimensions:
             self.build_dimension_param(dimensions, params)
+        if unit:
+            params['Unit'] = unit
         return self.get_list('GetMetricStatistics', params,
                              [('member', Datapoint)])
 
@@ -249,8 +268,8 @@ class CloudWatchConnection(AWSQueryConnection):
             Passing that token as a parameter to list_metrics will
             retrieve the next page of metrics.
 
-        :type dimension: dict
-        :param dimension_filters: A dictionary containing name/value
+        :type dimensions: dict
+        :param dimensions: A dictionary containing name/value
             pairs that will be used to filter the results.  The key in
             the dictionary is the name of a Dimension.  The value in
             the dictionary is either a scalar value of that Dimension

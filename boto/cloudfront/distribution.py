@@ -21,6 +21,7 @@
 
 import uuid
 import base64
+import time
 try:
     import simplejson as json
 except ImportError:
@@ -622,8 +623,12 @@ class Distribution:
         Creates a custom policy string based on the supplied parameters.
         """
         condition = {}
-        if expires:
-            condition["DateLessThan"] = {"AWS:EpochTime": expires}
+        # SEE: http://docs.amazonwebservices.com/AmazonCloudFront/latest/DeveloperGuide/RestrictingAccessPrivateContent.html#CustomPolicy
+        # The 'DateLessThan' property is required.
+        if not expires:
+            # Defaults to ONE day
+            expires = int(time.time()) + 86400
+        condition["DateLessThan"] = {"AWS:EpochTime": expires}
         if valid_after:
             condition["DateGreaterThan"] = {"AWS:EpochTime": valid_after}
         if ip_address:

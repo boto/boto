@@ -16,16 +16,17 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
 
 class RegionInfo(object):
     """
     Represents an AWS Region
     """
-    
+
     def __init__(self, connection=None, name=None, endpoint=None,
                  connection_cls=None):
         self.connection = connection
@@ -54,11 +55,9 @@ class RegionInfo(object):
         You may pass any of the arguments accepted by the connection
         class's constructor as keyword arguments and they will be
         passed along to the connection object.
-        
+
         :rtype: Connection object
         :return: The connection to this regions endpoint
         """
         if self.connection_cls:
             return self.connection_cls(region=self, **kw_params)
-
-

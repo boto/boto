@@ -19,13 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Represents an EC2 Elastic IP Address
-"""
 
 from boto.ec2.ec2object import EC2Object
 
 class Address(EC2Object):
+    """
+    Represents an EC2 Elastic IP Address
+
+    :ivar public_ip: The Elastic IP address.
+    :ivar instance_id: The instance the address is associated with (if any).
+    :ivar domain: Indicates whether the address is a EC2 address or a VPC address (standard|vpc).
+    :ivar allocation_id: The allocation ID for the address (VPC addresses only).
+    :ivar association_id: The association ID for the address (VPC addresses only).
+    :ivar network_interface_id: The network interface (if any) that the address is associated with (VPC addresses only).
+    :ivar network_interface_owner_id: The owner IID (VPC addresses only).
+    :ivar private_ip_address: The private IP address associated with the Elastic IP address (VPC addresses only).
+    """
 
     def __init__(self, connection=None, public_ip=None, instance_id=None):
         EC2Object.__init__(self, connection)
@@ -35,6 +44,9 @@ class Address(EC2Object):
         self.domain = None
         self.allocation_id = None
         self.association_id = None
+        self.network_interface_id = None
+        self.network_interface_owner_id = None
+        self.private_ip_address = None
 
     def __repr__(self):
         return 'Address:%s' % self.public_ip
@@ -50,18 +62,42 @@ class Address(EC2Object):
             self.allocation_id = value
         elif name == 'associationId':
             self.association_id = value
+        elif name == 'networkInterfaceId':
+            self.network_interface_id = value
+        elif name == 'networkInterfaceOwnerId':
+            self.network_interface_owner_id = value
+        elif name == 'privateIpAddress':
+            self.private_ip_address = value
         else:
             setattr(self, name, value)
 
     def release(self):
-        return self.connection.release_address(self.public_ip)
+        """
+        Free up this Elastic IP address.
+        :see: :meth:`boto.ec2.connection.EC2Connection.release_address`
+        """
+        if self.allocation_id:
+            return self.connection.release_address(None, self.allocation_id)
+        else:
+            return self.connection.release_address(self.public_ip)
 
     delete = release
 
     def associate(self, instance_id):
+        """
+        Associate this Elastic IP address with a currently running instance.
+        :see: :meth:`boto.ec2.connection.EC2Connection.associate_address`
+        """
         return self.connection.associate_address(instance_id, self.public_ip)
 
     def disassociate(self):
-        return self.connection.disassociate_address(self.public_ip)
+        """
+        Disassociate this Elastic IP address from a currently running instance.
+        :see: :meth:`boto.ec2.connection.EC2Connection.disassociate_address`
+        """
+        if self.association_id:
+            return self.connection.disassociate_address(None, self.association_id)
+        else:
+            return self.connection.disassociate_address(self.public_ip)
 
 
