@@ -25,10 +25,13 @@ Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
 import base64
+from decimal import (Decimal, Context,
+                     Clamped, Overflow, Inexact, Underflow, Rounded)
+from exceptions import DynamoDBNumberError
 
 
 def is_num(n):
-    types = (int, long, float, bool)
+    types = (int, long, float, bool, Decimal)
     return isinstance(n, types) or n in types
 
 
@@ -41,12 +44,23 @@ def is_binary(n):
     return isinstance(n, Binary)
 
 
+dynamodb_context = Context(Emin=-128, Emax=126, rounding=None, prec=38,
+                           traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
+
+def serialize_num(s):
+    """Cast a number to a string and perform
+       validation to ensure no loss of precision.
+    """
+    try:
+        return str(dynamodb_context.create_decimal(s))
+    except Exception, e:
+        msg = '{0} numeric for `{1}`\n{2}'.format(\
+            e.__class__.__name__, s, e.message or '')
+        raise DynamoDBNumberError(msg)
+
+
 def convert_num(s):
-    if '.' in s:
-        n = float(s)
-    else:
-        n = int(s)
-    return n
+    return dynamodb_context.create_decimal(s)
 
 
 def convert_binary(n):
@@ -86,23 +100,13 @@ def dynamize_value(val):
     needs to be sent to Amazon DynamoDB.  If the type of the value
     is not supported, raise a TypeError
     """
-    def _str(val):
-        """
-        DynamoDB stores booleans as numbers. True is 1, False is 0.
-        This function converts Python booleans into DynamoDB friendly
-        representation.
-        """
-        if isinstance(val, bool):
-            return str(int(val))
-        return str(val)
-
     dynamodb_type = get_dynamodb_type(val)
     if dynamodb_type == 'N':
-        val = {dynamodb_type: _str(val)}
+        val = {dynamodb_type: serialize_num(val)}
     elif dynamodb_type == 'S':
         val = {dynamodb_type: val}
     elif dynamodb_type == 'NS':
-        val = {dynamodb_type: [str(n) for n in val]}
+        val = {dynamodb_type: map(serialize_num, val)}
     elif dynamodb_type == 'SS':
         val = {dynamodb_type: [n for n in val]}
     elif dynamodb_type == 'B':
