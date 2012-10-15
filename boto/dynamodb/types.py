@@ -52,7 +52,10 @@ def serialize_num(s):
        validation to ensure no loss of precision.
     """
     try:
-        return str(dynamodb_context.create_decimal(s))
+        n = str(dynamodb_context.create_decimal(s))
+        if filter(lambda x: x in n, ('Infinity', 'NaN')):
+            raise TypeError('Infinity and NaN not supported')
+        return n
     except Exception, e:
         msg = '{0} numeric for `{1}`\n{2}'.format(\
             e.__class__.__name__, s, e.message or '')
