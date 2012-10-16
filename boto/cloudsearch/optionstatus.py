@@ -22,6 +22,7 @@
 # IN THE SOFTWARE.
 #
 
+import time
 try:
     import simplejson as json
 except ImportError:
