@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-import boto.utils
 import urllib
 from boto.connection import AWSQueryConnection
 from boto.rds.dbinstance import DBInstance
@@ -161,8 +160,9 @@ class RDSConnection(AWSQueryConnection):
                           db_subnet_group_name = None,
                           license_model = None,
                           option_group_name = None,
+                          iops=None,
                           ):
-        # API version: 2012-04-23
+        # API version: 2012-09-17
         # Parameter notes:
         # =================
         # id should be db_instance_identifier according to API docs but has been left
@@ -348,6 +348,17 @@ class RDSConnection(AWSQueryConnection):
         :param option_group_name: Indicates that the DB Instance should be associated
                                   with the specified option group.
 
+        :type iops: int
+        :param iops:  The amount of IOPS (input/output operations per second) to Provisioned
+                      for the DB Instance. Can be modified at a later date.
+
+                      Must scale linearly. For every 1000 IOPS provision, you must allocated
+                      100 GB of storage space. This scales up to 1 TB / 10 000 IOPS for MySQL
+                      and Oracle. MSSQL is limited to 700 GB / 7 000 IOPS.
+
+                      If you specify a value, it must be at least 1000 IOPS and you must
+                      allocate 100 GB of storage.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -390,6 +401,7 @@ class RDSConnection(AWSQueryConnection):
                   'DBSubnetGroupName': db_subnet_group_name,
                   'Engine': engine,
                   'EngineVersion': engine_version,
+                  'Iops': iops,
                   'LicenseModel': license_model,
                   'MasterUsername': master_username,
                   'MasterUserPassword': master_password,
@@ -490,7 +502,8 @@ class RDSConnection(AWSQueryConnection):
                           backup_retention_period=None,
                           preferred_backup_window=None,
                           multi_az=False,
-                          apply_immediately=False):
+                          apply_immediately=False,
+                          iops=None):
         """
         Modify an existing DBInstance.
 
@@ -550,6 +563,17 @@ class RDSConnection(AWSQueryConnection):
         :param multi_az: If True, specifies the DB Instance will be
                          deployed in multiple availability zones.
 
+        :type iops: int
+        :param iops:  The amount of IOPS (input/output operations per second) to Provisioned
+                      for the DB Instance. Can be modified at a later date.
+
+                      Must scale linearly. For every 1000 IOPS provision, you must allocated
+                      100 GB of storage space. This scales up to 1 TB / 10 000 IOPS for MySQL
+                      and Oracle. MSSQL is limited to 700 GB / 7 000 IOPS.
+
+                      If you specify a value, it must be at least 1000 IOPS and you must
+                      allocate 100 GB of storage.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -582,6 +606,8 @@ class RDSConnection(AWSQueryConnection):
             params['MultiAZ'] = 'true'
         if apply_immediately:
             params['ApplyImmediately'] = 'true'
+        if iops:
+            params['Iops'] = iops
 
         return self.get_object('ModifyDBInstance', params, DBInstance)
 

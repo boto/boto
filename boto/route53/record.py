@@ -264,6 +264,8 @@ class Record(object):
 
         if self.identifier != None and self.weight != None:
             rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)
+        elif self.identifier != None and self.region != None:
+            rr += ' (LBR id=%s, region=%s)' % (self.identifier, self.region)
 
         return rr
 

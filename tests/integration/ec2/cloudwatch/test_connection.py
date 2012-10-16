@@ -34,6 +34,7 @@ from boto.ec2.cloudwatch.metric import Metric
 # HTTP response body for CloudWatchConnection.describe_alarms
 DESCRIBE_ALARMS_BODY = """<DescribeAlarmsResponse xmlns="http://monitoring.amazonaws.com/doc/2010-08-01/">
   <DescribeAlarmsResult>
+    <NextToken>mynexttoken</NextToken>
     <MetricAlarms>
       <member>
         <StateUpdatedTimestamp>2011-11-18T23:43:59.111Z</StateUpdatedTimestamp>
@@ -264,6 +265,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
 
         c.make_request = make_request
         alarms = c.describe_alarms()
+        self.assertEquals(alarms.next_token, 'mynexttoken')
         self.assertEquals(alarms[0].name, 'FancyAlarm')
         self.assertEquals(alarms[0].comparison, '<')
         self.assertEquals(alarms[0].dimensions, {u'Job': [u'ANiceCronJob']})

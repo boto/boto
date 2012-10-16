@@ -23,6 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import with_statement
+
 try:
     from setuptools import setup
     extra = dict(test_suite="tests.test.suite", include_package_data=True)
@@ -39,10 +41,14 @@ if sys.version_info <= (2, 4):
     print >> sys.stderr, error
     sys.exit(1)
 
+def readme():
+    with open("README.rst") as f:
+        return f.read()
+
 setup(name = "boto",
       version = __version__,
       description = "Amazon Web Services Library",
-      long_description = open("README.rst").read(),
+      long_description = readme(),
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
       scripts = ["bin/sdbadmin", "bin/elbadmin", "bin/cfadmin",
@@ -64,7 +70,8 @@ setup(name = "boto",
                   "boto.fps", "boto.emr", "boto.emr", "boto.sns",
                   "boto.ecs", "boto.iam", "boto.route53", "boto.ses",
                   "boto.cloudformation", "boto.sts", "boto.dynamodb",
-                  "boto.swf", "boto.mws", "boto.cloudsearch", "boto.glacier"],
+                  "boto.swf", "boto.mws", "boto.cloudsearch", "boto.glacier",
+                  "boto.beanstalk"],
       package_data = {"boto.cacerts": ["cacerts.txt"]},
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",
