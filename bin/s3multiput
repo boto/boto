@@ -41,7 +41,7 @@ SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>] 
+          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
 
     Where
@@ -76,8 +76,8 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
-        key_prefix - A prefix to be added to the S3 key name, after any 
-                     stripping of the file path is done based on the 
+        key_prefix - A prefix to be added to the S3 key name, after any
+                     stripping of the file path is done based on the
                      "-p/--prefix" option.
         reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
@@ -188,26 +188,27 @@ def expand_path(path):
 def main():
 
     # default values
-    aws_access_key_id     = None
+    aws_access_key_id = None
     aws_secret_access_key = None
     bucket_name = ''
     ignore_dirs = []
-    debug  = 0
-    cb     = None
+    debug = 0
+    cb = None
     num_cb = 0
-    quiet  = False
-    no_op  = False
+    quiet = False
+    no_op = False
     prefix = '/'
     key_prefix = ''
-    grant  = None
+    grant = None
     no_overwrite = False
     reduced = False
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
-                                   ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
-                                    'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=', 
-                                    'no_overwrite', 'reduced'])
+        opts, args = getopt.getopt(
+            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
+            ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
+             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
+             'no_overwrite', 'reduced'])
     except:
         usage()
 
@@ -230,7 +231,7 @@ def main():
             ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
             no_op = True
-        if o in ('w', '--no_overwrite'):
+        if o in ('-w', '--no_overwrite'):
             no_overwrite = True
         if o in ('-p', '--prefix'):
             prefix = a
@@ -272,19 +273,21 @@ def main():
             for ignore in ignore_dirs:
                 if ignore in dirs:
                     dirs.remove(ignore)
-            for file in files:
-                fullpath = os.path.join(root, file)
+            for path in files:
+                if path.startswith("."):
+                    continue
+                fullpath = os.path.join(root, path)
                 key_name = get_key_name(fullpath, prefix, key_prefix)
                 copy_file = True
                 if no_overwrite:
                     if key_name in keys:
                         copy_file = False
                         if not quiet:
-                            print 'Skipping %s as it exists in s3' % file
+                            print 'Skipping %s as it exists in s3' % path
 
                 if copy_file:
                     if not quiet:
-                        print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
+                        print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
 
                     if not no_op:
                         if os.stat(fullpath).st_size == 0:

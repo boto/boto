@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -29,8 +29,8 @@ SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>] [-q/--quiet]
-          [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
+          [-n/--no_op] [-p/--prefix <prefix>]
+          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
           [--header] path
 
     Where
@@ -65,17 +65,17 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
+        reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
                 transferred to S3.  The value of provided must be one
                 of the "canned" ACL policies supported by S3:
                 private|public-read|public-read-write|authenticated-read
-        no_overwrite - No files will be overwritten on S3, if the file/key 
-                       exists on s3 it will be kept. This is useful for 
-                       resuming interrupted transfers. Note this is not a 
-                       sync, even if the file has been updated locally if 
-                       the key exists on s3 the file on s3 will not be 
+        no_overwrite - No files will be overwritten on S3, if the file/key
+                       exists on s3 it will be kept. This is useful for
+                       resuming interrupted transfers. Note this is not a
+                       sync, even if the file has been updated locally if
+                       the key exists on s3 the file on s3 will not be
                        updated.
-        reduced - Use Reduced Redundancy storage
         header - key=value paris of extra header(s) to pass along in the
                  request
 
@@ -104,19 +104,12 @@ def expand_path(path):
     return os.path.abspath(path)
 
 def main():
-    try:
-        opts, args = getopt.getopt(
-                sys.argv[1:], 'a:b:c::d:g:hi:np:qs:wr',
-                ['access_key=', 'bucket=', 'callback=', 'debug=', 'help',
-                 'grant=', 'ignore=', 'no_op', 'prefix=', 'quiet',
-                 'secret_key=', 'no_overwrite', 'reduced', "header="]
-                )
-    except:
-        usage()
-    ignore_dirs = []
+
+    # default values
     aws_access_key_id = None
     aws_secret_access_key = None
     bucket_name = ''
+    ignore_dirs = []
     debug = 0
     cb = None
     num_cb = 0
@@ -127,10 +120,20 @@ def main():
     no_overwrite = False
     reduced = False
     headers = {}
+
+    try:
+        opts, args = getopt.getopt(
+            sys.argv[1:], 'a:b:c::d:g:hi:np:qs:wr',
+            ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
+             'ignore=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
+             'no_overwrite', 'reduced', 'header='])
+    except:
+        usage()
+
+    # parse opts
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
-            sys.exit()
         if o in ('-a', '--access_key'):
             aws_access_key_id = a
         if o in ('-b', '--bucket'):
@@ -148,8 +151,6 @@ def main():
             no_op = True
         if o in ('-w', '--no_overwrite'):
             no_overwrite = True
-        if o in ('-r', '--reduced'):
-            reduced = True
         if o in ('-p', '--prefix'):
             prefix = a
             if prefix[-1] != os.sep:
@@ -159,64 +160,80 @@ def main():
             quiet = True
         if o in ('-s', '--secret_key'):
             aws_secret_access_key = a
+        if o in ('-r', '--reduced'):
+            reduced = True
         if o in ('--header'):
             (k,v) = a.split("=")
             headers[k] = v
+
     if len(args) != 1:
-        print usage()
+        usage()
+
     path = expand_path(args[0])
-    if bucket_name:
-        c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
-                            aws_secret_access_key=aws_secret_access_key)
-        c.debug = debug
-        b = c.get_bucket(bucket_name)
-        if os.path.isdir(path):
-            if no_overwrite:
-                if not quiet:
-                    print 'Getting list of existing keys to check against'
-                keys = []
-                for key in b.list(get_key_name(path, prefix)):
-                    keys.append(key.name)
-            for root, dirs, files in os.walk(path):
-                for ignore in ignore_dirs:
-                    if ignore in dirs:
-                        dirs.remove(ignore)
-                for file in files:
-                    if file.startswith("."):
-                        continue
-                    fullpath = os.path.join(root, file)
-                    key_name = get_key_name(fullpath, prefix)
-                    copy_file = True
-                    if no_overwrite:
-                        if key_name in keys:
-                            copy_file = False
-                            if not quiet:
-                                print 'Skipping %s as it exists in s3' % file
-                    if copy_file:
+
+    if not bucket_name:
+        print "bucket name is required!"
+        usage()
+
+    c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key)
+    c.debug = debug
+    b = c.get_bucket(bucket_name)
+
+    # upload a directory of files recursively
+    if os.path.isdir(path):
+        if no_overwrite:
+            if not quiet:
+                print 'Getting list of existing keys to check against'
+            keys = []
+            for key in b.list(get_key_name(path, prefix)):
+                keys.append(key.name)
+        for root, dirs, files in os.walk(path):
+            for ignore in ignore_dirs:
+                if ignore in dirs:
+                    dirs.remove(ignore)
+            for path in files:
+                if path.startswith("."):
+                    continue
+                fullpath = os.path.join(root, path)
+                key_name = get_key_name(fullpath, prefix)
+                copy_file = True
+                if no_overwrite:
+                    if key_name in keys:
+                        copy_file = False
                         if not quiet:
-                            print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
-                        if not no_op:
-                            k = b.new_key(key_name)
-                            k.set_contents_from_filename(
-                                    fullpath, cb=cb, num_cb=num_cb,
-                                    policy=grant, reduced_redundancy=reduced,
-                                    headers=headers
-                                    )
-        elif os.path.isfile(path):
-            key_name = get_key_name(path, prefix)
-            copy_file = True
-            if no_overwrite:
-                if b.get_key(key_name):
-                    copy_file = False
+                            print 'Skipping %s as it exists in s3' % path
+
+                if copy_file:
                     if not quiet:
-                        print 'Skipping %s as it exists in s3' % path
-            if copy_file:
+                        print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
+
+                    if not no_op:
+                        k = b.new_key(key_name)
+                        k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb,
+                                                     policy=grant, reduced_redundancy=reduced,
+                                                     headers=headers)
+                total += 1
+
+    # upload a single file
+    elif os.path.isfile(path):
+        fullpath = os.path.abspath(path)
+        key_name = get_key_name(fullpath, prefix)
+        copy_file = True
+        if no_overwrite:
+            if b.get_key(key_name):
+                copy_file = False
+                if not quiet:
+                    print 'Skipping %s as it exists in s3' % path
+
+        if copy_file:
+            if not quiet:
+                print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
+
+            if not no_op:
                 k = b.new_key(key_name)
-                k.set_contents_from_filename(path, cb=cb, num_cb=num_cb,
-                                             policy=grant,
+                k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb, policy=grant,
                                              reduced_redundancy=reduced, headers=headers)
-    else:
-        print usage()
 
 if __name__ == "__main__":
     main()
