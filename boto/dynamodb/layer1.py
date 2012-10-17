@@ -27,7 +27,9 @@ from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 
-import time
+if boto.enable_performance_logger:
+    import time
+
 try:
     import simplejson as json
 except ImportError:
@@ -113,19 +115,28 @@ class Layer1(AWSAuthConnection):
                    'Host': self.region.endpoint,
                    'Content-Type': 'application/x-amz-json-1.0',
                    'Content-Length': str(len(body))}
+
         http_request = self.build_base_http_request('POST', '/', '/',
                                                     {}, headers, body, None)
-        start = time.time()
+        if boto.enable_performance_logger:
+            start = time.time()
+
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
-        elapsed = (time.time() - start)*1000
         request_id = response.getheader('x-amzn-RequestId')
-        boto.log.debug('RequestId: %s' % request_id)
-        boto.perflog.debug('dynamodb %s: id=%s time=%sms',
-                          headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
+
+        if boto.enable_performance_logger:
+            elapsed = (time.time() - start)*1000
+            boto.perflog.debug('dynamodb %s: id=%s time=%sms',
+                               headers['X-Amz-Target'],
+                               request_id,
+                               int(elapsed))
+
+        boto.log.debug('RequestId: %s' % request_id)
         boto.log.debug(response_body)
+
         return json.loads(response_body, object_hook=object_hook)
 
     def _retry_handler(self, response, i, next_sleep):

@@ -54,6 +54,8 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
+enable_performance_logger = False
+
 log = logging.getLogger('boto')
 perflog = logging.getLogger('boto.perf')
 log.addHandler(NullHandler())
