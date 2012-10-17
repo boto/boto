@@ -42,7 +42,8 @@ SYNOPSIS
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
-          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
+          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
+          [--header] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -90,6 +91,9 @@ SYNOPSIS
                        sync, even if the file has been updated locally if
                        the key exists on s3 the file on s3 will not be
                        updated.
+        header - key=value paris of extra header(s) to pass along in the
+                 request
+
 
      If the -n option is provided, no files will be transferred to S3 but
      informational messages will be printed about what would happen.
@@ -202,13 +206,14 @@ def main():
     grant = None
     no_overwrite = False
     reduced = False
+    headers = {}
 
     try:
         opts, args = getopt.getopt(
             sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
-             'no_overwrite', 'reduced'])
+             'no_overwrite', 'reduced', 'header='])
     except:
         usage()
 
@@ -246,6 +251,9 @@ def main():
             aws_secret_access_key = a
         if o in ('-r', '--reduced'):
             reduced = True
+        if o in ('--header'):
+            (k,v) = a.split("=")
+            headers[k] = v
 
     if len(args) != 1:
         usage()
@@ -294,11 +302,13 @@ def main():
                             # 0-byte files don't work and also don't need multipart upload
                             k = b.new_key(key_name)
                             k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb,
-                                                         policy=grant, reduced_redundancy=reduced)
+                                                         policy=grant, reduced_redundancy=reduced,
+                                                         headers=headers)
                         else:
                             upload(bucket_name, aws_access_key_id,
                                    aws_secret_access_key, fullpath, key_name,
                                    reduced, debug, cb, num_cb, grant or 'private')
+                                   headers)
 
     # upload a single file
     elif os.path.isfile(path):
@@ -319,11 +329,13 @@ def main():
                     # 0-byte files don't work and also don't need multipart upload
                     k = b.new_key(key_name)
                     k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant,
-                                                 reduced_redundancy=reduced)
+                                                 reduced_redundancy=reduced,
+                                                 headers=headers)
                 else:
                     upload(bucket_name, aws_access_key_id,
                            aws_secret_access_key, path, key_name,
-                           reduced, debug, cb, num_cb, grant or 'private')
+                           reduced, debug, cb, num_cb, grant or 'private',
+                           headers)
 
 if __name__ == "__main__":
     main()
