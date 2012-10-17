@@ -30,7 +30,8 @@ SYNOPSIS
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-q/--quiet]
-          [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
+          [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
+          [--header] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -75,6 +76,8 @@ SYNOPSIS
                        the key exists on s3 the file on s3 will not be 
                        updated.
         reduced - Use Reduced Redundancy storage
+        header - key=value paris of extra header(s) to pass along in the
+                 request
 
 
      If the -n option is provided, no files will be transferred to S3 but
