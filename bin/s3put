@@ -29,7 +29,7 @@ SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>]
+          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
           [--header] path
 
@@ -65,6 +65,9 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
+        key_prefix - A prefix to be added to the S3 key name, after any
+                     stripping of the file path is done based on the
+                     "-p/--prefix" option.
         reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
                 transferred to S3.  The value of provided must be one
@@ -90,13 +93,13 @@ def usage():
 def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
 
-def get_key_name(fullpath, prefix):
+def get_key_name(fullpath, prefix, key_prefix):
     if fullpath.startswith(prefix):
         key_name = fullpath[len(prefix):]
     else:
         key_name = fullpath
     l = key_name.split(os.sep)
-    return '/'.join(l)
+    return key_prefix + '/'.join(l)
 
 def expand_path(path):
     path = os.path.expanduser(path)
@@ -116,6 +119,7 @@ def main():
     quiet = False
     no_op = False
     prefix = '/'
+    key_prefix = ''
     grant = None
     no_overwrite = False
     reduced = False
@@ -123,9 +127,9 @@ def main():
 
     try:
         opts, args = getopt.getopt(
-            sys.argv[1:], 'a:b:c::d:g:hi:np:qs:wr',
+            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
-             'ignore=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
+             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
              'no_overwrite', 'reduced', 'header='])
     except:
         usage()
@@ -156,6 +160,8 @@ def main():
             if prefix[-1] != os.sep:
                 prefix = prefix + os.sep
             prefix = expand_path(prefix)
+        if o in ('-k', '--key_prefix'):
+            key_prefix = a
         if o in ('-q', '--quiet'):
             quiet = True
         if o in ('-s', '--secret_key'):
@@ -186,7 +192,7 @@ def main():
             if not quiet:
                 print 'Getting list of existing keys to check against'
             keys = []
-            for key in b.list(get_key_name(path, prefix)):
+            for key in b.list(get_key_name(path, prefix, key_prefix)):
                 keys.append(key.name)
         for root, dirs, files in os.walk(path):
             for ignore in ignore_dirs:
@@ -196,7 +202,7 @@ def main():
                 if path.startswith("."):
                     continue
                 fullpath = os.path.join(root, path)
-                key_name = get_key_name(fullpath, prefix)
+                key_name = get_key_name(fullpath, prefix, key_prefix)
                 copy_file = True
                 if no_overwrite:
                     if key_name in keys:
@@ -218,7 +224,7 @@ def main():
     # upload a single file
     elif os.path.isfile(path):
         fullpath = os.path.abspath(path)
-        key_name = get_key_name(fullpath, prefix)
+        key_name = get_key_name(fullpath, prefix, key_prefix)
         copy_file = True
         if no_overwrite:
             if b.get_key(key_name):
