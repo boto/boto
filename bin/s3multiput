@@ -20,21 +20,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
-# multipart portions copyright Fabian Topfstedt
-# https://gist.github.com/924094
-
-
-import math
-import mimetypes
-from multiprocessing import Pool
 import getopt, sys, os
-
 import boto
 from boto.exception import S3ResponseError
 
-from boto.s3.connection import S3Connection
-from filechunkio import FileChunkIO
+try:
+    # multipart portions copyright Fabian Topfstedt
+    # https://gist.github.com/924094
+
+    import math
+    import mimetypes
+    from multiprocessing import Pool
+    from boto.s3.connection import S3Connection
+    from filechunkio import FileChunkIO
+    multipart_capable=True
+    usage_flag_multipart_capable = """ [--multipart]"""
+    usage_string_multipart_capable = """
+        multipart - Upload files as multiple parts. This needs filechunkio."""
+except ImportError:
+    multipart_capable=False
+    usage_flag_multipart_capable = ""
+    usage_string_multipart_capable = ""
+
 
 usage_string = """
 SYNOPSIS
@@ -43,7 +50,7 @@ SYNOPSIS
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] path
+          [--header] """ + usage_string_multipart_capable + """ path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -92,7 +99,7 @@ SYNOPSIS
                        the key exists on s3 the file on s3 will not be
                        updated.
         header - key=value paris of extra header(s) to pass along in the
-                 request
+                 request""" + usage_string_multipart_capable + """
 
 
      If the -n option is provided, no files will be transferred to S3 but
@@ -145,9 +152,9 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
 
     _upload()
 
-def upload(bucketname, aws_key, aws_secret, source_path, keyname,
-    reduced, debug, cb, num_cb,
-    acl='private', headers={}, guess_mimetype=True, parallel_processes=4):
+def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
+                     reduced, debug, cb, num_cb, acl='private', headers={},
+                     guess_mimetype=True, parallel_processes=4):
     """
     Parallel multipart upload.
     """
@@ -184,10 +191,20 @@ def upload(bucketname, aws_key, aws_secret, source_path, keyname,
     else:
         mp.cancel_upload()
 
+
+def singlepart_upload(bucket, key_name, fullpath, *kargs, **kwargs):
+    """
+    Single upload.
+    """
+    k = bucket.new_key(key_name)
+    k.set_contents_from_filename(fullpath, *kargs, **kwargs)
+
+
 def expand_path(path):
     path = os.path.expanduser(path)
     path = os.path.expandvars(path)
     return os.path.abspath(path)
+
 
 def main():
 
@@ -207,13 +224,14 @@ def main():
     no_overwrite = False
     reduced = False
     headers = {}
+    multipart_requested = False
 
     try:
         opts, args = getopt.getopt(
             sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
-             'no_overwrite', 'reduced', 'header='])
+             'no_overwrite', 'reduced', 'header=', 'multipart'])
     except:
         usage()
 
@@ -254,6 +272,12 @@ def main():
         if o in ('--header'):
             (k,v) = a.split("=")
             headers[k] = v
+        if o in ('--multipart'):
+            if multipart_capable:
+                multipart_requested = True
+            else:
+                print "multipart upload requested but not capable"
+                sys.exit()
 
     if len(args) != 1:
         usage()
@@ -298,21 +322,22 @@ def main():
                         print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
 
                     if not no_op:
-                        if os.stat(fullpath).st_size == 0:
-                            # 0-byte files don't work and also don't need multipart upload
-                            k = b.new_key(key_name)
-                            k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb,
-                                                         policy=grant, reduced_redundancy=reduced,
-                                                         headers=headers)
+                        # 0-byte files don't work and also don't need multipart upload
+                        if os.stat(fullpath).st_size != 0 and \
+                           multipart_capable and multipart_requested:
+                            multipart_upload(bucket_name, aws_access_key_id,
+                                             aws_secret_access_key, fullpath, key_name,
+                                             reduced, debug, cb, num_cb, grant or 'private',
+                                             headers)
                         else:
-                            upload(bucket_name, aws_access_key_id,
-                                   aws_secret_access_key, fullpath, key_name,
-                                   reduced, debug, cb, num_cb, grant or 'private')
-                                   headers)
+                            singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
+                                              policy=grant, reduced_redundancy=reduced,
+                                              headers=headers)
 
     # upload a single file
     elif os.path.isfile(path):
-        key_name = get_key_name(os.path.abspath(path), prefix, key_prefix)
+        fullpath = os.path.abspath(path)
+        key_name = get_key_name(fullpath, prefix, key_prefix)
         copy_file = True
         if no_overwrite:
             if b.get_key(key_name):
@@ -325,17 +350,17 @@ def main():
                 print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
 
             if not no_op:
-                if os.stat(path).st_size == 0:
-                    # 0-byte files don't work and also don't need multipart upload
-                    k = b.new_key(key_name)
-                    k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant,
-                                                 reduced_redundancy=reduced,
-                                                 headers=headers)
+                # 0-byte files don't work and also don't need multipart upload
+                if os.stat(fullpath).st_size != 0 and \
+                   multipart_capable and multipart_requested:
+                    multipart_upload(bucket_name, aws_access_key_id,
+                                     aws_secret_access_key, fullpath, key_name,
+                                     reduced, debug, cb, num_cb, grant or 'private',
+                                     headers=headers)
                 else:
-                    upload(bucket_name, aws_access_key_id,
-                           aws_secret_access_key, path, key_name,
-                           reduced, debug, cb, num_cb, grant or 'private',
-                           headers)
+                    singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
+                                      policy=grant, reduced_redundancy=reduced,
+                                      headers=headers)
 
 if __name__ == "__main__":
     main()
