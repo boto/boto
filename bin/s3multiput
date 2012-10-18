@@ -102,7 +102,10 @@ def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
 
 def get_key_name(fullpath, prefix, key_prefix):
-    key_name = fullpath[len(prefix):]
+    if fullpath.startswith(prefix):
+        key_name = fullpath[len(prefix):]
+    else:
+        key_name = fullpath
     l = key_name.split(os.sep)
     return key_prefix + '/'.join(l)
 
@@ -177,6 +180,10 @@ def upload(bucketname, aws_key, aws_secret, source_path, keyname,
     else:
         mp.cancel_upload()
 
+def expand_path(path):
+    path = os.path.expanduser(path)
+    path = os.path.expandvars(path)
+    return os.path.abspath(path)
 
 def main():
 
@@ -230,6 +237,7 @@ def main():
             prefix = a
             if prefix[-1] != os.sep:
                 prefix = prefix + os.sep
+            prefix = expand_path(prefix)
         if o in ('-k', '--key_prefix'):
             key_prefix = a
         if o in ('-q', '--quiet'):
@@ -242,10 +250,7 @@ def main():
     if len(args) != 1:
         usage()
 
-
-    path = os.path.expanduser(args[0])
-    path = os.path.expandvars(path)
-    path = os.path.abspath(path)
+    path = expand_path(args[0])
 
     if not bucket_name:
         print "bucket name is required!"
