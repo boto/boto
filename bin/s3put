@@ -38,10 +38,12 @@ try:
     usage_flag_multipart_capable = """ [--multipart]"""
     usage_string_multipart_capable = """
         multipart - Upload files as multiple parts. This needs filechunkio."""
-except ImportError:
+except ImportError as err:
     multipart_capable = False
     usage_flag_multipart_capable = ""
-    usage_string_multipart_capable = ""
+    usage_string_multipart_capable = '\n\n     "' + \
+        err.message[len('No module named '):] + \
+        '" is missing for multipart support '
 
 
 usage_string = """
