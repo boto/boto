@@ -114,7 +114,6 @@ def main():
     aws_access_key_id = None
     aws_secret_access_key = None
     bucket_name = ''
-    total = 0
     debug = 0
     cb = None
     num_cb = 0
@@ -200,7 +199,6 @@ def main():
                                     policy=grant, reduced_redundancy=reduced,
                                     headers=headers
                                     )
-                    total += 1
         elif os.path.isfile(path):
             key_name = get_key_name(path, prefix)
             copy_file = True

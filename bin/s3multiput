@@ -192,7 +192,6 @@ def main():
     aws_secret_access_key = None
     bucket_name = ''
     ignore_dirs = []
-    total  = 0
     debug  = 0
     cb     = None
     num_cb = 0
@@ -297,7 +296,6 @@ def main():
                             upload(bucket_name, aws_access_key_id,
                                    aws_secret_access_key, fullpath, key_name,
                                    reduced, debug, cb, num_cb, grant or 'private')
-                total += 1
 
     # upload a single file
     elif os.path.isfile(path):
