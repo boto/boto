@@ -20,9 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import getopt, sys, os
+import getopt
+import sys
+import os
 import boto
-from boto.exception import S3ResponseError
+
 
 usage_string = """
 SYNOPSIS
@@ -86,12 +88,16 @@ SYNOPSIS
      If the -n option is provided, no files will be transferred to S3 but
      informational messages will be printed about what would happen.
 """
+
+
 def usage():
     print usage_string
     sys.exit()
 
+
 def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
+
 
 def get_key_name(fullpath, prefix, key_prefix):
     if fullpath.startswith(prefix):
@@ -101,10 +107,12 @@ def get_key_name(fullpath, prefix, key_prefix):
     l = key_name.split(os.sep)
     return key_prefix + '/'.join(l)
 
+
 def expand_path(path):
     path = os.path.expanduser(path)
     path = os.path.expandvars(path)
     return os.path.abspath(path)
+
 
 def main():
 
@@ -129,8 +137,8 @@ def main():
         opts, args = getopt.getopt(
             sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
-             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
-             'no_overwrite', 'reduced', 'header='])
+             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
+             'secret_key=', 'no_overwrite', 'reduced', 'header='])
     except:
         usage()
 
@@ -169,7 +177,7 @@ def main():
         if o in ('-r', '--reduced'):
             reduced = True
         if o in ('--header'):
-            (k,v) = a.split("=")
+            (k, v) = a.split("=")
             headers[k] = v
 
     if len(args) != 1:
