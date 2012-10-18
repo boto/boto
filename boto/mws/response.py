@@ -266,7 +266,7 @@ class RequestReportResult(ResponseElement):
 
 
 class GetReportRequestListResult(RequestReportResult):
-    ReportRequestInfo = Element()
+    ReportRequestInfo = ElementList()
 
 
 class GetReportRequestListByNextTokenResult(GetReportRequestListResult):
