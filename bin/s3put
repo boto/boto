@@ -51,7 +51,7 @@ SYNOPSIS
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] """ + usage_string_multipart_capable + """ path
+          [--header] """ + usage_string_multipart_capable + """ path [path...]
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -291,10 +291,8 @@ def main():
                 print "multipart upload requested but not capable"
                 sys.exit()
 
-    if len(args) != 1:
+    if len(args) < 1:
         usage()
-
-    path = expand_path(args[0])
 
     if not bucket_name:
         print "bucket name is required!"
@@ -304,75 +302,61 @@ def main():
                         aws_secret_access_key=aws_secret_access_key)
     c.debug = debug
     b = c.get_bucket(bucket_name)
+    existing_keys_to_check_against = []
+    files_to_check_for_upload = []
 
-    # upload a directory of files recursively
-    if os.path.isdir(path):
-        if no_overwrite:
-            if not quiet:
-                print 'Getting list of existing keys to check against'
-            keys = []
-            for key in b.list(get_key_name(path, prefix, key_prefix)):
-                keys.append(key.name)
-        for root, dirs, files in os.walk(path):
-            for ignore in ignore_dirs:
-                if ignore in dirs:
-                    dirs.remove(ignore)
-            for path in files:
-                if path.startswith("."):
-                    continue
-                fullpath = os.path.join(root, path)
-                key_name = get_key_name(fullpath, prefix, key_prefix)
-                copy_file = True
-                if no_overwrite:
-                    if key_name in keys:
-                        copy_file = False
-                        if not quiet:
-                            print 'Skipping %s as it exists in s3' % path
-
-                if copy_file:
-                    if not quiet:
-                        print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
-
-                    if not no_op:
-                        # 0-byte files don't work and also don't need multipart upload
-                        if os.stat(fullpath).st_size != 0 and \
-                           multipart_capable and multipart_requested:
-                            multipart_upload(bucket_name, aws_access_key_id,
-                                             aws_secret_access_key, fullpath, key_name,
-                                             reduced, debug, cb, num_cb, grant or 'private',
-                                             headers)
-                        else:
-                            singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
-                                              policy=grant, reduced_redundancy=reduced,
-                                              headers=headers)
-
-    # upload a single file
-    elif os.path.isfile(path):
-        fullpath = os.path.abspath(path)
-        key_name = get_key_name(fullpath, prefix, key_prefix)
-        copy_file = True
-        if no_overwrite:
-            if b.get_key(key_name):
-                copy_file = False
+    for path in args:
+        path = expand_path(path)
+        # upload a directory of files recursively
+        if os.path.isdir(path):
+            if no_overwrite:
                 if not quiet:
-                    print 'Skipping %s as it exists in s3' % path
+                    print 'Getting list of existing keys to check against'
+                for key in b.list(get_key_name(path, prefix, key_prefix)):
+                    existing_keys_to_check_against.append(key.name)
+            for root, dirs, files in os.walk(path):
+                for ignore in ignore_dirs:
+                    if ignore in dirs:
+                        dirs.remove(ignore)
+                for path in files:
+                    if path.startswith("."):
+                        continue
+                    files_to_check_for_upload.append(os.path.join(root, path))
 
-        if copy_file:
+        # upload a single file
+        elif os.path.isfile(path):
+            fullpath = os.path.abspath(path)
+            key_name = get_key_name(fullpath, prefix, key_prefix)
+            files_to_check_for_upload.append(fullpath)
+            existing_keys_to_check_against.append(key_name)
+
+        # we are trying to upload something unknown
+        else:
+            print "I don't know what %s is, so i can't upload it" % path
+
+    for fullpath in files_to_check_for_upload:
+        key_name = get_key_name(fullpath, prefix, key_prefix)
+
+        if no_overwrite and key_name in existing_keys_to_check_against:
             if not quiet:
-                print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
+                print 'Skipping %s as it exists in s3' % fullpath
+            continue
 
-            if not no_op:
-                # 0-byte files don't work and also don't need multipart upload
-                if os.stat(fullpath).st_size != 0 and \
-                   multipart_capable and multipart_requested:
-                    multipart_upload(bucket_name, aws_access_key_id,
-                                     aws_secret_access_key, fullpath, key_name,
-                                     reduced, debug, cb, num_cb, grant or 'private',
-                                     headers=headers)
-                else:
-                    singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
-                                      policy=grant, reduced_redundancy=reduced,
-                                      headers=headers)
+        if not quiet:
+            print 'Copying %s to %s/%s' % (fullpath, bucket_name, key_name)
+
+        if not no_op:
+            # 0-byte files don't work and also don't need multipart upload
+            if os.stat(fullpath).st_size != 0 and multipart_capable and \
+                    multipart_requested:
+                multipart_upload(bucket_name, aws_access_key_id,
+                                 aws_secret_access_key, fullpath, key_name,
+                                 reduced, debug, cb, num_cb,
+                                 grant or 'private', headers)
+            else:
+                singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
+                                  policy=grant, reduced_redundancy=reduced,
+                                  headers=headers)
 
 if __name__ == "__main__":
     main()
