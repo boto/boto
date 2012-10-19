@@ -26,10 +26,6 @@ Bear in mind that if you have your credentials in boto config in your home
 directory, the two keyword arguments in the call above are not needed. More
 details on configuration can be found in :doc:`boto_config_tut`.
 
-.. note:: At this
-    time, Amazon DynamoDB is available only in the US-EAST-1 region. The
-    ``connect_dynamodb`` method automatically connect to that region.
-
 The :py:func:`boto.connect_dynamodb` functions returns a
 :py:class:`boto.dynamodb.layer2.Layer2` instance, which is a high-level API
 for working with DynamoDB. Layer2 is a set of abstractions that sit atop
