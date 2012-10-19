@@ -20,8 +20,8 @@ At this point the variable conn will point to an S3Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
 method explicitely.  Alternatively, you can set the environment variables:
 
-AWS_ACCESS_KEY_ID - Your AWS Access Key ID
-AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
+* `AWS_ACCESS_KEY_ID` - Your AWS Access Key ID
+* `AWS_SECRET_ACCESS_KEY` - Your AWS Secret Access Key
 
 and then call the constructor without any arguments, like this:
 
@@ -168,6 +168,7 @@ S3.  There are two ways to set the ACL for an object:
 
 2. Use a "canned" access control policy.  There are four canned policies
    defined:
+
    a. private: Owner gets FULL_CONTROL.  No one else has any access rights.
    b. public-read: Owners gets FULL_CONTROL and the anonymous principal is granted READ access.
    c. public-read-write: Owner gets FULL_CONTROL and the anonymous principal is granted READ and WRITE access.
@@ -237,7 +238,7 @@ with an S3 object.  For example:
 This code associates two metadata key/value pairs with the Key k.  To retrieve
 those values later:
 
->>> k = b.get_key('has_metadata)
+>>> k = b.get_key('has_metadata')
 >>> k.get_metadata('meta1')
 'This is the first metadata value'
 >>> k.get_metadata('meta2')
