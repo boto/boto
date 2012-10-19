@@ -126,6 +126,11 @@ class ResourceRecordSets(ResultSet):
         self.changes.append([action, change])
         return change
 
+    def add_change_record(self, action, change):
+        """Add an existing record to a change set with the specified action"""
+        self.changes.append([action, change])
+        return
+
     def to_xml(self):
         """Convert this ResourceRecordSet into XML
         to be saved via the ChangeResourceRecordSetsRequest"""
