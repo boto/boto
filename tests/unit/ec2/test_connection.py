@@ -122,10 +122,9 @@ class TestReservedInstanceOfferings(TestEC2ConnectionBase):
             'MaxDuration': '1000',
             'MaxInstanceCount': '1',
             'NextToken': 'next_token',
-            'MaxResults': '10',
-            'Version': '2012-08-15'},
+            'MaxResults': '10',},
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp'])
+                                   'SignatureVersion', 'Timestamp', 'Version'])
 
 
 class TestPurchaseReservedInstanceOffering(TestEC2ConnectionBase):
@@ -141,10 +140,10 @@ class TestPurchaseReservedInstanceOffering(TestEC2ConnectionBase):
             'InstanceCount': 1,
             'ReservedInstancesOfferingId': 'offering_id',
             'LimitPrice.Amount': '100.0',
-            'LimitPrice.CurrencyCode': 'USD',
-            'Version': '2012-08-15'},
+            'LimitPrice.CurrencyCode': 'USD',},
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp'])
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
 
 
 class TestCancelReservedInstancesListing(TestEC2ConnectionBase):
@@ -369,10 +368,87 @@ class TestCreateReservedInstancesListing(TestEC2ConnectionBase):
             'PriceSchedules.0.Price': '2.5',
             'PriceSchedules.0.Term': '11',
             'PriceSchedules.1.Price': '2.0',
-            'PriceSchedules.1.Term': '8',
-            'Version': '2012-08-15'},
+            'PriceSchedules.1.Term': '8',},
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp'])
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+
+class TestDescribeSpotInstanceRequests(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+        <DescribeSpotInstanceRequestsResponse>
+            <requestId>requestid</requestId>
+            <spotInstanceRequestSet>
+                <item>
+                    <spotInstanceRequestId>sir-id</spotInstanceRequestId>
+                    <spotPrice>0.003000</spotPrice>
+                    <type>one-time</type>
+                    <state>active</state>
+                    <status>
+                        <code>fulfilled</code>
+                        <updateTime>2012-10-19T18:09:26.000Z</updateTime>
+                        <message>Your Spot request is fulfilled.</message>
+                    </status>
+                    <launchGroup>mylaunchgroup</launchGroup>
+                    <launchSpecification>
+                        <imageId>ami-id</imageId>
+                        <keyName>mykeypair</keyName>
+                        <groupSet>
+                            <item>
+                                <groupId>sg-id</groupId>
+                                <groupName>groupname</groupName>
+                            </item>
+                        </groupSet>
+                        <instanceType>t1.micro</instanceType>
+                        <monitoring>
+                            <enabled>false</enabled>
+                        </monitoring>
+                    </launchSpecification>
+                    <instanceId>i-id</instanceId>
+                    <createTime>2012-10-19T18:07:05.000Z</createTime>
+                    <productDescription>Linux/UNIX</productDescription>
+                    <launchedAvailabilityZone>us-east-1d</launchedAvailabilityZone>
+                </item>
+            </spotInstanceRequestSet>
+        </DescribeSpotInstanceRequestsResponse>
+        """
+
+    def test_describe_spot_instance_requets(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.get_all_spot_instance_requests()
+        self.assertEqual(len(response), 1)
+        spotrequest = response[0]
+        self.assertEqual(spotrequest.id, 'sir-id')
+        self.assertEqual(spotrequest.price, 0.003)
+        self.assertEqual(spotrequest.type, 'one-time')
+        self.assertEqual(spotrequest.state, 'active')
+        self.assertEqual(spotrequest.fault, None)
+        self.assertEqual(spotrequest.valid_from, None)
+        self.assertEqual(spotrequest.valid_until, None)
+        self.assertEqual(spotrequest.launch_group, 'mylaunchgroup')
+        self.assertEqual(spotrequest.launched_availability_zone, 'us-east-1d')
+        self.assertEqual(spotrequest.product_description, 'Linux/UNIX')
+        self.assertEqual(spotrequest.availability_zone_group, None)
+        self.assertEqual(spotrequest.create_time,
+                         '2012-10-19T18:07:05.000Z')
+        self.assertEqual(spotrequest.instance_id, 'i-id')
+        launch_spec = spotrequest.launch_specification
+        self.assertEqual(launch_spec.key_name, 'mykeypair')
+        self.assertEqual(launch_spec.instance_type, 't1.micro')
+        self.assertEqual(launch_spec.image_id, 'ami-id')
+        self.assertEqual(launch_spec.placement, None)
+        self.assertEqual(launch_spec.kernel, None)
+        self.assertEqual(launch_spec.ramdisk, None)
+        self.assertEqual(launch_spec.monitored, False)
+        self.assertEqual(launch_spec.subnet_id, None)
+        self.assertEqual(launch_spec.block_device_mapping, None)
+        self.assertEqual(launch_spec.instance_profile, None)
+        self.assertEqual(launch_spec.ebs_optimized, False)
+        status = spotrequest.status
+        self.assertEqual(status.code, 'fulfilled')
+        self.assertEqual(status.update_time, None)
+        self.assertEqual(status.message, 'Your Spot request is fulfilled.')
 
 
 if __name__ == '__main__':
