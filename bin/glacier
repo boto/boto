@@ -30,9 +30,11 @@
 
     Author: Miguel Olivares <miguel@moliware.com>
 """
+import json
 import sys
 
 from boto.glacier import connect_to_region
+from boto.glacier.exceptions import UnexpectedHTTPResponseError
 from getopt import getopt, GetoptError
 from os.path import isfile
 from pprint import pprint
@@ -70,10 +72,14 @@ glacier <command> [args]
         List files of a particular vault (This create a job is not instant):
             glacier vaults inventory <vault name>
 
+        Retrieve a file from a vault:
+            glacier vaults <vault name> <archive id>
+
     Jobs operations:
 
         List jobs:
             glacier jobs <vault name>
+
         Get Job output:
             glacier jobs <vault name> <job id>
 
@@ -104,19 +110,36 @@ def list_vaults(region, access_key=None, secret_key=None):
 
 def vault_inventory(vault_name, region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key, secret_key)
-    vault = layer2.get_vault(vault_name)
-    print 'Job Id: %s' % vault.retrieve_inventory()
+    try:
+        vault = layer2.get_vault(vault_name)
+        print 'Job Id: %s' % vault.retrieve_inventory()
+    except UnexpectedHTTPResponseError, e:
+        print json.loads(e.body)['message']
+
+
+def retrieve_archive(vault_name, archive_id, region, access_key=None, secret_key=None):
+    layer2 = connect(region, access_key, secret_key)
+    try:
+        vault = layer2.get_vault(vault_name)
+        print 'Job Id: %s' % vault.retrieve_archive(archive_id).id
+    except UnexpectedHTTPResponseError, e:
+        print json.loads(e.body)['message']
 
 
 def list_jobs(vault_name, region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key, secret_key)
-    pprint(layer2.layer1.list_jobs(vault_name))
+    try:
+        pprint(layer2.layer1.list_jobs(vault_name))
+    except UnexpectedHTTPResponseError, e:
+        print json.loads(e.body)['message']
 
 
 def get_job_output(vault_name, job_id, region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key, secret_key)
-    print layer2.layer1.get_job_output(vault_name, job_id)
-
+    try:
+        print layer2.layer1.get_job_output(vault_name, job_id)
+    except UnexpectedHTTPResponseError, e:
+        print json.loads(e.body)['message']
 
 
 def upload_files(vault_name, filenames, region, access_key=None, secret_key=None):
@@ -127,6 +150,8 @@ def upload_files(vault_name, filenames, region, access_key=None, secret_key=None
         if isfile(filename):
             print 'Uploading %s to %s' % (filename, vault_name)
             glacier_vault.upload_archive(filename)
+        else:
+            print '"%s" is not a valid path and won\'t be uploaded' % filename
 
 
 def main():
@@ -161,6 +186,8 @@ def main():
             list_vaults(region, access_key, secret_key)
         elif args[0] == 'inventory' and len(args) == 2:
             vault_inventory(args[1], region, access_key, secret_key)
+        elif len(args) == 2:
+            retrieve_archive(args[0], args[1], region, access_key, secret_key)
         else:
             usage()
     elif command == 'jobs':
