@@ -35,6 +35,7 @@ import sys
 from boto.glacier import connect_to_region
 from getopt import getopt, GetoptError
 from os.path import isfile
+from pprint import pprint
 
 
 COMMANDS = ('vaults', 'jobs', 'upload')
@@ -73,6 +74,8 @@ glacier <command> [args]
 
         List jobs:
             glacier jobs <vault name>
+        Get Job output:
+            glacier jobs <vault name> <job id>
 
     Uploading files:
 
@@ -107,7 +110,13 @@ def vault_inventory(vault_name, region, access_key=None, secret_key=None):
 
 def list_jobs(vault_name, region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key, secret_key)
-    print layer2.layer1.list_jobs(vault_name)
+    pprint(layer2.layer1.list_jobs(vault_name))
+
+
+def get_job_output(vault_name, job_id, region, access_key=None, secret_key=None):
+    layer2 = connect(region, access_key, secret_key)
+    print layer2.layer1.get_job_output(vault_name, job_id)
+
 
 
 def upload_files(vault_name, filenames, region, access_key=None, secret_key=None):
@@ -152,10 +161,15 @@ def main():
             list_vaults(region, access_key, secret_key)
         elif args[0] == 'inventory' and len(args) == 2:
             vault_inventory(args[1], region, access_key, secret_key)
-    elif command == 'jobs':
-        if len(args) != 1:
+        else:
             usage()
-        list_jobs(args[0], region, access_key, secret_key)
+    elif command == 'jobs':
+        if len(args) == 1:
+            list_jobs(args[0], region, access_key, secret_key)
+        elif len(args) == 2:
+            get_job_output(args[0], args[1], region, access_key, secret_key)
+        else:
+            usage()
     elif command == 'upload':
         if len(args) < 2:
             usage()
