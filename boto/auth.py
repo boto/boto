@@ -392,22 +392,26 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         scope.append('aws4_request')
         return '/'.join(scope)
 
-    def credential_scope(self, http_request):
+    def credential_scope(self, http_request, region=None):
         scope = []
         http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
         scope.append(http_request.timestamp)
         parts = http_request.host.split('.')
-        if len(parts) == 3:
+
+        if region:
+            http_request.region_name = region.name
+        elif len(parts) == 3:
             http_request.region_name = 'us-east-1'
         else:
             http_request.region_name = parts[1]
+
         scope.append(http_request.region_name)
         http_request.service_name = parts[0]
         scope.append(http_request.service_name)
         scope.append('aws4_request')
         return '/'.join(scope)
 
-    def string_to_sign(self, http_request, canonical_request):
+    def string_to_sign(self, http_request, canonical_request, region=None):
         """
         Return the canonical StringToSign as well as a dict
         containing the original version of all headers that
@@ -415,7 +419,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         """
         sts = ['AWS4-HMAC-SHA256']
         sts.append(http_request.headers['X-Amz-Date'])
-        sts.append(self.credential_scope(http_request))
+        sts.append(self.credential_scope(http_request, region=region))
         sts.append(sha256(canonical_request).hexdigest())
         return '\n'.join(sts)
 
@@ -428,7 +432,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         k_signing = self._sign(k_service, 'aws4_request')
         return self._sign(k_signing, string_to_sign, hex=True)
 
-    def add_auth(self, req, **kwargs):
+    def add_auth(self, req, region=None, **kwargs):
         """
         Add AWS4 authentication to a request.
 
@@ -445,7 +449,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
         canonical_request = self.canonical_request(req)
         boto.log.debug('CanonicalRequest:\n%s' % canonical_request)
-        string_to_sign = self.string_to_sign(req, canonical_request)
+        string_to_sign = self.string_to_sign(req, canonical_request, region=region)
         boto.log.debug('StringToSign:\n%s' % string_to_sign)
         signature = self.signature(req, string_to_sign)
         boto.log.debug('Signature:\n%s' % signature)
