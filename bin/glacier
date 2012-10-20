@@ -64,7 +64,10 @@ glacier <command> [args]
     Vaults operations:
 
         List vaults:
-            glacier vaults 
+            glacier vaults
+
+        List files of a particular vault (This create a job is not instant):
+            glacier vaults inventory <vault name>
 
     Jobs operations:
 
@@ -94,6 +97,12 @@ def list_vaults(region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key, secret_key)
     for vault in layer2.list_vaults():
         print vault.arn
+
+
+def vault_inventory(vault_name, region, access_key=None, secret_key=None):
+    layer2 = connect(region, access_key, secret_key)
+    vault = layer2.get_vault(vault_name)
+    print 'Job Id: %s' % vault.retrieve_inventory()
 
 
 def list_jobs(vault_name, region, access_key=None, secret_key=None):
@@ -139,7 +148,10 @@ def main():
             region = value
     # handle each command
     if command == 'vaults':
-        list_vaults(region, access_key, secret_key)
+        if len(args) == 0:
+            list_vaults(region, access_key, secret_key)
+        elif args[0] == 'inventory' and len(args) == 2:
+            vault_inventory(args[1], region, access_key, secret_key)
     elif command == 'jobs':
         if len(args) != 1:
             usage()
