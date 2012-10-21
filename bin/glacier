@@ -137,7 +137,7 @@ def list_jobs(vault_name, region, access_key=None, secret_key=None):
 def get_job_output(vault_name, job_id, region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key, secret_key)
     try:
-        print layer2.layer1.get_job_output(vault_name, job_id)
+        pprint(layer2.layer1.get_job_output(vault_name, job_id))
     except UnexpectedHTTPResponseError, e:
         print json.loads(e.body)['message']
 
