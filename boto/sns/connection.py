@@ -20,14 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import uuid
+
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
+from boto.compat import json
 import boto
-import uuid
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 
 class SNSConnection(AWSQueryConnection):

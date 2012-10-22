@@ -20,13 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import boto.utils
 import os
 import datetime
-try:
-    import simplejson as json
-except ImportError:
-    import json
+
+import boto.utils
+from boto.compat import json
+
 
 class Credentials(object):
     """

@@ -20,18 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import time
 
 import boto
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
-
-import time
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from boto.compat import json
 
 #
 # To get full debug output, uncomment the following line and set the

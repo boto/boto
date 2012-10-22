@@ -24,11 +24,7 @@ from datetime import datetime
 from boto.resultset import ResultSet
 from boto.ec2.cloudwatch.listelement import ListElement
 from boto.ec2.cloudwatch.dimension import Dimension
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from boto.compat import json
 
 
 class MetricAlarms(list):
