@@ -25,7 +25,10 @@
 import urllib
 import hashlib
 import math
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 _ONE_MEGABYTE = 1024 * 1024
