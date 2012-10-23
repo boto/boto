@@ -129,7 +129,7 @@ class Layer1(AWSAuthConnection):
 
         if boto.enable_performance_logger:
             elapsed = (time.time() - start)*1000
-            boto.perflog.debug('dynamodb-action=%s: id=%s time=%s ms',
+            boto.perflog.debug('dynamodb_action=%s: id=%s time=%s',
                                headers['X-Amz-Target'],
                                request_id,
                                int(elapsed))
