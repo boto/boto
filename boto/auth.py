@@ -264,7 +264,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         headers_to_sign = self.headers_to_sign(http_request)
         canonical_headers = self.canonical_headers(headers_to_sign)
         string_to_sign = '\n'.join([http_request.method,
-                                    http_request.path,
+                                    http_request.auth_path,
                                     '',
                                     canonical_headers,
                                     '',
@@ -337,6 +337,10 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
+        # POST requests pass parameters in through the
+        # http_request.body field.
+        if http_request.method == 'POST':
+            return ""
         l = []
         for param in http_request.params:
             value = str(http_request.params[param])
@@ -363,7 +367,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.path
+        return http_request.auth_path
 
     def payload(self, http_request):
         body = http_request.body
@@ -443,6 +447,18 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         req.headers['X-Amz-Date'] = now.strftime('%Y%m%dT%H%M%SZ')
         if self._provider.security_token:
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
+        qs = self.query_string(req)
+        if qs and req.method == 'POST':
+            # Stash request parameters into post body
+            # before we generate the signature.
+            req.body = qs
+            req.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+            req.headers['Content-Length'] = str(len(req.body))
+        else:
+            # Safe to modify req.path here since
+            # the signature will use req.auth_path.
+            req.path = req.path.split('?')[0]
+            req.path = req.path + '?' + qs
         canonical_request = self.canonical_request(req)
         boto.log.debug('CanonicalRequest:\n%s' % canonical_request)
         string_to_sign = self.string_to_sign(req, canonical_request)
@@ -454,10 +470,6 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
-        qs = self.query_string(req)
-        if qs:
-            req.path = req.path.split('?')[0]
-            req.path = req.path + '?' + qs
 
 
 class QuerySignatureHelper(HmacKeys):
