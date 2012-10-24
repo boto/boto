@@ -123,7 +123,7 @@ class TestReservedInstanceOfferings(TestEC2ConnectionBase):
             'MaxInstanceCount': '1',
             'NextToken': 'next_token',
             'MaxResults': '10',
-            'Version': '2012-08-15'},
+            'Version': '2012-10-01'},
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp'])
 
@@ -142,7 +142,7 @@ class TestPurchaseReservedInstanceOffering(TestEC2ConnectionBase):
             'ReservedInstancesOfferingId': 'offering_id',
             'LimitPrice.Amount': '100.0',
             'LimitPrice.CurrencyCode': 'USD',
-            'Version': '2012-08-15'},
+            'Version': '2012-10-01'},
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp'])
 
@@ -370,7 +370,7 @@ class TestCreateReservedInstancesListing(TestEC2ConnectionBase):
             'PriceSchedules.0.Term': '11',
             'PriceSchedules.1.Price': '2.0',
             'PriceSchedules.1.Term': '8',
-            'Version': '2012-08-15'},
+            'Version': '2012-10-01'},
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp'])
 
