@@ -41,8 +41,9 @@ SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>] 
-          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
+          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
+          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
+          [--header] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -76,8 +77,8 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
-        key_prefix - A prefix to be added to the S3 key name, after any 
-                     stripping of the file path is done based on the 
+        key_prefix - A prefix to be added to the S3 key name, after any
+                     stripping of the file path is done based on the
                      "-p/--prefix" option.
         reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
@@ -90,6 +91,9 @@ SYNOPSIS
                        sync, even if the file has been updated locally if
                        the key exists on s3 the file on s3 will not be
                        updated.
+        header - key=value paris of extra header(s) to pass along in the
+                 request
+
 
      If the -n option is provided, no files will be transferred to S3 but
      informational messages will be printed about what would happen.
@@ -102,7 +106,10 @@ def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
 
 def get_key_name(fullpath, prefix, key_prefix):
-    key_name = fullpath[len(prefix):]
+    if fullpath.startswith(prefix):
+        key_name = fullpath[len(prefix):]
+    else:
+        key_name = fullpath
     l = key_name.split(os.sep)
     return key_prefix + '/'.join(l)
 
@@ -177,31 +184,36 @@ def upload(bucketname, aws_key, aws_secret, source_path, keyname,
     else:
         mp.cancel_upload()
 
+def expand_path(path):
+    path = os.path.expanduser(path)
+    path = os.path.expandvars(path)
+    return os.path.abspath(path)
 
 def main():
 
     # default values
-    aws_access_key_id     = None
+    aws_access_key_id = None
     aws_secret_access_key = None
     bucket_name = ''
     ignore_dirs = []
-    total  = 0
-    debug  = 0
-    cb     = None
+    debug = 0
+    cb = None
     num_cb = 0
-    quiet  = False
-    no_op  = False
+    quiet = False
+    no_op = False
     prefix = '/'
     key_prefix = ''
-    grant  = None
+    grant = None
     no_overwrite = False
     reduced = False
+    headers = {}
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
-                                   ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
-                                    'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=', 
-                                    'no_overwrite', 'reduced'])
+        opts, args = getopt.getopt(
+            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
+            ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
+             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=',
+             'no_overwrite', 'reduced', 'header='])
     except:
         usage()
 
@@ -224,12 +236,13 @@ def main():
             ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
             no_op = True
-        if o in ('w', '--no_overwrite'):
+        if o in ('-w', '--no_overwrite'):
             no_overwrite = True
         if o in ('-p', '--prefix'):
             prefix = a
             if prefix[-1] != os.sep:
                 prefix = prefix + os.sep
+            prefix = expand_path(prefix)
         if o in ('-k', '--key_prefix'):
             key_prefix = a
         if o in ('-q', '--quiet'):
@@ -238,14 +251,14 @@ def main():
             aws_secret_access_key = a
         if o in ('-r', '--reduced'):
             reduced = True
+        if o in ('--header'):
+            (k,v) = a.split("=")
+            headers[k] = v
 
     if len(args) != 1:
         usage()
 
-
-    path = os.path.expanduser(args[0])
-    path = os.path.expandvars(path)
-    path = os.path.abspath(path)
+    path = expand_path(args[0])
 
     if not bucket_name:
         print "bucket name is required!"
@@ -268,31 +281,34 @@ def main():
             for ignore in ignore_dirs:
                 if ignore in dirs:
                     dirs.remove(ignore)
-            for file in files:
-                fullpath = os.path.join(root, file)
+            for path in files:
+                if path.startswith("."):
+                    continue
+                fullpath = os.path.join(root, path)
                 key_name = get_key_name(fullpath, prefix, key_prefix)
                 copy_file = True
                 if no_overwrite:
                     if key_name in keys:
                         copy_file = False
                         if not quiet:
-                            print 'Skipping %s as it exists in s3' % file
+                            print 'Skipping %s as it exists in s3' % path
 
                 if copy_file:
                     if not quiet:
-                        print 'Copying %s to %s/%s' % (file, bucket_name, key_name)
+                        print 'Copying %s to %s/%s' % (path, bucket_name, key_name)
 
                     if not no_op:
                         if os.stat(fullpath).st_size == 0:
                             # 0-byte files don't work and also don't need multipart upload
                             k = b.new_key(key_name)
                             k.set_contents_from_filename(fullpath, cb=cb, num_cb=num_cb,
-                                                         policy=grant, reduced_redundancy=reduced)
+                                                         policy=grant, reduced_redundancy=reduced,
+                                                         headers=headers)
                         else:
                             upload(bucket_name, aws_access_key_id,
                                    aws_secret_access_key, fullpath, key_name,
                                    reduced, debug, cb, num_cb, grant or 'private')
-                total += 1
+                                   headers)
 
     # upload a single file
     elif os.path.isfile(path):
@@ -313,11 +329,13 @@ def main():
                     # 0-byte files don't work and also don't need multipart upload
                     k = b.new_key(key_name)
                     k.set_contents_from_filename(path, cb=cb, num_cb=num_cb, policy=grant,
-                                                 reduced_redundancy=reduced)
+                                                 reduced_redundancy=reduced,
+                                                 headers=headers)
                 else:
                     upload(bucket_name, aws_access_key_id,
                            aws_secret_access_key, path, key_name,
-                           reduced, debug, cb, num_cb, grant or 'private')
+                           reduced, debug, cb, num_cb, grant or 'private',
+                           headers)
 
 if __name__ == "__main__":
     main()
