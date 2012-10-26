@@ -27,6 +27,7 @@ import hashlib
 import math
 import json
 
+from .exceptions import EmptyArchiveError
 
 _ONE_MEGABYTE = 1024 * 1024
 
@@ -89,6 +90,10 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
         linear_hash.update(chunk)
         chunks.append(hashlib.sha256(chunk).digest())
         chunk = fileobj.read(chunk_size)
+
+    if not chunks:
+        raise EmptyArchiveError()
+
     return linear_hash.hexdigest(), bytes_to_hex(tree_hash(chunks))
 
 
@@ -156,6 +161,10 @@ class Writer(object):
             return
         if self._buffer_size > 0:
             self.send_part()
+
+        if not self._tree_hashes:
+            raise EmptyArchiveError()
+
         # Complete the multiplart glacier upload
         hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
         response = self.vault.layer1.complete_multipart_upload(self.vault.name,

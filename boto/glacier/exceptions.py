@@ -44,3 +44,6 @@ class UnexpectedHTTPResponseError(Exception):
 
 class UploadArchiveError(Exception):
     pass
+
+class EmptyArchiveError(UploadArchiveError):
+    pass
