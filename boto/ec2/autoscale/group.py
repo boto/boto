@@ -136,10 +136,10 @@ class AutoScalingGroup(object):
         :param load_balancers: List of load balancers.
 
         :type max_size: int
-        :param maxsize: Maximum size of group (required).
+        :param max_size: Maximum size of group (required).
 
         :type min_size: int
-        :param minsize: Minimum size of group (required).
+        :param min_size: Minimum size of group (required).
 
         :type placement_group: str
         :param placement_group: Physical location of your cluster placement
