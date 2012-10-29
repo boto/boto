@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
+from __future__ import with_statement
 from .job import Job
 from .writer import Writer, compute_hashes_from_fileobj
 from .concurrent import ConcurrentUploader
