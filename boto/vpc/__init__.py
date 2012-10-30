@@ -694,3 +694,91 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpnConnectionId': vpn_connection_id}
         return self.get_status('DeleteVpnConnection', params)
+
+    def disable_vgw_route_propagation(self, route_table_id, gateway_id):
+        """
+        Disables a virtual private gateway (VGW) from propagating routes to the
+        routing tables of an Amazon VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the routing table.
+
+        :type gateway_id: str
+        :param gateway_id: The ID of the virtual private gateway.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'GatewayId': gateway_id,
+        }
+        self.get_status('DisableVgwRoutePropagation', params)
+
+    def enable_vgw_route_propagation(self, route_table_id, gateway_id):
+        """
+        Enables a virtual private gateway (VGW) to propagate routes to the
+        routing tables of an Amazon VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the routing table.
+
+        :type gateway_id: str
+        :param gateway_id: The ID of the virtual private gateway.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'GatewayId': gateway_id,
+        }
+        self.get_status('EnableVgwRoutePropagation', params)
+
+    def create_vpn_connection_route(self, destination_cidr_block,
+                                    vpn_connection_id):
+        """
+        Creates a new static route associated with a VPN connection between an
+        existing virtual private gateway and a VPN customer gateway. The static
+        route allows traffic to be routed from the virtual private gateway to
+        the VPN customer gateway.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR block associated with the local
+        subnet of the customer data center.
+
+        :type vpn_connection_id: str
+        :param vpn_connection_id: The ID of the VPN connection.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'DestinationCidrBlock': destination_cidr_block,
+            'VpnConnectionId': vpn_connection_id,
+        }
+        self.get_status('CreateVpnConnectionRoute', params)
+
+    def delete_vpn_connection_route(self, destination_cidr_block,
+                                    vpn_connection_id):
+        """
+        Deletes a static route associated with a VPN connection between an
+        existing virtual private gateway and a VPN customer gateway. The static
+        route allows traffic to be routed from the virtual private gateway to
+        the VPN customer gateway.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR block associated with the local
+        subnet of the customer data center.
+
+        :type vpn_connection_id: str
+        :param vpn_connection_id: The ID of the VPN connection.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'DestinationCidrBlock': destination_cidr_block,
+            'VpnConnectionId': vpn_connection_id,
+        }
+        self.get_status('DeleteVpnConnectionRoute', params)
