@@ -708,6 +708,8 @@ class AWSAuthConnection(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.proxy, int(self.proxy_port)))
+            if "timeout" in self.http_connection_kwargs:
+                sock.settimeout(self.http_connection_kwargs["timeout"])
         except:
             raise
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
