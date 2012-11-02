@@ -37,11 +37,12 @@ class TableBatchGenerator(object):
         generator.
     """
 
-    def __init__(self, table, keys, attributes_to_get=None):
+    def __init__(self, table, keys, attributes_to_get=None, consistent_read=False):
         self.table = table
         self.keys = keys
         self.consumed_units = 0
         self.attributes_to_get = attributes_to_get
+        self.consistent_read = consistent_read
 
     def _queue_unprocessed(self, res):
         if not u'UnprocessedKeys' in res:
@@ -99,6 +100,16 @@ class Table(object):
     """
 
     def __init__(self, layer2, response):
+        """
+
+        :type layer2: :class:`boto.dynamodb.layer2.Layer2`
+        :param layer2: A `Layer2` api object.
+
+        :type response: dict
+        :param response: The output of
+            `boto.dynamodb.layer1.Layer1.describe_table`.
+
+        """
         self.layer2 = layer2
         self._dict = {}
         self.update_from_response(response)

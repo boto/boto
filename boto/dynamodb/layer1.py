@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 import time
+from binascii import crc32
 
 import boto
 from boto.connection import AWSAuthConnection
@@ -77,7 +78,7 @@ class Layer1(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
-                 validate_certs=True):
+                 validate_certs=True, validate_checksums=True):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -94,6 +95,8 @@ class Layer1(AWSAuthConnection):
                                    debug=debug, security_token=security_token,
                                    validate_certs=validate_certs)
         self.throughput_exceeded_events = 0
+        self._validate_checksums = boto.config.getbool(
+            'DynamoDB', 'validate_checksums', validate_checksums)
 
     def _get_session_token(self):
         self.provider = Provider(self._provider_type)
@@ -135,10 +138,7 @@ class Layer1(AWSAuthConnection):
             if self.ThruputError in data.get('__type'):
                 self.throughput_exceeded_events += 1
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
-                if i == 0:
-                    next_sleep = 0
-                else:
-                    next_sleep = 0.05 * (2 ** i)
+                next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
             elif self.SessionExpiredError in data.get('__type'):
@@ -154,7 +154,23 @@ class Layer1(AWSAuthConnection):
             else:
                 raise self.ResponseError(response.status, response.reason,
                                          data)
+        expected_crc32 = response.getheader('x-amz-crc32')
+        if self._validate_checksums and expected_crc32 is not None:
+            boto.log.debug('Validating crc32 checksum for body: %s', response.read())
+            actual_crc32 = crc32(response.read()) & 0xffffffff
+            expected_crc32 = int(expected_crc32)
+            if actual_crc32 != expected_crc32:
+                msg = ("The calculated checksum %s did not match the expected "
+                       "checksum %s" % (actual_crc32, expected_crc32))
+                status = (msg, i + 1, self._exponential_time(i))
         return status
+
+    def _exponential_time(self, i):
+        if i == 0:
+            next_sleep = 0
+        else:
+            next_sleep = 0.05 * (2 ** i)
+        return next_sleep
 
     def list_tables(self, limit=None, start_table=None):
         """
