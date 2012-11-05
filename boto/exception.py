@@ -93,9 +93,9 @@ class BotoServerError(StandardError):
                 self.error_message = self.body
                 self.body = None
 
+        self.message = self.error_message
+
     def __getattr__(self, name):
-        if name == 'message':
-            return self.error_message
         if name == 'code':
             return self.error_code
         raise AttributeError
