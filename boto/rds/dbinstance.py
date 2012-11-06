@@ -66,6 +66,8 @@ class DBInstance(object):
     :ivar pending_modified_values: Specifies that changes to the
         DB Instance are pending. This element is only included when changes
         are pending. Specific changes are identified by subelements.
+    :ivar arn: The Amazon Resource Name for this DBInstance. Retrieved by
+        querying IAM for the account-id of the current connection.
     """
 
     def __init__(self, connection=None, id=None):
