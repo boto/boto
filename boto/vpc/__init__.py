@@ -27,6 +27,7 @@ from boto.ec2.connection import EC2Connection
 from boto.resultset import ResultSet
 from boto.vpc.vpc import VPC
 from boto.vpc.customergateway import CustomerGateway
+from boto.vpc.networkacl import NetworkAcl
 from boto.vpc.routetable import RouteTable
 from boto.vpc.internetgateway import InternetGateway
 from boto.vpc.vpngateway import VpnGateway, Attachment
@@ -238,6 +239,192 @@ class VPCConnection(EC2Connection):
         }
 
         return self.get_status('DeleteRoute', params)
+
+
+###BEGIN BASHO
+
+    def get_all_network_acls(self, network_acl_ids=None, filters=None):
+        """
+        Retrieve information about your network acls. You can filter results
+        to return information only about those network acls that match your
+        search parameters. Otherwise, all network acls associated with your
+        account are returned.
+
+        :type network_acl_ids: list
+        :param network_acl_ids: A list of strings with the desired route table
+                                IDs.
+
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters. Each tuple
+                        consists of a filter key and a filter value.
+
+        :rtype: list
+        :return: A list of :class:`boto.vpc.networkacl.NetworkAcl`
+        """
+        params = {}
+        if network_acl_ids:
+            self.build_list_params(params, network_acl_ids, "NetworkAclId")
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        return self.get_list('DescribeNetworkAcls', params,
+                             [('item', RouteTable)])
+
+    def associate_network_acl(self, network_acl_id, subnet_id):
+        """
+        Associates a network acl with a specific subnet.
+
+        :type network_acl_id: str
+        :param network_acl_id: The ID of the network ACL to associate.
+
+        :type subnet_id: str
+        :param subnet_id: The ID of the subnet to associate with.
+
+        :rtype: str
+        :return: The ID of the association created
+        """
+        params = {
+            'NetworkAclId': network_acl_id,
+            'SubnetId': subnet_id
+        }
+
+        result = self.get_object('AssociateNetworkAcl', params, ResultSet)
+        return result.associationId
+
+    def disassociate_network_acl(self, association_id):
+        """
+        Removes an association from a network ACL. This will cause all subnets
+        that would've used this association to now use the default
+        association instead.
+
+        :type association_id: str
+        :param association_id: The ID of the association to disassociate.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = { 'AssociationId': association_id }
+        return self.get_status('DisassociateNetworkAcl', params)
+
+    def create_network_acl(self, vpc_id):
+        """
+        Creates a new network ACL.
+
+        :type vpc_id: str
+        :param vpc_id: The VPC ID to associate this network ACL with.
+
+        :rtype: The newly created network ACL
+        :return: A :class:`boto.vpc.networkacl.NetworkAcl` object
+        """
+        params = { 'VpcId': vpc_id }
+        return self.get_object('CreateNetworkAcl', params, NetworkAcl)
+
+    def delete_network_acl(self, network_acl_id):
+        """
+        Delete a network ACL
+
+        :type route_table_id: str
+        :param network_acl_id: The ID of the network_acl to delete.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = { 'NetworkAclId': network_acl_id }
+        return self.get_status('DeleteNetworkAcl', params)
+
+    def create_network_acl_entry(self, network_acl_id, rule_number, protocol, rule_action,
+                      cidr_block, egress = None, icmp_code = None, icmp_type = None,
+                      port_range_from = None, port_range_to = None):
+        """
+        Creates a new network ACL entry in a network ACL within a VPC.
+
+        :type network_acl_id: str
+        :param network_acl_id: The ID of the network ACL for this network ACL entry.
+
+        :type rule_number: int
+        :param rule_number: The rule number to assign to the entry (for example, 100).
+
+        :type protocol: int
+        :param protocol: Valid values: -1 or a protocol number
+        (http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml)
+
+        :type rule_action: str
+        :param rule_action: Indicates whether to allow or deny traffic that matches the rule.
+
+        :type cidr_block: str
+        :param cidr_block: The CIDR range to allow or deny, in CIDR notation (for example, 172.16.0.0/24).
+
+        :type egress: boo
+        :param egress: Indicates whether this rule applies to egress traffic from the subnet (true)
+        or ingress traffic to the subnet (false).
+
+        :type icmp_type: int
+        :param icmp_type: For the ICMP protocol, the ICMP type. You can use -1 to specify
+         all ICMP types.
+
+        :type icmp_code: int
+        :param icmp_code: For the ICMP protocol, the ICMP code. You can use -1 to specify
+        all ICMP codes for the given ICMP type.
+
+        :type port_range_from: int
+        :param port_range_from: The first port in the range.
+
+        :type port_range_to: int
+        :param port_range_to: The last port in the range.
+
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'NetworkAclId': network_acl_id,
+            'RuleNumber'  : rule_number,
+            'Protocol'    : protocol,
+            'RuleAction'  : rule_action,
+            'Egress'      : egress,
+            'CidrBlock'   : cidr_block
+        }
+
+        if icmp_code is not None:
+            params['Icmp.Code'] = icmp_code
+        if icmp_type is not None:
+            params['Icmp.Type'] = icmp_type
+        if port_range_from is not None:
+            params['PortRange.From'] = port_range_from
+        if port_range_to is not None:
+            params['PortRange.To'] = port_range_to
+
+        return self.get_status('CreateNetworkAclEntry', params)
+
+    def delete_network_acl_entry(self, network_acl_id, rule_number, egress = None ):
+        """
+        Deletes a network ACL entry from a network ACL within a VPC.
+
+        :type network_acl_id: str
+        :param network_acl_id: The ID of the network ACL with the network ACL entry.
+
+        :type rule_number: int
+        :param rule_number: The rule number for the entry to delete.
+
+        :type egress: boo
+        :param egress: Specifies whether the rule to delete is an egress rule (true)
+        or ingress rule (false).
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'NetworkAclId': network_acl_id,
+            'RuleNumber': rule_number
+        }
+
+        if egress is not None:
+            params['Egress'] = egress
+
+        return self.get_status('DeleteNetworkAclEntry', params)
+
+##END BASHO
+
+
 
     # Internet Gateways
 
