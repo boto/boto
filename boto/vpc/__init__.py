@@ -251,7 +251,7 @@ class VPCConnection(EC2Connection):
         account are returned.
 
         :type network_acl_ids: list
-        :param network_acl_ids: A list of strings with the desired route table
+        :param network_acl_ids: A list of strings with the desired network ACL
                                 IDs.
 
         :type filters: list of tuples
@@ -267,7 +267,7 @@ class VPCConnection(EC2Connection):
         if filters:
             self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeNetworkAcls', params,
-                             [('item', RouteTable)])
+                             [('item', NetworkAcl)])
 
     def associate_network_acl(self, network_acl_id, subnet_id):
         """
@@ -322,7 +322,7 @@ class VPCConnection(EC2Connection):
         """
         Delete a network ACL
 
-        :type route_table_id: str
+        :type network_acl_id: str
         :param network_acl_id: The ID of the network_acl to delete.
 
         :rtype: bool

@@ -46,7 +46,7 @@ class NetworkAcl(TaggedEC2Object):
             return result
 
         if name == 'entrySet':
-            self.network_acl_entries = ResultSet([('item', NetworkAcl)])
+            self.network_acl_entries = ResultSet([('item', NetworkAclEntry)])
             return self.network_acl_entries
         elif name == 'associationSet':
             self.associations = ResultSet([('item', NetworkAclAssociation)])
@@ -72,7 +72,7 @@ class NetworkAclEntry(object):
 
 
     def __repr__(self):
-        return 'Acl:%s' % self.ruleNumber
+        return 'Acl:%s' % self.rule_number
 
     def startElement(self, name, attrs, connection):
         return None
