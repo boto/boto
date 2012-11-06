@@ -20,7 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import json
+from boto.compat import json
+
 
 class GlacierResponse(dict):
     """
@@ -41,7 +42,7 @@ class GlacierResponse(dict):
         size = http_response.getheader('Content-Length', None)
         if size is not None:
             self.size = size
-        
+
     def read(self, amt=None):
         "Reads and returns the response body, or up to the next amt bytes."
         return self.http_response.read(amt)

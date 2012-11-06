@@ -41,12 +41,18 @@ class Batch(object):
     :ivar attributes_to_get: A list of attribute names.
         If supplied, only the specified attribute names will
         be returned.  Otherwise, all attributes will be returned.
+
+    :ivar consistent_read: Specify whether or not to use a
+        consistent read. Defaults to False.
+
     """
 
-    def __init__(self, table, keys, attributes_to_get=None):
+    def __init__(self, table, keys, attributes_to_get=None,
+                 consistent_read=False):
         self.table = table
         self.keys = keys
         self.attributes_to_get = attributes_to_get
+        self.consistent_read = consistent_read
 
     def to_dict(self):
         """
@@ -66,7 +72,12 @@ class Batch(object):
         batch_dict['Keys'] = key_list
         if self.attributes_to_get:
             batch_dict['AttributesToGet'] = self.attributes_to_get
+        if self.consistent_read:
+            batch_dict['ConsistentRead'] = True
+        else:
+            batch_dict['ConsistentRead'] = False
         return batch_dict
+
 
 class BatchWrite(object):
     """
@@ -126,7 +137,8 @@ class BatchList(list):
         self.unprocessed = None
         self.layer2 = layer2
 
-    def add_batch(self, table, keys, attributes_to_get=None):
+    def add_batch(self, table, keys, attributes_to_get=None,
+                  consistent_read=False):
         """
         Add a Batch to this BatchList.
 
@@ -149,7 +161,7 @@ class BatchList(list):
             If supplied, only the specified attribute names will
             be returned.  Otherwise, all attributes will be returned.
         """
-        self.append(Batch(table, keys, attributes_to_get))
+        self.append(Batch(table, keys, attributes_to_get, consistent_read))
 
     def resubmit(self):
         """
@@ -201,6 +213,7 @@ class BatchList(list):
             if b['Keys']:
                 d[batch.table.name] = b
         return d
+
 
 class BatchWriteList(list):
     """

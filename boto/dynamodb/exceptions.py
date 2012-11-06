@@ -4,6 +4,7 @@ Exceptions that are specific to the dynamodb module.
 from boto.exception import BotoServerError, BotoClientError
 from boto.exception import DynamoDBResponseError
 
+
 class DynamoDBExpiredTokenError(BotoServerError):
     """
     Raised when a DynamoDB security token expires. This is generally boto's
@@ -35,6 +36,7 @@ class DynamoDBConditionalCheckFailedError(DynamoDBResponseError):
     paramenter, fails.
     """
     pass
+
 
 class DynamoDBValidationError(DynamoDBResponseError):
     """

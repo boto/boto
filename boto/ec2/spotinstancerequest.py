@@ -29,6 +29,12 @@ from boto.ec2.launchspecification import LaunchSpecification
 
 
 class SpotInstanceStateFault(object):
+    """
+    The fault codes for the Spot Instance request, if any.
+
+    :ivar code: The reason code for the Spot Instance state change.
+    :ivar message: The message for the Spot Instance state change.
+    """
 
     def __init__(self, code=None, message=None):
         self.code = code
@@ -46,6 +52,35 @@ class SpotInstanceStateFault(object):
         elif name == 'message':
             self.message = value
         setattr(self, name, value)
+
+
+class SpotInstanceStatus(object):
+    """
+    Contains the status of a Spot Instance Request.
+
+    :ivar code: Status code of the request.
+    :ivar message: The description for the status code for the Spot request.
+    :ivar update_time: Time the status was stated.
+    """
+
+    def __init__(self, code=None, update_time=None, message=None):
+        self.code = code
+        self.update_time = update_time
+        self.message = message
+
+    def __repr__(self):
+        return '<Status: %s>' % self.code
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'code':
+            self.code = value
+        elif name == 'message':
+            self.message = value
+        elif name == 'updateTime':
+            self.update_time = value
 
 
 class SpotInstanceRequest(TaggedEC2Object):
@@ -66,6 +101,7 @@ class SpotInstanceRequest(TaggedEC2Object):
         self.create_time = None
         self.launch_specification = None
         self.instance_id = None
+        self.status = None
 
     def __repr__(self):
         return 'SpotInstanceRequest:%s' % self.id
@@ -80,6 +116,9 @@ class SpotInstanceRequest(TaggedEC2Object):
         elif name == 'fault':
             self.fault = SpotInstanceStateFault()
             return self.fault
+        elif name == 'status':
+            self.status = SpotInstanceStatus()
+            return self.status
         else:
             return None
 
@@ -113,3 +152,21 @@ class SpotInstanceRequest(TaggedEC2Object):
 
     def cancel(self):
         self.connection.cancel_spot_instance_requests([self.id])
+
+
+class SpotInstanceStatus(object):
+    def __init__(self, code=None, update_time=None, message=None):
+        self.code = code
+        self.update_time = update_time
+        self.message = message
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'code':
+            self.code = value
+        elif name == 'update_time':
+            self.update_time = value
+        elif name == 'message':
+            self.message = value

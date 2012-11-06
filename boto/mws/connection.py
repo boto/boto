@@ -21,6 +21,7 @@
 import xml.sax
 import hashlib
 import base64
+import string
 from boto.connection import AWSQueryConnection
 from boto.mws.exception import ResponseErrorFactory
 from boto.mws.response import ResponseFactory, ResponseElement
@@ -219,6 +220,7 @@ def api_action(section, quota, restore, *api):
             response = getattr(boto.mws.response, action + 'Response')
         else:
             response = ResponseFactory(action)
+        response._action = action
 
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
@@ -277,6 +279,39 @@ class MWSConnection(AWSQueryConnection):
         h = XmlHandler(obj, self)
         xml.sax.parseString(body, h)
         return obj
+
+    def method_for(self, name):
+        """Return the MWS API method referred to in the argument.
+           The named method can be in CamelCase or underlined_lower_case.
+           This is the complement to MWSConnection.any_call.action
+        """
+        # this looks ridiculous but it should be better than regex
+        action = '_' in name and string.capwords(name, '_') or name
+        attribs = [getattr(self, m) for m in dir(self)]
+        ismethod = lambda m: type(m) is type(self.method_for)
+        ismatch = lambda m: getattr(m, 'action', None) == action
+        method = filter(ismatch, filter(ismethod, attribs))
+        return method and method[0] or None
+
+    def iter_call(self, call, *args, **kw):
+        """Pass a call name as the first argument and a generator
+           is returned for the initial response and any continuation
+           call responses made using the NextToken.
+        """
+        method = self.method_for(call)
+        assert method, 'No call named "{0}"'.format(call)
+        return self.iter_response(method(*args, **kw))
+
+    def iter_response(self, response):
+        """Pass a call's response as the initial argument and a
+           generator is returned for the initial response and any
+           continuation call responses made using the NextToken.
+        """
+        yield response
+        more = self.method_for(response._action + 'ByNextToken')
+        while more and response._result.HasNext == 'true':
+            response = more(NextToken=response._result.NextToken)
+            yield response
 
     @boolean_arguments('PurgeAndReplace')
     @http_body('FeedContent')

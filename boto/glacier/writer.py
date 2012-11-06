@@ -22,10 +22,8 @@
 # IN THE SOFTWARE.
 #
 
-import urllib
 import hashlib
 import math
-import json
 
 
 _ONE_MEGABYTE = 1024 * 1024
@@ -139,6 +137,8 @@ class Writer(object):
                                                  linear_hash,
                                                  hex_tree_hash,
                                                  content_range, part)
+
+        response.read()
         self._uploaded_size += len(part)
 
     def write(self, str):

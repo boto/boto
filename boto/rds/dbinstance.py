@@ -279,15 +279,17 @@ class DBInstance(object):
             deployed in multiple availability zones.
 
         :type iops: int
-        :param iops:  The amount of IOPS (input/output operations per second) to Provisioned
-                      for the DB Instance. Can be modified at a later date.
+        :param iops: The amount of IOPS (input/output operations per
+            second) to Provisioned for the DB Instance. Can be
+            modified at a later date.
 
-                      Must scale linearly. For every 1000 IOPS provision, you must allocated
-                      100 GB of storage space. This scales up to 1 TB / 10 000 IOPS for MySQL
-                      and Oracle. MSSQL is limited to 700 GB / 7 000 IOPS.
+            Must scale linearly. For every 1000 IOPS provision, you
+            must allocated 100 GB of storage space. This scales up to
+            1 TB / 10 000 IOPS for MySQL and Oracle. MSSQL is limited
+            to 700 GB / 7 000 IOPS.
 
-                      If you specify a value, it must be at least 1000 IOPS and you must
-                      allocate 100 GB of storage.
+            If you specify a value, it must be at least 1000 IOPS and
+            you must allocate 100 GB of storage.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
@@ -302,8 +304,8 @@ class DBInstance(object):
                                                  backup_retention_period,
                                                  preferred_backup_window,
                                                  multi_az,
-                                                 iops,
-                                                 apply_immediately)
+                                                 apply_immediately,
+                                                 iops)
 
     @property
     def arn(self):
