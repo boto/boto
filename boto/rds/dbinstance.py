@@ -68,6 +68,7 @@ class DBInstance(object):
         are pending. Specific changes are identified by subelements.
     :ivar arn: The Amazon Resource Name for this DBInstance. Retrieved by
         querying IAM for the account-id of the current connection.
+    :ivar tags: A dict with tags associated with this DBInstance.
     """
 
     def __init__(self, connection=None, id=None):
@@ -94,6 +95,7 @@ class DBInstance(object):
         self._port = None
         self._address = None
         self._arn = None
+        self._tags = None
 
     def __repr__(self):
         return 'DBInstance:%s' % self.id
@@ -281,15 +283,17 @@ class DBInstance(object):
             deployed in multiple availability zones.
 
         :type iops: int
-        :param iops:  The amount of IOPS (input/output operations per second) to Provisioned
-                      for the DB Instance. Can be modified at a later date.
+        :param iops: The amount of IOPS (input/output operations per
+            second) to Provisioned for the DB Instance. Can be
+            modified at a later date.
 
-                      Must scale linearly. For every 1000 IOPS provision, you must allocated
-                      100 GB of storage space. This scales up to 1 TB / 10 000 IOPS for MySQL
-                      and Oracle. MSSQL is limited to 700 GB / 7 000 IOPS.
+            Must scale linearly. For every 1000 IOPS provision, you
+            must allocated 100 GB of storage space. This scales up to
+            1 TB / 10 000 IOPS for MySQL and Oracle. MSSQL is limited
+            to 700 GB / 7 000 IOPS.
 
-                      If you specify a value, it must be at least 1000 IOPS and you must
-                      allocate 100 GB of storage.
+            If you specify a value, it must be at least 1000 IOPS and
+            you must allocate 100 GB of storage.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
@@ -304,8 +308,8 @@ class DBInstance(object):
                                                  backup_retention_period,
                                                  preferred_backup_window,
                                                  multi_az,
-                                                 iops,
-                                                 apply_immediately)
+                                                 apply_immediately,
+                                                 iops)
 
     @property
     def arn(self):
@@ -335,6 +339,75 @@ class DBInstance(object):
     @arn.setter
     def arn(self, value):
         self._arn = value
+
+    @property
+    def tags(self):
+
+        if self._tags is None:
+            mytags = {}
+            tag_rs = self.connection.get_dbinstance_tags(self)
+
+            # Translate the boto.ResultSet to a dict
+            #
+            for tag in tag_rs:
+                mytags[tag.name] = tag.value
+
+            self.tags = mytags
+
+        return self._tags
+
+    @tags.setter
+    def tags(self, value):
+        self._tags = value
+
+    def add_tag(self, key, value=''):
+        """
+        Add a tag to this object. The local tag-list (dbinstance.tags) will be
+        updated with the newly created or modified tag, without checking with
+        AWS. You could do that yourself with:
+
+        dbinstance.tags = None
+        tags = dbinstance.tags
+
+        This will query AWS for the current tags and update the local tags.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+                      If you want only the tag name and no value, the
+                      value should be the empty string.
+        """
+        self.connection.create_tags(self, {key: value})
+
+        # What to do: only update local tags with newly added tag, or update
+        # local tags with remote? Since it is uncertain if new tag is already
+        # added (AWS-API is asynchronous), we'll only update our local tags.
+        #
+        self.tags[key] = value
+
+    def remove_tag(self, key):
+        """
+        Remove a tag from this object. The tag will also be removed from the
+        local tag-list (dbinstance.tags), without checking with AWS. You could
+        do that yourself with:
+
+        dbinstance.tags = None
+        tags = dbinstance.tags
+
+        This will query AWS for the current tags and update the local tags.
+
+        Contrary to EC2-tags, RDS does not support removing tags with a key and
+        a matching value.
+
+        :type key: str
+        :param key: The key or name of the tag to remove.
+        """
+        self.connection.delete_tags(self, [key])
+
+        if key in self.tags:
+            del self.tags[key]
 
 
 class PendingModifiedValues(dict):

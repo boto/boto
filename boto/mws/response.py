@@ -275,7 +275,7 @@ class RequestReportResult(ResponseElement):
 
 
 class GetReportRequestListResult(RequestReportResult):
-    ReportRequestInfo = Element()
+    ReportRequestInfo = ElementList()
 
 
 class GetReportRequestListByNextTokenResult(GetReportRequestListResult):
@@ -287,7 +287,7 @@ class CancelReportRequestsResult(RequestReportResult):
 
 
 class GetReportListResult(ResponseElement):
-    ReportInfo = Element()
+    ReportInfo = ElementList()
 
 
 class GetReportListByNextTokenResult(GetReportListResult):

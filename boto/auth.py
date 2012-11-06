@@ -264,7 +264,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         headers_to_sign = self.headers_to_sign(http_request)
         canonical_headers = self.canonical_headers(headers_to_sign)
         string_to_sign = '\n'.join([http_request.method,
-                                    http_request.path,
+                                    http_request.auth_path,
                                     '',
                                     canonical_headers,
                                     '',
@@ -363,7 +363,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.path
+        return http_request.auth_path
 
     def payload(self, http_request):
         body = http_request.body
@@ -518,6 +518,11 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
 
     SignatureVersion = 1
     capability = ['sign-v1', 'mturk']
+
+    def __init__(self, *args, **kw):
+        QuerySignatureHelper.__init__(self, *args, **kw)
+        AuthHandler.__init__(self, *args, **kw)
+        self._hmac_256 = None
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')

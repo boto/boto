@@ -23,10 +23,10 @@
 #
 
 import os
-import json
 import urllib
 
 import boto.glacier
+from boto.compat import json
 from boto.connection import AWSAuthConnection
 from .exceptions import UnexpectedHTTPResponseError
 from .response import GlacierResponse
