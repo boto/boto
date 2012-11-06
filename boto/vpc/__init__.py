@@ -240,8 +240,8 @@ class VPCConnection(EC2Connection):
 
         return self.get_status('DeleteRoute', params)
 
+    #Network ACLs
 
-###BEGIN BASHO
 
     def get_all_network_acls(self, network_acl_ids=None, filters=None):
         """
@@ -287,7 +287,7 @@ class VPCConnection(EC2Connection):
             'SubnetId': subnet_id
         }
 
-        result = self.get_object('AssociateNetworkAcl', params, ResultSet)
+        result = self.get_object('SubnetNetworkAclAssociation', params, ResultSet)
         return result.associationId
 
     def disassociate_network_acl(self, association_id):
@@ -421,9 +421,6 @@ class VPCConnection(EC2Connection):
             params['Egress'] = egress
 
         return self.get_status('DeleteNetworkAclEntry', params)
-
-##END BASHO
-
 
 
     # Internet Gateways
