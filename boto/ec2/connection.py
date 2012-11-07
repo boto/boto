@@ -1816,8 +1816,8 @@ class EC2Connection(AWSQueryConnection):
         :param description: A description of the snapshot.
                             Limited to 255 characters.
 
-        :rtype: bool
-        :return: True if successful
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         params = {'VolumeId': volume_id}
         if description:
