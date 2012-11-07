@@ -38,7 +38,7 @@ def minimum_part_size(size_in_bytes):
         if size_in_bytes > (4096 * _MEGABYTE * 10000):
             raise ValueError("File size too large: %s" % size_in_bytes)
         min_part_size = size_in_bytes / 10000
-        power = 2
+        power = 3
         while part_size < min_part_size:
             part_size = math.ldexp(_MEGABYTE, power)
             power += 1
