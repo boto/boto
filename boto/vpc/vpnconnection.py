@@ -44,7 +44,7 @@ class VpnConnection(EC2Object):
             self.id = value
         elif name == 'state':
             self.state = value
-        elif name == 'CustomerGatewayConfiguration':
+        elif name == 'customerGatewayConfiguration':
             self.customer_gateway_configuration = value
         elif name == 'type':
             self.type = value

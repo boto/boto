@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from unittest import main, skip, skipUnless, TestCase
-import uuid
+
+from tests.unit import unittest
 import sys
 import os
 import os.path
@@ -18,10 +18,9 @@ from boto.fps.connection import FPSConnection
 from boto.fps.response import ComplexAmount
 
 
-class FPSTestCase(TestCase):
+class FPSTestCase(unittest.TestCase):
 
-    def __init__(self, *args, **kw):
-        TestCase.__init__(self, *args, **kw)
+    def setUp(self):
         self.fps = FPSConnection(host='fps.sandbox.amazonaws.com')
         if advanced:
             self.activity = self.fps.get_account_activity(\
@@ -29,7 +28,7 @@ class FPSTestCase(TestCase):
             result = self.activity.GetAccountActivityResult
             self.transactions = result.Transaction
 
-    @skipUnless(simple, "skipping simple test")
+    @unittest.skipUnless(simple, "skipping simple test")
     def test_get_account_balance(self):
         response = self.fps.get_account_balance()
         self.assertTrue(hasattr(response, 'GetAccountBalanceResult'))
@@ -42,19 +41,19 @@ class FPSTestCase(TestCase):
         availablebalances = accountbalance.AvailableBalances
         self.assertTrue(hasattr(availablebalances, 'RefundBalance'))
 
-    @skipUnless(simple, "skipping simple test")
+    @unittest.skipUnless(simple, "skipping simple test")
     def test_complex_amount(self):
         response = self.fps.get_account_balance()
         accountbalance = response.GetAccountBalanceResult.AccountBalance
         asfloat = float(accountbalance.TotalBalance.Value)
         self.assertIn('.', str(asfloat))
 
-    @skipUnless(simple, "skipping simple test")
+    @unittest.skipUnless(simple, "skipping simple test")
     def test_required_arguments(self):
         with self.assertRaises(KeyError):
             self.fps.write_off_debt(AdjustmentAmount=123.45)
 
-    @skipUnless(simple, "skipping simple test")
+    @unittest.skipUnless(simple, "skipping simple test")
     def test_cbui_url(self):
         inputs = {
             'transactionAmount':    123.45,
@@ -64,9 +63,9 @@ class FPSTestCase(TestCase):
             'callerReference':      'foo',
         }
         result = self.fps.cbui_url(**inputs)
-        print "cbui_url() yields {}".format(result)
+        print "cbui_url() yields {0}".format(result)
 
-    @skipUnless(simple, "skipping simple test")
+    @unittest.skipUnless(simple, "skipping simple test")
     def test_get_account_activity(self):
         response = self.fps.get_account_activity(StartDate='2012-01-01')
         self.assertTrue(hasattr(response, 'GetAccountActivityResult'))
@@ -77,14 +76,14 @@ class FPSTestCase(TestCase):
         except:
             self.assertTrue(False)
 
-    @skipUnless(advanced, "skipping advanced test")
+    @unittest.skipUnless(advanced, "skipping advanced test")
     def test_get_transaction(self):
         assert len(self.transactions)
         transactionid = self.transactions[0].TransactionId
         result = self.fps.get_transaction(TransactionId=transactionid)
         self.assertTrue(hasattr(result.GetTransactionResult, 'Transaction'))
 
-    @skip('cosmetic')
+    @unittest.skip('cosmetic')
     def test_bad_request(self):
         try:
             self.fps.write_off_debt(CreditInstrumentId='foo',
@@ -92,10 +91,10 @@ class FPSTestCase(TestCase):
         except Exception, e:
             print e
 
-    @skip('cosmetic')
+    @unittest.skip('cosmetic')
     def test_repr(self):
         print self.fps.get_account_balance()
 
 
 if __name__ == "__main__":
-    main()
+    unittest.main()

@@ -22,17 +22,17 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-from xml.etree import ElementTree
 import urllib
 import base64
 import time
+
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
-from boto.exception import BotoClientError, XMLParseError
+from boto.exception import BotoClientError, S3ResponseError
 
 
 def check_lowercase_bucketname(n):
@@ -155,7 +155,8 @@ class S3Connection(AWSAuthConnection):
                  host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
-                 suppress_consec_slashes=True, anon=False):
+                 suppress_consec_slashes=True, anon=False,
+                 validate_certs=None):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
@@ -164,26 +165,14 @@ class S3Connection(AWSAuthConnection):
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
                 path=path, provider=provider, security_token=security_token,
-                suppress_consec_slashes=suppress_consec_slashes)
+                suppress_consec_slashes=suppress_consec_slashes,
+                validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         if self.anon:
             return ['anon']
         else:
             return ['s3']
-
-    def _credentials_expired(self, response):
-        if response.status != 400:
-            return False
-        try:
-            for event, node in ElementTree.iterparse(response,
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'ExpiredToken':
-                        return True
-        except XMLParseError:
-            return False
-        return False
 
     def __iter__(self):
         for bucket in self.get_all_buckets():
@@ -332,13 +321,15 @@ class S3Connection(AWSAuthConnection):
         if response_headers:
             for k, v in response_headers.items():
                 extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+        if self.provider.security_token:
+            headers['x-amz-security-token'] = self.provider.security_token
         if extra_qp:
             delimiter = '?' if '?' not in auth_path else '&'
             auth_path += delimiter + '&'.join(extra_qp)
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
-        encoded_canonical = urllib.quote_plus(b64_hmac)
+        encoded_canonical = urllib.quote(b64_hmac, safe='')
         self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,

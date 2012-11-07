@@ -8,21 +8,21 @@ boto.s3.acl
 -----------
 
 .. automodule:: boto.s3.acl
-   :members:   
+   :members:
    :undoc-members:
 
 boto.s3.bucket
 --------------
 
 .. automodule:: boto.s3.bucket
-   :members:   
+   :members:
    :undoc-members:
 
 boto.s3.bucketlistresultset
 ---------------------------
 
 .. automodule:: boto.s3.bucketlistresultset
-   :members:   
+   :members:
    :undoc-members:
 
 boto.s3.connection
@@ -32,52 +32,80 @@ boto.s3.connection
    :members:
    :undoc-members:
 
-boto.s3.key
------------
-
-.. automodule:: boto.s3.key
-   :members:   
-   :undoc-members:
-
-boto.s3.prefix
+boto.s3.cors
 --------------
 
-.. automodule:: boto.s3.prefix
-   :members:   
-   :undoc-members:
-
-boto.s3.user
-------------
-
-.. automodule:: boto.s3.user
-   :members:   
-   :undoc-members:
-
-boto.s3.multipart
------------------
-
-.. automodule:: boto.s3.multipart
-   :members:   
-   :undoc-members:
-
-boto.s3.resumable_download_handler
-----------------------------------
-
-.. automodule:: boto.s3.resumable_download_handler
-   :members:   
+.. automodule:: boto.s3.cors
+   :members:
    :undoc-members:
 
 boto.s3.deletemarker
 --------------------
 
 .. automodule:: boto.s3.deletemarker
-   :members:   
+   :members:
    :undoc-members:
-   
+
+boto.s3.key
+-----------
+
+.. automodule:: boto.s3.key
+   :members:
+   :undoc-members:
+
+boto.s3.prefix
+--------------
+
+.. automodule:: boto.s3.prefix
+   :members:
+   :undoc-members:
+
+boto.s3.multipart
+-----------------
+
+.. automodule:: boto.s3.multipart
+   :members:
+   :undoc-members:
+
+boto.s3.multidelete
+-----------------
+
+.. automodule:: boto.s3.multidelete
+   :members:
+   :undoc-members:
+
+boto.s3.resumable_download_handler
+----------------------------------
+
+.. automodule:: boto.s3.resumable_download_handler
+   :members:
+   :undoc-members:
+
 boto.s3.lifecycle
 --------------------
 
 .. automodule:: boto.s3.lifecycle
-   :members:   
+   :members:
    :undoc-members:
-   
+
+boto.s3.prefix
+-----------------
+
+.. automodule:: boto.s3.prefix
+   :members:
+   :undoc-members:
+
+boto.s3.tagging
+--------------
+
+.. automodule:: boto.s3.tagging
+   :members:
+   :undoc-members:
+
+boto.s3.user
+------------
+
+.. automodule:: boto.s3.user
+   :members:
+   :undoc-members:
+

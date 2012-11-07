@@ -41,7 +41,7 @@ class EmrConnection(AWSQueryConnection):
     APIVersion = boto.config.get('Boto', 'emr_version', '2009-03-31')
     DefaultRegionName = boto.config.get('Boto', 'emr_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'emr_region_endpoint',
-                                            'elasticmapreduce.amazonaws.com')
+                                            'elasticmapreduce.us-east-1.amazonaws.com')
     ResponseError = EmrResponseError
 
     # Constants for AWS Console debugging
@@ -52,7 +52,7 @@ class EmrConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -63,7 +63,8 @@ class EmrConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token)
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['emr']

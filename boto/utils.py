@@ -52,6 +52,7 @@ import boto.provider
 import tempfile
 import smtplib
 import datetime
+import re
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -84,7 +85,14 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    'uploads', 'uploadId', 'response-content-type',
                    'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
-                   'response-content-encoding', 'delete', 'lifecycle']
+                   'response-content-encoding', 'delete', 'lifecycle',
+                   'tagging']
+
+
+_first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
+_number_cap_regex = re.compile('([a-z])([0-9]+)')
+_end_cap_regex = re.compile('([a-z0-9])([A-Z])')
+
 
 def unquote_v(nv):
     if len(nv) == 1:
@@ -199,47 +207,85 @@ def retry_url(url, retry_on_404=True, num_retries=10):
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
-def _get_iam_instance_metadata(url, num_retries):
-    d = {}
-    # get info first
-    data = retry_url(url + 'info', num_retries=num_retries)
-    d['info'] = json.loads(data)
-    d['security-credentials'] = {}
-    cred_name = retry_url(url + 'security-credentials',
-                          num_retries=num_retries)
-    data = retry_url(url + 'security-credentials' + '/' + cred_name,
-                     num_retries=num_retries)
-    d['security-credentials'][cred_name] = json.loads(data)
-    return d
-
 def _get_instance_metadata(url, num_retries):
-    d = {}
-    data = retry_url(url, num_retries=num_retries)
-    if data:
-        fields = data.split('\n')
-        for field in fields:
-            if field == 'iam/':
-                d[field[0:-1]] = _get_iam_instance_metadata(url + field,
-                                                            num_retries=num_retries)
-            elif field.endswith('/'):
-                d[field[0:-1]] = _get_instance_metadata(url + field,
-                                                        num_retries=num_retries)
-            else:
-                p = field.find('=')
-                if p > 0:
-                    key = field[p+1:]
-                    resource = field[0:p] + '/openssh-key'
+    return LazyLoadMetadata(url, num_retries)
+
+class LazyLoadMetadata(dict):
+    def __init__(self, url, num_retries):
+        self._url = url
+        self._num_retries = num_retries
+        self._leaves = {}
+        self._dicts = []
+        data = boto.utils.retry_url(self._url, num_retries=self._num_retries)
+        if data:
+            fields = data.split('\n')
+            for field in fields:
+                if field.endswith('/'):
+                    key = field[0:-1]
+                    self._dicts.append(key)
                 else:
-                    key = resource = field
-                val = retry_url(url + resource, num_retries=num_retries)
-                if val[0] == '{':
-                    val = json.loads(val)
-                else:
-                    p = val.find('\n')
+                    p = field.find('=')
                     if p > 0:
-                        val = val.split('\n')
-                d[key] = val
-    return d
+                        key = field[p + 1:]
+                        resource = field[0:p] + '/openssh-key'
+                    else:
+                        key = resource = field
+                    self._leaves[key] = resource
+                self[key] = None
+
+    def _materialize(self):
+        for key in self:
+            self[key]
+
+    def __getitem__(self, key):
+        if key not in self:
+            # allow dict to throw the KeyError
+            return super(LazyLoadMetadata, self).__getitem__(key)
+
+        # already loaded
+        val = super(LazyLoadMetadata, self).__getitem__(key)
+        if val is not None:
+            return val
+
+        if key in self._leaves:
+            resource = self._leaves[key]
+            val = boto.utils.retry_url(self._url + urllib.quote(resource,
+                                                                safe="/:"),
+                                       num_retries=self._num_retries)
+            if val and val[0] == '{':
+                val = json.loads(val)
+            else:
+                p = val.find('\n')
+                if p > 0:
+                    val = val.split('\n')
+            self[key] = val
+        elif key in self._dicts:
+            self[key] = LazyLoadMetadata(self._url + key + '/',
+                                         self._num_retries)
+
+        return super(LazyLoadMetadata, self).__getitem__(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def values(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).values()
+
+    def items(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).items()
+
+    def __str__(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).__str__()
+
+    def __repr__(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).__repr__()
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254',
                           timeout=None, num_retries=5):
@@ -260,6 +306,32 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     try:
         return _get_instance_metadata('%s/%s/meta-data/' % (url, version),
                                       num_retries=num_retries)
+    except urllib2.URLError, e:
+        return None
+    finally:
+        if timeout is not None:
+            socket.setdefaulttimeout(original)
+
+def get_instance_identity(version='latest', url='http://169.254.169.254',
+                          timeout=None, num_retries=5):
+    """
+    Returns the instance identity as a nested Python dictionary.
+    """
+    iid = {}
+    base_url = 'http://169.254.169.254/latest/dynamic/instance-identity'
+    if timeout is not None:
+        original = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+    try:
+        data = retry_url(base_url, num_retries=num_retries)
+        fields = data.split('\n')
+        for field in fields:
+            val = retry_url(base_url + '/' + field + '/')
+            if val[0] == '{':
+                val = json.loads(val)
+            if field:
+                iid[field] = val
+        return iid
     except urllib2.URLError, e:
         return None
     finally:
@@ -664,16 +736,23 @@ def mklist(value):
             value = [value]
     return value
 
-def pythonize_name(name, sep='_'):
-    s = ''
-    if name[0].isupper:
-        s = name[0].lower()
-    for c in name[1:]:
-        if c.isupper():
-            s += sep + c.lower()
-        else:
-            s += c
-    return s
+def pythonize_name(name):
+    """Convert camel case to a "pythonic" name.
+
+    Examples::
+
+        pythonize_name('CamelCase') -> 'camel_case'
+        pythonize_name('already_pythonized') -> 'already_pythonized'
+        pythonize_name('HTTPRequest') -> 'http_request'
+        pythonize_name('HTTPStatus200Ok') -> 'http_status_200_ok'
+        pythonize_name('UPPER') -> 'upper'
+        pythonize_name('') -> ''
+
+    """
+    s1 = _first_cap_regex.sub(r'\1_\2', name)
+    s2 = _number_cap_regex.sub(r'\1_\2', s1)
+    return _end_cap_regex.sub(r'\1_\2', s2).lower()
+
 
 def write_mime_multipart(content, compress=False, deftype='text/plain', delimiter=':'):
     """Description:
@@ -771,14 +850,18 @@ def compute_md5(fp, buf_size=8192, size=None):
              plain digest as the second element and the data size as
              the third element.
     """
-    m = md5()
+    return compute_hash(fp, buf_size, size, hash_algorithm=md5)
+
+
+def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
+    hash_obj = hash_algorithm()
     spos = fp.tell()
     if size and size < buf_size:
         s = fp.read(size)
     else:
         s = fp.read(buf_size)
     while s:
-        m.update(s)
+        hash_obj.update(s)
         if size:
             size -= len(s)
             if size <= 0:
@@ -787,11 +870,11 @@ def compute_md5(fp, buf_size=8192, size=None):
             s = fp.read(size)
         else:
             s = fp.read(buf_size)
-    hex_md5 = m.hexdigest()
-    base64md5 = base64.encodestring(m.digest())
-    if base64md5[-1] == '\n':
-        base64md5 = base64md5[0:-1]
+    hex_digest = hash_obj.hexdigest()
+    base64_digest = base64.encodestring(hash_obj.digest())
+    if base64_digest[-1] == '\n':
+        base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.
     data_size = fp.tell() - spos
     fp.seek(spos)
-    return (hex_md5, base64md5, data_size)
+    return (hex_digest, base64_digest, data_size)

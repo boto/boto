@@ -102,6 +102,8 @@ class ResultSet(list):
             self.bucket = value
         elif name == 'MaxUploads':
             self.max_uploads = int(value)
+        elif name == 'MaxItems':
+            self.max_items = int(value)
         elif name == 'Prefix':
             self.prefix = value
         elif name == 'return':

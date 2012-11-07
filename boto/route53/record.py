@@ -117,7 +117,7 @@ class ResourceRecordSets(ResultSet):
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight, region=None)
+                weight=weight, region=region)
         self.changes.append([action, change])
         return change
 

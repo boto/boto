@@ -18,7 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from xml.etree import ElementTree
 
 from boto.connection import AWSQueryConnection
 from boto.sqs.regioninfo import SQSRegionInfo
@@ -26,7 +25,7 @@ from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto.sqs.batchresults import BatchResults
-from boto.exception import SQSError, XMLParseError
+from boto.exception import SQSError, BotoServerError
 
 
 class SQSConnection(AWSQueryConnection):
@@ -34,7 +33,7 @@ class SQSConnection(AWSQueryConnection):
     A Connection to the SQS Service.
     """
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'sqs.us-east-1.amazonaws.com'
+    DefaultRegionEndpoint = 'queue.amazonaws.com'
     APIVersion = '2011-10-01'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
@@ -43,7 +42,7 @@ class SQSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None):
+                 security_token=None, validate_certs=True):
         if not region:
             region = SQSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -55,23 +54,11 @@ class SQSConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token=security_token)
+                                    security_token=security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['sqs']
-
-    def _credentials_expired(self, response):
-        if response.status != 401:
-            return False
-        try:
-            for event, node in ElementTree.iterparse(response,
-                                                     events=['start']):
-                if node.tag.endswith('Code'):
-                    if node.text == 'InvalidAccessKeyId':
-                        return True
-        except XMLParseError:
-            return False
-        return False
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """
@@ -415,8 +402,3 @@ class SQSConnection(AWSQueryConnection):
         """
         params = {'Label': label}
         return self.get_status('RemovePermission', params, queue.id)
-
-
-
-
-

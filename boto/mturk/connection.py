@@ -38,7 +38,7 @@ class MTurkRequestError(EC2ResponseError):
 
 class MTurkConnection(AWSQueryConnection):
     
-    APIVersion = '2008-08-02'
+    APIVersion = '2012-03-25'
     
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -363,6 +363,14 @@ class MTurkConnection(AWSQueryConnection):
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('RejectAssignment', params)
+
+    def approve_rejected_assignment(self, assignment_id, feedback=None):
+        """
+        """
+        params = {'AssignmentId' : assignment_id, }
+        if feedback:
+            params['RequesterFeedback'] = feedback
+        return self._process_request('ApproveRejectedAssignment', params)
 
     def get_hit(self, hit_id, response_groups=None):
         """

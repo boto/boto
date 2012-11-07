@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -27,6 +28,8 @@ from boto.ec2.ec2object import EC2Object
 from boto.resultset import ResultSet
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
 from boto.ec2.group import Group
+from boto.ec2.instance import SubParse
+
 
 class GroupList(list):
 
@@ -36,9 +39,10 @@ class GroupList(list):
     def endElement(self, name, value, connection):
         if name == 'groupId':
             self.append(value)
-            
+
+
 class LaunchSpecification(EC2Object):
-    
+
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.key_name = None
@@ -52,6 +56,8 @@ class LaunchSpecification(EC2Object):
         self.subnet_id = None
         self._in_monitoring_element = False
         self.block_device_mapping = None
+        self.instance_profile = None
+        self.ebs_optimized = False
 
     def __repr__(self):
         return 'LaunchSpecification(%s)' % self.image_id
@@ -65,6 +71,9 @@ class LaunchSpecification(EC2Object):
         elif name == 'blockDeviceMapping':
             self.block_device_mapping = BlockDeviceMapping()
             return self.block_device_mapping
+        elif name == 'iamInstanceProfile':
+            self.instance_profile = SubParse('iamInstanceProfile')
+            return self.instance_profile
         else:
             return None
 
@@ -90,7 +99,7 @@ class LaunchSpecification(EC2Object):
                 if value == 'enabled':
                     self.monitored = True
                 self._in_monitoring_element = False
+        elif name == 'ebsOptimized':
+            self.ebs_optimized = (value == 'true')
         else:
             setattr(self, name, value)
-
-

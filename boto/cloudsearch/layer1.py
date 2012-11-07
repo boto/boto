@@ -1,4 +1,4 @@
-# Copyright (c) 202 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # All Rights Reserved
 #
@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,6 +28,7 @@ from boto.regioninfo import RegionInfo
 
 #boto.set_stream_logger('cloudsearch')
 
+
 def do_bool(val):
     return 'true' if val in [True, 1, '1', 'true'] else 'false'
 
@@ -38,13 +39,14 @@ class Layer1(AWSQueryConnection):
     DefaultRegionName = boto.config.get('Boto', 'cs_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'cs_region_endpoint',
                                             'cloudsearch.us-east-1.amazonaws.com')
-    
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, host=None, port=None,
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 api_version=None, security_token=None):
+                 api_version=None, security_token=None,
+                 validate_certs=True):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -55,7 +57,8 @@ class Layer1(AWSQueryConnection):
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    security_token)
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['sign-v2']
@@ -202,7 +205,7 @@ class Layer1(AWSQueryConnection):
             params['IndexField.TextOptions.DefaultValue'] = default
             params['IndexField.TextOptions.FacetEnabled'] = do_bool(facet)
             params['IndexField.TextOptions.ResultEnabled'] = do_bool(result)
-        
+
         return self.get_response(doc_path, 'DefineIndexField',
                                  params, verb='POST')
 
@@ -398,7 +401,8 @@ class Layer1(AWSQueryConnection):
                     'domain_status_list')
         params = {}
         if domain_names:
-            params['DomainNames'] = domain_names
+            for i, domain_name in enumerate(domain_names, 1):
+                params['DomainNames.member.%d' % i] = domain_name
         return self.get_response(doc_path, 'DescribeDomains',
                                  params, verb='POST',
                                  list_marker='DomainStatusList')
@@ -427,7 +431,8 @@ class Layer1(AWSQueryConnection):
                     'index_fields')
         params = {'DomainName': domain_name}
         if field_names:
-            params['FieldNames'] = field_names
+            for i, field_name in enumerate(field_names, 1):
+                params['FieldNames.member.%d' % i] = field_name
         return self.get_response(doc_path, 'DescribeIndexFields',
                                  params, verb='POST',
                                  list_marker='IndexFields')
@@ -456,7 +461,8 @@ class Layer1(AWSQueryConnection):
                     'rank_expressions')
         params = {'DomainName': domain_name}
         if rank_names:
-            params['RankNames'] = rank_names
+            for i, rank_name in enumerate(rank_names, 1):
+                params['RankNames.member.%d' % i] = rank_name
         return self.get_response(doc_path, 'DescribeRankExpressions',
                                  params, verb='POST',
                                  list_marker='RankExpressions')

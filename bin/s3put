@@ -98,7 +98,7 @@ def main():
                 sys.argv[1:], 'a:b:c::d:g:hi:np:qs:vwr',
                 ['access_key=', 'bucket=', 'callback=', 'debug=', 'help',
                  'grant=', 'ignore=', 'no_op', 'prefix=', 'quiet',
-                 'secret_key=', 'no_overwrite', 'reduced']
+                 'secret_key=', 'no_overwrite', 'reduced', "header="]
                 )
     except:
         usage()
@@ -116,6 +116,7 @@ def main():
     grant = None
     no_overwrite = False
     reduced = False
+    headers = {}
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
@@ -147,6 +148,9 @@ def main():
             quiet = True
         if o in ('-s', '--secret_key'):
             aws_secret_access_key = a
+        if o in ('--header'):
+            (k,v) = a.split("=")
+            headers[k] = v
     if len(args) != 1:
         print usage()
     path = os.path.expanduser(args[0])
@@ -169,6 +173,8 @@ def main():
                     if ignore in dirs:
                         dirs.remove(ignore)
                 for file in files:
+                    if file.startswith("."):
+                        continue
                     fullpath = os.path.join(root, file)
                     key_name = get_key_name(fullpath, prefix)
                     copy_file = True
@@ -185,10 +191,11 @@ def main():
                             k.set_contents_from_filename(
                                     fullpath, cb=cb, num_cb=num_cb,
                                     policy=grant, reduced_redundancy=reduced,
+                                    headers=headers
                                     )
                     total += 1
         elif os.path.isfile(path):
-            key_name = os.path.split(path)[1]
+            key_name = get_key_name(path, prefix)
             copy_file = True
             if no_overwrite:
                 if b.get_key(key_name):
@@ -199,7 +206,7 @@ def main():
                 k = b.new_key(key_name)
                 k.set_contents_from_filename(path, cb=cb, num_cb=num_cb,
                                              policy=grant,
-                                             reduced_redundancy=reduced)
+                                             reduced_redundancy=reduced, headers=headers)
     else:
         print usage()
 

@@ -1,6 +1,7 @@
 """
-helper class for creating decision responses
+Helper class for creating decision responses.
 """
+
 
 class Layer1Decisions:
     """
@@ -24,30 +25,28 @@ class Layer1Decisions:
                                start_to_close_timeout=None,
                                input=None):
         """
-        schedules an activity task
+        Schedules an activity task.
 
         :type activity_id: string
-        :param activity_id: The activityId of the type of the activity 
+        :param activity_id: The activityId of the type of the activity
             being scheduled.
 
         :type activity_type_name: string
-        :param activity_type_name: The name of the type of the activity 
+        :param activity_type_name: The name of the type of the activity
             being scheduled.
 
         :type activity_type_version: string
-        :param activity_type_version: The version of the type of the 
+        :param activity_type_version: The version of the type of the
             activity being scheduled.
 
         :type task_list: string
-        :param task_list: If set, specifies the name of the task list in 
-            which to schedule the activity task. If not specified, the 
+        :param task_list: If set, specifies the name of the task list in
+            which to schedule the activity task. If not specified, the
             defaultTaskList registered with the activity type will be used.
-            Note: a task list for this activity task must be specified either 
-            as a default for the activity type or through this field. If 
-            neither this field is set nor a default task list was specified 
+            Note: a task list for this activity task must be specified either
+            as a default for the activity type or through this field. If
+            neither this field is set nor a default task list was specified
             at registration time then a fault will be returned.
-
-        FINISH DOCS
         """
         o = {}
         o['decisionType'] = 'ScheduleActivityTask'
@@ -73,16 +72,14 @@ class Layer1Decisions:
             attrs['input'] = input
         self._data.append(o)
 
-    def request_cancel_activity_task(self,
-                                     activity_id):
+    def request_cancel_activity_task(self, activity_id):
         """
-        attempts to cancel a previously scheduled activity task. If the activity 
-        task was scheduled but has not been assigned to a worker, then it will 
-        be canceled. If the activity task was already assigned to a worker, then 
-        the worker will be informed that cancellation has been requested in the 
-        response to RecordActivityTaskHeartbeat.
-    
-        FINISH DOCS
+        Attempts to cancel a previously scheduled activity task. If
+        the activity task was scheduled but has not been assigned to a
+        worker, then it will be canceled. If the activity task was
+        already assigned to a worker, then the worker will be informed
+        that cancellation has been requested in the response to
+        RecordActivityTaskHeartbeat.
         """
         o = {}
         o['decisionType'] = 'RequestCancelActivityTask'
@@ -90,15 +87,12 @@ class Layer1Decisions:
         attrs['activityId'] = activity_id
         self._data.append(o)
 
-    def record_marker(self,
-                      marker_name,
-                      details=None):
+    def record_marker(self, marker_name, details=None):
         """
-        records a MarkerRecorded event in the history. Markers can be used for 
-        adding custom information in the history for instance to let deciders know 
-        that they do not need to look at the history beyond the marker event.
-        
-        FINISH DOCS
+        Records a MarkerRecorded event in the history. Markers can be
+        used for adding custom information in the history for instance
+        to let deciders know that they do not need to look at the
+        history beyond the marker event.
         """
         o = {}
         o['decisionType'] = 'RecordMarker'
@@ -108,13 +102,10 @@ class Layer1Decisions:
             attrs['details'] = details
         self._data.append(o)
 
-    def complete_workflow_execution(self,
-                                    result=None):
+    def complete_workflow_execution(self, result=None):
         """
-        closes the workflow execution and records a WorkflowExecutionCompleted 
-        event in the history 
-
-        FINISH DOCS
+        Closes the workflow execution and records a WorkflowExecutionCompleted
+        event in the history
         """
         o = {}
         o['decisionType'] = 'CompleteWorkflowExecution'
@@ -123,14 +114,10 @@ class Layer1Decisions:
             attrs['result'] = result
         self._data.append(o)
 
-    def fail_workflow_execution(self,
-                                reason=None,
-                                details=None):
+    def fail_workflow_execution(self, reason=None, details=None):
         """
-        closes the workflow execution and records a WorkflowExecutionFailed event 
-        in the history.
-
-        FINISH DOCS
+        Closes the workflow execution and records a
+        WorkflowExecutionFailed event in the history.
         """
         o = {}
         o['decisionType'] = 'FailWorkflowExecution'
@@ -141,16 +128,13 @@ class Layer1Decisions:
             attrs['details'] = details
         self._data.append(o)
 
-    def cancel_workflow_executions(self,
-                                   details=None):
+    def cancel_workflow_executions(self, details=None):
         """
-        closes the workflow execution and records a WorkflowExecutionCanceled 
+        Closes the workflow execution and records a WorkflowExecutionCanceled
         event in the history.
-
-        FINISH DOCS
         """
         o = {}
-        o['decisionType'] = 'CancelWorkflowExecutions'
+        o['decisionType'] = 'CancelWorkflowExecution'
         attrs = o['cancelWorkflowExecutionsDecisionAttributes'] = {}
         if details is not None:
             attrs['details'] = details
@@ -165,11 +149,9 @@ class Layer1Decisions:
                                            start_to_close_timeout=None,
                                            workflow_type_version=None):
         """
-        closes the workflow execution and starts a new workflow execution of 
-        the same type using the same workflow id and a unique run Id. A 
+        Closes the workflow execution and starts a new workflow execution of
+        the same type using the same workflow id and a unique run Id. A
         WorkflowExecutionContinuedAsNew event is recorded in the history.
-
-        FINISH DOCS
         """
         o = {}
         o['decisionType'] = 'ContinueAsNewWorkflowExecution'
@@ -195,11 +177,9 @@ class Layer1Decisions:
                     timer_id,
                     control=None):
         """
-        starts a timer for this workflow execution and records a TimerStarted 
-        event in the history.  This timer will fire after the specified delay 
+        Starts a timer for this workflow execution and records a TimerStarted
+        event in the history.  This timer will fire after the specified delay
         and record a TimerFired event.
-
-        FINISH DOCS
         """
         o = {}
         o['decisionType'] = 'StartTimer'
@@ -210,13 +190,10 @@ class Layer1Decisions:
             attrs['control'] = control
         self._data.append(o)
 
-    def cancel_timer(self,
-                     timer_id):
+    def cancel_timer(self, timer_id):
         """
-        cancels a previously started timer and records a TimerCanceled event in the 
-        history.
-
-        FINISH DOCS
+        Cancels a previously started timer and records a TimerCanceled
+        event in the history.
         """
         o = {}
         o['decisionType'] = 'CancelTimer'
@@ -231,11 +208,9 @@ class Layer1Decisions:
                                            control=None,
                                            input=None):
         """
-        requests a signal to be delivered to the specified external workflow 
-        execution and records a SignalExternalWorkflowExecutionInitiated 
+        Requests a signal to be delivered to the specified external workflow
+        execution and records a SignalExternalWorkflowExecutionInitiated
         event in the history.
-
-        FINISH DOCS
         """
         o = {}
         o['decisionType'] = 'SignalExternalWorkflowExecution'
@@ -255,11 +230,10 @@ class Layer1Decisions:
                                                    control=None,
                                                    run_id=None):
         """
-        requests that a request be made to cancel the specified external workflow 
-        execution and records a 
-        RequestCancelExternalWorkflowExecutionInitiated event in the history.
-
-        FINISH DOCS
+        Requests that a request be made to cancel the specified
+        external workflow execution and records a
+        RequestCancelExternalWorkflowExecutionInitiated event in the
+        history.
         """
         o = {}
         o['decisionType'] = 'RequestCancelExternalWorkflowExecution'
@@ -274,6 +248,7 @@ class Layer1Decisions:
     def start_child_workflow_execution(self,
                                        workflow_type_name,
                                        workflow_type_version,
+                                       workflow_id,
                                        child_policy=None,
                                        control=None,
                                        execution_start_to_close_timeout=None,
@@ -282,11 +257,10 @@ class Layer1Decisions:
                                        task_list=None,
                                        task_start_to_close_timeout=None):
         """
-        requests that a child workflow execution be started and records a 
-        StartChildWorkflowExecutionInitiated event in the history.  The child 
-        workflow execution is a separate workflow execution with its own history.
-
-        FINISH DOCS
+        Requests that a child workflow execution be started and
+        records a StartChildWorkflowExecutionInitiated event in the
+        history.  The child workflow execution is a separate workflow
+        execution with its own history.
         """
         o = {}
         o['decisionType'] = 'StartChildWorkflowExecution'
@@ -295,6 +269,7 @@ class Layer1Decisions:
             'name': workflow_type_name,
             'version': workflow_type_version,
         }
+        attrs['workflowId'] = workflow_id
         if child_policy is not None:
             attrs['childPolicy'] = child_policy
         if control is not None:
@@ -310,7 +285,3 @@ class Layer1Decisions:
         if task_start_to_close_timeout is not None:
             attrs['taskStartToCloseTimeout'] = task_start_to_close_timeout
         self._data.append(o)
-
-
-
-

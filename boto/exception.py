@@ -29,12 +29,6 @@ import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
 
-try:
-    from xml.etree.ElementTree import ParseError as XMLParseError
-except ImportError:
-    # In python2.6/5, xml.etree.ElementTree.ParseError does not exist.
-    from xml.parsers.expat import ExpatError as XMLParseError
-
 
 class BotoClientError(StandardError):
     """

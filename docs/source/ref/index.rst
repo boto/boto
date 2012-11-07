@@ -18,13 +18,14 @@ API Reference
    emr
    file
    fps
+   glacier
    gs
    iam
    manage
    mturk
    pyami
    rds
-   route53 
+   route53
    s3
    sdb
    services
@@ -34,4 +35,4 @@ API Reference
    sts
    swf
    vpc
- 
+

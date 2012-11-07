@@ -13,6 +13,7 @@ HEADERS = {
     'Zone': {'get': attrgetter('placement'), 'length':15},
     'Groups': {'get': attrgetter('groups'), 'length':30},
     'Hostname': {'get': attrgetter('public_dns_name'), 'length':50},
+    'PrivateHostname': {'get': attrgetter('private_dns_name'), 'length':50},
     'State': {'get': attrgetter('state'), 'length':15},
     'Image': {'get': attrgetter('image_id'), 'length':15},
     'Type': {'get': attrgetter('instance_type'), 'length':15},
@@ -33,6 +34,7 @@ def main():
     parser = OptionParser()
     parser.add_option("-r", "--region", help="Region (default us-east-1)", dest="region", default="us-east-1")
     parser.add_option("-H", "--headers", help="Set headers (use 'T:tagname' for including tags)", default=None, action="store", dest="headers", metavar="ID,Zone,Groups,Hostname,State,T:Name")
+    parser.add_option("-t", "--tab", help="Tab delimited, skip header - useful in shell scripts", action="store_true", default=False)
     (options, args) = parser.parse_args()
 
     # Connect the region
@@ -61,13 +63,20 @@ def main():
 
 
     # List and print
-    print format_string % headers
-    print "-" * len(format_string % headers)
+
+    if not options.tab:
+        print format_string % headers
+        print "-" * len(format_string % headers)
+
     for r in ec2.get_all_instances():
         groups = [g.name for g in r.groups]
         for i in r.instances:
             i.groups = ','.join(groups)
-            print format_string % tuple(get_column(h, i) for h in headers)
+            if options.tab: 
+                print "\t".join(tuple(get_column(h, i) for h in headers))
+            else:
+                print format_string % tuple(get_column(h, i) for h in headers)
+ 
 
 if __name__ == "__main__":
     main()

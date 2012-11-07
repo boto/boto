@@ -24,6 +24,7 @@
 Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
+import base64
 
 
 def is_num(n):
@@ -32,7 +33,12 @@ def is_num(n):
 
 
 def is_str(n):
-    return isinstance(n, basestring) or (isinstance(n, type) and issubclass(n, basestring))
+    return isinstance(n, basestring) or (isinstance(n, type) and
+                                         issubclass(n, basestring))
+
+
+def is_binary(n):
+    return isinstance(n, Binary)
 
 
 def convert_num(s):
@@ -41,6 +47,10 @@ def convert_num(s):
     else:
         n = int(s)
     return n
+
+
+def convert_binary(n):
+    return Binary(base64.b64decode(n))
 
 
 def get_dynamodb_type(val):
@@ -59,6 +69,10 @@ def get_dynamodb_type(val):
             dynamodb_type = 'NS'
         elif False not in map(is_str, val):
             dynamodb_type = 'SS'
+        elif False not in map(is_binary, val):
+            dynamodb_type = 'BS'
+    elif isinstance(val, Binary):
+        dynamodb_type = 'B'
     if dynamodb_type is None:
         msg = 'Unsupported type "%s" for value "%s"' % (type(val), val)
         raise TypeError(msg)
@@ -91,4 +105,34 @@ def dynamize_value(val):
         val = {dynamodb_type: [str(n) for n in val]}
     elif dynamodb_type == 'SS':
         val = {dynamodb_type: [n for n in val]}
+    elif dynamodb_type == 'B':
+        val = {dynamodb_type: val.encode()}
+    elif dynamodb_type == 'BS':
+        val = {dynamodb_type: [n.encode() for n in val]}
     return val
+
+
+class Binary(object):
+    def __init__(self, value):
+        self.value = value
+
+    def encode(self):
+        return base64.b64encode(self.value)
+
+    def __eq__(self, other):
+        if isinstance(other, Binary):
+            return self.value == other.value
+        else:
+            return self.value == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __repr__(self):
+        return 'Binary(%s)' % self.value
+
+    def __str__(self):
+        return self.value
+
+    def __hash__(self):
+        return hash(self.value)

@@ -1,4 +1,5 @@
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -14,13 +15,11 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto import handler
-import xml.sax
 
 class Rule(object):
     """
@@ -28,13 +27,13 @@ class Rule(object):
 
     :ivar id: Unique identifier for the rule. The value cannot be longer
         than 255 characters.
-    
+
     :ivar prefix: Prefix identifying one or more objects to which the
         rule applies.
-    
+
     :ivar status: If Enabled, the rule is currently being applied.
         If Disabled, the rule is not currently being applied.
-        
+
     :ivar expiration: Indicates the lifetime, in days, of the objects
         that are subject to the rule. The value must be a non-zero
         positive integer.
@@ -44,10 +43,10 @@ class Rule(object):
         self.prefix = prefix
         self.status = status
         self.expiration = expiration
-        
+
     def __repr__(self):
-        return '<Rule: %s>' % self.id
-        
+        return '<CORSRule: %s>' % self.id
+
     def startElement(self, name, attrs, connection):
         return None
 
@@ -71,7 +70,8 @@ class Rule(object):
         s += '<Expiration><Days>%d</Days></Expiration>' % self.expiration
         s += '</Rule>'
         return s
-            
+
+
 class Lifecycle(list):
     """
     A container for the rules associated with a Lifecycle configuration.
@@ -86,7 +86,7 @@ class Lifecycle(list):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
-        
+
     def to_xml(self):
         """
         Returns a string containing the XML version of the Lifecycle
@@ -124,5 +124,3 @@ class Lifecycle(list):
         """
         rule = Rule(id, prefix, status, expiration)
         self.append(rule)
-
-    

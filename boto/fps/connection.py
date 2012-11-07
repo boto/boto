@@ -48,7 +48,7 @@ def complex_amounts(*fields):
                 kw[field + '.CurrencyCode'] = getattr(amount, 'CurrencyCode',
                                                       self.currencycode)
             return func(self, *args, **kw)
-        wrapper.__doc__ = "{}\nComplex Amounts: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nComplex Amounts: {1}".format(func.__doc__,
                                                  ', '.join(fields))
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -62,12 +62,12 @@ def requires(*groups):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if 1 != len(filter(hasgroup, groups)):
                 message = ' OR '.join(['+'.join(g) for g in groups])
-                message = "{} requires {} argument(s)" \
-                          "".format(func.action, message)
+                message = "{0} requires {1} argument(s)" \
+                          "".format(getattr(func, 'action', 'Method'), message)
                 raise KeyError(message)
             return func(*args, **kw)
         message = ' OR '.join(['+'.join(g) for g in groups])
-        wrapper.__doc__ = "{}\nRequired: {}".format(func.__doc__,
+        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
                                                            message)
         return add_attrs_from(func, to=wrapper)
     return decorator
@@ -78,18 +78,8 @@ def needs_caller_reference(func):
     def wrapper(*args, **kw):
         kw.setdefault('CallerReference', uuid.uuid4())
         return func(*args, **kw)
-    wrapper.__doc__ = "{}\nUses CallerReference, defaults " \
+    wrapper.__doc__ = "{0}\nUses CallerReference, defaults " \
                       "to uuid.uuid4()".format(func.__doc__)
-    return add_attrs_from(func, to=wrapper)
-
-
-def needs_caller_key(func):
-
-    def wrapper(self, *args, **kw):
-        kw.setdefault('callerKey', self.aws_access_key_id)
-        return func(self, *args, **kw)
-    wrapper.__doc__ = "{}\nUses callerKey, defaults to your " \
-                      "AWS Access Key ID".format(func.__doc__)
     return add_attrs_from(func, to=wrapper)
 
 
@@ -104,8 +94,8 @@ def api_action(*api):
         def wrapper(self, *args, **kw):
             return func(self, action, response, *args, **kw)
         wrapper.action, wrapper.response = action, response
-        wrapper.__doc__ = "FPS {} API call\n{}".format(action,
-                                                       func.__doc__)
+        wrapper.__doc__ = "FPS {0} API call\n{1}".format(action,
+                                                         func.__doc__)
         return wrapper
     return decorator
 
@@ -193,14 +183,14 @@ class FPSConnection(AWSQueryConnection):
         """
         return self.get_object(action, kw, response)
 
-    @needs_caller_key
+    @needs_caller_reference
     @requires(['returnURL', 'pipelineName'])
     def cbui_url(self, **kw):
         """Generate a signed URL for the Co-Branded service API given
            arguments as payload.
         """
         sandbox = 'sandbox' in self.host and 'payments-sandbox' or 'payments'
-        endpoint = 'authorize.{}.amazon.com'.format(sandbox)
+        endpoint = 'authorize.{0}.amazon.com'.format(sandbox)
         base = '/cobranded-ui/actions/start'
 
         validpipelines = ('SingleUse', 'MultiUse', 'Recurring', 'Recipient',
@@ -210,6 +200,7 @@ class FPSConnection(AWSQueryConnection):
             'signatureMethod':  'HmacSHA256',
             'signatureVersion': '2',
         })
+        kw.setdefault('callerKey', self.aws_access_key_id)
 
         safestr = lambda x: x is not None and str(x) or ''
         safequote = lambda x: urllib.quote(safestr(x), safe='~')
@@ -221,7 +212,7 @@ class FPSConnection(AWSQueryConnection):
         payload += [('signature', safequote(signature))]
         payload.sort()
 
-        return 'https://{}{}?{}'.format(endpoint, base, encoded(payload))
+        return 'https://{0}{1}?{2}'.format(endpoint, base, encoded(payload))
 
     @needs_caller_reference
     @complex_amounts('TransactionAmount')
