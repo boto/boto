@@ -21,9 +21,11 @@
 # IN THE SOFTWARE.
 #
 from __future__ import with_statement
+from .exceptions import UploadArchiveError
 from .job import Job
 from .writer import Writer, compute_hashes_from_fileobj
 from .concurrent import ConcurrentUploader
+import math
 import os.path
 
 _MEGABYTE = 1024 * 1024
@@ -136,12 +138,33 @@ class Vault(object):
         :rtype: str
         :return: The archive id of the newly created archive
         """
+        # The default part size (4 MB) will be too small for a very large
+        # archive, as there is a limit of 10,000 parts in a multipart upload.
+        # This puts the maximum allowed archive size with the default part size
+        # at 40,000 MB. We need to do a sanity check on the part size, and find
+        # one that works if the default is too small.
+        # NOTE: This can only be done if we got a filename to upload. I can't
+        # think of a practical way to get the size of a file-like object if
+        # that's what we got.
+        part_size = self.DefaultPartSize
         if not file_obj:
+            file_size = os.path.getsize(filename)
+            if (self.DefaultPartSize * 10000) < file_size:
+                if file_size > (4096 * _MEGABYTE * 10000):
+                    raise UploadArchiveError(
+                        'File exceeds 40,000 GB limit of Glacier')
+                minimum_part_size = file_size / 10000
+                power = 1
+                while part_size < minimum_part_size:
+                    part_size = math.ldexp(part_size, power)
+                    power += 1
+                part_size = int(part_size)
             file_obj = open(filename, "rb")
 
-        writer = self.create_archive_writer(description=description)
+        writer = self.create_archive_writer(description=description,
+            part_size=part_size)
         while True:
-            data = file_obj.read(self.DefaultPartSize)
+            data = file_obj.read(part_size)
             if not data:
                 break
             writer.write(data)
