@@ -52,7 +52,8 @@ def create_mock_vault():
 
 
 def partify(data, part_size):
-    for start in itertools.count(0, part_size):
+    for i in itertools.count(0):
+        start = i * part_size
         part = data[start:start+part_size]
         if part:
             yield part

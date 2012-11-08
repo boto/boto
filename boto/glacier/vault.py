@@ -211,12 +211,12 @@ class Vault(object):
         part_list_response = self.list_unpaginated_parts(upload_id)
         part_size = part_list_response['PartSizeInBytes']
 
-        part_hash_map = {
-            self._range_string_to_part_index(
-                part_desc['RangeInBytes'], part_size):
-                    part_desc['SHA256TreeHash'].decode('hex')
-            for part_desc in part_list_response['Parts']
-        }
+        part_hash_map = {}
+        for part_desc in part_list_response['Parts']:
+            part_index = self._range_string_to_part_index(
+                part_desc['RangeInBytes'], part_size)
+            part_tree_hash = part_desc['SHA256TreeHash'].decode('hex')
+            part_hash_map[part_index] = part_tree_hash
 
         if not file_obj:
             file_obj = open(filename, "rb")
