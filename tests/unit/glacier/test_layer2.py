@@ -23,12 +23,7 @@
 
 from tests.unit import unittest
 
-from mock import (
-    call,
-    Mock,
-    patch,
-    sentinel,
-)
+from mock import call, Mock, patch, sentinel
 
 from boto.glacier.layer1 import Layer1
 from boto.glacier.layer2 import Layer2
@@ -186,21 +181,21 @@ class TestVault(GlacierLayer2Base):
                          "8i1_AUyUsuhPAdTqLHy8pTl5nfCFJmDl2yEZONi5L26Omw12vcs0"
                          "1MNGntHEQL8MBfGlqrEXAMPLEArchiveId")
 
-    def test_list_unpaginated_parts_one_page(self):
+    def test_list_all_parts_one_page(self):
         self.mock_layer1.list_parts.return_value = (
             dict(EXAMPLE_PART_LIST_COMPLETE)) # take a copy
-        parts_result = self.vault.list_unpaginated_parts(sentinel.upload_id)
+        parts_result = self.vault.list_all_parts(sentinel.upload_id)
         expected = [call('examplevault', sentinel.upload_id)]
         self.assertEquals(expected, self.mock_layer1.list_parts.call_args_list)
         self.assertEquals(EXAMPLE_PART_LIST_COMPLETE, parts_result)
 
-    def test_list_unpaginated_parts_two_pages(self):
+    def test_list_all_parts_two_pages(self):
         self.mock_layer1.list_parts.side_effect = [
             # take copies
             dict(EXAMPLE_PART_LIST_RESULT_PAGE_1),
             dict(EXAMPLE_PART_LIST_RESULT_PAGE_2)
         ]
-        parts_result = self.vault.list_unpaginated_parts(sentinel.upload_id)
+        parts_result = self.vault.list_all_parts(sentinel.upload_id)
         expected = [call('examplevault', sentinel.upload_id),
                     call('examplevault', sentinel.upload_id,
                          marker=EXAMPLE_PART_LIST_RESULT_PAGE_1['Marker'])]
@@ -222,7 +217,7 @@ class TestVault(GlacierLayer2Base):
                 },
         ]}
 
-        self.vault.list_unpaginated_parts = mock_list_parts
+        self.vault.list_all_parts = mock_list_parts
         self.vault.resume_archive_from_file(
             sentinel.upload_id, file_obj=sentinel.file_obj)
         mock_resume_file_upload.assert_called_once_with(

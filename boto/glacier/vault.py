@@ -24,11 +24,7 @@
 from __future__ import with_statement
 from .exceptions import UploadArchiveError
 from .job import Job
-from .writer import (
-    compute_hashes_from_fileobj,
-    resume_file_upload,
-    Writer,
-)
+from .writer import compute_hashes_from_fileobj, resume_file_upload, Writer
 from .concurrent import ConcurrentUploader
 from .utils import minimum_part_size, DEFAULT_PART_SIZE
 import os.path
@@ -181,8 +177,8 @@ class Vault(object):
         end = inside_end + 1
         length = end - start
         if length == part_size + 1:
-            # Off-by-one bug in Amazon's Glacier implementation
-            # See: https://forums.aws.amazon.com/thread.jspa?threadID=106866&tstart=0
+            # Off-by-one bug in Amazon's Glacier implementation,
+            # see: https://forums.aws.amazon.com/thread.jspa?threadID=106866
             # Workaround: since part_size is too big by one byte, adjust it
             end -= 1
             inside_end -= 1
@@ -201,14 +197,22 @@ class Vault(object):
 
         One and only one of filename or file_obj must be specified.
 
+        :type upload_id: str
         :param upload_id: existing Glacier upload id of upload being resumed.
+
+        :type filename: str
         :param filename: file to open for resume
-        :param fobj: file object containing local data to resume. This must
-            read from the start of the entire upload, not just from the point
-            being resumed. Use fobj.seek(0) to achieve this if necessary.
+
+        :type fobj: file
+        :param fobj: file-like object containing local data to resume. This
+            must read from the start of the entire upload, not just from the
+            point being resumed. Use fobj.seek(0) to achieve this if necessary.
+
+        :rtype: str
+        :return: The archive id of the newly created archive
 
         """
-        part_list_response = self.list_unpaginated_parts(upload_id)
+        part_list_response = self.list_all_parts(upload_id)
         part_size = part_list_response['PartSizeInBytes']
 
         part_hash_map = {}
@@ -353,7 +357,7 @@ class Vault(object):
                                               status_code)
         return [Job(self, jd) for jd in response_data['JobList']]
 
-    def list_unpaginated_parts(self, upload_id):
+    def list_all_parts(self, upload_id):
         """Automatically make and combine multiple calls to list_parts.
 
         Call list_parts as necessary, combining the results in case multiple
