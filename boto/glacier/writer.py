@@ -91,8 +91,8 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
     return linear_hash.hexdigest(), bytes_to_hex(tree_hash(chunks))
 
 
-def bytes_to_hex(str):
-    return ''.join(["%02x" % ord(x) for x in str]).strip()
+def bytes_to_hex(str_as_bytes):
+    return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
 
 
 class _Partitioner(object):
@@ -152,17 +152,18 @@ class _Uploader(object):
         self.upload_id = upload_id
         self.part_size = part_size
         self.chunk_size = chunk_size
+        self.archive_id = None
 
         self._uploaded_size = 0
         self._tree_hashes = []
 
         self.closed = False
 
-    def _insert_tree_hash(self, index, tree_hash):
+    def _insert_tree_hash(self, index, raw_tree_hash):
         list_length = len(self._tree_hashes)
         if index >= list_length:
             self._tree_hashes.extend([None] * (list_length - index + 1))
-        self._tree_hashes[index] = tree_hash
+        self._tree_hashes[index] = raw_tree_hash
 
     def upload_part(self, part_index, part_data):
         """Upload a part to Glacier.
@@ -214,10 +215,9 @@ class _Uploader(object):
             raise RuntimeError("Some parts were not uploaded.")
         # Complete the multiplart glacier upload
         hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
-        response = self.vault.layer1.complete_multipart_upload(self.vault.name,
-                                                               self.upload_id,
-                                                               hex_tree_hash,
-                                                               self._uploaded_size)
+        response = self.vault.layer1.complete_multipart_upload(
+            self.vault.name, self.upload_id, hex_tree_hash,
+            self._uploaded_size)
         self.archive_id = response['ArchiveId']
         self.closed = True
 
