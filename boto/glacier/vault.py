@@ -21,17 +21,24 @@
 # IN THE SOFTWARE.
 #
 from __future__ import with_statement
+from .exceptions import UploadArchiveError
 from .job import Job
 from .writer import Writer, compute_hashes_from_fileobj
 from .concurrent import ConcurrentUploader
+from .utils import minimum_part_size, DEFAULT_PART_SIZE
 import os.path
 
+
 _MEGABYTE = 1024 * 1024
+_GIGABYTE = 1024 * _MEGABYTE
+
+MAXIMUM_ARCHIVE_SIZE = 10000 * 4 * _GIGABYTE
+MAXIMUM_NUMBER_OF_PARTS = 10000
 
 
 class Vault(object):
 
-    DefaultPartSize = 4 * _MEGABYTE
+    DefaultPartSize = DEFAULT_PART_SIZE
     SingleOperationThreshold = 100 * _MEGABYTE
 
     ResponseDataElements = (('VaultName', 'name', None),
@@ -136,12 +143,19 @@ class Vault(object):
         :rtype: str
         :return: The archive id of the newly created archive
         """
+        part_size = self.DefaultPartSize
         if not file_obj:
+            file_size = os.path.getsize(filename)
+            try:
+                part_size = minimum_part_size(file_size)
+            except ValueError:
+                raise UploadArchiveError("File size of %s bytes exceeds "
+                                         "40,000 GB archive limit of Glacier.")
             file_obj = open(filename, "rb")
-
-        writer = self.create_archive_writer(description=description)
+        writer = self.create_archive_writer(description=description,
+            part_size=part_size)
         while True:
-            data = file_obj.read(self.DefaultPartSize)
+            data = file_obj.read(part_size)
             if not data:
                 break
             writer.write(data)
