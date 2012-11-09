@@ -28,6 +28,7 @@ from boto.resultset import ResultSet
 from boto.vpc.vpc import VPC
 from boto.vpc.customergateway import CustomerGateway
 from boto.vpc.networkacl import NetworkAcl
+from boto.vpc.networkacl import NetworkAclEntry
 from boto.vpc.routetable import RouteTable
 from boto.vpc.internetgateway import InternetGateway
 from boto.vpc.vpngateway import VpnGateway, Attachment

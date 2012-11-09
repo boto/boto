@@ -20,11 +20,33 @@
 # IN THE SOFTWARE.
 
 """
-Represents a Route Table
+Represents a Network ACL
 """
 
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.resultset import ResultSet
+
+
+class Icmp(object):
+    """
+    Defines the ICMP code and type.
+    """
+    def __init__(self, connection=None):
+        self.code = None
+        self.type   = None
+
+    def __repr__(self):
+        return 'Icmp::code:%s, type:%s)' % ( self.code, self.type)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+
+        if name == 'code':
+            self.code = value
+        elif name == 'type':
+            self.type = value
 
 class NetworkAcl(TaggedEC2Object):
 
@@ -69,16 +91,20 @@ class NetworkAclEntry(object):
         self.rule_action = None
         self.egress = None
         self.cidr_block = None
-        self.icmp_code = None,
-        self.icmp_type = None,
-        self.port_range_from = None,
-        self.port_range_to = None
+        self.port_range = PortRange()
+        self.icmp = Icmp()
 
     def __repr__(self):
         return 'Acl:%s' % self.rule_number
 
     def startElement(self, name, attrs, connection):
-        return None
+
+        if name == 'portRange':
+            return self.port_range
+        elif name == 'icmpTypeCode':
+            return self.icmp
+        else:
+            return None
 
     def endElement(self, name, value, connection):
         if name == 'cidrBlock':
@@ -91,15 +117,6 @@ class NetworkAclEntry(object):
             self.rule_action = value
         elif name == 'ruleNumber':
             self.rule_number = value
-        elif name == 'Icmp.Code':
-            self.icmp_code = value
-        elif name == 'Icmp.Type':
-            self.icmp_code = value
-        elif name == 'portRange.From':
-            self.port_range_from = value
-        elif name == 'portRange.To':
-            self.port_range_to = value
-
 
 
 class NetworkAclAssociation(object):
@@ -121,4 +138,27 @@ class NetworkAclAssociation(object):
             self.route_table_id = value
         elif name == 'subnetId':
             self.subnet_id = value
+
+class PortRange(object):
+    """
+    Define the port range for the ACL entry if it is tcp / udp
+    """
+
+    def __init__(self, connection=None):
+        self.from_port = None
+        self.to_port   = None
+
+    def __repr__(self):
+        return 'PortRange:(%s-%s)' % ( self.from_port, self.to_port)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+
+        if name == 'from':
+            self.from_port = value
+        elif name == 'to':
+            self.to_port = value
+
 
