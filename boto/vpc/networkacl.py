@@ -69,7 +69,10 @@ class NetworkAclEntry(object):
         self.rule_action = None
         self.egress = None
         self.cidr_block = None
-
+        self.icmp_code = None,
+        self.icmp_type = None,
+        self.port_range_from = None,
+        self.port_range_to = None
 
     def __repr__(self):
         return 'Acl:%s' % self.rule_number
@@ -78,7 +81,7 @@ class NetworkAclEntry(object):
         return None
 
     def endElement(self, name, value, connection):
-        if name == 'CidrBlock':
+        if name == 'cidrBlock':
             self.cidr_block = value
         elif name == 'egress':
             self.egress = value
@@ -88,6 +91,14 @@ class NetworkAclEntry(object):
             self.rule_action = value
         elif name == 'ruleNumber':
             self.rule_number = value
+        elif name == 'Icmp.Code':
+            self.icmp_code = value
+        elif name == 'Icmp.Type':
+            self.icmp_code = value
+        elif name == 'portRange.From':
+            self.port_range_from = value
+        elif name == 'portRange.To':
+            self.port_range_to = value
 
 
 
@@ -96,7 +107,6 @@ class NetworkAclAssociation(object):
         self.id = None
         self.subnet_id = None
         self.network_acl_id = None
-        self.main = False
 
     def __repr__(self):
         return 'NetworkAclAssociation:%s' % self.id
@@ -105,11 +115,10 @@ class NetworkAclAssociation(object):
         return None
 
     def endElement(self, name, value, connection):
-        if name == 'NetworkAclAssociationId':
+        if name == 'networkAclAssociationId':
             self.id = value
-        elif name == 'NetworkAclId':
+        elif name == 'networkAclId':
             self.route_table_id = value
         elif name == 'subnetId':
             self.subnet_id = value
-        elif name == 'main':
-            self.main = value == 'true'
+

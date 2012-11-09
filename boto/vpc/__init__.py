@@ -282,28 +282,40 @@ class VPCConnection(EC2Connection):
         :rtype: str
         :return: The ID of the association created
         """
+
+        acl = self.get_all_network_acls(filters = [('association.subnet-id', subnet_id)])[0]
+        association_id = acl.associations[0].id
+
+
         params = {
-            'NetworkAclId': network_acl_id,
-            'SubnetId': subnet_id
+            'AssociationId': association_id,
+            'NetworkAclId': network_acl_id
         }
 
-        result = self.get_object('SubnetNetworkAclAssociation', params, ResultSet)
-        return result.associationId
+        result = self.get_object('ReplaceNetworkAclAssociation', params, ResultSet)
+        return result.newAssociationId
 
-    def disassociate_network_acl(self, association_id):
+    def disassociate_network_acl(self, subnet_id, vpc_id ):
         """
-        Removes an association from a network ACL. This will cause all subnets
-        that would've used this association to now use the default
-        association instead.
+        Figures out what the default ACL is for the VPC, and associates
+        current network ACL with the default.
 
-        :type association_id: str
-        :param association_id: The ID of the association to disassociate.
+        :type subnet_id: str
+        :param association_id: The ID of the subnet to which the ACL belongs.
 
-        :rtype: bool
-        :return: True if successful
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC to which the ACL/subnet belongs.
+
+        :rtype: str
+        :return: The ID of the association created
         """
-        params = { 'AssociationId': association_id }
-        return self.get_status('DisassociateNetworkAcl', params)
+
+        acls = self.get_all_network_acls(filters = [ ('vpc-id', vpc_id), ('default', 'true')])
+        default_acl_id = acls[0].id
+
+        return self.associate_network_acl(default_acl_id, subnet_id)
+
+
 
     def create_network_acl(self, vpc_id):
         """
@@ -394,6 +406,71 @@ class VPCConnection(EC2Connection):
             params['PortRange.To'] = port_range_to
 
         return self.get_status('CreateNetworkAclEntry', params)
+
+
+    def replace_network_acl_entry(self, network_acl_id, rule_number, protocol, rule_action,
+                      cidr_block, egress = None, icmp_code = None, icmp_type = None,
+                      port_range_from = None, port_range_to = None):
+        """
+        Creates a new network ACL entry in a network ACL within a VPC.
+
+        :type network_acl_id: str
+        :param network_acl_id: The ID of the network ACL for the id you want to replace
+
+        :type rule_number: int
+        :param rule_number: The rule number that you want to replace(for example, 100).
+
+        :type protocol: int
+        :param protocol: Valid values: -1 or a protocol number
+        (http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml)
+
+        :type rule_action: str
+        :param rule_action: Indicates whether to allow or deny traffic that matches the rule.
+
+        :type cidr_block: str
+        :param cidr_block: The CIDR range to allow or deny, in CIDR notation (for example, 172.16.0.0/24).
+
+        :type egress: boo
+        :param egress: Indicates whether this rule applies to egress traffic from the subnet (true)
+        or ingress traffic to the subnet (false).
+
+        :type icmp_type: int
+        :param icmp_type: For the ICMP protocol, the ICMP type. You can use -1 to specify
+         all ICMP types.
+
+        :type icmp_code: int
+        :param icmp_code: For the ICMP protocol, the ICMP code. You can use -1 to specify
+        all ICMP codes for the given ICMP type.
+
+        :type port_range_from: int
+        :param port_range_from: The first port in the range.
+
+        :type port_range_to: int
+        :param port_range_to: The last port in the range.
+
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'NetworkAclId': network_acl_id,
+            'RuleNumber'  : rule_number,
+            'Protocol'    : protocol,
+            'RuleAction'  : rule_action,
+            'Egress'      : egress,
+            'CidrBlock'   : cidr_block
+        }
+
+        if icmp_code is not None:
+            params['Icmp.Code'] = icmp_code
+        if icmp_type is not None:
+            params['Icmp.Type'] = icmp_type
+        if port_range_from is not None:
+            params['PortRange.From'] = port_range_from
+        if port_range_to is not None:
+            params['PortRange.To'] = port_range_to
+
+        return self.get_status('ReplaceNetworkAclEntry', params)
 
     def delete_network_acl_entry(self, network_acl_id, rule_number, egress = None ):
         """
