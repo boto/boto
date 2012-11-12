@@ -117,7 +117,7 @@ class Vault(object):
         :type description: str
         :param description: An optional description for the archive.
 
-        :rtype: :class:`boto.glaicer.writer.Writer`
+        :rtype: :class:`boto.glacier.writer.Writer`
         :return: A Writer object that to which the archive data
             should be written.
         """
@@ -328,7 +328,7 @@ class Vault(object):
         :type job_id: str
         :param job_id: The ID of the job
 
-        :rtype: :class:`boto.glaicer.job.Job`
+        :rtype: :class:`boto.glacier.job.Job`
         :return: A Job object representing the job.
         """
         response_data = self.layer1.describe_job(self.name, job_id)
@@ -350,7 +350,7 @@ class Vault(object):
             Valid values are: InProgress|Succeeded|Failed.  If not
             specified, jobs with all status codes are returned.
 
-        :rtype: list of :class:`boto.glaicer.job.Job`
+        :rtype: list of :class:`boto.glacier.job.Job`
         :return: A list of Job objects related to this vault.
         """
         response_data = self.layer1.list_jobs(self.name, completed,
