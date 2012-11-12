@@ -57,7 +57,7 @@ glacier <command> [args]
         secret_key - Your AWS Secret Access Key.  If not supplied, boto
                      will use the value of the environment variable
                      AWS_SECRET_ACCESS_KEY
-        region     - AWS region to use. Possible vaules: us-east-1, us-west-1,
+        region     - AWS region to use. Possible vaults: us-east-1, us-west-1,
                      us-west-2, ap-northeast-1, eu-west-1.
                      Default: us-east-1
 
