@@ -46,6 +46,13 @@ boto.glacier.writer
    :members:
    :undoc-members:
 
+boto.glacier.concurrent
+-------------------
+
+.. automodule:: boto.glacier.concurrent
+   :members:
+   :undoc-members:
+
 boto.glacier.exceptions
 -----------------------
 
