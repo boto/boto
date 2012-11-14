@@ -45,6 +45,12 @@ class Key(object):
 
     DefaultContentType = 'application/octet-stream'
 
+    RestoreBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+        <Days>%s</Days>
+      </RestoreRequest>"""
+
+
     BufferSize = 8192
 
     # The object metadata fields a user can set, other than custom metadata
@@ -1575,3 +1581,26 @@ class Key(object):
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
                             metadata=metadata, preserve_acl=preserve_acl)
+
+    def restore(self, days, headers=None):
+        """Restore an object from an archive.
+
+        :type days: int
+        :param days: The lifetime of the restored object (must
+            be at least 1 day).  If the object is already restored
+            then this parameter can be used to readjust the lifetime
+            of the restored object.  In this case, the days
+            param is with respect to the initial time of the request.
+            If the object has not been restored, this param is with
+            respect to the completion time of the request.
+
+        """
+        response = self.bucket.connection.make_request(
+            'POST', self.bucket.name, self.name,
+            data=self.RestoreBody % days,
+            headers=headers, query_args='restore')
+        if response.status not in (200, 202):
+            provider = self.bucket.connection.provider
+            raise provider.storage_response_error(response.status,
+                                                  response.reason,
+                                                  response.read())
