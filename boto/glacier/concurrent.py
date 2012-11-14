@@ -28,10 +28,10 @@ import logging
 from Queue import Queue, Empty
 
 from .writer import chunk_hashes, tree_hash, bytes_to_hex
+from .utils import DEFAULT_PART_SIZE, minimum_part_size
 from .exceptions import UploadArchiveError
 
 
-DEFAULT_PART_SIZE = 4 * 1024 * 1024
 _END_SENTINEL = object()
 log = logging.getLogger('boto.glacier.concurrent')
 
@@ -70,6 +70,12 @@ class ConcurrentUploader(object):
     def upload(self, filename, description=None):
         """Concurrently create an archive.
 
+        The part_size value specified when the class was constructed
+        will be used *unless* it is smaller than the minimum required
+        part size needed for the size of the given file.  In that case,
+        the part size used will be the minimum part size required
+        to properly upload the given file.
+
         :type file: str
         :param file: The filename to upload
 
@@ -82,23 +88,32 @@ class ConcurrentUploader(object):
         """
         fileobj = open(filename, 'rb')
         total_size = os.fstat(fileobj.fileno()).st_size
-        total_parts = int(math.ceil(total_size / float(self._part_size)))
+        min_part_size_required = minimum_part_size(total_size)
+        if self._part_size >= min_part_size_required:
+            part_size = self._part_size
+        else:
+            part_size = min_part_size_required
+            log.debug("The part size specified (%s) is smaller than "
+                      "the minimum required part size.  Using a part "
+                      "size of: %s", self._part_size, part_size)
+        total_parts = int(math.ceil(total_size / float(part_size)))
         hash_chunks = [None] * total_parts
         worker_queue = Queue()
         result_queue = Queue()
         response = self._api.initiate_multipart_upload(self._vault_name,
-                                                       self._part_size,
+                                                       part_size,
                                                        description)
         upload_id = response['UploadId']
         # The basic idea is to add the chunks (the offsets not the actual
         # contents) to a work queue, start up a thread pool, let the crank
         # through the items in the work queue, and then place their results
         # in a result queue which we use to complete the multipart upload.
-        self._add_work_items_to_queue(total_parts, worker_queue)
+        self._add_work_items_to_queue(total_parts, worker_queue, part_size)
         self._start_upload_threads(result_queue, upload_id,
                                    worker_queue, filename)
         try:
-            self._wait_for_upload_threads(hash_chunks, result_queue, total_parts)
+            self._wait_for_upload_threads(hash_chunks, result_queue,
+                                          total_parts)
         except UploadArchiveError, e:
             log.debug("An error occurred while uploading an archive, aborting "
                       "multipart upload.")
@@ -135,7 +150,8 @@ class ConcurrentUploader(object):
             thread.join()
         log.debug("Threads have exited.")
 
-    def _start_upload_threads(self, result_queue, upload_id, worker_queue, filename):
+    def _start_upload_threads(self, result_queue, upload_id, worker_queue,
+                              filename):
         log.debug("Starting threads.")
         for _ in xrange(self._num_threads):
             thread = UploadWorkerThread(self._api, self._vault_name, filename,
@@ -144,10 +160,10 @@ class ConcurrentUploader(object):
             thread.start()
             self._threads.append(thread)
 
-    def _add_work_items_to_queue(self, total_parts, worker_queue):
+    def _add_work_items_to_queue(self, total_parts, worker_queue, part_size):
         log.debug("Adding work items to queue.")
         for i in xrange(total_parts):
-            worker_queue.put((i, self._part_size))
+            worker_queue.put((i, part_size))
         for i in xrange(self._num_threads):
             worker_queue.put(_END_SENTINEL)
 
