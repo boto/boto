@@ -120,11 +120,11 @@ class Layer1(AWSAuthConnection):
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10,
                               retry_handler=self._retry_handler)
-        elapsed = (time.time() - start)*1000
+        elapsed = (time.time() - start) * 1000
         request_id = response.getheader('x-amzn-RequestId')
         boto.log.debug('RequestId: %s' % request_id)
-        boto.perflog.info('%s: id=%s time=%sms',
-                          headers['X-Amz-Target'], request_id, int(elapsed))
+        boto.perflog.debug('%s: id=%s time=%sms',
+                           headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
@@ -156,7 +156,8 @@ class Layer1(AWSAuthConnection):
                                          data)
         expected_crc32 = response.getheader('x-amz-crc32')
         if self._validate_checksums and expected_crc32 is not None:
-            boto.log.debug('Validating crc32 checksum for body: %s', response.read())
+            boto.log.debug('Validating crc32 checksum for body: %s',
+                           response.read())
             actual_crc32 = crc32(response.read()) & 0xffffffff
             expected_crc32 = int(expected_crc32)
             if actual_crc32 != expected_crc32:
