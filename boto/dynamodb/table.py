@@ -410,12 +410,11 @@ class Table(object):
         and expensive operation, and should be avoided if
         at all possible.
 
-        :type scan_filter: A list of tuples
-        :param scan_filter: A list of tuples where each tuple consists
-            of an attribute name, a comparison operator, and either
-            a scalar or tuple consisting of the values to compare
-            the attribute to.  Valid comparison operators are shown below
-            along with the expected number of values that should be supplied.
+        :type scan_filter: A dict
+        :param scan_filter: A dictionary where the key is the
+            attribute name and the value is a
+            :class:`boto.dynamodb.condition.Condition` object.
+            Valid Condition objects include:
 
              * EQ - equal (1)
              * NE - not equal (1)
