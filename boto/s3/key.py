@@ -1520,7 +1520,7 @@ class Key(object):
         :param display_name: An option string containing the user's
             Display Name.  Only required on Walrus.
         """
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id,
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
