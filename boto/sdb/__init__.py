@@ -43,7 +43,9 @@ def regions():
             SDBRegionInfo(name='ap-northeast-1',
                           endpoint='sdb.ap-northeast-1.amazonaws.com'),
             SDBRegionInfo(name='ap-southeast-1',
-                          endpoint='sdb.ap-southeast-1.amazonaws.com')
+                          endpoint='sdb.ap-southeast-1.amazonaws.com'),
+            SDBRegionInfo(name='ap-southeast-2',
+                          endpoint='sdb.ap-southeast-2.amazonaws.com')
             ]
 
 
