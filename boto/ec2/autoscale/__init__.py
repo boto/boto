@@ -52,7 +52,9 @@ RegionData = {
     'sa-east-1': 'autoscaling.sa-east-1.amazonaws.com',
     'eu-west-1': 'autoscaling.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'autoscaling.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():
