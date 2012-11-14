@@ -78,7 +78,7 @@ class ECSConnection(AWSQueryConnection):
     # Group methods
     #
     
-    def item_search(self, search_index, **params):
+    def item_search(self, search_index, page=0, itemSet=None, **params):
         """
         Returns items that satisfy the search criteria, including one or more search 
         indices.
@@ -87,4 +87,5 @@ class ECSConnection(AWSQueryConnection):
         :see: http://docs.amazonwebservices.com/AWSECommerceService/2010-09-01/DG/index.html?ItemSearch.html
         """
         params['SearchIndex'] = search_index
-        return self.get_response('ItemSearch', params)
+        return self.get_response('ItemSearch', params, page=page, itemSet=itemSet)
+
