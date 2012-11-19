@@ -342,11 +342,10 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         if http_request.method == 'POST':
             return ""
         l = []
-        for param in http_request.params:
+        for param in sorted(http_request.params):
             value = str(http_request.params[param])
             l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
                                 urllib.quote(value, safe='-_.~')))
-        l = sorted(l)
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
