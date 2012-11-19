@@ -143,6 +143,7 @@ class Location:
     SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
+    APSoutheast2 = 'ap-southeast-2'
 
 
 class S3Connection(AWSAuthConnection):
