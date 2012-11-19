@@ -49,3 +49,15 @@ class TestSigV4Handler(unittest.TestCase):
                          'host:glacier.us-east-1.amazonaws.com\n'
                          'x-amz-archive-description:two spaces\n'
                          'x-amz-glacier-version:2012-06-01')
+
+    def test_canonical_query_string(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            '/-/vaults/foo/archives', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        request.params['Foo.1'] = 'aaa'
+        request.params['Foo.10'] = 'zzz'
+        query_string = auth.canonical_query_string(request)
+        self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
