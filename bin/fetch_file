@@ -22,8 +22,14 @@
 #
 if __name__ == "__main__":
     from optparse import OptionParser
-    parser = OptionParser(version="0.1", usage="Usage: %prog [options] url")
-    parser.add_option("-o", "--out-file", help="Output file", dest="outfile")
+    usage = """%prog [options] URI
+Fetch a URI using the boto library and (by default) pipe contents to STDOUT
+The URI can be either an HTTP URL, or "s3://bucket_name/key_name"
+"""
+    parser = OptionParser(version="0.1", usage=usage)
+    parser.add_option("-o", "--out-file",
+                      help="File to receive output instead of STDOUT",
+                      dest="outfile")
 
     (options, args) = parser.parse_args()
     if len(args) < 1:
