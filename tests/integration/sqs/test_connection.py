@@ -208,6 +208,7 @@ class SQSConnectionTest(unittest.TestCase):
         response = queue.read(wait_time_seconds=10)
         end = time.time()
 
+        t.join()
         self.assertEqual(response.id, messages[0].id)
         self.assertEqual(response.get_body(), messages[0].get_body())
         # The timer thread should send the message in 5 seconds, so
