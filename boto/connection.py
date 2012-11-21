@@ -952,7 +952,7 @@ class AWSQueryConnection(AWSAuthConnection):
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, str):
+        if isinstance(items, basestring):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]

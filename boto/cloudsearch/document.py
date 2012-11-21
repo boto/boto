@@ -21,12 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 import boto.exception
+from boto.compat import json
 import requests
 import boto
 

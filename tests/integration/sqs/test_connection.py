@@ -25,8 +25,10 @@
 Some unit tests for the SQSConnection
 """
 
-import unittest
 import time
+from threading import Timer
+from tests.unit import unittest
+
 from boto.sqs.connection import SQSConnection
 from boto.sqs.message import MHMessage
 from boto.exception import SQSError
@@ -150,3 +152,65 @@ class SQSConnectionTest(unittest.TestCase):
         c.delete_queue(queue, True)
 
         print '--- tests completed ---'
+
+    def test_sqs_timeout(self):
+        c = SQSConnection()
+        queue_name = 'test_sqs_timeout_%s' % int(time.time())
+        queue = c.create_queue(queue_name)
+        self.addCleanup(c.delete_queue, queue, True)
+        start = time.time()
+        poll_seconds = 2
+        response = queue.read(visibility_timeout=None,
+                              wait_time_seconds=poll_seconds)
+        total_time = time.time() - start
+        self.assertTrue(total_time > poll_seconds,
+                        "SQS queue did not block for at least %s seconds: %s" %
+                        (poll_seconds, total_time))
+        self.assertIsNone(response)
+
+        # Now that there's an element in the queue, we should not block for 2
+        # seconds.
+        c.send_message(queue, 'test message')
+        start = time.time()
+        poll_seconds = 2
+        message = c.receive_message(
+            queue, number_messages=1,
+            visibility_timeout=None, attributes=None,
+            wait_time_seconds=poll_seconds)[0]
+        total_time = time.time() - start
+        self.assertTrue(total_time < poll_seconds,
+                        "SQS queue blocked longer than %s seconds: %s" %
+                        (poll_seconds, total_time))
+        self.assertEqual(message.get_body(), 'test message')
+
+        attrs = c.get_queue_attributes(queue, 'ReceiveMessageWaitTimeSeconds')
+        self.assertEqual(attrs['ReceiveMessageWaitTimeSeconds'], '0')
+
+    def test_sqs_longpoll(self):
+        c = SQSConnection()
+        queue_name = 'test_sqs_longpoll_%s' % int(time.time())
+        queue = c.create_queue(queue_name)
+        self.addCleanup(c.delete_queue, queue, True)
+        messages = []
+
+        # The basic idea is to spawn a timer thread that will put something
+        # on the queue in 5 seconds and verify that our long polling client
+        # sees the message after waiting for approximately that long.
+        def send_message():
+            messages.append(
+                queue.write(queue.new_message('this is a test message')))
+
+        t = Timer(5.0, send_message)
+        t.start()
+        self.addCleanup(t.join)
+
+        start = time.time()
+        response = queue.read(wait_time_seconds=10)
+        end = time.time()
+
+        self.assertEqual(response.id, messages[0].id)
+        self.assertEqual(response.get_body(), messages[0].get_body())
+        # The timer thread should send the message in 5 seconds, so
+        # we're giving +- .5 seconds for the total time the queue
+        # was blocked on the read call.
+        self.assertTrue(4.5 <= (end - start) <= 5.5)

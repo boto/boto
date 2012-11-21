@@ -17,7 +17,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -32,6 +32,9 @@ import time
 from boto.exception import S3ResponseError
 from boto.s3.connection import S3Connection
 from boto.s3.bucketlogging import BucketLogging
+from boto.s3.lifecycle import Lifecycle
+from boto.s3.lifecycle import Transition
+from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
 
@@ -84,9 +87,9 @@ class S3BucketTest (unittest.TestCase):
     def test_logging(self):
         # use self.bucket as the target bucket so that teardown
         # will delete any log files that make it into the bucket
-        # automatically and all we have to do is delete the 
+        # automatically and all we have to do is delete the
         # source bucket.
-        sb_name = "src-" + self.bucket_name 
+        sb_name = "src-" + self.bucket_name
         sb = self.conn.create_bucket(sb_name)
         # grant log write perms to target bucket using canned-acl
         self.bucket.set_acl("log-delivery-write")
@@ -148,3 +151,38 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(response[0][0].value, 'avalue')
         self.assertEqual(response[0][1].key, 'anotherkey')
         self.assertEqual(response[0][1].value, 'anothervalue')
+
+    def test_website_configuration(self):
+        response = self.bucket.configure_website('index.html')
+        self.assertTrue(response)
+        config = self.bucket.get_website_configuration()
+        self.assertEqual(config, {'WebsiteConfiguration':
+                                  {'IndexDocument': {'Suffix': 'index.html'}}})
+        config2, xml = self.bucket.get_website_configuration_with_xml()
+        self.assertEqual(config, config2)
+        self.assertTrue('<Suffix>index.html</Suffix>' in xml, xml)
+
+    def test_lifecycle(self):
+        lifecycle = Lifecycle()
+        lifecycle.add_rule('myid', '', 'Enabled', 30)
+        self.assertTrue(self.bucket.configure_lifecycle(lifecycle))
+        response = self.bucket.get_lifecycle_config()
+        self.assertEqual(len(response), 1)
+        actual_lifecycle = response[0]
+        self.assertEqual(actual_lifecycle.id, 'myid')
+        self.assertEqual(actual_lifecycle.prefix, '')
+        self.assertEqual(actual_lifecycle.status, 'Enabled')
+        self.assertEqual(actual_lifecycle.transition, None)
+
+    def test_lifecycle_with_glacier_transition(self):
+        lifecycle = Lifecycle()
+        transition = Transition(days=30, storage_class='GLACIER')
+        rule = Rule('myid', prefix='', status='Enabled', expiration=None,
+                    transition=transition)
+        lifecycle.append(rule)
+        self.assertTrue(self.bucket.configure_lifecycle(lifecycle))
+        response = self.bucket.get_lifecycle_config()
+        transition = response[0].transition
+        self.assertEqual(transition.days, 30)
+        self.assertEqual(transition.storage_class, 'GLACIER')
+        self.assertEqual(transition.date, None)

@@ -547,6 +547,13 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_website_configuration_with_xml(headers)
 
+    def set_metadata(self, metadata_plus, metadata_minus, preserve_acl,
+                     headers=None):
+        return self.get_key(False).set_remote_metadata(metadata_plus,
+                                                       metadata_minus,
+                                                       preserve_acl,
+                                                       headers=headers)
+
 
 class FileStorageUri(StorageUri):
     """

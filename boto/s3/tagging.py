@@ -20,6 +20,9 @@ class Tag(object):
         return '<Tag><Key>%s</Key><Value>%s</Value></Tag>' % (
             self.key, self.value)
 
+    def __eq__(self, other):
+        return (self.key == other.key and self.value == other.value)
+
 
 class TagSet(list):
     def startElement(self, name, attrs, connection):
