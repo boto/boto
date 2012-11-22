@@ -126,7 +126,7 @@ def get(elb, name):
         for state in b.get_instance_health():
             print "%-12s %-15s %-*s %s" % (state.instance_id,
                                            state.state,
-                                           name_column_width, names[i.id],
+                                           name_column_width, names[state.instance_id],
                                            state.description)
 
         print
