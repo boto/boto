@@ -107,12 +107,27 @@ def get(elb, name):
 
         print
 
+        # Make map of all instance Id's to Name tags
+        ec2 = boto.connect_ec2()
+        names = {}
+
+        for r in ec2.get_all_instances():
+            for i in r.instances:
+                names[i.id] = i.tags.get('Name', '')
+
+        name_column_width = max([4] + [len(v) for k,v in names.iteritems()]) + 2
+
         print "Instances"
         print "---------"
-        print "%-12s %-15s %s" % ("ID", "STATE", "DESCRIPTION")
+        print "%-12s %-15s %-*s %s" % ("ID",
+                                       "STATE",
+                                       name_column_width, "NAME",
+                                       "DESCRIPTION")
         for state in b.get_instance_health():
-            print "%-12s %-15s %s" % (state.instance_id, state.state,
-                                      state.description)
+            print "%-12s %-15s %-*s %s" % (state.instance_id,
+                                           state.state,
+                                           name_column_width, names[i.id],
+                                           state.description)
 
         print
 
