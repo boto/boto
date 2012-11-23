@@ -786,7 +786,10 @@ class AWSAuthConnection(object):
         """
         boto.log.debug('Method: %s' % request.method)
         boto.log.debug('Path: %s' % request.path)
-        boto.log.debug('Data: %s' % request.body)
+        if len(request.body) > 128:
+            boto.log.debug('Data (first 1024 of %s bytes): %s' % (len(request.body), request.body[0:1024]))
+        else:
+            boto.log.debug('Data: %s' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
         response = None
@@ -854,10 +857,12 @@ class AWSAuthConnection(object):
                     if isinstance(e, unretryable):
                         boto.log.debug(
                             'encountered unretryable %s exception, re-raising' %
-                            e.__class__.__name__)
+                            e)
                         raise e
                 boto.log.debug('encountered %s exception, reconnecting' % \
-                                  e.__class__.__name__)
+                                  e)
+                if hasattr(request.body, 'seek'):
+                    request.body.seek(0)
                 connection = self.new_http_connection(request.host,
                                                       self.is_secure)
             time.sleep(next_sleep)
