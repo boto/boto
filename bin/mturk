@@ -249,18 +249,18 @@ if __name__ == '__main__':
 
     sub = subs.add_parser('bal',
         help = 'display your prepaid balance')
-    sub.set_defaults(f = get_balance, a = lambda args: [])
+    sub.set_defaults(f = get_balance, a = lambda: [])
 
     sub = subs.add_parser('hit',
         help = 'get information about a HIT')
     sub.add_argument('hit',
         help = 'nickname or ID of the HIT to show')
-    sub.set_defaults(f = show_hit, a = lambda args:
+    sub.set_defaults(f = show_hit, a = lambda:
         [get_hitid(args.hit)])
 
     sub = subs.add_parser('hits',
         help = 'list all your HITS')
-    sub.set_defaults(f = list_hits, a = lambda args: [])
+    sub.set_defaults(f = list_hits, a = lambda: [])
 
     sub = subs.add_parser('new',
         help = 'create a new HIT')
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     sub.add_argument('-r', '--reward', dest = 'reward',
         type = float, metavar = 'PRICE',
         help = 'reward amount')
-    sub.set_defaults(f = make_hit, a = lambda args: dict(
+    sub.set_defaults(f = make_hit, a = lambda: dict(
         unjson(args.json_path).items() + [(k, getattr(args, k))
             for k in ('question_url', 'assignments', 'reward')
             if getattr(args, k) is not None]))
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     sub.add_argument('-t', '--time', dest = 'time',
         metavar = 'T',
         help = 'amount of time to add to the expiration date')
-    sub.set_defaults(f = extend_hit, a = lambda args:
+    sub.set_defaults(f = extend_hit, a = lambda:
         [get_hitid(args.hit), args.assignments,
             args.time and parse_duration(args.time)])
 
@@ -298,14 +298,14 @@ if __name__ == '__main__':
         help = 'delete a HIT')
     sub.add_argument('hit',
         help = 'nickname or ID of the HIT to delete')
-    sub.set_defaults(f = delete_hit, a = lambda args:
+    sub.set_defaults(f = delete_hit, a = lambda:
         [get_hitid(args.hit)])
 
     sub = subs.add_parser('expire',
         help = 'force a HIT to expire without deleting it')
     sub.add_argument('hit',
         help = 'nickname or ID of the HIT to expire')
-    sub.set_defaults(f = expire_hit, a = lambda args:
+    sub.set_defaults(f = expire_hit, a = lambda:
         [get_hitid(args.hit)])
 
     sub = subs.add_parser('as',
@@ -315,7 +315,7 @@ if __name__ == '__main__':
     sub.add_argument('-r', '--reviewable', dest = 'only_reviewable',
         action = 'store_true',
         help = 'show only unreviewed assignments')
-    sub.set_defaults(f = list_assignments, a = lambda args:
+    sub.set_defaults(f = list_assignments, a = lambda:
         [get_hitid(args.hit), args.only_reviewable])
 
     for command, fun, helpmsg in [
@@ -328,7 +328,7 @@ if __name__ == '__main__':
         sub.add_argument('-m', '--message', dest = 'message',
             metavar = 'TEXT',
             help = 'feedback message shown to workers')
-        sub.set_defaults(f = fun, a = lambda args:
+        sub.set_defaults(f = fun, a = lambda:
             [args.message, args.assignment])
 
     sub = subs.add_parser('bonus',
@@ -339,21 +339,21 @@ if __name__ == '__main__':
         help = 'the reason for the bonus (shown to workers in an email sent by MTurk)')
     sub.add_argument('widaid', nargs = '+',
         help = 'a WORKER_ID,ASSIGNMENT_ID pair')
-    sub.set_defaults(f = grant_bonus, a = lambda args:
+    sub.set_defaults(f = grant_bonus, a = lambda:
         [args.message, args.amount,
             [p.split(',') for p in args.widaid]])
 
-    cmdline_args = parser.parse_args()
+    args = parser.parse_args()
 
-    init(cmdline_args.sandbox)
+    init(args.sandbox)
     try:
-        nicknames = unjson(cmdline_args.nicknames_path)
+        nicknames = unjson(args.nicknames_path)
     except IOError:
         nicknames = {}
     original_nicknames = nicknames.copy()
 
-    f = cmdline_args.f
-    a = cmdline_args.a(cmdline_args)
+    f = args.f
+    a = args.a()
     if isinstance(a, dict):
         # We do some introspective gymnastics so we can produce a
         # less incomprehensible error message if some arguments
@@ -370,6 +370,6 @@ if __name__ == '__main__':
         print x
 
     if nicknames != original_nicknames:
-        with open(cmdline_args.nicknames_path, 'w') as o:
+        with open(args.nicknames_path, 'w') as o:
             json.dump(nicknames, o, sort_keys = True, indent = 4)
             print >>o
