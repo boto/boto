@@ -27,6 +27,10 @@ import datetime, calendar
 import json
 import boto.mturk.connection, boto.mturk.price, boto.mturk.question, boto.mturk.qualification
 
+# --------------------------------------------------
+# Globals
+# -------------------------------------------------
+
 interactive = False
 con = None
 mturk_website = None
@@ -34,6 +38,25 @@ mturk_website = None
 default_nicknames_path = os.path.expanduser('~/.boto_mturkcli_hit_nicknames')
 nicknames = {}
 nickname_pool = set(string.ascii_lowercase)
+
+example_config_file = '''Example configuration file:
+
+  {
+    "title": "Pick your favorite color",
+    "description": "In this task, you are asked to pick your favorite color.",
+    "reward": 0.50,
+    "assignments": 10,
+    "duration": "20 min",
+    "keywords": ["color", "favorites", "survey"],
+    "lifetime": "7 d",
+    "approval_delay": "14 d",
+    "qualifications": [
+        "PercentAssignmentsApproved > 90",
+        "Locale == US"
+    ],
+    "question_url": "http://example.com/myhit",
+    "question_frame_height": 450
+  }'''
 
 # --------------------------------------------------
 # Subroutines
@@ -263,7 +286,9 @@ if __name__ == '__main__':
     sub.set_defaults(f = list_hits, a = lambda: [])
 
     sub = subs.add_parser('new',
-        help = 'create a new HIT')
+        help = 'create a new HIT',
+        epilog = example_config_file,
+        formatter_class = argparse.RawDescriptionHelpFormatter)
     sub.add_argument('json_path',
         help = 'path to JSON configuration file for the HIT')
     sub.add_argument('-u', '--question-url', dest = 'question_url',
