@@ -53,11 +53,11 @@ import tempfile
 import smtplib
 import datetime
 import re
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
-from email import Encoders
+import email.mime.multipart
+import email.mime.base
+import email.mime.text
+import email.utils
+import email.encoders
 import gzip
 import base64
 try:
@@ -509,7 +509,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
                             self.fromaddr,
                             ','.join(self.toaddrs),
                             self.getSubject(record),
-                            formatdate(), msg)
+                            email.utils.formatdate(), msg)
             smtp.sendmail(self.fromaddr, self.toaddrs, msg)
             smtp.quit()
         except (KeyboardInterrupt, SystemExit):
@@ -676,20 +676,20 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=None,
     if to_string:
         try:
             from_string = boto.config.get_value('Notification', 'smtp_from', 'boto')
-            msg = MIMEMultipart()
+            msg = email.mime.multipart.MIMEMultipart()
             msg['From'] = from_string
             msg['Reply-To'] = from_string
             msg['To'] = to_string
-            msg['Date'] = formatdate(localtime=True)
+            msg['Date'] = email.utils.formatdate(localtime=True)
             msg['Subject'] = subject
 
             if body:
-                msg.attach(MIMEText(body))
+                msg.attach(email.mime.text.MIMEText(body))
 
             if html_body:
-                part = MIMEBase('text', 'html')
+                part = email.mime.base.MIMEBase('text', 'html')
                 part.set_payload(html_body)
-                Encoders.encode_base64(part)
+                email.encoders.encode_base64(part)
                 msg.attach(part)
 
             for part in attachments:
@@ -769,17 +769,17 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     :return: Final mime multipart
     :rtype: str:
     """
-    wrapper = MIMEMultipart()
+    wrapper = email.mime.multipart.MIMEMultipart()
     for name, con in content:
         definite_type = guess_mime_type(con, deftype)
         maintype, subtype = definite_type.split('/', 1)
         if maintype == 'text':
-            mime_con = MIMEText(con, _subtype=subtype)
+            mime_con = email.mime.text.MIMEText(con, _subtype=subtype)
         else:
-            mime_con = MIMEBase(maintype, subtype)
+            mime_con = email.mime.base.MIMEBase(maintype, subtype)
             mime_con.set_payload(con)
             # Encode the payload using Base64
-            Encoders.encode_base64(mime_con)
+            email.encoders.encode_base64(mime_con)
         mime_con.add_header('Content-Disposition', 'attachment', filename=name)
         wrapper.attach(mime_con)
     rcontent = wrapper.as_string()
