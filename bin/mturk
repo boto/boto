@@ -286,7 +286,7 @@ if __name__ == '__main__':
     sub.set_defaults(f = list_hits, a = lambda: [])
 
     sub = subs.add_parser('new',
-        help = 'create a new HIT',
+        help = 'create a new HIT (external questions only)',
         epilog = example_config_file,
         formatter_class = argparse.RawDescriptionHelpFormatter)
     sub.add_argument('json_path',
