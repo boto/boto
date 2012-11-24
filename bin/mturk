@@ -299,7 +299,7 @@ if __name__ == '__main__':
         help = 'number of assignments')
     sub.add_argument('-r', '--reward', dest = 'reward',
         type = float, metavar = 'PRICE',
-        help = 'reward amount')
+        help = 'reward amount, in USD')
     sub.set_defaults(f = make_hit, a = lambda: dict(
         unjson(args.json_path).items() + [(k, getattr(args, k))
             for k in ('question_url', 'assignments', 'reward')
