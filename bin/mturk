@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 
 import argparse # Hence, Python 2.7 is required.
+import os.path
+import string
 import inspect
 import datetime, calendar
 import json
@@ -28,6 +30,10 @@ import boto.mturk.connection, boto.mturk.price, boto.mturk.question, boto.mturk.
 interactive = False
 con = None
 mturk_website = None
+
+default_nicknames_path = os.path.expanduser('~/.boto_mturkcli_hit_nicknames')
+nicknames = {}
+nickname_pool = set(string.ascii_lowercase)
 
 # --------------------------------------------------
 # Subroutines
@@ -78,13 +84,23 @@ Returns a datetime object in the local time zone.'''
         calendar.timegm(
         datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%SZ').timetuple()))
 
+def get_hitid(nickname_or_hitid):
+    return nicknames.get(nickname_or_hitid) or nickname_or_hitid
+
+def get_nickname(hitid):
+    for k, v in nicknames.items():
+        if v == hitid:
+            return k
+    return None
+
 def display_datetime(dt):
     return dt.strftime('%e %b %Y, %l:%M %P')
 
 def display_hit(hit):
     et = parse_timestamp(hit.Expiration)
     return '\n'.join([
-        '{} ({}, {}, {})'.format(
+        '{} - {} ({}, {}, {})'.format(
+            get_nickname(hit.HITId),
             hit.Title,
             hit.FormattedPrice,
             display_duration(int(hit.AssignmentDurationInSeconds)),
@@ -150,6 +166,11 @@ def make_hit(title, description, keywords, reward, question_url, question_frame_
         approval_delay = parse_duration(approval_delay),
         lifetime = parse_duration(lifetime))
     if interactive:
+        available_nicks = nickname_pool - set(nicknames.keys())
+        if available_nicks:
+            nick = min(available_nicks)
+            nicknames[nick] = r[0].HITId
+            print 'Nickname:', nick
         print 'HIT ID:', r[0].HITId
         print 'Preview:', preview_url(r[0])
     else:
@@ -170,6 +191,9 @@ assignments get automatically approved upon submission.
 The API docs say DisableHIT doesn't work with Reviewable HITs,
 but apparently, it does.'''
     con.disable_hit(hit)
+    if interactive:
+        global nicknames
+        nicknames = {k: v for k, v in nicknames.items() if v != hit}
 
 def list_assignments(hit, only_reviewable = False):
     assignments = map(digest_assignment, con.get_assignments(
@@ -217,6 +241,11 @@ if __name__ == '__main__':
     parser.add_argument('-P', '--production',
         dest = 'sandbox', action = 'store_false', default = True,
         help = 'use the production site (default: use the sandbox)')
+    parser.add_argument('--nicknames',
+        dest = 'nicknames_path', metavar = 'PATH',
+        default = default_nicknames_path,
+        help = 'where to store HIT nicknames (default: {})'.format(
+            default_nicknames_path))
 
     sub = subs.add_parser('bal',
         help = 'display your prepaid balance')
@@ -225,9 +254,9 @@ if __name__ == '__main__':
     sub = subs.add_parser('hit',
         help = 'get information about a HIT')
     sub.add_argument('hit',
-        help = 'ID of the HIT to show')
+        help = 'nickname or ID of the HIT to show')
     sub.set_defaults(f = show_hit, a = lambda args:
-        [args.hit])
+        [get_hitid(args.hit)])
 
     sub = subs.add_parser('hits',
         help = 'list all your HITS')
@@ -254,7 +283,7 @@ if __name__ == '__main__':
     sub = subs.add_parser('extend',
         help = 'add assignments or time to a HIT')
     sub.add_argument('hit',
-        help = 'ID of the HIT to extend')
+        help = 'nickname or ID of the HIT to extend')
     sub.add_argument('-a', '--assignments', dest = 'assignments',
         metavar = 'N', type = int,
         help = 'number of assignments to add')
@@ -262,31 +291,32 @@ if __name__ == '__main__':
         metavar = 'T',
         help = 'amount of time to add to the expiration date')
     sub.set_defaults(f = extend_hit, a = lambda args:
-        [args.hit, args.assignments, args.time and parse_duration(args.time)])
+        [get_hitid(args.hit), args.assignments,
+            args.time and parse_duration(args.time)])
 
     sub = subs.add_parser('rm',
         help = 'delete a HIT')
     sub.add_argument('hit',
-        help = 'ID of the HIT to delete')
+        help = 'nickname or ID of the HIT to delete')
     sub.set_defaults(f = delete_hit, a = lambda args:
-        [args.hit])
+        [get_hitid(args.hit)])
 
     sub = subs.add_parser('expire',
         help = 'force a HIT to expire without deleting it')
     sub.add_argument('hit',
-        help = 'ID of the HIT to expire')
+        help = 'nickname or ID of the HIT to expire')
     sub.set_defaults(f = expire_hit, a = lambda args:
-        [args.hit])
+        [get_hitid(args.hit)])
 
     sub = subs.add_parser('as',
         help = "list a HIT's submitted assignments")
     sub.add_argument('hit',
-        help = 'ID of the HIT to get assignments for')
+        help = 'nickname or ID of the HIT to get assignments for')
     sub.add_argument('-r', '--reviewable', dest = 'only_reviewable',
         action = 'store_true',
         help = 'show only unreviewed assignments')
     sub.set_defaults(f = list_assignments, a = lambda args:
-        [args.hit, args.only_reviewable])
+        [get_hitid(args.hit), args.only_reviewable])
 
     for command, fun, helpmsg in [
             ('approve', approve_assignments, 'approve an assignment'),
@@ -314,7 +344,14 @@ if __name__ == '__main__':
             [p.split(',') for p in args.widaid]])
 
     cmdline_args = parser.parse_args()
+
     init(cmdline_args.sandbox)
+    try:
+        nicknames = unjson(cmdline_args.nicknames_path)
+    except IOError:
+        nicknames = {}
+    original_nicknames = nicknames.copy()
+
     f = cmdline_args.f
     a = cmdline_args.a(cmdline_args)
     if isinstance(a, dict):
@@ -331,3 +368,8 @@ if __name__ == '__main__':
 
     if x is not None:
         print x
+
+    if nicknames != original_nicknames:
+        with open(cmdline_args.nicknames_path, 'w') as o:
+            json.dump(nicknames, o, sort_keys = True, indent = 4)
+            print >>o
