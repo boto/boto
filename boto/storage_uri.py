@@ -616,6 +616,14 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(False, headers)
         return bucket.configure_versioning(enabled, headers)
 
+    def set_metadata(self, metadata_plus, metadata_minus, preserve_acl,
+                     headers=None):
+        return self.get_key(False).set_remote_metadata(metadata_plus,
+                                                       metadata_minus,
+                                                       preserve_acl,
+                                                       headers=headers)
+
+
 class FileStorageUri(StorageUri):
     """
     StorageUri subclass that handles files in the local file system.
