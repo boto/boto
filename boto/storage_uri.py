@@ -581,7 +581,8 @@ class BucketStorageUri(StorageUri):
                               src_key_name=src_key_name, metadata=metadata,
                               src_version_id=src_version_id,
                               storage_class=storage_class,
-                              preserve_acl=preserve_acl, encrypt_key=encrypt_key,
+                              preserve_acl=preserve_acl,
+                              encrypt_key=encrypt_key,
                               headers=headers, query_args=query_args)
 
     def enable_logging(self, target_bucket, target_prefix=None, validate=False,
