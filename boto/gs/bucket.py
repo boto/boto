@@ -79,10 +79,6 @@ class Bucket(S3Bucket):
         if key:
             key.meta_generation = resp.getheader('x-goog-meta-generation')
             key.generation = resp.getheader('x-goog-generation')
-            # Sequence-based generation numbers are deprecated.
-            if (resp.getheader('x-goog-generation') ==
-                resp.getheader('x-goog-sequence-number')):
-              key.generation = key.meta_generation = None
         return key
 
     def copy_key(self, new_key_name, src_bucket_name, src_key_name,
