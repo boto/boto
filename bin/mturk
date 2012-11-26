@@ -319,18 +319,18 @@ if __name__ == '__main__':
         [get_hitid(args.hit), args.assignments,
             args.time and parse_duration(args.time)])
 
-    sub = subs.add_parser('rm',
-        help = 'delete a HIT')
-    sub.add_argument('hit',
-        help = 'nickname or ID of the HIT to delete')
-    sub.set_defaults(f = delete_hit, a = lambda:
-        [get_hitid(args.hit)])
-
     sub = subs.add_parser('expire',
         help = 'force a HIT to expire without deleting it')
     sub.add_argument('hit',
         help = 'nickname or ID of the HIT to expire')
     sub.set_defaults(f = expire_hit, a = lambda:
+        [get_hitid(args.hit)])
+
+    sub = subs.add_parser('rm',
+        help = 'delete a HIT')
+    sub.add_argument('hit',
+        help = 'nickname or ID of the HIT to delete')
+    sub.set_defaults(f = delete_hit, a = lambda:
         [get_hitid(args.hit)])
 
     sub = subs.add_parser('as',
@@ -344,9 +344,9 @@ if __name__ == '__main__':
         [get_hitid(args.hit), args.only_reviewable])
 
     for command, fun, helpmsg in [
-            ('approve', approve_assignments, 'approve an assignment'),
-            ('reject', reject_assignments, 'reject an assignment'),
-            ('unreject', unreject_assignments, 'approve a previously rejected assignment')]:
+            ('approve', approve_assignments, 'approve assignments'),
+            ('reject', reject_assignments, 'reject assignments'),
+            ('unreject', unreject_assignments, 'approve previously rejected assignments')]:
         sub = subs.add_parser(command, help = helpmsg)
         sub.add_argument('assignment', nargs = '+',
             help = 'ID of an assignment')
