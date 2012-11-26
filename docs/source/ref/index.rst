@@ -8,6 +8,7 @@ API Reference
    :maxdepth: 4
 
    boto
+   beanstalk
    cloudformation
    cloudfront
    cloudsearch

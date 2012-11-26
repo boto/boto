@@ -45,6 +45,12 @@ class Key(object):
 
     DefaultContentType = 'application/octet-stream'
 
+    RestoreBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+        <Days>%s</Days>
+      </RestoreRequest>"""
+
+
     BufferSize = 8192
 
     # The object metadata fields a user can set, other than custom metadata
@@ -444,6 +450,41 @@ class Key(object):
 
     def set_canned_acl(self, acl_str, headers=None):
         return self.bucket.set_canned_acl(acl_str, self.name, headers)
+
+    def get_redirect(self):
+        """Return the redirect location configured for this key.
+
+        If no redirect is configured (via set_redirect), then None
+        will be returned.
+
+        """
+        response = self.bucket.connection.make_request(
+            'GET', self.bucket.name, self.name)
+        if response.status == 200:
+            return response.getheader('x-amz-website-redirect-location')
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, response.read())
+
+    def set_redirect(self, redirect_location):
+        """Configure this key to redirect to another location.
+
+        When the bucket associated with this key is accessed from the website
+        endpoint, a 301 redirect will be issued to the specified
+        `redirect_location`.
+
+        :type redirect_location: string
+        :param redirect_location: The location to redirect.
+
+        """
+        headers = {'x-amz-website-redirect-location': redirect_location}
+        response = self.bucket.connection.make_request('PUT', self.bucket.name,
+                                                       self.name, headers)
+        if response.status == 200:
+            return True
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, response.read())
 
     def make_public(self, headers=None):
         return self.bucket.set_canned_acl('public-read', self.name, headers)
@@ -1488,7 +1529,7 @@ class Key(object):
         :param display_name: An option string containing the user's
             Display Name.  Only required on Walrus.
         """
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id,
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
@@ -1549,3 +1590,26 @@ class Key(object):
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
                             metadata=metadata, preserve_acl=preserve_acl)
+
+    def restore(self, days, headers=None):
+        """Restore an object from an archive.
+
+        :type days: int
+        :param days: The lifetime of the restored object (must
+            be at least 1 day).  If the object is already restored
+            then this parameter can be used to readjust the lifetime
+            of the restored object.  In this case, the days
+            param is with respect to the initial time of the request.
+            If the object has not been restored, this param is with
+            respect to the completion time of the request.
+
+        """
+        response = self.bucket.connection.make_request(
+            'POST', self.bucket.name, self.name,
+            data=self.RestoreBody % days,
+            headers=headers, query_args='restore')
+        if response.status not in (200, 202):
+            provider = self.bucket.connection.provider
+            raise provider.storage_response_error(response.status,
+                                                  response.reason,
+                                                  response.read())

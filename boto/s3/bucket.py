@@ -1263,7 +1263,7 @@ class Bucket(object):
 
               * Key : name of object to serve when an error occurs
         """
-        return self.get_website_configuration_xml(self, headers)[0]
+        return self.get_website_configuration_with_xml(headers)[0]
 
     def get_website_configuration_with_xml(self, headers=None):
         """

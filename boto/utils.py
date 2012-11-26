@@ -73,10 +73,7 @@ except ImportError:
     import md5
     _hashfn = md5.md5
 
-try:
-    import simplejson as json
-except:
-    import json
+from boto.compat import json
 
 # List of Query String Arguments of Interest
 qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
@@ -86,7 +83,7 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
                    'response-content-encoding', 'delete', 'lifecycle',
-                   'tagging']
+                   'tagging', 'restore']
 
 
 _first_cap_regex = re.compile('(.)([A-Z][a-z]+)')

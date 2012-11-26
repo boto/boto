@@ -48,7 +48,7 @@ def item_object_hook(dct):
     if 'NS' in dct:
         return set(map(convert_num, dct['NS']))
     if 'B' in dct:
-        return base64.b64decode(dct['B'])
+        return convert_binary(dct['B'])
     if 'BS' in dct:
         return set(map(convert_binary, dct['BS']))
     return dct

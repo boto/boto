@@ -38,7 +38,9 @@ RegionData = {
     'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',
     'eu-west-1': 'elasticloadbalancing.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'elasticloadbalancing.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():
@@ -76,7 +78,7 @@ def connect_to_region(region_name, **kw_params):
 
 class ELBConnection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'elb_version', '2011-11-15')
+    APIVersion = boto.config.get('Boto', 'elb_version', '2012-06-01')
     DefaultRegionName = boto.config.get('Boto', 'elb_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'elb_region_endpoint',
                                             'elasticloadbalancing.us-east-1.amazonaws.com')
@@ -180,7 +182,8 @@ class ELBConnection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
-        params = {'LoadBalancerName': name}
+        params = {'LoadBalancerName': name,
+                  'Scheme': scheme}
         for index, listener in enumerate(listeners):
             i = index + 1
             protocol = listener[2].upper()
