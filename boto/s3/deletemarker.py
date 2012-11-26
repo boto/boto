@@ -53,5 +53,3 @@ class DeleteMarker:
             self.version_id = value
         else:
             setattr(self, name, value)
-
-

@@ -1217,13 +1217,22 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
+        self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                torrent=torrent, version_id=version_id,
+                                override_num_retries=override_num_retries,
+                                response_headers=response_headers,
+                                query_args=None)
+
+    def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None, query_args=None):
         if headers is None:
             headers = {}
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
 
-        query_args = []
+        query_args = query_args or []
         if torrent:
             query_args.append('torrent')
             m = None
