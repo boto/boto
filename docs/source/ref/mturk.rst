@@ -18,6 +18,13 @@ boto.mturk.connection
    :members:   
    :undoc-members:
 
+boto.mturk.layoutparam
+----------------------
+
+.. automodule:: boto.mturk.layoutparam
+   :members:   
+   :undoc-members:
+
 boto.mturk.notification
 -----------------------
 
