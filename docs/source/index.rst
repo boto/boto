@@ -36,6 +36,7 @@ Currently Supported Services
 * **Identity & Access**
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
+  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
 
 * **Application Services**
 

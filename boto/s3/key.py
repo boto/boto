@@ -45,6 +45,12 @@ class Key(object):
 
     DefaultContentType = 'application/octet-stream'
 
+    RestoreBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+        <Days>%s</Days>
+      </RestoreRequest>"""
+
+
     BufferSize = 8192
 
     # The object metadata fields a user can set, other than custom metadata
@@ -1211,13 +1217,22 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
+        self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                torrent=torrent, version_id=version_id,
+                                override_num_retries=override_num_retries,
+                                response_headers=response_headers,
+                                query_args=None)
+
+    def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None, query_args=None):
         if headers is None:
             headers = {}
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
 
-        query_args = []
+        query_args = query_args or []
         if torrent:
             query_args.append('torrent')
             m = None
@@ -1514,7 +1529,7 @@ class Key(object):
         :param display_name: An option string containing the user's
             Display Name.  Only required on Walrus.
         """
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id,
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
@@ -1575,3 +1590,26 @@ class Key(object):
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
                             metadata=metadata, preserve_acl=preserve_acl)
+
+    def restore(self, days, headers=None):
+        """Restore an object from an archive.
+
+        :type days: int
+        :param days: The lifetime of the restored object (must
+            be at least 1 day).  If the object is already restored
+            then this parameter can be used to readjust the lifetime
+            of the restored object.  In this case, the days
+            param is with respect to the initial time of the request.
+            If the object has not been restored, this param is with
+            respect to the completion time of the request.
+
+        """
+        response = self.bucket.connection.make_request(
+            'POST', self.bucket.name, self.name,
+            data=self.RestoreBody % days,
+            headers=headers, query_args='restore')
+        if response.status not in (200, 202):
+            provider = self.bucket.connection.provider
+            raise provider.storage_response_error(response.status,
+                                                  response.reason,
+                                                  response.read())

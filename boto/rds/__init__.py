@@ -50,7 +50,9 @@ def regions():
             RDSRegionInfo(name='ap-northeast-1',
                           endpoint='rds.ap-northeast-1.amazonaws.com'),
             RDSRegionInfo(name='ap-southeast-1',
-                          endpoint='rds.ap-southeast-1.amazonaws.com')
+                          endpoint='rds.ap-southeast-1.amazonaws.com'),
+            RDSRegionInfo(name='ap-southeast-2',
+                          endpoint='rds.ap-southeast-2.amazonaws.com'),
             ]
 
 

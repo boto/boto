@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -196,11 +196,7 @@ class Config(ConfigParser.SafeConfigParser):
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
     
     def dump_to_sdb(self, domain_name, item_name):
-        try:
-            import simplejson as json
-        except ImportError:
-            import json
-
+        from boto.compat import json
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         if not domain:
@@ -215,11 +211,7 @@ class Config(ConfigParser.SafeConfigParser):
         item.save()
 
     def load_from_sdb(self, domain_name, item_name):
-        try:
-            import json
-        except ImportError:
-            import simplejson as json
-
+        from boto.compat import json
         sdb = boto.connect_sdb()
         domain = sdb.lookup(domain_name)
         item = domain.get_item(item_name)

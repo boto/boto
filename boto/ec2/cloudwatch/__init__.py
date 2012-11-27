@@ -23,11 +23,7 @@
 This module provides an interface to the Elastic Compute Cloud (EC2)
 CloudWatch service from AWS.
 """
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
+from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
 from boto.ec2.cloudwatch.alarm import MetricAlarm, MetricAlarms, AlarmHistoryItem
@@ -42,7 +38,9 @@ RegionData = {
     'sa-east-1': 'monitoring.sa-east-1.amazonaws.com',
     'eu-west-1': 'monitoring.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'monitoring.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'monitoring.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():

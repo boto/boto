@@ -21,6 +21,7 @@
 
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
+from boto.resultset import ResultSet
 
 
 class DBInstance(object):
@@ -43,9 +44,9 @@ class DBInstance(object):
         capacity class of the DB Instance.
     :ivar master_username: The username that is set as master username
         at creation time.
-    :ivar parameter_group: Provides the list of DB Parameter Groups
+    :ivar parameter_groups: Provides the list of DB Parameter Groups
         applied to this DB Instance.
-    :ivar security_group: Provides List of DB Security Group elements
+    :ivar security_groups: Provides List of DB Security Group elements
         containing only DBSecurityGroup.Name and DBSecurityGroup.Status
         subelements.
     :ivar availability_zone: Specifies the name of the Availability Zone
@@ -78,8 +79,8 @@ class DBInstance(object):
         self.endpoint = None
         self.instance_class = None
         self.master_username = None
-        self.parameter_group = None
-        self.security_group = None
+        self.parameter_groups = []
+        self.security_groups = []
         self.availability_zone = None
         self.backup_retention_period = None
         self.preferred_backup_window = None
@@ -98,12 +99,14 @@ class DBInstance(object):
     def startElement(self, name, attrs, connection):
         if name == 'Endpoint':
             self._in_endpoint = True
-        elif name == 'DBParameterGroup':
-            self.parameter_group = ParameterGroup(self.connection)
-            return self.parameter_group
-        elif name == 'DBSecurityGroup':
-            self.security_group = DBSecurityGroup(self.connection)
-            return self.security_group
+        elif name == 'DBParameterGroups':
+            self.parameter_groups = ResultSet([('DBParameterGroup',
+                                                ParameterGroup)])
+            return self.parameter_groups
+        elif name == 'DBSecurityGroups':
+            self.security_groups = ResultSet([('DBSecurityGroup',
+                                               DBSecurityGroup)])
+            return self.security_groups
         elif name == 'PendingModifiedValues':
             self.pending_modified_values = PendingModifiedValues()
             return self.pending_modified_values
@@ -152,6 +155,28 @@ class DBInstance(object):
             self.iops = int(value)
         else:
             setattr(self, name, value)
+
+    @property
+    def security_group(self):
+        """
+        Provide backward compatibility for previous security_group
+        attribute.
+        """
+        if len(self.security_groups) > 0:
+            return self.security_groups[-1]
+        else:
+            return None
+
+    @property
+    def parameter_group(self):
+        """
+        Provide backward compatibility for previous parameter_group
+        attribute.
+        """
+        if len(self.parameter_groups) > 0:
+            return self.parameter_groups[-1]
+        else:
+            return None
 
     def snapshot(self, snapshot_id):
         """
@@ -278,15 +303,17 @@ class DBInstance(object):
             deployed in multiple availability zones.
 
         :type iops: int
-        :param iops:  The amount of IOPS (input/output operations per second) to Provisioned
-                      for the DB Instance. Can be modified at a later date.
+        :param iops: The amount of IOPS (input/output operations per
+            second) to Provisioned for the DB Instance. Can be
+            modified at a later date.
 
-                      Must scale linearly. For every 1000 IOPS provision, you must allocated
-                      100 GB of storage space. This scales up to 1 TB / 10 000 IOPS for MySQL
-                      and Oracle. MSSQL is limited to 700 GB / 7 000 IOPS.
+            Must scale linearly. For every 1000 IOPS provision, you
+            must allocated 100 GB of storage space. This scales up to
+            1 TB / 10 000 IOPS for MySQL and Oracle. MSSQL is limited
+            to 700 GB / 7 000 IOPS.
 
-                      If you specify a value, it must be at least 1000 IOPS and you must
-                      allocate 100 GB of storage.
+            If you specify a value, it must be at least 1000 IOPS and
+            you must allocate 100 GB of storage.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
@@ -301,8 +328,8 @@ class DBInstance(object):
                                                  backup_retention_period,
                                                  preferred_backup_window,
                                                  multi_az,
-                                                 iops,
-                                                 apply_immediately)
+                                                 apply_immediately,
+                                                 iops)
 
 
 class PendingModifiedValues(dict):

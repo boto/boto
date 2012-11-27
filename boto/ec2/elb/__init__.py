@@ -38,7 +38,9 @@ RegionData = {
     'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',
     'eu-west-1': 'elasticloadbalancing.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'elasticloadbalancing.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():

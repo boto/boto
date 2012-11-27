@@ -64,7 +64,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-08-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-10-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -1816,8 +1816,8 @@ class EC2Connection(AWSQueryConnection):
         :param description: A description of the snapshot.
                             Limited to 255 characters.
 
-        :rtype: bool
-        :return: True if successful
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         params = {'VolumeId': volume_id}
         if description:

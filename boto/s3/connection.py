@@ -143,6 +143,7 @@ class Location:
     SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
+    APSoutheast2 = 'ap-southeast-2'
 
 
 class S3Connection(AWSAuthConnection):
@@ -291,9 +292,9 @@ class S3Connection(AWSAuthConnection):
             conditions.append('{"x-amz-storage-class": "%s"}' % storage_class)
 
         if server_side_encryption:
-            fields.append({'name': 'x-azm-server-side-encryption',
+            fields.append({'name': 'x-amz-server-side-encryption',
                            'value': server_side_encryption})
-            conditions.append('{"x-azm-server-side-encryption": "%s"}' % server_side_encryption)
+            conditions.append('{"x-amz-server-side-encryption": "%s"}' % server_side_encryption)
 
         policy = self.build_post_policy(expiration, conditions)
 
