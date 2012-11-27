@@ -250,9 +250,11 @@ class LoadBalancer(object):
                                                            lb_port,
                                                            policies)
 
-    def create_cookie_stickiness_policy(self, cookie_expiration_period,
-                                        policy_name):
-        return self.connection.create_lb_cookie_stickiness_policy(cookie_expiration_period, self.name, policy_name)
+    def create_cookie_stickiness_policy(self, policy_name,
+                                        cookie_expiration_period=None):
+        return self.connection.create_lb_cookie_stickiness_policy(
+            self.name, policy_name,
+            cookie_expiration_period)
 
     def create_app_cookie_stickiness_policy(self, name, policy_name):
         return self.connection.create_app_cookie_stickiness_policy(name,

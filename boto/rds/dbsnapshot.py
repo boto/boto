@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -39,7 +39,7 @@ class DBSnapshot(object):
     :ivar snapshot_create_time: Provides the time (UTC) when the snapshot was taken
     :ivar status: Specifies the status of this DB Snapshot. Possible values are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
     """
-    
+
     def __init__(self, connection=None, id=None):
         self.connection = connection
         self.id = id
@@ -85,3 +85,24 @@ class DBSnapshot(object):
             self.time = value
         else:
             setattr(self, name, value)
+
+    def update(self, validate=False):
+        """
+        Update the DB snapshot's status information by making a call to fetch
+        the current snapshot attributes from the service.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         instance the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
+        """
+        rs = self.connection.get_all_dbsnapshots(self.id)
+        if len(rs) > 0:
+            for i in rs:
+                if i.id == self.id:
+                    self.__dict__.update(i.__dict__)
+        elif validate:
+            raise ValueError('%s is not a valid Snapshot ID' % self.id)
+        return self.status

@@ -434,8 +434,8 @@ class ELBConnection(AWSQueryConnection):
                   'PolicyName': policy_name}
         return self.get_status('CreateAppCookieStickinessPolicy', params)
 
-    def create_lb_cookie_stickiness_policy(self, cookie_expiration_period,
-                                           lb_name, policy_name):
+    def create_lb_cookie_stickiness_policy(self, lb_name, policy_name,
+                                           cookie_expiration_period=None):
         """
         Generates a stickiness policy with sticky session lifetimes controlled
         by the lifetime of the browser (user-agent) or a specified expiration
@@ -454,9 +454,10 @@ class ELBConnection(AWSQueryConnection):
         on the cookie expiration time, which is specified in the policy
         configuration.
         """
-        params = {'CookieExpirationPeriod': cookie_expiration_period,
-                  'LoadBalancerName': lb_name,
+        params = {'LoadBalancerName': lb_name,
                   'PolicyName': policy_name}
+        if cookie_expiration_period is not None:
+            params['CookieExpirationPeriod'] = cookie_expiration_period
         return self.get_status('CreateLBCookieStickinessPolicy', params)
 
     def delete_lb_policy(self, lb_name, policy_name):

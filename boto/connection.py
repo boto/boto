@@ -569,6 +569,22 @@ class AWSAuthConnection(object):
     gs_secret_access_key = aws_secret_access_key
     secret_key = aws_secret_access_key
 
+    @property
+    def aws_user(self):
+        if 'AWS_USER' not in os.environ:
+            raise BotoClientError('AWS_USER environment variable not set')
+        return os.environ['AWS_USER']
+
+    @property
+    def account_id(self):
+        aws_user = self.aws_user
+        if ':' in aws_user:
+            try:
+                return aws_user.split(':')[4]
+            except IndexError:
+                raise BotoClientError('Unknown ARN format in AWS_USER: %r' % (aws_user,))
+        return aws_user
+
     def get_path(self, path='/'):
         # The default behavior is to suppress consecutive slashes for reasons
         # discussed at
@@ -951,7 +967,8 @@ class AWSQueryConnection(AWSAuthConnection):
             http_request.params['Version'] = self.APIVersion
         return self._mexe(http_request)
 
-    def build_list_params(self, params, items, label):
+    @staticmethod
+    def build_list_params(params, items, label):
         if isinstance(items, basestring):
             items = [items]
         for i in range(1, len(items) + 1):
