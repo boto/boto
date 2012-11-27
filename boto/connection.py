@@ -46,25 +46,38 @@ Handles basic connections to AWS
 from __future__ import with_statement
 import base64
 import errno
-import httplib
+
+try:
+    # Python 2
+    from httplib import HTTPConnection, HTTPSConnection, HTTPResponse, HTTPException, BadStatusLine
+except ImportError:
+    # Python 3
+    from http.client import HTTPConnection, HTTPSConnection, HTTPResponse, HTTPException, BadStatusLine
+
 import os
-import Queue
 import random
 import re
 import socket
 import sys
 import time
 import urllib
-import urlparse
+
+try:
+    # Python 2
+    from urlparse import urlparse
+except ImportError:
+    # Python 3
+    from urllib.parse import urlparse
+
 import xml.sax
 import copy
 
-import auth
-import auth_handler
 import boto
 import boto.utils
 import boto.handler
 import boto.cacerts
+import boto.auth
+import boto.auth_handler
 
 from boto import config, UserAgent
 from boto.exception import AWSConnectionError, BotoClientError
@@ -383,17 +396,17 @@ class HTTPRequest(object):
                 self.headers['Content-Length'] = str(len(self.body))
 
 
-class HTTPResponse(httplib.HTTPResponse):
+class HTTPResponse(HTTPResponse):
 
     def __init__(self, *args, **kwargs):
-        httplib.HTTPResponse.__init__(self, *args, **kwargs)
+        HTTPResponse.__init__(self, *args, **kwargs)
         self._cached_response = ''
 
     def read(self, amt=None):
         """Read the response.
 
         This method does not have the same behavior as
-        httplib.HTTPResponse.read.  Instead, if this method is called with
+        HTTPResponse.read.  Instead, if this method is called with
         no ``amt`` arg, then the response body will be cached.  Subsequent
         calls to ``read()`` with no args **will return the cached response**.
 
@@ -406,10 +419,10 @@ class HTTPResponse(httplib.HTTPResponse):
             # will return the full body.  Note that this behavior only
             # happens if the amt arg is not specified.
             if not self._cached_response:
-                self._cached_response = httplib.HTTPResponse.read(self)
+                self._cached_response = HTTPResponse.read(self)
             return self._cached_response
         else:
-            return httplib.HTTPResponse.read(self, amt)
+            return HTTPResponse.read(self, amt)
 
 
 class AWSAuthConnection(object):
@@ -485,9 +498,9 @@ class AWSAuthConnection(object):
         self.ca_certificates_file = config.get_value(
                 'Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
-        # define exceptions from httplib that we want to catch and retry
-        self.http_exceptions = (httplib.HTTPException, socket.error,
-                                socket.gaierror, httplib.BadStatusLine)
+        # define HTTP-related exceptions that we want to catch and retry
+        self.http_exceptions = (HTTPException, socket.error,
+                                socket.gaierror, BadStatusLine)
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
@@ -544,7 +557,7 @@ class AWSAuthConnection(object):
         self._pool = ConnectionPool()
         self._connection = (self.server_name(), self.is_secure)
         self._last_rs = None
-        self._auth_handler = auth.get_auth_handler(
+        self._auth_handler = boto.auth.get_auth_handler(
               host, config, self.provider, self._required_auth_capability())
 
     def __repr__(self):
@@ -645,8 +658,8 @@ class AWSAuthConnection(object):
                 self.proxy_pass = config.get_value('Boto', 'proxy_pass', None)
 
         if not self.proxy_port and self.proxy:
-            print "http_proxy environment variable does not specify " \
-                "a port, using default"
+            print("http_proxy environment variable does not specify " \
+                  "a port, using default")
             self.proxy_port = self.port
         self.use_proxy = (self.proxy != None)
 
@@ -675,7 +688,7 @@ class AWSAuthConnection(object):
                         host, ca_certs=self.ca_certificates_file,
                         **self.http_connection_kwargs)
             else:
-                connection = httplib.HTTPSConnection(host,
+                connection = HTTPSConnection(host,
                         **self.http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
@@ -686,7 +699,7 @@ class AWSAuthConnection(object):
                 connection = self.https_connection_factory(host,
                     **self.http_connection_kwargs)
             else:
-                connection = httplib.HTTPConnection(host,
+                connection = HTTPConnection(host,
                     **self.http_connection_kwargs)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
@@ -722,7 +735,7 @@ class AWSAuthConnection(object):
                 sock.sendall("\r\n")
         else:
             sock.sendall("\r\n")
-        resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
+        resp = HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
         if resp.status != 200:
@@ -736,7 +749,7 @@ class AWSAuthConnection(object):
         # We can safely close the response, it duped the original socket
         resp.close()
 
-        h = httplib.HTTPConnection(host)
+        h = HTTPConnection(host)
 
         if self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
             boto.log.debug("wrapping ssl socket for proxied connection; "
@@ -755,6 +768,7 @@ class AWSAuthConnection(object):
                         hostname, cert, 'hostname mismatch')
         else:
             # Fallback for old Python without ssl.wrap_socket
+            import httplib
             if hasattr(httplib, 'ssl'):
                 sslSock = httplib.ssl.SSLSocket(sock)
             else:
@@ -839,7 +853,7 @@ class AWSAuthConnection(object):
                     return response
                 else:
                     scheme, request.host, request.path, \
-                        params, query, fragment = urlparse.urlparse(location)
+                        params, query, fragment = urlparse(location)
                     if query:
                         request.path += '?' + query
                     msg = 'Redirecting: %s' % scheme + '://'
@@ -849,7 +863,7 @@ class AWSAuthConnection(object):
                                                           scheme == 'https')
                     response = None
                     continue
-            except self.http_exceptions, e:
+            except self.http_exceptions as e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
                         boto.log.debug(
