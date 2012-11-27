@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import os
+
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
 from boto.resultset import ResultSet
@@ -92,9 +94,28 @@ class DBInstance(object):
         self._in_endpoint = False
         self._port = None
         self._address = None
+        self._tags = None
 
     def __repr__(self):
         return 'DBInstance:%s' % self.id
+
+    @property
+    def arn(self):
+        return ':'.join([
+            'arn',
+            'aws',
+            'rds',
+            self.connection.region.name,
+            self.connection.account_id,
+            'db',
+            self.id
+        ])
+
+    @property
+    def tags(self):
+        if self._tags is None:
+            self._tags = self.connection.list_tags_for_resource(self.arn)
+        return self._tags
 
     def startElement(self, name, attrs, connection):
         if name == 'Endpoint':
@@ -217,6 +238,7 @@ class DBInstance(object):
                     self.__dict__.update(i.__dict__)
         elif validate:
             raise ValueError('%s is not a valid Instance ID' % self.id)
+        self._tags = None
         return self.status
 
     def stop(self, skip_final_snapshot=False, final_snapshot_id=''):
@@ -330,6 +352,27 @@ class DBInstance(object):
                                                  multi_az,
                                                  apply_immediately,
                                                  iops)
+
+    def add_tags(self, tags):
+        ret = self.connection.add_tags_to_resource(self.arn, tags)
+        if ret:
+            for key, value in tags.iteritems():
+                self.tags[key] = value
+        return ret
+
+    def add_tag(self, key, value):
+        return self.add_tags({key: value})
+
+    def remove_tags(self, tags):
+        ret = self.connection.remove_tags_from_resource(self.arn, tags)
+        if ret:
+            for key in tags:
+                if key in self.tags:
+                    del self.tags[key]
+        return ret
+
+    def remove_tag(self, key):
+        return self.remove_tags([key])
 
 
 class PendingModifiedValues(dict):
