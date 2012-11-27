@@ -356,6 +356,16 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_location()
 
+    def get_storage_class(self, validate=False, headers=None):
+        self._check_bucket_uri('get_storage_class')
+        # StorageClass is defined as a bucket param for GCS, but as a key
+        # param for S3.
+        if self.scheme != 'gs':
+            raise ValueError('get_storage_class() not supported for %s '
+                             'URIs.' % self.scheme)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_storage_class()
+
     def get_subresource(self, subresource, validate=False, headers=None,
                         version_id=None):
         self._check_bucket_uri('get_subresource')
@@ -367,8 +377,8 @@ class BucketStorageUri(StorageUri):
                               validate=False, headers=None):
         self._check_bucket_uri('add_group_email_grant')
         if self.scheme != 'gs':
-              raise ValueError('add_group_email_grant() not supported for %s '
-                               'URIs.' % self.scheme)
+            raise ValueError('add_group_email_grant() not supported for %s '
+                             'URIs.' % self.scheme)
         if self.object_name:
             if recursive:
               raise ValueError('add_group_email_grant() on key-ful URI cannot '
@@ -456,10 +466,17 @@ class BucketStorageUri(StorageUri):
         """Returns True if this URI represents input/output stream."""
         return False
 
-    def create_bucket(self, headers=None, location='', policy=None):
+    def create_bucket(self, headers=None, location='', policy=None,
+                      storage_class=None):
         self._check_bucket_uri('create_bucket ')
         conn = self.connect()
-        return conn.create_bucket(self.bucket_name, headers, location, policy)
+        # Pass storage_class param only if this is a GCS bucket. (In S3 the
+        # storage class is specified on the key object.)
+        if self.scheme == 'gs':
+          return conn.create_bucket(self.bucket_name, headers, location, policy,
+                                    storage_class)
+        else:
+          return conn.create_bucket(self.bucket_name, headers, location, policy)
 
     def delete_bucket(self, headers=None):
         self._check_bucket_uri('delete_bucket')

@@ -83,7 +83,12 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    'response-content-language', 'response-expires',
                    'response-cache-control', 'response-content-disposition',
                    'response-content-encoding', 'delete', 'lifecycle',
-                   'tagging', 'restore']
+                   'tagging', 'restore',
+                   # storageClass is a QSA for buckets in Google Cloud Storage.
+                   # (StorageClass is associated to individual keys in S3, but
+                   # having it listed here should cause no problems because
+                   # GET bucket?storageClass is not part of the S3 API.)
+                   'storageClass']
 
 
 _first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
