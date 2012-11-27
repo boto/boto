@@ -594,6 +594,34 @@ class AWSAuthConnection(object):
     gs_secret_access_key = aws_secret_access_key
     secret_key = aws_secret_access_key
 
+    @property
+    def aws_user_arn(self):
+        # TODO(reversefold): Cache?
+        try:
+            # import here to avoid cycles
+            from boto.iam.connection import IAMConnection
+            iam = IAMConnection()
+            user = iam.get_user()
+            arn = user['get_user_response']['get_user_result']['user']['arn']
+            boto.log.debug('Got user ARN through IAM: %s', arn)
+            return arn
+        except (KeyError, BotoClientError, BotoServerError):
+            boto.log.debug('Could not get user ARN through IAM, trying AWS_USER env var')
+            if 'AWS_USER' not in os.environ:
+                raise BotoClientError('iam.get_user failed and AWS_USER environment variable not set')
+            return os.environ['AWS_USER']
+
+    @property
+    def account_id(self):
+        # TODO(reversefold): Cache?
+        aws_user_arn = self.aws_user_arn
+        if ':' in aws_user_arn:
+            try:
+                return aws_user_arn.split(':')[4]
+            except IndexError:
+                raise BotoClientError('Unknown User ARN format: %r' % (aws_user_arn,))
+        return aws_user_arn
+
     def get_path(self, path='/'):
         # The default behavior is to suppress consecutive slashes for reasons
         # discussed at
