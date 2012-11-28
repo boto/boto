@@ -68,7 +68,7 @@ def unjson(path):
 
 def init(sandbox = False):
     global con, mturk_website
-    mturk_website = 'workersandbox.mturk.com' if sandbox else 'mturk.com'
+    mturk_website = 'workersandbox.mturk.com' if sandbox else 'www.mturk.com'
     con = boto.mturk.connection.MTurkConnection(
         host = 'mechanicalturk.sandbox.amazonaws.com' if sandbox else 'mechanicalturk.amazonaws.com')
 
