@@ -641,6 +641,13 @@ class BucketStorageUri(StorageUri):
                                                        preserve_acl,
                                                        headers=headers)
 
+    def exists(self):
+      """Returns the key if the object exists or None if it doesn't"""
+      if not self.object_name:
+        raise InvalidUriError('exists on object-less URI (%s)' % self.uri)
+      bucket = self.get_bucket()
+      key = bucket.get_key(self.object_name)
+      return key
 
 class FileStorageUri(StorageUri):
     """
@@ -728,3 +735,7 @@ class FileStorageUri(StorageUri):
         """Closes the underlying file.
         """
         self.get_key().close()
+
+    def exists(self):
+      """Returns True if the file exists or False if it doesn't"""
+      return os.path.exists(self.object_name)
