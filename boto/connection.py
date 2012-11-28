@@ -54,12 +54,7 @@ except ImportError:
     # Python 3
     from http.client import HTTPConnection, HTTPSConnection, HTTPResponse, HTTPException, BadStatusLine
 
-try:
-    # Python 2
-    long
-except NameError:
-    # Python 3
-    long = int
+from boto.compat23 import ensure_bytes, integer_types, urlparse
 
 import os
 import random
@@ -68,13 +63,6 @@ import socket
 import sys
 import time
 import urllib
-
-try:
-    # Python 2
-    from urlparse import urlparse
-except ImportError:
-    # Python 3
-    from urllib.parse import urlparse
 
 import xml.sax
 import copy
@@ -378,7 +366,7 @@ class HTTPRequest(object):
             del self.headers['Transfer-Encoding']
         else:
             self.headers = headers
-        self.body = body
+        self.body = ensure_bytes(body)
 
     def __str__(self):
         return (('method:(%s) protocol:(%s) host(%s) port(%s) path(%s) '
@@ -389,8 +377,7 @@ class HTTPRequest(object):
     def authorize(self, connection, **kwargs):
         for key in self.headers:
             val = self.headers[key]
-            if isinstance(val, unicode):
-                self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
+            self.headers[key] = urllib.quote_plus(val)
 
         connection._auth_handler.add_auth(self, **kwargs)
 
@@ -528,7 +515,7 @@ class AWSAuthConnection(object):
         self.host = host
         self.path = path
         # if the value passed in for debug
-        if not isinstance(debug, (int, long)):
+        if not isinstance(debug, integer_types):
             debug = 0
         self.debug = config.getint('Boto', 'debug', debug)
         if port:
@@ -973,7 +960,7 @@ class AWSQueryConnection(AWSAuthConnection):
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, basestring):
+        if hasattr(items, 'startswith'):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
@@ -986,6 +973,7 @@ class AWSQueryConnection(AWSAuthConnection):
             parent = self
         response = self.make_request(action, params, path, verb)
         body = response.read()
+        body = ensure_bytes(body)
         boto.log.debug(body)
         if not body:
             boto.log.error('Null body %s' % body)
@@ -1006,6 +994,7 @@ class AWSQueryConnection(AWSAuthConnection):
             parent = self
         response = self.make_request(action, params, path, verb)
         body = response.read()
+        body = ensure_bytes(body)
         boto.log.debug(body)
         if not body:
             boto.log.error('Null body %s' % body)

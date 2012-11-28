@@ -45,6 +45,8 @@ from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
 
+from boto.compat23 import basestring, xrange
+
 RegionData = {
     'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
     'us-west-1': 'autoscaling.us-west-1.amazonaws.com',

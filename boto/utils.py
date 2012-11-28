@@ -745,11 +745,12 @@ def notify(subject, body=None, html_body=None, to_string=None, attachments=None,
             boto.log.exception('notify failed')
 
 def get_utf8_value(value):
-    if not isinstance(value, str) and not isinstance(value, unicode):
+    if not hasattr(value, 'startswith'):
         value = str(value)
-    if isinstance(value, unicode):
+
+    try:
         return value.encode('utf-8')
-    else:
+    except AttributeError:
         return value
 
 def mklist(value):

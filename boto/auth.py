@@ -71,6 +71,8 @@ except ImportError:
     import sha
     sha256 = None
 
+from boto.compat23 import ensure_bytes, quote, quote_plus
+
 
 class HmacKeys(object):
     """Key based Auth handler helper."""
@@ -332,8 +334,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         pairs = []
         for pname in parameter_names:
             pval = str(http_request.params[pname]).encode('utf-8')
-            pairs.append(urllib.quote(pname, safe='') + '=' +
-                         urllib.quote(pval, safe='-_~'))
+            pairs.append(quote(pname, safe='') + '=' +
+                         quote(pval, safe='-_~'))
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
@@ -344,8 +346,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l = []
         for param in sorted(http_request.params):
             value = str(http_request.params[param])
-            l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
-                                urllib.quote(value, safe='-_.~')))
+            l.append('%s=%s' % (quote(param, safe='-_.~'),
+                                quote(value, safe='-_.~')))
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
@@ -416,6 +418,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         containing the original version of all headers that
         were included in the StringToSign.
         """
+        canonical_request = ensure_bytes(canonical_request)
         sts = ['AWS4-HMAC-SHA256']
         sts.append(http_request.headers['X-Amz-Date'])
         sts.append(self.credential_scope(http_request))
@@ -424,7 +427,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     def signature(self, http_request, string_to_sign):
         key = self._provider.secret_key
-        k_date = self._sign(('AWS4' + key).encode('utf-8'),
+        k_date = self._sign(('AWS4' + str(key)).encode('utf-8'),
                               http_request.timestamp)
         k_region = self._sign(k_date, http_request.region_name)
         k_service = self._sign(k_region, http_request.service_name)
@@ -490,7 +493,7 @@ class QuerySignatureHelper(HmacKeys):
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            http_request.body = qs + '&Signature=' + urllib.quote_plus(signature)
+            http_request.body = qs + '&Signature=' + quote_plus(signature)
             http_request.headers['Content-Length'] = str(len(http_request.body))
         else:
             http_request.body = ''
@@ -498,7 +501,7 @@ class QuerySignatureHelper(HmacKeys):
             # already be there, we need to get rid of that and rebuild it
             http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs +
-                                 '&Signature=' + urllib.quote_plus(signature))
+                                 '&Signature=' + quote_plus(signature))
 
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
@@ -517,7 +520,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -545,7 +548,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
             hmac.update(key)
             val = boto.utils.get_utf8_value(params[key])
             hmac.update(val)
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -568,11 +571,12 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(urllib.quote(key, safe='') + '=' +
-                         urllib.quote(val, safe='-_~'))
+            pairs.append(quote(key, safe='') + '=' +
+                         quote(val, safe='-_~'))
         qs = '&'.join(pairs)
         boto.log.debug('query string: %s' % qs)
         string_to_sign += qs
+        string_to_sign = ensure_bytes(string_to_sign)
         boto.log.debug('string_to_sign: %s' % string_to_sign)
         hmac.update(string_to_sign)
         b64 = base64.b64encode(hmac.digest())
@@ -606,7 +610,7 @@ class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):
         # already be there, we need to get rid of that and rebuild it
         req.path = req.path.split('?')[0]
         req.path = (req.path + '?' + qs +
-                             '&Signature=' + urllib.quote_plus(signature))
+                             '&Signature=' + quote_plus(signature))
 
 
 def get_auth_handler(host, config, provider, requested_capability=None):

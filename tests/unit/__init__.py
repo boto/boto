@@ -53,7 +53,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
         response.getheaders.return_value = header
         def overwrite_header(arg, default=None):
             header_dict = dict(header)
-            if header_dict.has_key(arg):
+            if arg in header_dict:
                 return header_dict[arg]
             else:
                 return default
