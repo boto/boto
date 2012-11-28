@@ -54,6 +54,13 @@ except ImportError:
     # Python 3
     from http.client import HTTPConnection, HTTPSConnection, HTTPResponse, HTTPException, BadStatusLine
 
+try:
+    # Python 2
+    long
+except NameError:
+    # Python 3
+    long = int
+
 import os
 import random
 import re
