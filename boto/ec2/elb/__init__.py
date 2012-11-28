@@ -453,10 +453,13 @@ class ELBConnection(AWSQueryConnection):
         from the same user to that server. The validity of the cookie is based
         on the cookie expiration time, which is specified in the policy
         configuration.
+
+        None may be passed for cookie_expiration_period.
         """
-        params = {'CookieExpirationPeriod': cookie_expiration_period,
-                  'LoadBalancerName': lb_name,
+        params = {'LoadBalancerName': lb_name,
                   'PolicyName': policy_name}
+        if cookie_expiration_period is not None:
+            params['CookieExpirationPeriod'] = cookie_expiration_period
         return self.get_status('CreateLBCookieStickinessPolicy', params)
 
     def delete_lb_policy(self, lb_name, policy_name):
