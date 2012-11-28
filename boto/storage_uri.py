@@ -642,12 +642,12 @@ class BucketStorageUri(StorageUri):
                                                        headers=headers)
 
     def exists(self):
-      """Returns the key if the object exists or None if it doesn't"""
+      """Returns True if the object exists or False if it doesn't"""
       if not self.object_name:
         raise InvalidUriError('exists on object-less URI (%s)' % self.uri)
       bucket = self.get_bucket()
       key = bucket.get_key(self.object_name)
-      return key
+      return bool(key)
 
 class FileStorageUri(StorageUri):
     """
