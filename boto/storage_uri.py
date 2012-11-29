@@ -736,6 +736,6 @@ class FileStorageUri(StorageUri):
         """
         self.get_key().close()
 
-    def exists(self, headers=None):
+    def exists(self, _headers_not_used=None):
       """Returns True if the file exists or False if it doesn't"""
       return os.path.exists(self.object_name)
