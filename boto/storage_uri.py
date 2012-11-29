@@ -646,7 +646,7 @@ class BucketStorageUri(StorageUri):
       if not self.object_name:
         raise InvalidUriError('exists on object-less URI (%s)' % self.uri)
       bucket = self.get_bucket()
-      key = bucket.get_key(self.object_name, headers)
+      key = bucket.get_key(self.object_name, headers=headers)
       return bool(key)
 
 class FileStorageUri(StorageUri):
@@ -738,4 +738,7 @@ class FileStorageUri(StorageUri):
 
     def exists(self, _headers_not_used=None):
       """Returns True if the file exists or False if it doesn't"""
+      # The _headers_not_used parameter is ignored. It is only there to ensure
+      # that this method's signature is identical to the exists method on the
+      # BucketStorageUri class.
       return os.path.exists(self.object_name)
