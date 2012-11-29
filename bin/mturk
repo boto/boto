@@ -66,11 +66,37 @@ def unjson(path):
     with open(path) as o:
         return json.load(o)
 
-def init(sandbox = False):
-    global con, mturk_website
+def add_argparse_arguments(parser):
+    parser.add_argument('-P', '--production',
+        dest = 'sandbox', action = 'store_false', default = True,
+        help = 'use the production site (default: use the sandbox)')
+    parser.add_argument('--nicknames',
+        dest = 'nicknames_path', metavar = 'PATH',
+        default = default_nicknames_path,
+        help = 'where to store HIT nicknames (default: {})'.format(
+            default_nicknames_path))
+
+def init_by_args(args):
+    init(args.sandbox, args.nicknames_path)
+
+def init(sandbox = False, nicknames_path = default_nicknames_path):
+    global con, mturk_website, nicknames, original_nicknames
+
     mturk_website = 'workersandbox.mturk.com' if sandbox else 'www.mturk.com'
     con = boto.mturk.connection.MTurkConnection(
         host = 'mechanicalturk.sandbox.amazonaws.com' if sandbox else 'mechanicalturk.amazonaws.com')
+
+    try:
+        nicknames = unjson(nicknames_path)
+    except IOError:
+        nicknames = {}
+    original_nicknames = nicknames.copy()
+
+def save_nicknames(nicknames_path = default_nicknames_path):
+    if nicknames != original_nicknames:
+        with open(nicknames_path, 'w') as o:
+            json.dump(nicknames, o, sort_keys = True, indent = 4)
+            print >>o
 
 time_units = dict(s = 1, min = 60, h = 60 * 60, d = 24 * 60 * 60)
 def parse_duration(s):
@@ -188,12 +214,13 @@ def make_hit(title, description, keywords, reward, question_url, question_frame_
         max_assignments = assignments,
         approval_delay = parse_duration(approval_delay),
         lifetime = parse_duration(lifetime))
+    nick = None
+    available_nicks = nickname_pool - set(nicknames.keys())
+    if available_nicks:
+        nick = min(available_nicks)
+        nicknames[nick] = r[0].HITId
     if interactive:
-        available_nicks = nickname_pool - set(nicknames.keys())
-        if available_nicks:
-            nick = min(available_nicks)
-            nicknames[nick] = r[0].HITId
-            print 'Nickname:', nick
+        print 'Nickname:', nick
         print 'HIT ID:', r[0].HITId
         print 'Preview:', preview_url(r[0])
     else:
@@ -214,9 +241,8 @@ assignments get automatically approved upon submission.
 The API docs say DisableHIT doesn't work with Reviewable HITs,
 but apparently, it does.'''
     con.disable_hit(hit)
-    if interactive:
-        global nicknames
-        nicknames = {k: v for k, v in nicknames.items() if v != hit}
+    global nicknames
+    nicknames = {k: v for k, v in nicknames.items() if v != hit}
 
 def list_assignments(hit, only_reviewable = False):
     assignments = map(digest_assignment, con.get_assignments(
@@ -255,20 +281,11 @@ def unreject_assignments(message, assignments):
 # --------------------------------------------------
 
 if __name__ == '__main__':
-
     interactive = True
 
     parser = argparse.ArgumentParser()
+    add_argparse_arguments(parser)
     subs = parser.add_subparsers()
-
-    parser.add_argument('-P', '--production',
-        dest = 'sandbox', action = 'store_false', default = True,
-        help = 'use the production site (default: use the sandbox)')
-    parser.add_argument('--nicknames',
-        dest = 'nicknames_path', metavar = 'PATH',
-        default = default_nicknames_path,
-        help = 'where to store HIT nicknames (default: {})'.format(
-            default_nicknames_path))
 
     sub = subs.add_parser('bal',
         help = 'display your prepaid balance')
@@ -370,12 +387,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    init(args.sandbox)
-    try:
-        nicknames = unjson(args.nicknames_path)
-    except IOError:
-        nicknames = {}
-    original_nicknames = nicknames.copy()
+    init_by_args(args)
 
     f = args.f
     a = args.a()
@@ -394,7 +406,4 @@ if __name__ == '__main__':
     if x is not None:
         print x
 
-    if nicknames != original_nicknames:
-        with open(args.nicknames_path, 'w') as o:
-            json.dump(nicknames, o, sort_keys = True, indent = 4)
-            print >>o
+    save_nicknames()
