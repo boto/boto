@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 
 import argparse # Hence, Python 2.7 is required.
+import sys
 import os.path
 import string
 import inspect
@@ -399,9 +400,15 @@ if __name__ == '__main__':
         missing = set(spec.args[: len(spec.args) - len(spec.defaults)]) - set(a.keys())
         if missing:
             raise ValueError('Missing arguments: ' + ', '.join(missing))
-        x = f(**a)
+        doit = lambda: f(**a)
     else:
-        x = f(*a)
+        doit = lambda: f(*a)
+
+    try:
+        x = doit()
+    except boto.mturk.connection.MTurkRequestError as e:
+        print 'MTurk error:', e.error_message
+        sys.exit(1)
 
     if x is not None:
         print x
