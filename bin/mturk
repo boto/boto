@@ -146,7 +146,7 @@ def get_nickname(hitid):
 def display_datetime(dt):
     return dt.strftime('%e %b %Y, %l:%M %P')
 
-def display_hit(hit):
+def display_hit(hit, verbose = False):
     et = parse_timestamp(hit.Expiration)
     return '\n'.join([
         '{} - {} ({}, {}, {})'.format(
@@ -170,10 +170,13 @@ def display_hit(hit):
             int(hit.MaxAssignments) - (int(hit.NumberOfAssignmentsAvailable) + int(hit.NumberOfAssignmentsPending) + int(hit.NumberOfAssignmentsCompleted)),
             hit.NumberOfAssignmentsCompleted)
             if hasattr(hit, 'NumberOfAssignmentsAvailable')
-            else 'Assignments: {} total'.format(hit.MaxAssignments)
+            else 'Assignments: {} total'.format(hit.MaxAssignments),
             # For some reason, SearchHITs includes the
             # NumberOfAssignmentsFoobar fields but GetHIT doesn't.
-        ]) + '\n'
+        ] + ([] if not verbose else [
+            '\nDescription: ' + hit.Description,
+            '\nKeywords: ' + hit.Keywords
+        ])) + '\n'
 
 def digest_assignment(a):
     return dict(
@@ -191,7 +194,7 @@ def get_balance():
     return con.get_account_balance()
 
 def show_hit(hit):
-    return display_hit(con.get_hit(hit)[0])
+    return display_hit(con.get_hit(hit)[0], verbose = True)
 
 def list_hits():
     'Lists your 10 most recently created HITs, with the most recent last.'
