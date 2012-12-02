@@ -2,7 +2,9 @@ language: python
 python:
   - "2.6"
   - "2.7"
+  - "3.2"
 before_install:
   - sudo apt-get install swig
-install: pip install --use-mirrors -r requirements.txt
-script: python tests/test.py unit
+install: if [ "$(python --version 2>&1)" == "Python 3.2.3" ]; then pip install -r requirements-py3.txt --use-mirrors; else pip install -r requirements.txt --use-mirrors; fi
+script: if [ "$(python --version 2>&1)" == "Python 3.2.3" ]; then nosetests -v tests/unit/ec2; else python tests/test.py unit; fi
+

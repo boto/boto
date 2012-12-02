@@ -2,7 +2,13 @@ try:
     import unittest2 as unittest
 except ImportError:
     import unittest
-import httplib
+
+try:
+    # Python 2
+    from httplib import HTTPSConnection, HTTPResponse
+except ImportError:
+    # Python 3
+    from http.client import HTTPSConnection, HTTPResponse
 
 from mock import Mock
 
@@ -15,7 +21,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
     connection_class = None
 
     def setUp(self):
-        self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection = Mock(spec=HTTPSConnection)
         self.https_connection_factory = (
             Mock(return_value=self.https_connection), ())
         self.service_connection = self.create_service_connection(
@@ -39,7 +45,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
     def create_response(self, status_code, reason='', header=[], body=None):
         if body is None:
             body = self.default_body()
-        response = Mock(spec=httplib.HTTPResponse)
+        response = Mock(spec=HTTPResponse)
         response.status = status_code
         response.read.return_value = body
         response.reason = reason
@@ -47,7 +53,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
         response.getheaders.return_value = header
         def overwrite_header(arg, default=None):
             header_dict = dict(header)
-            if header_dict.has_key(arg):
+            if arg in header_dict:
                 return header_dict[arg]
             else:
                 return default

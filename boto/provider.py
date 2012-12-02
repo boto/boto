@@ -35,6 +35,7 @@ from boto.gs.acl import ACL
 from boto.gs.acl import CannedACLStrings as CannedGSACLStrings
 from boto.s3.acl import CannedACLStrings as CannedS3ACLStrings
 from boto.s3.acl import Policy
+from boto.compat23 import ensure_bytes
 
 
 HEADER_PREFIX_KEY = 'header_prefix'
@@ -272,11 +273,7 @@ class Provider(object):
                            self._credential_expiry_time - datetime.now(), expires_at)
 
     def _convert_key_to_str(self, key):
-        if isinstance(key, unicode):
-            # the secret key must be bytes and not unicode to work
-            #  properly with hmac.new (see http://bugs.python.org/issue5285)
-            return str(key)
-        return key
+        return ensure_bytes(key)
 
     def configure_headers(self):
         header_info_map = self.HeaderInfoMap[self.name]

@@ -32,7 +32,7 @@ import re
 import sys
 import logging
 import logging.config
-import urlparse
+from boto.compat23 import urlparse
 from boto.exception import InvalidUriError
 
 __version__ = '2.6.0-dev'
@@ -449,7 +449,7 @@ def connect_ec2_endpoint(url, aws_access_key_id=None,
     """
     from boto.ec2.regioninfo import RegionInfo
 
-    purl = urlparse.urlparse(url)
+    purl = urlparse(url)
     kwargs['port'] = purl.port
     kwargs['host'] = purl.hostname
     kwargs['path'] = purl.path
@@ -673,7 +673,7 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     The last example uses the default scheme ('file', unless overridden)
     """
 
-    # Manually parse URI components instead of using urlparse.urlparse because
+    # Manually parse URI components instead of using urlparse because
     # what we're calling URIs don't really fit the standard syntax for URIs
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')
