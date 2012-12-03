@@ -29,6 +29,8 @@ from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 
+from boto.rds.tag import TagList
+
 
 def regions():
     """
@@ -1192,3 +1194,62 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
+
+    # Tag methods
+
+    @staticmethod
+    def build_tag_param_list(params, tags):
+        keys = sorted(tags.keys())
+        i = 1
+        for key in keys:
+            value = tags[key]
+            params['Tags.member.%d.Key' % (i,)] = key
+            if value is not None:
+                params['Tags.member.%d.Value' % (i,)] = value
+            i += 1
+
+    def add_tags_to_resource(self, resource_name, tags):
+        """
+        Create new metadata tags for the specified resource name.
+
+        :type resource_name: string
+        :param resource_name: Name of the resource to add tags to
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs.
+                     If you want to create only a tag name, the
+                     value for that tag should be the empty string
+                     (e.g. '').
+
+        """
+        params = {'ResourceName': resource_name}
+        self.build_tag_param_list(params, tags)
+        return self.get_status('AddTagsToResource', params, verb='POST')
+
+    def list_tags_for_resource(self, resource_name):
+        """
+        Retrieve all the metadata tags associated with a resource.
+
+        :type resource_name: string
+        :param resource_name: The name of the resource to get the tags for.
+
+        :rtype: dict
+        :return: A dictionary containing metadata tags
+        """
+        params = {'ResourceName': resource_name}
+        return self.get_object('ListTagsForResource', params,
+                               TagList, verb='POST')
+
+    def remove_tags_from_resource(self, resource_name, tags):
+        """
+        Delete metadata tags for the specified resource ids.
+
+        :type resource_name: string
+        :param resource_name: The name of the resource to remove tags from.
+
+        :type tags: dict or list
+        :param tags: A list containing just tag names.
+        """
+        params = {'ResourceName': resource_name}
+        self.build_list_params(params, tags, 'TagKeys.member')
+        return self.get_status('RemoveTagsFromResource', params, verb='POST')
