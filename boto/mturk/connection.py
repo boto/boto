@@ -50,6 +50,7 @@ class MTurkConnection(AWSQueryConnection):
                 host = 'mechanicalturk.sandbox.amazonaws.com'
             else:
                 host = 'mechanicalturk.amazonaws.com'
+        self.debug = debug
 
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
@@ -102,14 +103,14 @@ class MTurkConnection(AWSQueryConnection):
         Performs a SetHITTypeNotification operation to set email
         notification for a specified HIT type
         """
-        return self._set_notification(hit_type, 'Email', email, event_types)
+        return self._set_notification(hit_type, 'Email', email, 'SetHITTypeNotification', event_types)
     
     def set_rest_notification(self, hit_type, url, event_types=None):
         """
         Performs a SetHITTypeNotification operation to set REST notification
         for a specified HIT type
         """
-        return self._set_notification(hit_type, 'REST', url, event_types)
+        return self._set_notification(hit_type, 'REST', url, 'SetHITTypeNotification', event_types)
 
     def set_sqs_notification(self, hit_type, queue_url, event_types=None):
         """
@@ -118,15 +119,20 @@ class MTurkConnection(AWSQueryConnection):
         https://queue.amazonaws.com/<CUSTOMER_ID>/<QUEUE_NAME> and can be
         found when looking at the details for a Queue in the AWS Console"
         """
-        return self._set_notification(hit_type, "SQS", queue_url, event_types)
+        return self._set_notification(hit_type, "SQS", queue_url, 'SetHITTypeNotification', event_types)
  
-    def _set_notification(self, hit_type, transport, destination, event_types=None):
+    def send_test_event_notification(self, hit_type, url, event_types=None, test_event_type='Ping'):
         """
-        Common SetHITTypeNotification operation to set notification for a
+        Performs a SendTestEventNotification operation with REST notification
+        for a specified HIT type
+        """
+        return self._set_notification(hit_type, 'REST', url, 'SendTestEventNotification', event_types, test_event_type)
+        
+    def _set_notification(self, hit_type, transport, destination, request_type, event_types=None, test_event_type=None):
+        """
+        Common operation to set notification or send a test event notification for a
         specified HIT type
         """
-        assert isinstance(hit_type, str), "hit_type argument should be a string."
-        
         params = {'HITTypeId': hit_type}
         
         # from the Developer Guide:
@@ -152,45 +158,55 @@ class MTurkConnection(AWSQueryConnection):
         # Update main params dict
         params.update(notification_rest_params)
         
+        # If test notification, specify the notification type to be tested
+        if test_event_type:
+            params.update({'TestEventType': test_event_type})
+        
         # Execute operation
-        return self._process_request('SetHITTypeNotification', params)
+        return self._process_request(request_type, params)
     
-    def create_hit(self, hit_type=None, question=None,
+    def create_hit(self, hit_type=None, question=None, hit_layout=None,
                    lifetime=datetime.timedelta(days=7),
                    max_assignments=1, 
                    title=None, description=None, keywords=None,
                    reward=None, duration=datetime.timedelta(days=7),
                    approval_delay=None, annotation=None,
                    questions=None, qualifications=None,
-                   response_groups=None):
+                   layout_params=None, response_groups=None):
         """
         Creates a new HIT.
         Returns a ResultSet
-        See: http://docs.amazonwebservices.com/AWSMechanicalTurkRequester/2006-10-31/ApiReference_CreateHITOperation.html
+        See: http://docs.amazonwebservices.com/AWSMechTurk/2012-03-25/AWSMturkAPI/ApiReference_CreateHITOperation.html
         """
         
-        # handle single or multiple questions
-        neither = question is None and questions is None
-        both = question is not None and questions is not None
-        if neither or both:
-            raise ValueError("Must specify either question (single Question instance) or questions (list or QuestionForm instance), but not both")
-
-        if question:
-            questions = [question]
-        question_param = QuestionForm(questions)
-        if isinstance(question, QuestionForm):
-            question_param = question
-        elif isinstance(question, ExternalQuestion):
-            question_param = question
-        elif isinstance(question, HTMLQuestion):
-            question_param = question
-        
         # Handle basic required arguments and set up params dict
-        params = {'Question': question_param.get_as_xml(),
-                  'LifetimeInSeconds':
+        params = {'LifetimeInSeconds':
                       self.duration_as_seconds(lifetime),
                   'MaxAssignments': max_assignments,
-                  }
+                 }
+
+        # handle single or multiple questions or layouts
+        neither = question is None and questions is None
+        if hit_layout is None:
+            both = question is not None and questions is not None
+            if neither or both:
+                raise ValueError("Must specify question (single Question instance) or questions (list or QuestionForm instance), but not both")
+            if question:
+                questions = [question]
+            question_param = QuestionForm(questions)
+            if isinstance(question, QuestionForm):
+                question_param = question
+            elif isinstance(question, ExternalQuestion):
+                question_param = question
+            elif isinstance(question, HTMLQuestion):
+                question_param = question
+            params['Question'] = question_param.get_as_xml()
+        else:
+            if not neither:
+                raise ValueError("Must not specify question (single Question instance) or questions (list or QuestionForm instance) when specifying hit_layout")
+            params['HITLayoutId'] = hit_layout
+            if layout_params:
+                params.update(layout_params.get_as_params())
 
         # if hit type specified then add it
         # else add the additional required parameters
@@ -316,6 +332,33 @@ class MTurkConnection(AWSQueryConnection):
                 
 
         return self._process_request('SearchHITs', params, [('HIT', HIT),])
+
+    def get_assignment(self, assignment_id, response_groups=None):
+        """
+        Retrieves an assignment using the assignment's ID. Requesters can only
+        retrieve their own assignments, and only assignments whose related HIT 
+        has not been disposed.
+
+        The returned ResultSet will have the following attributes:
+
+        Request
+                This element is present only if the Request ResponseGroup is specified.
+        Assignment
+                The assignment. The response includes one Assignment object.
+        HIT
+                The HIT associated with this assignment. The response includes one HIT object.
+
+        """
+
+        params = {'AssignmentId' : assignment_id}
+
+        # Handle optional response groups argument
+        if response_groups:
+            self.build_list_params(params, response_groups, 'ResponseGroup')
+
+        return self._process_request('GetAssignment', params,
+                                     [('Assignment', Assignment),
+                                      ('HIT', HIT),])
 
     def get_assignments(self, hit_id, status=None,
                             sort_by='SubmitTime', sort_direction='Ascending', 
@@ -767,7 +810,8 @@ class MTurkConnection(AWSQueryConnection):
         Helper to process the xml response from AWS
         """
         body = response.read()
-        #print body
+        if self.debug == 2:
+            print body
         if '<Errors>' not in body:
             rs = ResultSet(marker_elems)
             h = handler.XmlHandler(rs, self)
@@ -887,12 +931,22 @@ class QualificationRequest(BaseAutoResultElement):
     
     Will have attributes named as per the Developer Guide, 
     e.g. QualificationRequestId, QualificationTypeId, SubjectId, etc
-
-    TODO: Ensure that Test and Answer attribute are treated properly if the
-          qualification requires a test. These attributes are XML-encoded.
     """
     
-    pass
+    def __init__(self, connection):
+        BaseAutoResultElement.__init__(self, connection)
+        self.answers = []
+
+    def endElement(self, name, value, connection):
+        # the answer consists of embedded XML, so it needs to be parsed independantly
+        if name == 'Answer':
+            answer_rs = ResultSet([('Answer', QuestionFormAnswer),])
+            h = handler.XmlHandler(answer_rs, connection)
+            value = connection.get_utf8_value(value)
+            xml.sax.parseString(value, h)
+            self.answers.append(answer_rs)
+        else:
+            BaseAutoResultElement.endElement(self, name, value, connection)
 
 class Assignment(BaseAutoResultElement):
     """
@@ -922,7 +976,7 @@ class QuestionFormAnswer(BaseAutoResultElement):
     """
     Class to extract Answers from inside the embedded XML
     QuestionFormAnswers element inside the Answer element which is
-    part of the Assignment structure
+    part of the Assignment and QualificationRequest structures
 
     A QuestionFormAnswers element contains an Answer element for each
     question in the HIT or Qualification test for which the Worker
