@@ -61,3 +61,13 @@ class TestSigV4Handler(unittest.TestCase):
         request.params['Foo.10'] = 'zzz'
         query_string = auth.canonical_query_string(request)
         self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
+
+    def test_region_and_service_can_be_overriden(self):
+        auth = HmacAuthV4Handler('queue.amazonaws.com',
+                                 Mock(), self.provider)
+        self.request.headers['X-Amz-Date'] = '20121121000000'
+
+        auth.region_name = 'us-west-2'
+        auth.service_name = 'sqs'
+        scope = auth.credential_scope(self.request)
+        self.assertEqual(scope, '20121121/us-west-2/sqs/aws4_request')
