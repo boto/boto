@@ -279,6 +279,7 @@ class Key(object):
             Possible values are:
             * STANDARD
             * REDUCED_REDUNDANCY
+            * GLACIER
 
         :type dst_bucket: string
         :param dst_bucket: The name of a destination bucket.  If not
@@ -296,6 +297,10 @@ class Key(object):
             return self.copy(self.bucket.name, self.name,
                              reduced_redundancy=True, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
+        elif new_storage_class == 'GLACIER':
+            return self.copy(self.bucket.name, self.name,
+                             reduced_redundancy=False, preserve_acl=True,
+                             validate_dst_bucket=validate_dst_bucket)                             
         else:
             raise BotoClientError('Invalid storage class: %s' %
                                   new_storage_class)
