@@ -1015,7 +1015,8 @@ class RDSConnection(AWSQueryConnection):
                                            instance_class, port=None,
                                            availability_zone=None,
                                            multi_az=None,
-                                           auto_minor_version_upgrade=None):
+                                           auto_minor_version_upgrade=None,
+                                           db_subnet_group_name=None):
         """
         Create a new DBInstance from a DB snapshot.
 
@@ -1052,6 +1053,11 @@ class RDSConnection(AWSQueryConnection):
                                            during the maintenance window.
                                            Default is the API default.
 
+        :type db_subnet_group_name: str
+        :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
+                                     If there is no DB Subnet Group, then it is a non-VPC DB
+                                     instance.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """
@@ -1066,6 +1072,8 @@ class RDSConnection(AWSQueryConnection):
             params['MultiAZ'] = str(multi_az).lower()
         if auto_minor_version_upgrade is not None:
             params['AutoMinorVersionUpgrade'] = str(auto_minor_version_upgrade).lower()
+        if db_subnet_group_name is not None:
+            params['DBSubnetGroupName'] = db_subnet_group_name
         return self.get_object('RestoreDBInstanceFromDBSnapshot',
                                params, DBInstance)
 
