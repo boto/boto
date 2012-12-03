@@ -284,8 +284,6 @@ class S3Connection(AWSAuthConnection):
             fields.append({"name": "success_action_redirect", "value": success_action_redirect})
         if max_content_length:
             conditions.append('["content-length-range", 0, %i]' % max_content_length)
-            fields.append({"name": 'content-length-range',
-                           "value": "0,%i" % max_content_length})
 
         if self.provider.security_token:
             fields.append({'name': 'x-amz-security-token',
