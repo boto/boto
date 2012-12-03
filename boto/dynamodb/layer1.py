@@ -75,6 +75,9 @@ class Layer1(AWSAuthConnection):
 
     ResponseError = DynamoDBResponseError
 
+    NumberRetries = 10
+    """The number of times an error is retried."""
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
@@ -118,7 +121,7 @@ class Layer1(AWSAuthConnection):
                                                     {}, headers, body, None)
         start = time.time()
         response = self._mexe(http_request, sender=None,
-                              override_num_retries=10,
+                              override_num_retries=self.NumberRetries,
                               retry_handler=self._retry_handler)
         elapsed = (time.time() - start) * 1000
         request_id = response.getheader('x-amzn-RequestId')
