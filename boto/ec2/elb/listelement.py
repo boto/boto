@@ -14,15 +14,16 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class ListElement(list):
     """
-    A :py:class:`list` subclass that has some additional methods for interacting
-    with Amazon's XML API.
+    A :py:class:`list` subclass that has some additional methods
+    for interacting with Amazon's XML API.
     """
 
     def startElement(self, name, attrs, connection):
@@ -31,5 +32,3 @@ class ListElement(list):
     def endElement(self, name, value, connection):
         if name == 'member':
             self.append(value)
-    
-    
