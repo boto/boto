@@ -303,9 +303,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     capability = ['hmac-v4']
 
-    def __init__(self, host, config, provider):
+    def __init__(self, host, config, provider,
+                 service_name=None, region_name=None):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
+        # You can set the service_name and region_name to override the
+        # values which would otherwise come from the endpoint, e.g.
+        # <service>.<region>.amazonaws.com.
+        self.service_name = service_name
+        self.region_name = region_name
 
     def _sign(self, key, msg, hex=False):
         if hex:
@@ -399,13 +405,26 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         scope = []
         http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
         scope.append(http_request.timestamp)
+        # The service_name and region_name either come from:
+        # * The service_name/region_name attrs or (if these values are None)
+        # * parsed from the endpoint <service>.<region>.amazonaws.com.
         parts = http_request.host.split('.')
-        if len(parts) == 3:
-            http_request.region_name = 'us-east-1'
+        if self.region_name is not None:
+            region_name = self.region_name
         else:
-            http_request.region_name = parts[1]
+            if len(parts) == 3:
+                region_name = 'us-east-1'
+            else:
+                region_name = parts[1]
+        if self.service_name is not None:
+            service_name = self.service_name
+        else:
+            service_name = parts[0]
+
+        http_request.service_name = service_name
+        http_request.region_name = region_name
+
         scope.append(http_request.region_name)
-        http_request.service_name = parts[0]
         scope.append(http_request.service_name)
         scope.append('aws4_request')
         return '/'.join(scope)
