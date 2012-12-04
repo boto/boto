@@ -2792,22 +2792,20 @@ class EC2Connection(AWSQueryConnection):
     def get_all_reserved_instances(self, reserved_instances_id=None,
                                    filters=None):
         """
-        Describes Reserved Instance offerings that are available for purchase.
+        Describes one or more of the Reserved Instances that you purchased.
 
         :type reserved_instance_ids: list
         :param reserved_instance_ids: A list of the reserved instance ids that
-                                      will be returned. If not provided, all
-                                      reserved instances will be returned.
+            will be returned. If not provided, all reserved instances
+            will be returned.
 
         :type filters: dict
-        :param filters: Optional filters that can be used to limit
-                        the results returned.  Filters are provided
-                        in the form of a dictionary consisting of
-                        filter names as the key and filter values
-                        as the value.  The set of allowable filter
-                        names/values is dependent on the request
-                        being performed.  Check the EC2 API guide
-                        for details.
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
@@ -2832,16 +2830,16 @@ class EC2Connection(AWSQueryConnection):
 
         :type reserved_instances_offering_id: string
         :param reserved_instances_offering_id: The offering ID of the Reserved
-                                               Instance to purchase
+            Instance to purchase
 
         :type instance_count: int
         :param instance_count: The number of Reserved Instances to purchase.
-                               Default value is 1.
+            Default value is 1.
 
         :type limit_price: tuple
         :param instance_count: Limit the price on the total order.
-                               Must be a tuple of (amount, currency_code), for example:
-                                   (100.0, 'USD').
+            Must be a tuple of (amount, currency_code), for example:
+            (100.0, 'USD').
 
         :rtype: :class:`boto.ec2.reservedinstance.ReservedInstance`
         :return: The newly created Reserved Instance

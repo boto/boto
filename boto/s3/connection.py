@@ -229,8 +229,14 @@ class S3Connection(AWSAuthConnection):
         :param expires_in: Time (in seconds) before this expires, defaults
             to 6000
 
-        :type acl: :class:`boto.s3.acl.ACL`
-        :param acl: ACL rule to use, if any
+        :type acl: string
+        :param acl: A canned ACL.  One of:
+            * private
+            * public-read
+            * public-read-write
+            * authenticated-read
+            * bucket-owner-read
+            * bucket-owner-full-control
 
         :type success_action_redirect: string
         :param success_action_redirect: URL to redirect to on success
@@ -278,8 +284,6 @@ class S3Connection(AWSAuthConnection):
             fields.append({"name": "success_action_redirect", "value": success_action_redirect})
         if max_content_length:
             conditions.append('["content-length-range", 0, %i]' % max_content_length)
-            fields.append({"name": 'content-length-range',
-                           "value": "0,%i" % max_content_length})
 
         if self.provider.security_token:
             fields.append({'name': 'x-amz-security-token',

@@ -37,6 +37,7 @@ class SQSConnection(AWSQueryConnection):
     APIVersion = '2012-11-05'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
+    AuthServiceName = 'sqs'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -56,9 +57,10 @@ class SQSConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token=security_token,
                                     validate_certs=validate_certs)
+        self.auth_region_name = self.region.name
 
     def _required_auth_capability(self):
-        return ['sqs']
+        return ['hmac-v4']
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """
