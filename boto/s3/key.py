@@ -42,6 +42,33 @@ except ImportError:
 
 
 class Key(object):
+    """
+    Represents a key (object) in an S3 bucket.
+
+    :ivar bucket: The parent :class:`boto.s3.bucket.Bucket`.
+    :ivar name: The name of this Key object.
+    :ivar metadata: A dictionary containing user metadata that you
+        wish to store with the object or that has been retrieved from
+        an existing object.
+    :ivar cache_control: The value of the `Cache-Control` HTTP header.
+    :ivar content_type: The value of the `Content-Type` HTTP header.
+    :ivar content_encoding: The value of the `Content-Encoding` HTTP header.
+    :ivar content_disposition: The value of the `Content-Disposition` HTTP
+        header.
+    :ivar content_language: The value of the `Content-Language` HTTP header.
+    :ivar etag: The `etag` associated with this object.
+    :ivar last_modified: The string timestamp representing the last
+        time this object was modified in S3.
+    :ivar owner: The ID of the owner of this object.
+    :ivar storage_class: The storage class of the object.  Currently, one of:
+        STANDARD | REDUCED_REDUNDANCY | GLACIER
+    :ivar md5: The MD5 hash of the contents of the object.
+    :ivar size: The size, in bytes, of the object.
+    :ivar version_id: The version ID of this object, if it is a versioned
+        object.
+    :ivar encrypted: Whether the object is encrypted while at rest on
+        the server.
+    """
 
     DefaultContentType = 'application/octet-stream'
 
