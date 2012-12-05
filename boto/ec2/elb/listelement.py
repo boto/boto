@@ -28,10 +28,6 @@ class ListElement(list):
     for interacting with Amazon's XML API.
     """
 
-    def __init__(self, parent=None):
-        self.parent = parent
-        list.__init__(self)
-
     def startElement(self, name, attrs, connection):
         pass
 

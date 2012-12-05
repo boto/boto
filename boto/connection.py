@@ -976,7 +976,7 @@ class AWSQueryConnection(AWSAuthConnection):
     def build_list_params(self, params, items, label):
         # Convert comma- or whitespace-delimited string to array
         if isinstance(items, basestring):
-            items = re.findall('[^,\s]+', items)
+            items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
 
