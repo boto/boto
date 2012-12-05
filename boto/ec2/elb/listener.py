@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,6 +22,7 @@
 # IN THE SOFTWARE.
 
 from boto.ec2.elb.listelement import ListElement
+
 
 class Listener(object):
     """
@@ -70,7 +73,3 @@ class Listener(object):
         if key == 2:
             return self.protocol
         raise KeyError
-
-
-
-

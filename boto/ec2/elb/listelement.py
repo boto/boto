@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -25,6 +27,10 @@ class ListElement(list):
     A :py:class:`list` subclass that has some additional methods
     for interacting with Amazon's XML API.
     """
+
+    def __init__(self, parent=None):
+        self.parent = parent
+        list.__init__(self)
 
     def startElement(self, name, attrs, connection):
         pass
