@@ -78,6 +78,9 @@ class Vault(object):
         :type file: str
         :param file: A filename to upload
 
+        :type description: str
+        :param description: An optional description for the archive.
+
         :rtype: str
         :return: The archive id of the newly created archive
         """
@@ -89,8 +92,12 @@ class Vault(object):
         """
         Adds an archive to a vault in a single operation. It's recommended for
         archives less than 100MB
+
         :type file: str
         :param file: A filename to upload
+
+        :type description: str
+        :param description: A description for the archive.
 
         :rtype: str
         :return: The archive id of the newly created archive
