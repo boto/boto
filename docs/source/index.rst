@@ -70,6 +70,10 @@ Currently Supported Services
 
   * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
 
+* **Other**
+
+  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
+
 Additional Resources
 --------------------
 
@@ -107,6 +111,7 @@ Additional Resources
    ref/rds
    ref/cloudformation
    ref/iam
+   ref/mws
    sqs_tut
    ref/sqs
    ref/sns
