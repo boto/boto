@@ -70,7 +70,7 @@ class Vault(object):
         """
         self.layer1.delete_vault(self.name)
 
-    def upload_archive(self, filename):
+    def upload_archive(self, filename, description=None):
         """
         Adds an archive to a vault. For archives greater than 100MB the
         multipart upload will be used.
@@ -82,10 +82,10 @@ class Vault(object):
         :return: The archive id of the newly created archive
         """
         if os.path.getsize(filename) > self.SingleOperationThreshold:
-            return self.create_archive_from_file(filename)
-        return self._upload_archive_single_operation(filename)
+            return self.create_archive_from_file(filename, description=description)
+        return self._upload_archive_single_operation(filename, description)
 
-    def _upload_archive_single_operation(self, filename):
+    def _upload_archive_single_operation(self, filename, description):
         """
         Adds an archive to a vault in a single operation. It's recommended for
         archives less than 100MB
@@ -99,7 +99,8 @@ class Vault(object):
             linear_hash, tree_hash = compute_hashes_from_fileobj(fileobj)
             fileobj.seek(0)
             response = self.layer1.upload_archive(self.name, fileobj,
-                                                  linear_hash, tree_hash)
+                                                  linear_hash, tree_hash,
+                                                  description)
         return response['ArchiveId']
 
     def create_archive_writer(self, part_size=DefaultPartSize,
