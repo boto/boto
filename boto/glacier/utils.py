@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import hashlib
 import math
 
 
@@ -46,3 +47,68 @@ def minimum_part_size(size_in_bytes):
     else:
         part_size = DEFAULT_PART_SIZE
     return part_size
+
+
+def chunk_hashes(bytestring, chunk_size=_MEGABYTE):
+    chunk_count = int(math.ceil(len(bytestring) / float(chunk_size)))
+    hashes = []
+    for i in xrange(chunk_count):
+        start = i * chunk_size
+        end = (i + 1) * chunk_size
+        hashes.append(hashlib.sha256(bytestring[start:end]).digest())
+    return hashes
+
+
+def tree_hash(fo):
+    """
+    Given a hash of each 1MB chunk (from chunk_hashes) this will hash
+    together adjacent hashes until it ends up with one big one. So a
+    tree of hashes.
+    """
+    hashes = []
+    hashes.extend(fo)
+    while len(hashes) > 1:
+        new_hashes = []
+        while True:
+            if len(hashes) > 1:
+                first = hashes.pop(0)
+                second = hashes.pop(0)
+                new_hashes.append(hashlib.sha256(first + second).digest())
+            elif len(hashes) == 1:
+                only = hashes.pop(0)
+                new_hashes.append(only)
+            else:
+                break
+        hashes.extend(new_hashes)
+    return hashes[0]
+
+
+def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
+    """Compute the linear and tree hash from a fileobj.
+
+    This function will compute the linear/tree hash of a fileobj
+    in a single pass through the fileobj.
+
+    :param fileobj: A file like object.
+
+    :param chunk_size: The size of the chunks to use for the tree
+        hash.  This is also the buffer size used to read from
+        `fileobj`.
+
+    :rtype: tuple
+    :return: A tuple of (linear_hash, tree_hash).  Both hashes
+        are returned in hex.
+
+    """
+    linear_hash = hashlib.sha256()
+    chunks = []
+    chunk = fileobj.read(chunk_size)
+    while chunk:
+        linear_hash.update(chunk)
+        chunks.append(hashlib.sha256(chunk).digest())
+        chunk = fileobj.read(chunk_size)
+    return linear_hash.hexdigest(), bytes_to_hex(tree_hash(chunks))
+
+
+def bytes_to_hex(str_as_bytes):
+    return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
