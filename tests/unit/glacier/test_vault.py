@@ -53,6 +53,16 @@ class TestVault(unittest.TestCase):
         api.upload_archive.assert_called_with('myvault', m.return_value, ANY,
                                               ANY, 'my description')
 
+    def test_concurrent_upload_file(self):
+        v = vault.Vault(None, None)
+        with mock.patch('boto.glacier.vault.ConcurrentUploader') as c:
+            c.return_value.upload.return_value = 'archive_id'
+            archive_id = v.concurrent_create_archive_from_file(
+                'filename', 'my description')
+            c.return_value.upload.assert_called_with('filename',
+                                                     'my description')
+        self.assertEqual(archive_id, 'archive_id')
+
 
 if __name__ == '__main__':
     unittest.main()

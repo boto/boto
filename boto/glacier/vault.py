@@ -236,7 +236,7 @@ class Vault(object):
         return resume_file_upload(
             self, upload_id, part_size, file_obj, part_hash_map)
 
-    def concurrent_create_archive_from_file(self, filename):
+    def concurrent_create_archive_from_file(self, filename, description):
         """
         Create a new archive from a file and upload the given
         file.
@@ -257,7 +257,7 @@ class Vault(object):
 
         """
         uploader = ConcurrentUploader(self.layer1, self.name)
-        archive_id = uploader.upload(filename)
+        archive_id = uploader.upload(filename, description)
         return archive_id
 
     def retrieve_archive(self, archive_id, sns_topic=None,
