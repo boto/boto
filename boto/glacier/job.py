@@ -25,7 +25,7 @@ import math
 import socket
 
 from .exceptions import TreeHashDoesNotMatchError, DownloadArchiveError
-from .writer import bytes_to_hex, chunk_hashes, tree_hash
+from .utils import bytes_to_hex, chunk_hashes, tree_hash
 
 
 class Job(object):

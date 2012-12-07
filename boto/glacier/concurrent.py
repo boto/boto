@@ -28,8 +28,8 @@ import logging
 from Queue import Queue, Empty
 import binascii
 
-from .writer import chunk_hashes, tree_hash, bytes_to_hex
-from .utils import DEFAULT_PART_SIZE, minimum_part_size
+from .utils import DEFAULT_PART_SIZE, minimum_part_size, chunk_hashes, \
+        tree_hash, bytes_to_hex
 from .exceptions import UploadArchiveError, DownloadArchiveError, \
         TreeHashDoesNotMatchError
 

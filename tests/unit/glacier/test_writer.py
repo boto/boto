@@ -1,3 +1,24 @@
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, dis-
+# tribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the fol-
+# lowing conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
+# ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+#
 from hashlib import sha256
 import itertools
 from StringIO import StringIO
@@ -13,33 +34,8 @@ from nose.tools import assert_equal
 
 from boto.glacier.layer1 import Layer1
 from boto.glacier.vault import Vault
-from boto.glacier.writer import (
-    bytes_to_hex,
-    chunk_hashes,
-    resume_file_upload,
-    tree_hash,
-    Writer,
-)
-
-
-class TestChunking(unittest.TestCase):
-    def test_chunk_hashes_exact(self):
-        chunks = chunk_hashes('a' * (2 * 1024 * 1024))
-        self.assertEqual(len(chunks), 2)
-        self.assertEqual(chunks[0], sha256('a' * 1024 * 1024).digest())
-
-    def test_chunks_with_leftovers(self):
-        bytestring = 'a' * (2 * 1024 * 1024 + 20)
-        chunks = chunk_hashes(bytestring)
-        self.assertEqual(len(chunks), 3)
-        self.assertEqual(chunks[0], sha256('a' * 1024 * 1024).digest())
-        self.assertEqual(chunks[1], sha256('a' * 1024 * 1024).digest())
-        self.assertEqual(chunks[2], sha256('a' * 20).digest())
-
-    def test_less_than_one_chunk(self):
-        chunks = chunk_hashes('aaaa')
-        self.assertEqual(len(chunks), 1)
-        self.assertEqual(chunks[0], sha256('aaaa').digest())
+from boto.glacier.writer import Writer, resume_file_upload
+from boto.glacier.utils import bytes_to_hex, chunk_hashes, tree_hash
 
 
 def create_mock_vault():
