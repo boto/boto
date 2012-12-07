@@ -45,3 +45,11 @@ class DynamoDBValidationError(DynamoDBResponseError):
     has exceeded the 64Kb size limit.
     """
     pass
+
+
+class DynamoDBThroughputExceededError(BotoServerError):
+    """
+    Raised when a ProvisionedThroughputExceededException response is receive.
+    This happens after retries have been exceeded.
+    """
+    pass

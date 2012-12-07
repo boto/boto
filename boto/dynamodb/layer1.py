@@ -25,7 +25,7 @@ from binascii import crc32
 
 import boto
 from boto.connection import AWSAuthConnection
-from boto.exception import DynamoDBResponseError
+from boto.exception import DynamoDBResponseError, BotoServerError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 from boto.compat import json
@@ -122,7 +122,8 @@ class Layer1(AWSAuthConnection):
         start = time.time()
         response = self._mexe(http_request, sender=None,
                               override_num_retries=self.NumberRetries,
-                              retry_handler=self._retry_handler)
+                              retry_handler=self._retry_handler,
+                              retry_exhausted_handler=self._retry_exhausted_handler)
         elapsed = (time.time() - start) * 1000
         request_id = response.getheader('x-amzn-RequestId')
         boto.log.debug('RequestId: %s' % request_id)
@@ -168,6 +169,16 @@ class Layer1(AWSAuthConnection):
                        "checksum %s" % (actual_crc32, expected_crc32))
                 status = (msg, i + 1, self._exponential_time(i))
         return status
+
+    def _retry_exhausted_handler(self, response):
+        if response.status == 400:
+            response_body = response.read()
+            boto.log.debug(response_body)
+            data = json.loads(response_body)
+            if self.ThruputError in data.get('__type'):
+                raise dynamodb_exceptions.DynamoDBThroughputExceededError(response.status, response.reason, data)
+            else:
+                raise BotoServerError(response.status, response.reason, data)
 
     def _exponential_time(self, i):
         if i == 0:
