@@ -280,6 +280,9 @@ def unreject_assignments(message, assignments):
         con.approve_rejected_assignment(a, message)
         if interactive: print 'Unrejected', a
 
+def notify_workers(subject, text, workers):
+    con.notify_workers(workers, subject, text)
+
 # --------------------------------------------------
 # Mainline code
 # --------------------------------------------------
@@ -303,7 +306,7 @@ if __name__ == '__main__':
         [get_hitid(args.hit)])
 
     sub = subs.add_parser('hits',
-        help = 'list all your HITS')
+        help = 'list all your HITs')
     sub.set_defaults(f = list_hits, a = lambda: [])
 
     sub = subs.add_parser('new',
@@ -378,7 +381,7 @@ if __name__ == '__main__':
             [args.message, args.assignment])
 
     sub = subs.add_parser('bonus',
-        help = 'give a worker a bonus')
+        help = 'give some workers a bonus')
     sub.add_argument('amount', type = float,
         help = 'bonus amount, in USD')
     sub.add_argument('message',
@@ -388,6 +391,17 @@ if __name__ == '__main__':
     sub.set_defaults(f = grant_bonus, a = lambda:
         [args.message, args.amount,
             [p.split(',') for p in args.widaid]])
+
+    sub = subs.add_parser('notify',
+        help = 'send a message to some workers')
+    sub.add_argument('subject',
+        help = 'subject of the message')
+    sub.add_argument('message',
+        help = 'text of the message')
+    sub.add_argument('worker', nargs = '+',
+        help = 'ID of a worker')
+    sub.set_defaults(f = notify_workers, a = lambda:
+        [args.subject, args.message, args.worker])
 
     args = parser.parse_args()
 
