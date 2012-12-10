@@ -85,6 +85,14 @@ class SQSAuthParams(AWSMockServiceTestCase):
         self.assertIn('us-west-2/sqs/aws4_request',
                       self.actual_request.headers['Authorization'])
 
+    def test_set_get_auth_service_and_region_names(self):
+        self.service_connection.auth_service_name = 'service_name'
+        self.service_connection.auth_region_name = 'region_name'
+
+        self.assertEqual(self.service_connection.auth_service_name,
+                         'service_name')
+        self.assertEqual(self.service_connection.auth_region_name, 'region_name')
+
 
 if __name__ == '__main__':
     unittest.main()

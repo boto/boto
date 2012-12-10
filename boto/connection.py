@@ -570,7 +570,7 @@ class AWSAuthConnection(object):
 
     def _set_auth_region_name(self, value):
         self._auth_handler.region_name = value
-    auth_region_name = property(_get_auth_service_name, _set_auth_region_name)
+    auth_region_name = property(_get_auth_region_name, _set_auth_region_name)
 
     def connection(self):
         return self.get_http_connection(*self._connection)
