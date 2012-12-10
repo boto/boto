@@ -91,18 +91,18 @@ def connect(region, debug_level=0, access_key=None, secret_key=None):
 
 
 def list_vaults(region, access_key=None, secret_key=None):
-    layer2 = connect(region, access_key, secret_key)
+    layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     for vault in layer2.list_vaults():
         print vault.arn
 
 
 def list_jobs(vault_name, region, access_key=None, secret_key=None):
-    layer2 = connect(region, access_key, secret_key)
+    layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     print layer2.layer1.list_jobs(vault_name)
 
 
 def upload_files(vault_name, filenames, region, access_key=None, secret_key=None):
-    layer2 = connect(region, access_key, secret_key)
+    layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     layer2.create_vault(vault_name)
     glacier_vault = layer2.get_vault(vault_name)
     for filename in filenames:
