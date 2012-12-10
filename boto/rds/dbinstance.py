@@ -67,6 +67,9 @@ class DBInstance(object):
     :ivar pending_modified_values: Specifies that changes to the
         DB Instance are pending. This element is only included when changes
         are pending. Specific changes are identified by subelements.
+    :ivar arn: The Amazon Resource Name for this DBInstance. Retrieved by
+        querying IAM for the account-id of the current connection.
+    :ivar tags: A dict with tags associated with this DBInstance.
     """
 
     def __init__(self, connection=None, id=None):
@@ -92,6 +95,8 @@ class DBInstance(object):
         self._in_endpoint = False
         self._port = None
         self._address = None
+        self._arn = None
+        self._tags = None
 
     def __repr__(self):
         return 'DBInstance:%s' % self.id
@@ -330,6 +335,104 @@ class DBInstance(object):
                                                  multi_az,
                                                  apply_immediately,
                                                  iops)
+
+    @property
+    def arn(self):
+
+        # Current RDS-API does not supply the ARN (Amazon Resource Name) for
+        # database instances. However, new functionality like tags for RDS
+        # resources, works with ARN's. This getter for DBInstance.arn gets
+        # the account-id from IAM, and creates an ARN for this DBInstance. If
+        # the Amazon-API does supply the ARN in the future, this code should
+        # be compatible (and could be removed, after renaming DBInstance._arn
+        # to DBInstance.arn
+
+        if self._arn is None:
+            import boto
+            iam = boto.connect_iam(
+                    self.connection.aws_access_key_id,
+                    self.connection.aws_secret_access_key)
+            if iam:
+                user = iam.get_user()
+                if user:
+                    account_id = user.arn.split(':')[4]
+                    self.arn = ('arn:aws:rds:%s:%s:db:%s' %
+                            (self.connection.region.name, account_id, self.id))
+
+        return self._arn
+
+    @arn.setter
+    def arn(self, value):
+        self._arn = value
+
+    @property
+    def tags(self):
+
+        if self._tags is None:
+            mytags = {}
+            tag_rs = self.connection.get_dbinstance_tags(self)
+
+            # Translate the boto.ResultSet to a dict
+            #
+            for tag in tag_rs:
+                mytags[tag.name] = tag.value
+
+            self.tags = mytags
+
+        return self._tags
+
+    @tags.setter
+    def tags(self, value):
+        self._tags = value
+
+    def add_tag(self, key, value=''):
+        """
+        Add a tag to this object. The local tag-list (dbinstance.tags) will be
+        updated with the newly created or modified tag, without checking with
+        AWS. You could do that yourself with:
+
+        dbinstance.tags = None
+        tags = dbinstance.tags
+
+        This will query AWS for the current tags and update the local tags.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+                      If you want only the tag name and no value, the
+                      value should be the empty string.
+        """
+        self.connection.create_tags(self, {key: value})
+
+        # What to do: only update local tags with newly added tag, or update
+        # local tags with remote? Since it is uncertain if new tag is already
+        # added (AWS-API is asynchronous), we'll only update our local tags.
+        #
+        self.tags[key] = value
+
+    def remove_tag(self, key):
+        """
+        Remove a tag from this object. The tag will also be removed from the
+        local tag-list (dbinstance.tags), without checking with AWS. You could
+        do that yourself with:
+
+        dbinstance.tags = None
+        tags = dbinstance.tags
+
+        This will query AWS for the current tags and update the local tags.
+
+        Contrary to EC2-tags, RDS does not support removing tags with a key and
+        a matching value.
+
+        :type key: str
+        :param key: The key or name of the tag to remove.
+        """
+        self.connection.delete_tags(self, [key])
+
+        if key in self.tags:
+            del self.tags[key]
 
 
 class PendingModifiedValues(dict):

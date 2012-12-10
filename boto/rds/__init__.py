@@ -28,6 +28,7 @@ from boto.rds.parametergroup import ParameterGroup
 from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
+from boto.rds.tag import RDSTag
 
 
 def regions():
@@ -1192,3 +1193,70 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
+
+    def create_tags(self, dbinstance, tags):
+        """
+        Create new metadata tags for the specified RDS DBInstance.
+
+        At this moment an instance of :class:`boto.rds.dbinstance.DBInstance`
+        must be specified, since the AddTagsToResource API call needs an ARN.
+
+        :type dbinstance: :class:`boto.rds.dbinstance.DBInstance`
+        :param dbinstance: The dbinstance to get the tags for
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs.
+                     If you want to create only a tag name, the
+                     value for that tag should be the empty string
+                     (e.g. '').
+        """
+        assert isinstance(dbinstance, DBInstance)
+
+        params = {'ResourceName': dbinstance.arn}
+
+        for i, (key, value) in enumerate(tags.items()):
+            params['Tags.member.%d.Key'   % (i + 1)] = key
+            params['Tags.member.%d.Value' % (i + 1)] = value
+
+        return self.get_status('AddTagsToResource', params, verb='POST')
+
+    def delete_tags(self, dbinstance, tags):
+        """
+        Delete metadata tags for the specified RDS DBInstance id.
+
+        At this moment an instance of :class:`boto.rds.dbinstance.DBInstance`
+        must be specified, since the AddTagsToResource API call needs an ARN.
+
+        :type dbinstance: :class:`boto.rds.dbinstance.DBInstance`
+        :param dbinstance: The dbinstance to get the tags for
+
+        :type tags: list
+        :param tags: A list containing the names of the tags to delete
+        """
+
+        assert isinstance(dbinstance, DBInstance)
+
+        params = {'ResourceName': dbinstance.arn}
+
+        for i, key in enumerate(tags):
+            params['TagKeys.member.%d' % (i + 1)] = key
+
+        return self.get_status('RemoveTagsFromResource', params, verb='POST')
+
+    def get_dbinstance_tags(self, dbinstance):
+        """
+        Get all metadata tags for the specified RDS DBInstance.
+
+        At this moment an instance of :class:`boto.rds.dbinstance.DBInstance`
+        must be specified, since the ListTagsForResource API call needs an ARN.
+
+        :type dbinstance: :class:`boto.rds.dbinstance.DBInstance`
+        :param dbinstance: The dbinstance to get the tags for
+        """
+        assert isinstance(dbinstance, DBInstance)
+
+        params = {'ResourceName': dbinstance.arn}
+
+        return self.get_list('ListTagsForResource', params,
+                [('Tag', RDSTag)])
+

@@ -25,6 +25,7 @@ from boto.compat import json
 from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
+from boto.iam.user import User
 
 
 ASSUME_ROLE_POLICY_DOCUMENT = json.dumps({
@@ -354,11 +355,14 @@ class IAMConnection(AWSQueryConnection):
         :type user_name: string
         :param user_name: The name of the user to delete.
             If not specified, defaults to user making request.
+
+        :rtype: :class:`boto.iam.user.User`
+        :return: The requested User instance
         """
         params = {}
         if user_name:
             params['UserName'] = user_name
-        return self.get_response('GetUser', params)
+        return self.get_object('GetUser', params, User)
 
     def update_user(self, user_name, new_user_name=None, new_path=None):
         """
