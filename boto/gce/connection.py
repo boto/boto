@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = 'ziyadm@google.com (Ziyad Mir)'
-
 import httplib2
 import os
 import boto
@@ -71,7 +69,8 @@ class GCEConnection():
         self.google_project = 'google'
         self.storage = Storage('creds.dat')
         self.credentials = self.storage.get()
-        self.default_network = "https://www.googleapis.com/compute/{0}/projects/google/networks/default".format(API_VERSION)
+        self.default_network = "https://www.googleapis.com/compute/{0}/projects/
+        google/networks/default".format(API_VERSION)
 
         if self.credentials is None or self.credentials.invalid:
             self.credentials = run(FLOW, self.storage)
@@ -83,7 +82,8 @@ class GCEConnection():
 
     def get_all_images(self):
         """
-        Retrieve all the Google Compute Engine images available to your project.
+        Retrieve all the Google Compute Engine images available to your
+        project.
         """
         list_gce_images = self.service.images().list(
             project=self.google_project).execute(http=self.http)
@@ -331,8 +331,8 @@ class GCEConnection():
         :return: The Google Compute Engine Firewall specified, or None if the
         firewall is not found
         """
-        gce_firewall = self.service.firewalls().get(project=self.google_project,
-                                                    firewall=firewall_name).execute(
-                                                        http=self.http)
+        gce_firewall = self.service.firewalls().get(
+            project=self.google_project, firewall=firewall_name).execute(
+                http=self.http)
 
         return Firewall(gce_firewall)

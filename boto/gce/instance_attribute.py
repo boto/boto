@@ -13,12 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = 'ziyadm@google.com (Ziyad Mir)'
-
 
 class InstanceAttribute():
     """
-    Represents a GCE InstanceAttribute.
+    Represents the value of an attribute from a Google Compute Engine instance.
+    Supported attributes are:
+      * status
+      * kind
+      * machine_type
+      * name
+      * zone
+      * image
+      * disks
+      * self_link
+      * network_interfaces
+      * creation_timestamp
     """
     def __init__(self, instance_attribute_value):
         self.value = instance_attribute_value
