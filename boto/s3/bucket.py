@@ -207,6 +207,7 @@ class Bucket(object):
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
+            k.handle_restore_headers(response)
             return k, response
         else:
             if response.status == 404:

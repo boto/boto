@@ -117,6 +117,13 @@ class Key(object):
         self.source_version_id = None
         self.delete_marker = False
         self.encrypted = None
+        # If the object is being restored, this attribute will be set to True.
+        # If the object is restored, it will be set to False.  Otherwise this
+        # value will be None. If the restore is completed (ongoing_restore =
+        # False), the expiry_date will be populated with the expiry date of the
+        # restored object.
+        self.ongoing_restore = None
+        self.expiry_date = None
 
     def __repr__(self):
         if self.bucket:
@@ -181,6 +188,19 @@ class Key(object):
             self.delete_marker = True
         else:
             self.delete_marker = False
+
+    def handle_restore_headers(self, response):
+        header = response.getheader('x-amz-restore')
+        if header is None:
+            return
+        parts = header.split(',', 1)
+        for part in parts:
+            key, val = [i.strip() for i in part.split('=')]
+            val = val.replace('"', '')
+            if key == 'ongoing-request':
+                self.ongoing_restore = True if val.lower() == 'true' else False
+            elif key == 'expiry-date':
+                self.expiry_date = val
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
