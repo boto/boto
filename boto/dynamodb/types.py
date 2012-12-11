@@ -30,6 +30,10 @@ from decimal import (Decimal, Context,
 from exceptions import DynamoDBNumberError
 
 
+DYNAMODB_CONTEXT = Context(Emin=-128, Emax=126, rounding=None, prec=38,
+                           traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
+
+
 def is_num(n):
     types = (int, long, float, bool, Decimal)
     return isinstance(n, types) or n in types
@@ -44,15 +48,12 @@ def is_binary(n):
     return isinstance(n, Binary)
 
 
-dynamodb_context = Context(Emin=-128, Emax=126, rounding=None, prec=38,
-                           traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
-
 def serialize_num(s):
     """Cast a number to a string and perform
        validation to ensure no loss of precision.
     """
     try:
-        n = str(dynamodb_context.create_decimal(s))
+        n = str(DYNAMODB_CONTEXT.create_decimal(s))
         if filter(lambda x: x in n, ('Infinity', 'NaN')):
             raise TypeError('Infinity and NaN not supported')
         return n
@@ -63,7 +64,7 @@ def serialize_num(s):
 
 
 def convert_num(s):
-    return dynamodb_context.create_decimal(s)
+    return DYNAMODB_CONTEXT.create_decimal(s)
 
 
 def convert_binary(n):
