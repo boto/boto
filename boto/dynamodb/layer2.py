@@ -190,12 +190,12 @@ class Layer2(object):
         Otherwise, a Python dict version of a Amazon DynamoDB Key
         data structure is returned.
 
-        :type hash_key: int, float, str, or unicode
+        :type hash_key: int|float|str|unicode|Binary
         :param hash_key: The hash key of the item you are looking for.
             The type of the hash key should match the type defined in
             the schema.
 
-        :type range_key: int, float, str or unicode
+        :type range_key: int|float|str|unicode|Binary
         :param range_key: The range key of the item your are looking for.
             This should be supplied only if the schema requires a
             range key.  The type of the range key should match the
@@ -338,7 +338,7 @@ class Layer2(object):
         :type hash_key_name: str
         :param hash_key_name: The name of the HashKey for the schema.
 
-        :type hash_key_proto_value: int|long|float|str|unicode
+        :type hash_key_proto_value: int|long|float|str|unicode|Binary
         :param hash_key_proto_value: A sample or prototype of the type
             of value you want to use for the HashKey.  Alternatively,
             you can also just pass in the Python type (e.g. int, float, etc.).
@@ -347,7 +347,7 @@ class Layer2(object):
         :param range_key_name: The name of the RangeKey for the schema.
             This parameter is optional.
 
-        :type range_key_proto_value: int|long|float|str|unicode
+        :type range_key_proto_value: int|long|float|str|unicode|Binary
         :param range_key_proto_value: A sample or prototype of the type
             of value you want to use for the RangeKey.  Alternatively,
             you can also pass in the Python type (e.g. int, float, etc.)
@@ -376,12 +376,12 @@ class Layer2(object):
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object from which the item is retrieved.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key: int|long|float|str|unicode
+        :type range_key: int|long|float|str|unicode|Binary
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
@@ -553,7 +553,7 @@ class Layer2(object):
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object that is being queried.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
