@@ -48,7 +48,7 @@ class TableGenerator:
     def __init__(self, table, callable, remaining, item_class, kwargs):
         self.table = table
         self.callable = callable
-        self.remaining = remaining or -1
+        self.remaining = -1 if remaining is None else remaining
         self.item_class = item_class
         self.kwargs = kwargs
         self._consumed_units = 0.0
