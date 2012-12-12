@@ -189,7 +189,7 @@ class Dynamizer(object):
             return n
         except Exception, e:
             msg = '{0} numeric for `{1}`\n{2}'.format(\
-                e.__class__.__name__, attr, e.message or '')
+                e.__class__.__name__, attr, str(e) or '')
         raise DynamoDBNumberError(msg)
 
     def encode_s(self, attr):
