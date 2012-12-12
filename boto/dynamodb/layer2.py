@@ -29,42 +29,6 @@ from boto.dynamodb.types import get_dynamodb_type, dynamize_value, \
     item_object_hook
 
 
-def table_generator(tgen):
-    """
-    A low-level generator used to page through results from
-    query and scan operations.  This is used by
-    :class:`boto.dynamodb.layer2.TableGenerator` and is not intended
-    to be used outside of that context.
-    """
-    n = 0
-    while True:
-        response = tgen.callable(**tgen.kwargs)
-        if not response:
-            break
-        tgen.consumed_units += response.get('ConsumedCapacityUnits', 0)
-        # at the expense of a possibly gratuitous dynamize, ensure that
-        # early generator termination won't result in bad LEK values
-        if 'LastEvaluatedKey' in response:
-            lek = response['LastEvaluatedKey']
-            esk = tgen.table.layer2.dynamize_last_evaluated_key(lek)
-            tgen.kwargs['exclusive_start_key'] = esk
-            lektuple = (lek['HashKeyElement'],)
-            if 'RangeKeyElement' in lek:
-                lektuple += (lek['RangeKeyElement'],)
-            tgen.last_evaluated_key = lektuple
-        else:
-            tgen.last_evaluated_key = None
-        for item in response['Items']:
-            if tgen.max_results is not None and n == tgen.max_results:
-                break
-            yield tgen.item_class(tgen.table, attrs=item)
-            n += 1
-        else:
-            if tgen.last_evaluated_key is not None:
-                continue
-        break
-
-
 class TableGenerator:
     """
     This is an object that wraps up the table_generator function.
@@ -72,26 +36,103 @@ class TableGenerator:
     to accumulate and return the ConsumedCapacityUnits element that
     is part of each response.
 
-    :ivar consumed_units: An integer that holds the number of
-        ConsumedCapacityUnits accumulated thus far for this
-        generator.
-
     :ivar last_evaluated_key: A sequence representing the key(s)
         of the item last evaluated, or None if no additional
         results are available.
+
+    :ivar remaining: The remaining quantity of results requested.
+
+    :ivar table: The table to which the call was made.
     """
 
-    def __init__(self, table, callable, max_results, item_class, kwargs):
+    def __init__(self, table, callable, remaining, item_class, kwargs):
         self.table = table
         self.callable = callable
-        self.max_results = max_results
+        self.remaining = remaining or -1
         self.item_class = item_class
         self.kwargs = kwargs
-        self.consumed_units = 0
+        self._consumed_units = 0.0
         self.last_evaluated_key = None
+        self._count = 0
+        self._scanned_count = 0
+        self._response = None
+
+    @property
+    def count(self):
+        """
+        The total number of items retrieved thus far.  This value changes with
+        iteration and even when issuing a call with count=True, it is necessary
+        to complete the iteration to assert an accurate count value.
+        """
+        self.response
+        return self._count
+
+    @property
+    def scanned_count(self):
+        """
+        As above, but representing the total number of items scanned by
+        DynamoDB, without regard to any filters.
+        """
+        self.response
+        return self._scanned_count
+
+    @property
+    def consumed_units(self):
+        """
+        Returns a float representing the ConsumedCapacityUnits accumulated.
+        """
+        self.response
+        return self._consumed_units
+
+    @property
+    def response(self):
+        """
+        The current response to the call from DynamoDB.
+        """
+        return self.next_response() if self._response is None else self._response
+
+    def next_response(self):
+        """
+        Issue a call and return the result.  You can invoke this method
+        while iterating over the TableGenerator in order to skip to the
+        next "page" of results.
+        """
+        self._response = self.callable(**self.kwargs)
+        self._consumed_units += self._response.get('ConsumedCapacityUnits', 0.0)
+        self._count += self._response.get('Count', 0)
+        self._scanned_count += self._response.get('ScannedCount', 0)
+        # at the expense of a possibly gratuitous dynamize, ensure that
+        # early generator termination won't result in bad LEK values
+        if 'LastEvaluatedKey' in self._response:
+            lek = self._response['LastEvaluatedKey']
+            esk = self.table.layer2.dynamize_last_evaluated_key(lek)
+            self.kwargs['exclusive_start_key'] = esk
+            lektuple = (lek['HashKeyElement'],)
+            if 'RangeKeyElement' in lek:
+                lektuple += (lek['RangeKeyElement'],)
+            self.last_evaluated_key = lektuple
+        else:
+            self.last_evaluated_key = None
+        return self._response
 
     def __iter__(self):
-        return table_generator(self)
+        while self.remaining != 0:
+            response = self.response
+            for item in response.get('Items', []):
+                self.remaining -= 1
+                yield self.item_class(self.table, attrs=item)
+                if self.remaining == 0:
+                    break
+                if response is not self._response:
+                    break
+            else:
+                if self.last_evaluated_key is not None:
+                    self.next_response()
+                    continue
+                break
+            if response is not self._response:
+                continue
+            break
 
 
 class Layer2(object):
@@ -544,7 +585,7 @@ class Layer2(object):
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
-              max_results=None, consistent_read=False,
+              max_results=None, consistent_read=False, count=False,
               scan_index_forward=True, exclusive_start_key=None,
               item_class=Item):
         """
@@ -597,6 +638,11 @@ class Layer2(object):
         :param scan_index_forward: Specified forward or backward
             traversal of the index.  Default is forward (True).
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Scan operation, even if the
+            operation has no matching items for the assigned filter.
+
         :type exclusive_start_key: list or tuple
         :param exclusive_start_key: Primary key of the item from
             which to continue an earlier query.  This would be
@@ -623,6 +669,7 @@ class Layer2(object):
                   'range_key_conditions': rkc,
                   'attributes_to_get': attributes_to_get,
                   'limit': request_limit,
+                  'count': count,
                   'consistent_read': consistent_read,
                   'scan_index_forward': scan_index_forward,
                   'exclusive_start_key': esk,
