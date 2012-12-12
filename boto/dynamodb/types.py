@@ -35,6 +35,21 @@ DYNAMODB_CONTEXT = Context(
     traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
 
 
+# python2.6 cannot convert floats directly to
+# Decimals.  This is taken from:
+# http://docs.python.org/release/2.6.7/library/decimal.html#decimal-faq
+def float_to_decimal(f):
+    n, d = f.as_integer_ratio()
+    numerator, denominator = Decimal(n), Decimal(d)
+    ctx = DYNAMODB_CONTEXT
+    result = ctx.divide(numerator, denominator)
+    while ctx.flags[Inexact]:
+        ctx.flags[Inexact] = False
+        ctx.prec *= 2
+        result = ctx.divide(numerator, denominator)
+    return result
+
+
 def is_num(n):
     types = (int, long, float, bool, Decimal)
     return isinstance(n, types) or n in types
@@ -183,7 +198,12 @@ class Dynamizer(object):
 
     def encode_n(self, attr):
         try:
-            n = str(DYNAMODB_CONTEXT.create_decimal(attr))
+            if isinstance(attr, float) and not hasattr(Decimal, 'from_float'):
+                # python2.6 does not support creating Decimals directly
+                # from floats so we have to do this ourself.
+                n = str(float_to_decimal(attr))
+            else:
+                n = str(DYNAMODB_CONTEXT.create_decimal(attr))
             if filter(lambda x: x in n, ('Infinity', 'NaN')):
                 raise TypeError('Infinity and NaN not supported')
             return n
