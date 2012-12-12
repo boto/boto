@@ -111,17 +111,17 @@ class Zone(object):
                    comment=""):
         """
         Add a new record to this Zone.  See _new_record for parameter
-        documentation.
+        documentation.  Returns a Status object.
         """
         changes = ResourceRecordSets(self.route53connection, self.id, comment)
         self._new_record(changes, resource_type, name, value, ttl, identifier,
                          comment)
-        Status(self.route53connection, self._commit(changes))
+        return Status(self.route53connection, self._commit(changes))
 
     def update_record(self, old_record, new_value, new_ttl=None,
                       new_identifier=None, comment=""):
         """
-        Update an existing record in this Zone.
+        Update an existing record in this Zone.  Returns a Status object.
 
         :type old_record: ResourceRecord
         :param old_record: A ResourceRecord (e.g. returned by find_records)
@@ -134,11 +134,11 @@ class Zone(object):
         changes.add_change_record("DELETE", record)
         self._new_record(changes, record.type, record.name,
                          new_value, new_ttl, new_identifier, comment)
-        Status(self.route53connection, self._commit(changes))
+        return Status(self.route53connection, self._commit(changes))
 
     def delete_record(self, record, comment=""):
         """
-        Delete one or more records from this Zone.
+        Delete one or more records from this Zone.  Returns a Status object.
 
         :param record: A ResourceRecord (e.g. returned by
            find_records) or list, tuple, or set of ResourceRecords.
@@ -152,12 +152,12 @@ class Zone(object):
                 changes.add_change_record("DELETE", r)
         else:
             changes.add_change_record("DELETE", record)
-        Status(self.route53connection, self._commit(changes))
+        return Status(self.route53connection, self._commit(changes))
 
     def add_cname(self, name, value, ttl=None, identifier=None, comment=""):
         """
         Add a new CNAME record to this Zone.  See _new_record for
-        parameter documentation.
+        parameter documentation.  Returns a Status object.
         """
         ttl = ttl or default_ttl
         name = self.route53connection._make_qualified(name)
@@ -172,7 +172,7 @@ class Zone(object):
     def add_a(self, name, value, ttl=None, identifier=None, comment=""):
         """
         Add a new A record to this Zone.  See _new_record for
-        parameter documentation.
+        parameter documentation.  Returns a Status object.
         """
         ttl = ttl or default_ttl
         name = self.route53connection._make_qualified(name)
@@ -186,7 +186,7 @@ class Zone(object):
     def add_mx(self, name, records, ttl=None, identifier=None, comment=""):
         """
         Add a new MX record to this Zone.  See _new_record for
-        parameter documentation.
+        parameter documentation.  Returns a Status object.
         """
         ttl = ttl or default_ttl
         records = self.route53connection._make_qualified(records)
@@ -302,7 +302,7 @@ class Zone(object):
     def update_cname(self, name, value, ttl=None, identifier=None, comment=""):
         """
         Update the given CNAME record in this Zone to a new value, ttl,
-        and identifier.
+        and identifier.  Returns a Status object.
 
         Will throw TooManyRecordsException is name, value does not match
         a single record.
@@ -320,7 +320,7 @@ class Zone(object):
     def update_a(self, name, value, ttl=None, identifier=None, comment=""):
         """
         Update the given A record in this Zone to a new value, ttl,
-        and identifier.
+        and identifier.  Returns a Status object.
 
         Will throw TooManyRecordsException is name, value does not match
         a single record.
@@ -337,7 +337,7 @@ class Zone(object):
     def update_mx(self, name, value, ttl=None, identifier=None, comment=""):
         """
         Update the given MX record in this Zone to a new value, ttl,
-        and identifier.
+        and identifier.  Returns a Status object.
 
         Will throw TooManyRecordsException is name, value does not match
         a single record.
@@ -355,7 +355,7 @@ class Zone(object):
     def delete_cname(self, name, identifier=None, all=False):
         """
         Delete a CNAME record matching name and identifier from
-        this Zone.
+        this Zone.  Returns a Status object.
 
         If there is more than one match delete all matching records if
         all is True, otherwise throws TooManyRecordsException.
@@ -368,7 +368,7 @@ class Zone(object):
     def delete_a(self, name, identifier=None, all=False):
         """
         Delete an A record matching name and identifier from this
-        Zone.
+        Zone.  Returns a Status object.
 
         If there is more than one match delete all matching records if
         all is True, otherwise throws TooManyRecordsException.
@@ -381,7 +381,7 @@ class Zone(object):
     def delete_mx(self, name, identifier=None, all=False):
         """
         Delete an MX record matching name and identifier from this
-        Zone.
+        Zone.  Returns a Status object.
 
         If there is more than one match delete all matching records if
         all is True, otherwise throws TooManyRecordsException.
