@@ -1159,7 +1159,9 @@ class Bucket(object):
         :param lifecycle_config: The lifecycle configuration you want
             to configure for this bucket.
         """
-        fp = StringIO.StringIO(lifecycle_config.to_xml())
+        xml = lifecycle_config.to_xml()
+        xml = xml.encode('utf-8')
+        fp = StringIO.StringIO(xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}

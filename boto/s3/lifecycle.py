@@ -149,7 +149,8 @@ class Lifecycle(list):
         Returns a string containing the XML version of the Lifecycle
         configuration as defined by S3.
         """
-        s = '<LifecycleConfiguration>'
+        s = '<?xml version="1.0" encoding="UTF-8"?>'
+        s += '<LifecycleConfiguration>'
         for rule in self:
             s += rule.to_xml()
         s += '</LifecycleConfiguration>'
