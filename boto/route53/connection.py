@@ -1,5 +1,8 @@
 # Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2011 Blue Pines Technologies LLC, Brad Carleton
+# www.bluepines.org
+# Copyright (c) 2012 42 Lines Inc., Jim Browne
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the

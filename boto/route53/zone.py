@@ -1,5 +1,6 @@
 # Copyright (c) 2011 Blue Pines Technologies LLC, Brad Carleton
 # www.bluepines.org
+# Copyright (c) 2012 42 Lines Inc., Jim Browne
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
