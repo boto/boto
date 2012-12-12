@@ -3,7 +3,7 @@ from boto.route53.connection import Route53Connection
 from boto.exception import TooManyRecordsException
 
 
-class TestRoute53Layer2(unittest.TestCase):
+class TestRoute53Zone(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         route53 = Route53Connection()
