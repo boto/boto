@@ -30,8 +30,9 @@ from decimal import (Decimal, Context,
 from exceptions import DynamoDBNumberError
 
 
-DYNAMODB_CONTEXT = Context(Emin=-128, Emax=126, rounding=None, prec=38,
-                           traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
+DYNAMODB_CONTEXT = Context(
+    Emin=-128, Emax=126, rounding=None, prec=38,
+    traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
 
 
 def is_num(n):
@@ -48,23 +49,21 @@ def is_binary(n):
     return isinstance(n, Binary)
 
 
-def serialize_num(s):
+def serialize_num(val):
     """Cast a number to a string and perform
        validation to ensure no loss of precision.
     """
-    try:
-        n = str(DYNAMODB_CONTEXT.create_decimal(s))
-        if filter(lambda x: x in n, ('Infinity', 'NaN')):
-            raise TypeError('Infinity and NaN not supported')
-        return n
-    except Exception, e:
-        msg = '{0} numeric for `{1}`\n{2}'.format(\
-            e.__class__.__name__, s, e.message or '')
-        raise DynamoDBNumberError(msg)
+    if isinstance(val, bool):
+        return str(int(val))
+    return str(val)
 
 
 def convert_num(s):
-    return DYNAMODB_CONTEXT.create_decimal(s)
+    if '.' in s:
+        n = float(s)
+    else:
+        n = int(s)
+    return n
 
 
 def convert_binary(n):
@@ -167,3 +166,85 @@ def item_object_hook(dct):
     if 'BS' in dct:
         return set(map(convert_binary, dct['BS']))
     return dct
+
+
+class Dynamizer(object):
+    def _get_dynamodb_type(self, attr):
+        return get_dynamodb_type(attr)
+
+    def encode(self, attr):
+        dynamodb_type = self._get_dynamodb_type(attr)
+        try:
+            encoder = getattr(self, 'encode_%s' % dynamodb_type.lower())
+        except AttributeError:
+            raise ValueError("Unable to encode dynamodb type: %s" %
+                             dynamodb_type)
+        return {dynamodb_type: encoder(attr)}
+
+    def encode_n(self, attr):
+        try:
+            n = str(DYNAMODB_CONTEXT.create_decimal(attr))
+            if filter(lambda x: x in n, ('Infinity', 'NaN')):
+                raise TypeError('Infinity and NaN not supported')
+            return n
+        except Exception, e:
+            msg = '{0} numeric for `{1}`\n{2}'.format(\
+                e.__class__.__name__, attr, e.message or '')
+        raise DynamoDBNumberError(msg)
+
+    def encode_s(self, attr):
+        return attr
+
+    def encode_ns(self, attr):
+        return map(self.encode_n, attr)
+
+    def encode_ss(self, attr):
+        return [self.encode_s(n) for n in attr]
+
+    def encode_b(self, attr):
+        return attr.encode()
+
+    def encode_bs(self, attr):
+        return [self.encode_b(n) for n in attr]
+
+    def decode(self, attr):
+        if len(attr) > 1 or not attr:
+            return attr
+        dynamodb_type = attr.keys()[0]
+        try:
+            decoder = getattr(self, 'decode_%s' % dynamodb_type.lower())
+        except AttributeError:
+            return attr
+        return decoder(attr[dynamodb_type])
+
+    def decode_n(self, attr):
+        return DYNAMODB_CONTEXT.create_decimal(attr)
+
+    def decode_s(self, attr):
+        return attr
+
+    def decode_ns(self, attr):
+        return set(map(self.decode_n, attr))
+
+    def decode_ss(self, attr):
+        return set(map(self.decode_s, attr))
+
+    def decode_b(self, attr):
+        return convert_binary(attr)
+
+    def decode_bs(self, attr):
+        return set(map(self.decode_b, attr))
+
+
+class LossyFloatDynamizer(Dynamizer):
+    def encode_n(self, attr):
+        return serialize_num(attr)
+
+    def encode_ns(self, attr):
+        return [str(i) for i in attr]
+
+    def decode_n(self, attr):
+        return convert_num(attr)
+
+    def decode_ns(self, attr):
+        return set(map(self.decode_n, attr))
