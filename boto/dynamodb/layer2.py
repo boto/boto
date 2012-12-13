@@ -261,6 +261,33 @@ class Layer2(object):
         """
         return self.layer1.describe_table(name)
 
+    def table_from_schema(self, name, schema):
+        """
+        Create a Table object from a schema.
+
+        This method will create a Table object without
+        making any API calls.  If you know the name and schema
+        of the table, you can use this method instead of
+        ``get_table``.
+
+        Example usage::
+
+            table = layer2.table_from_schema(
+                'tablename',
+                Schema.create(hash_key=('foo', 'N')))
+
+        :type name: str
+        :param name: The name of the table.
+
+        :type schema: :class:`boto.dynamodb.schema.Schema`
+        :param schema: The schema associated with the table.
+
+        :rtype: :class:`boto.dynamodb.table.Table`
+        :return: A Table object representing the table.
+
+        """
+        return Table.create_from_schema(self, name, schema)
+
     def get_table(self, name):
         """
         Retrieve the Table object for an existing table.
@@ -272,7 +299,7 @@ class Layer2(object):
         :return: A Table object representing the table.
         """
         response = self.layer1.describe_table(name)
-        return Table(self,  response)
+        return Table(self, response)
 
     lookup = get_table
 
@@ -353,19 +380,13 @@ class Layer2(object):
             you can also pass in the Python type (e.g. int, float, etc.)
             This parameter is optional.
         """
-        schema = {}
-        hash_key = {}
-        hash_key['AttributeName'] = hash_key_name
-        hash_key_type = get_dynamodb_type(hash_key_proto_value)
-        hash_key['AttributeType'] = hash_key_type
-        schema['HashKeyElement'] = hash_key
+        hash_key = (hash_key_name, get_dynamodb_type(hash_key_proto_value))
         if range_key_name and range_key_proto_value is not None:
-            range_key = {}
-            range_key['AttributeName'] = range_key_name
-            range_key_type = get_dynamodb_type(range_key_proto_value)
-            range_key['AttributeType'] = range_key_type
-            schema['RangeKeyElement'] = range_key
-        return Schema(schema)
+            range_key = (range_key_name,
+                         get_dynamodb_type(range_key_proto_value))
+        else:
+            range_key = None
+        return Schema.create(hash_key, range_key)
 
     def get_item(self, table, hash_key, range_key=None,
                  attributes_to_get=None, consistent_read=False,
