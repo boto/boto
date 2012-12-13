@@ -571,27 +571,74 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeDhcpOptions', params,
                              [('item', DhcpOptions)])
 
-    def create_dhcp_options(self, vpc_id, cidr_block, availability_zone=None):
+    def create_dhcp_options(self, domain_name=None, domain_name_servers=None,
+                            ntp_servers=None, netbios_name_servers=None,
+                            netbios_node_type=None):
         """
         Create a new DhcpOption
 
-        :type vpc_id: str
-        :param vpc_id: The ID of the VPC where you want to create the subnet.
+        This corresponds to
+        http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-CreateDhcpOptions.html
 
-        :type cidr_block: str
-        :param cidr_block: The CIDR block you want the subnet to cover.
+        :type domain_name: str
+        :param domain_name: A domain name of your choice (for example,
+            example.com)
 
-        :type availability_zone: str
-        :param availability_zone: The AZ you want the subnet in
+        :type domain_name_servers: list of strings
+        :param domain_name_servers: The IP address of a domain name server. You
+            can specify up to four addresses.
+
+        :type ntp_servers: list of strings
+        :param ntp_servers: The IP address of a Network Time Protocol (NTP)
+            server. You can specify up to four addresses.
+
+        :type netbios_name_servers: list of strings
+        :param netbios_name_servers: The IP address of a NetBIOS name server.
+            You can specify up to four addresses.
+
+        :type netbios_node_type: str
+        :param netbios_node_type: The NetBIOS node type (1, 2, 4, or 8). For
+            more information about the values, see RFC 2132. We recommend you
+            only use 2 at this time (broadcast and multicast are currently not
+            supported).
 
         :rtype: The newly created DhcpOption
         :return: A :class:`boto.vpc.customergateway.DhcpOption` object
         """
-        params = {'VpcId' : vpc_id,
-                  'CidrBlock' : cidr_block}
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDhcpOption', params, DhcpOptions)
+
+        key_counter = 1
+        params = {}
+
+        def insert_option(params, name, value):
+            params['DhcpConfiguration.%d.Key' % (key_counter,)] = name
+            if isinstance(value, (list, tuple)):
+                for idx, value in enumerate(value, 1):
+                    key_name = 'DhcpConfiguration.%d.Value.%d' % (
+                        key_counter, idx)
+                    params[key_name] = value
+            else:
+                key_name = 'DhcpConfiguration.%d.Value.1' % (key_counter,)
+                params[key_name] = value
+
+            return key_counter + 1
+
+        if domain_name:
+            key_counter = insert_option(params,
+                'domain-name', domain_name)
+        if domain_name_servers:
+            key_counter = insert_option(params,
+                'domain-name-servers', domain_name_servers)
+        if ntp_servers:
+            key_counter = insert_option(params,
+                'ntp-servers', ntp_servers)
+        if netbios_name_servers:
+            key_counter = insert_option(params,
+                'netbios-name-servers', netbios_name_servers)
+        if netbios_node_type:
+            key_counter = insert_option(params,
+                'netbios-node-type', netbios_node_type)
+
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 
     def delete_dhcp_options(self, dhcp_options_id):
         """
