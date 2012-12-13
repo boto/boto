@@ -25,7 +25,7 @@ Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
 import base64
-from decimal import (Decimal, Context,
+from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
 from exceptions import DynamoDBNumberError
 
@@ -190,13 +190,13 @@ class Dynamizer(object):
     def encode(self, attr):
         dynamodb_type = self._get_dynamodb_type(attr)
         try:
-            encoder = getattr(self, 'encode_%s' % dynamodb_type.lower())
+            encoder = getattr(self, '_encode_%s' % dynamodb_type.lower())
         except AttributeError:
             raise ValueError("Unable to encode dynamodb type: %s" %
                              dynamodb_type)
         return {dynamodb_type: encoder(attr)}
 
-    def encode_n(self, attr):
+    def _encode_n(self, attr):
         try:
             if isinstance(attr, float) and not hasattr(Decimal, 'from_float'):
                 # python2.6 does not support creating Decimals directly
@@ -207,64 +207,64 @@ class Dynamizer(object):
             if filter(lambda x: x in n, ('Infinity', 'NaN')):
                 raise TypeError('Infinity and NaN not supported')
             return n
-        except Exception, e:
-            msg = '{0} numeric for `{1}`\n{2}'.format(\
+        except (TypeError, DecimalException), e:
+            msg = '{0} numeric for `{1}`\n{2}'.format(
                 e.__class__.__name__, attr, str(e) or '')
         raise DynamoDBNumberError(msg)
 
-    def encode_s(self, attr):
-        return attr
+    def _encode_s(self, attr):
+        return str(attr)
 
-    def encode_ns(self, attr):
-        return map(self.encode_n, attr)
+    def _encode_ns(self, attr):
+        return map(self._encode_n, attr)
 
-    def encode_ss(self, attr):
-        return [self.encode_s(n) for n in attr]
+    def _encode_ss(self, attr):
+        return [self._encode_s(n) for n in attr]
 
-    def encode_b(self, attr):
+    def _encode_b(self, attr):
         return attr.encode()
 
-    def encode_bs(self, attr):
-        return [self.encode_b(n) for n in attr]
+    def _encode_bs(self, attr):
+        return [self._encode_b(n) for n in attr]
 
     def decode(self, attr):
         if len(attr) > 1 or not attr:
             return attr
         dynamodb_type = attr.keys()[0]
         try:
-            decoder = getattr(self, 'decode_%s' % dynamodb_type.lower())
+            decoder = getattr(self, '_decode_%s' % dynamodb_type.lower())
         except AttributeError:
             return attr
         return decoder(attr[dynamodb_type])
 
-    def decode_n(self, attr):
+    def _decode_n(self, attr):
         return DYNAMODB_CONTEXT.create_decimal(attr)
 
-    def decode_s(self, attr):
+    def _decode_s(self, attr):
         return attr
 
-    def decode_ns(self, attr):
-        return set(map(self.decode_n, attr))
+    def _decode_ns(self, attr):
+        return set(map(self._decode_n, attr))
 
-    def decode_ss(self, attr):
-        return set(map(self.decode_s, attr))
+    def _decode_ss(self, attr):
+        return set(map(self._decode_s, attr))
 
-    def decode_b(self, attr):
+    def _decode_b(self, attr):
         return convert_binary(attr)
 
-    def decode_bs(self, attr):
-        return set(map(self.decode_b, attr))
+    def _decode_bs(self, attr):
+        return set(map(self._decode_b, attr))
 
 
 class LossyFloatDynamizer(Dynamizer):
-    def encode_n(self, attr):
+    def _encode_n(self, attr):
         return serialize_num(attr)
 
-    def encode_ns(self, attr):
+    def _encode_ns(self, attr):
         return [str(i) for i in attr]
 
-    def decode_n(self, attr):
+    def _decode_n(self, attr):
         return convert_num(attr)
 
-    def decode_ns(self, attr):
-        return set(map(self.decode_n, attr))
+    def _decode_ns(self, attr):
+        return set(map(self._decode_n, attr))
