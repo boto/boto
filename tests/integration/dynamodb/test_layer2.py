@@ -459,3 +459,16 @@ class DynamoDBLayer2Test (unittest.TestCase):
         self.assertNotEqual(1.12345678912345, retrieved)
         # Instead, it's truncated:
         self.assertEqual(1.12345678912, retrieved)
+
+    def test_large_integers(self):
+        # It's not just floating point numbers, large integers
+        # can trigger rouding issues.
+        self.dynamodb.use_decimals()
+        table = self.create_sample_table()
+        item = table.new_item('foo', 'bar')
+        item['decimalvalue'] = Decimal('129271300103398600')
+        item.put()
+        retrieved = table.get_item('foo', 'bar')
+        self.assertEqual(retrieved['decimalvalue'], Decimal('129271300103398600'))
+        # Also comparable directly to an int.
+        self.assertEqual(retrieved['decimalvalue'], 129271300103398600)
