@@ -20,38 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import base64
-
 from boto.dynamodb.layer1 import Layer1
 from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
 from boto.dynamodb.types import get_dynamodb_type, dynamize_value, \
-        convert_num, convert_binary
-
-
-def item_object_hook(dct):
-    """
-    A custom object hook for use when decoding JSON item bodys.
-    This hook will transform Amazon DynamoDB JSON responses to something
-    that maps directly to native Python types.
-    """
-    if len(dct.keys()) > 1:
-        return dct
-    if 'S' in dct:
-        return dct['S']
-    if 'N' in dct:
-        return convert_num(dct['N'])
-    if 'SS' in dct:
-        return set(dct['SS'])
-    if 'NS' in dct:
-        return set(map(convert_num, dct['NS']))
-    if 'B' in dct:
-        return base64.b64decode(dct['B'])
-    if 'BS' in dct:
-        return set(map(convert_binary, dct['BS']))
-    return dct
+    item_object_hook
 
 
 def table_generator(tgen):
@@ -61,27 +36,33 @@ def table_generator(tgen):
     :class:`boto.dynamodb.layer2.TableGenerator` and is not intended
     to be used outside of that context.
     """
-    response = True
     n = 0
-    while response:
-        if tgen.max_results and n == tgen.max_results:
+    while True:
+        response = tgen.callable(**tgen.kwargs)
+        if not response:
             break
-        if response is True:
-            pass
-        elif 'LastEvaluatedKey' in response:
+        tgen.consumed_units += response.get('ConsumedCapacityUnits', 0)
+        # at the expense of a possibly gratuitous dynamize, ensure that
+        # early generator termination won't result in bad LEK values
+        if 'LastEvaluatedKey' in response:
             lek = response['LastEvaluatedKey']
             esk = tgen.table.layer2.dynamize_last_evaluated_key(lek)
             tgen.kwargs['exclusive_start_key'] = esk
+            lektuple = (lek['HashKeyElement'],)
+            if 'RangeKeyElement' in lek:
+                lektuple += (lek['RangeKeyElement'],)
+            tgen.last_evaluated_key = lektuple
         else:
-            break
-        response = tgen.callable(**tgen.kwargs)
-        if 'ConsumedCapacityUnits' in response:
-            tgen.consumed_units += response['ConsumedCapacityUnits']
+            tgen.last_evaluated_key = None
         for item in response['Items']:
-            if tgen.max_results and n == tgen.max_results:
+            if tgen.max_results is not None and n == tgen.max_results:
                 break
             yield tgen.item_class(tgen.table, attrs=item)
             n += 1
+        else:
+            if tgen.last_evaluated_key is not None:
+                continue
+        break
 
 
 class TableGenerator:
@@ -94,6 +75,10 @@ class TableGenerator:
     :ivar consumed_units: An integer that holds the number of
         ConsumedCapacityUnits accumulated thus far for this
         generator.
+
+    :ivar last_evaluated_key: A sequence representing the key(s)
+        of the item last evaluated, or None if no additional
+        results are available.
     """
 
     def __init__(self, table, callable, max_results, item_class, kwargs):
@@ -103,6 +88,7 @@ class TableGenerator:
         self.item_class = item_class
         self.kwargs = kwargs
         self.consumed_units = 0
+        self.last_evaluated_key = None
 
     def __iter__(self):
         return table_generator(self)
@@ -204,12 +190,12 @@ class Layer2(object):
         Otherwise, a Python dict version of a Amazon DynamoDB Key
         data structure is returned.
 
-        :type hash_key: int, float, str, or unicode
+        :type hash_key: int|float|str|unicode|Binary
         :param hash_key: The hash key of the item you are looking for.
             The type of the hash key should match the type defined in
             the schema.
 
-        :type range_key: int, float, str or unicode
+        :type range_key: int|float|str|unicode|Binary
         :param range_key: The range key of the item your are looking for.
             This should be supplied only if the schema requires a
             range key.  The type of the range key should match the
@@ -352,7 +338,7 @@ class Layer2(object):
         :type hash_key_name: str
         :param hash_key_name: The name of the HashKey for the schema.
 
-        :type hash_key_proto_value: int|long|float|str|unicode
+        :type hash_key_proto_value: int|long|float|str|unicode|Binary
         :param hash_key_proto_value: A sample or prototype of the type
             of value you want to use for the HashKey.  Alternatively,
             you can also just pass in the Python type (e.g. int, float, etc.).
@@ -361,7 +347,7 @@ class Layer2(object):
         :param range_key_name: The name of the RangeKey for the schema.
             This parameter is optional.
 
-        :type range_key_proto_value: int|long|float|str|unicode
+        :type range_key_proto_value: int|long|float|str|unicode|Binary
         :param range_key_proto_value: A sample or prototype of the type
             of value you want to use for the RangeKey.  Alternatively,
             you can also pass in the Python type (e.g. int, float, etc.)
@@ -390,12 +376,12 @@ class Layer2(object):
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object from which the item is retrieved.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key: int|long|float|str|unicode
+        :type range_key: int|long|float|str|unicode|Binary
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
@@ -567,7 +553,7 @@ class Layer2(object):
         :type table: :class:`boto.dynamodb.table.Table`
         :param table: The Table object that is being queried.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.

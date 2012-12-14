@@ -179,6 +179,8 @@ class ResponseElement(dict):
         name = self.__class__.__name__
         if name == 'JITResponse':
             name = '^{0}^'.format(self._name or '')
+        elif name == 'MWSResponse':
+            name = '^{0}^'.format(self._name or name)
         return '{0}{1!r}({2})'.format(
             name, self.copy(), ', '.join(map(render, attrs)))
 
@@ -211,6 +213,13 @@ class ResponseElement(dict):
 
 class Response(ResponseElement):
     ResponseMetadata = Element()
+
+    @strip_namespace
+    def startElement(self, name, attrs, connection):
+        if name == self._name:
+            self.update(attrs)
+        else:
+            return ResponseElement.startElement(self, name, attrs, connection)
 
     @property
     def _result(self):
@@ -266,7 +275,7 @@ class RequestReportResult(ResponseElement):
 
 
 class GetReportRequestListResult(RequestReportResult):
-    ReportRequestInfo = Element()
+    ReportRequestInfo = ElementList()
 
 
 class GetReportRequestListByNextTokenResult(GetReportRequestListResult):
@@ -278,7 +287,7 @@ class CancelReportRequestsResult(RequestReportResult):
 
 
 class GetReportListResult(ResponseElement):
-    ReportInfo = Element()
+    ReportInfo = ElementList()
 
 
 class GetReportListByNextTokenResult(GetReportListResult):

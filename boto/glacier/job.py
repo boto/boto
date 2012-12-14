@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from __future__ import with_statement
 import math
 import socket
 
 from .exceptions import TreeHashDoesNotMatchError, DownloadArchiveError
-from .writer import bytes_to_hex, chunk_hashes, tree_hash
+from .utils import bytes_to_hex, chunk_hashes, tree_hash
 
 
 class Job(object):

@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -18,6 +20,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
 
 class HealthCheck(object):
     """
@@ -77,11 +80,10 @@ class HealthCheck(object):
         if not self.access_point:
             return
 
-        new_hc = self.connection.configure_health_check(self.access_point, self)
+        new_hc = self.connection.configure_health_check(self.access_point,
+                                                        self)
         self.interval = new_hc.interval
         self.target = new_hc.target
         self.healthy_threshold = new_hc.healthy_threshold
         self.unhealthy_threshold = new_hc.unhealthy_threshold
         self.timeout = new_hc.timeout
-
-

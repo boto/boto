@@ -20,18 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import time
+from binascii import crc32
 
 import boto
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
-
-import time
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from boto.compat import json
 
 #
 # To get full debug output, uncomment the following line and set the
@@ -78,10 +75,13 @@ class Layer1(AWSAuthConnection):
 
     ResponseError = DynamoDBResponseError
 
+    NumberRetries = 10
+    """The number of times an error is retried."""
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
-                 validate_certs=True):
+                 validate_certs=True, validate_checksums=True):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -98,6 +98,8 @@ class Layer1(AWSAuthConnection):
                                    debug=debug, security_token=security_token,
                                    validate_certs=validate_certs)
         self.throughput_exceeded_events = 0
+        self._validate_checksums = boto.config.getbool(
+            'DynamoDB', 'validate_checksums', validate_checksums)
 
     def _get_session_token(self):
         self.provider = Provider(self._provider_type)
@@ -119,13 +121,13 @@ class Layer1(AWSAuthConnection):
                                                     {}, headers, body, None)
         start = time.time()
         response = self._mexe(http_request, sender=None,
-                              override_num_retries=10,
+                              override_num_retries=self.NumberRetries,
                               retry_handler=self._retry_handler)
-        elapsed = (time.time() - start)*1000
+        elapsed = (time.time() - start) * 1000
         request_id = response.getheader('x-amzn-RequestId')
         boto.log.debug('RequestId: %s' % request_id)
-        boto.perflog.info('%s: id=%s time=%sms',
-                          headers['X-Amz-Target'], request_id, int(elapsed))
+        boto.perflog.debug('%s: id=%s time=%sms',
+                           headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
@@ -139,10 +141,7 @@ class Layer1(AWSAuthConnection):
             if self.ThruputError in data.get('__type'):
                 self.throughput_exceeded_events += 1
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
-                if i == 0:
-                    next_sleep = 0
-                else:
-                    next_sleep = 0.05 * (2 ** i)
+                next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
             elif self.SessionExpiredError in data.get('__type'):
@@ -158,7 +157,24 @@ class Layer1(AWSAuthConnection):
             else:
                 raise self.ResponseError(response.status, response.reason,
                                          data)
+        expected_crc32 = response.getheader('x-amz-crc32')
+        if self._validate_checksums and expected_crc32 is not None:
+            boto.log.debug('Validating crc32 checksum for body: %s',
+                           response.read())
+            actual_crc32 = crc32(response.read()) & 0xffffffff
+            expected_crc32 = int(expected_crc32)
+            if actual_crc32 != expected_crc32:
+                msg = ("The calculated checksum %s did not match the expected "
+                       "checksum %s" % (actual_crc32, expected_crc32))
+                status = (msg, i + 1, self._exponential_time(i))
         return status
+
+    def _exponential_time(self, i):
+        if i == 0:
+            next_sleep = 0
+        else:
+            next_sleep = 0.05 * (2 ** i)
+        return next_sleep
 
     def list_tables(self, limit=None, start_table=None):
         """

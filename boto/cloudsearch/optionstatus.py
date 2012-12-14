@@ -22,10 +22,9 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import time
+from boto.compat import json
+
 
 class OptionStatus(dict):
     """

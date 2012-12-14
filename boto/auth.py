@@ -264,7 +264,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         headers_to_sign = self.headers_to_sign(http_request)
         canonical_headers = self.canonical_headers(headers_to_sign)
         string_to_sign = '\n'.join([http_request.method,
-                                    http_request.path,
+                                    http_request.auth_path,
                                     '',
                                     canonical_headers,
                                     '',
@@ -303,9 +303,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     capability = ['hmac-v4']
 
-    def __init__(self, host, config, provider):
+    def __init__(self, host, config, provider,
+                 service_name=None, region_name=None):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
+        # You can set the service_name and region_name to override the
+        # values which would otherwise come from the endpoint, e.g.
+        # <service>.<region>.amazonaws.com.
+        self.service_name = service_name
+        self.region_name = region_name
 
     def _sign(self, key, msg, hex=False):
         if hex:
@@ -337,12 +343,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
+        # POST requests pass parameters in through the
+        # http_request.body field.
+        if http_request.method == 'POST':
+            return ""
         l = []
-        for param in http_request.params:
+        for param in sorted(http_request.params):
             value = str(http_request.params[param])
             l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
                                 urllib.quote(value, safe='-_.~')))
-        l = sorted(l)
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
@@ -352,9 +361,9 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = ['%s:%s' % (n.lower().strip(),
-                      headers_to_sign[n].strip()) for n in headers_to_sign]
-        l = sorted(l)
+        l = sorted(['%s:%s' % (n.lower().strip(),
+                    ' '.join(headers_to_sign[n].strip().split()))
+                    for n in headers_to_sign])
         return '\n'.join(l)
 
     def signed_headers(self, headers_to_sign):
@@ -363,7 +372,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.path
+        return http_request.auth_path
 
     def payload(self, http_request):
         body = http_request.body
@@ -396,13 +405,26 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         scope = []
         http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
         scope.append(http_request.timestamp)
+        # The service_name and region_name either come from:
+        # * The service_name/region_name attrs or (if these values are None)
+        # * parsed from the endpoint <service>.<region>.amazonaws.com.
         parts = http_request.host.split('.')
-        if len(parts) == 3:
-            http_request.region_name = 'us-east-1'
+        if self.region_name is not None:
+            region_name = self.region_name
         else:
-            http_request.region_name = parts[1]
+            if len(parts) == 3:
+                region_name = 'us-east-1'
+            else:
+                region_name = parts[1]
+        if self.service_name is not None:
+            service_name = self.service_name
+        else:
+            service_name = parts[0]
+
+        http_request.service_name = service_name
+        http_request.region_name = region_name
+
         scope.append(http_request.region_name)
-        http_request.service_name = parts[0]
         scope.append(http_request.service_name)
         scope.append('aws4_request')
         return '/'.join(scope)
@@ -443,6 +465,18 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         req.headers['X-Amz-Date'] = now.strftime('%Y%m%dT%H%M%SZ')
         if self._provider.security_token:
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
+        qs = self.query_string(req)
+        if qs and req.method == 'POST':
+            # Stash request parameters into post body
+            # before we generate the signature.
+            req.body = qs
+            req.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+            req.headers['Content-Length'] = str(len(req.body))
+        else:
+            # Safe to modify req.path here since
+            # the signature will use req.auth_path.
+            req.path = req.path.split('?')[0]
+            req.path = req.path + '?' + qs
         canonical_request = self.canonical_request(req)
         boto.log.debug('CanonicalRequest:\n%s' % canonical_request)
         string_to_sign = self.string_to_sign(req, canonical_request)
@@ -454,10 +488,6 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
-        qs = self.query_string(req)
-        if qs:
-            req.path = req.path.split('?')[0]
-            req.path = req.path + '?' + qs
 
 
 class QuerySignatureHelper(HmacKeys):
@@ -518,6 +548,11 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
 
     SignatureVersion = 1
     capability = ['sign-v1', 'mturk']
+
+    def __init__(self, *args, **kw):
+        QuerySignatureHelper.__init__(self, *args, **kw)
+        AuthHandler.__init__(self, *args, **kw)
+        self._hmac_256 = None
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')

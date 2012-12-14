@@ -31,11 +31,12 @@ Currently Supported Services
 * **Deployment and Management**
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
-  * Elastic Beanstalk -- ("doc"`API Reference <ref/beanstalk>`)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
 
 * **Identity & Access**
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
+  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
 
 * **Application Services**
 
@@ -68,6 +69,10 @@ Currently Supported Services
 * **Workforce**
 
   * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
+
+* **Other**
+
+  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
 
 Additional Resources
 --------------------
@@ -106,6 +111,7 @@ Additional Resources
    ref/rds
    ref/cloudformation
    ref/iam
+   ref/mws
    sqs_tut
    ref/sqs
    ref/sns
@@ -135,4 +141,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

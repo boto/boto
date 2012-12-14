@@ -118,7 +118,8 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, route_table_ids, "RouteTableId")
         if filters:
             self.build_filter_params(params, dict(filters))
-        return self.get_list('DescribeRouteTables', params, [('item', RouteTable)])
+        return self.get_list('DescribeRouteTables', params,
+                             [('item', RouteTable)])
 
     def associate_route_table(self, route_table_id, subnet_id):
         """
@@ -182,7 +183,8 @@ class VPCConnection(EC2Connection):
         params = { 'RouteTableId': route_table_id }
         return self.get_status('DeleteRouteTable', params)
 
-    def create_route(self, route_table_id, destination_cidr_block, gateway_id=None, instance_id=None):
+    def create_route(self, route_table_id, destination_cidr_block,
+                     gateway_id=None, instance_id=None):
         """
         Creates a new route in the route table within a VPC. The route's target
         can be either a gateway attached to the VPC or a NAT instance in the
@@ -239,7 +241,8 @@ class VPCConnection(EC2Connection):
 
     # Internet Gateways
 
-    def get_all_internet_gateways(self, internet_gateway_ids=None, filters=None):
+    def get_all_internet_gateways(self, internet_gateway_ids=None,
+                                  filters=None):
         """
         Get a list of internet gateways. You can filter results to return information
         about only those gateways that you're interested in.
@@ -254,10 +257,12 @@ class VPCConnection(EC2Connection):
         params = {}
 
         if internet_gateway_ids:
-            self.build_list_params(params, internet_gateway_ids, 'InternetGatewayId')
+            self.build_list_params(params, internet_gateway_ids,
+                                   'InternetGatewayId')
         if filters:
             self.build_filter_params(params, dict(filters))
-        return self.get_list('DescribeInternetGateways', params, [('item', InternetGateway)])
+        return self.get_list('DescribeInternetGateways', params,
+                             [('item', InternetGateway)])
 
     def create_internet_gateway(self):
         """
@@ -323,15 +328,17 @@ class VPCConnection(EC2Connection):
 
     # Customer Gateways
 
-    def get_all_customer_gateways(self, customer_gateway_ids=None, filters=None):
+    def get_all_customer_gateways(self, customer_gateway_ids=None,
+                                  filters=None):
         """
-        Retrieve information about your CustomerGateways.  You can filter results to
-        return information only about those CustomerGateways that match your search
-        parameters.  Otherwise, all CustomerGateways associated with your account
-        are returned.
+        Retrieve information about your CustomerGateways.  You can filter
+        results to return information only about those CustomerGateways that
+        match your search parameters.  Otherwise, all CustomerGateways
+        associated with your account are returned.
 
         :type customer_gateway_ids: list
-        :param customer_gateway_ids: A list of strings with the desired CustomerGateway ID's
+        :param customer_gateway_ids: A list of strings with the desired
+            CustomerGateway ID's.
 
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
@@ -349,11 +356,13 @@ class VPCConnection(EC2Connection):
         """
         params = {}
         if customer_gateway_ids:
-            self.build_list_params(params, customer_gateway_ids, 'CustomerGatewayId')
+            self.build_list_params(params, customer_gateway_ids,
+                                   'CustomerGatewayId')
         if filters:
             self.build_filter_params(params, dict(filters))
 
-        return self.get_list('DescribeCustomerGateways', params, [('item', CustomerGateway)])
+        return self.get_list('DescribeCustomerGateways', params,
+                             [('item', CustomerGateway)])
 
     def create_customer_gateway(self, type, ip_address, bgp_asn):
         """
@@ -422,7 +431,8 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, vpn_gateway_ids, 'VpnGatewayId')
         if filters:
             self.build_filter_params(params, dict(filters))
-        return self.get_list('DescribeVpnGateways', params, [('item', VpnGateway)])
+        return self.get_list('DescribeVpnGateways', params,
+                             [('item', VpnGateway)])
 
     def create_vpn_gateway(self, type, availability_zone=None):
         """
@@ -491,7 +501,7 @@ class VPCConnection(EC2Connection):
 
                         - *state*, a list of states of the Subnet
                           (pending,available)
-                        - *vpdId*, a list of IDs of teh VPC the subnet is in.
+                        - *vpcId*, a list of IDs of teh VPC the subnet is in.
                         - *cidrBlock*, a list of CIDR blocks of the subnet
                         - *availabilityZone*, list of the Availability Zones
                           the subnet is in.
@@ -558,7 +568,8 @@ class VPCConnection(EC2Connection):
         params = {}
         if dhcp_options_ids:
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
-        return self.get_list('DescribeDhcpOptions', params, [('item', DhcpOptions)])
+        return self.get_list('DescribeDhcpOptions', params,
+                             [('item', DhcpOptions)])
 
     def create_dhcp_options(self, vpc_id, cidr_block, availability_zone=None):
         """
@@ -642,10 +653,12 @@ class VPCConnection(EC2Connection):
         """
         params = {}
         if vpn_connection_ids:
-            self.build_list_params(params, vpn_connection_ids, 'Vpn_ConnectionId')
+            self.build_list_params(params, vpn_connection_ids,
+                                   'Vpn_ConnectionId')
         if filters:
             self.build_filter_params(params, dict(filters))
-        return self.get_list('DescribeVpnConnections', params, [('item', VpnConnection)])
+        return self.get_list('DescribeVpnConnections', params,
+                             [('item', VpnConnection)])
 
     def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id):
         """
@@ -681,3 +694,91 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpnConnectionId': vpn_connection_id}
         return self.get_status('DeleteVpnConnection', params)
+
+    def disable_vgw_route_propagation(self, route_table_id, gateway_id):
+        """
+        Disables a virtual private gateway (VGW) from propagating routes to the
+        routing tables of an Amazon VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the routing table.
+
+        :type gateway_id: str
+        :param gateway_id: The ID of the virtual private gateway.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'GatewayId': gateway_id,
+        }
+        self.get_status('DisableVgwRoutePropagation', params)
+
+    def enable_vgw_route_propagation(self, route_table_id, gateway_id):
+        """
+        Enables a virtual private gateway (VGW) to propagate routes to the
+        routing tables of an Amazon VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the routing table.
+
+        :type gateway_id: str
+        :param gateway_id: The ID of the virtual private gateway.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'GatewayId': gateway_id,
+        }
+        self.get_status('EnableVgwRoutePropagation', params)
+
+    def create_vpn_connection_route(self, destination_cidr_block,
+                                    vpn_connection_id):
+        """
+        Creates a new static route associated with a VPN connection between an
+        existing virtual private gateway and a VPN customer gateway. The static
+        route allows traffic to be routed from the virtual private gateway to
+        the VPN customer gateway.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR block associated with the local
+        subnet of the customer data center.
+
+        :type vpn_connection_id: str
+        :param vpn_connection_id: The ID of the VPN connection.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'DestinationCidrBlock': destination_cidr_block,
+            'VpnConnectionId': vpn_connection_id,
+        }
+        self.get_status('CreateVpnConnectionRoute', params)
+
+    def delete_vpn_connection_route(self, destination_cidr_block,
+                                    vpn_connection_id):
+        """
+        Deletes a static route associated with a VPN connection between an
+        existing virtual private gateway and a VPN customer gateway. The static
+        route allows traffic to be routed from the virtual private gateway to
+        the VPN customer gateway.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR block associated with the local
+        subnet of the customer data center.
+
+        :type vpn_connection_id: str
+        :param vpn_connection_id: The ID of the VPN connection.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'DestinationCidrBlock': destination_cidr_block,
+            'VpnConnectionId': vpn_connection_id,
+        }
+        self.get_status('DeleteVpnConnectionRoute', params)

@@ -1,4 +1,4 @@
-mock==0.8.0
+mock==1.0.1
 nose==1.1.2
 M2Crypto==0.21.1
 requests==0.13.1

@@ -549,6 +549,33 @@ class Instance(TaggedEC2Object):
         """
         return self.connection.reset_instance_attribute(self.id, attribute)
 
+    def create_image(
+        self, name,
+        description=None, no_reboot=False
+    ):
+        """
+        Will create an AMI from the instance in the running or stopped
+        state.
+
+        :type name: string
+        :param name: The name of the new image
+
+        :type description: string
+        :param description: An optional human-readable string describing
+                            the contents and purpose of the AMI.
+
+        :type no_reboot: bool
+        :param no_reboot: An optional flag indicating that the bundling process
+                          should not attempt to shutdown the instance before
+                          bundling.  If this flag is True, the responsibility
+                          of maintaining file system integrity is left to the
+                          owner of the instance.
+
+        :rtype: string
+        :return: The new image id
+        """
+        return self.connection.create_image(self.id, name, description, no_reboot)
+
 
 class ConsoleOutput:
 

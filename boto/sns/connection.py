@@ -20,14 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import uuid
+
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
+from boto.compat import json
 import boto
-import uuid
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 
 class SNSConnection(AWSQueryConnection):
@@ -257,7 +255,7 @@ class SNSConnection(AWSQueryConnection):
         Subscribe to a Topic.
 
         :type topic: string
-        :param topic: The name of the new topic.
+        :param topic: The ARN of the new topic.
 
         :type protocol: string
         :param protocol: The protocol used to communicate with
@@ -304,7 +302,7 @@ class SNSConnection(AWSQueryConnection):
           that policy.  If no policy exists, a new policy will be created.
 
         :type topic: string
-        :param topic: The name of the new topic.
+        :param topic: The ARN of the new topic.
 
         :type queue: A boto Queue object
         :param queue: The queue you wish to subscribe to the SNS Topic.

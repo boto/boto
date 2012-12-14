@@ -23,10 +23,7 @@
 #
 
 import boto
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from boto.compat import json
 from .optionstatus import OptionStatus
 from .optionstatus import IndexFieldStatus
 from .optionstatus import ServicePoliciesStatus
