@@ -493,3 +493,13 @@ class ResumableDownloadException(Exception):
     def __repr__(self):
         return 'ResumableDownloadException("%s", %s)' % (
             self.message, self.disposition)
+
+class TooManyRecordsException(Exception):
+    """
+    Exception raised when a search of Route53 records returns more
+    records than requested.
+    """
+
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
