@@ -589,9 +589,10 @@ class Bucket(object):
             created or removed and what version_id the delete created
             or removed.
         """
-        self._delete_key_internal(key_name, headers=headers,
-                                  version_id=version_id, mfa_token=mfa_token,
-                                  query_args_l=None)
+        return self._delete_key_internal(key_name, headers=headers,
+                                         version_id=version_id,
+                                         mfa_token=mfa_token,
+                                         query_args_l=None)
 
     def _delete_key_internal(self, key_name, headers=None, version_id=None,
                              mfa_token=None, query_args_l=None):
