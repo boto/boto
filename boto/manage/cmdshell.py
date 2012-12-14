@@ -46,9 +46,9 @@ class SSHClient(object):
         self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.connect()
 
-    def connect(self):
+    def connect(self, num_retries=5):
         retry = 0
-        while retry < 5:
+        while retry < num_retries:
             try:
                 self._ssh_client.connect(self.server.hostname,
                                          username=self.uname,
