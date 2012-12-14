@@ -1319,6 +1319,11 @@ class EC2Connection(AWSQueryConnection):
     def allocate_address(self, domain=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
+        
+        :type domain: string
+        :param domain: Optional string. If domain is set to "vpc" the address 
+                        will be allocated to VPC . Will return address 
+                        object with allocation_id.
 
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
