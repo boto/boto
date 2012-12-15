@@ -310,6 +310,7 @@ class Instance(TaggedEC2Object):
             return self.eventsSet
         elif name == 'networkInterfaceSet':
             self.interfaces = ResultSet([('item', NetworkInterface)])
+            return self.interfaces
         elif name == 'iamInstanceProfile':
             self.instance_profile = SubParse('iamInstanceProfile')
             return self.instance_profile
