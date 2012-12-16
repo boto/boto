@@ -337,11 +337,7 @@ class Table(object):
         """
         return item_class(self, hash_key, range_key, attrs)
 
-    def query(self, hash_key, range_key_condition=None,
-              attributes_to_get=None, request_limit=None,
-              max_results=None, consistent_read=False,
-              scan_index_forward=True, exclusive_start_key=None,
-              item_class=Item):
+    def query(self, hash_key, **kw):
         """
         Perform a query on the table.
 
@@ -394,20 +390,20 @@ class Table(object):
             which to continue an earlier query.  This would be
             provided as the LastEvaluatedKey in that query.
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Query operation, even if the
+            operation has no matching items for the assigned filter.
+
+
         :type item_class: Class
         :param item_class: Allows you to override the class used
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
         """
-        return self.layer2.query(self, hash_key, range_key_condition,
-                                 attributes_to_get, request_limit,
-                                 max_results, consistent_read,
-                                 scan_index_forward, exclusive_start_key,
-                                 item_class=item_class)
+        return self.layer2.query(self, hash_key, **kw)
 
-    def scan(self, scan_filter=None,
-             attributes_to_get=None, request_limit=None, max_results=None,
-             count=False, exclusive_start_key=None, item_class=Item):
+    def scan(self, **kw):
         """
         Scan through this table, this is a very long
         and expensive operation, and should be avoided if
@@ -472,9 +468,7 @@ class Table(object):
             over all results
         :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
-        return self.layer2.scan(self, scan_filter, attributes_to_get,
-                                request_limit, max_results, count,
-                                exclusive_start_key, item_class=item_class)
+        return self.layer2.scan(self, **kw)
 
     def batch_get_item(self, keys, attributes_to_get=None):
         """

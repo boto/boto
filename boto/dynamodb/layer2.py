@@ -640,7 +640,7 @@ class Layer2(object):
 
         :type count: bool
         :param count: If True, Amazon DynamoDB returns a total
-            number of items for the Scan operation, even if the
+            number of items for the Query operation, even if the
             operation has no matching items for the assigned filter.
 
         :type exclusive_start_key: list or tuple
