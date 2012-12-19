@@ -1,7 +1,7 @@
 .. ref-glacier
 
 =======
-Glaicer
+Glacier
 =======
 
 boto.glacier

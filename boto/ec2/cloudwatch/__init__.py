@@ -38,7 +38,9 @@ RegionData = {
     'sa-east-1': 'monitoring.sa-east-1.amazonaws.com',
     'eu-west-1': 'monitoring.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'monitoring.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'monitoring.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():

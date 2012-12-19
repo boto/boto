@@ -57,7 +57,12 @@ class ResourceRecordSets(ResultSet):
         ResultSet.__init__(self, [('ResourceRecordSet', Record)])
 
     def __repr__(self):
-        return '<ResourceRecordSets: %s>' % self.hosted_zone_id
+        if self.changes:
+            record_list = ','.join([c.__repr__() for c in self.changes])
+        else:
+            record_list = ','.join([record.__repr__() for record in self])
+        return '<ResourceRecordSets:%s [%s]' % (self.hosted_zone_id,
+                                                record_list)
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
@@ -125,6 +130,11 @@ class ResourceRecordSets(ResultSet):
                 resource_records=resource_records)
         self.changes.append([action, change])
         return change
+
+    def add_change_record(self, action, change):
+        """Add an existing record to a change set with the specified action"""
+        self.changes.append([action, change])
+        return
 
     def to_xml(self):
         """Convert this ResourceRecordSet into XML
@@ -218,6 +228,9 @@ class Record(object):
         self.identifier = identifier
         self.weight = weight
         self.region = region
+
+    def __repr__(self):
+        return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
 
     def add_value(self, value):
         """Add a resource record value"""

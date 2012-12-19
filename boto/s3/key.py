@@ -42,8 +42,41 @@ except ImportError:
 
 
 class Key(object):
+    """
+    Represents a key (object) in an S3 bucket.
+
+    :ivar bucket: The parent :class:`boto.s3.bucket.Bucket`.
+    :ivar name: The name of this Key object.
+    :ivar metadata: A dictionary containing user metadata that you
+        wish to store with the object or that has been retrieved from
+        an existing object.
+    :ivar cache_control: The value of the `Cache-Control` HTTP header.
+    :ivar content_type: The value of the `Content-Type` HTTP header.
+    :ivar content_encoding: The value of the `Content-Encoding` HTTP header.
+    :ivar content_disposition: The value of the `Content-Disposition` HTTP
+        header.
+    :ivar content_language: The value of the `Content-Language` HTTP header.
+    :ivar etag: The `etag` associated with this object.
+    :ivar last_modified: The string timestamp representing the last
+        time this object was modified in S3.
+    :ivar owner: The ID of the owner of this object.
+    :ivar storage_class: The storage class of the object.  Currently, one of:
+        STANDARD | REDUCED_REDUNDANCY | GLACIER
+    :ivar md5: The MD5 hash of the contents of the object.
+    :ivar size: The size, in bytes, of the object.
+    :ivar version_id: The version ID of this object, if it is a versioned
+        object.
+    :ivar encrypted: Whether the object is encrypted while at rest on
+        the server.
+    """
 
     DefaultContentType = 'application/octet-stream'
+
+    RestoreBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+        <Days>%s</Days>
+      </RestoreRequest>"""
+
 
     BufferSize = 8192
 
@@ -84,6 +117,13 @@ class Key(object):
         self.source_version_id = None
         self.delete_marker = False
         self.encrypted = None
+        # If the object is being restored, this attribute will be set to True.
+        # If the object is restored, it will be set to False.  Otherwise this
+        # value will be None. If the restore is completed (ongoing_restore =
+        # False), the expiry_date will be populated with the expiry date of the
+        # restored object.
+        self.ongoing_restore = None
+        self.expiry_date = None
 
     def __repr__(self):
         if self.bucket:
@@ -148,6 +188,19 @@ class Key(object):
             self.delete_marker = True
         else:
             self.delete_marker = False
+
+    def handle_restore_headers(self, response):
+        header = response.getheader('x-amz-restore')
+        if header is None:
+            return
+        parts = header.split(',', 1)
+        for part in parts:
+            key, val = [i.strip() for i in part.split('=')]
+            val = val.replace('"', '')
+            if key == 'ongoing-request':
+                self.ongoing_restore = True if val.lower() == 'true' else False
+            elif key == 'expiry-date':
+                self.expiry_date = val
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
@@ -1211,13 +1264,22 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
+        self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                torrent=torrent, version_id=version_id,
+                                override_num_retries=override_num_retries,
+                                response_headers=response_headers,
+                                query_args=None)
+
+    def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None, query_args=None):
         if headers is None:
             headers = {}
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
 
-        query_args = []
+        query_args = query_args or []
         if torrent:
             query_args.append('torrent')
             m = None
@@ -1514,7 +1576,7 @@ class Key(object):
         :param display_name: An option string containing the user's
             Display Name.  Only required on Walrus.
         """
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id,
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
@@ -1575,3 +1637,26 @@ class Key(object):
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
                             metadata=metadata, preserve_acl=preserve_acl)
+
+    def restore(self, days, headers=None):
+        """Restore an object from an archive.
+
+        :type days: int
+        :param days: The lifetime of the restored object (must
+            be at least 1 day).  If the object is already restored
+            then this parameter can be used to readjust the lifetime
+            of the restored object.  In this case, the days
+            param is with respect to the initial time of the request.
+            If the object has not been restored, this param is with
+            respect to the completion time of the request.
+
+        """
+        response = self.bucket.connection.make_request(
+            'POST', self.bucket.name, self.name,
+            data=self.RestoreBody % days,
+            headers=headers, query_args='restore')
+        if response.status not in (200, 202):
+            provider = self.bucket.connection.provider
+            raise provider.storage_response_error(response.status,
+                                                  response.reason,
+                                                  response.read())

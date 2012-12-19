@@ -22,6 +22,9 @@ class AWSMockServiceTestCase(unittest.TestCase):
             https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
             aws_secret_access_key='aws_secret_access_key')
+        self.initialize_service_connection()
+
+    def initialize_service_connection(self):
         self.actual_request = None
         self.original_mexe = self.service_connection._mexe
         self.service_connection._mexe = self._mexe_spy
@@ -45,6 +48,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
         response.reason = reason
 
         response.getheaders.return_value = header
+        response.msg = dict(header)
         def overwrite_header(arg, default=None):
             header_dict = dict(header)
             if header_dict.has_key(arg):
@@ -52,7 +56,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
             else:
                 return default
         response.getheader.side_effect = overwrite_header
-        
+
         return response
 
     def assert_request_parameters(self, params, ignore_params_values=None):

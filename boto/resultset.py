@@ -54,6 +54,7 @@ class ResultSet(list):
         self.next_key_marker = None
         self.next_upload_id_marker = None
         self.next_version_id_marker = None
+        self.next_generation_marker= None
         self.version_id_marker = None
         self.is_truncated = False
         self.next_token = None
@@ -94,6 +95,8 @@ class ResultSet(list):
             self.version_id_marker = value
         elif name == 'NextVersionIdMarker':
             self.next_version_id_marker = value
+        elif name == 'NextGenerationMarker':
+            self.next_generation_marker = value
         elif name == 'UploadIdMarker':
             self.upload_id_marker = value
         elif name == 'NextUploadIdMarker':
@@ -164,4 +167,3 @@ class BooleanResult(object):
             self.request_id = value
         else:
             setattr(self, name, value)
-

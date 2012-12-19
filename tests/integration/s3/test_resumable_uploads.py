@@ -91,7 +91,7 @@ class ResumableUploadTests(unittest.TestCase):
 
     def get_staged_host(self):
         """URL of an existing bucket."""
-        return 'pub.commondatastorage.googleapis.com'
+        return 'pub.storage.googleapis.com'
 
     def get_invalid_upload_id(self):
         return (

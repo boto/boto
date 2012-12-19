@@ -49,3 +49,25 @@ class TestSigV4Handler(unittest.TestCase):
                          'host:glacier.us-east-1.amazonaws.com\n'
                          'x-amz-archive-description:two spaces\n'
                          'x-amz-glacier-version:2012-06-01')
+
+    def test_canonical_query_string(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            '/-/vaults/foo/archives', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        request.params['Foo.1'] = 'aaa'
+        request.params['Foo.10'] = 'zzz'
+        query_string = auth.canonical_query_string(request)
+        self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
+
+    def test_region_and_service_can_be_overriden(self):
+        auth = HmacAuthV4Handler('queue.amazonaws.com',
+                                 Mock(), self.provider)
+        self.request.headers['X-Amz-Date'] = '20121121000000'
+
+        auth.region_name = 'us-west-2'
+        auth.service_name = 'sqs'
+        scope = auth.credential_scope(self.request)
+        self.assertEqual(scope, '20121121/us-west-2/sqs/aws4_request')

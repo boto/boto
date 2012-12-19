@@ -308,7 +308,7 @@ class MockConnection(object):
         self.buckets = {}
 
     def create_bucket(self, bucket_name, headers=NOT_IMPL, location=NOT_IMPL,
-                      policy=NOT_IMPL):
+                      policy=NOT_IMPL, storage_class=NOT_IMPL):
         if bucket_name in self.buckets:
             raise boto.exception.StorageCreateError(
                 409, 'BucketAlreadyOwnedByYou',
@@ -372,7 +372,7 @@ class MockBucketStorageUri(object):
         return mock_connection
 
     def create_bucket(self, headers=NOT_IMPL, location=NOT_IMPL,
-                      policy=NOT_IMPL):
+                      policy=NOT_IMPL, storage_class=NOT_IMPL):
         return self.connect().create_bucket(self.bucket_name)
 
     def delete_bucket(self, headers=NOT_IMPL):
@@ -410,7 +410,8 @@ class MockBucketStorageUri(object):
     def get_all_keys(self, validate=NOT_IMPL, headers=NOT_IMPL):
         return self.get_bucket().get_all_keys(self)
 
-    def list_bucket(self, prefix='', delimiter='', headers=NOT_IMPL):
+    def list_bucket(self, prefix='', delimiter='', headers=NOT_IMPL,
+                    all_versions=NOT_IMPL):
         return self.get_bucket().list(prefix=prefix, delimiter=delimiter)
 
     def get_bucket(self, validate=NOT_IMPL, headers=NOT_IMPL):
@@ -469,7 +470,7 @@ class MockBucketStorageUri(object):
     def copy_key(self, src_bucket_name, src_key_name, metadata=NOT_IMPL,
                  src_version_id=NOT_IMPL, storage_class=NOT_IMPL,
                  preserve_acl=NOT_IMPL, encrypt_key=NOT_IMPL, headers=NOT_IMPL,
-                 query_args=NOT_IMPL):
+                 query_args=NOT_IMPL, src_generation=NOT_IMPL):
         dst_bucket = self.get_bucket()
         return dst_bucket.copy_key(new_key_name=self.object_name,
                                    src_bucket_name=src_bucket_name,

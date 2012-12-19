@@ -166,16 +166,18 @@ class Bucket(object):
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
-        query_args = []
+        query_args_l = []
         if version_id:
-            query_args.append('versionId=%s' % version_id)
+            query_args_l.append('versionId=%s' % version_id)
         if response_headers:
             for rk, rv in response_headers.iteritems():
-                query_args.append('%s=%s' % (rk, urllib.quote(rv)))
-        if query_args:
-            query_args = '&'.join(query_args)
-        else:
-            query_args = None
+                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+
+        key, resp = self._get_key_internal(key_name, headers, query_args_l)
+        return key
+
+    def _get_key_internal(self, key_name, headers, query_args_l):
+        query_args = '&'.join(query_args_l) or None
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
                                                 query_args=query_args)
@@ -205,10 +207,11 @@ class Bucket(object):
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
-            return k
+            k.handle_restore_headers(response)
+            return k, response
         else:
             if response.status == 404:
-                return None
+                return None, response
             else:
                 raise self.connection.provider.storage_response_error(
                     response.status, response.reason, '')
@@ -240,9 +243,7 @@ class Bucket(object):
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
             to allow you to organize and browse your keys
-            hierarchically. See:
-            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
-            more details.
+            hierarchically. See http://goo.gl/Xx63h for more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
@@ -563,8 +564,8 @@ class Bucket(object):
             pass
         return result
 
-    def delete_key(self, key_name, headers=None,
-                   version_id=None, mfa_token=None):
+    def delete_key(self, key_name, headers=None, version_id=None,
+                   mfa_token=None):
         """
         Deletes a key from the bucket.  If a version_id is provided,
         only that version of the key will be deleted.
@@ -588,11 +589,18 @@ class Bucket(object):
             created or removed and what version_id the delete created
             or removed.
         """
+        return self._delete_key_internal(key_name, headers=headers,
+                                         version_id=version_id,
+                                         mfa_token=mfa_token,
+                                         query_args_l=None)
+
+    def _delete_key_internal(self, key_name, headers=None, version_id=None,
+                             mfa_token=None, query_args_l=None):
+        query_args_l = query_args_l or []
         provider = self.connection.provider
         if version_id:
-            query_args = 'versionId=%s' % version_id
-        else:
-            query_args = None
+            query_args_l.append('versionId=%s' % version_id)
+        query_args = '&'.join(query_args_l) or None
         if mfa_token:
             if not headers:
                 headers = {}

@@ -27,6 +27,7 @@ from boto.dynamodb.item import Item
 from boto.dynamodb import exceptions as dynamodb_exceptions
 import time
 
+
 class TableBatchGenerator(object):
     """
     A low-level generator used to page through results from
@@ -37,11 +38,13 @@ class TableBatchGenerator(object):
         generator.
     """
 
-    def __init__(self, table, keys, attributes_to_get=None):
+    def __init__(self, table, keys, attributes_to_get=None,
+                 consistent_read=False):
         self.table = table
         self.keys = keys
         self.consumed_units = 0
         self.attributes_to_get = attributes_to_get
+        self.consistent_read = consistent_read
 
     def _queue_unprocessed(self, res):
         if not u'UnprocessedKeys' in res:
@@ -60,7 +63,8 @@ class TableBatchGenerator(object):
         while self.keys:
             # Build the next batch
             batch = BatchList(self.table.layer2)
-            batch.add_batch(self.table, self.keys[:100], self.attributes_to_get)
+            batch.add_batch(self.table, self.keys[:100],
+                            self.attributes_to_get)
             res = batch.submit()
 
             # parse the results
@@ -99,9 +103,52 @@ class Table(object):
     """
 
     def __init__(self, layer2, response):
+        """
+
+        :type layer2: :class:`boto.dynamodb.layer2.Layer2`
+        :param layer2: A `Layer2` api object.
+
+        :type response: dict
+        :param response: The output of
+            `boto.dynamodb.layer1.Layer1.describe_table`.
+
+        """
         self.layer2 = layer2
         self._dict = {}
         self.update_from_response(response)
+
+    @classmethod
+    def create_from_schema(cls, layer2, name, schema):
+        """Create a Table object.
+
+        If you know the name and schema of your table, you can
+        create a ``Table`` object without having to make any
+        API calls (normally an API call is made to retrieve
+        the schema of a table).
+
+        Example usage::
+
+            table = Table.create_from_schema(
+                boto.connect_dynamodb(),
+                'tablename',
+                Schema.create(hash_key=('keyname', 'N')))
+
+        :type layer2: :class:`boto.dynamodb.layer2.Layer2`
+        :param layer2: A ``Layer2`` api object.
+
+        :type name: str
+        :param name: The name of the table.
+
+        :type schema: :class:`boto.dynamodb.schema.Schema`
+        :param schema: The schema associated with the table.
+
+        :rtype: :class:`boto.dynamodb.table.Table`
+        :return: A Table object representing the table.
+
+        """
+        table = cls(layer2, {'Table': {'TableName': name}})
+        table._schema = schema
+        return table
 
     def __repr__(self):
         return 'Table(%s)' % self.name
@@ -112,11 +159,11 @@ class Table(object):
 
     @property
     def create_time(self):
-        return self._dict['CreationDateTime']
+        return self._dict.get('CreationDateTime', None)
 
     @property
     def status(self):
-        return self._dict['TableStatus']
+        return self._dict.get('TableStatus', None)
 
     @property
     def item_count(self):
@@ -132,19 +179,27 @@ class Table(object):
 
     @property
     def read_units(self):
-        return self._dict['ProvisionedThroughput']['ReadCapacityUnits']
+        try:
+            return self._dict['ProvisionedThroughput']['ReadCapacityUnits']
+        except KeyError:
+            return None
 
     @property
     def write_units(self):
-        return self._dict['ProvisionedThroughput']['WriteCapacityUnits']
+        try:
+            return self._dict['ProvisionedThroughput']['WriteCapacityUnits']
+        except KeyError:
+            return None
 
     def update_from_response(self, response):
         """
         Update the state of the Table object based on the response
         data received from Amazon DynamoDB.
         """
+        # 'Table' is from a describe_table call.
         if 'Table' in response:
             self._dict.update(response['Table'])
+        # 'TableDescription' is from a create_table call.
         elif 'TableDescription' in response:
             self._dict.update(response['TableDescription'])
         if 'KeySchema' in self._dict:
@@ -202,12 +257,12 @@ class Table(object):
         """
         Retrieve an existing item from the table.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key: int|long|float|str|unicode
+        :type range_key: int|long|float|str|unicode|Binary
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
@@ -240,12 +295,12 @@ class Table(object):
         the data that is returned, since this method specifically tells
         Amazon not to return anything but the Item's key.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key: int|long|float|str|unicode
+        :type range_key: int|long|float|str|unicode|Binary
         :param range_key: The optional RangeKey of the requested item.
             The type of the value must match the type defined in the
             schema for the table.
@@ -302,12 +357,12 @@ class Table(object):
            the explicit parameters, the values in the attrs will be
            ignored.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the new item.  The
             type of the value must match the type defined in the
             schema for the table.
 
-        :type range_key: int|long|float|str|unicode
+        :type range_key: int|long|float|str|unicode|Binary
         :param range_key: The optional RangeKey of the new item.
             The type of the value must match the type defined in the
             schema for the table.
@@ -331,7 +386,7 @@ class Table(object):
         """
         Perform a query on the table.
 
-        :type hash_key: int|long|float|str|unicode
+        :type hash_key: int|long|float|str|unicode|Binary
         :param hash_key: The HashKey of the requested item.  The
             type of the value must match the type defined in the
             schema for the table.
@@ -399,12 +454,11 @@ class Table(object):
         and expensive operation, and should be avoided if
         at all possible.
 
-        :type scan_filter: A list of tuples
-        :param scan_filter: A list of tuples where each tuple consists
-            of an attribute name, a comparison operator, and either
-            a scalar or tuple consisting of the values to compare
-            the attribute to.  Valid comparison operators are shown below
-            along with the expected number of values that should be supplied.
+        :type scan_filter: A dict
+        :param scan_filter: A dictionary where the key is the
+            attribute name and the value is a
+            :class:`boto.dynamodb.condition.Condition` object.
+            Valid Condition objects include:
 
              * EQ - equal (1)
              * NE - not equal (1)
@@ -455,7 +509,8 @@ class Table(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
 
-        :return: A TableGenerator (generator) object which will iterate over all results
+        :return: A TableGenerator (generator) object which will iterate
+            over all results
         :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
         return self.layer2.scan(self, scan_filter, attributes_to_get,
@@ -484,7 +539,8 @@ class Table(object):
             If supplied, only the specified attribute names will
             be returned.  Otherwise, all attributes will be returned.
 
-        :return: A TableBatchGenerator (generator) object which will iterate over all results
+        :return: A TableBatchGenerator (generator) object which will
+            iterate over all results
         :rtype: :class:`boto.dynamodb.table.TableBatchGenerator`
         """
         return TableBatchGenerator(self, keys, attributes_to_get)
