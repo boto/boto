@@ -68,9 +68,11 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             'NetworkInterface.1.PrivateIpAddress': '10.0.0.54',
             'NetworkInterface.1.SubnetId': 'subnet_id',
             'NetworkInterface.1.PrivateIpAddresses.1.Primary': 'false',
-            'NetworkInterface.1.PrivateIpAddresses.1.PrivateIpAddress': '10.0.0.10',
+            'NetworkInterface.1.PrivateIpAddresses.1.PrivateIpAddress':
+                '10.0.0.10',
             'NetworkInterface.1.PrivateIpAddresses.2.Primary': 'false',
-            'NetworkInterface.1.PrivateIpAddresses.2.PrivateIpAddress': '10.0.0.11',
+            'NetworkInterface.1.PrivateIpAddresses.2.PrivateIpAddress':
+                '10.0.0.11',
             'NetworkInterface.2.DeviceIndex': '2',
             'NetworkInterface.2.Description': 'description2',
             'NetworkInterface.2.DeleteOnTermination': 'false',
@@ -79,9 +81,58 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             'NetworkInterface.2.SecurityGroupId.1': 'group_id1',
             'NetworkInterface.2.SecurityGroupId.2': 'group_id2',
             'NetworkInterface.2.PrivateIpAddresses.1.Primary': 'false',
-            'NetworkInterface.2.PrivateIpAddresses.1.PrivateIpAddress': '10.0.1.10',
+            'NetworkInterface.2.PrivateIpAddresses.1.PrivateIpAddress':
+                '10.0.1.10',
             'NetworkInterface.2.PrivateIpAddresses.2.Primary': 'false',
-            'NetworkInterface.2.PrivateIpAddresses.2.PrivateIpAddress': '10.0.1.11',
+            'NetworkInterface.2.PrivateIpAddresses.2.PrivateIpAddress':
+                '10.0.1.11',
+        })
+
+    def test_add_prefix_to_serialization(self):
+        return
+        collection = NetworkInterfaceCollection(self.network_interfaces_spec1,
+                                                self.network_interfaces_spec2)
+        params = {}
+        collection.build_list_params(params, prefix='LaunchSpecification.')
+        # We already tested the actual serialization previously, so
+        # we're just checking a few keys to make sure we get the proper
+        # prefix.
+        self.assertDictEqual(params, {
+            'LaunchSpecification.NetworkInterface.1.DeviceIndex': '1',
+            'LaunchSpecification.NetworkInterface.1.DeleteOnTermination':
+                'false',
+            'LaunchSpecification.NetworkInterface.1.Description':
+                'description1',
+            'LaunchSpecification.NetworkInterface.1.PrivateIpAddress':
+                '10.0.0.54',
+            'LaunchSpecification.NetworkInterface.1.SubnetId': 'subnet_id',
+            'LaunchSpecification.NetworkInterface.1.PrivateIpAddresses.1.Primary':
+                'false',
+            'LaunchSpecification.NetworkInterface.1.PrivateIpAddresses.1.PrivateIpAddress':
+                '10.0.0.10',
+            'LaunchSpecification.NetworkInterface.1.PrivateIpAddresses.2.Primary': 'false',
+            'LaunchSpecification.NetworkInterface.1.PrivateIpAddresses.2.PrivateIpAddress':
+                '10.0.0.11',
+            'LaunchSpecification.NetworkInterface.2.DeviceIndex': '2',
+            'LaunchSpecification.NetworkInterface.2.Description':
+                'description2',
+            'LaunchSpecification.NetworkInterface.2.DeleteOnTermination':
+                'false',
+            'LaunchSpecification.NetworkInterface.2.PrivateIpAddress':
+                '10.0.1.54',
+            'LaunchSpecification.NetworkInterface.2.SubnetId': 'subnet_id2',
+            'LaunchSpecification.NetworkInterface.2.SecurityGroupId.1':
+                'group_id1',
+            'LaunchSpecification.NetworkInterface.2.SecurityGroupId.2':
+                'group_id2',
+            'LaunchSpecification.NetworkInterface.2.PrivateIpAddresses.1.Primary':
+                'false',
+            'LaunchSpecification.NetworkInterface.2.PrivateIpAddresses.1.PrivateIpAddress':
+                '10.0.1.10',
+            'LaunchSpecification.NetworkInterface.2.PrivateIpAddresses.2.Primary':
+                'false',
+            'LaunchSpecification.NetworkInterface.2.PrivateIpAddresses.2.PrivateIpAddress':
+                '10.0.1.11',
         })
 
 

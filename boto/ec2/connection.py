@@ -1021,7 +1021,8 @@ class EC2Connection(AWSQueryConnection):
                                instance_profile_arn=None,
                                instance_profile_name=None,
                                security_group_ids=None,
-                               ebs_optimized=False):
+                               ebs_optimized=False,
+                               network_interfaces=None):
         """
         Request instances on the spot market at a particular price.
 
@@ -1124,6 +1125,10 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
+        :type network_interfaces: list
+        :param network_interfaces: A list of
+            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
                  associated with the request for machines
@@ -1187,6 +1192,8 @@ class EC2Connection(AWSQueryConnection):
             params['%s.IamInstanceProfile.Arn' % ls] = instance_profile_arn
         if ebs_optimized:
             params['%s.EbsOptimized' % ls] = 'true'
+        if network_interfaces:
+            network_interfaces.build_list_params(params, prefix=ls + '.')
         return self.get_list('RequestSpotInstances', params,
                              [('item', SpotInstanceRequest)],
                              verb='POST')
