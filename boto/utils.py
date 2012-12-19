@@ -589,7 +589,7 @@ class LRUCache(dict):
     C
 
     This code is based on the LRUCache class from Genshi which is based on
-    `Mighty <http://www.myghty.org>`_'s LRUCache from ``myghtyutils.util``,
+    `Myghty <http://www.myghty.org>`_'s LRUCache from ``myghtyutils.util``,
     written by Mike Bayer and released under the MIT license (Genshi uses the
     BSD License).
     """
