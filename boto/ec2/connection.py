@@ -525,7 +525,7 @@ class EC2Connection(AWSQueryConnection):
                       security_group_ids=None,
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
-                      ebs_optimized=False):
+                      ebs_optimized=False, network_interfaces=None):
         """
         Runs an image on EC2.
 
@@ -647,6 +647,10 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
+        :type network_interfaces: list
+        :param network_interfaces: A list of
+            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -711,6 +715,8 @@ class EC2Connection(AWSQueryConnection):
             params['IamInstanceProfile.Arn'] = instance_profile_arn
         if ebs_optimized:
             params['EbsOptimized'] = 'true'
+        if network_interfaces:
+            network_interfaces.build_list_params(params)
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 

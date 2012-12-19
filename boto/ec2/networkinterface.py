@@ -73,6 +73,7 @@ class Attachment(object):
         else:
             setattr(self, name, value)
 
+
 class NetworkInterface(TaggedEC2Object):
     """
     An Elastic Network Interface.
@@ -167,10 +168,11 @@ class NetworkInterface(TaggedEC2Object):
 
 
 class PrivateIPAddress(object):
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, private_ip_address=None,
+                 primary=None):
         self.connection = connection
-        self.private_ip_address = None
-        self.primary = None
+        self.private_ip_address = private_ip_address
+        self.primary = primary
 
     def startElement(self, name, attrs, connection):
         pass
@@ -184,3 +186,62 @@ class PrivateIPAddress(object):
     def __repr__(self):
         return "PrivateIPAddress(%s, primary=%s)" % (self.private_ip_address,
                                                      self.primary)
+
+
+class NetworkInterfaceCollection(list):
+    def __init__(self, *interfaces):
+        self.extend(interfaces)
+
+    def build_list_params(self, params, prefix=''):
+        for i, spec in enumerate(self, 1):
+            full_prefix = '%sNetworkInterface.%s.' % (prefix, i)
+            if spec.network_interface_id is not None:
+                params[full_prefix + 'NetworkInterfaceId'] = \
+                        str(spec.network_interface_id)
+            if spec.device_index is not None:
+                params[full_prefix + 'DeviceIndex'] = \
+                        str(spec.device_index)
+            if spec.subnet_id is not None:
+                params[full_prefix + 'SubnetId'] = str(spec.subnet_id)
+            if spec.description is not None:
+                params[full_prefix + 'Description'] = str(spec.description)
+            if spec.delete_on_termination is not None:
+                params[full_prefix + 'DeleteOnTermination'] = \
+                        'true' if spec.delete_on_termination else 'false'
+            if spec.secondary_private_ip_address_count is not None:
+                params[full_prefix + 'SecondaryPrivateIpAddressCount'] = \
+                        str(spec.secondary_private_ip_address_count)
+            if spec.private_ip_address is not None:
+                params[full_prefix + 'PrivateIpAddress'] = \
+                        str(spec.private_ip_address)
+            if spec.groups is not None:
+                for j, group_id in enumerate(spec.groups, 1):
+                    query_param_key = '%sSecurityGroupId.%s' % (full_prefix, j)
+                    params[query_param_key] = str(group_id)
+            if spec.private_ip_addresses is not None:
+                for k, ip_addr in enumerate(spec.private_ip_addresses, 1):
+                    query_param_key_prefix = (
+                        '%sPrivateIpAddresses.%s' % (full_prefix, k))
+                    params[query_param_key_prefix + '.PrivateIpAddress'] = \
+                            str(ip_addr.private_ip_address)
+                    if ip_addr.primary is not None:
+                        params[query_param_key_prefix + '.Primary'] = \
+                                'true' if ip_addr.primary else 'false'
+
+
+class NetworkInterfaceSpecification(object):
+    def __init__(self, network_interface_id=None, device_index=None,
+                 subnet_id=None, description=None, private_ip_address=None,
+                 groups=None, delete_on_termination=None,
+                 private_ip_addresses=None,
+                 secondary_private_ip_address_count=None):
+        self.network_interface_id = network_interface_id
+        self.device_index = device_index
+        self.subnet_id = subnet_id
+        self.description = description
+        self.private_ip_address = private_ip_address
+        self.groups = groups
+        self.delete_on_termination = delete_on_termination
+        self.private_ip_addresses = private_ip_addresses
+        self.secondary_private_ip_address_count = \
+                secondary_private_ip_address_count
