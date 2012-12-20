@@ -470,11 +470,11 @@ class Instance(TaggedEC2Object):
 
     def use_ip(self, ip_address):
         """
-        Associates Elastic IP to instance 
+        Associates Elastic IP to instance
 
         :type ip_address: class:`boto.ec2.address`
-        :param ip_address: IP Address object. 
-        
+        :param ip_address: IP Address object.
+
         :rtype: bool
         :return: True if successful
         """
