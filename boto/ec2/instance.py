@@ -273,10 +273,6 @@ class Instance(TaggedEC2Object):
         return 0
 
     @property
-    def state(self):
-        return self._state.name
-
-    @property
     def placement(self):
         return self._placement.zone
 
@@ -473,6 +469,16 @@ class Instance(TaggedEC2Object):
         return self.connection.confirm_product_instance(self.id, product_code)
 
     def use_ip(self, ip_address):
+        """
+        Associates Elastic IP to instance 
+
+        :type ip_address: class:`boto.ec2.address`
+        :param ip_address: IP Address object. 
+        
+        :rtype: bool
+        :return: True if successful
+        """
+
         if isinstance(ip_address, Address):
             ip_address = ip_address.public_ip
         return self.connection.associate_address(self.id, ip_address)
