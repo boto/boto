@@ -233,7 +233,7 @@ should allow incoming connections on 8080 and 8443).
 
 To remove instances:
 
->>> lb.degregister_instances(instance_ids)
+>>> lb.deregister_instances(instance_ids)
 
 Modifying Availability Zones for a Load Balancer
 ------------------------------------------------
