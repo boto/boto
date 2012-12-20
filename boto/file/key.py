@@ -152,7 +152,7 @@ class Key(object):
         """
 
         fp = StringIO.StringIO()
-        self.get_contents_to_file(fp)
+        self.get_file(fp)
         return fp.getvalue()
 
     def is_stream(self):
