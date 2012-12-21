@@ -97,7 +97,12 @@ class TableGenerator:
         while iterating over the TableGenerator in order to skip to the
         next "page" of results.
         """
+        # preserve any existing limit in case the user alters self.remaining
+        limit = self.kwargs.get('limit')
+        if self.remaining > 0 and limit is None or limit > self.remaining:
+            self.kwargs['limit'] = self.remaining
         self._response = self.callable(**self.kwargs)
+        self.kwargs['limit'] = limit
         self._consumed_units += self._response.get('ConsumedCapacityUnits', 0.0)
         self._count += self._response.get('Count', 0)
         self._scanned_count += self._response.get('ScannedCount', 0)
