@@ -590,9 +590,9 @@ class Layer2(object):
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
-              max_results=None, consistent_read=False, count=False,
+              max_results=None, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
-              item_class=Item):
+              item_class=Item, count=False):
         """
         Perform a query on the table.
 
@@ -684,7 +684,7 @@ class Layer2(object):
 
     def scan(self, table, scan_filter=None,
              attributes_to_get=None, request_limit=None, max_results=None,
-             count=False, exclusive_start_key=None, item_class=Item):
+             exclusive_start_key=None, item_class=Item, count=False):
         """
         Perform a scan of DynamoDB.
 

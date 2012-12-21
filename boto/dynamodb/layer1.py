@@ -462,8 +462,8 @@ class Layer1(AWSAuthConnection):
 
     def query(self, table_name, hash_key_value, range_key_conditions=None,
               attributes_to_get=None, limit=None, consistent_read=False,
-              scan_index_forward=True, exclusive_start_key=None, count=False,
-              object_hook=None):
+              scan_index_forward=True, exclusive_start_key=None,
+              object_hook=None, count=False):
         """
         Perform a query of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -530,8 +530,7 @@ class Layer1(AWSAuthConnection):
 
     def scan(self, table_name, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None,
-             object_hook=None):
+             exclusive_start_key=None, object_hook=None, count=False):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body

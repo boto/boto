@@ -337,7 +337,7 @@ class Table(object):
         """
         return item_class(self, hash_key, range_key, attrs)
 
-    def query(self, hash_key, **kw):
+    def query(self, hash_key, *args, **kw):
         """
         Perform a query on the table.
 
@@ -401,9 +401,9 @@ class Table(object):
             to generate the items. This should be a subclass of
             :class:`boto.dynamodb.item.Item`
         """
-        return self.layer2.query(self, hash_key, **kw)
+        return self.layer2.query(self, hash_key, *args, **kw)
 
-    def scan(self, **kw):
+    def scan(self, *args, **kw):
         """
         Scan through this table, this is a very long
         and expensive operation, and should be avoided if
@@ -468,7 +468,7 @@ class Table(object):
             over all results
         :rtype: :class:`boto.dynamodb.layer2.TableGenerator`
         """
-        return self.layer2.scan(self, **kw)
+        return self.layer2.scan(self, *args, **kw)
 
     def batch_get_item(self, keys, attributes_to_get=None):
         """
