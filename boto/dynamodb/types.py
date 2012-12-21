@@ -184,10 +184,47 @@ def item_object_hook(dct):
 
 
 class Dynamizer(object):
+    """Control serialization/deserialization of types.
+
+    This class controls the encoding of python types to the
+    format that is expected by the DynamoDB API, as well as
+    taking DynamoDB types and constructing the appropriate
+    python types.
+
+    If you want to customize this process, you can subclass
+    this class and override the encoding/decoding of
+    specific types.  For example::
+
+        'foo'      (Python type)
+            |
+            v
+        encode('foo')
+            |
+            v
+        _encode_s('foo')
+            |
+            v
+        {'S': 'foo'}  (Encoding sent to/received from DynamoDB)
+            |
+            V
+        decode({'S': 'foo'})
+            |
+            v
+        _decode_s({'S': 'foo'})
+            |
+            v
+        'foo'     (Python type)
+
+    """
     def _get_dynamodb_type(self, attr):
         return get_dynamodb_type(attr)
 
     def encode(self, attr):
+        """
+        Encodes a python type to the format expected
+        by DynamoDB.
+
+        """
         dynamodb_type = self._get_dynamodb_type(attr)
         try:
             encoder = getattr(self, '_encode_%s' % dynamodb_type.lower())
@@ -228,6 +265,11 @@ class Dynamizer(object):
         return [self._encode_b(n) for n in attr]
 
     def decode(self, attr):
+        """
+        Takes the format returned by DynamoDB and constructs
+        the appropriate python type.
+
+        """
         if len(attr) > 1 or not attr:
             return attr
         dynamodb_type = attr.keys()[0]
@@ -257,6 +299,16 @@ class Dynamizer(object):
 
 
 class LossyFloatDynamizer(Dynamizer):
+    """Use float/int instead of Decimal for numeric types.
+
+    This class is provided for backwards compatibility.  Instead of
+    using Decimals for the 'N', 'NS' types it uses ints/floats.
+
+    This class is deprecated and its usage is not encouraged,
+    as doing so may result in loss of precision.  Use the
+    `Dynamizer` class instead.
+
+    """
     def _encode_n(self, attr):
         return serialize_num(attr)
 

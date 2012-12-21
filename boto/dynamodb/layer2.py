@@ -107,6 +107,15 @@ class Layer2(object):
         self.dynamizer = dynamizer()
 
     def use_decimals(self):
+        """
+        Use the ``decimal.Decimal`` type for encoding/decoding numeric types.
+
+        By default, ints/floats are used to represent numeric types
+        ('N', 'NS') received from DynamoDB.  Using the ``Decimal``
+        type is recommended to prevent loss of precision.
+
+        """
+        # Eventually this should be made the default dynamizer.
         self.dynamizer = Dynamizer()
 
     def dynamize_attribute_updates(self, pending_updates):
