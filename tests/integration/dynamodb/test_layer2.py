@@ -355,6 +355,24 @@ class DynamoDBLayer2Test (unittest.TestCase):
         response = batch_list.submit()
         # should really check for unprocessed items
 
+        # Do some generator gymnastics
+        results = table.scan(scan_filter={'Tags': CONTAINS('table')})
+        assert results.scanned_count == 5
+        results = table.scan(request_limit=2, max_results=5)
+        assert results.count == 2
+        for item in results:
+            if results.count == 2:
+                assert results.remaining == 4
+                results.remaining -= 2
+                results.next_response()
+            else:
+                assert results.count == 4
+                assert results.remaining in (0, 1)
+        assert results.count == 4
+        results = table.scan(request_limit=6, max_results=4)
+        assert len(list(results)) == 4
+        assert results.count == 4
+
         batch_list = c.new_batch_write_list()
         batch_list.add_batch(table, deletes=[(item4_key, item4_range),
                                              (item5_key, item5_range)])
@@ -362,13 +380,6 @@ class DynamoDBLayer2Test (unittest.TestCase):
 
         # Try queries
         results = table.query('Amazon DynamoDB', range_key_condition=BEGINS_WITH('DynamoDB'))
-        n = 0
-        for item in results:
-            n += 1
-        assert n == 2
-
-        # Try scans
-        results = table.scan(scan_filter={'Tags': CONTAINS('table')})
         n = 0
         for item in results:
             n += 1
