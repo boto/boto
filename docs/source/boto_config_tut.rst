@@ -62,6 +62,21 @@ For example::
 Please notice that quote characters are not used to either side of the '='
 operator even when both your aws access key id and secret key are strings.
 
+For greater security, the secret key can be stored in a keyring and
+retrieved via the keyring package.  To use a keyring, use ``keyring``,
+rather than ``aws_secret_access_key``::
+
+    [Credentials]
+    aws_access_key_id = <your access key>
+    keyring = <keyring name>
+
+To use a keyring, you must have the Python `keyring
+<http://pypi.python.org/pypi/keyring>`_ package installed and in the
+Python path. To learn about setting up keyrings, see the `keyring
+documentation
+<http://pypi.python.org/pypi/keyring#installing-and-using-python-keyring-lib>`_
+
+
 Boto
 ^^^^
 

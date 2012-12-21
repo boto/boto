@@ -251,6 +251,11 @@ class Provider(object):
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
             boto.log.debug("Using secret key found in config file.")
+        elif config.has_option('Credentials', 'keyring'):
+            keyring_name = config.get('Credentials', 'keyring')
+            import keyring
+            self.secret_key = keyring.get_password(
+                keyring_name, self.access_key)
 
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
