@@ -64,7 +64,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-10-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-12-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -1838,6 +1838,40 @@ class EC2Connection(AWSQueryConnection):
     def delete_snapshot(self, snapshot_id):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params, verb='POST')
+
+    def copy_snapshot(self, source_region, source_snapshot_id,
+                      description=None):
+        """
+        Copies a point-in-time snapshot of an Amazon Elastic Block Store
+        (Amazon EBS) volume and stores it in Amazon Simple Storage Service
+        (Amazon S3). You can copy the snapshot within the same region or from
+        one region to another. You can use the snapshot to create new Amazon
+        EBS volumes or Amazon Machine Images (AMIs).
+
+
+        :type source_region: str
+        :param source_region: The ID of the AWS region that contains the
+            snapshot to be copied (e.g 'us-east-1', 'us-west-2', etc.).
+
+        :type source_snapshot_id: str
+        :param source_snapshot_id: The ID of the Amazon EBS snapshot to copy
+
+        :type description: str
+        :param description: A description of the new Amazon EBS snapshot.
+
+        :rtype: str
+        :return: The snapshot ID
+
+        """
+        params = {
+            'SourceRegion': source_region,
+            'SourceSnapshotId': source_snapshot_id,
+        }
+        if description is not None:
+            params['Description'] = description
+        snapshot = self.get_object('CopySnapshot', params, Snapshot,
+                                   verb='POST')
+        return snapshot.id
 
     def trim_snapshots(self, hourly_backups=8, daily_backups=7,
                        weekly_backups=4):

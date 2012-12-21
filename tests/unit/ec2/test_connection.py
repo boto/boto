@@ -451,5 +451,30 @@ class TestDescribeSpotInstanceRequests(TestEC2ConnectionBase):
         self.assertEqual(status.message, 'Your Spot request is fulfilled.')
 
 
+class TestCopySnapshot(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+        <CopySnapshotResponse xmlns="http://ec2.amazonaws.com/doc/2012-12-01/">
+            <requestId>request_id</requestId>
+            <snapshotId>snap-copied-id</snapshotId>
+        </CopySnapshotResponse>
+        """
+
+    def test_copy_snapshot(self):
+        self.set_http_response(status_code=200)
+        snapshot_id = self.ec2.copy_snapshot('us-west-2', 'snap-id',
+                                             'description')
+        self.assertEqual(snapshot_id, 'snap-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopySnapshot',
+            'Description': 'description',
+            'SourceRegion': 'us-west-2',
+            'SourceSnapshotId': 'snap-id'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+
 if __name__ == '__main__':
     unittest.main()
