@@ -22,7 +22,6 @@
 import uuid
 import urllib
 
-from boto.resultset import ResultSet
 
 
 class InvalidationBatch(object):
