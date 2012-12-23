@@ -26,7 +26,7 @@ Defines an interface which all Auth handlers need to implement.
 from plugin import Plugin
 
 class NotReadyToAuthenticate(Exception):
-  pass
+    pass
 
 class AuthHandler(Plugin):
 
