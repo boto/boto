@@ -415,4 +415,3 @@ class Route53Connection(AWSAuthConnection):
             if value and not value[-1] == '.':
                 value = "%s." % value
             return value
->>>>>>> 412c2e9fc1c33ea413b7ac497072627685f22f5e
