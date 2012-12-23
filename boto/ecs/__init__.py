@@ -20,9 +20,7 @@
 # IN THE SOFTWARE.
 
 import boto
-from boto.connection import AWSQueryConnection, AWSAuthConnection
-import time
-import urllib
+from boto.connection import AWSQueryConnection
 import xml.sax
 from boto.ecs.item import ItemSet
 from boto import handler

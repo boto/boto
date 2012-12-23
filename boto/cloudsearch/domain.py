@@ -22,8 +22,6 @@
 # IN THE SOFTWARE.
 #
 
-import boto
-from boto.compat import json
 from .optionstatus import OptionStatus
 from .optionstatus import IndexFieldStatus
 from .optionstatus import ServicePoliciesStatus
