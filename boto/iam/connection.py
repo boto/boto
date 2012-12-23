@@ -22,7 +22,6 @@
 import boto
 import boto.jsonresponse
 from boto.compat import json
-from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
 

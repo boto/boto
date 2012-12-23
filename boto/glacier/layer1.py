@@ -23,7 +23,6 @@
 #
 
 import os
-import urllib
 
 import boto.glacier
 from boto.compat import json

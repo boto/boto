@@ -22,11 +22,9 @@
 # IN THE SOFTWARE.
 #
 
-import time
 
 import boto
 from boto.connection import AWSAuthConnection
-from boto.provider import Provider
 from boto.exception import SWFResponseError
 from boto.swf import exceptions as swf_exceptions
 from boto.compat import json

@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 
 import types
-from boto.gs.user import User
 from boto.exception import InvalidCorsError
 from xml.sax import handler
 
