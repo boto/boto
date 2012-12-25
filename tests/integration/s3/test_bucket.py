@@ -31,7 +31,6 @@ import time
 
 from boto.exception import S3ResponseError
 from boto.s3.connection import S3Connection
-from boto.s3.bucketlogging import BucketLogging
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.lifecycle import Transition
 from boto.s3.lifecycle import Rule

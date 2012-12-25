@@ -26,14 +26,11 @@ Tests of Google Cloud Storage resumable uploads.
 """
 
 import errno
-import getopt
 import os
 import random
-import re
 import shutil
 import socket
 import StringIO
-import sys
 import tempfile
 import time
 import unittest

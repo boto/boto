@@ -1,5 +1,4 @@
 import unittest
-import os
 from boto.mturk.question import QuestionForm
 
 from common import MTurkCommon

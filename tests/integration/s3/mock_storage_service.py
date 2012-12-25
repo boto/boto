@@ -28,7 +28,6 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 
 import copy
 import boto
-import base64
 
 from boto.utils import compute_md5
 from boto.s3.prefix import Prefix

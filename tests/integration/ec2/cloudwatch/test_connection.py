@@ -25,11 +25,9 @@ Initial, and very limited, unit tests for CloudWatchConnection.
 """
 
 import datetime
-import time
 import unittest
 
 from boto.ec2.cloudwatch import CloudWatchConnection
-from boto.ec2.cloudwatch.metric import Metric
 
 # HTTP response body for CloudWatchConnection.describe_alarms
 DESCRIBE_ALARMS_BODY = """<DescribeAlarmsResponse xmlns="http://monitoring.amazonaws.com/doc/2010-08-01/">

@@ -28,7 +28,6 @@ from tests.unit import unittest
 import time
 import StringIO
 from boto.s3.connection import S3Connection
-from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
 

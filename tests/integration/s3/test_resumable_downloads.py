@@ -26,19 +26,16 @@ Tests of resumable downloads.
 """
 
 import errno
-import getopt
 import os
 import random
 import re
 import shutil
 import socket
 import StringIO
-import sys
 import tempfile
 import time
 import unittest
 
-import boto
 from boto import storage_uri
 from boto.s3.resumable_download_handler import get_cur_file_size
 from boto.s3.resumable_download_handler import ResumableDownloadHandler

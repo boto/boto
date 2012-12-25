@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import unittest
-import httplib
 from datetime import datetime
 try:
     import json

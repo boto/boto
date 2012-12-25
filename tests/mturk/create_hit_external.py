@@ -1,6 +1,4 @@
 import unittest
-import uuid
-import datetime
 from boto.mturk.question import ExternalQuestion
 
 from _init_environment import SetHostMTurkConnection, external_url, \
