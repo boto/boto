@@ -138,8 +138,8 @@ if __name__ == "__main__":
         exit()
 
     if not options.dump and not options.load and not options.empty:
-            parser.print_help()
-            exit()
+        parser.print_help()
+        exit()
 
 
 
