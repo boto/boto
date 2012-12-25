@@ -146,7 +146,6 @@ def update_image(autoscale, name, lc_name, image_id, is_migrate_instances=False)
     g = get_group(autoscale, name)
     l = get_lc(autoscale, g.launch_config_name)
 
-    old_lc_name = l.name
     l.name = lc_name
     l.image_id = image_id
     autoscale.create_launch_configuration(l)
@@ -197,7 +196,6 @@ if __name__ == "__main__":
     import sys
     import time
     from optparse import OptionParser
-    from boto.mashups.iobject import IObject
     from boto.ec2.autoscale import AutoScalingGroup
     from boto.ec2.autoscale import LaunchConfiguration
     parser = OptionParser(version=VERSION, usage=usage)
