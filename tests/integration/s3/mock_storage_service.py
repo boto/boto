@@ -492,6 +492,7 @@ class MockBucketStorageUri(object):
                                  cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
                                  reduced_redundancy=NOT_IMPL,
                                  query_args=NOT_IMPL, size=NOT_IMPL):
+        dst_key = self.new_key()
         dst_key.set_contents_from_stream(fp)
 
     def get_contents_to_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL,
