@@ -124,14 +124,6 @@ class CertValidationTest(unittest.TestCase):
         self.assertConnectionThrows(S3Connection, ssl.SSLError)
         self.assertConnectionThrows(GSConnection, ssl.SSLError)
 
-    def do_test_invalid_host(self):
-        boto.config.set('Credentials', 'gs_host', INVALID_HOSTNAME_HOST)
-        boto.config.set('Credentials', 's3_host', INVALID_HOSTNAME_HOST)
-        self.assertConnectionThrows(
-                S3Connection, https_connection.InvalidCertificateException)
-        self.assertConnectionThrows(
-                GSConnection, https_connection.InvalidCertificateException)
-
     def test_invalid_host(self):
         self.do_test_invalid_host()
 
