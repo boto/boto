@@ -153,14 +153,41 @@ class Bucket(S3Bucket):
                                   query_args_l=query_args_l)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
-                generation=None):
-        """Sets or changes a bucket's or key's ACL. The generation argument can
-        be used to specify an object version, else we will modify the current
-        version."""
+                generation=None, if_generation=None, if_metageneration=None):
+        """Sets or changes a bucket's or key's ACL.
+
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string or an ACL object.
+
+        :type key_name: string
+        :param key_name: A key name within the bucket to set the ACL for. If not
+            specified, the ACL for the bucket will be set.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type version_id: None
+        :param version_id: Added for compatibility with S3. This argument is
+            ignored.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+        """
         key_name = key_name or ''
         query_args = STANDARD_ACL
         if generation:
-          query_args += '&generation=%s' % str(generation)
+            query_args += '&generation=%s' % str(generation)
+        headers = headers or {}
+        if if_metageneration is not None and if_generation is None:
+            raise ValueError("Received if_metageneration argument with no "
+                             "if_generation argument. A meta-generation has no "
+                             "meaning without a content generation.")
+        if if_generation is not None:
+            headers['x-goog-if-generation-match'] = str(if_generation)
+        if if_metageneration is not None:
+            headers['x-goog-if-metageneration-match'] = str(if_metageneration)
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):

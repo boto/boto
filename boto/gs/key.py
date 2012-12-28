@@ -25,6 +25,33 @@ from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 
 class Key(S3Key):
+    """
+    Represents a key (object) in a GS bucket.
+
+    :ivar bucket: The parent :class:`boto.gs.bucket.Bucket`.
+    :ivar name: The name of this Key object.
+    :ivar metadata: A dictionary containing user metadata that you
+        wish to store with the object or that has been retrieved from
+        an existing object.
+    :ivar cache_control: The value of the `Cache-Control` HTTP header.
+    :ivar content_type: The value of the `Content-Type` HTTP header.
+    :ivar content_encoding: The value of the `Content-Encoding` HTTP header.
+    :ivar content_disposition: The value of the `Content-Disposition` HTTP
+        header.
+    :ivar content_language: The value of the `Content-Language` HTTP header.
+    :ivar etag: The `etag` associated with this object.
+    :ivar last_modified: The string timestamp representing the last
+        time this object was modified in GS.
+    :ivar owner: The ID of the owner of this object.
+    :ivar storage_class: The storage class of the object.  Currently, one of:
+        STANDARD | DURABLE_REDUCED_AVAILABILITY.
+    :ivar md5: The MD5 hash of the contents of the object.
+    :ivar size: The size, in bytes, of the object.
+    :ivar generation: The generation number of the object.
+    :ivar meta_generation: The generation number of the object metadata.
+    :ivar encrypted: Whether the object is encrypted while at rest on
+        the server.
+    """
     generation = None
     meta_generation = None
 
@@ -160,7 +187,8 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None, size=None, rewind=False):
+                               res_upload_handler=None, size=None, rewind=False,
+                               if_generation=None):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -230,6 +258,12 @@ class Key(S3Key):
                        it. The default behaviour is False which reads from
                        the current position of the file pointer (fp).
 
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
+
         :rtype: int
         :return: The number of bytes written to the key.
 
@@ -284,9 +318,14 @@ class Key(S3Key):
 
             if self.name == None:
                 self.name = self.md5
+
             if not replace:
                 if self.bucket.lookup(self.name):
                     return
+
+            if if_generation is not None:
+                headers['x-goog-if-generation-match'] = str(if_generation)
+
             if res_upload_handler:
                 res_upload_handler.send_file(self, fp, headers, cb, num_cb)
             else:
@@ -296,7 +335,8 @@ class Key(S3Key):
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
                                    reduced_redundancy=None,
-                                   res_upload_handler=None):
+                                   res_upload_handler=None,
+                                   if_generation=None):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file named by 'filename'.
@@ -342,6 +382,12 @@ class Key(S3Key):
         :type res_upload_handler: ResumableUploadHandler
         :param res_upload_handler: If provided, this handler will perform the
             upload.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
         """
         # Clear out any previously computed md5 hashes, since we are setting the content.
         self.md5 = None
@@ -349,11 +395,13 @@ class Key(S3Key):
 
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, res_upload_handler)
+                                    policy, md5, res_upload_handler,
+                                    if_generation=if_generation)
         fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
-                                 cb=None, num_cb=10, policy=None, md5=None):
+                                 cb=None, num_cb=10, policy=None, md5=None,
+                                 if_generation=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -396,6 +444,12 @@ class Key(S3Key):
                     to upload, it's silly to have to do it twice so this
                     param, if present, will be used as the MD5 values
                     of the file.  Otherwise, the checksum will be computed.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
         """
 
         # Clear out any previously computed md5 hashes, since we are setting the content.
@@ -406,6 +460,77 @@ class Key(S3Key):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5)
+                                        policy, md5,
+                                        if_generation=if_generation)
         fp.close()
         return r
+
+    def set_contents_from_stream(self, *args, **kwargs):
+        """
+        Store an object using the name of the Key object as the key in
+        cloud and the contents of the data stream pointed to by 'fp' as
+        the contents.
+
+        The stream object is not seekable and total size is not known.
+        This has the implication that we can't specify the
+        Content-Size and Content-MD5 in the header. So for huge
+        uploads, the delay in calculating MD5 is avoided but with a
+        penalty of inability to verify the integrity of the uploaded
+        data.
+
+        :type fp: file
+        :param fp: the file whose contents are to be uploaded
+
+        :type headers: dict
+        :param headers: additional HTTP headers to be sent with the
+            PUT request.
+
+        :type replace: bool
+        :param replace: If this parameter is False, the method will first check
+            to see if an object exists in the bucket with the same key. If it
+            does, it won't overwrite it. The default value is True which will
+            overwrite the object.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload. The callback should accept two integer
+            parameters, the first representing the number of bytes that have
+            been successfully transmitted to GS and the second representing the
+            total number of bytes that need to be transmitted.
+
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter, this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file transfer.
+
+        :type policy: :class:`boto.gs.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key
+            in GS.
+
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+            class of the new Key to be REDUCED_REDUNDANCY. The Reduced
+            Redundancy Storage (RRS) feature of S3, provides lower
+            redundancy at lower storage cost.
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+            the file pointer (fp). This is useful when uploading a
+            file in multiple parts where you are splitting the file up
+            into different ranges to be uploaded. If not specified,
+            the default behaviour is to read all bytes from the file
+            pointer. Less bytes may be available.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
+        """
+        if_generation = kwargs.pop('if_generation', None)
+        if if_generation is not None:
+            headers = kwargs.get('headers', {})
+            headers['x-goog-if-generation-match'] = str(if_generation)
+            kwargs['headers'] = headers
+        return super(Key, self).set_contents_from_stream(*args, **kwargs)
