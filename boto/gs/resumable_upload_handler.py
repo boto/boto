@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import cgi
 import errno
 import httplib
 import os
@@ -28,7 +27,6 @@ import re
 import socket
 import time
 import urlparse
-import boto
 from boto import config
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError

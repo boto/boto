@@ -48,7 +48,6 @@ import base64
 import errno
 import httplib
 import os
-import Queue
 import random
 import re
 import socket
@@ -67,7 +66,7 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError
+from boto.exception import BotoClientError
 from boto.exception import BotoServerError
 from boto.provider import Provider
 from boto.resultset import ResultSet

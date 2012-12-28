@@ -93,10 +93,8 @@ if __name__ == "__main__":
         import readline
     except ImportError:
         pass
-    import boto
     import sys
     from optparse import OptionParser
-    from boto.mashups.iobject import IObject
     parser = OptionParser(version=__version__, usage=usage)
 
     (options, args) = parser.parse_args()

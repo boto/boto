@@ -97,7 +97,7 @@ def save_nicknames(nicknames_path = default_nicknames_path):
     if nicknames != original_nicknames:
         with open(nicknames_path, 'w') as o:
             json.dump(nicknames, o, sort_keys = True, indent = 4)
-            print >>o
+            print >> o
 
 time_units = dict(s = 1, min = 60, h = 60 * 60, d = 24 * 60 * 60)
 def parse_duration(s):
@@ -105,6 +105,7 @@ def parse_duration(s):
 "172800 s", or "172800".'''
     x = s.split()
     return int(x[0]) * time_units['s' if len(x) == 1 else x[1]]
+
 def display_duration(n):
     for unit, m in sorted(time_units.items(), key = lambda x: -x[1]):
         if n % m == 0:

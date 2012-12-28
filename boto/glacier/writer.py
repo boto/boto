@@ -28,7 +28,6 @@ from boto.glacier.utils import chunk_hashes, tree_hash, bytes_to_hex
 # This import is provided for backwards compatibility.  This function is
 # now in boto.glacier.utils, but any existing code can still import
 # this directly from this module.
-from boto.glacier.utils import compute_hashes_from_fileobj
 
 
 _ONE_MEGABYTE = 1024 * 1024

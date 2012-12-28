@@ -42,7 +42,6 @@ Some handy utility functions used by several classes.
 import socket
 import urllib
 import urllib2
-import imp
 import subprocess
 import StringIO
 import time

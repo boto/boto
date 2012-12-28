@@ -25,7 +25,6 @@ Tests for Session Tokens
 """
 
 import unittest
-import time
 import os
 from boto.sts.connection import STSConnection
 from boto.sts.credentials import Credentials

@@ -25,7 +25,6 @@ import requests.packages.urllib3
 import hmac
 import base64
 from hashlib import sha256
-import sys
 import datetime
 
 try:

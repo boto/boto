@@ -20,11 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from Queue import Queue
 
 import mock
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader
 

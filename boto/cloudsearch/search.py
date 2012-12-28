@@ -22,9 +22,7 @@
 # IN THE SOFTWARE.
 #
 from math import ceil
-import time
 import json
-import boto
 import requests
 
 

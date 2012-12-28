@@ -35,13 +35,11 @@ import boto.utils
 import hmac
 import sys
 import urllib
-import time
 import datetime
 import copy
 from email.utils import formatdate
 
 from boto.auth_handler import AuthHandler
-from boto.exception import BotoClientError
 #
 # the following is necessary because of the incompatibilities
 # between Python 2.4, 2.5, and 2.6 as well as the fact that some

@@ -30,21 +30,21 @@ class Step(object):
         :rtype: str
         :return: URI to the jar
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def args(self):
         """
         :rtype: list(str)
         :return: List of arguments for the step
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def main_class(self):
         """
         :rtype: str
         :return: The main class name
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 class JarStep(Step):

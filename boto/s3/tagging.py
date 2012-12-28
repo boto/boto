@@ -1,5 +1,4 @@
 from boto import handler
-import xml.sax
 
 
 class Tag(object):

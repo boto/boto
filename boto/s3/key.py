@@ -31,7 +31,6 @@ import math
 import urllib
 import boto.utils
 from boto.exception import BotoClientError
-from boto.provider import Provider
 from boto.s3.user import User
 from boto import UserAgent
 from boto.utils import compute_md5

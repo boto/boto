@@ -24,7 +24,6 @@
 import boto
 from boto import handler
 from boto.resultset import ResultSet
-from boto.exception import BotoClientError
 from boto.s3.acl import Policy, CannedACLStrings, Grant
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
@@ -47,7 +46,6 @@ import xml.sax.saxutils
 import StringIO
 import urllib
 import re
-import base64
 from collections import defaultdict
 
 # as per http://goo.gl/BDuud (02/19/2011)

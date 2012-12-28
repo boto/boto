@@ -39,9 +39,9 @@ def list_bucket(b, prefix=None):
            print "%s\t%s\t%010s\t%s" % (mode, k.last_modified,
                  sizeof_fmt(size), k.name)
         else:
-           #If it's not a Key object, it doesn't have a last_modified time, so
-           #print nothing instead
-           print "%s\t%s\t%010s\t%s" % (mode, ' '*24,
+            #If it's not a Key object, it doesn't have a last_modified time, so
+            #print nothing instead
+            print "%s\t%s\t%010s\t%s" % (mode, ' '*24,
               sizeof_fmt(size), k.name)
         total += size
     print "="*80
@@ -58,12 +58,12 @@ if __name__ == "__main__":
     pairs = []
     mixedCase = False
     for name in sys.argv[1:]:
-            if "/" in name:
-                pairs.append(name.split("/",1))
-            else:
-                pairs.append([name, None])
-            if pairs[-1][0].lower() != pairs[-1][0]:
-                mixedCase = True
+        if "/" in name:
+            pairs.append(name.split("/",1))
+        else:
+            pairs.append([name, None])
+        if pairs[-1][0].lower() != pairs[-1][0]:
+            mixedCase = True
     
     if mixedCase:
         s3 = boto.connect_s3(calling_format=OrdinaryCallingFormat())

@@ -22,7 +22,7 @@
 import time
 from tests.unit import unittest
 
-from boto.glacier.layer2 import Layer1, Layer2
+from boto.glacier.layer2 import Layer2
 
 
 class TestGlacierLayer2(unittest.TestCase):

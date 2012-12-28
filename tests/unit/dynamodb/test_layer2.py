@@ -25,7 +25,7 @@ from tests.unit import unittest
 from mock import Mock
 
 from boto.dynamodb.layer2 import Layer2
-from boto.dynamodb.table import Table, Schema
+from boto.dynamodb.table import Schema
 
 
 DESCRIBE_TABLE = {

@@ -33,7 +33,7 @@ from boto import handler
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
-from boto.exception import BotoClientError, S3ResponseError
+from boto.exception import BotoClientError
 
 
 def check_lowercase_bucketname(n):

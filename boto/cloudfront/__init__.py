@@ -21,7 +21,6 @@
 #
 
 import xml.sax
-import time
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler

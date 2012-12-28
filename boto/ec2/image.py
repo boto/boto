@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.ec2.ec2object import EC2Object, TaggedEC2Object
+from boto.ec2.ec2object import TaggedEC2Object
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
 
 class ProductCodes(list):

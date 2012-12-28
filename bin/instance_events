@@ -26,6 +26,7 @@ Options:
   -h, --help            show help message (including options list) and exit
 """
 
+import sys
 from operator import itemgetter
 
 HEADERS = {

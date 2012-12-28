@@ -25,7 +25,7 @@ from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto.sqs.batchresults import BatchResults
-from boto.exception import SQSError, BotoServerError
+from boto.exception import SQSError
 
 
 class SQSConnection(AWSQueryConnection):

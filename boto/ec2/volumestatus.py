@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.ec2.instancestatus import Status, Details
+from boto.ec2.instancestatus import Status
 
 class Event(object):
     """
