@@ -49,23 +49,23 @@ class DistributionConfig:
         :param enabled: Whether the distribution is enabled to accept
                         end user requests for content.
         :type enabled: bool
-        
+
         :param caller_reference: A unique number that ensures the
                                  request can't be replayed.  If no
                                  caller_reference is provided, boto
                                  will generate a type 4 UUID for use
                                  as the caller reference.
         :type enabled: str
-        
+
         :param cnames: A CNAME alias you want to associate with this
                        distribution. You can have up to 10 CNAME aliases
                        per distribution.
         :type enabled: array of str
-        
+
         :param comment: Any comments you want to include about the
                         distribution.
         :type comment: str
-        
+
         :param trusted_signers: Specifies any AWS accounts you want to
                                 permit to create signed URLs for private
                                 content. If you want the distribution to
@@ -74,7 +74,7 @@ class DistributionConfig:
                                 distribution to use basic URLs, leave
                                 this None.
         :type trusted_signers: :class`boto.cloudfront.signers.TrustedSigners`
-        
+
         :param default_root_object: Designates a default root object.
                                     Only include a DefaultRootObject value
                                     if you are going to assign a default
@@ -86,7 +86,7 @@ class DistributionConfig:
                         this should contain a LoggingInfo object; otherwise
                         it should contain None.
         :type logging: :class`boto.cloudfront.logging.LoggingInfo`
-        
+
         """
         self.connection = connection
         self.origin = origin
@@ -278,7 +278,7 @@ class StreamingDistributionSummary(DistributionSummary):
 
     def get_distribution(self):
         return self.connection.get_streaming_distribution_info(self.id)
-    
+
 class Distribution:
 
     def __init__(self, connection=None, config=None, domain_name='',
@@ -400,11 +400,11 @@ class Distribution:
             return self._bucket
         else:
             raise NotImplementedError('Unable to get_objects on CustomOrigin')
-    
+
     def get_objects(self):
         """
         Return a list of all content objects in this distribution.
-        
+
         :rtype: list of :class:`boto.cloudfront.object.Object`
         :return: The content objects
         """
@@ -743,5 +743,5 @@ class StreamingDistribution(Distribution):
 
     def delete(self):
         self.connection.delete_streaming_distribution(self.id, self.etag)
-            
-        
+
+
