@@ -640,13 +640,13 @@ class Distribution:
     @staticmethod
     def _sign_string(message, private_key_file=None, private_key_string=None):
         """
-        Signs a string for use with Amazon CloudFront.  Requires the M2Crypto
-        library be installed.
+        Signs a string for use with Amazon CloudFront.
+        Requires the rsa library be installed.
         """
         try:
-            from M2Crypto import EVP
+            import rsa
         except ImportError:
-            raise NotImplementedError("Boto depends on the python M2Crypto "
+            raise NotImplementedError("Boto depends on the python rsa "
                                       "library to generate signed URLs for "
                                       "CloudFront")
         # Make sure only one of private_key_file and private_key_string is set
@@ -654,18 +654,17 @@ class Distribution:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
         if not private_key_file and not private_key_string:
             raise ValueError("You must specify one of private_key_file or private_key_string")
-        # if private_key_file is a file object read the key string from there
+        # If private_key_file is a file, read its contents. Otherwise, open it and then read it
         if isinstance(private_key_file, file):
+            private_key_file.seek(0)
             private_key_string = private_key_file.read()
-        # Now load key and calculate signature
-        if private_key_string:
-            key = EVP.load_key_string(private_key_string)
         else:
-            key = EVP.load_key(private_key_file)
-        key.reset_context(md='sha1')
-        key.sign_init()
-        key.sign_update(str(message))
-        signature = key.sign_final()
+            with open(private_key_file, 'r') as file_handle:
+                private_key_string = file_handle.read()
+
+        # Sign it!
+        private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
+        signature = rsa.sign(str(message), private_key, 'SHA-1')
         return signature
 
     @staticmethod
