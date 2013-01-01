@@ -658,7 +658,7 @@ class Distribution:
         if isinstance(private_key_file, file):
             private_key_file.seek(0)
             private_key_string = private_key_file.read()
-        else:
+        elif private_key_file:
             with open(private_key_file, 'r') as file_handle:
                 private_key_string = file_handle.read()
 
