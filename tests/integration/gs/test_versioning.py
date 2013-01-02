@@ -49,18 +49,18 @@ class GSVersioningTest(unittest.TestCase):
                     bucket.delete_key(k.name, generation=k.generation)
             bucket.delete()
 
-    def _BucketName(self):
+    def _MakeBucketName(self):
         b = "boto-gs-test-%s" % repr(time.time()).replace(".", "-")
         self.buckets.append(b)
         return b
 
-    def _VersionedBucket(self):
-        b = self.conn.create_bucket(self._BucketName())
+    def _MakeVersionedBucket(self):
+        b = self.conn.create_bucket(self._MakeBucketName())
         b.configure_versioning(True)
         return b
 
     def testVersioningToggle(self):
-        b = self.conn.create_bucket(self._BucketName())
+        b = self.conn.create_bucket(self._MakeBucketName())
         self.assertFalse(b.get_versioning_status())
         b.configure_versioning(True)
         self.assertTrue(b.get_versioning_status())
@@ -68,7 +68,7 @@ class GSVersioningTest(unittest.TestCase):
         self.assertFalse(b.get_versioning_status())
 
     def testDeleteVersionedKey(self):
-        b = self._VersionedBucket()
+        b = self._MakeVersionedBucket()
         k = b.new_key("foo")
         s1 = "test1"
         k.set_contents_from_string(s1)
@@ -89,12 +89,14 @@ class GSVersioningTest(unittest.TestCase):
         self.assertIn(g1, generations)
         self.assertIn(g2, generations)
 
-        # Delete "current" version and make sure it goes away.
+        # Delete "current" version and make sure that version is no longer
+        # visible from a basic GET call.
         k = b.get_key("foo")
         k.delete()
         self.assertIsNone(b.get_key("foo"))
 
-        # Both old versions should still be there.
+        # Both old versions should still be there when listed using the versions
+        # query parameter.
         versions = list(b.list_versions())
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].name, "foo")
@@ -116,7 +118,7 @@ class GSVersioningTest(unittest.TestCase):
         self.assertEqual(len(versions), 0)
 
     def testGetVersionedKey(self):
-        b = self._VersionedBucket()
+        b = self._MakeVersionedBucket()
         k = b.new_key("foo")
         s1 = "test1"
         k.set_contents_from_string(s1)
@@ -140,7 +142,7 @@ class GSVersioningTest(unittest.TestCase):
         self.assertEqual(k.get_contents_as_string(), s2)
 
     def testVersionedAcl(self):
-        b = self._VersionedBucket()
+        b = self._MakeVersionedBucket()
         k = b.new_key("foo")
         s1 = "test1"
         k.set_contents_from_string(s1)
@@ -177,7 +179,7 @@ class GSVersioningTest(unittest.TestCase):
         self.assertEqual(len(public_read_entries2), 0)
 
     def testCopyVersionedKey(self):
-        b = self._VersionedBucket()
+        b = self._MakeVersionedBucket()
         k = b.new_key("foo")
         s1 = "test1"
         k.set_contents_from_string(s1)
@@ -188,7 +190,7 @@ class GSVersioningTest(unittest.TestCase):
         s2 = "test2"
         k.set_contents_from_string(s2)
 
-        b2 = self._VersionedBucket()
+        b2 = self._MakeVersionedBucket()
         b2.copy_key("foo2", b.name, "foo", src_generation=g1)
 
         k2 = b2.get_key("foo2")
