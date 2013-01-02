@@ -543,7 +543,7 @@ class Layer1(AWSAuthConnection):
             be returned.  Otherwise, all attributes will be returned.
 
         :type limit: int
-        :param limit: The maximum number of items to return.
+        :param limit: The maximum number of items to evaluate.
 
         :type count: bool
         :param count: If True, Amazon DynamoDB returns a total
