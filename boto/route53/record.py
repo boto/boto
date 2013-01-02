@@ -284,7 +284,7 @@ class Record(object):
 
     def endElement(self, name, value, connection):
         if name == 'Name':
-            self.name = value
+            self.name = value.replace(r'\052', '*')
         elif name == 'Type':
             self.type = value
         elif name == 'TTL':
