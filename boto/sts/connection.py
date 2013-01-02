@@ -154,7 +154,7 @@ class STSConnection(AWSQueryConnection):
                                 FederationToken, verb='POST')
 
     def assume_role(self, role_arn, role_session_name, policy=None,
-                    duration_seconds=None, unique_client_id=None):
+                    duration_seconds=None, external_id=None):
         """
         Returns a set of temporary credentials that the caller can use to
         access resources that are allowed by the temporary credentials.  The
@@ -184,8 +184,8 @@ class STSConnection(AWSQueryConnection):
             (36 hours).  By default, the value is set to 43200 seconds (12
             hours).
 
-        :type unique_client_id: str
-        :param unique_client_id: A unique identifier that is used by
+        :type external_id: str
+        :param external_id: A unique identifier that is used by
             third-party services to ensure that they are assuming a role that
             corresponds to the correct users. For third-party services that
             have access to resources across multiple AWS accounts, the unique
@@ -203,6 +203,6 @@ class STSConnection(AWSQueryConnection):
             params['Policy'] = policy
         if duration_seconds is not None:
             params['DurationSeconds'] = duration_seconds
-        if unique_client_id is not None:
-            params['UniqueClientId'] = unique_client_id
+        if external_id is not None:
+            params['ExternalId'] = external_id
         return self.get_object('AssumeRole', params, AssumedRole, verb='POST')
