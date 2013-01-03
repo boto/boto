@@ -112,3 +112,16 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
 
 def bytes_to_hex(str_as_bytes):
     return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
+
+
+class ResettingFileSender(object):
+    def __init__(self, archive):
+        self._archive = archive
+        self._starting_offset = archive.tell()
+
+    def __call__(self, connection, method, path, body, headers):
+        try:
+            connection.request(method, path, self._archive, headers)
+            return connection.getresponse()
+        finally:
+            self._archive.seek(self._starting_offset)

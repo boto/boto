@@ -1,7 +1,9 @@
-from tests.unit import AWSMockServiceTestCase
-from boto.glacier.layer1 import Layer1
 import json
 import copy
+import tempfile
+
+from tests.unit import AWSMockServiceTestCase
+from boto.glacier.layer1 import Layer1
 
 
 class GlacierLayer1ConnectionBase(AWSMockServiceTestCase):
@@ -76,3 +78,21 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
         response = self.service_connection.get_job_output(self.vault_name,
                                                          'example-job-id')
         self.assertEqual(self.job_content, response.read())
+
+
+class GlacierUploadArchiveResets(GlacierLayer1ConnectionBase):
+    def test_upload_archive(self):
+        fake_data = tempfile.NamedTemporaryFile()
+        fake_data.write('foobarbaz')
+        # First seek to a non zero offset.
+        fake_data.seek(2)
+        self.set_http_response(status_code=201)
+        # Simulate reading the request body when we send the request.
+        self.service_connection.connection.request.side_effect = \
+                lambda *args: fake_data.read()
+        self.service_connection.upload_archive('vault_name', fake_data, 'linear_hash',
+                                               'tree_hash')
+        # Verify that we seek back to the original offset after making
+        # a request.  This ensures that if we need to resend the request we're
+        # back at the correct location within the file.
+        self.assertEqual(fake_data.tell(), 2)
