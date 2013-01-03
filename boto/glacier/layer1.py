@@ -23,7 +23,6 @@
 #
 
 import os
-import urllib
 
 import boto.glacier
 from boto.compat import json
@@ -56,7 +55,7 @@ class Layer1(AWSAuthConnection):
         self.account_id = account_id
         AWSAuthConnection.__init__(self, region.endpoint,
                                    aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port,
+                                   is_secure, port, proxy, proxy_port,
                                    proxy_user, proxy_pass, debug,
                                    https_connection_factory,
                                    path, provider, security_token,
