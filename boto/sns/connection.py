@@ -312,7 +312,10 @@ class SNSConnection(AWSQueryConnection):
                                           t[1], t[2])
         resp = self.subscribe(topic, 'sqs', q_arn)
         attr = queue.get_attributes('Policy')
-        policy = json.loads(attr['Policy'])
+        if 'Policy' in attr:
+            policy = json.loads(attr['Policy'])
+        else:
+            policy = {}
         if 'Version' not in policy:
             policy['Version'] = '2008-10-17'
         if 'Statement' not in policy:
