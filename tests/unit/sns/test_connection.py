@@ -50,8 +50,7 @@ class TestSNSConnection(AWSMockServiceTestCase):
 
         queue = Mock()
         queue.get_attributes.return_value = QUEUE_POLICY
-        queue.id = '/idnum/queuename'
-        queue.connection.region.name = 'us-east-1'
+        queue.arn = 'arn:aws:sqs:us-east-1:idnum:queuename'
 
         self.service_connection.subscribe_sqs_queue('topic_arn', queue)
         self.assert_request_parameters({
@@ -78,8 +77,7 @@ class TestSNSConnection(AWSMockServiceTestCase):
 
         queue = Mock()
         queue.get_attributes.return_value = {}
-        queue.id = '/idnum/queuename'
-        queue.connection.region.name = 'us-east-1'
+        queue.arn = 'arn:aws:sqs:us-east-1:idnum:queuename'
 
         self.service_connection.subscribe_sqs_queue('topic_arn', queue)
         self.assert_request_parameters({
