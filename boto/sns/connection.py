@@ -308,8 +308,7 @@ class SNSConnection(AWSQueryConnection):
         :param queue: The queue you wish to subscribe to the SNS Topic.
         """
         t = queue.id.split('/')
-        q_arn = 'arn:aws:sqs:%s:%s:%s' % (queue.connection.region.name,
-                                          t[1], t[2])
+        q_arn = queue.arn
         resp = self.subscribe(topic, 'sqs', q_arn)
         attr = queue.get_attributes('Policy')
         if 'Policy' in attr:
