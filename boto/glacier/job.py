@@ -25,7 +25,7 @@ import math
 import socket
 
 from .exceptions import TreeHashDoesNotMatchError, DownloadArchiveError
-from .utils import bytes_to_hex, chunk_hashes, tree_hash
+from .utils import tree_hash_from_str
 
 
 class Job(object):
@@ -59,7 +59,7 @@ class Job(object):
     def __repr__(self):
         return 'Job(%s)' % self.arn
 
-    def get_output(self, byte_range=None):
+    def get_output(self, byte_range=None, validate_checksum=False):
         """
         This operation downloads the output of the job.  Depending on
         the job type you specified when you initiated the job, the
@@ -77,10 +77,25 @@ class Job(object):
         :type byte_range: tuple
         :param range: A tuple of integer specifying the slice (in bytes)
             of the archive you want to receive
+
+        :type validate_checksum: bool
+        :param validate_checksum: Specify whether or not to validate
+            the associate tree hash.  If the response does not contain
+            a TreeHash, then no checksum will be verified.
+
         """
-        return self.vault.layer1.get_job_output(self.vault.name,
-                                                self.id,
-                                                byte_range)
+        response = self.vault.layer1.get_job_output(self.vault.name,
+                                                    self.id,
+                                                    byte_range)
+        if validate_checksum and 'TreeHash' in response:
+            data = response.read()
+            actual_tree_hash = tree_hash_from_str(data)
+            if response['TreeHash'] != actual_tree_hash:
+                raise TreeHashDoesNotMatchError(
+                    "The calculated tree hash %s does not match the "
+                    "expected tree hash %s for the byte range %s" % (
+                        actual_tree_hash, response['TreeHash'], byte_range))
+        return response
 
     def download_to_file(self, filename, chunk_size=DefaultPartSize,
                          verify_hashes=True, retry_exceptions=(socket.error,)):
@@ -111,7 +126,7 @@ class Job(object):
             data, expected_tree_hash = self._download_byte_range(
                 byte_range, retry_exceptions)
             if verify_hashes:
-                actual_tree_hash = bytes_to_hex(tree_hash(chunk_hashes(data)))
+                actual_tree_hash = tree_hash_from_str(data)
                 if expected_tree_hash != actual_tree_hash:
                     raise TreeHashDoesNotMatchError(
                         "The calculated tree hash %s does not match the "

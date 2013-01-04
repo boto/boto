@@ -114,6 +114,19 @@ def bytes_to_hex(str_as_bytes):
     return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
 
 
+def tree_hash_from_str(str_as_bytes):
+    """
+
+    :type str_as_bytes: str
+    :param str_as_bytes: The string for which to compute the tree hash.
+
+    :rtype: str
+    :return: The computed tree hash, returned as hex.
+
+    """
+    return bytes_to_hex(tree_hash(chunk_hashes(str_as_bytes)))
+
+
 class ResettingFileSender(object):
     def __init__(self, archive):
         self._archive = archive
