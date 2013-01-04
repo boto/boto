@@ -409,17 +409,6 @@ class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass
 
-class TooManyAuthHandlerReadyToAuthenticate(Exception):
-    """Is raised when there are more than one auth handler ready.
-
-    In normal situation there should only be one auth handler that is ready to
-    authenticate. In case where more than one auth handler is ready to
-    authenticate, we raise this exception, to prevent unpredictable behavior
-    when multiple auth handlers can handle a particular case and the one chosen
-    depends on the order they were checked.
-    """
-    pass
-
 # Enum class for resumable upload failure disposition.
 class ResumableTransferDisposition(object):
     # START_OVER means an attempt to resume an existing transfer failed,
