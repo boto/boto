@@ -1153,11 +1153,10 @@ class Key(object):
             will be encrypted on the server-side by S3 and will be
             stored in an encrypted form while at rest in S3.
         """
-        fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, reduced_redundancy,
-                                    encrypt_key=encrypt_key)
-        fp.close()
+        with open(filename, 'rb') as fp:
+            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5, reduced_redundancy,
+                                        encrypt_key=encrypt_key)
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
@@ -1467,12 +1466,11 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
-        fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id,
-                                  res_download_handler=res_download_handler,
-                                  response_headers=response_headers)
-        fp.close()
+        with open(filename, 'wb') as fp:
+            self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                      version_id=version_id,
+                                      res_download_handler=res_download_handler,
+                                      response_headers=response_headers)
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
             try:
