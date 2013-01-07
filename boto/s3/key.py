@@ -1154,10 +1154,12 @@ class Key(object):
             stored in an encrypted form while at rest in S3.
         """
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, reduced_redundancy,
-                                    encrypt_key=encrypt_key)
-        fp.close()
+        try:
+            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5, reduced_redundancy,
+                                        encrypt_key=encrypt_key)
+        finally:
+            fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
