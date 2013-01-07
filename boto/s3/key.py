@@ -1468,11 +1468,16 @@ class Key(object):
             http://goo.gl/EWOPb for details.
         """
         fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id,
-                                  res_download_handler=res_download_handler,
-                                  response_headers=response_headers)
-        fp.close()
+        try:
+            self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                      version_id=version_id,
+                                      res_download_handler=res_download_handler,
+                                      response_headers=response_headers)
+        except Exception:
+            os.remove(filename)
+            raise
+        finally:
+            fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
             try:
