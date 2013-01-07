@@ -152,21 +152,3 @@ class SpotInstanceRequest(TaggedEC2Object):
 
     def cancel(self):
         self.connection.cancel_spot_instance_requests([self.id])
-
-
-class SpotInstanceStatus(object):
-    def __init__(self, code=None, update_time=None, message=None):
-        self.code = code
-        self.update_time = update_time
-        self.message = message
-
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'code':
-            self.code = value
-        elif name == 'update_time':
-            self.update_time = value
-        elif name == 'message':
-            self.message = value
