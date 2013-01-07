@@ -447,7 +447,7 @@ class TestDescribeSpotInstanceRequests(TestEC2ConnectionBase):
         self.assertEqual(launch_spec.ebs_optimized, False)
         status = spotrequest.status
         self.assertEqual(status.code, 'fulfilled')
-        self.assertEqual(status.update_time, None)
+        self.assertEqual(status.update_time, '2012-10-19T18:09:26.000Z')
         self.assertEqual(status.message, 'Your Spot request is fulfilled.')
 
 
