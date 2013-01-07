@@ -8,14 +8,14 @@ boto.ec2
 --------
 
 .. automodule:: boto.ec2
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.address
 ----------------
 
 .. automodule:: boto.ec2.address
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.autoscale
@@ -27,7 +27,7 @@ boto.ec2.buyreservation
 -----------------------
 
 .. automodule:: boto.ec2.buyreservation
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.cloudwatch
@@ -39,14 +39,14 @@ boto.ec2.connection
 -------------------
 
 .. automodule:: boto.ec2.connection
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.ec2object
 ------------------
 
 .. automodule:: boto.ec2.ec2object
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.elb
@@ -58,76 +58,83 @@ boto.ec2.image
 --------------
 
 .. automodule:: boto.ec2.image
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.instance
 -----------------
 
 .. automodule:: boto.ec2.instance
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.instanceinfo
 ---------------------
 
 .. automodule:: boto.ec2.instanceinfo
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.instancestatus
 --------------------------
 
 .. automodule:: boto.ec2.instancestatus
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.keypair
 ----------------
 
 .. automodule:: boto.ec2.keypair
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.regioninfo
 -------------------
 
 .. automodule:: boto.ec2.regioninfo
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.reservedinstance
 -------------------------
 
 .. automodule:: boto.ec2.reservedinstance
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.securitygroup
 ----------------------
 
 .. automodule:: boto.ec2.securitygroup
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.snapshot
 -----------------
 
 .. automodule:: boto.ec2.snapshot
-   :members:   
+   :members:
+   :undoc-members:
+
+boto.ec2.spotinstancerequest
+----------------------------
+
+.. automodule:: boto.ec2.spotinstancerequest
+   :members:
    :undoc-members:
 
 boto.ec2.volume
 ---------------
 
 .. automodule:: boto.ec2.volume
-   :members:   
+   :members:
    :undoc-members:
 
 boto.ec2.zone
 -------------
 
 .. automodule:: boto.ec2.zone
-   :members:   
+   :members:
    :undoc-members:
 
