@@ -229,7 +229,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Answered': 0,
             'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
-            }
+        }
         item3 = table.new_item(item3_key, item3_range, item3_attrs)
         item3.put()
 
@@ -238,20 +238,20 @@ class DynamoDBLayer2Test (unittest.TestCase):
         table2_item1_attrs = {
             'DateTimePosted': '25/1/2011 12:34:56 PM',
             'Text': 'I think boto rocks and so does DynamoDB'
-            }
+        }
         table2_item1 = table2.new_item(table2_item1_key,
                                        attrs=table2_item1_attrs)
         table2_item1.put()
 
         # Try a few queries
-        items = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))
+        items = table.query('Amazon DynamoDB', range_key_condition=BEGINS_WITH('DynamoDB'))
         n = 0
         for item in items:
             n += 1
         assert n == 2
         assert items.consumed_units > 0
 
-        items = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'),
+        items = table.query('Amazon DynamoDB', range_key_condition=BEGINS_WITH('DynamoDB'),
                             request_limit=1, max_results=1)
         n = 0
         for item in items:
@@ -267,7 +267,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         assert n == 3
         assert items.consumed_units > 0
 
-        items = table.scan({'Replies': GT(0)})
+        items = table.scan(scan_filter={'Replies': GT(0)})
         n = 0
         for item in items:
             n += 1
@@ -299,8 +299,8 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item4 = table.get_item(item3_key, item3_range, consistent_read=True)
         assert item4['IntAttr'] == integer_value
         assert item4['FloatAttr'] == float_value
-        assert item4['TrueBoolean'] == True
-        assert item4['FalseBoolean'] == False
+        assert bool(item4['TrueBoolean']) is True
+        assert bool(item4['FalseBoolean']) is False
         # The values will not necessarily be in the same order as when
         # we wrote them to the DB.
         for i in item4['IntSetAttr']:
@@ -336,7 +336,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Answered': 0,
             'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
-            }
+        }
         item5_key = 'Amazon S3'
         item5_range = 'S3 Thread 3'
         item5_attrs = {
@@ -347,7 +347,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'Answered': 0,
             'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
-            }
+        }
         item4 = table.new_item(item4_key, item4_range, item4_attrs)
         item5 = table.new_item(item5_key, item5_range, item5_attrs)
         batch_list = c.new_batch_write_list()
@@ -355,21 +355,31 @@ class DynamoDBLayer2Test (unittest.TestCase):
         response = batch_list.submit()
         # should really check for unprocessed items
 
+        # Do some generator gymnastics
+        results = table.scan(scan_filter={'Tags': CONTAINS('table')})
+        assert results.scanned_count == 5
+        results = table.scan(request_limit=2, max_results=5)
+        assert results.count == 2
+        for item in results:
+            if results.count == 2:
+                assert results.remaining == 4
+                results.remaining -= 2
+                results.next_response()
+            else:
+                assert results.count == 4
+                assert results.remaining in (0, 1)
+        assert results.count == 4
+        results = table.scan(request_limit=6, max_results=4)
+        assert len(list(results)) == 4
+        assert results.count == 4
+
         batch_list = c.new_batch_write_list()
         batch_list.add_batch(table, deletes=[(item4_key, item4_range),
                                              (item5_key, item5_range)])
         response = batch_list.submit()
 
-
         # Try queries
-        results = table.query('Amazon DynamoDB', BEGINS_WITH('DynamoDB'))
-        n = 0
-        for item in results:
-            n += 1
-        assert n == 2
-
-        # Try scans
-        results = table.scan({'Tags': CONTAINS('table')})
+        results = table.query('Amazon DynamoDB', range_key_condition=BEGINS_WITH('DynamoDB'))
         n = 0
         for item in results:
             n += 1
@@ -380,7 +390,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
         item1.delete(expected_value=expected)
 
         self.assertFalse(table.has_item(item1_key, range_key=item1_range,
-                                       consistent_read=True))
+                                        consistent_read=True))
         # Now delete the remaining items
         ret_vals = item2.delete(return_values='ALL_OLD')
         # some additional checks here would be useful
@@ -414,7 +424,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
             'BinarySequence': set([Binary('\x01\x02'), Binary('\x03\x04')]),
             'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
-            }
+        }
         item1 = table.new_item(item1_key, item1_range, item1_attrs)
         item1.put()
 

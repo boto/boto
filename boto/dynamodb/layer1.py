@@ -463,7 +463,7 @@ class Layer1(AWSAuthConnection):
     def query(self, table_name, hash_key_value, range_key_conditions=None,
               attributes_to_get=None, limit=None, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
-              object_hook=None):
+              object_hook=None, count=False):
         """
         Perform a query of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -487,6 +487,11 @@ class Layer1(AWSAuthConnection):
         :type limit: int
         :param limit: The maximum number of items to return.
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Query operation, even if the
+            operation has no matching items for the assigned filter.
+
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
@@ -509,6 +514,8 @@ class Layer1(AWSAuthConnection):
             data['AttributesToGet'] = attributes_to_get
         if limit:
             data['Limit'] = limit
+        if count:
+            data['Count'] = True
         if consistent_read:
             data['ConsistentRead'] = True
         if scan_index_forward:
@@ -523,8 +530,7 @@ class Layer1(AWSAuthConnection):
 
     def scan(self, table_name, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None,
-             object_hook=None):
+             exclusive_start_key=None, object_hook=None, count=False):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
