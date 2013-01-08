@@ -960,22 +960,22 @@ class EC2Connection(AWSQueryConnection):
 
     def get_spot_price_history(self, start_time=None, end_time=None,
                                instance_type=None, product_description=None,
-                               availability_zone=None):
+                               availability_zone=None, max_results=None, next_token=None):
         """
         Retrieve the recent history of spot instances pricing.
 
-        :type start_time: str
+        :type start_time: str or datetime
         :param start_time: An indication of how far back to provide price
-            changes for. An ISO8601 DateTime string.
+            changes for. If type is datetime will convert to an ISO8601 DateTime string.
 
-        :type end_time: str
+        :type end_time: str or datetime
         :param end_time: An indication of how far forward to provide price
-            changes for.  An ISO8601 DateTime string.
+            changes for. If type is datetime will convert to an ISO8601 DateTime string.
 
-        :type instance_type: str
+        :type instance_type: str or list/tuple
         :param instance_type: Filter responses to a particular instance type.
 
-        :type product_description: str
+        :type product_description: str or list/tuple
         :param product_description: Filter responses to a particular platform.
             Valid values are currently:
 
@@ -986,27 +986,54 @@ class EC2Connection(AWSQueryConnection):
             * SUSE Linux (Amazon VPC)
             * Windows (Amazon VPC)
 
-        :type availability_zone: str
+        :type availability_zone: str or list/tuple
         :param availability_zone: The availability zone for which prices
             should be returned.  If not specified, data for all
             availability zones will be returned.
+
+        :type max_results: int
+        :param max_results: Specifies the number of rows to return.
+
+        :type next_token: str
+        :param next_token: Specifies the next set of rows to return.
 
         :rtype: list
         :return: A list tuples containing price and timestamp.
         """
         params = {}
         if start_time:
+            if isinstance(start_time, datetime):
+                start_time = start_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')
             params['StartTime'] = start_time
         if end_time:
+            if isinstance(end_time, datetime):
+                end_time = end_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')
             params['EndTime'] = end_time
         if instance_type:
-            params['InstanceType'] = instance_type
+            if isinstance(instance_type, str):
+                params['InstanceType'] = instance_type
+            elif isinstance(instance_type, tuple) or isinstance(instance_type, list):
+                for i in range(0, len(instance_type)):
+                    params['InstanceType.%s'%(i+1)] = instance_type[i]
         if product_description:
-            params['ProductDescription'] = product_description
+            if isinstance(product_description, str):
+                params['ProductDescription'] = product_description
+            elif isinstance(product_description, list) or isinstance(product_description, tuple):
+                for i in range(0, len(product_description)):
+                    params['ProductDescription.%s'%(i+1)] = product_description[i]
         if availability_zone:
-            params['AvailabilityZone'] = availability_zone
+            if isinstance(availability_zone, str):
+                params['AvailabilityZone'] = availability_zone
+            elif isinstance(availability_zone, tuple) or isinstance(availability_zone, list):
+                params['Filter.1.Name'] = "availability-zone"
+                for i in range(0, len(availability_zone)):
+                    params['Filter.1.Value.%s'%(i+1)] = availability_zone[i]
+        if max_results:
+            params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
         return self.get_list('DescribeSpotPriceHistory', params,
-                             [('item', SpotPriceHistory)], verb='POST')
+            [('item', SpotPriceHistory)], verb='POST')
 
     def request_spot_instances(self, price, image_id, count=1, type='one-time',
                                valid_from=None, valid_until=None,
