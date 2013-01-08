@@ -8,7 +8,7 @@ boto.dynamodb
 -------------
 
 .. automodule:: boto.dynamodb
-   :members:   
+   :members:
    :undoc-members:
 
 boto.dynamodb.layer1
@@ -53,4 +53,9 @@ boto.dynamodb.batch
    :members:
    :undoc-members:
 
+boto.dynamodb.types
+-------------------
 
+.. automodule:: boto.dynamodb.types
+   :members:
+   :undoc-members:

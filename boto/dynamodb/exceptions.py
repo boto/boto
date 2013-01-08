@@ -29,6 +29,13 @@ class DynamoDBItemError(BotoClientError):
     pass
 
 
+class DynamoDBNumberError(BotoClientError):
+    """
+    Raised in the event of incompatible numeric type casting.
+    """
+    pass
+
+
 class DynamoDBConditionalCheckFailedError(DynamoDBResponseError):
     """
     Raised when a ConditionalCheckFailedException response is received.

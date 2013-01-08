@@ -272,6 +272,36 @@ To update an item's attributes, simply retrieve it, modify the value, then
     >>> item['SentBy'] = 'User B'
     >>> item.put()
 
+Working with Decimals
+---------------------
+
+To avoid the loss of precision, you can stipulate that the
+``decimal.Decimal`` type be used for numeric values::
+
+    >>> import decimal
+    >>> conn.use_decimals()
+    >>> table = conn.get_table('messages')
+    >>> item = table.new_item(
+            hash_key='LOLCat Forum',
+            range_key='Check this out!'
+        )
+    >>> item['decimal_type'] = decimal.Decimal('1.12345678912345')
+    >>> item.put()
+    >>> print table.get_item('LOLCat Forum', 'Check this out!')
+    {u'forum_name': 'LOLCat Forum', u'decimal_type': Decimal('1.12345678912345'),
+     u'subject': 'Check this out!'}
+
+You can enable the usage of ``decimal.Decimal`` by using either the ``use_decimals``
+method, or by passing in the
+:py:class:`Dynamizer <boto.dynamodb.types.Dynamizer>` class for
+the ``dynamizer`` param::
+
+    >>> from boto.dynamodb.types import Dynamizer
+    >>> conn = boto.connect_dynamodb(dynamizer=Dynamizer)
+
+This mechanism can also be used if you want to customize the encoding/decoding
+process of DynamoDB types.
+
 
 Deleting Items
 --------------
