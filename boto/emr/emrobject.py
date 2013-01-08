@@ -153,6 +153,7 @@ class JobFlow(EmrObject):
         'TerminationProtected',
         'Type',
         'Value',
+        'VisibleToAllUsers',
     ])
 
     def __init__(self, connection=None):

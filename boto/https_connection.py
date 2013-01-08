@@ -84,7 +84,7 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
 
   default_port = httplib.HTTPS_PORT
 
-  def __init__(self, host, port=None, key_file=None, cert_file=None,
+  def __init__(self, host, port=default_port, key_file=None, cert_file=None,
                ca_certs=None, strict=None, **kwargs):
     """Constructor.
 
