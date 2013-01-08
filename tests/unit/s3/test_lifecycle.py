@@ -65,7 +65,8 @@ class TestS3LifeCycle(AWSMockServiceTestCase):
         self.assertEqual(rule.id, 'rule-1')
         self.assertEqual(rule.prefix, 'prefix/foo')
         self.assertEqual(rule.status, 'Enabled')
-        self.assertEqual(rule.expiration, 365)
+        self.assertEqual(rule.expiration.days, 365)
+        self.assertIsNone(rule.expiration.date)
         transition = rule.transition
         self.assertEqual(transition.days, 30)
         self.assertEqual(transition.storage_class, 'GLACIER')
