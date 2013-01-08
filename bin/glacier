@@ -51,15 +51,15 @@ glacier <command> [args]
                     created
 
     Common args:
-        access_key - Your AWS Access Key ID.  If not supplied, boto will
-                     use the value of the environment variable
-                     AWS_ACCESS_KEY_ID
-        secret_key - Your AWS Secret Access Key.  If not supplied, boto
-                     will use the value of the environment variable
-                     AWS_SECRET_ACCESS_KEY
-        region     - AWS region to use. Possible vaules: us-east-1, us-west-1,
-                     us-west-2, ap-northeast-1, eu-west-1.
-                     Default: us-east-1
+        --access_key - Your AWS Access Key ID.  If not supplied, boto will
+                       use the value of the environment variable
+                       AWS_ACCESS_KEY_ID
+        --secret_key - Your AWS Secret Access Key.  If not supplied, boto
+                       will use the value of the environment variable
+                       AWS_SECRET_ACCESS_KEY
+        --region     - AWS region to use. Possible values: us-east-1, us-west-1,
+                       us-west-2, ap-northeast-1, eu-west-1.
+                       Default: us-east-1
 
     Vaults operations:
 
@@ -91,18 +91,18 @@ def connect(region, debug_level=0, access_key=None, secret_key=None):
 
 
 def list_vaults(region, access_key=None, secret_key=None):
-    layer2 = connect(region, access_key, secret_key)
+    layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     for vault in layer2.list_vaults():
         print vault.arn
 
 
 def list_jobs(vault_name, region, access_key=None, secret_key=None):
-    layer2 = connect(region, access_key, secret_key)
+    layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     print layer2.layer1.list_jobs(vault_name)
 
 
 def upload_files(vault_name, filenames, region, access_key=None, secret_key=None):
-    layer2 = connect(region, access_key, secret_key)
+    layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     layer2.create_vault(vault_name)
     glacier_vault = layer2.get_vault(vault_name)
     for filename in filenames:
@@ -131,11 +131,11 @@ def main():
     access_key = secret_key = None
     region = 'us-east-1'
     for option, value in opts:
-        if option in ('a', '--access_key'):
+        if option in ('-a', '--access_key'):
             access_key = value
-        elif option in ('s', '--secret_key'):
+        elif option in ('-s', '--secret_key'):
             secret_key = value
-        elif option in ('r', '--region'):
+        elif option in ('-r', '--region'):
             region = value
     # handle each command
     if command == 'vaults':

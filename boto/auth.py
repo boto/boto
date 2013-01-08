@@ -647,8 +647,7 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         An implementation of AuthHandler.
 
     Raises:
-        boto.exception.NoAuthHandlerFound:
-        boto.exception.TooManyAuthHandlerReadyToAuthenticate:
+        boto.exception.NoAuthHandlerFound
     """
     ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
@@ -667,18 +666,14 @@ def get_auth_handler(host, config, provider, requested_capability=None):
               ' %s '
               'Check your credentials' % (len(names), str(names)))
 
-    if len(ready_handlers) > 1:
-        # NOTE: Even though it would be nice to accept more than one handler
-        # by using one of the many ready handlers, we are never sure that each
-        # of them are referring to the same storage account. Since we cannot
-        # easily guarantee that, it is always safe to fail, rather than operate
-        # on the wrong account.
-        names = [handler.__class__.__name__ for handler in ready_handlers]
-        raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
-               '%d AuthHandlers %s ready to authenticate for requested_capability '
-               '%s, only 1 expected. This happens if you import multiple '
-               'pluging.Plugin implementations that declare support for the '
-               'requested_capability.' % (len(names), str(names),
-               requested_capability))
-
-    return ready_handlers[0]
+    # We select the last ready auth handler that was loaded, to allow users to
+    # customize how auth works in environments where there are shared boto
+    # config files (e.g., /etc/boto.cfg and ~/.boto): The more general,
+    # system-wide shared configs should be loaded first, and the user's
+    # customizations loaded last. That way, for example, the system-wide
+    # config might include a plugin_directory that includes a service account
+    # auth plugin shared by all users of a Google Compute Engine instance
+    # (allowing sharing of non-user data between various services), and the
+    # user could override this with a .boto config that includes user-specific
+    # credentials (for access to user data).
+    return ready_handlers[-1]

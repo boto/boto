@@ -56,6 +56,8 @@ def chunk_hashes(bytestring, chunk_size=_MEGABYTE):
         start = i * chunk_size
         end = (i + 1) * chunk_size
         hashes.append(hashlib.sha256(bytestring[start:end]).digest())
+    if not hashes:
+        return [hashlib.sha256('').digest()]
     return hashes
 
 
@@ -107,8 +109,36 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
         linear_hash.update(chunk)
         chunks.append(hashlib.sha256(chunk).digest())
         chunk = fileobj.read(chunk_size)
+    if not chunks:
+        chunks = [hashlib.sha256('').digest()]
     return linear_hash.hexdigest(), bytes_to_hex(tree_hash(chunks))
 
 
 def bytes_to_hex(str_as_bytes):
     return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
+
+
+def tree_hash_from_str(str_as_bytes):
+    """
+
+    :type str_as_bytes: str
+    :param str_as_bytes: The string for which to compute the tree hash.
+
+    :rtype: str
+    :return: The computed tree hash, returned as hex.
+
+    """
+    return bytes_to_hex(tree_hash(chunk_hashes(str_as_bytes)))
+
+
+class ResettingFileSender(object):
+    def __init__(self, archive):
+        self._archive = archive
+        self._starting_offset = archive.tell()
+
+    def __call__(self, connection, method, path, body, headers):
+        try:
+            connection.request(method, path, self._archive, headers)
+            return connection.getresponse()
+        finally:
+            self._archive.seek(self._starting_offset)

@@ -98,6 +98,8 @@ class Bucket(S3Bucket):
                  preserve_acl=False, encrypt_key=False, headers=None,
                  query_args=None, src_generation=None):
         if src_generation:
+            if headers is None:
+                headers = {}
             headers['x-goog-copy-source-generation'] = src_generation
         super(Bucket, self).copy_key(new_key_name, src_bucket_name,
                                      src_key_name, metadata=metadata,
@@ -161,7 +163,7 @@ class Bucket(S3Bucket):
         key_name = key_name or ''
         query_args = STANDARD_ACL
         if generation:
-          query_args += '&generation=%d' % generation
+          query_args += '&generation=%s' % str(generation)
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -204,7 +206,7 @@ class Bucket(S3Bucket):
            and is therefore ignored here."""
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%d' % generation
+            query_args += '&generation=%s' % str(generation)
         return self.get_acl_helper(key_name, headers, query_args)
 
     def get_def_acl(self, key_name='', headers=None):
@@ -237,7 +239,7 @@ class Bucket(S3Bucket):
            Google Cloud Storage buckets and is therefore ignored here."""
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%d' % generation
+            query_args += '&generation=%s' % str(generation)
         return self.set_canned_acl_helper(acl_str, key_name, headers,
                                           query_args=query_args)
 

@@ -45,7 +45,8 @@ from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
-from cb_test_harnass import CallbackTestHarnass
+from cb_test_harness import CallbackTestHarness
+from tests.integration.gs.util import has_google_credentials
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
 # ensures that it's loaded and available by default.
@@ -57,6 +58,10 @@ except ImportError:
   pass
 
 
+@unittest.skipUnless(has_google_credentials(),
+                     "Google credentials are required to run the Google "
+                     "Cloud Storage tests.  Update your boto.cfg to run "
+                     "these tests.")
 class ResumableDownloadTests(unittest.TestCase):
     """
     Resumable download test suite.
@@ -182,17 +187,17 @@ class ResumableDownloadTests(unittest.TestCase):
         """
         Tests that failed resumable download leaves a correct tracker file
         """
-        harnass = CallbackTestHarnass()
+        harness = CallbackTestHarness()
         res_download_handler = ResumableDownloadHandler(
             tracker_file_name=self.tracker_file_name, num_retries=0)
         try:
             self.small_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
+                self.dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
         except ResumableDownloadException, e:
             # We'll get a ResumableDownloadException at this point because
-            # of CallbackTestHarnass (above). Check that the tracker file was
+            # of CallbackTestHarness (above). Check that the tracker file was
             # created correctly.
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
@@ -209,10 +214,10 @@ class ResumableDownloadTests(unittest.TestCase):
         """
         # Test one of the RETRYABLE_EXCEPTIONS.
         exception = ResumableDownloadHandler.RETRYABLE_EXCEPTIONS[0]
-        harnass = CallbackTestHarnass(exception=exception)
+        harness = CallbackTestHarness(exception=exception)
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         self.small_src_key.get_contents_to_file(
-            self.dst_fp, cb=harnass.call,
+            self.dst_fp, cb=harness.call,
             res_download_handler=res_download_handler)
         # Ensure downloaded object has correct content.
         self.assertEqual(self.small_src_key_size,
@@ -225,10 +230,10 @@ class ResumableDownloadTests(unittest.TestCase):
         Tests handling of a Broken Pipe (which interacts with an httplib bug)
         """
         exception = IOError(errno.EPIPE, "Broken pipe")
-        harnass = CallbackTestHarnass(exception=exception)
+        harness = CallbackTestHarness(exception=exception)
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         self.small_src_key.get_contents_to_file(
-            self.dst_fp, cb=harnass.call,
+            self.dst_fp, cb=harness.call,
             res_download_handler=res_download_handler)
         # Ensure downloaded object has correct content.
         self.assertEqual(self.small_src_key_size,
@@ -240,12 +245,12 @@ class ResumableDownloadTests(unittest.TestCase):
         """
         Tests resumable download that fails with a non-retryable exception
         """
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             exception=OSError(errno.EACCES, 'Permission denied'))
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         try:
             self.small_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
+                self.dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected OSError')
         except OSError, e:
@@ -257,11 +262,11 @@ class ResumableDownloadTests(unittest.TestCase):
         Tests resumable download that fails once and then completes,
         with tracker file
         """
-        harnass = CallbackTestHarnass()
+        harness = CallbackTestHarness()
         res_download_handler = ResumableDownloadHandler(
             tracker_file_name=self.tracker_file_name, num_retries=1)
         self.small_src_key.get_contents_to_file(
-            self.dst_fp, cb=harnass.call,
+            self.dst_fp, cb=harness.call,
             res_download_handler=res_download_handler)
         # Ensure downloaded object has correct content.
         self.assertEqual(self.small_src_key_size,
@@ -289,16 +294,16 @@ class ResumableDownloadTests(unittest.TestCase):
         Tests resumable download that fails completely in one process,
         then when restarted completes, using a tracker file
         """
-        # Set up test harnass that causes more failures than a single
+        # Set up test harness that causes more failures than a single
         # ResumableDownloadHandler instance will handle, writing enough data
         # before the first failure that some of it survives that process run.
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             fail_after_n_bytes=self.larger_src_key_size/2, num_times_to_fail=2)
         res_download_handler = ResumableDownloadHandler(
             tracker_file_name=self.tracker_file_name, num_retries=0)
         try:
             self.larger_src_key.get_contents_to_file(
-                self.dst_fp, cb=harnass.call,
+                self.dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
         except ResumableDownloadException, e:
@@ -308,7 +313,7 @@ class ResumableDownloadTests(unittest.TestCase):
             self.assertTrue(os.path.exists(self.tracker_file_name))
         # Try it one more time; this time should succeed.
         self.larger_src_key.get_contents_to_file(
-            self.dst_fp, cb=harnass.call,
+            self.dst_fp, cb=harness.call,
             res_download_handler=res_download_handler)
         self.assertEqual(self.larger_src_key_size,
                          get_cur_file_size(self.dst_fp))
@@ -317,21 +322,21 @@ class ResumableDownloadTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.tracker_file_name))
         # Ensure some of the file was downloaded both before and after failure.
         self.assertTrue(
-            len(harnass.transferred_seq_before_first_failure) > 1 and
-            len(harnass.transferred_seq_after_first_failure) > 1)
+            len(harness.transferred_seq_before_first_failure) > 1 and
+            len(harness.transferred_seq_after_first_failure) > 1)
 
     def test_download_with_inital_partial_download_before_failure(self):
         """
         Tests resumable download that successfully downloads some content
         before it fails, then restarts and completes
         """
-        # Set up harnass to fail download after several hundred KB so download
+        # Set up harness to fail download after several hundred KB so download
         # server will have saved something before we retry.
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             fail_after_n_bytes=self.larger_src_key_size/2)
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         self.larger_src_key.get_contents_to_file(
-            self.dst_fp, cb=harnass.call,
+            self.dst_fp, cb=harness.call,
             res_download_handler=res_download_handler)
         # Ensure downloaded object has correct content.
         self.assertEqual(self.larger_src_key_size,
@@ -340,8 +345,8 @@ class ResumableDownloadTests(unittest.TestCase):
                          self.larger_src_key.get_contents_as_string())
         # Ensure some of the file was downloaded both before and after failure.
         self.assertTrue(
-            len(harnass.transferred_seq_before_first_failure) > 1 and
-            len(harnass.transferred_seq_after_first_failure) > 1)
+            len(harness.transferred_seq_before_first_failure) > 1 and
+            len(harness.transferred_seq_after_first_failure) > 1)
 
     def test_zero_length_object_download(self):
         """

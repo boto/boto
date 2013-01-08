@@ -428,8 +428,10 @@ class S3Connection(AWSAuthConnection):
         :type headers: dict
         :param headers: Additional headers to pass along with the request to AWS.
 
-        :type location: :class:`boto.s3.connection.Location`
-        :param location: The location of the new bucket
+        :type location: str
+        :param location: The location of the new bucket.  You can use one of the
+            constants in :class:`boto.s3.connection.Location` (e.g. Location.EU,
+            Location.USWest, etc.).
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the

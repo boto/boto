@@ -23,13 +23,13 @@
 #
 
 import os
-import urllib
 
 import boto.glacier
 from boto.compat import json
 from boto.connection import AWSAuthConnection
 from .exceptions import UnexpectedHTTPResponseError
 from .response import GlacierResponse
+from .utils import ResettingFileSender
 
 
 class Layer1(AWSAuthConnection):
@@ -56,7 +56,7 @@ class Layer1(AWSAuthConnection):
         self.account_id = account_id
         AWSAuthConnection.__init__(self, region.endpoint,
                                    aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port,
+                                   is_secure, port, proxy, proxy_port,
                                    proxy_user, proxy_pass, debug,
                                    https_connection_factory,
                                    path, provider, security_token,
@@ -67,7 +67,7 @@ class Layer1(AWSAuthConnection):
 
     def make_request(self, verb, resource, headers=None,
                      data='', ok_responses=(200,), params=None,
-                     response_headers=None):
+                     sender=None, response_headers=None):
         if headers is None:
             headers = {}
         headers['x-amz-glacier-version'] = self.Version
@@ -75,6 +75,7 @@ class Layer1(AWSAuthConnection):
         response = AWSAuthConnection.make_request(self, verb, uri,
                                                   params=params,
                                                   headers=headers,
+                                                  sender=sender,
                                                   data=data)
         if response.status in ok_responses:
             return GlacierResponse(response, response_headers)
@@ -421,7 +422,7 @@ class Layer1(AWSAuthConnection):
         uri = 'vaults/%s/archives' % vault_name
         try:
             content_length = str(len(archive))
-        except TypeError:
+        except (TypeError, AttributeError):
             # If a file like object is provided, try to retrieve
             # the file size via fstat.
             content_length = str(os.fstat(archive.fileno()).st_size)
@@ -430,9 +431,17 @@ class Layer1(AWSAuthConnection):
                    'Content-Length': content_length}
         if description:
             headers['x-amz-archive-description'] = description
+        if self._is_file_like(archive):
+            sender = ResettingFileSender(archive)
+        else:
+            sender = None
         return self.make_request('POST', uri, headers=headers,
-                                 data=archive, ok_responses=(201,),
-                                 response_headers=response_headers)
+                                sender=sender,
+                                data=archive, ok_responses=(201,),
+                                response_headers=response_headers)
+
+    def _is_file_like(self, archive):
+        return hasattr(archive, 'seek') and hasattr(archive, 'tell')
 
     def delete_archive(self, vault_name, archive_id):
         """

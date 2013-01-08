@@ -64,6 +64,12 @@ class TestS3Key(AWSMockServiceTestCase):
         self.assertFalse(k.ongoing_restore)
         self.assertEqual(k.expiry_date, 'Fri, 21 Dec 2012 00:00:00 GMT')
 
+    def test_delete_key_return_key(self):
+        self.set_http_response(status_code=204, body='')
+        b = Bucket(self.service_connection, 'mybucket')
+        key = b.delete_key('fookey')
+        self.assertIsNotNone(key)
+
 
 if __name__ == '__main__':
     unittest.main()

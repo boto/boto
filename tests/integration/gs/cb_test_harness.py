@@ -20,9 +20,9 @@
 # IN THE SOFTWARE.
 
 """
-Test harnass that allows us to raise exceptions, change file content,
+Test harness that allows us to raise exceptions, change file content,
 and record the byte transfer callback sequence, to test various resumable
-upload and download cases. The 'call' method of this harnass can be passed
+upload and download cases. The 'call' method of this harness can be passed
 as the 'cb' parameter to boto.s3.Key.send_file() and boto.s3.Key.get_file(),
 allowing testing of various file upload/download conditions.
 """
@@ -30,7 +30,7 @@ allowing testing of various file upload/download conditions.
 import socket
 
 
-class CallbackTestHarnass(object):
+class CallbackTestHarness(object):
 
     def __init__(self, fail_after_n_bytes=0, num_times_to_fail=1,
                  exception=socket.error('mock socket error', 0),
@@ -48,7 +48,7 @@ class CallbackTestHarnass(object):
 
     def call(self, total_bytes_transferred, unused_total_size):
         """
-        To use this test harnass, pass the 'call' method of the instantiated
+        To use this test harness, pass the 'call' method of the instantiated
         object as the cb param to the set_contents_from_file() or
         get_contents_to_file() call.
         """

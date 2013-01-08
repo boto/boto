@@ -64,7 +64,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-10-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-12-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -525,7 +525,7 @@ class EC2Connection(AWSQueryConnection):
                       security_group_ids=None,
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
-                      ebs_optimized=False):
+                      ebs_optimized=False, network_interfaces=None):
         """
         Runs an image on EC2.
 
@@ -647,6 +647,10 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
+        :type network_interfaces: list
+        :param network_interfaces: A list of
+            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -711,6 +715,8 @@ class EC2Connection(AWSQueryConnection):
             params['IamInstanceProfile.Arn'] = instance_profile_arn
         if ebs_optimized:
             params['EbsOptimized'] = 'true'
+        if network_interfaces:
+            network_interfaces.build_list_params(params)
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -1015,7 +1021,8 @@ class EC2Connection(AWSQueryConnection):
                                instance_profile_arn=None,
                                instance_profile_name=None,
                                security_group_ids=None,
-                               ebs_optimized=False):
+                               ebs_optimized=False,
+                               network_interfaces=None):
         """
         Request instances on the spot market at a particular price.
 
@@ -1118,6 +1125,10 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
+        :type network_interfaces: list
+        :param network_interfaces: A list of
+            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
                  associated with the request for machines
@@ -1181,6 +1192,8 @@ class EC2Connection(AWSQueryConnection):
             params['%s.IamInstanceProfile.Arn' % ls] = instance_profile_arn
         if ebs_optimized:
             params['%s.EbsOptimized' % ls] = 'true'
+        if network_interfaces:
+            network_interfaces.build_list_params(params, prefix=ls + '.')
         return self.get_list('RequestSpotInstances', params,
                              [('item', SpotInstanceRequest)],
                              verb='POST')
@@ -1319,6 +1332,11 @@ class EC2Connection(AWSQueryConnection):
     def allocate_address(self, domain=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
+        
+        :type domain: string
+        :param domain: Optional string. If domain is set to "vpc" the address 
+                        will be allocated to VPC . Will return address 
+                        object with allocation_id.
 
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
@@ -1834,6 +1852,40 @@ class EC2Connection(AWSQueryConnection):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params, verb='POST')
 
+    def copy_snapshot(self, source_region, source_snapshot_id,
+                      description=None):
+        """
+        Copies a point-in-time snapshot of an Amazon Elastic Block Store
+        (Amazon EBS) volume and stores it in Amazon Simple Storage Service
+        (Amazon S3). You can copy the snapshot within the same region or from
+        one region to another. You can use the snapshot to create new Amazon
+        EBS volumes or Amazon Machine Images (AMIs).
+
+
+        :type source_region: str
+        :param source_region: The ID of the AWS region that contains the
+            snapshot to be copied (e.g 'us-east-1', 'us-west-2', etc.).
+
+        :type source_snapshot_id: str
+        :param source_snapshot_id: The ID of the Amazon EBS snapshot to copy
+
+        :type description: str
+        :param description: A description of the new Amazon EBS snapshot.
+
+        :rtype: str
+        :return: The snapshot ID
+
+        """
+        params = {
+            'SourceRegion': source_region,
+            'SourceSnapshotId': source_snapshot_id,
+        }
+        if description is not None:
+            params['Description'] = description
+        snapshot = self.get_object('CopySnapshot', params, Snapshot,
+                                   verb='POST')
+        return snapshot.id
+
     def trim_snapshots(self, hourly_backups=8, daily_backups=7,
                        weekly_backups=4):
         """
@@ -2223,7 +2275,7 @@ class EC2Connection(AWSQueryConnection):
                        if any.
 
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+        :return: The newly created :class:`boto.ec2.securitygroup.SecurityGroup`.
         """
         params = {'GroupName': name,
                   'GroupDescription': description}
