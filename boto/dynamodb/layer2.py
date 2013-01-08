@@ -25,8 +25,8 @@ from boto.dynamodb.table import Table
 from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
-from boto.dynamodb.types import get_dynamodb_type, dynamize_value, \
-    item_object_hook
+from boto.dynamodb.types import get_dynamodb_type, Dynamizer, \
+        LossyFloatDynamizer
 
 
 class TableGenerator:
@@ -145,11 +145,24 @@ class Layer2(object):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
-                 validate_certs=True):
+                 validate_certs=True, dynamizer=LossyFloatDynamizer):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
                              debug, security_token, region,
                              validate_certs=validate_certs)
+        self.dynamizer = dynamizer()
+
+    def use_decimals(self):
+        """
+        Use the ``decimal.Decimal`` type for encoding/decoding numeric types.
+
+        By default, ints/floats are used to represent numeric types
+        ('N', 'NS') received from DynamoDB.  Using the ``Decimal``
+        type is recommended to prevent loss of precision.
+
+        """
+        # Eventually this should be made the default dynamizer.
+        self.dynamizer = Dynamizer()
 
     def dynamize_attribute_updates(self, pending_updates):
         """
@@ -164,13 +177,13 @@ class Layer2(object):
                 d[attr_name] = {"Action": action}
             else:
                 d[attr_name] = {"Action": action,
-                                "Value": dynamize_value(value)}
+                                "Value": self.dynamizer.encode(value)}
         return d
 
     def dynamize_item(self, item):
         d = {}
         for attr_name in item:
-            d[attr_name] = dynamize_value(item[attr_name])
+            d[attr_name] = self.dynamizer.encode(item[attr_name])
         return d
 
     def dynamize_range_key_condition(self, range_key_condition):
@@ -208,7 +221,7 @@ class Layer2(object):
                 elif attr_value is False:
                     attr_value = {'Exists': False}
                 else:
-                    val = dynamize_value(expected_value[attr_name])
+                    val = self.dynamizer.encode(expected_value[attr_name])
                     attr_value = {'Value': val}
                 d[attr_name] = attr_value
         return d
@@ -221,10 +234,10 @@ class Layer2(object):
         d = None
         if last_evaluated_key:
             hash_key = last_evaluated_key['HashKeyElement']
-            d = {'HashKeyElement': dynamize_value(hash_key)}
+            d = {'HashKeyElement': self.dynamizer.encode(hash_key)}
             if 'RangeKeyElement' in last_evaluated_key:
                 range_key = last_evaluated_key['RangeKeyElement']
-                d['RangeKeyElement'] = dynamize_value(range_key)
+                d['RangeKeyElement'] = self.dynamizer.encode(range_key)
         return d
 
     def build_key_from_values(self, schema, hash_key, range_key=None):
@@ -248,13 +261,13 @@ class Layer2(object):
             type defined in the schema.
         """
         dynamodb_key = {}
-        dynamodb_value = dynamize_value(hash_key)
+        dynamodb_value = self.dynamizer.encode(hash_key)
         if dynamodb_value.keys()[0] != schema.hash_key_type:
             msg = 'Hashkey must be of type: %s' % schema.hash_key_type
             raise TypeError(msg)
         dynamodb_key['HashKeyElement'] = dynamodb_value
         if range_key is not None:
-            dynamodb_value = dynamize_value(range_key)
+            dynamodb_value = self.dynamizer.encode(range_key)
             if dynamodb_value.keys()[0] != schema.range_key_type:
                 msg = 'RangeKey must be of type: %s' % schema.range_key_type
                 raise TypeError(msg)
@@ -471,7 +484,7 @@ class Layer2(object):
         key = self.build_key_from_values(table.schema, hash_key, range_key)
         response = self.layer1.get_item(table.name, key,
                                         attributes_to_get, consistent_read,
-                                        object_hook=item_object_hook)
+                                        object_hook=self.dynamizer.decode)
         item = item_class(table, hash_key, range_key, response['Item'])
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
@@ -491,7 +504,7 @@ class Layer2(object):
         """
         request_items = batch_list.to_dict()
         return self.layer1.batch_get_item(request_items,
-                                          object_hook=item_object_hook)
+                                          object_hook=self.dynamizer.decode)
 
     def batch_write_item(self, batch_list):
         """
@@ -505,7 +518,7 @@ class Layer2(object):
         """
         request_items = batch_list.to_dict()
         return self.layer1.batch_write_item(request_items,
-                                            object_hook=item_object_hook)
+                                            object_hook=self.dynamizer.decode)
 
     def put_item(self, item, expected_value=None, return_values=None):
         """
@@ -533,7 +546,7 @@ class Layer2(object):
         response = self.layer1.put_item(item.table.name,
                                         self.dynamize_item(item),
                                         expected_value, return_values,
-                                        object_hook=item_object_hook)
+                                        object_hook=self.dynamizer.decode)
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
         return response
@@ -574,7 +587,7 @@ class Layer2(object):
         response = self.layer1.update_item(item.table.name, key,
                                            attr_updates,
                                            expected_value, return_values,
-                                           object_hook=item_object_hook)
+                                           object_hook=self.dynamizer.decode)
         item._updates.clear()
         if 'ConsumedCapacityUnits' in response:
             item.consumed_units = response['ConsumedCapacityUnits']
@@ -607,7 +620,7 @@ class Layer2(object):
         return self.layer1.delete_item(item.table.name, key,
                                        expected=expected_value,
                                        return_values=return_values,
-                                       object_hook=item_object_hook)
+                                       object_hook=self.dynamizer.decode)
 
     def query(self, table, hash_key, range_key_condition=None,
               attributes_to_get=None, request_limit=None,
@@ -691,7 +704,7 @@ class Layer2(object):
         else:
             esk = None
         kwargs = {'table_name': table.name,
-                  'hash_key_value': dynamize_value(hash_key),
+                  'hash_key_value': self.dynamizer.encode(hash_key),
                   'range_key_conditions': rkc,
                   'attributes_to_get': attributes_to_get,
                   'limit': request_limit,
@@ -699,7 +712,7 @@ class Layer2(object):
                   'consistent_read': consistent_read,
                   'scan_index_forward': scan_index_forward,
                   'exclusive_start_key': esk,
-                  'object_hook': item_object_hook}
+                  'object_hook': self.dynamizer.decode}
         return TableGenerator(table, self.layer1.query,
                               max_results, item_class, kwargs)
 
@@ -780,6 +793,6 @@ class Layer2(object):
                   'limit': request_limit,
                   'count': count,
                   'exclusive_start_key': esk,
-                  'object_hook': item_object_hook}
+                  'object_hook': self.dynamizer.decode}
         return TableGenerator(table, self.layer1.scan,
                               max_results, item_class, kwargs)

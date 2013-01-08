@@ -23,10 +23,11 @@
 """
 Tests for Layer2 of Amazon DynamoDB
 """
-
 import unittest
 import time
 import uuid
+from decimal import Decimal
+
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer2 import Layer2
@@ -43,6 +44,16 @@ class DynamoDBLayer2Test (unittest.TestCase):
         self.hash_key_proto_value = ''
         self.range_key_name = 'subject'
         self.range_key_proto_value = ''
+        self.table_name = 'sample_data_%s' % int(time.time())
+
+    def create_sample_table(self):
+        schema = self.dynamodb.create_schema(
+            self.hash_key_name, self.hash_key_proto_value,
+            self.range_key_name,
+            self.range_key_proto_value)
+        table = self.create_table(self.table_name, schema, 5, 5)
+        table.refresh(wait_for_active=True)
+        return table
 
     def create_table(self, table_name, schema, read_units, write_units):
         result = self.dynamodb.create_table(table_name, schema, read_units, write_units)
@@ -438,3 +449,36 @@ class DynamoDBLayer2Test (unittest.TestCase):
         self.assertEqual(retrieved['BinaryData'], bytes('\x01\x02\x03\x04'))
         self.assertEqual(retrieved['BinarySequence'],
                          set([Binary('\x01\x02'), Binary('\x03\x04')]))
+
+    def test_put_decimal_attrs(self):
+        self.dynamodb.use_decimals()
+        table = self.create_sample_table()
+        item = table.new_item('foo', 'bar')
+        item['decimalvalue'] = Decimal('1.12345678912345')
+        item.put()
+        retrieved = table.get_item('foo', 'bar')
+        self.assertEqual(retrieved['decimalvalue'], Decimal('1.12345678912345'))
+
+    def test_lossy_float_conversion(self):
+        table = self.create_sample_table()
+        item = table.new_item('foo', 'bar')
+        item['floatvalue'] = 1.12345678912345
+        item.put()
+        retrieved = table.get_item('foo', 'bar')['floatvalue']
+        # Notice how this is not equal to the original value.
+        self.assertNotEqual(1.12345678912345, retrieved)
+        # Instead, it's truncated:
+        self.assertEqual(1.12345678912, retrieved)
+
+    def test_large_integers(self):
+        # It's not just floating point numbers, large integers
+        # can trigger rouding issues.
+        self.dynamodb.use_decimals()
+        table = self.create_sample_table()
+        item = table.new_item('foo', 'bar')
+        item['decimalvalue'] = Decimal('129271300103398600')
+        item.put()
+        retrieved = table.get_item('foo', 'bar')
+        self.assertEqual(retrieved['decimalvalue'], Decimal('129271300103398600'))
+        # Also comparable directly to an int.
+        self.assertEqual(retrieved['decimalvalue'], 129271300103398600)
