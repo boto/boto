@@ -656,7 +656,6 @@ class Distribution:
             raise ValueError("You must specify one of private_key_file or private_key_string")
         # If private_key_file is a file, read its contents. Otherwise, open it and then read it
         if isinstance(private_key_file, file):
-            private_key_file.seek(0)
             private_key_string = private_key_file.read()
         elif private_key_file:
             with open(private_key_file, 'r') as file_handle:
