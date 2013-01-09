@@ -889,7 +889,7 @@ class AWSAuthConnection(object):
         # use it to raise an exception.
         # Otherwise, raise the exception that must have already h#appened.
         if response:
-            raise BotoServerError(response.status, response.reason, body)
+            raise BotoServerError(response.status, response.reason, response.read())
         elif e:
             raise e
         else:
