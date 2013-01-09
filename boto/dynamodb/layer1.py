@@ -137,6 +137,12 @@ class Layer1(AWSAuthConnection):
                 next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
+                if i == self.NumberRetries:
+                    # If this was our last retry attempt, raise
+                    # a specific error saying that the throughput
+                    # was exceeded.
+                    raise dynamodb_exceptions.DynamoDBThroughputExceededError(
+                        response.status, response.reason, data)
             elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
                 self._get_session_token()
