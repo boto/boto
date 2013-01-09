@@ -30,13 +30,6 @@ from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 from boto.compat import json
 
-#
-# To get full debug output, uncomment the following line and set the
-# value of Debug to be 2
-#
-#boto.set_stream_logger('dynamodb')
-Debug = 0
-
 
 class Layer1(AWSAuthConnection):
     """
