@@ -19,7 +19,6 @@ At the moment, boto supports:
   * Amazon Elastic Compute Cloud (EC2)
   * Amazon Elastic Map Reduce (EMR)
   * AutoScaling
-  * Elastic Load Balancing (ELB)
 
 * Content Delivery
 
@@ -33,10 +32,13 @@ At the moment, boto supports:
 
 * Deployment and Management
 
-  * AWS Identity and Access Management (IAM)
-  * Amazon CloudWatch
   * AWS Elastic Beanstalk
   * AWS CloudFormation
+  * AWS Data Pipeline
+
+* Identity & Access
+
+  * AWS Identity and Access Management (IAM)
 
 * Application Services
 
@@ -46,10 +48,15 @@ At the moment, boto supports:
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
 
+* Montoring
+
+  * Amazon CloudWatch
+
 * Networking
 
   * Amazon Route53
   * Amazon Virtual Private Cloud (VPC)
+  * Elastic Load Balancing (ELB)
 
 * Payments and Billing
 
@@ -105,16 +112,6 @@ ChangeLogs
 
 To see what has changed over time in boto, you can check out the
 `release notes`_ in the wiki.
-
-*********************************
-Special Note for Python 3.x Users
-*********************************
-
-If you are interested in trying out boto with Python 3.x, check out the
-`neo`_ branch.  This is under active development and the goal is a version
-of boto that works in Python 2.6, 2.7, and 3.x.  Not everything is working
-just yet but many things are and it's worth a look if you are an active
-Python 3.x user.
 
 ***************************
 Finding Out More About Boto
