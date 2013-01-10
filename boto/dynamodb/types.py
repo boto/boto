@@ -250,7 +250,11 @@ class Dynamizer(object):
         raise DynamoDBNumberError(msg)
 
     def _encode_s(self, attr):
-        return str(attr)
+        if isinstance(attr, unicode):
+            attr = attr.encode('utf-8')
+        elif not isinstance(attr, str):
+            attr = str(attr)
+        return attr
 
     def _encode_ns(self, attr):
         return map(self._encode_n, attr)
