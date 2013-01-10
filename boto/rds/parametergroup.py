@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,7 +28,7 @@ class ParameterGroup(dict):
         self.description = None
         self.engine = None
         self._current_param = None
-        
+
     def __repr__(self):
         return 'ParameterGroup:%s' % self.name
 
@@ -60,7 +60,7 @@ class ParameterGroup(dict):
     def get_params(self):
         pg = self.connection.get_all_dbparameters(self.name)
         self.update(pg)
-    
+
     def add_param(self, name, value, apply_method):
         param = Parameter()
         param.name = name
@@ -79,12 +79,12 @@ class Parameter(object):
     ValidSources = ['user', 'system', 'engine-default']
     ValidApplyTypes = ['static', 'dynamic']
     ValidApplyMethods = ['immediate', 'pending-reboot']
-    
+
     def __init__(self, group=None, name=None):
         self.group = group
         self.name = name
         self._value = None
-        self.type = str
+        self.type = 'string'
         self.source = None
         self.is_modifiable = True
         self.description = None
@@ -127,18 +127,18 @@ class Parameter(object):
         prefix = 'Parameters.member.%d.' % i
         if self.name:
             d[prefix+'ParameterName'] = self.name
-        if self._value:
+        if self._value is not None:
             d[prefix+'ParameterValue'] = self._value
         if self.apply_type:
             d[prefix+'ApplyMethod'] = self.apply_method
 
     def _set_string_value(self, value):
         if not isinstance(value, str) or isinstance(value, unicode):
-            raise ValueError, 'value must be of type str'
+            raise ValueError('value must be of type str')
         if self.allowed_values:
             choices = self.allowed_values.split(',')
             if value not in choices:
-                raise ValueError, 'value must be in %s' % self.allowed_values
+                raise ValueError('value must be in %s' % self.allowed_values)
         self._value = value
 
     def _set_integer_value(self, value):
@@ -148,10 +148,10 @@ class Parameter(object):
             if self.allowed_values:
                 min, max = self.allowed_values.split('-')
                 if value < int(min) or value > int(max):
-                    raise ValueError, 'range is %s' % self.allowed_values
+                    raise ValueError('range is %s' % self.allowed_values)
             self._value = value
         else:
-            raise ValueError, 'value must be integer'
+            raise ValueError('value must be integer')
 
     def _set_boolean_value(self, value):
         if isinstance(value, bool):
@@ -162,8 +162,8 @@ class Parameter(object):
             else:
                 self._value = False
         else:
-            raise ValueError, 'value must be boolean'
-        
+            raise ValueError('value must be boolean')
+
     def set_value(self, value):
         if self.type == 'string':
             self._set_string_value(value)
@@ -172,7 +172,7 @@ class Parameter(object):
         elif self.type == 'boolean':
             self._set_boolean_value(value)
         else:
-            raise TypeError, 'unknown type (%s)' % self.type
+            raise TypeError('unknown type (%s)' % self.type)
 
     def get_value(self):
         if self._value == None:
@@ -188,7 +188,7 @@ class Parameter(object):
                 self._set_boolean_value(self._value)
             return self._value
         else:
-            raise TypeError, 'unknown type (%s)' % self.type
+            raise TypeError('unknown type (%s)' % self.type)
 
     value = property(get_value, set_value, 'The value of the parameter')
 

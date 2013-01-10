@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 pairs.append([name, None])
             if pairs[-1][0].lower() != pairs[-1][0]:
                 mixedCase = True
-
+    
     if mixedCase:
         s3 = boto.connect_s3(calling_format=OrdinaryCallingFormat())
     else:

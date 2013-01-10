@@ -52,3 +52,10 @@ boto.sqs.regioninfo
 .. automodule:: boto.sqs.regioninfo
    :members:   
    :undoc-members:
+
+boto.sqs.batchresults
+---------------------
+
+.. automodule:: boto.sqs.batchresults
+   :members:   
+   :undoc-members:

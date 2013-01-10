@@ -31,7 +31,7 @@ def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None):
         for k in rs:
             yield k
         if k:
-            marker = k.name
+            marker = rs.next_marker or k.name
         more_results= rs.is_truncated
         
 class BucketListResultSet:

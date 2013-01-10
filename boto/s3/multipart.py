@@ -35,14 +35,18 @@ class CompleteMultiPartUpload(object):
                      is contained
      * key_name - The name of the new, completed key
      * etag - The MD5 hash of the completed, combined upload
+     * version_id - The version_id of the completed upload
+     * encrypted - The value of the encryption header
     """
 
     def __init__(self, bucket=None):
-        self.bucket = None
+        self.bucket = bucket
         self.location = None
         self.bucket_name = None
         self.key_name = None
         self.etag = None
+        self.version_id = None
+        self.encrypted = None
 
     def __repr__(self):
         return '<CompleteMultiPartUpload: %s.%s>' % (self.bucket_name,
@@ -142,7 +146,6 @@ class MultiPartUpload(object):
         return part_lister(self)
 
     def to_xml(self):
-        self.get_all_parts()
         s = '<CompleteMultipartUpload>\n'
         for part in self:
             s += '  <Part>\n'
@@ -185,6 +188,8 @@ class MultiPartUpload(object):
                 self.is_truncated = True
             else:
                 self.is_truncated = False
+        elif name == 'Initiated':
+            self.initiated = value
         else:
             setattr(self, name, value)
 
@@ -199,7 +204,7 @@ class MultiPartUpload(object):
         self._parts = []
         query_args = 'uploadId=%s' % self.id
         if max_parts:
-            query_args += '&max_parts=%d' % max_parts
+            query_args += '&max-parts=%d' % max_parts
         if part_number_marker:
             query_args += '&part-number-marker=%s' % part_number_marker
         response = self.bucket.connection.make_request('GET', self.bucket.name,
@@ -212,7 +217,8 @@ class MultiPartUpload(object):
             return self._parts
 
     def upload_part_from_file(self, fp, part_num, headers=None, replace=True,
-                               cb=None, num_cb=10, policy=None, md5=None):
+                              cb=None, num_cb=10, policy=None, md5=None,
+                              size=None):
         """
         Upload another part of this MultiPart Upload.
         
@@ -231,7 +237,41 @@ class MultiPartUpload(object):
         key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,
                                    md5, reduced_redundancy=False,
-                                   query_args=query_args)
+                                   query_args=query_args, size=size)
+
+    def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
+                           start=None, end=None):
+        """
+        Copy another part of this MultiPart Upload.
+
+        :type src_bucket_name: string
+        :param src_bucket_name: Name of the bucket containing the source key
+
+        :type src_key_name: string
+        :param src_key_name: Name of the source key
+
+        :type part_num: int
+        :param part_num: The number of this part.
+
+        :type start: int
+        :param start: Zero-based byte offset to start copying from
+
+        :type end: int
+        :param end: Zero-based byte offset to copy to
+        """
+        if part_num < 1:
+            raise ValueError('Part numbers must be greater than zero')
+        query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
+        if start is not None and end is not None:
+            rng = 'bytes=%s-%s' % (start, end)
+            provider = self.bucket.connection.provider
+            headers = {provider.copy_source_range_header: rng}
+        else:
+            headers = None
+        return self.bucket.copy_key(self.key_name, src_bucket_name,
+                                    src_key_name, storage_class=None,
+                                    headers=headers,
+                                    query_args=query_args)
 
     def complete_upload(self):
         """

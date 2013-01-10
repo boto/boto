@@ -31,8 +31,8 @@ def usage():
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hcq:o:t:r:',
-                                   ['help', 'clear', 'queue',
-                                    'output', 'timeout', 'region'])
+                                   ['help', 'clear', 'queue=',
+                                    'output=', 'timeout=', 'region='])
     except:
         usage()
         sys.exit(2)

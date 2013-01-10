@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -27,7 +27,7 @@ from boto.ec2.ec2object import TaggedEC2Object
 from boto.exception import BotoClientError
 
 class SecurityGroup(TaggedEC2Object):
-    
+
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None, id=None):
         TaggedEC2Object.__init__(self, connection)
@@ -74,7 +74,7 @@ class SecurityGroup(TaggedEC2Object):
             else:
                 raise Exception(
                     'Unexpected value of status %s for group %s'%(
-                        value, 
+                        value,
                         self.name
                     )
                 )
@@ -82,10 +82,13 @@ class SecurityGroup(TaggedEC2Object):
             setattr(self, name, value)
 
     def delete(self):
-        return self.connection.delete_security_group(self.name)
+        if self.vpc_id:
+            return self.connection.delete_security_group(group_id=self.id)
+        else:
+            return self.connection.delete_security_group(self.name)
 
     def add_rule(self, ip_protocol, from_port, to_port,
-                 src_group_name, src_group_owner_id, cidr_ip):
+                 src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
         """
         Add a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -96,10 +99,10 @@ class SecurityGroup(TaggedEC2Object):
         rule.from_port = from_port
         rule.to_port = to_port
         self.rules.append(rule)
-        rule.add_grant(src_group_name, src_group_owner_id, cidr_ip)
+        rule.add_grant(src_group_name, src_group_owner_id, cidr_ip, src_group_group_id)
 
     def remove_rule(self, ip_protocol, from_port, to_port,
-                    src_group_name, src_group_owner_id, cidr_ip):
+                    src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
         """
         Remove a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -113,7 +116,7 @@ class SecurityGroup(TaggedEC2Object):
                         target_rule = rule
                         target_grant = None
                         for grant in rule.grants:
-                            if grant.name == src_group_name:
+                            if grant.name == src_group_name or grant.group_id == src_group_group_id:
                                 if grant.owner_id == src_group_owner_id:
                                     if grant.cidr_ip == cidr_ip:
                                         target_grant = grant
@@ -130,7 +133,7 @@ class SecurityGroup(TaggedEC2Object):
         OR ip_protocol, from_port, to_port,
         and cidr_ip.  In other words, either you are authorizing another
         group or you are authorizing some ip-based rule.
-        
+
         :type ip_protocol: string
         :param ip_protocol: Either tcp | udp | icmp
 
@@ -140,55 +143,86 @@ class SecurityGroup(TaggedEC2Object):
         :type to_port: int
         :param to_port: The ending port number you are enabling
 
-        :type cidr_ip: string
+        :type cidr_ip: string or list of strings
         :param cidr_ip: The CIDR block you are providing access to.
                         See http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
         :type src_group: :class:`boto.ec2.securitygroup.SecurityGroup` or
                          :class:`boto.ec2.securitygroup.GroupOrCIDR`
         :param src_group: The Security Group you are granting access to.
-                         
+
         :rtype: bool
         :return: True if successful.
         """
+        group_name = None
+        if not self.vpc_id:
+            group_name = self.name
+        group_id = None
+        if self.vpc_id:
+            group_id = self.id
+        src_group_name = None
+        src_group_owner_id = None
+        src_group_group_id = None
         if src_group:
             cidr_ip = None
-            src_group_name = src_group.name
             src_group_owner_id = src_group.owner_id
-        else:
-            src_group_name = None
-            src_group_owner_id = None
-        status = self.connection.authorize_security_group(self.name,
+            if not self.vpc_id:
+                src_group_name = src_group.name
+            else:
+                if hasattr(src_group, 'group_id'):
+                    src_group_group_id = src_group.group_id
+                else:
+                    src_group_group_id = src_group.id
+        status = self.connection.authorize_security_group(group_name,
                                                           src_group_name,
                                                           src_group_owner_id,
                                                           ip_protocol,
                                                           from_port,
                                                           to_port,
-                                                          cidr_ip)
+                                                          cidr_ip,
+                                                          group_id,
+                                                          src_group_group_id)
         if status:
-            self.add_rule(ip_protocol, from_port, to_port, src_group_name,
-                          src_group_owner_id, cidr_ip)
+            if not isinstance(cidr_ip, list):
+                cidr_ip = [cidr_ip]
+            for single_cidr_ip in cidr_ip:
+                self.add_rule(ip_protocol, from_port, to_port, src_group_name,
+                              src_group_owner_id, single_cidr_ip, src_group_group_id)
         return status
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
                cidr_ip=None, src_group=None):
+        group_name = None
+        if not self.vpc_id:
+            group_name = self.name
+        group_id = None
+        if self.vpc_id:
+            group_id = self.id
+        src_group_name = None
+        src_group_owner_id = None
+        src_group_group_id = None
         if src_group:
-            cidr_ip=None
-            src_group_name = src_group.name
+            cidr_ip = None
             src_group_owner_id = src_group.owner_id
-        else:
-            src_group_name = None
-            src_group_owner_id = None
-        status = self.connection.revoke_security_group(self.name,
+            if not self.vpc_id:
+                src_group_name = src_group.name
+            else:
+                if hasattr(src_group, 'group_id'):
+                    src_group_group_id = src_group.group_id
+                else:
+                    src_group_group_id = src_group.id
+        status = self.connection.revoke_security_group(group_name,
                                                        src_group_name,
                                                        src_group_owner_id,
                                                        ip_protocol,
                                                        from_port,
                                                        to_port,
-                                                       cidr_ip)
+                                                       cidr_ip,
+                                                       group_id,
+                                                       src_group_group_id)
         if status:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
-                             src_group_owner_id, cidr_ip)
+                             src_group_owner_id, cidr_ip, src_group_group_id)
         return status
 
     def copy_to_region(self, region, name=None):
@@ -204,7 +238,7 @@ class SecurityGroup(TaggedEC2Object):
         :type name: string
         :param name: The name of the copy.  If not supplied, the copy
                      will have the same name as this security group.
-        
+
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
         :return: The new security group.
         """
@@ -215,11 +249,11 @@ class SecurityGroup(TaggedEC2Object):
         sg = rconn.create_security_group(name or self.name, self.description)
         source_groups = []
         for rule in self.rules:
-            grant = rule.grants[0]
             for grant in rule.grants:
-                if grant.name:
-                    if grant.name not in source_groups:
-                        source_groups.append(grant.name)
+                grant_nom = grant.name or grant.group_id
+                if grant_nom:
+                    if grant_nom not in source_groups:
+                        source_groups.append(grant_nom)
                         sg.authorize(None, None, None, None, grant)
                 else:
                     sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
@@ -245,7 +279,7 @@ class SecurityGroup(TaggedEC2Object):
         return instances
 
 class IPPermissionsList(list):
-    
+
     def startElement(self, name, attrs, connection):
         if name == 'item':
             self.append(IPPermissions(self))
@@ -254,7 +288,7 @@ class IPPermissionsList(list):
 
     def endElement(self, name, value, connection):
         pass
-            
+
 class IPPermissions(object):
 
     def __init__(self, parent=None):
@@ -284,9 +318,10 @@ class IPPermissions(object):
         else:
             setattr(self, name, value)
 
-    def add_grant(self, name=None, owner_id=None, cidr_ip=None):
+    def add_grant(self, name=None, owner_id=None, cidr_ip=None, group_id=None):
         grant = GroupOrCIDR(self)
         grant.owner_id = owner_id
+        grant.group_id = group_id
         grant.name = name
         grant.cidr_ip = cidr_ip
         self.grants.append(grant)
@@ -296,6 +331,7 @@ class GroupOrCIDR(object):
 
     def __init__(self, parent=None):
         self.owner_id = None
+        self.group_id = None
         self.name = None
         self.cidr_ip = None
 
@@ -303,7 +339,7 @@ class GroupOrCIDR(object):
         if self.cidr_ip:
             return '%s' % self.cidr_ip
         else:
-            return '%s-%s' % (self.name, self.owner_id)
+            return '%s-%s' % (self.name or self.group_id, self.owner_id)
 
     def startElement(self, name, attrs, connection):
         return None
@@ -311,10 +347,11 @@ class GroupOrCIDR(object):
     def endElement(self, name, value, connection):
         if name == 'userId':
             self.owner_id = value
+        elif name == 'groupId':
+            self.group_id = value
         elif name == 'groupName':
             self.name = value
         if name == 'cidrIp':
             self.cidr_ip = value
         else:
             setattr(self, name, value)
-

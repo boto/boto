@@ -35,7 +35,7 @@ class Qualifications:
         for n, req in enumerate(self.requirements):
             reqparams = req.get_as_params()
             for rp in reqparams:
-                params['QualificationRequirement.%s.%s' % ((n+1),rp) ] = reqparams[rp]
+                params['QualificationRequirement.%s.%s' % ((n+1), rp) ] = reqparams[rp]
         return params
 
 

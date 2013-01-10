@@ -92,7 +92,7 @@ class Service(ScriptBase):
     def save_results(self, results, input_message, output_message):
         output_keys = []
         for file, type in results:
-            if input_message.has_key('OutputBucket'):
+            if 'OutputBucket' in input_message:
                 output_bucket = input_message['OutputBucket']
             else:
                 output_bucket = input_message['Bucket']
@@ -105,7 +105,7 @@ class Service(ScriptBase):
     def write_message(self, message):
         message['Service-Write'] = get_ts()
         message['Server'] = self.name
-        if os.environ.has_key('HOSTNAME'):
+        if 'HOSTNAME' in os.environ:
             message['Host'] = os.environ['HOSTNAME']
         else:
             message['Host'] = 'unknown'

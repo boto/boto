@@ -1,96 +1,14 @@
 .. ref-cloudfront
 
 ==========
-cloudfront
+CloudFront
 ==========
-
-A Crash Course in CloudFront in Boto
-------------------------------------
-
-This new boto module provides an interface to Amazon's new Content Service, CloudFront.
-
-.. warning::
-
-    This module is not well tested.  Paging of distributions is not yet
-    supported.  CNAME support is completely untested.  Use with caution.
-    Feedback and bug reports are greatly appreciated.
-
-The following shows the main features of the cloudfront module from an interactive shell:
-
-Create an cloudfront connection:
-
->>> from boto.cloudfront import CloudFrontConnection
->>> c = CloudFrontConnection()
-
-Create a new :class:`boto.cloudfront.distribution.Distribution`:
-
->>> distro = c.create_distribution(origin='mybucket.s3.amazonaws.com', enabled=False, comment='My new Distribution')
->>> d.domain_name
-u'd2oxf3980lnb8l.cloudfront.net'
->>> d.id
-u'ECH69MOIW7613'
->>> d.status
-u'InProgress'
->>> d.config.comment
-u'My new distribution'
->>> d.config.origin
-<S3Origin: mybucket.s3.amazonaws.com>
->>> d.config.caller_reference
-u'31b8d9cf-a623-4a28-b062-a91856fac6d0'
->>> d.config.enabled
-False
-
-Note that a new caller reference is created automatically, using
-uuid.uuid4().  The :class:`boto.cloudfront.distribution.Distribution`, :class:`boto.cloudfront.distribution.DistributionConfig` and
-:class:`boto.cloudfront.distribution.DistributionSummary` objects are defined in the :mod:`boto.cloudfront.distribution`
-module.
-
-To get a listing of all current distributions:
-
->>> rs = c.get_all_distributions()
->>> rs
-[<boto.cloudfront.distribution.DistributionSummary instance at 0xe8d4e0>,
- <boto.cloudfront.distribution.DistributionSummary instance at 0xe8d788>]
-
-This returns a list of :class:`boto.cloudfront.distribution.DistributionSummary` objects.  Note that paging
-is not yet supported!  To get a :class:`boto.cloudfront.distribution.DistributionObject` from a
-:class:`boto.cloudfront.distribution.DistributionSummary` object:
-
->>> ds = rs[1]
->>> distro = ds.get_distribution()
->>> distro.domain_name
-u'd2oxf3980lnb8l.cloudfront.net'
-
-To change a property of a distribution object:
-
->>> distro.comment
-u'My new distribution'
->>> distro.update(comment='This is a much better comment')
->>> distro.comment
-'This is a much better comment'
-
-You can also enable/disable a distribution using the following
-convenience methods:
-
->>> distro.enable()  # just calls distro.update(enabled=True)
-
-or 
-
->>> distro.disable()  # just calls distro.update(enabled=False)
-
-The only attributes that can be updated for a Distribution are
-comment, enabled and cnames.
-
-To delete a :class:`boto.cloudfront.distribution.Distribution`:
-
->>> distro.delete()
-
 
 boto.cloudfront
 ---------------
 
 .. automodule:: boto.cloudfront
-   :members:   
+   :members:
    :undoc-members:
 
 boto.cloudfront.distribution
@@ -101,9 +19,44 @@ boto.cloudfront.distribution
    :undoc-members:
 
 boto.cloudfront.origin
-----------------------------
+----------------------
 
 .. automodule:: boto.cloudfront.origin
+   :members:
+   :undoc-members:
+
+boto.cloudfront.identity
+------------------------
+
+.. automodule:: boto.cloudfront.identity
+   :members:
+   :undoc-members:
+
+boto.cloudfront.signers
+-----------------------
+
+.. automodule:: boto.cloudfront.signers
+   :members:
+   :undoc-members:
+
+boto.cloudfront.invalidation
+----------------------------
+
+.. automodule:: boto.cloudfront.invalidation
+   :members:
+   :undoc-members:
+
+boto.cloudfront.object
+----------------------
+
+.. automodule:: boto.cloudfront.object
+   :members:
+   :undoc-members:
+
+boto.cloudfront.logging
+-----------------------
+
+.. automodule:: boto.cloudfront.logging
    :members:
    :undoc-members:
 
@@ -111,5 +64,5 @@ boto.cloudfront.exception
 -------------------------
 
 .. automodule:: boto.cloudfront.exception
-   :members:   
+   :members:
    :undoc-members:

@@ -155,7 +155,7 @@ class TaskPoller(object):
         self.queue = self.sqs.lookup(queue_name)
 
     def poll(self, wait=60, vtimeout=60):
-        while 1:
+        while True:
             m = self.queue.read(vtimeout)
             if m:
                 task = Task.get_by_id(m.get_body())

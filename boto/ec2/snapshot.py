@@ -24,6 +24,7 @@
 Represents an EC2 Elastic Block Store Snapshot
 """
 from boto.ec2.ec2object import TaggedEC2Object
+from boto.ec2.zone import Zone
 
 class Snapshot(TaggedEC2Object):
     
@@ -37,6 +38,7 @@ class Snapshot(TaggedEC2Object):
         self.progress = None
         self.start_time = None
         self.owner_id = None
+        self.owner_alias = None
         self.volume_size = None
         self.description = None
 
@@ -54,6 +56,8 @@ class Snapshot(TaggedEC2Object):
             self.start_time = value
         elif name == 'ownerId':
             self.owner_id = value
+        elif name == 'ownerAlias':
+            self.owner_alias = value
         elif name == 'volumeSize':
             try:
                 self.volume_size = int(value)
@@ -111,6 +115,30 @@ class Snapshot(TaggedEC2Object):
         return self.connection.reset_snapshot_attribute(self.id,
                                                         self.AttrName)
 
+    def create_volume(self, zone, size=None, volume_type=None, iops=None):
+        """
+        Create a new EBS Volume from this Snapshot
+
+        :type zone: string or :class:`boto.ec2.zone.Zone`
+        :param zone: The availability zone in which the Volume will be created.
+
+        :type size: int
+        :param size: The size of the new volume, in GiB. (optional). Defaults to
+            the size of the snapshot.
+
+        :type volume_type: string
+        :param volume_type: The type of the volume. (optional).  Valid
+            values are: standard | io1.
+
+        :type iops: int
+        :param iops: The provisioned IOPs you want to associate with
+            this volume. (optional)
+        """
+        if isinstance(zone, Zone):
+            zone = zone.name
+        return self.connection.create_volume(size, zone, self.id, volume_type, iops)
+
+
 class SnapshotAttribute:
 
     def __init__(self, parent=None):
@@ -124,12 +152,12 @@ class SnapshotAttribute:
         if name == 'createVolumePermission':
             self.name = 'create_volume_permission'
         elif name == 'group':
-            if self.attrs.has_key('groups'):
+            if 'groups' in self.attrs:
                 self.attrs['groups'].append(value)
             else:
                 self.attrs['groups'] = [value]
         elif name == 'userId':
-            if self.attrs.has_key('user_ids'):
+            if 'user_ids' in self.attrs:
                 self.attrs['user_ids'].append(value)
             else:
                 self.attrs['user_ids'] = [value]

@@ -19,6 +19,13 @@ boto.route53.hostedzone
    :members:   
    :undoc-members:
 
+boto.route53.record
+-------------------
+
+.. automodule:: boto.route53.record
+   :members:   
+   :undoc-members:
+
 boto.route53.exception
 ----------------------
 

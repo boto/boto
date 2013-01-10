@@ -128,6 +128,7 @@ class InstanceGroup(EmrObject):
 
 class JobFlow(EmrObject):
     Fields = set([
+        'AmiVersion',
         'AvailabilityZone',
         'CreationDateTime',
         'Ec2KeyName',

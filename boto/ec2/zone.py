@@ -24,21 +24,54 @@ Represents an EC2 Availability Zone
 """
 from boto.ec2.ec2object import EC2Object
 
+class MessageSet(list):
+    """
+    A list object that contains messages associated with
+    an availability zone.
+    """
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'message':
+            self.append(value)
+        else:
+            setattr(self, name, value)
+            
 class Zone(EC2Object):
+    """
+    Represents an Availability Zone.
+
+    :ivar name: The name of the zone.
+    :ivar state: The current state of the zone.
+    :ivar region_name: The name of the region the zone is associated with.
+    :ivar messages: A list of messages related to the zone.
+    """
     
     def __init__(self, connection=None):
         EC2Object.__init__(self, connection)
         self.name = None
         self.state = None
+        self.region_name = None
+        self.messages = None
 
     def __repr__(self):
         return 'Zone:%s' % self.name
 
+    def startElement(self, name, attrs, connection):
+        if name == 'messageSet':
+            self.messages = MessageSet()
+            return self.messages
+        return None
+    
     def endElement(self, name, value, connection):
         if name == 'zoneName':
             self.name = value
         elif name == 'zoneState':
             self.state = value
+        elif name == 'regionName':
+            self.region_name = value
         else:
             setattr(self, name, value)
 

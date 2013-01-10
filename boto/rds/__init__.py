@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2009-2012 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -30,6 +30,7 @@ from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 
+
 def regions():
     """
     Get all available regions for the RDS service.
@@ -38,28 +39,33 @@ def regions():
     :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
     """
     return [RDSRegionInfo(name='us-east-1',
-                          endpoint='rds.us-east-1.amazonaws.com'),
+                          endpoint='rds.amazonaws.com'),
             RDSRegionInfo(name='eu-west-1',
                           endpoint='rds.eu-west-1.amazonaws.com'),
             RDSRegionInfo(name='us-west-1',
                           endpoint='rds.us-west-1.amazonaws.com'),
+            RDSRegionInfo(name='us-west-2',
+                          endpoint='rds.us-west-2.amazonaws.com'),
+            RDSRegionInfo(name='sa-east-1',
+                          endpoint='rds.sa-east-1.amazonaws.com'),
             RDSRegionInfo(name='ap-northeast-1',
                           endpoint='rds.ap-northeast-1.amazonaws.com'),
             RDSRegionInfo(name='ap-southeast-1',
                           endpoint='rds.ap-southeast-1.amazonaws.com')
             ]
 
+
 def connect_to_region(region_name, **kw_params):
     """
-    Given a valid region name, return a 
-    :class:`boto.ec2.connection.EC2Connection`.
+    Given a valid region name, return a
+    :class:`boto.rds.RDSConnection`.
     Any additional parameters after the region_name are passed on to
     the connect method of the region object.
 
     :type: str
     :param region_name: The name of the region to connect to.
 
-    :rtype: :class:`boto.ec2.connection.EC2Connection` or ``None``
+    :rtype: :class:`boto.rds.RDSConnection` or ``None``
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
@@ -70,16 +76,18 @@ def connect_to_region(region_name, **kw_params):
 
 #boto.set_stream_logger('rds')
 
+
 class RDSConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'rds.amazonaws.com'
-    APIVersion = '2010-04-01'
+    DefaultRegionEndpoint = 'rds.us-east-1.amazonaws.com'
+    APIVersion = '2011-04-01'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/'):
+                 https_connection_factory=None, region=None, path='/',
+                 security_token=None, validate_certs=True):
         if not region:
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -89,7 +97,9 @@ class RDSConnection(AWSQueryConnection):
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
-                                    https_connection_factory, path)
+                                    https_connection_factory, path,
+                                    security_token,
+                                    validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['rds']
@@ -129,16 +139,43 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBInstances', params,
                              [('DBInstance', DBInstance)])
 
-    def create_dbinstance(self, id, allocated_storage, instance_class,
-                          master_username, master_password, port=3306,
-                          engine='MySQL5.1', db_name=None, param_group=None,
-                          security_groups=None, availability_zone=None,
+    def create_dbinstance(self,
+                          id,
+                          allocated_storage,
+                          instance_class,
+                          master_username,
+                          master_password,
+                          port=3306,
+                          engine='MySQL5.1',
+                          db_name=None,
+                          param_group=None,
+                          security_groups=None,
+                          availability_zone=None,
                           preferred_maintenance_window=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
                           multi_az=False,
                           engine_version=None,
-                          auto_minor_version_upgrade=True):
+                          auto_minor_version_upgrade=True,
+                          character_set_name = None,
+                          db_subnet_group_name = None,
+                          license_model = None,
+                          option_group_name = None,
+                          ):
+        # API version: 2012-04-23
+        # Parameter notes:
+        # =================
+        # id should be db_instance_identifier according to API docs but has been left
+        # id for backwards compatibility
+        #
+        # security_groups should be db_security_groups according to API docs but has been left
+        # security_groups for backwards compatibility
+        #
+        # master_password should be master_user_password according to API docs but has been left
+        # master_password for backwards compatibility
+        #
+        # instance_class should be db_instance_class according to API docs but has been left
+        # instance_class for backwards compatibility
         """
         Create a new DBInstance.
 
@@ -150,7 +187,16 @@ class RDSConnection(AWSQueryConnection):
 
         :type allocated_storage: int
         :param allocated_storage: Initially allocated storage size, in GBs.
-                                  Valid values are [5-1024]
+                                  Valid values are depending on the engine value.
+
+                                  * MySQL = 5--1024
+                                  * oracle-se1 = 10--1024
+                                  * oracle-se = 10--1024
+                                  * oracle-ee = 10--1024
+                                  * sqlserver-ee = 200--1024
+                                  * sqlserver-se = 200--1024
+                                  * sqlserver-ex = 30--1024
+                                  * sqlserver-web = 30--1024
 
         :type instance_class: str
         :param instance_class: The compute and memory capacity of
@@ -164,24 +210,68 @@ class RDSConnection(AWSQueryConnection):
                                * db.m2.4xlarge
 
         :type engine: str
-        :param engine: Name of database engine. Must be MySQL5.1 for now.
+        :param engine: Name of database engine. Defaults to MySQL but can be;
+
+                       * MySQL
+                       * oracle-se1
+                       * oracle-se
+                       * oracle-ee
+                       * sqlserver-ee
+                       * sqlserver-se
+                       * sqlserver-ex
+                       * sqlserver-web
 
         :type master_username: str
         :param master_username: Name of master user for the DBInstance.
-                                Must be 1-15 alphanumeric characters, first
-                                must be a letter.
+
+                                * MySQL must be;
+                                  - 1--16 alphanumeric characters
+                                  - first character must be a letter
+                                  - cannot be a reserved MySQL word
+
+                                * Oracle must be:
+                                  - 1--30 alphanumeric characters
+                                  - first character must be a letter
+                                  - cannot be a reserved Oracle word
+
+                                * SQL Server must be:
+                                  - 1--128 alphanumeric characters
+                                  - first character must be a letter
+                                  - cannot be a reserver SQL Server word
 
         :type master_password: str
         :param master_password: Password of master user for the DBInstance.
-                                Must be 4-16 alphanumeric characters.
+
+                                * MySQL must be 8--41 alphanumeric characters
+
+                                * Oracle must be 8--30 alphanumeric characters
+
+                                * SQL Server must be 8--128 alphanumeric characters.
 
         :type port: int
         :param port: Port number on which database accepts connections.
-                     Valid values [1115-65535].  Defaults to 3306.
+                     Valid values [1115-65535].
+
+                     * MySQL defaults to 3306
+
+                     * Oracle defaults to 1521
+
+                     * SQL Server defaults to 1433 and _cannot_ be 1434 or 3389
 
         :type db_name: str
-        :param db_name: Name of a database to create when the DBInstance
-                        is created.  Default is to create no databases.
+        :param db_name: * MySQL:
+                          Name of a database to create when the DBInstance
+                          is created. Default is to create no databases.
+
+                          Must contain 1--64 alphanumeric characters and cannot
+                          be a reserved MySQL word.
+
+                        * Oracle:
+                          The Oracle System ID (SID) of the created DB instances.
+                          Default is ORCL. Cannot be longer than 8 characters.
+
+                        * SQL Server:
+                          Not applicable and must be None.
 
         :type param_group: str
         :param param_group: Name of DBParameterGroup to associate with
@@ -189,8 +279,8 @@ class RDSConnection(AWSQueryConnection):
                             no parameter groups will be used.
 
         :type security_groups: list of str or list of DBSecurityGroup objects
-        :param security_groups: List of names of DBSecurityGroup to authorize on
-                                this DBInstance.
+        :param security_groups: List of names of DBSecurityGroup to
+            authorize on this DBInstance.
 
         :type availability_zone: str
         :param availability_zone: Name of the availability zone to place
@@ -216,8 +306,18 @@ class RDSConnection(AWSQueryConnection):
         :param multi_az: If True, specifies the DB Instance will be
                          deployed in multiple availability zones.
 
+                         For Microsoft SQL Server, must be set to false. You cannot set
+                         the AvailabilityZone parameter if the MultiAZ parameter is
+                         set to true.
+
         :type engine_version: str
-        :param engine_version: Version number of the database engine to use.
+        :param engine_version: The version number of the database engine to use.
+
+                               * MySQL format example: 5.1.42
+
+                               * Oracle format example: 11.2.0.2.v2
+
+                               * SQL Server format example: 10.50.2789.0.v1
 
         :type auto_minor_version_upgrade: bool
         :param auto_minor_version_upgrade: Indicates that minor engine
@@ -225,22 +325,78 @@ class RDSConnection(AWSQueryConnection):
                                            automatically to the Read Replica
                                            during the maintenance window.
                                            Default is True.
+        :type character_set_name: str
+        :param character_set_name: For supported engines, indicates that the DB Instance
+                                   should be associated with the specified CharacterSet.
+
+        :type db_subnet_group_name: str
+        :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
+                                     If there is no DB Subnet Group, then it is a non-VPC DB
+                                     instance.
+
+        :type license_model: str
+        :param license_model: License model information for this DB Instance.
+
+                              Valid values are;
+                              - license-included
+                              - bring-your-own-license
+                              - general-public-license
+
+                              All license types are not supported on all engines.
+
+        :type option_group_name: str
+        :param option_group_name: Indicates that the DB Instance should be associated
+                                  with the specified option group.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
-        params = {'DBInstanceIdentifier' : id,
-                  'AllocatedStorage' : allocated_storage,
-                  'DBInstanceClass' : instance_class,
-                  'Engine' : engine,
-                  'MasterUsername' : master_username,
-                  'MasterUserPassword' : master_password}
-        if port:
-            params['Port'] = port
-        if db_name:
-            params['DBName'] = db_name
-        if param_group:
-            params['DBParameterGroupName'] = param_group
+        # boto argument alignment with AWS API parameter names:
+        # =====================================================
+        # arg => AWS parameter
+        # allocated_storage => AllocatedStorage
+        # auto_minor_version_update => AutoMinorVersionUpgrade
+        # availability_zone => AvailabilityZone
+        # backup_retention_period => BackupRetentionPeriod
+        # character_set_name => CharacterSetName
+        # db_instance_class => DBInstanceClass
+        # db_instance_identifier => DBInstanceIdentifier
+        # db_name => DBName
+        # db_parameter_group_name => DBParameterGroupName
+        # db_security_groups => DBSecurityGroups.member.N
+        # db_subnet_group_name => DBSubnetGroupName
+        # engine => Engine
+        # engine_version => EngineVersion
+        # license_model => LicenseModel
+        # master_username => MasterUsername
+        # master_user_password => MasterUserPassword
+        # multi_az => MultiAZ
+        # option_group_name => OptionGroupName
+        # port => Port
+        # preferred_backup_window => PreferredBackupWindow
+        # preferred_maintenance_window => PreferredMaintenanceWindow
+        params = {
+                  'AllocatedStorage': allocated_storage,
+                  'AutoMinorVersionUpgrade': str(auto_minor_version_upgrade).lower() if auto_minor_version_upgrade else None,
+                  'AvailabilityZone': availability_zone,
+                  'BackupRetentionPeriod': backup_retention_period,
+                  'CharacterSetName': character_set_name,
+                  'DBInstanceClass': instance_class,
+                  'DBInstanceIdentifier': id,
+                  'DBName': db_name,
+                  'DBParameterGroupName': param_group,
+                  'DBSubnetGroupName': db_subnet_group_name,
+                  'Engine': engine,
+                  'EngineVersion': engine_version,
+                  'LicenseModel': license_model,
+                  'MasterUsername': master_username,
+                  'MasterUserPassword': master_password,
+                  'MultiAZ': str(multi_az).lower() if multi_az else None,
+                  'OptionGroupName': option_group_name,
+                  'Port': port,
+                  'PreferredBackupWindow': preferred_backup_window,
+                  'PreferredMaintenanceWindow': preferred_maintenance_window,
+                  }
         if security_groups:
             l = []
             for group in security_groups:
@@ -249,20 +405,10 @@ class RDSConnection(AWSQueryConnection):
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'DBSecurityGroups.member')
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
-        if preferred_maintenance_window:
-            params['PreferredMaintenanceWindow'] = preferred_maintenance_window
-        if backup_retention_period is not None:
-            params['BackupRetentionPeriod'] = backup_retention_period
-        if preferred_backup_window:
-            params['PreferredBackupWindow'] = preferred_backup_window
-        if multi_az:
-            params['MultiAZ'] = 'true'
-        if engine_version:
-            params['EngineVersion'] = engine_version
-        if auto_minor_version_upgrade is False:
-            params['AutoMinorVersionUpgrade'] = 'false'
+
+        # Remove any params set to None
+        for k, v in params.items():
+          if not v: del(params[k])
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 
@@ -318,8 +464,8 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
-        params = {'DBInstanceIdentifier' : id,
-                  'SourceDBInstanceIdentifier' : source_id}
+        params = {'DBInstanceIdentifier': id,
+                  'SourceDBInstanceIdentifier': source_id}
         if instance_class:
             params['DBInstanceClass'] = instance_class
         if port:
@@ -405,7 +551,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
-        params = {'DBInstanceIdentifier' : id}
+        params = {'DBInstanceIdentifier': id}
         if param_group:
             params['DBParameterGroupName'] = param_group
         if security_groups:
@@ -457,14 +603,13 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The deleted db instance.
         """
-        params = {'DBInstanceIdentifier' : id}
+        params = {'DBInstanceIdentifier': id}
         if skip_final_snapshot:
             params['SkipFinalSnapshot'] = 'true'
         else:
             params['SkipFinalSnapshot'] = 'false'
             params['FinalDBSnapshotIdentifier'] = final_snapshot_id
         return self.get_object('DeleteDBInstance', params, DBInstance)
-
 
     def reboot_dbinstance(self, id):
         """
@@ -476,7 +621,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The rebooting db instance.
         """
-        params = {'DBInstanceIdentifier' : id}
+        params = {'DBInstanceIdentifier': id}
         return self.get_object('RebootDBInstance', params, DBInstance)
 
     # DBParameterGroup methods
@@ -537,7 +682,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.ec2.parametergroup.ParameterGroup`
         :return: The ParameterGroup
         """
-        params = {'DBParameterGroupName' : groupname}
+        params = {'DBParameterGroupName': groupname}
         if source:
             params['Source'] = source
         if max_records:
@@ -556,7 +701,7 @@ class RDSConnection(AWSQueryConnection):
         :param name: The name of the new dbparameter group
 
         :type engine: str
-        :param engine: Name of database engine.  Must be MySQL5.1 for now.
+        :param engine: Name of database engine.
 
         :type description: string
         :param description: The description of the new security group
@@ -565,8 +710,8 @@ class RDSConnection(AWSQueryConnection):
         :return: The newly created DBSecurityGroup
         """
         params = {'DBParameterGroupName': name,
-                  'Engine': engine,
-                  'Description' : description}
+                  'DBParameterGroupFamily': engine,
+                  'Description': description}
         return self.get_object('CreateDBParameterGroup', params, ParameterGroup)
 
     def modify_parameter_group(self, name, parameters=None):
@@ -602,7 +747,7 @@ class RDSConnection(AWSQueryConnection):
         :param parameters: The parameters to reset.  If not supplied,
                            all parameters will be reset.
         """
-        params = {'DBParameterGroupName':name}
+        params = {'DBParameterGroupName': name}
         if reset_all_params:
             params['ResetAllParameters'] = 'true'
         else:
@@ -619,7 +764,7 @@ class RDSConnection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the DBSecurityGroup to delete
         """
-        params = {'DBParameterGroupName':name}
+        params = {'DBParameterGroupName': name}
         return self.get_status('DeleteDBParameterGroup', params)
 
     # DBSecurityGroup methods
@@ -671,7 +816,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbsecuritygroup.DBSecurityGroup`
         :return: The newly created DBSecurityGroup
         """
-        params = {'DBSecurityGroupName':name}
+        params = {'DBSecurityGroupName': name}
         if description:
             params['DBSecurityGroupDescription'] = description
         group = self.get_object('CreateDBSecurityGroup', params,
@@ -687,7 +832,7 @@ class RDSConnection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the DBSecurityGroup to delete
         """
-        params = {'DBSecurityGroupName':name}
+        params = {'DBSecurityGroupName': name}
         return self.get_status('DeleteDBSecurityGroup', params)
 
     def authorize_dbsecurity_group(self, group_name, cidr_ip=None,
@@ -718,7 +863,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'DBSecurityGroupName':group_name}
+        params = {'DBSecurityGroupName': group_name}
         if ec2_security_group_name:
             params['EC2SecurityGroupName'] = ec2_security_group_name
         if ec2_security_group_owner_id:
@@ -755,7 +900,7 @@ class RDSConnection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'DBSecurityGroupName':group_name}
+        params = {'DBSecurityGroupName': group_name}
         if ec2_security_group_name:
             params['EC2SecurityGroupName'] = ec2_security_group_name
         if ec2_security_group_owner_id:
@@ -824,8 +969,8 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
         :return: The newly created DBSnapshot
         """
-        params = {'DBSnapshotIdentifier' : snapshot_id,
-                  'DBInstanceIdentifier' : dbinstance_id}
+        params = {'DBSnapshotIdentifier': snapshot_id,
+                  'DBInstanceIdentifier': dbinstance_id}
         return self.get_object('CreateDBSnapshot', params, DBSnapshot)
 
     def delete_dbsnapshot(self, identifier):
@@ -835,13 +980,14 @@ class RDSConnection(AWSQueryConnection):
         :type identifier: string
         :param identifier: The identifier of the DBSnapshot to delete
         """
-        params = {'DBSnapshotIdentifier' : identifier}
+        params = {'DBSnapshotIdentifier': identifier}
         return self.get_object('DeleteDBSnapshot', params, DBSnapshot)
 
     def restore_dbinstance_from_dbsnapshot(self, identifier, instance_id,
                                            instance_class, port=None,
-                                           availability_zone=None):
-
+                                           availability_zone=None,
+                                           multi_az=None,
+                                           auto_minor_version_upgrade=None):
         """
         Create a new DBInstance from a DB snapshot.
 
@@ -866,16 +1012,32 @@ class RDSConnection(AWSQueryConnection):
         :param availability_zone: Name of the availability zone to place
                                   DBInstance into.
 
+        :type multi_az: bool
+        :param multi_az: If True, specifies the DB Instance will be
+                         deployed in multiple availability zones.
+                         Default is the API default.
+
+        :type auto_minor_version_upgrade: bool
+        :param auto_minor_version_upgrade: Indicates that minor engine
+                                           upgrades will be applied
+                                           automatically to the Read Replica
+                                           during the maintenance window.
+                                           Default is the API default.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """
-        params = {'DBSnapshotIdentifier' : identifier,
-                  'DBInstanceIdentifier' : instance_id,
-                  'DBInstanceClass' : instance_class}
+        params = {'DBSnapshotIdentifier': identifier,
+                  'DBInstanceIdentifier': instance_id,
+                  'DBInstanceClass': instance_class}
         if port:
             params['Port'] = port
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
+        if multi_az is not None:
+            params['MultiAZ'] = str(multi_az).lower()
+        if auto_minor_version_upgrade is not None:
+            params['AutoMinorVersionUpgrade'] = str(auto_minor_version_upgrade).lower()
         return self.get_object('RestoreDBInstanceFromDBSnapshot',
                                params, DBInstance)
 
@@ -921,8 +1083,8 @@ class RDSConnection(AWSQueryConnection):
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """
-        params = {'SourceDBInstanceIdentifier' : source_instance_id,
-                  'TargetDBInstanceIdentifier' : target_instance_id}
+        params = {'SourceDBInstanceIdentifier': source_instance_id,
+                  'TargetDBInstanceIdentifier': target_instance_id}
         if use_latest:
             params['UseLatestRestorableTime'] = 'true'
         elif restore_time:
@@ -994,5 +1156,3 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
-
-

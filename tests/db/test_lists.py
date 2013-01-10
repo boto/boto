@@ -46,13 +46,13 @@ class TestLists(object):
     def test_list_order(self):
         """Testing the order of lists"""
         t = SimpleListModel()
-        t.nums = [5,4,1,3,2]
+        t.nums = [5, 4, 1, 3, 2]
         t.strs = ["B", "C", "A", "D", "Foo"]
         t.put()
         self.objs.append(t)
         time.sleep(3)
         t = SimpleListModel.get_by_id(t.id)
-        assert(t.nums == [5,4,1,3,2])
+        assert(t.nums == [5, 4, 1, 3, 2])
         assert(t.strs == ["B", "C", "A", "D", "Foo"])
 
     def test_old_compat(self):
@@ -66,8 +66,7 @@ class TestLists(object):
         item.save()
         time.sleep(3)
         t = SimpleListModel.get_by_id(t.id)
-        i1 = item['strs']
-        i1.sort()
+        i1 = sorted(item['strs'])
         i2 = t.strs
         i2.sort()
         assert(i1 == i2)
@@ -82,7 +81,7 @@ class TestLists(object):
         time.sleep(3)
         assert(SimpleListModel.find(strs="Bizzle").count() == 1)
         assert(SimpleListModel.find(strs="Bar").count() == 1)
-        assert(SimpleListModel.find(strs=["Bar","Bizzle"]).count() == 1)
+        assert(SimpleListModel.find(strs=["Bar", "Bizzle"]).count() == 1)
 
     def test_query_not_equals(self):
         """Test a not equal filter"""

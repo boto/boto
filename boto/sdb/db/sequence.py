@@ -136,20 +136,24 @@ class Sequence(object):
         self.last_value = None
         self.domain_name = domain_name
         self.id = id
+        if init_val == None:
+            init_val = fnc(init_val)
+
         if self.id == None:
             import uuid
             self.id = str(uuid.uuid4())
-            if init_val == None:
-                init_val = fnc(init_val)
-            self.val = init_val
 
         self.item_type = type(fnc(None))
         self.timestamp = None
         # Allow us to pass in a full name to a function
-        if type(fnc) == str:
+        if isinstance(fnc, str):
             from boto.utils import find_class
             fnc = find_class(fnc)
         self.fnc = fnc
+
+        # Bootstrap the value last
+        if not self.val:
+            self.val = init_val
 
     def set(self, val):
         """Set the value"""
@@ -167,7 +171,7 @@ class Sequence(object):
             self.timestamp = new_val['timestamp']
         except SDBResponseError, e:
             if e.status == 409:
-                raise ValueError, "Sequence out of sync"
+                raise ValueError("Sequence out of sync")
             else:
                 raise
 
@@ -175,12 +179,13 @@ class Sequence(object):
     def get(self):
         """Get the value"""
         val = self.db.get_attributes(self.id, consistent_read=True)
-        if val and val.has_key('timestamp'):
-            self.timestamp = val['timestamp']
-        if val and val.has_key('current_value'):
-            self._value = self.item_type(val['current_value'])
-        if val.has_key("last_value") and val['last_value'] != None:
-            self.last_value = self.item_type(val['last_value'])
+        if val:
+            if 'timestamp' in val:
+                self.timestamp = val['timestamp']
+            if 'current_value' in val:
+                self._value = self.item_type(val['current_value'])
+            if "last_value" in val and val['last_value'] != None:
+                self.last_value = self.item_type(val['last_value'])
         return self._value
 
     val = property(get, set)

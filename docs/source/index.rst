@@ -5,84 +5,126 @@ boto: A Python interface to Amazon Web Services
 ===============================================
 
 An integrated interface to current and future infrastructural services
-offered by Amazon Web Services. 
+offered by `Amazon Web Services`_.
 
-Currently, this includes:
+.. _Amazon Web Services: http://aws.amazon.com/
 
-* Compute
+Currently Supported Services
+----------------------------
 
-  * Elastic Compute Cloud (EC2)
-  * Elastic MapReduce (EMR)
-  * Auto Scaling
+* **Compute**
 
-* Content Delivery
+  * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
+  * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
+  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
 
-  * CloudFront
+* **Content Delivery**
 
-* Database
+  * :doc:`CloudFront <cloudfront_tut>` -- (:doc:`API Reference <ref/cloudfront>`)
 
-  * SimpleDB
-  * Relational Data Services (RDS)
+* **Database**
 
-* Deployment and Management
+  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
 
-  * CloudFormation
+* **Deployment and Management**
 
-* Identity & Access
+  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
 
-  * Identity and Access Management (IAM)
+* **Identity & Access**
 
-* Messaging
+  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
 
-  * Simple Queue Service (SQS)
-  * Simple Notificaiton Service (SNS)
-  * Simple Email Service (SES)
+* **Application Services**
 
-* Monitoring
+  * Simple Workflow Service (SWF) -- (:doc:`API Reference <ref/swf>`)
+  * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
+  * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
+  * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
+  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
 
-  * CloudWatch
+* **Monitoring**
 
-* Networking
+  * :doc:`CloudWatch <cloudwatch_tut>` -- (:doc:`API Reference <ref/cloudwatch>`)
 
-  * Route 53
-  * Virtual Private Cloud (VPC)
-  * Elastic Load Balancing (ELB)
+* **Networking**
 
-* Payments & Billing
+  * Route 53 -- (:doc:`API Reference <ref/route53>`)
+  * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
+  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
 
-  * Flexible Payments Service (FPS)
+* **Payments & Billing**
 
-* Storage
+  * Flexible Payments Service (FPS) -- (:doc:`API Reference <ref/fps>`)
 
-  * Simple Storage Service (S3)
+* **Storage**
 
-* Workforce
+  * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
+  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
+  * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 
-  * Mechanical Turk
+* **Workforce**
 
-The boto source repository is at http://github.com/boto
+  * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
 
-Follow project updates on Twitter (http://twitter.com/pythonboto).
+Additional Resources
+--------------------
 
-Follow Mitch on Twitter (http://twitter.com/garnaat).
+* :doc:`Boto Config Tutorial <boto_config_tut>`
+* :doc:`Contributing to Boto <contributing>`
+* `Boto Source Repository`_
+* `Boto Issue Tracker`_
+* `Boto Twitter`_
+* `Follow Mitch on Twitter`_
+* Join our `IRC channel`_ (#boto on FreeNode).
 
-Join our `IRC channel`_ (#boto on FreeNode).
-
+.. _Boto Issue Tracker: https://github.com/boto/boto/issues
+.. _Boto Source Repository: https://github.com/boto/boto
+.. _Boto Twitter: http://twitter.com/pythonboto
 .. _IRC channel: http://webchat.freenode.net/?channels=boto
-
-Documentation Contents
-----------------------
+.. _Follow Mitch on Twitter: http://twitter.com/garnaat
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
-   sqs_tut
-   s3_tut
    ec2_tut
-   elb_tut
-   autoscale_tut
-   vpc_tut
+   security_groups
+   ref/ec2
    emr_tut
+   ref/emr
+   autoscale_tut
+   ref/autoscale
+   cloudfront_tut
+   ref/cloudfront
+   simpledb_tut
+   ref/sdb
+   ref/sdb_db
+   dynamodb_tut
+   ref/dynamodb
+   ref/rds
+   ref/cloudformation
+   ref/iam
+   sqs_tut
+   ref/sqs
+   ref/sns
+   ses_tut
+   ref/ses
+   cloudsearch_tut
+   ref/cloudsearch
+   cloudwatch_tut
+   ref/cloudwatch
+   ref/route53
+   vpc_tut
+   ref/vpc
+   elb_tut
+   ref/elb
+   ref/fps
+   s3_tut
+   ref/s3
+   ref/mturk
+   boto_config_tut
    ref/index
    documentation
 
@@ -93,4 +135,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

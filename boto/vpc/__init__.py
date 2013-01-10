@@ -50,12 +50,12 @@ class VPCConnection(EC2Connection):
 
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
-                        Possible filter keys are:
+            consists of a filter key and a filter value.
+            Possible filter keys are:
 
-                        - *state*, the state of the VPC (pending or available)
-                        - *cidrBlock*, CIDR block of the VPC
-                        - *dhcpOptionsId*, the ID of a set of DHCP options
+            * *state* - a list of states of the VPC (pending or available)
+            * *cidrBlock* - a list CIDR blocks of the VPC
+            * *dhcpOptionsId* - a list of IDs of a set of DHCP options
 
         :rtype: list
         :return: A list of :class:`boto.vpc.vpc.VPC`
@@ -64,11 +64,7 @@ class VPCConnection(EC2Connection):
         if vpc_ids:
             self.build_list_params(params, vpc_ids, 'VpcId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1' % i)] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
 
     def create_vpc(self, cidr_block):
@@ -261,7 +257,6 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, internet_gateway_ids, 'InternetGatewayId')
         if filters:
             self.build_filter_params(params, dict(filters))
-
         return self.get_list('DescribeInternetGateways', params, [('item', InternetGateway)])
 
     def create_internet_gateway(self):
@@ -311,7 +306,7 @@ class VPCConnection(EC2Connection):
         Detach an internet gateway from a specific VPC.
 
         :type internet_gateway_id: str
-        :param internet_gateway_id: The ID of the internet gateway to delete.
+        :param internet_gateway_id: The ID of the internet gateway to detach.
 
         :type vpc_id: str
         :param vpc_id: The ID of the VPC to attach to.
@@ -356,11 +351,8 @@ class VPCConnection(EC2Connection):
         if customer_gateway_ids:
             self.build_list_params(params, customer_gateway_ids, 'CustomerGatewayId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
+
         return self.get_list('DescribeCustomerGateways', params, [('item', CustomerGateway)])
 
     def create_customer_gateway(self, type, ip_address, bgp_asn):
@@ -416,10 +408,10 @@ class VPCConnection(EC2Connection):
                         consists of a filter key and a filter value.
                         Possible filter keys are:
 
-                        - *state*, the state of the VpnGateway
+                        - *state*, a list of states of the VpnGateway
                           (pending,available,deleting,deleted)
-                        - *type*, the type of customer gateway (ipsec.1)
-                        - *availabilityZone*, the Availability zone the
+                        - *type*, a list types of customer gateway (ipsec.1)
+                        - *availabilityZone*, a list of  Availability zones the
                           VPN gateway is in.
 
         :rtype: list
@@ -429,11 +421,7 @@ class VPCConnection(EC2Connection):
         if vpn_gateway_ids:
             self.build_list_params(params, vpn_gateway_ids, 'VpnGatewayId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpnGateways', params, [('item', VpnGateway)])
 
     def create_vpn_gateway(self, type, availability_zone=None):
@@ -501,11 +489,11 @@ class VPCConnection(EC2Connection):
                         consists of a filter key and a filter value.
                         Possible filter keys are:
 
-                        - *state*, the state of the Subnet
+                        - *state*, a list of states of the Subnet
                           (pending,available)
-                        - *vpdId*, the ID of teh VPC the subnet is in.
-                        - *cidrBlock*, CIDR block of the subnet
-                        - *availabilityZone*, the Availability Zone
+                        - *vpdId*, a list of IDs of teh VPC the subnet is in.
+                        - *cidrBlock*, a list of CIDR blocks of the subnet
+                        - *availabilityZone*, list of the Availability Zones
                           the subnet is in.
 
 
@@ -516,11 +504,7 @@ class VPCConnection(EC2Connection):
         if subnet_ids:
             self.build_list_params(params, subnet_ids, 'SubnetId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1' % i)] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
 
     def create_subnet(self, vpc_id, cidr_block, availability_zone=None):
@@ -645,12 +629,12 @@ class VPCConnection(EC2Connection):
                         consists of a filter key and a filter value.
                         Possible filter keys are:
 
-                        - *state*, the state of the VPN_CONNECTION
+                        - *state*, a list of states of the VPN_CONNECTION
                           pending,available,deleting,deleted
-                        - *type*, the type of connection, currently 'ipsec.1'
-                        - *customerGatewayId*, the ID of the customer gateway
+                        - *type*, a list of types of connection, currently 'ipsec.1'
+                        - *customerGatewayId*, a list of IDs of the customer gateway
                           associated with the VPN
-                        - *vpnGatewayId*, the ID of the VPN gateway associated
+                        - *vpnGatewayId*, a list of IDs of the VPN gateway associated
                           with the VPN connection
 
         :rtype: list
@@ -660,11 +644,7 @@ class VPCConnection(EC2Connection):
         if vpn_connection_ids:
             self.build_list_params(params, vpn_connection_ids, 'Vpn_ConnectionId')
         if filters:
-            i = 1
-            for filter in filters:
-                params[('Filter.%d.Name' % i)] = filter[0]
-                params[('Filter.%d.Value.1')] = filter[1]
-                i += 1
+            self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpnConnections', params, [('item', VpnConnection)])
 
     def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id):
@@ -701,5 +681,3 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpnConnectionId': vpn_connection_id}
         return self.get_status('DeleteVpnConnection', params)
-
-

@@ -74,7 +74,10 @@ class Key(object):
             key_file = self.fp
         else:
             key_file = open(self.full_path, 'rb')
-        shutil.copyfileobj(key_file, fp)
+        try:
+            shutil.copyfileobj(key_file, fp)
+        finally:
+            key_file.close()
 
     def set_contents_from_file(self, fp, headers=None, replace=True, cb=None,
                                num_cb=10, policy=None, md5=None):
@@ -119,8 +122,10 @@ class Key(object):
             if not replace and os.path.exists(self.full_path):
                 return
             key_file = open(self.full_path, 'wb')
-        shutil.copyfileobj(fp, key_file)
-        key_file.close()
+        try:
+            shutil.copyfileobj(fp, key_file)
+        finally:
+            key_file.close()
 
     def get_contents_as_string(self, headers=None, cb=None, num_cb=10,
                                torrent=False):
@@ -152,3 +157,12 @@ class Key(object):
 
     def is_stream(self):
         return (self.key_type & self.KEY_STREAM)
+
+    def close(self):
+        """
+        Closes fp associated with underlying file.
+        Caller should call this method when done with this class, to avoid
+        using up OS resources (e.g., when iterating over a large number
+        of files).
+        """
+        self.fp.close()

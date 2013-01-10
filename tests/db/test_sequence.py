@@ -69,7 +69,7 @@ class TestDBHandler(object):
         assert(s2.val == 3)
 
     def test_sequence_simple_string(self):
-        from boto.sdb.db.sequence import Sequence,increment_string
+        from boto.sdb.db.sequence import Sequence, increment_string
         s = Sequence(fnc=increment_string)
         self.sequences.append(s)
         assert(s.val == "A")
@@ -80,26 +80,26 @@ class TestDBHandler(object):
         from boto.sdb.db.sequence import fib
         # Just check the first few numbers in the sequence
         lv = 0
-        for v in [1,2,3,5,8,13,21,34,55,89,144]:
-            assert(fib(v,lv) == lv+v)
-            lv = fib(v,lv)
+        for v in [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]:
+            assert(fib(v, lv) == lv+v)
+            lv = fib(v, lv)
 
     def test_sequence_fib(self):
         """Test the fibonacci sequence"""
-        from boto.sdb.db.sequence import Sequence,fib
+        from boto.sdb.db.sequence import Sequence, fib
         s = Sequence(fnc=fib)
         s2 = Sequence(s.id)
         self.sequences.append(s)
         assert(s.val == 1)
         # Just check the first few numbers in the sequence
-        for v in [1,2,3,5,8,13,21,34,55,89,144]:
+        for v in [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]:
             assert(s.next() == v)
             assert(s.val == v)
             assert(s2.val == v) # it shouldn't matter which reference we use since it's garunteed to be consistent
 
     def test_sequence_string(self):
         """Test the String incrementation sequence"""
-        from boto.sdb.db.sequence import Sequence,increment_string
+        from boto.sdb.db.sequence import Sequence, increment_string
         s = Sequence(fnc=increment_string)
         self.sequences.append(s)
         assert(s.val == "A")

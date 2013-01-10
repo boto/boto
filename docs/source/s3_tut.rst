@@ -41,7 +41,7 @@ Creating a Bucket
 
 Once you have a connection established with S3, you will probably want to
 create a bucket.  A bucket is a container used to store key/value pairs
-in S3.  A bucket can hold un unlimited about of data so you could potentially
+in S3.  A bucket can hold an unlimited amount of data so you could potentially
 have just one bucket in S3 for all of your information.  Or, you could create
 separate buckets for different types of data.  You can figure all of that out
 later, first let's just create a bucket.  That can be accomplished like this:
@@ -203,7 +203,7 @@ by S3 and creates a set of Python objects that represent the ACL.
 [<boto.acl.Grant instance at 0x2e6a08>]
 >>> for grant in acp.acl.grants:
 ...   print grant.permission, grant.display_name, grant.email_address, grant.id
-... 
+...
 FULL_CONTROL <boto.user.User instance at 0x2e6a30>
 
 The Python objects representing the ACL can be found in the acl.py module
@@ -243,3 +243,43 @@ those values later:
 >>> k.get_metadata('meta2')
 'This is the second metadata value'
 >>>
+
+Setting/Getting/Deleting CORS Configuration on a Bucket
+-------------------------------------------------------
+
+Cross-origin resource sharing (CORS) defines a way for client web
+applications that are loaded in one domain to interact with resources
+in a different domain. With CORS support in Amazon S3, you can build
+rich client-side web applications with Amazon S3 and selectively allow
+cross-origin access to your Amazon S3 resources.
+
+To create a CORS configuration and associate it with a bucket:
+
+>>> from boto.s3.cors import CORSConfiguration
+>>> cors_cfg = CORSConfiguration()
+>>> cors_cfg.add_rule(['PUT', 'POST', 'DELETE'], 'https://www.example.com', allowed_header='*', max_age_seconds=3000, expose_header='x-amz-server-side-encryption')
+>>> cors_cfg.add_rule('GET', '*')
+
+The above code creates a CORS configuration object with two rules.
+
+* The first rule allows cross-origin PUT, POST, and DELETE requests from
+  the https://www.example.com/ origin.  The rule also allows all headers
+  in preflight OPTIONS request through the Access-Control-Request-Headers
+  header.  In response to any preflight OPTIONS request, Amazon S3 will
+  return any requested headers.
+* The second rule allows cross-origin GET requests from all origins.
+
+To associate this configuration with a bucket:
+
+>>> import boto
+>>> c = boto.connect_s3()
+>>> bucket = c.lookup('mybucket')
+>>> bucket.set_cors(cors_cfg)
+
+To retrieve the CORS configuration associated with a bucket:
+
+>>> cors_cfg = bucket.get_cors()
+
+And, finally, to delete all CORS configurations from a bucket:
+
+>>> bucket.delete_cors()

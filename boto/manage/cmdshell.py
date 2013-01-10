@@ -54,7 +54,7 @@ class SSHClient(object):
                                          username=self.uname,
                                          pkey=self._pkey)
                 return
-            except socket.error, (value,message):
+            except socket.error, (value, message):
                 if value == 61 or value == 111:
                     print 'SSH Connection refused, will retry in 5 seconds'
                     time.sleep(5)
@@ -143,7 +143,7 @@ class SSHClient(object):
         channel = self._ssh_client.get_transport().open_session()
         channel.get_pty()
         channel.exec_command(command)
-        return channel.recv(1024)
+        return channel
 
     def close(self):
         transport = self._ssh_client.get_transport()
@@ -173,7 +173,7 @@ class LocalClient(object):
         return os.path.exists(path)
 
     def shell(self):
-        raise NotImplementedError, 'shell not supported with LocalClient'
+        raise NotImplementedError('shell not supported with LocalClient')
 
     def run(self):
         boto.log.info('running:%s' % self.command)

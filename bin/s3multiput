@@ -41,8 +41,8 @@ SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>] [-q/--quiet]
-          [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
+          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>] 
+          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced] path
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -76,6 +76,9 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
+        key_prefix - A prefix to be added to the S3 key name, after any 
+                     stripping of the file path is done based on the 
+                     "-p/--prefix" option.
         reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
                 transferred to S3.  The value of provided must be one
@@ -98,10 +101,10 @@ def usage():
 def submit_cb(bytes_so_far, total_bytes):
     print '%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes)
 
-def get_key_name(fullpath, prefix):
+def get_key_name(fullpath, prefix, key_prefix):
     key_name = fullpath[len(prefix):]
     l = key_name.split(os.sep)
-    return '/'.join(l)
+    return key_prefix + '/'.join(l)
 
 def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
     source_path, offset, bytes, debug, cb, num_cb, amount_of_retries=10):
@@ -189,15 +192,16 @@ def main():
     quiet  = False
     no_op  = False
     prefix = '/'
+    key_prefix = ''
     grant  = None
     no_overwrite = False
     reduced = False
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:np:qs:wr',
-                                   ['access_key', 'bucket', 'callback', 'debug', 'help', 'grant',
-                                    'ignore', 'no_op', 'prefix', 'quiet', 'secret_key', 'no_overwrite',
-                                    'reduced'])
+        opts, args = getopt.getopt(sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
+                                   ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
+                                    'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'secret_key=', 
+                                    'no_overwrite', 'reduced'])
     except:
         usage()
 
@@ -226,6 +230,8 @@ def main():
             prefix = a
             if prefix[-1] != os.sep:
                 prefix = prefix + os.sep
+        if o in ('-k', '--key_prefix'):
+            key_prefix = a
         if o in ('-q', '--quiet'):
             quiet = True
         if o in ('-s', '--secret_key'):
@@ -256,7 +262,7 @@ def main():
             if not quiet:
                 print 'Getting list of existing keys to check against'
             keys = []
-            for key in b.list():
+            for key in b.list(get_key_name(path, prefix, key_prefix)):
                 keys.append(key.name)
         for root, dirs, files in os.walk(path):
             for ignore in ignore_dirs:
@@ -264,7 +270,7 @@ def main():
                     dirs.remove(ignore)
             for file in files:
                 fullpath = os.path.join(root, file)
-                key_name = get_key_name(fullpath, prefix)
+                key_name = get_key_name(fullpath, prefix, key_prefix)
                 copy_file = True
                 if no_overwrite:
                     if key_name in keys:
@@ -285,12 +291,12 @@ def main():
                         else:
                             upload(bucket_name, aws_access_key_id,
                                    aws_secret_access_key, fullpath, key_name,
-                                   reduced, debug, cb, num_cb)
+                                   reduced, debug, cb, num_cb, grant or 'private')
                 total += 1
 
     # upload a single file
     elif os.path.isfile(path):
-        key_name = get_key_name(os.path.abspath(path), prefix)
+        key_name = get_key_name(os.path.abspath(path), prefix, key_prefix)
         copy_file = True
         if no_overwrite:
             if b.get_key(key_name):
@@ -311,7 +317,7 @@ def main():
                 else:
                     upload(bucket_name, aws_access_key_id,
                            aws_secret_access_key, path, key_name,
-                           reduced, debug, cb, num_cb)
+                           reduced, debug, cb, num_cb, grant or 'private')
 
 if __name__ == "__main__":
     main()

@@ -19,7 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import os
 import StringIO
+from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 
 class Key(S3Key):
@@ -110,7 +112,7 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None):
+                               res_upload_handler=None, size=None, rewind=False):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -158,38 +160,90 @@ class Key(S3Key):
         :param res_upload_handler: If provided, this handler will perform the
             upload.
 
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+            the file pointer (fp). This is useful when uploading
+            a file in multiple parts where you are splitting the
+            file up into different ranges to be uploaded. If not
+            specified, the default behaviour is to read all bytes
+            from the file pointer. Less bytes may be available.
+            Notes:
+
+                1. The "size" parameter currently cannot be used when
+                   a resumable upload handler is given but is still
+                   useful for uploading part of a file as implemented
+                   by the parent class.
+                2. At present Google Cloud Storage does not support
+                   multipart uploads.
+
+        :type rewind: bool
+        :param rewind: (optional) If True, the file pointer (fp) will be 
+                       rewound to the start before any bytes are read from
+                       it. The default behaviour is False which reads from
+                       the current position of the file pointer (fp).
+
+        :rtype: int
+        :return: The number of bytes written to the key.
+
         TODO: At some point we should refactor the Bucket and Key classes,
         to move functionality common to all providers into a parent class,
         and provider-specific functionality into subclasses (rather than
         just overriding/sharing code the way it currently works).
         """
         provider = self.bucket.connection.provider
+        if res_upload_handler and size:
+            # could use size instead of file_length if provided but...
+            raise BotoClientError('"size" param not supported for resumable uploads.')
         headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
+
+        if rewind:
+            # caller requests reading from beginning of fp.
+            fp.seek(0, os.SEEK_SET)
+        else:
+            spos = fp.tell()
+            fp.seek(0, os.SEEK_END)
+            if fp.tell() == spos:
+                fp.seek(0, os.SEEK_SET)
+                if fp.tell() != spos:
+                    # Raise an exception as this is likely a programming error
+                    # whereby there is data before the fp but nothing after it.
+                    fp.seek(spos)
+                    raise AttributeError(
+                     'fp is at EOF. Use rewind option or seek() to data start.')
+            # seek back to the correct position.
+            fp.seek(spos)
+
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
-            if not md5:
-                md5 = self.compute_md5(fp)
+            if size:
+                self.size = size
             else:
-                # Even if md5 is provided, still need to set size of content.
-                fp.seek(0, 2)
-                self.size = fp.tell()
-                fp.seek(0)
-            self.md5 = md5[0]
-            self.base64md5 = md5[1]
+                # If md5 is provided, still need to size so
+                # calculate based on bytes to end of content
+                spos = fp.tell()
+                fp.seek(0, os.SEEK_END)
+                self.size = fp.tell() - spos
+                fp.seek(spos)
+                size = self.size
+
             if self.name == None:
+                if md5 == None:
+                  md5 = self.compute_md5(fp, size)
+                  self.md5 = md5[0]
+                  self.base64md5 = md5[1]
+
                 self.name = self.md5
             if not replace:
-                k = self.bucket.lookup(self.name)
-                if k:
+                if self.bucket.lookup(self.name):
                     return
             if res_upload_handler:
                 res_upload_handler.send_file(self, fp, headers, cb, num_cb)
             else:
                 # Not a resumable transfer so use basic send_file mechanism.
-                self.send_file(fp, headers, cb, num_cb)
+                self.send_file(fp, headers, cb, num_cb, size=size)
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
@@ -241,6 +295,10 @@ class Key(S3Key):
         :param res_upload_handler: If provided, this handler will perform the
             upload.
         """
+        # Clear out any previously computed md5 hashes, since we are setting the content.
+        self.md5 = None
+        self.base64md5 = None
+
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
@@ -291,6 +349,11 @@ class Key(S3Key):
                     param, if present, will be used as the MD5 values
                     of the file.  Otherwise, the checksum will be computed.
         """
+
+        # Clear out any previously computed md5 hashes, since we are setting the content.
+        self.md5 = None
+        self.base64md5 = None
+
         if isinstance(s, unicode):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)

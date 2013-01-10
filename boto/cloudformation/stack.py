@@ -2,7 +2,8 @@ from datetime import datetime
 
 from boto.resultset import ResultSet
 
-class Stack:
+
+class Stack(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.creation_time = None
@@ -11,6 +12,8 @@ class Stack:
         self.notification_arns = []
         self.outputs = []
         self.parameters = []
+        self.capabilities = []
+        self.tags = []
         self.stack_id = None
         self.stack_status = None
         self.stack_name = None
@@ -24,6 +27,15 @@ class Stack:
         elif name == "Outputs":
             self.outputs = ResultSet([('member', Output)])
             return self.outputs
+        elif name == "Capabilities":
+            self.capabilities = ResultSet([('member', Capability)])
+            return self.capabilities
+        elif name == "Tags":
+            self.tags = Tag()
+            return self.tags
+        elif name == 'NotificationARNs':
+            self.notification_arns = ResultSet([('member', NotificationARN)])
+            return self.notification_arns
         else:
             return None
 
@@ -34,8 +46,6 @@ class Stack:
             self.description = value
         elif name == "DisableRollback":
             self.disable_rollback = bool(value)
-        elif name == "NotificationARNs":
-            self.notification_arns = value
         elif name == 'StackId':
             self.stack_id = value
         elif name == 'StackName':
@@ -91,7 +101,8 @@ class Stack:
     def get_template(self):
         return self.connection.get_template(stack_name_or_id=self.stack_id)
 
-class StackSummary:
+
+class StackSummary(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.stack_id = None
@@ -122,7 +133,8 @@ class StackSummary:
         else:
             setattr(self, name, value)
 
-class Parameter:
+
+class Parameter(object):
     def __init__(self, connection=None):
         self.connection = None
         self.key = None
@@ -142,7 +154,8 @@ class Parameter:
     def __repr__(self):
         return "Parameter:\"%s\"=\"%s\"" % (self.key, self.value)
 
-class Output:
+
+class Output(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.description = None
@@ -165,7 +178,57 @@ class Output:
     def __repr__(self):
         return "Output:\"%s\"=\"%s\"" % (self.key, self.value)
 
-class StackResource:
+
+class Capability(object):
+    def __init__(self, connection=None):
+        self.connection = None
+        self.value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        self.value = value
+
+    def __repr__(self):
+        return "Capability:\"%s\"" % (self.value)
+
+
+class Tag(dict):
+
+    def __init__(self, connection=None):
+        dict.__init__(self)
+        self.connection = connection
+        self._current_key = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == "Key":
+            self._current_key = value
+        elif name == "Value":
+            self[self._current_key] = value
+        else:
+            setattr(self, name, value)
+
+
+class NotificationARN(object):
+    def __init__(self, connection=None):
+        self.connection = None
+        self.value = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        self.value = value
+
+    def __repr__(self):
+        return "NotificationARN:\"%s\"" % (self.value)
+
+
+class StackResource(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.description = None
@@ -207,7 +270,8 @@ class StackResource:
         return "StackResource:%s (%s)" % (self.logical_resource_id,
                 self.resource_type)
 
-class StackResourceSummary:
+
+class StackResourceSummary(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.last_updated_timestamp = None
@@ -222,7 +286,7 @@ class StackResourceSummary:
 
     def endElement(self, name, value, connection):
         if name == "LastUpdatedTimestamp":
-            self.last_updated_timestampe = datetime.strptime(value,
+            self.last_updated_timestamp = datetime.strptime(value,
                 '%Y-%m-%dT%H:%M:%SZ')
         elif name == "LogicalResourceId":
             self.logical_resource_id = value
@@ -241,7 +305,8 @@ class StackResourceSummary:
         return "StackResourceSummary:%s (%s)" % (self.logical_resource_id,
                 self.resource_type)
 
-class StackEvent:
+
+class StackEvent(object):
     valid_states = ("CREATE_IN_PROGRESS", "CREATE_FAILED", "CREATE_COMPLETE",
             "DELETE_IN_PROGRESS", "DELETE_FAILED", "DELETE_COMPLETE")
     def __init__(self, connection=None):

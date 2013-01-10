@@ -24,11 +24,11 @@ from boto.sdb.db.model import Model
 from boto.sdb.db.property import StringProperty, IntegerProperty, ListProperty, ReferenceProperty, CalculatedProperty
 from boto.manage.server import Server
 from boto.manage import propget
+import boto.utils
 import boto.ec2
 import time
 import traceback
 from contextlib import closing
-import dateutil.parser
 import datetime
 
 
@@ -191,10 +191,10 @@ class Volume(Model):
         for snapshot in rs:
             if snapshot.volume_id in all_vols:
                 if snapshot.progress == '100%':
-                    snapshot.date = dateutil.parser.parse(snapshot.start_time)
+                    snapshot.date = boto.utils.parse_ts(snapshot.start_time)
                     snapshot.keep = True
                     snaps.append(snapshot)
-        snaps.sort(cmp=lambda x,y: cmp(x.date, y.date))
+        snaps.sort(cmp=lambda x, y: cmp(x.date, y.date))
         return snaps
 
     def attach(self, server=None):
@@ -219,7 +219,7 @@ class Volume(Model):
 
     def checkfs(self, use_cmd=None):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         # detemine state of file system on volume, only works if attached
         if use_cmd:
             cmd = use_cmd
@@ -234,7 +234,7 @@ class Volume(Model):
 
     def wait(self):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         with closing(self.server.get_cmdshell()) as cmd:
             # wait for the volume device to appear
             cmd = self.server.get_cmdshell()
@@ -244,7 +244,7 @@ class Volume(Model):
 
     def format(self):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         status = None
         with closing(self.server.get_cmdshell()) as cmd:
             if not self.checkfs(cmd):
@@ -254,7 +254,7 @@ class Volume(Model):
 
     def mount(self):
         if self.server == None:
-            raise ValueError, 'server attribute must be set to run this command'
+            raise ValueError('server attribute must be set to run this command')
         boto.log.info('handle_mount_point')
         with closing(self.server.get_cmdshell()) as cmd:
             cmd = self.server.get_cmdshell()
@@ -376,7 +376,7 @@ class Volume(Model):
             for snap in partial_week[1:]:
                 snap.keep = False
         # Keep the first snapshot of each week for the previous 4 weeks
-        for i in range(0,4):
+        for i in range(0, 4):
             weeks_worth = self.get_snapshot_range(snaps, week_boundary-one_week, week_boundary)
             if len(weeks_worth) > 1:
                 for snap in weeks_worth[1:]:
