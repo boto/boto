@@ -796,7 +796,7 @@ class AWSAuthConnection(object):
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     def _mexe(self, request, sender=None, override_num_retries=None,
-              retry_handler=None):
+              retry_handler=None, retry_exhausted_handler=None):
         """
         mexe - Multi-execute inside a loop, retrying multiple times to handle
                transient Internet errors by simply trying again.
@@ -889,7 +889,10 @@ class AWSAuthConnection(object):
         # use it to raise an exception.
         # Otherwise, raise the exception that must have already h#appened.
         if response:
-            raise BotoServerError(response.status, response.reason, body)
+            if callable(retry_exhausted_handler):
+                retry_exhausted_handler(response)
+            else:
+                raise BotoServerError(response.status, response.reason, body)
         elif e:
             raise e
         else:
