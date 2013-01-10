@@ -252,7 +252,7 @@ class Dynamizer(object):
     def _encode_s(self, attr):
         if isinstance(attr, unicode):
             attr = attr.encode('utf-8')
-        if not isinstance(attr, str):
+        elif not isinstance(attr, str):
             attr = str(attr)
         return attr
 
