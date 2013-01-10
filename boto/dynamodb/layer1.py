@@ -30,13 +30,6 @@ from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 from boto.compat import json
 
-#
-# To get full debug output, uncomment the following line and set the
-# value of Debug to be 2
-#
-#boto.set_stream_logger('dynamodb')
-Debug = 0
-
 
 class Layer1(AWSAuthConnection):
     """
@@ -144,6 +137,12 @@ class Layer1(AWSAuthConnection):
                 next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
+                if i == self.NumberRetries:
+                    # If this was our last retry attempt, raise
+                    # a specific error saying that the throughput
+                    # was exceeded.
+                    raise dynamodb_exceptions.DynamoDBThroughputExceededError(
+                        response.status, response.reason, data)
             elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
                 self._get_session_token()
