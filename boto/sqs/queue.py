@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -54,6 +54,12 @@ class Queue:
         return  val
     name = property(_name)
 
+    def _arn(self):
+        parts = self.id.split('/')
+        return 'arn:aws:sqs:%s:%s:%s' % (
+            self.connection.region.name, parts[1], parts[2])
+    arn = property(_arn)
+
     def startElement(self, name, attrs, connection):
         return None
 
@@ -90,6 +96,7 @@ class Queue:
                            CreatedTimestamp,
                            LastModifiedTimestamp,
                            Policy
+                           ReceiveMessageWaitTimeSeconds
         :rtype: Attribute object
         :return: An Attribute object which is a mapping type holding the
                  requested name/value pairs
@@ -99,7 +106,7 @@ class Queue:
     def set_attribute(self, attribute, value):
         """
         Set a new value for an attribute of the Queue.
-        
+
         :type attribute: String
         :param attribute: The name of the attribute you want to set.  The
                            only valid value at this time is: VisibilityTimeout
@@ -116,7 +123,7 @@ class Queue:
     def get_timeout(self):
         """
         Get the visibility timeout for the queue.
-        
+
         :rtype: int
         :return: The number of seconds as an integer.
         """
@@ -175,17 +182,24 @@ class Queue:
         """
         return self.connection.remove_permission(self, label)
 
-    def read(self, visibility_timeout=None):
+    def read(self, visibility_timeout=None, wait_time_seconds=None):
         """
         Read a single message from the queue.
-        
+
         :type visibility_timeout: int
         :param visibility_timeout: The timeout for this message in seconds
+
+        :type wait_time_seconds: int
+        :param wait_time_seconds: The duration (in seconds) for which the call
+            will wait for a message to arrive in the queue before returning.
+            If a message is available, the call will return sooner than
+            wait_time_seconds.
 
         :rtype: :class:`boto.sqs.message.Message`
         :return: A single message or None if queue is empty
         """
-        rs = self.get_messages(1, visibility_timeout)
+        rs = self.get_messages(1, visibility_timeout,
+                               wait_time_seconds=wait_time_seconds)
         if len(rs) == 1:
             return rs[0]
         else:
@@ -240,14 +254,14 @@ class Queue:
 
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None,
-                     attributes=None):
+                     attributes=None, wait_time_seconds=None):
         """
         Get a variable number of messages.
 
         :type num_messages: int
         :param num_messages: The maximum number of messages to read from
             the queue.
-        
+
         :type visibility_timeout: int
         :param visibility_timeout: The VisibilityTimeout for the messages read.
 
@@ -257,13 +271,20 @@ class Queue:
             default is to return no additional attributes.  Valid
             values: All SenderId SentTimestamp ApproximateReceiveCount
             ApproximateFirstReceiveTimestamp
-                           
+
+        :type wait_time_seconds: int
+        :param wait_time_seconds: The duration (in seconds) for which the call
+            will wait for a message to arrive in the queue before returning.
+            If a message is available, the call will return sooner than
+            wait_time_seconds.
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
         """
-        return self.connection.receive_message(self, number_messages=num_messages,
-                                               visibility_timeout=visibility_timeout,
-                                               attributes=attributes)
+        return self.connection.receive_message(
+            self, number_messages=num_messages,
+            visibility_timeout=visibility_timeout, attributes=attributes,
+            wait_time_seconds=wait_time_seconds)
 
     def delete_message(self, message):
         """
@@ -396,9 +417,9 @@ class Queue:
         """
         Read all messages from the queue and persist them to S3.
         Messages are stored in the S3 bucket using a naming scheme of::
-        
+
             <queue_id>/<message_id>
-        
+
         Messages are deleted from the queue after being saved to S3.
         Returns the number of messages saved.
         """

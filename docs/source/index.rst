@@ -17,6 +17,7 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
 
 * **Content Delivery**
 
@@ -36,6 +37,7 @@ Currently Supported Services
 * **Identity & Access**
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
+  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
 
 * **Application Services**
 
@@ -68,6 +70,10 @@ Currently Supported Services
 * **Workforce**
 
   * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
+
+* **Other**
+
+  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
 
 Additional Resources
 --------------------
@@ -106,6 +112,7 @@ Additional Resources
    ref/rds
    ref/cloudformation
    ref/iam
+   ref/mws
    sqs_tut
    ref/sqs
    ref/sns

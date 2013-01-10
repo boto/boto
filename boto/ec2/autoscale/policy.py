@@ -153,3 +153,14 @@ class ScalingPolicy(object):
     def delete(self):
         return self.connection.delete_policy(self.name, self.as_name)
 
+
+class TerminationPolicies(list):
+    def __init__(self, connection=None, **kwargs):
+        pass
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'member':
+            self.append(value)

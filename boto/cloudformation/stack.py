@@ -200,6 +200,7 @@ class Tag(dict):
         dict.__init__(self)
         self.connection = connection
         self._current_key = None
+        self._current_value = None
 
     def startElement(self, name, attrs, connection):
         return None
@@ -208,9 +209,14 @@ class Tag(dict):
         if name == "Key":
             self._current_key = value
         elif name == "Value":
-            self[self._current_key] = value
+            self._current_value = value
         else:
             setattr(self, name, value)
+        
+        if self._current_key and self._current_value:
+            self[self._current_key] = self._current_value
+            self._current_key = None
+            self._current_value = None
 
 
 class NotificationARN(object):

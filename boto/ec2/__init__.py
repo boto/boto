@@ -24,6 +24,19 @@ This module provides an interface to the Elastic Compute Cloud (EC2)
 service from AWS.
 """
 from boto.ec2.connection import EC2Connection
+from boto.regioninfo import RegionInfo
+
+
+RegionData = {
+    'us-east-1': 'ec2.us-east-1.amazonaws.com',
+    'us-west-1': 'ec2.us-west-1.amazonaws.com',
+    'us-west-2': 'ec2.us-west-2.amazonaws.com',
+    'sa-east-1': 'ec2.sa-east-1.amazonaws.com',
+    'eu-west-1': 'ec2.eu-west-1.amazonaws.com',
+    'ap-northeast-1': 'ec2.ap-northeast-1.amazonaws.com',
+    'ap-southeast-1': 'ec2.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'ec2.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions(**kw_params):
@@ -36,8 +49,13 @@ def regions(**kw_params):
     :rtype: list
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
-    c = EC2Connection(**kw_params)
-    return c.get_all_regions()
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=EC2Connection)
+        regions.append(region)
+    return regions
 
 
 def connect_to_region(region_name, **kw_params):

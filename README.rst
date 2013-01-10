@@ -1,8 +1,8 @@
 ####
 boto
 ####
-boto 2.6.0
-19-Sep-2012
+boto 2.7.0
+10-Jan-2013
 
 .. image:: https://secure.travis-ci.org/boto/boto.png?branch=develop
         :target: https://secure.travis-ci.org/boto/boto
@@ -15,40 +15,66 @@ Boto is a Python package that provides interfaces to Amazon Web Services.
 At the moment, boto supports:
 
 * Compute
+
   * Amazon Elastic Compute Cloud (EC2)
   * Amazon Elastic Map Reduce (EMR)
   * AutoScaling
-  * Elastic Load Balancing (ELB)
+
 * Content Delivery
+
   * Amazon CloudFront
+
 * Database
+
   * Amazon Relational Data Service (RDS)
   * Amazon DynamoDB
   * Amazon SimpleDB
+
 * Deployment and Management
-  * AWS Identity and Access Management (IAM)
-  * Amazon CloudWatch
+
   * AWS Elastic Beanstalk
   * AWS CloudFormation
+  * AWS Data Pipeline
+
+* Identity & Access
+
+  * AWS Identity and Access Management (IAM)
+
 * Application Services
+
   * Amazon CloudSearch
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS)
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
+
+* Montoring
+
+  * Amazon CloudWatch
+
 * Networking
+
   * Amazon Route53
   * Amazon Virtual Private Cloud (VPC)
+  * Elastic Load Balancing (ELB)
+
 * Payments and Billing
+
   * Amazon Flexible Payment Service (FPS)
+
 * Storage
+
   * Amazon Simple Storage Service (S3)
   * Amazon Glacier
   * Amazon Elastic Block Store (EBS)
   * Google Cloud Storage
+
 * Workforce
+
   * Amazon Mechanical Turk
+
 * Other
+
   * Marketplace Web Services
 
 The goal of boto is to support the full breadth and depth of Amazon
@@ -87,16 +113,6 @@ ChangeLogs
 To see what has changed over time in boto, you can check out the
 `release notes`_ in the wiki.
 
-*********************************
-Special Note for Python 3.x Users
-*********************************
-
-If you are interested in trying out boto with Python 3.x, check out the
-`neo`_ branch.  This is under active development and the goal is a version
-of boto that works in Python 2.6, 2.7, and 3.x.  Not everything is working
-just yet but many things are and it's worth a look if you are an active
-Python 3.x user.
-
 ***************************
 Finding Out More About Boto
 ***************************
@@ -112,6 +128,8 @@ Boto releases can be found on the `Python Cheese Shop`_.
 
 Join our IRC channel `#boto` on FreeNode.
 Webchat IRC channel: http://webchat.freenode.net/?channels=boto
+
+Join the `boto-users Google Group`_.
 
 *************************
 Getting Started with Boto
@@ -141,3 +159,4 @@ All rights reserved.
 .. _this: http://code.google.com/p/boto/wiki/BotoConfig
 .. _gitflow: http://nvie.com/posts/a-successful-git-branching-model/
 .. _neo: https://github.com/boto/boto/tree/neo
+.. _boto-users Google Group: https://groups.google.com/forum/?fromgroups#!forum/boto-users

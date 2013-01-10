@@ -34,9 +34,10 @@ class SQSConnection(AWSQueryConnection):
     """
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'queue.amazonaws.com'
-    APIVersion = '2011-10-01'
+    APIVersion = '2012-11-05'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
+    AuthServiceName = 'sqs'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -56,9 +57,10 @@ class SQSConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token=security_token,
                                     validate_certs=validate_certs)
+        self.auth_region_name = self.region.name
 
     def _required_auth_capability(self):
-        return ['sqs']
+        return ['hmac-v4']
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """
@@ -122,12 +124,13 @@ class SQSConnection(AWSQueryConnection):
             supplied, the default is to return all attributes.  Valid
             attributes are:
 
-            * ApproximateNumberOfMessages|
-            * ApproximateNumberOfMessagesNotVisible|
-            * VisibilityTimeout|
-            * CreatedTimestamp|
-            * LastModifiedTimestamp|
+            * ApproximateNumberOfMessages
+            * ApproximateNumberOfMessagesNotVisible
+            * VisibilityTimeout
+            * CreatedTimestamp
+            * LastModifiedTimestamp
             * Policy
+            * ReceiveMessageWaitTimeSeconds
 
         :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
@@ -141,7 +144,8 @@ class SQSConnection(AWSQueryConnection):
         return self.get_status('SetQueueAttributes', params, queue.id)
 
     def receive_message(self, queue, number_messages=1,
-                        visibility_timeout=None, attributes=None):
+                        visibility_timeout=None, attributes=None,
+                        wait_time_seconds=None):
         """
         Read messages from an SQS Queue.
 
@@ -168,14 +172,23 @@ class SQSConnection(AWSQueryConnection):
             * ApproximateReceiveCount
             * ApproximateFirstReceiveTimestamp
 
+        :type wait_time_seconds: int
+        :param wait_time_seconds: The duration (in seconds) for which the call
+            will wait for a message to arrive in the queue before returning.
+            If a message is available, the call will return sooner than
+            wait_time_seconds.
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
+
         """
         params = {'MaxNumberOfMessages' : number_messages}
-        if visibility_timeout:
+        if visibility_timeout is not None:
             params['VisibilityTimeout'] = visibility_timeout
-        if attributes:
+        if attributes is not None:
             self.build_list_params(params, attributes, 'AttributeName')
+        if wait_time_seconds is not None:
+            params['WaitTimeSeconds'] = wait_time_seconds
         return self.get_list('ReceiveMessage', params,
                              [('Message', queue.message_class)],
                              queue.id, queue)

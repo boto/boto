@@ -65,6 +65,26 @@ def invalidate(cf, origin_or_id, *paths):
         sys.exit(1)
     cf.create_invalidation_request(dist.id, paths)
 
+def listinvalidations(cf, origin_or_id):
+    """List invalidation requests for a given origin"""
+    dist = None
+    for d in cf.get_all_distributions():
+        if d.id == origin_or_id or d.origin.dns_name == origin_or_id:
+            dist = d
+            break
+    if not dist:
+        print "Distribution not found: %s" % origin_or_id
+        sys.exit(1)
+    results = cf.get_invalidation_requests(dist.id)
+    if results:
+        for result in results:
+            if result.status == "InProgress":
+                result = result.get_invalidation_request()
+                print result.id, result.status, result.paths
+            else:
+                print result.id, result.status
+
+
 if __name__ == "__main__":
     import boto
     import sys

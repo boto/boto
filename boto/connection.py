@@ -487,7 +487,7 @@ class AWSAuthConnection(object):
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
         self.http_exceptions = (httplib.HTTPException, socket.error,
-                                socket.gaierror)
+                                socket.gaierror, httplib.BadStatusLine)
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
@@ -546,12 +546,31 @@ class AWSAuthConnection(object):
         self._last_rs = None
         self._auth_handler = auth.get_auth_handler(
               host, config, self.provider, self._required_auth_capability())
+        if getattr(self, 'AuthServiceName', None) is not None:
+            self.auth_service_name = self.AuthServiceName
 
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
 
     def _required_auth_capability(self):
         return []
+
+    def _get_auth_service_name(self):
+        return getattr(self._auth_handler, 'service_name')
+
+    # For Sigv4, the auth_service_name/auth_region_name properties allow
+    # the service_name/region_name to be explicitly set instead of being
+    # derived from the endpoint url.
+    def _set_auth_service_name(self, value):
+        self._auth_handler.service_name = value
+    auth_service_name = property(_get_auth_service_name, _set_auth_service_name)
+
+    def _get_auth_region_name(self):
+        return getattr(self._auth_handler, 'region_name')
+
+    def _set_auth_region_name(self, value):
+        self._auth_handler.region_name = value
+    auth_region_name = property(_get_auth_region_name, _set_auth_region_name)
 
     def connection(self):
         return self.get_http_connection(*self._connection)
@@ -658,7 +677,7 @@ class AWSAuthConnection(object):
             return self.new_http_connection(host, is_secure)
 
     def new_http_connection(self, host, is_secure):
-        if self.use_proxy:
+        if self.use_proxy and not is_secure:
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
             host = self.server_name()
@@ -667,7 +686,7 @@ class AWSAuthConnection(object):
                     'establishing HTTPS connection: host=%s, kwargs=%s',
                     host, self.http_connection_kwargs)
             if self.use_proxy:
-                connection = self.proxy_ssl()
+                connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
             elif self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
@@ -703,8 +722,11 @@ class AWSAuthConnection(object):
     def put_http_connection(self, host, is_secure, connection):
         self._pool.put_http_connection(host, is_secure, connection)
 
-    def proxy_ssl(self):
-        host = '%s:%d' % (self.host, self.port)
+    def proxy_ssl(self, host=None, port=None):
+        if host and port:
+            host = '%s:%d' % (host, port)
+        else:
+            host = '%s:%d' % (self.host, self.port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.proxy, int(self.proxy_port)))
@@ -952,7 +974,8 @@ class AWSQueryConnection(AWSAuthConnection):
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, str):
+        # Convert comma- or whitespace-delimited string to array
+        if isinstance(items, basestring):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]

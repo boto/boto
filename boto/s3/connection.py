@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
 # All rights reserved.
 #
@@ -142,6 +143,7 @@ class Location:
     SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
+    APSoutheast2 = 'ap-southeast-2'
 
 
 class S3Connection(AWSAuthConnection):
@@ -204,11 +206,12 @@ class S3Connection(AWSAuthConnection):
         return '{"expiration": "%s",\n"conditions": [%s]}' % \
             (time.strftime(boto.utils.ISO8601, expiration_time), ",".join(conditions))
 
-    def build_post_form_args(self, bucket_name, key, expires_in = 6000,
-                             acl = None, success_action_redirect = None,
-                             max_content_length = None,
-                             http_method = "http", fields=None,
-                             conditions=None):
+    def build_post_form_args(self, bucket_name, key, expires_in=6000,
+                             acl=None, success_action_redirect=None,
+                             max_content_length=None,
+                             http_method='http', fields=None,
+                             conditions=None, storage_class='STANDARD',
+                             server_side_encryption=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
         This only returns the arguments required for the post form, not the
@@ -226,8 +229,14 @@ class S3Connection(AWSAuthConnection):
         :param expires_in: Time (in seconds) before this expires, defaults
             to 6000
 
-        :type acl: :class:`boto.s3.acl.ACL`
-        :param acl: ACL rule to use, if any
+        :type acl: string
+        :param acl: A canned ACL.  One of:
+            * private
+            * public-read
+            * public-read-write
+            * authenticated-read
+            * bucket-owner-read
+            * bucket-owner-full-control
 
         :type success_action_redirect: string
         :param success_action_redirect: URL to redirect to on success
@@ -238,25 +247,21 @@ class S3Connection(AWSAuthConnection):
         :type http_method: string
         :param http_method:  HTTP Method to use, "http" or "https"
 
+        :type storage_class: string
+        :param storage_class: Storage class to use for storing the object.
+            Valid values: STANDARD | REDUCED_REDUNDANCY
+
+        :type server_side_encryption: string
+        :param server_side_encryption: Specifies server-side encryption
+            algorithm to use when Amazon S3 creates an object.
+            Valid values: None | AES256
+
         :rtype: dict
         :return: A dictionary containing field names/values as well as
             a url to POST to
 
             .. code-block:: python
 
-                {
-                    "action": action_url_to_post_to,
-                    "fields": [
-                        {
-                            "name": field_name,
-                            "value":  field_value
-                        },
-                        {
-                            "name": field_name2,
-                            "value": field_value2
-                        }
-                    ]
-                }
 
         """
         if fields == None:
@@ -273,13 +278,27 @@ class S3Connection(AWSAuthConnection):
             conditions.append('{"key": "%s"}' % key)
         if acl:
             conditions.append('{"acl": "%s"}' % acl)
-            fields.append({ "name": "acl", "value": acl})
+            fields.append({"name": "acl", "value": acl})
         if success_action_redirect:
             conditions.append('{"success_action_redirect": "%s"}' % success_action_redirect)
-            fields.append({ "name": "success_action_redirect", "value": success_action_redirect})
+            fields.append({"name": "success_action_redirect", "value": success_action_redirect})
         if max_content_length:
             conditions.append('["content-length-range", 0, %i]' % max_content_length)
-            fields.append({"name":'content-length-range', "value": "0,%i" % max_content_length})
+
+        if self.provider.security_token:
+            fields.append({'name': 'x-amz-security-token',
+                           'value': self.provider.security_token})
+            conditions.append('{"x-amz-security-token": "%s"}' % self.provider.security_token)
+
+        if storage_class:
+            fields.append({'name': 'x-amz-storage-class',
+                           'value': storage_class})
+            conditions.append('{"x-amz-storage-class": "%s"}' % storage_class)
+
+        if server_side_encryption:
+            fields.append({'name': 'x-amz-server-side-encryption',
+                           'value': server_side_encryption})
+            conditions.append('{"x-amz-server-side-encryption": "%s"}' % server_side_encryption)
 
         policy = self.build_post_policy(expiration, conditions)
 
@@ -291,7 +310,8 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "AWSAccessKeyId",
                        "value": self.aws_access_key_id})
 
-        # Add signature for encoded policy document as the 'AWSAccessKeyId' field
+        # Add signature for encoded policy document as the
+        # 'signature' field
         signature = self._auth_handler.sign_string(policy_b64)
         fields.append({"name": "signature", "value": signature})
         fields.append({"name": "key", "value": key})
@@ -408,8 +428,10 @@ class S3Connection(AWSAuthConnection):
         :type headers: dict
         :param headers: Additional headers to pass along with the request to AWS.
 
-        :type location: :class:`boto.s3.connection.Location`
-        :param location: The location of the new bucket
+        :type location: str
+        :param location: The location of the new bucket.  You can use one of the
+            constants in :class:`boto.s3.connection.Location` (e.g. Location.EU,
+            Location.USWest, etc.).
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the

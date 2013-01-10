@@ -1,5 +1,7 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -15,7 +17,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -24,6 +26,7 @@ import user
 import key
 from boto import handler
 import xml.sax
+
 
 class CompleteMultiPartUpload(object):
     """
@@ -51,7 +54,7 @@ class CompleteMultiPartUpload(object):
     def __repr__(self):
         return '<CompleteMultiPartUpload: %s.%s>' % (self.bucket_name,
                                                      self.key_name)
-        
+
     def startElement(self, name, attrs, connection):
         return None
 
@@ -66,7 +69,8 @@ class CompleteMultiPartUpload(object):
             self.etag = value
         else:
             setattr(self, name, value)
-        
+
+
 class Part(object):
     """
     Represents a single part in a MultiPart upload.
@@ -90,7 +94,7 @@ class Part(object):
             return '<Part %d>' % self.part_number
         else:
             return '<Part %s>' % None
-        
+
     def startElement(self, name, attrs, connection):
         return None
 
@@ -105,7 +109,8 @@ class Part(object):
             self.size = int(value)
         else:
             setattr(self, name, value)
-        
+
+
 def part_lister(mpupload, part_number_marker=None):
     """
     A generator function for listing parts of a multipart upload.
@@ -117,13 +122,14 @@ def part_lister(mpupload, part_number_marker=None):
         for part in parts:
             yield part
         part_number_marker = mpupload.next_part_number_marker
-        more_results= mpupload.is_truncated
-        
+        more_results = mpupload.is_truncated
+
+
 class MultiPartUpload(object):
     """
     Represents a MultiPart Upload operation.
     """
-    
+
     def __init__(self, bucket=None):
         self.bucket = bucket
         self.bucket_name = None
@@ -217,14 +223,13 @@ class MultiPartUpload(object):
             return self._parts
 
     def upload_part_from_file(self, fp, part_num, headers=None, replace=True,
-                              cb=None, num_cb=10, policy=None, md5=None,
-                              size=None):
+                              cb=None, num_cb=10, md5=None, size=None):
         """
         Upload another part of this MultiPart Upload.
-        
+
         :type fp: file
         :param fp: The file object you want to upload.
-        
+
         :type part_num: int
         :param part_num: The number of this part.
 
@@ -235,12 +240,14 @@ class MultiPartUpload(object):
             raise ValueError('Part numbers must be greater than zero')
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
         key = self.bucket.new_key(self.key_name)
-        key.set_contents_from_file(fp, headers, replace, cb, num_cb, policy,
-                                   md5, reduced_redundancy=False,
+        key.set_contents_from_file(fp, headers=headers, replace=replace,
+                                   cb=cb, num_cb=num_cb, md5=md5,
+                                   reduced_redundancy=False,
                                    query_args=query_args, size=size)
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
-                           start=None, end=None):
+                           start=None, end=None, src_version_id=None,
+                           headers=None):
         """
         Copy another part of this MultiPart Upload.
 
@@ -258,6 +265,12 @@ class MultiPartUpload(object):
 
         :type end: int
         :param end: Zero-based byte offset to copy to
+
+        :type src_version_id: string
+        :param src_version_id: version_id of source object to copy from
+
+        :type headers: dict
+        :param headers: Any headers to pass along in the request
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
@@ -265,11 +278,15 @@ class MultiPartUpload(object):
         if start is not None and end is not None:
             rng = 'bytes=%s-%s' % (start, end)
             provider = self.bucket.connection.provider
-            headers = {provider.copy_source_range_header: rng}
-        else:
-            headers = None
+            if headers is None:
+                headers = {}
+            else:
+                headers = headers.copy()
+            headers[provider.copy_source_range_header] = rng
         return self.bucket.copy_key(self.key_name, src_bucket_name,
-                                    src_key_name, storage_class=None,
+                                    src_key_name,
+                                    src_version_id=src_version_id,
+                                    storage_class=None,
                                     headers=headers,
                                     query_args=query_args)
 
@@ -296,5 +313,3 @@ class MultiPartUpload(object):
         completely free all storage consumed by all parts.
         """
         self.bucket.cancel_multipart_upload(self.key_name, self.id)
-
-
