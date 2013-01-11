@@ -226,10 +226,9 @@ class Layer1(AWSQueryConnection):
         if solution_stack_name:
             params['SolutionStackName'] = solution_stack_name
         if source_configuration_application_name:
-            params['ApplicationName'] = source_configuration_application_name
+            params['SourceConfiguration.ApplicationName'] = source_configuration_application_name
         if source_configuration_template_name:
-            params['SourceConfiguration.ApplicationName'] = source_configuration_template_name[0]
-            params['SourceConfiguration.TemplateName'] = source_configuration_template_name[1]
+            params['SourceConfiguration.TemplateName'] = source_configuration_template_name
         if environment_id:
             params['EnvironmentId'] = environment_id
         if description:
