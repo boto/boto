@@ -89,7 +89,7 @@ class Bucket(S3Bucket):
         key, resp = self._get_key_internal(key_name, headers,
                                            query_args_l=query_args_l)
         if key:
-            key.meta_generation = resp.getheader('x-goog-meta-generation')
+            key.meta_generation = resp.getheader('x-goog-metageneration')
             key.generation = resp.getheader('x-goog-generation')
         return key
 
