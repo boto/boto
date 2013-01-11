@@ -1,5 +1,8 @@
 # Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2011 Blue Pines Technologies LLC, Brad Carleton
+# www.bluepines.org
+# Copyright (c) 2012 42 Lines Inc., Jim Browne
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -15,23 +18,22 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+
 import xml.sax
-import time
 import uuid
 import urllib
-
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
-from boto.resultset import ResultSet
+from boto.route53.record import ResourceRecordSets
+from boto.route53.zone import Zone
 import boto.jsonresponse
 import exception
-import hostedzone
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
@@ -41,7 +43,7 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
     <Comment>%(comment)s</Comment>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
-
+        
 #boto.set_stream_logger('dns')
 
 
@@ -116,7 +118,7 @@ class Route53Connection(AWSAuthConnection):
     def get_hosted_zone(self, hosted_zone_id):
         """
         Get detailed information about a particular Hosted Zone.
-
+        
         :type hosted_zone_id: str
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
@@ -156,7 +158,7 @@ class Route53Connection(AWSAuthConnection):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
         information about the newly created Hosted Zone.
-
+        
         :type domain_name: str
         :param domain_name: The name of the domain. This should be a
             fully-specified domain, and should end with a final period
@@ -176,7 +178,7 @@ class Route53Connection(AWSAuthConnection):
             use that.
 
         :type comment: str
-        :param comment: Any comments you want to include about the hosted
+        :param comment: Any comments you want to include about the hosted      
             zone.
 
         """
@@ -186,10 +188,10 @@ class Route53Connection(AWSAuthConnection):
                   'caller_ref': caller_ref,
                   'comment': comment,
                   'xmlns': self.XMLNameSpace}
-        xml = HZXML % params
+        xml_body = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
-                                     {'Content-Type': 'text/xml'}, xml)
+                                     {'Content-Type': 'text/xml'}, xml_body)
         body = response.read()
         boto.log.debug(body)
         if response.status == 201:
@@ -202,7 +204,7 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-
+        
     def delete_hosted_zone(self, hosted_zone_id):
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('DELETE', uri)
@@ -224,7 +226,7 @@ class Route53Connection(AWSAuthConnection):
         """
         Retrieve the Resource Record Sets defined for this Hosted Zone.
         Returns the raw XML data returned by the Route53 call.
-
+        
         :type hosted_zone_id: str
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
@@ -271,7 +273,6 @@ class Route53Connection(AWSAuthConnection):
         :param maxitems: The maximum number of records
 
         """
-        from boto.route53.record import ResourceRecordSets
         params = {'type': type, 'name': name,
                   'Identifier': identifier, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
@@ -341,3 +342,62 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
+
+    def create_zone(self, name):
+        """
+        Create a new Hosted Zone.  Returns a Zone object for the newly
+        created Hosted Zone.
+
+        :type name: str
+        :param name: The name of the domain. This should be a
+            fully-specified domain, and should end with a final period
+            as the last label indication.  If you omit the final period,
+            Amazon Route 53 assumes the domain is relative to the root.
+            This is the name you have registered with your DNS registrar.
+            It is also the name you will delegate from your registrar to
+            the Amazon Route 53 delegation servers returned in
+            response to this request.
+        """
+        zone = self.create_hosted_zone(name)
+        return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
+
+    def get_zone(self, name):
+        """
+        Returns a Zone object for the specified Hosted Zone.
+
+        :param name: The name of the domain. This should be a
+            fully-specified domain, and should end with a final period
+            as the last label indication.
+        """
+        name = self._make_qualified(name)
+        for zone in self.get_zones():
+            if name == zone.name:
+                return zone
+
+    def get_zones(self):
+        """
+        Returns a list of Zone objects, one for each of the Hosted
+        Zones defined for the AWS account.
+        """
+        zones = self.get_all_hosted_zones()
+        return [Zone(self, zone) for zone in
+                zones['ListHostedZonesResponse']['HostedZones']]
+
+    def _make_qualified(self, value):
+        """
+        Ensure passed domain names end in a period (.) character.
+        This will usually make a domain fully qualified.
+        """
+        if type(value) in [list, tuple, set]:
+            new_list = []
+            for record in value:
+                if record and not record[-1] == '.':
+                    new_list.append("%s." % record)
+                else:
+                    new_list.append(record)
+            return new_list
+        else:
+            value = value.strip()
+            if value and not value[-1] == '.':
+                value = "%s." % value
+            return value

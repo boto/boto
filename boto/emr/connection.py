@@ -372,6 +372,24 @@ class EmrConnection(AWSQueryConnection):
 
         return self.get_status('SetTerminationProtection', params, verb='POST')
 
+    def set_visible_to_all_users(self, jobflow_id, visibility):
+        """
+        Set whether specified Elastic Map Reduce job flows are visible to all IAM users
+
+        :type jobflow_ids: list or str
+        :param jobflow_ids: A list of job flow IDs
+
+        :type visibility: bool
+        :param visibility: Visibility
+        """
+        assert visibility in (True, False)
+
+        params = {}
+        params['VisibleToAllUsers'] = (visibility and "true") or "false"
+        self.build_list_params(params, [jobflow_id], 'JobFlowIds.member')
+
+        return self.get_status('SetVisibleToAllUsers', params, verb='POST')
+
     def _build_bootstrap_action_args(self, bootstrap_action):
         bootstrap_action_params = {}
         bootstrap_action_params['ScriptBootstrapAction.Path'] = bootstrap_action.path

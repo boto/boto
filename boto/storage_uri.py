@@ -356,6 +356,16 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         return bucket.get_location()
 
+    def get_storage_class(self, validate=False, headers=None):
+        self._check_bucket_uri('get_storage_class')
+        # StorageClass is defined as a bucket param for GCS, but as a key
+        # param for S3.
+        if self.scheme != 'gs':
+            raise ValueError('get_storage_class() not supported for %s '
+                             'URIs.' % self.scheme)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_storage_class()
+
     def get_subresource(self, subresource, validate=False, headers=None,
                         version_id=None):
         self._check_bucket_uri('get_subresource')
@@ -367,8 +377,8 @@ class BucketStorageUri(StorageUri):
                               validate=False, headers=None):
         self._check_bucket_uri('add_group_email_grant')
         if self.scheme != 'gs':
-              raise ValueError('add_group_email_grant() not supported for %s '
-                               'URIs.' % self.scheme)
+            raise ValueError('add_group_email_grant() not supported for %s '
+                             'URIs.' % self.scheme)
         if self.object_name:
             if recursive:
               raise ValueError('add_group_email_grant() on key-ful URI cannot '
@@ -456,10 +466,17 @@ class BucketStorageUri(StorageUri):
         """Returns True if this URI represents input/output stream."""
         return False
 
-    def create_bucket(self, headers=None, location='', policy=None):
+    def create_bucket(self, headers=None, location='', policy=None,
+                      storage_class=None):
         self._check_bucket_uri('create_bucket ')
         conn = self.connect()
-        return conn.create_bucket(self.bucket_name, headers, location, policy)
+        # Pass storage_class param only if this is a GCS bucket. (In S3 the
+        # storage class is specified on the key object.)
+        if self.scheme == 'gs':
+          return conn.create_bucket(self.bucket_name, headers, location, policy,
+                                    storage_class)
+        else:
+          return conn.create_bucket(self.bucket_name, headers, location, policy)
 
     def delete_bucket(self, headers=None):
         self._check_bucket_uri('delete_bucket')
@@ -624,6 +641,13 @@ class BucketStorageUri(StorageUri):
                                                        preserve_acl,
                                                        headers=headers)
 
+    def exists(self, headers=None):
+      """Returns True if the object exists or False if it doesn't"""
+      if not self.object_name:
+        raise InvalidUriError('exists on object-less URI (%s)' % self.uri)
+      bucket = self.get_bucket()
+      key = bucket.get_key(self.object_name, headers=headers)
+      return bool(key)
 
 class FileStorageUri(StorageUri):
     """
@@ -711,3 +735,10 @@ class FileStorageUri(StorageUri):
         """Closes the underlying file.
         """
         self.get_key().close()
+
+    def exists(self, _headers_not_used=None):
+      """Returns True if the file exists or False if it doesn't"""
+      # The _headers_not_used parameter is ignored. It is only there to ensure
+      # that this method's signature is identical to the exists method on the
+      # BucketStorageUri class.
+      return os.path.exists(self.object_name)

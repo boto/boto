@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+
 class Step(object):
     """
     Jobflow Step base class
@@ -62,7 +63,8 @@ class JarStep(Step):
         :type main_class: str
         :param main_class: The class to execute in the jar
         :type action_on_failure: str
-        :param action_on_failure: An action, defined in the EMR docs to take on failure.
+        :param action_on_failure: An action, defined in the EMR docs to
+            take on failure.
         :type step_args: list(str)
         :param step_args: A list of arguments to pass to the step
         """
@@ -110,13 +112,16 @@ class StreamingStep(Step):
         :type reducer: str
         :param reducer: The reducer URI
         :type combiner: str
-        :param combiner: The combiner URI. Only works for Hadoop 0.20 and later!
+        :param combiner: The combiner URI. Only works for Hadoop 0.20
+            and later!
         :type action_on_failure: str
-        :param action_on_failure: An action, defined in the EMR docs to take on failure.
+        :param action_on_failure: An action, defined in the EMR docs to
+            take on failure.
         :type cache_files: list(str)
         :param cache_files: A list of cache files to be bundled with the job
         :type cache_archives: list(str)
-        :param cache_archives: A list of jar archives to be bundled with the job
+        :param cache_archives: A list of jar archives to be bundled with
+            the job
         :type step_args: list(str)
         :param step_args: A list of arguments to pass to the step
         :type input: str or a list of str
@@ -124,7 +129,8 @@ class StreamingStep(Step):
         :type output: str
         :param output: The output uri
         :type jar: str
-        :param jar: The hadoop streaming jar. This can be either a local path on the master node, or an s3:// URI.
+        :param jar: The hadoop streaming jar. This can be either a local
+            path on the master node, or an s3:// URI.
         """
         self.name = name
         self.mapper = mapper
@@ -180,7 +186,7 @@ class StreamingStep(Step):
                 args.extend(('-cacheFile', cache_file))
 
         if self.cache_archives:
-           for cache_archive in self.cache_archives:
+            for cache_archive in self.cache_archives:
                 args.extend(('-cacheArchive', cache_archive))
 
         return args
@@ -192,6 +198,7 @@ class StreamingStep(Step):
             self.cache_files, self.cache_archives, self.step_args,
             self.input, self.output, self._jar)
 
+
 class ScriptRunnerStep(JarStep):
 
     ScriptRunnerJar = 's3n://us-east-1.elasticmapreduce/libs/script-runner/script-runner.jar'
@@ -199,10 +206,12 @@ class ScriptRunnerStep(JarStep):
     def __init__(self, name, **kw):
         JarStep.__init__(self, name, self.ScriptRunnerJar, **kw)
 
+
 class PigBase(ScriptRunnerStep):
 
     BaseArgs = ['s3n://us-east-1.elasticmapreduce/libs/pig/pig-script',
                 '--base-path', 's3n://us-east-1.elasticmapreduce/libs/pig/']
+
 
 class InstallPigStep(PigBase):
     """
@@ -218,6 +227,7 @@ class InstallPigStep(PigBase):
         step_args.extend(['--pig-versions', pig_versions])
         ScriptRunnerStep.__init__(self, self.InstallPigName, step_args=step_args)
 
+
 class PigStep(PigBase):
     """
     Pig script step
@@ -231,10 +241,12 @@ class PigStep(PigBase):
         step_args.extend(pig_args)
         ScriptRunnerStep.__init__(self, name, step_args=step_args)
 
+
 class HiveBase(ScriptRunnerStep):
 
     BaseArgs = ['s3n://us-east-1.elasticmapreduce/libs/hive/hive-script',
                 '--base-path', 's3n://us-east-1.elasticmapreduce/libs/hive/']
+
 
 class InstallHiveStep(HiveBase):
     """
@@ -242,14 +254,15 @@ class InstallHiveStep(HiveBase):
     """
     InstallHiveName = 'Install Hive'
 
-    def __init__(self, hive_versions = 'latest', hive_site = None):
+    def __init__(self, hive_versions='latest', hive_site=None):
         step_args = []
         step_args.extend(self.BaseArgs)
         step_args.extend(['--install-hive'])
         step_args.extend(['--hive-versions', hive_versions])
         if hive_site is not None:
             step_args.extend(['--hive-site=%s' % hive_site])
-        ScriptRunnerStep.__init__(self, self.InstallHiveName, step_args = step_args)
+        ScriptRunnerStep.__init__(self, self.InstallHiveName,
+                                  step_args=step_args)
 
 
 class HiveStep(HiveBase):
@@ -257,13 +270,12 @@ class HiveStep(HiveBase):
     Hive script step
     """
 
-    def __init__(self, name, hive_file, hive_versions = 'latest',
-                 hive_args = None):
+    def __init__(self, name, hive_file, hive_versions='latest',
+                 hive_args=None):
         step_args = []
         step_args.extend(self.BaseArgs)
         step_args.extend(['--hive-versions', hive_versions])
-        step_args.extend(['--hive-script', '--args', '-f', hive_file])
+        step_args.extend(['--run-hive-script', '--args', '-f', hive_file])
         if hive_args is not None:
             step_args.extend(hive_args)
-        ScriptRunnerStep.__init__(self, name, step_args = step_args)
-
+        ScriptRunnerStep.__init__(self, name, step_args=step_args)

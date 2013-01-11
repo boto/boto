@@ -29,6 +29,20 @@ from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 
 
+class LoadBalancerZones(object):
+    """
+    Used to collect the zones for a Load Balancer when enable_zones
+    or disable_zones are called.
+    """
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.zones = ListElement()
+
+    def startElement(self, name, attrs, connection):
+        if name == 'AvailabilityZones':
+            return self.zones
+
+
 class LoadBalancer(object):
     """
     Represents an EC2 Load Balancer.

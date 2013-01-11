@@ -21,6 +21,7 @@
 
 import boto
 from boto import handler
+from boto.resultset import ResultSet
 from boto.exception import InvalidAclError
 from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
@@ -47,6 +48,17 @@ class Bucket(S3Bucket):
 
     def __init__(self, connection=None, name=None, key_class=GSKey):
         super(Bucket, self).__init__(connection, name, key_class)
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Name':
+            self.name = value
+        elif name == 'CreationDate':
+            self.creation_date = value
+        else:
+            setattr(self, name, value)
 
     def get_key(self, key_name, headers=None, version_id=None,
                 response_headers=None, generation=None):
@@ -86,6 +98,8 @@ class Bucket(S3Bucket):
                  preserve_acl=False, encrypt_key=False, headers=None,
                  query_args=None, src_generation=None):
         if src_generation:
+            if headers is None:
+                headers = {}
             headers['x-goog-copy-source-generation'] = src_generation
         super(Bucket, self).copy_key(new_key_name, src_bucket_name,
                                      src_key_name, metadata=metadata,
@@ -149,7 +163,7 @@ class Bucket(S3Bucket):
         key_name = key_name or ''
         query_args = STANDARD_ACL
         if generation:
-          query_args += '&generation=%d' % generation
+          query_args += '&generation=%s' % str(generation)
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
@@ -192,7 +206,7 @@ class Bucket(S3Bucket):
            and is therefore ignored here."""
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%d' % generation
+            query_args += '&generation=%s' % str(generation)
         return self.get_acl_helper(key_name, headers, query_args)
 
     def get_def_acl(self, key_name='', headers=None):
@@ -225,7 +239,7 @@ class Bucket(S3Bucket):
            Google Cloud Storage buckets and is therefore ignored here."""
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%d' % generation
+            query_args += '&generation=%s' % str(generation)
         return self.set_canned_acl_helper(acl_str, key_name, headers,
                                           query_args=query_args)
 
@@ -269,6 +283,26 @@ class Bucket(S3Bucket):
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+
+    def get_storage_class(self):
+        """
+        Returns the StorageClass for the bucket.
+
+        :rtype: str
+        :return: The StorageClass for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='storageClass')
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet(self)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.StorageClass
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.

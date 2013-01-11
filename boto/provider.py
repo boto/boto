@@ -230,22 +230,39 @@ class Provider(object):
             else:
                 return False
 
-
     def get_credentials(self, access_key=None, secret_key=None):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
             self.access_key = access_key
+            boto.log.debug("Using access key provided by client.")
         elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
+            boto.log.debug("Using access key found in environment variable.")
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
+            boto.log.debug("Using access key found in config file.")
 
         if secret_key is not None:
             self.secret_key = secret_key
+            boto.log.debug("Using secret key provided by client.")
         elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
+            boto.log.debug("Using secret key found in environment variable.")
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
+            boto.log.debug("Using secret key found in config file.")
+        elif config.has_option('Credentials', 'keyring'):
+            keyring_name = config.get('Credentials', 'keyring')
+            try:
+                import keyring
+            except ImportError:
+                boto.log.error("The keyring module could not be imported. "
+                               "For keyring support, install the keyring "
+                               "module.")
+                raise
+            self.secret_key = keyring.get_password(
+                keyring_name, self.access_key)
+            boto.log.debug("Using secret key found in keyring.")
 
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):

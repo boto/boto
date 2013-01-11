@@ -273,10 +273,6 @@ class Instance(TaggedEC2Object):
         return 0
 
     @property
-    def state(self):
-        return self._state.name
-
-    @property
     def placement(self):
         return self._placement.zone
 
@@ -310,6 +306,7 @@ class Instance(TaggedEC2Object):
             return self.eventsSet
         elif name == 'networkInterfaceSet':
             self.interfaces = ResultSet([('item', NetworkInterface)])
+            return self.interfaces
         elif name == 'iamInstanceProfile':
             self.instance_profile = SubParse('iamInstanceProfile')
             return self.instance_profile
@@ -473,6 +470,18 @@ class Instance(TaggedEC2Object):
         return self.connection.confirm_product_instance(self.id, product_code)
 
     def use_ip(self, ip_address):
+        """
+        Associates an Elastic IP to the instance.
+
+        :type ip_address: Either an instance of
+            :class:`boto.ec2.address.Address` or a string.
+        :param ip_address: The IP address to associate
+            with the instance.
+
+        :rtype: bool
+        :return: True if successful
+        """
+
         if isinstance(ip_address, Address):
             ip_address = ip_address.public_ip
         return self.connection.associate_address(self.id, ip_address)
@@ -548,6 +557,33 @@ class Instance(TaggedEC2Object):
         :return: Whether the operation succeeded or not
         """
         return self.connection.reset_instance_attribute(self.id, attribute)
+
+    def create_image(
+        self, name,
+        description=None, no_reboot=False
+    ):
+        """
+        Will create an AMI from the instance in the running or stopped
+        state.
+
+        :type name: string
+        :param name: The name of the new image
+
+        :type description: string
+        :param description: An optional human-readable string describing
+                            the contents and purpose of the AMI.
+
+        :type no_reboot: bool
+        :param no_reboot: An optional flag indicating that the bundling process
+                          should not attempt to shutdown the instance before
+                          bundling.  If this flag is True, the responsibility
+                          of maintaining file system integrity is left to the
+                          owner of the instance.
+
+        :rtype: string
+        :return: The new image id
+        """
+        return self.connection.create_image(self.id, name, description, no_reboot)
 
 
 class ConsoleOutput:

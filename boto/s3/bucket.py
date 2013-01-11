@@ -207,6 +207,7 @@ class Bucket(object):
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
+            k.handle_restore_headers(response)
             return k, response
         else:
             if response.status == 404:
@@ -242,9 +243,7 @@ class Bucket(object):
         :type delimiter: string
         :param delimiter: can be used in conjunction with the prefix
             to allow you to organize and browse your keys
-            hierarchically. See:
-            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
-            more details.
+            hierarchically. See http://goo.gl/Xx63h for more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
@@ -590,9 +589,10 @@ class Bucket(object):
             created or removed and what version_id the delete created
             or removed.
         """
-        self._delete_key_internal(key_name, headers=headers,
-                                  version_id=version_id, mfa_token=mfa_token,
-                                  query_args_l=None)
+        return self._delete_key_internal(key_name, headers=headers,
+                                         version_id=version_id,
+                                         mfa_token=mfa_token,
+                                         query_args_l=None)
 
     def _delete_key_internal(self, key_name, headers=None, version_id=None,
                              mfa_token=None, query_args_l=None):
@@ -1160,7 +1160,9 @@ class Bucket(object):
         :param lifecycle_config: The lifecycle configuration you want
             to configure for this bucket.
         """
-        fp = StringIO.StringIO(lifecycle_config.to_xml())
+        xml = lifecycle_config.to_xml()
+        xml = xml.encode('utf-8')
+        fp = StringIO.StringIO(xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1263,7 +1265,7 @@ class Bucket(object):
 
               * Key : name of object to serve when an error occurs
         """
-        return self.get_website_configuration_xml(self, headers)[0]
+        return self.get_website_configuration_with_xml(headers)[0]
 
     def get_website_configuration_with_xml(self, headers=None):
         """

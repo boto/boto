@@ -64,7 +64,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-08-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-12-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -525,7 +525,7 @@ class EC2Connection(AWSQueryConnection):
                       security_group_ids=None,
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
-                      ebs_optimized=False):
+                      ebs_optimized=False, network_interfaces=None):
         """
         Runs an image on EC2.
 
@@ -647,6 +647,10 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
+        :type network_interfaces: list
+        :param network_interfaces: A list of
+            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.instance.Reservation` associated with
                  the request for machines
@@ -711,6 +715,8 @@ class EC2Connection(AWSQueryConnection):
             params['IamInstanceProfile.Arn'] = instance_profile_arn
         if ebs_optimized:
             params['EbsOptimized'] = 'true'
+        if network_interfaces:
+            network_interfaces.build_list_params(params)
         return self.get_object('RunInstances', params, Reservation,
                                verb='POST')
 
@@ -853,6 +859,7 @@ class EC2Connection(AWSQueryConnection):
             * userData - Base64 encoded String (None)
             * disableApiTermination - Boolean (true)
             * instanceInitiatedShutdownBehavior - stop|terminate
+            * blockDeviceMapping - List of strings - ie: ['/dev/sda=false']
             * sourceDestCheck - Boolean (true)
             * groupSet - Set of Security Groups or IDs
             * ebsOptimized - Boolean (false)
@@ -882,6 +889,12 @@ class EC2Connection(AWSQueryConnection):
                 if isinstance(sg, SecurityGroup):
                     sg = sg.id
                 params['GroupId.%s' % (idx + 1)] = sg
+        elif attribute.lower() == 'blockdevicemapping':
+            for idx, kv in enumerate(value):
+                dev_name, _, flag = kv.partition('=')
+                pre = 'BlockDeviceMapping.%d' % (idx + 1)
+                params['%s.DeviceName' % pre] = dev_name
+                params['%s.Ebs.DeleteOnTermination' % pre] = flag or 'true'
         else:
             # for backwards compatibility handle lowercase first letter
             attribute = attribute[0].upper() + attribute[1:]
@@ -1008,7 +1021,8 @@ class EC2Connection(AWSQueryConnection):
                                instance_profile_arn=None,
                                instance_profile_name=None,
                                security_group_ids=None,
-                               ebs_optimized=False):
+                               ebs_optimized=False,
+                               network_interfaces=None):
         """
         Request instances on the spot market at a particular price.
 
@@ -1111,6 +1125,10 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
+        :type network_interfaces: list
+        :param network_interfaces: A list of
+            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+
         :rtype: Reservation
         :return: The :class:`boto.ec2.spotinstancerequest.SpotInstanceRequest`
                  associated with the request for machines
@@ -1174,6 +1192,8 @@ class EC2Connection(AWSQueryConnection):
             params['%s.IamInstanceProfile.Arn' % ls] = instance_profile_arn
         if ebs_optimized:
             params['%s.EbsOptimized' % ls] = 'true'
+        if network_interfaces:
+            network_interfaces.build_list_params(params, prefix=ls + '.')
         return self.get_list('RequestSpotInstances', params,
                              [('item', SpotInstanceRequest)],
                              verb='POST')
@@ -1312,6 +1332,11 @@ class EC2Connection(AWSQueryConnection):
     def allocate_address(self, domain=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
+        
+        :type domain: string
+        :param domain: Optional string. If domain is set to "vpc" the address 
+                        will be allocated to VPC . Will return address 
+                        object with allocation_id.
 
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
@@ -1809,8 +1834,8 @@ class EC2Connection(AWSQueryConnection):
         :param description: A description of the snapshot.
                             Limited to 255 characters.
 
-        :rtype: bool
-        :return: True if successful
+        :rtype: :class:`boto.ec2.snapshot.Snapshot`
+        :return: The created Snapshot object
         """
         params = {'VolumeId': volume_id}
         if description:
@@ -1826,6 +1851,40 @@ class EC2Connection(AWSQueryConnection):
     def delete_snapshot(self, snapshot_id):
         params = {'SnapshotId': snapshot_id}
         return self.get_status('DeleteSnapshot', params, verb='POST')
+
+    def copy_snapshot(self, source_region, source_snapshot_id,
+                      description=None):
+        """
+        Copies a point-in-time snapshot of an Amazon Elastic Block Store
+        (Amazon EBS) volume and stores it in Amazon Simple Storage Service
+        (Amazon S3). You can copy the snapshot within the same region or from
+        one region to another. You can use the snapshot to create new Amazon
+        EBS volumes or Amazon Machine Images (AMIs).
+
+
+        :type source_region: str
+        :param source_region: The ID of the AWS region that contains the
+            snapshot to be copied (e.g 'us-east-1', 'us-west-2', etc.).
+
+        :type source_snapshot_id: str
+        :param source_snapshot_id: The ID of the Amazon EBS snapshot to copy
+
+        :type description: str
+        :param description: A description of the new Amazon EBS snapshot.
+
+        :rtype: str
+        :return: The snapshot ID
+
+        """
+        params = {
+            'SourceRegion': source_region,
+            'SourceSnapshotId': source_snapshot_id,
+        }
+        if description is not None:
+            params['Description'] = description
+        snapshot = self.get_object('CopySnapshot', params, Snapshot,
+                                   verb='POST')
+        return snapshot.id
 
     def trim_snapshots(self, hourly_backups=8, daily_backups=7,
                        weekly_backups=4):
@@ -2216,7 +2275,7 @@ class EC2Connection(AWSQueryConnection):
                        if any.
 
         :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
+        :return: The newly created :class:`boto.ec2.securitygroup.SecurityGroup`.
         """
         params = {'GroupName': name,
                   'GroupDescription': description}
@@ -2785,22 +2844,20 @@ class EC2Connection(AWSQueryConnection):
     def get_all_reserved_instances(self, reserved_instances_id=None,
                                    filters=None):
         """
-        Describes Reserved Instance offerings that are available for purchase.
+        Describes one or more of the Reserved Instances that you purchased.
 
         :type reserved_instance_ids: list
         :param reserved_instance_ids: A list of the reserved instance ids that
-                                      will be returned. If not provided, all
-                                      reserved instances will be returned.
+            will be returned. If not provided, all reserved instances
+            will be returned.
 
         :type filters: dict
-        :param filters: Optional filters that can be used to limit
-                        the results returned.  Filters are provided
-                        in the form of a dictionary consisting of
-                        filter names as the key and filter values
-                        as the value.  The set of allowable filter
-                        names/values is dependent on the request
-                        being performed.  Check the EC2 API guide
-                        for details.
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
@@ -2825,16 +2882,16 @@ class EC2Connection(AWSQueryConnection):
 
         :type reserved_instances_offering_id: string
         :param reserved_instances_offering_id: The offering ID of the Reserved
-                                               Instance to purchase
+            Instance to purchase
 
         :type instance_count: int
         :param instance_count: The number of Reserved Instances to purchase.
-                               Default value is 1.
+            Default value is 1.
 
         :type limit_price: tuple
         :param instance_count: Limit the price on the total order.
-                               Must be a tuple of (amount, currency_code), for example:
-                                   (100.0, 'USD').
+            Must be a tuple of (amount, currency_code), for example:
+            (100.0, 'USD').
 
         :rtype: :class:`boto.ec2.reservedinstance.ReservedInstance`
         :return: The newly created Reserved Instance

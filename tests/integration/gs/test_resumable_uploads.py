@@ -45,7 +45,8 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.exception import StorageResponseError
-from cb_test_harnass import CallbackTestHarnass
+from cb_test_harness import CallbackTestHarness
+from tests.integration.gs.util import has_google_credentials
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
 # ensures that it's loaded and available by default.
@@ -57,6 +58,10 @@ except ImportError:
   pass
 
 
+@unittest.skipUnless(has_google_credentials(),
+                     "Google credentials are required to run the Google "
+                     "Cloud Storage tests.  Update your boto.cfg to run "
+                     "these tests.")
 class ResumableUploadTests(unittest.TestCase):
     """
     Resumable upload test suite.
@@ -91,7 +96,7 @@ class ResumableUploadTests(unittest.TestCase):
 
     def get_staged_host(self):
         """URL of an existing bucket."""
-        return 'pub.commondatastorage.googleapis.com'
+        return 'pub.storage.googleapis.com'
 
     def get_invalid_upload_id(self):
         return (
@@ -211,18 +216,18 @@ class ResumableUploadTests(unittest.TestCase):
         """
         Tests that failed resumable upload leaves a correct tracker URI file
         """
-        harnass = CallbackTestHarnass()
+        harness = CallbackTestHarness()
         res_upload_handler = ResumableUploadHandler(
             tracker_file_name=self.tracker_file_name, num_retries=0)
         self.small_src_file.seek(0)
         try:
             self.dst_key.set_contents_from_file(
-                self.small_src_file, cb=harnass.call,
+                self.small_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
             # We'll get a ResumableUploadException at this point because
-            # of CallbackTestHarnass (above). Check that the tracker file was
+            # of CallbackTestHarness (above). Check that the tracker file was
             # created correctly.
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
@@ -239,11 +244,11 @@ class ResumableUploadTests(unittest.TestCase):
         """
         # Test one of the RETRYABLE_EXCEPTIONS.
         exception = ResumableUploadHandler.RETRYABLE_EXCEPTIONS[0]
-        harnass = CallbackTestHarnass(exception=exception)
+        harness = CallbackTestHarness(exception=exception)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         self.small_src_file.seek(0)
         self.dst_key.set_contents_from_file(
-            self.small_src_file, cb=harnass.call,
+            self.small_src_file, cb=harness.call,
             res_upload_handler=res_upload_handler)
         # Ensure uploaded object has correct content.
         self.assertEqual(self.small_src_file_size, self.dst_key.size)
@@ -255,11 +260,11 @@ class ResumableUploadTests(unittest.TestCase):
         Tests handling of a Broken Pipe (which interacts with an httplib bug)
         """
         exception = IOError(errno.EPIPE, "Broken pipe")
-        harnass = CallbackTestHarnass(exception=exception)
+        harness = CallbackTestHarness(exception=exception)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         self.small_src_file.seek(0)
         self.dst_key.set_contents_from_file(
-            self.small_src_file, cb=harnass.call,
+            self.small_src_file, cb=harness.call,
             res_upload_handler=res_upload_handler)
         # Ensure uploaded object has correct content.
         self.assertEqual(self.small_src_file_size, self.dst_key.size)
@@ -270,13 +275,13 @@ class ResumableUploadTests(unittest.TestCase):
         """
         Tests a resumable upload that fails with a non-retryable exception
         """
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             exception=OSError(errno.EACCES, 'Permission denied'))
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         self.small_src_file.seek(0)
         try:
             self.dst_key.set_contents_from_file(
-                self.small_src_file, cb=harnass.call,
+                self.small_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected OSError')
         except OSError, e:
@@ -288,12 +293,12 @@ class ResumableUploadTests(unittest.TestCase):
         Tests resumable upload that fails once and then completes, with tracker
         file
         """
-        harnass = CallbackTestHarnass()
+        harness = CallbackTestHarness()
         res_upload_handler = ResumableUploadHandler(
             tracker_file_name=self.tracker_file_name, num_retries=1)
         self.small_src_file.seek(0)
         self.dst_key.set_contents_from_file(
-            self.small_src_file, cb=harnass.call,
+            self.small_src_file, cb=harness.call,
             res_upload_handler=res_upload_handler)
         # Ensure uploaded object has correct content.
         self.assertEqual(self.small_src_file_size, self.dst_key.size)
@@ -320,17 +325,17 @@ class ResumableUploadTests(unittest.TestCase):
         Tests resumable upload that fails completely in one process,
         then when restarted completes, using a tracker file
         """
-        # Set up test harnass that causes more failures than a single
+        # Set up test harness that causes more failures than a single
         # ResumableUploadHandler instance will handle, writing enough data
         # before the first failure that some of it survives that process run.
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             fail_after_n_bytes=self.larger_src_file_size/2, num_times_to_fail=2)
         res_upload_handler = ResumableUploadHandler(
             tracker_file_name=self.tracker_file_name, num_retries=1)
         self.larger_src_file.seek(0)
         try:
             self.dst_key.set_contents_from_file(
-                self.larger_src_file, cb=harnass.call,
+                self.larger_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
@@ -341,39 +346,39 @@ class ResumableUploadTests(unittest.TestCase):
         # Try it one more time; this time should succeed.
         self.larger_src_file.seek(0)
         self.dst_key.set_contents_from_file(
-            self.larger_src_file, cb=harnass.call,
+            self.larger_src_file, cb=harness.call,
             res_upload_handler=res_upload_handler)
         self.assertEqual(self.larger_src_file_size, self.dst_key.size)
         self.assertEqual(self.larger_src_file_as_string,
                          self.dst_key.get_contents_as_string())
         self.assertFalse(os.path.exists(self.tracker_file_name))
         # Ensure some of the file was uploaded both before and after failure.
-        self.assertTrue(len(harnass.transferred_seq_before_first_failure) > 1
+        self.assertTrue(len(harness.transferred_seq_before_first_failure) > 1
                         and
-                        len(harnass.transferred_seq_after_first_failure) > 1)
+                        len(harness.transferred_seq_after_first_failure) > 1)
 
     def test_upload_with_inital_partial_upload_before_failure(self):
         """
         Tests resumable upload that successfully uploads some content
         before it fails, then restarts and completes
         """
-        # Set up harnass to fail upload after several hundred KB so upload
+        # Set up harness to fail upload after several hundred KB so upload
         # server will have saved something before we retry.
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             fail_after_n_bytes=self.larger_src_file_size/2)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         self.larger_src_file.seek(0)
         self.dst_key.set_contents_from_file(
-            self.larger_src_file, cb=harnass.call,
+            self.larger_src_file, cb=harness.call,
             res_upload_handler=res_upload_handler)
         # Ensure uploaded object has correct content.
         self.assertEqual(self.larger_src_file_size, self.dst_key.size)
         self.assertEqual(self.larger_src_file_as_string,
                          self.dst_key.get_contents_as_string())
         # Ensure some of the file was uploaded both before and after failure.
-        self.assertTrue(len(harnass.transferred_seq_before_first_failure) > 1
+        self.assertTrue(len(harness.transferred_seq_before_first_failure) > 1
                         and
-                        len(harnass.transferred_seq_after_first_failure) > 1)
+                        len(harness.transferred_seq_after_first_failure) > 1)
 
     def test_empty_file_upload(self):
         """
@@ -416,7 +421,7 @@ class ResumableUploadTests(unittest.TestCase):
         Tests resumable upload on a file that changes sizes between inital
         upload start and restart
         """
-        harnass = CallbackTestHarnass(
+        harness = CallbackTestHarness(
             fail_after_n_bytes=self.larger_src_file_size/2)
         # Set up first process' ResumableUploadHandler not to do any
         # retries (initial upload request will establish expected size to
@@ -426,11 +431,11 @@ class ResumableUploadTests(unittest.TestCase):
         self.larger_src_file.seek(0)
         try:
             self.dst_key.set_contents_from_file(
-                self.larger_src_file, cb=harnass.call,
+                self.larger_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
-            # First abort (from harnass-forced failure) should be
+            # First abort (from harness-forced failure) should be
             # ABORT_CUR_PROCESS.
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
@@ -459,12 +464,12 @@ class ResumableUploadTests(unittest.TestCase):
         # Create a file we can change during the upload.
         test_file_size = 500 * 1024  # 500 KB.
         test_file = self.build_input_file(test_file_size)[1]
-        harnass = CallbackTestHarnass(fp_to_change=test_file,
+        harness = CallbackTestHarness(fp_to_change=test_file,
                                       fp_change_pos=test_file_size)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         try:
             self.dst_key.set_contents_from_file(
-                test_file, cb=harnass.call,
+                test_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:
@@ -479,16 +484,16 @@ class ResumableUploadTests(unittest.TestCase):
         """
         test_file_size = 500 * 1024  # 500 KB.
         test_file = self.build_input_file(test_file_size)[1]
-        harnass = CallbackTestHarnass(fail_after_n_bytes=test_file_size/2,
+        harness = CallbackTestHarness(fail_after_n_bytes=test_file_size/2,
                                       fp_to_change=test_file,
-                                      # Write to byte 1, as the CallbackTestHarnass writes
+                                      # Write to byte 1, as the CallbackTestHarness writes
                                       # 3 bytes. This will result in the data on the server
                                       # being different than the local file.
                                       fp_change_pos=1)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         try:
             self.dst_key.set_contents_from_file(
-                test_file, cb=harnass.call,
+                test_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
         except ResumableUploadException, e:

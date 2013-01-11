@@ -70,6 +70,33 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'cfg_secret_key')
         self.assertIsNone(p.security_token)
 
+    def test_keyring_is_used(self):
+        self.config = {
+            'Credentials': {
+                'aws_access_key_id': 'cfg_access_key',
+                'keyring': 'test',
+            }
+        }
+        import sys
+        try:
+            import keyring
+            imported = True
+        except ImportError:
+            sys.modules['keyring'] = keyring = type(mock)('keyring', '')
+            imported = False
+
+        try:
+            with mock.patch('keyring.get_password', create=True):
+                keyring.get_password.side_effect = (
+                    lambda kr, login: kr+login+'pw')
+                p = provider.Provider('aws')
+                self.assertEqual(p.access_key, 'cfg_access_key')
+                self.assertEqual(p.secret_key, 'testcfg_access_keypw')
+                self.assertIsNone(p.security_token)
+        finally:
+            if not imported:
+                del sys.modules['keyring']
+
     def test_env_vars_beat_config_values(self):
         self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
         self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
