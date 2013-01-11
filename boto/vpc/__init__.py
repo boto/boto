@@ -33,6 +33,59 @@ from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
+from boto.regioninfo import RegionInfo
+
+
+RegionData = {
+    'us-east-1': 'ec2.us-east-1.amazonaws.com',
+    'us-west-1': 'ec2.us-west-1.amazonaws.com',
+    'us-west-2': 'ec2.us-west-2.amazonaws.com',
+    'sa-east-1': 'ec2.sa-east-1.amazonaws.com',
+    'eu-west-1': 'ec2.eu-west-1.amazonaws.com',
+    'ap-northeast-1': 'ec2.ap-northeast-1.amazonaws.com',
+    'ap-southeast-1': 'ec2.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'ec2.ap-southeast-2.amazonaws.com',
+}
+
+
+def regions(**kw_params):
+    """
+    Get all available regions for the VPC service.
+    You may pass any of the arguments accepted by the VPCConnection
+    object's constructor as keyword arguments and they will be
+    passed along to the VPCConnection object.
+
+    :rtype: list
+    :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
+    """
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=VPCConnection)
+        regions.append(region)
+    return regions
+
+
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a
+    :class:`boto.ec2.connection.VPCConnection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
+
+    :type: str
+    :param region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.ec2.connection.VPCConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+             name is given
+    """
+    for region in regions(**kw_params):
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None
+
 
 class VPCConnection(EC2Connection):
 
