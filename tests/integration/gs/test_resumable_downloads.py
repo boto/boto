@@ -36,7 +36,6 @@ import StringIO
 import sys
 import tempfile
 import time
-import unittest
 
 import boto
 from boto import storage_uri
@@ -47,6 +46,7 @@ from boto.exception import ResumableDownloadException
 from boto.exception import StorageResponseError
 from cb_test_harness import CallbackTestHarness
 from tests.integration.gs.util import has_google_credentials
+from tests.unit import unittest
 
 # We don't use the OAuth2 authentication plugin directly; importing it here
 # ensures that it's loaded and available by default.

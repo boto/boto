@@ -141,6 +141,20 @@ class StorageUri(object):
         self.connection.debug = self.debug
         return self.connection
 
+    def has_version(self):
+        return (self.version_id is not None) or (self.generation is not None)
+
+    def versioned_uri_str(self):
+        """Returns a versionful URI string."""
+        version_desc = ''
+        if self.version_id is not None:
+            version_desc += '#' + self.version_id
+        elif self.generation is not None:
+            version_desc += '#' + str(self.generation)
+            if self.meta_generation is not None:
+                version_desc += '.' + str(self.meta_generation)
+        return self.uri + version_desc
+
     def delete_key(self, validate=False, headers=None, version_id=None,
                    mfa_token=None):
         self._check_object_uri('delete_key')
@@ -311,6 +325,34 @@ class BucketStorageUri(StorageUri):
             self.scheme, bucket_name=self.bucket_name, object_name=new_name,
             debug=self.debug,
             suppress_consec_slashes=self.suppress_consec_slashes)
+
+    def clone_replace_key(self, key):
+        """Instantiate a BucketStorageUri from a Key object while maintaining
+        debug and suppress_consec_slashes values.
+
+        @type key: Key
+        @param key: key for the new StorageUri to represent
+        """
+        self._check_bucket_uri('clone_replace_key')
+        version_id = None
+        generation = None
+        meta_generation = None
+        if hasattr(key, 'version_id'):
+            version_id = key.version_id
+        if hasattr(key, 'generation'):
+            generation = key.generation
+        if hasattr(key, 'meta_generation'):
+            meta_generation = key.meta_generation
+
+        return BucketStorageUri(
+            key.provider.get_provider_name(),
+            bucket_name=key.bucket.name,
+            object_name=key.name,
+            debug=self.debug,
+            suppress_consec_slashes=self.suppress_consec_slashes,
+            version_id=version_id,
+            generation=generation,
+            meta_generation=meta_generation)
 
     def get_acl(self, validate=False, headers=None, version_id=None):
         """returns a bucket's acl"""
