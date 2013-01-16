@@ -33,6 +33,47 @@ from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
+from boto.ec2 import RegionData
+from boto.regioninfo import RegionInfo
+
+def regions(**kw_params):
+    """
+    Get all available regions for the EC2 service.
+    You may pass any of the arguments accepted by the VPCConnection
+    object's constructor as keyword arguments and they will be
+    passed along to the VPCConnection object.
+
+    :rtype: list
+    :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
+    """
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=VPCConnection)
+        regions.append(region)
+    return regions
+
+
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a
+    :class:`boto.vpc.VPCConnection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
+
+    :type: str
+    :param region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.vpc.VPCConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+             name is given
+    """
+    for region in regions(**kw_params):
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None
+
 
 class VPCConnection(EC2Connection):
 
