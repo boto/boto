@@ -11,29 +11,24 @@ downloaded and installed.
 Creating a Connection
 ---------------------
 The first step in accessing SQS is to create a connection to the service.
-There are two ways to do this in boto.  The first is::
+The recommended method of doing this is as follows::
 
-    >>> from boto.sqs.connection import SQSConnection
-    >>> conn = SQSConnection('<aws access key>', '<aws secret key>')
+    >>> import boto.sqs
+    >>> conn = boto.sqs.connect_to_region("us-east-1", aws_access_key_id= '<aws access key'>, aws_secret_access_key='<aws secret key>')
 
-At this point the variable conn will point to an SQSConnection object. Bear in mind that
-just as any other AWS service SQS is region-specfic. Also important to note is that by default,
-if no region is provided, it'll connect to the US-EAST-1 region. In
-this example, the AWS access key and AWS secret key are passed in to the
-method explicitely.  Alternatively, you can set the environment variables:
+At this point the variable conn will point to an SQSConnection object in the
+US-EAST-1 region. Bear in mind that just as any other AWS service, SQS is
+region-specific. In this example, the AWS access key and AWS secret key are
+passed in to the method explicitely. Alternatively, you can set the environment
+variables:
 
 AWS_ACCESS_KEY_ID - Your AWS Access Key ID
 AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
 
-and then call the constructor without any arguments, like this::
+and then simply call::
 
-    >>> conn = SQSConnection()
-
-There is also a shortcut function in the boto package, called connect_sqs
-that may provide a slightly easier means of creating a connection::
-
-    >>> import boto
-    >>> conn = boto.connect_sqs()
+    >>> import boto.sqs
+    >>> conn = boto.sqs.connect_to_region("us-east-1")
 
 In either case, conn will point to an SQSConnection object which we will
 use throughout the remainder of this tutorial.
