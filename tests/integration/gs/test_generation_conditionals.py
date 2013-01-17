@@ -26,49 +26,15 @@
 import StringIO
 import os
 import tempfile
-import time
 from boto.exception import GSResponseError
-from boto.gs.connection import GSConnection
-from tests.integration.gs.util import has_google_credentials
-from tests.unit import unittest
+from tests.integration.gs.case import GSTestCase
 
 
 # HTTP Error returned when a generation precondition fails.
 VERSION_MISMATCH = "412"
 
 
-@unittest.skipUnless(has_google_credentials(),
-                     "Google credentials are required to run the Google "
-                     "Cloud Storage tests.  Update your boto.cfg to run "
-                     "these tests.")
-class GSGenerationConditionalsTest(unittest.TestCase):
-    gs = True
-
-    def setUp(self):
-        self.conn = GSConnection()
-        self.buckets = []
-
-    def tearDown(self):
-        for b in self.buckets:
-            bucket = self.conn.get_bucket(b)
-            while len(list(bucket.list_versions())) > 0:
-                for k in bucket.list_versions():
-                    bucket.delete_key(k.name, generation=k.generation)
-            bucket.delete()
-
-    def _MakeBucketName(self):
-        b = "boto-gs-test-%s" % repr(time.time()).replace(".", "-")
-        self.buckets.append(b)
-        return b
-
-    def _MakeBucket(self):
-        b = self.conn.create_bucket(self._MakeBucketName())
-        return b
-
-    def _MakeVersionedBucket(self):
-        b = self._MakeBucket()
-        b.configure_versioning(True)
-        return b
+class GSGenerationConditionalsTest(GSTestCase):
 
     def testConditionalSetContentsFromFile(self):
         b = self._MakeBucket()
@@ -80,7 +46,6 @@ class GSGenerationConditionalsTest(unittest.TestCase):
 
         fp = StringIO.StringIO(s1)
         k.set_contents_from_file(fp, if_generation=0)
-        k = b.get_key("foo")
         g1 = k.generation
 
         s2 = "test2"
@@ -90,7 +55,6 @@ class GSGenerationConditionalsTest(unittest.TestCase):
 
         fp = StringIO.StringIO(s2)
         k.set_contents_from_file(fp, if_generation=g1)
-        k = b.get_key("foo")
         self.assertEqual(k.get_contents_as_string(), s2)
 
     def testConditionalSetContentsFromString(self):
@@ -101,7 +65,6 @@ class GSGenerationConditionalsTest(unittest.TestCase):
             k.set_contents_from_string(s1, if_generation=999)
 
         k.set_contents_from_string(s1, if_generation=0)
-        k = b.get_key("foo")
         g1 = k.generation
 
         s2 = "test2"
@@ -109,7 +72,6 @@ class GSGenerationConditionalsTest(unittest.TestCase):
             k.set_contents_from_string(s2, if_generation=int(g1)+1)
 
         k.set_contents_from_string(s2, if_generation=g1)
-        k = b.get_key("foo")
         self.assertEqual(k.get_contents_as_string(), s2)
 
     def testConditionalSetContentsFromFilename(self):
@@ -132,14 +94,12 @@ class GSGenerationConditionalsTest(unittest.TestCase):
                 k.set_contents_from_filename(fname1, if_generation=999)
 
             k.set_contents_from_filename(fname1, if_generation=0)
-            k = b.get_key("foo")
             g1 = k.generation
 
             with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
                 k.set_contents_from_filename(fname2, if_generation=int(g1)+1)
 
             k.set_contents_from_filename(fname2, if_generation=g1)
-            k = b.get_key("foo")
             self.assertEqual(k.get_contents_as_string(), s2)
         finally:
             os.remove(fname1)
@@ -150,7 +110,6 @@ class GSGenerationConditionalsTest(unittest.TestCase):
         k = b.new_key("foo")
         s1 = "test1"
         k.set_contents_from_string(s1)
-        k = b.get_key("foo")
 
         g1 = k.generation
         mg1 = k.meta_generation
