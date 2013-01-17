@@ -99,7 +99,7 @@ class TableGenerator:
         """
         # preserve any existing limit in case the user alters self.remaining
         limit = self.kwargs.get('limit')
-        if self.remaining > 0 and limit is None or limit > self.remaining:
+        if self.remaining > 0 and (limit is None or limit > self.remaining):
             self.kwargs['limit'] = self.remaining
         self._response = self.callable(**self.kwargs)
         self.kwargs['limit'] = limit
