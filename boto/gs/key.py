@@ -277,12 +277,12 @@ class Key(S3Key):
                 fp.seek(spos)
                 size = self.size
 
-            if self.name == None:
-                if md5 == None:
-                  md5 = self.compute_md5(fp, size)
-                  self.md5 = md5[0]
-                  self.base64md5 = md5[1]
+            if md5 == None:
+                md5 = self.compute_md5(fp, size)
+            self.md5 = md5[0]
+            self.base64md5 = md5[1]
 
+            if self.name == None:
                 self.name = self.md5
             if not replace:
                 if self.bucket.lookup(self.name):
