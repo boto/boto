@@ -81,6 +81,7 @@ class DBInstance(object):
         self.master_username = None
         self.parameter_groups = []
         self.security_groups = []
+        self.read_replica_dbinstance_identifiers = []
         self.availability_zone = None
         self.backup_retention_period = None
         self.preferred_backup_window = None
@@ -110,6 +111,9 @@ class DBInstance(object):
         elif name == 'PendingModifiedValues':
             self.pending_modified_values = PendingModifiedValues()
             return self.pending_modified_values
+        elif name == 'ReadReplicaDBInstanceIdentifiers':
+            self.read_replica_dbinstance_identifiers = ReadReplicaDBInstanceIdentifiers()
+            return self.read_replica_dbinstance_identifiers
         return None
 
     def endElement(self, name, value, connection):
@@ -340,3 +344,13 @@ class PendingModifiedValues(dict):
     def endElement(self, name, value, connection):
         if name != 'PendingModifiedValues':
             self[name] = value
+
+
+class ReadReplicaDBInstanceIdentifiers(list):
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        print name
+        if name == 'ReadReplicaDBInstanceIdentifier':
+            self.append(value)
