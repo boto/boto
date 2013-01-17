@@ -55,6 +55,10 @@ class Key(S3Key):
         else:
             setattr(self, name, value)
 
+    def handle_version_headers(self, resp, force=False):
+        self.meta_generation = resp.getheader('x-goog-metageneration', None)
+        self.generation = resp.getheader('x-goog-generation', None)
+
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
                  torrent=False, version_id=None, override_num_retries=None,
                  response_headers=None):

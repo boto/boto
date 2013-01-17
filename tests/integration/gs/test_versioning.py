@@ -196,3 +196,18 @@ class GSVersioningTest(unittest.TestCase):
         k2 = b2.get_key("foo2")
         s3 = k2.get_contents_as_string()
         self.assertEqual(s3, s1)
+
+    def testKeyGenerationUpdatesOnSet(self):
+        b = self._MakeVersionedBucket()
+        k = b.new_key("foo")
+        self.assertIsNone(k.generation)
+        k.set_contents_from_string("test1")
+        g1 = k.generation
+        self.assertRegexpMatches(g1, r'[0-9]+')
+        self.assertEqual(k.meta_generation, '1')
+        k.set_contents_from_string("test2")
+        g2 = k.generation
+        self.assertNotEqual(g1, g2)
+        self.assertRegexpMatches(g2, r'[0-9]+')
+        self.assertGreater(int(g2), int(g1))
+        self.assertEqual(k.meta_generation, '1')

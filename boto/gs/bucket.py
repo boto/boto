@@ -88,9 +88,6 @@ class Bucket(S3Bucket):
 
         key, resp = self._get_key_internal(key_name, headers,
                                            query_args_l=query_args_l)
-        if key:
-            key.meta_generation = resp.getheader('x-goog-metageneration')
-            key.generation = resp.getheader('x-goog-generation')
         return key
 
     def copy_key(self, new_key_name, src_bucket_name, src_key_name,
