@@ -28,15 +28,17 @@
 Some unit tests for the GSConnection
 """
 
-import boto
-import time
 import os
 import re
+import StringIO
+import time
 import xml
-from boto.gs.connection import GSConnection
-from boto.gs.cors import Cors
+
+import boto
 from boto import handler
 from boto import storage_uri
+from boto.gs.connection import GSConnection
+from boto.gs.cors import Cors
 from tests.integration.gs.util import has_google_credentials
 from tests.unit import unittest
 
@@ -70,6 +72,11 @@ class GSConnectionTest(unittest.TestCase):
         # check to make sure content read from s3 is identical to original
         assert s1 == fp.read(), 'corrupted file'
         fp.close()
+        # check to make sure set_contents_from_file is working
+        sfp = StringIO.StringIO("foo")
+        k.set_contents_from_file(sfp)
+        sfp2 = StringIO.StringIO("foo2")
+        k.set_contents_from_file(sfp2)
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type
