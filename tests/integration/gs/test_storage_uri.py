@@ -100,17 +100,10 @@ class GSStorageUriTest(unittest.TestCase):
         b = self.conn.create_bucket(self._MakeBucketName())
         k = b.new_key("obj")
         k.set_contents_from_string("stringdata")
-        k2 = b.get_key("obj")
 
         orig_uri = storage_uri("gs://%s/" % b.name)
 
         uri = orig_uri.clone_replace_key(k)
-        self.assertTrue(uri.generation is None)
-        self.assertTrue(uri.meta_generation is None)
-        self.assertFalse(uri.has_version())
-
-        uri = orig_uri.clone_replace_key(k2)
-        new_uri = orig_uri.clone_replace_key(k2)
-        self.assertFalse(uri.generation is None)
-        self.assertFalse(uri.meta_generation is None)
         self.assertTrue(uri.has_version())
+        self.assertRegexpMatches(str(uri.generation), r'[0-9]+')
+        self.assertEquals(uri.meta_generation, 1)
