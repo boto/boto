@@ -20,11 +20,13 @@ def has_google_credentials():
 def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
     """Retry calling the decorated function using an exponential backoff.
 
-    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+    Taken from:
+      https://github.com/saltycrane/retry-decorator
+    Licensed under BSD:
+      https://github.com/saltycrane/retry-decorator/blob/master/LICENSE
 
     :param ExceptionToCheck: the exception to check. may be a tuple of
-        excpetions to check
+        exceptions to check
     :type ExceptionToCheck: Exception or tuple
     :param tries: number of times to try (not retry) before giving up
     :type tries: int

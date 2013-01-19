@@ -46,8 +46,10 @@ USER_BY_ID = 'UserById'
 CannedACLStrings = ['private', 'public-read', 'project-private',
                     'public-read-write', 'authenticated-read',
                     'bucket-owner-read', 'bucket-owner-full-control']
+"""A list of Google Cloud Storage predefined (canned) ACL strings."""
 
 SupportedPermissions = ['READ', 'WRITE', 'FULL_CONTROL']
+"""A list of supported ACL permissions."""
 
 class ACL:
 

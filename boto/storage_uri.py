@@ -373,9 +373,7 @@ class BucketStorageUri(StorageUri):
         """returns a bucket's default object acl"""
         self._check_bucket_uri('get_def_acl')
         bucket = self.get_bucket(validate, headers)
-        # This works for both bucket- and object- level ACLs (former passes
-        # key_name=None):
-        acl = bucket.get_def_acl('', headers)
+        acl = bucket.get_def_acl(headers)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
@@ -548,11 +546,11 @@ class BucketStorageUri(StorageUri):
           version_id = version_id or self.version_id
           bucket.set_acl(acl_or_str, key_name, headers, version_id)
 
-    def set_def_acl(self, acl_or_str, key_name='', validate=False,
-                    headers=None, version_id=None):
+    def set_def_acl(self, acl_or_str, validate=False, headers=None,
+                    version_id=None):
         """sets or updates a bucket's default object acl"""
         self._check_bucket_uri('set_def_acl')
-        self.get_bucket(validate, headers).set_def_acl(acl_or_str, '', headers)
+        self.get_bucket(validate, headers).set_def_acl(acl_or_str, headers)
 
     def set_canned_acl(self, acl_str, validate=False, headers=None,
                        version_id=None):

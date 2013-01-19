@@ -534,3 +534,129 @@ class Key(S3Key):
             headers['x-goog-if-generation-match'] = str(if_generation)
             kwargs['headers'] = headers
         return super(Key, self).set_contents_from_stream(*args, **kwargs)
+
+    def set_acl(self, acl_or_str, headers=None, generation=None,
+                 if_generation=None, if_metageneration=None):
+        """Sets the ACL for this object.
+
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string (see
+            :data:`~.gs.acl.CannedACLStrings`) or an ACL object.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if self.bucket != None:
+            self.bucket.set_acl(acl_or_str, self.name, headers=headers,
+                                generation=generation,
+                                if_generation=if_generation,
+                                if_metageneration=if_metageneration)
+
+    def get_acl(self, headers=None, generation=None):
+        """Returns the ACL of this object.
+
+        :param dict headers: Additional headers to set during the request.
+
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned.
+
+        :rtype: :class:`.gs.acl.ACL`
+        """
+        if self.bucket != None:
+            return self.bucket.get_acl(self.name, headers=headers,
+                                       generation=generation)
+
+    def get_xml_acl(self, headers=None, generation=None):
+        """Returns the ACL string of this object.
+
+        :param dict headers: Additional headers to set during the request.
+
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned.
+
+        :rtype: str
+        """
+        if self.bucket != None:
+            return self.bucket.get_xml_acl(self.name, headers=headers,
+                                           generation=generation)
+
+    def set_xml_acl(self, acl_str, headers=None, generation=None,
+                     if_generation=None, if_metageneration=None):
+        """Sets this objects's ACL to an XML string.
+
+        :type acl_str: string
+        :param acl_str: A string containing the ACL XML.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if self.bucket != None:
+            return self.bucket.set_xml_acl(acl_str, self.name, headers=headers,
+                                           generation=generation,
+                                           if_generation=if_generation,
+                                           if_metageneration=if_metageneration)
+
+    def set_canned_acl(self, acl_str, headers=None, generation=None,
+                         if_generation=None, if_metageneration=None):
+        """Sets this objects's ACL using a predefined (canned) value.
+
+        :type acl_str: string
+        :param acl_str: A canned ACL string. See
+            :data:`~.gs.acl.CannedACLStrings`.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if self.bucket != None:
+            return self.bucket.set_canned_acl(
+                acl_str,
+                self.name,
+                headers=headers,
+                generation=generation,
+                if_generation=if_generation,
+                if_metageneration=if_metageneration
+            )

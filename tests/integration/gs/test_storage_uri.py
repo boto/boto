@@ -24,7 +24,7 @@
 """Unit tests for StorageUri interface."""
 
 from boto import storage_uri
-from tests.integration.gs.case import GSTestCase
+from tests.integration.gs.testcase import GSTestCase
 
 class GSStorageUriTest(GSTestCase):
 

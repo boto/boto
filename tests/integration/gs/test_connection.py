@@ -186,6 +186,8 @@ class GSConnectionTest(unittest.TestCase):
         xml.sax.parseString(acl_xml, h)
         bucket.set_acl(acl)
         assert len(acl.entries.entry_list) == 1
+        aclstr = k.get_xml_acl()
+        assert aclstr.count('/Entry', 1)
         #
         # try set/get raw logging subresource
         empty_logging_str="<?xml version='1.0' encoding='UTF-8'?><Logging/>"
