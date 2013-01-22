@@ -424,16 +424,6 @@ class Bucket(S3Bucket):
         self.set_subresource('logging', xml_str, headers=headers)
 
     def enable_logging(self, target_bucket, target_prefix=None, headers=None):
-        """
-        Enables output of bucket logs to csv files in another bucket.
-        
-        :type target_bucket: str
-        :param target_bucket: The bucket that the logs will be written to.
-        
-        :type target_prefix: str
-        :param target_prefix: Prefix to use for log object names. Defaults to
-                              the logged bucket's name if not specified.
-        """
         if isinstance(target_bucket, Bucket):
             target_bucket = target_bucket.name
         xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging>'
