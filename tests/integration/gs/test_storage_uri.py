@@ -23,37 +23,10 @@
 
 """Unit tests for StorageUri interface."""
 
-import time
 from boto import storage_uri
-from boto.gs.connection import GSConnection
-from boto.gs.key import Key
-from tests.integration.gs.util import has_google_credentials
-from tests.unit import unittest
+from tests.integration.gs.testcase import GSTestCase
 
-
-@unittest.skipUnless(has_google_credentials(),
-                     "Google credentials are required to run the Google "
-                     "Cloud Storage tests.  Update your boto.cfg to run "
-                     "these tests.")
-class GSStorageUriTest(unittest.TestCase):
-    gs = True
-
-    def setUp(self):
-        self.conn = GSConnection()
-        self.buckets = []
-
-    def tearDown(self):
-        for b in self.buckets:
-            bucket = self.conn.get_bucket(b)
-            while len(list(bucket.list_versions())) > 0:
-                for k in bucket.list_versions():
-                    bucket.delete_key(k.name, generation=k.generation)
-            bucket.delete()
-
-    def _MakeBucketName(self):
-        b = "boto-gs-test-%s" % repr(time.time()).replace(".", "-")
-        self.buckets.append(b)
-        return b
+class GSStorageUriTest(GSTestCase):
 
     def testHasVersion(self):
         uri = storage_uri("gs://bucket/obj")
