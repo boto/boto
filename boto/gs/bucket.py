@@ -66,7 +66,10 @@ class Bucket(S3Bucket):
 
     def get_key(self, key_name, headers=None, version_id=None,
                 response_headers=None, generation=None):
-        """Returns a Key instance for an object in this bucket. 
+        """Returns a Key instance for an object in this bucket.
+
+         Note that this method uses a HEAD request to check for the existence of
+         the key.
 
         :type key_name: string
         :param key_name: The name of the key to retrieve
@@ -99,7 +102,7 @@ class Bucket(S3Bucket):
                  metadata=None, src_version_id=None, storage_class='STANDARD',
                  preserve_acl=False, encrypt_key=False, headers=None,
                  query_args=None, src_generation=None):
-        """Create a new key in the bucket by copying another existing key.
+        """Create a new key in the bucket by copying an existing key.
 
         :type new_key_name: string
         :param new_key_name: The name of the new key
@@ -123,22 +126,22 @@ class Bucket(S3Bucket):
         :type storage_class: string
         :param storage_class: The storage class of the new key.  By
             default, the new key will use the standard storage class.
-            Possible values are: STANDARD | REDUCED_REDUNDANCY
+            Possible values are: STANDARD | DURABLE_REDUCED_AVAILABILITY
 
         :type preserve_acl: bool
         :param preserve_acl: If True, the ACL from the source key will
             be copied to the destination key.  If False, the
             destination key will have the default ACL.  Note that
             preserving the ACL in the new key object will require two
-            additional API calls to S3, one to retrieve the current
+            additional API calls to GCS, one to retrieve the current
             ACL and one to set that ACL on the new object.  If you
-            don't care about the ACL, a value of False will be
-            significantly more efficient.
+            don't care about the ACL (or if you have a default ACL set
+            on the bucket), a value of False will be significantly more
+            efficient.
 
         :type encrypt_key: bool
-        :param encrypt_key: If True, the new copy of the object will
-            be encrypted on the server-side by S3 and will be stored
-            in an encrypted form while at rest in S3.
+        :param encrypt_key: Included for compatibility with S3. This argument is
+            ignored.
 
         :type headers: dict
         :param headers: A dictionary of header name/value pairs.
