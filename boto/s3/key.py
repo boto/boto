@@ -294,8 +294,21 @@ class Key(object):
 
     closed = False
 
-    def close(self):
-        if self.resp:
+    def close(self, fast=False):
+        """
+        Close the key after reading any data remaining on the open socket.
+        I added this path to support streaming transfers between
+        providers (where seek to EOF is implemented by doing
+        a range GET on the source object), so this param heavily
+        reduces wasted data transfers for that case. Note: According to
+        http://docs.python.org/2/library/httplib.html#httplib.HTTPConnection.getresponse
+        you must read the response before you can send a new request to the
+        server, but from my testing that's not the case.
+
+        :type fast: bool
+        :param fast: Skips reading data from open socket.
+        """
+        if self.resp and not fast:
             self.resp.read()
         self.resp = None
         self.mode = None
