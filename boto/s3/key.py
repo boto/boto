@@ -149,9 +149,8 @@ class Key(object):
     @property
     def provider(self):
         provider = None
-        if self.bucket:
-            if self.bucket.connection:
-                provider = self.bucket.connection.provider
+        if self.bucket and self.bucket.connection:
+            provider = self.bucket.connection.provider
         return provider
 
     def get_md5_from_hexdigest(self, md5_hexdigest):

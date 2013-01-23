@@ -245,7 +245,8 @@ class BucketStorageUri(StorageUri):
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=0, connection_args=None, suppress_consec_slashes=True,
-                 version_id=None, generation=None, meta_generation=None):
+                 version_id=None, generation=None, meta_generation=None,
+                 is_latest=False):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -265,6 +266,8 @@ class BucketStorageUri(StorageUri):
         @param version_id: Object version id (S3-specific).
         @param generation: Object generation number (GCS-specific).
         @param meta_generation: Object meta-generation number (GCS-specific).
+        @param is_latest: boolean indicating that a versioned object is the
+            current version
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
@@ -288,6 +291,7 @@ class BucketStorageUri(StorageUri):
         self.version_id = version_id
         self.generation = generation and int(generation)
         self.meta_generation = meta_generation and int(meta_generation)
+        self.is_latest = is_latest
 
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
@@ -337,22 +341,26 @@ class BucketStorageUri(StorageUri):
         version_id = None
         generation = None
         meta_generation = None
+        is_latest = False
         if hasattr(key, 'version_id'):
             version_id = key.version_id
         if hasattr(key, 'generation'):
             generation = key.generation
         if hasattr(key, 'meta_generation'):
             meta_generation = key.meta_generation
+        if hasattr(key, 'is_latest'):
+            is_latest = key.is_latest
 
         return BucketStorageUri(
-            key.provider.get_provider_name(),
-            bucket_name=key.bucket.name,
-            object_name=key.name,
-            debug=self.debug,
-            suppress_consec_slashes=self.suppress_consec_slashes,
-            version_id=version_id,
-            generation=generation,
-            meta_generation=meta_generation)
+                key.provider.get_provider_name(),
+                bucket_name=key.bucket.name,
+                object_name=key.name,
+                debug=self.debug,
+                suppress_consec_slashes=self.suppress_consec_slashes,
+                version_id=version_id,
+                generation=generation,
+                meta_generation=meta_generation,
+                is_latest=is_latest)
 
     def get_acl(self, validate=False, headers=None, version_id=None):
         """returns a bucket's acl"""
