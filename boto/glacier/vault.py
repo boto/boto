@@ -161,9 +161,8 @@ class Vault(object):
         if not file_obj:
             file_size = os.path.getsize(filename)
             try:
-                min_part_size = minimum_part_size(file_size)
-                if (min_part_size>part_size):
-                     part_size=min_part_size
+                min_part_size = minimum_part_size(file_size,
+                                                  self.DefaultPartSize)
             except ValueError:
                 raise UploadArchiveError("File size of %s bytes exceeds "
                                          "40,000 GB archive limit of Glacier.")
