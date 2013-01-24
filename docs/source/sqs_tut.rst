@@ -25,8 +25,8 @@ region-specific. In this example, the AWS access key and AWS secret key are
 passed in to the method explicitely. Alternatively, you can set the environment
 variables:
 
-* `AWS_ACCESS_KEY_ID` - Your AWS Access Key ID
-* `AWS_SECRET_ACCESS_KEY` - Your AWS Secret Access Key
+* ``AWS_ACCESS_KEY_ID`` - Your AWS Access Key ID
+* ``AWS_SECRET_ACCESS_KEY`` - Your AWS Secret Access Key
 
 and then simply call::
 
@@ -86,7 +86,7 @@ with ``'another'``::
 
 Getting a Queue (by name)
 -------------------------
-If you wish to explicitly retrieve an existing queue and the name of the queue is known, 
+If you wish to explicitly retrieve an existing queue and the name of the queue is known,
 you can retrieve the queue as follows::
 
     >>> my_queue = conn.get_queue('myqueue')
@@ -207,7 +207,7 @@ u'This is my first message'
 
 Deleting Messages and Queues
 ----------------------------
-As stated above, messages are never deleted by the queue unless explicitly told to do so. 
+As stated above, messages are never deleted by the queue unless explicitly told to do so.
 To remove a message from a queue:
 
 >>> q.delete_message(m)
