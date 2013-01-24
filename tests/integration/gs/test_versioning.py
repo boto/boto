@@ -33,7 +33,7 @@ from tests.integration.gs.testcase import GSTestCase
 class GSVersioningTest(GSTestCase):
 
     def testVersioningToggle(self):
-        b = self.conn.create_bucket(self._MakeBucketName())
+        b = self._MakeBucket()
         self.assertFalse(b.get_versioning_status())
         b.configure_versioning(True)
         self.assertTrue(b.get_versioning_status())
