@@ -53,7 +53,7 @@ SYNOPSIS
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] [--host]""" + usage_string_multipart_capable + """ path [path...]
+          [--header] [--host <s3_host>]""" + usage_string_multipart_capable + """ path [path...]
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -249,7 +249,7 @@ def main():
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
              'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart', 
-             'hostname'])
+             'host='])
     except:
         usage()
 
