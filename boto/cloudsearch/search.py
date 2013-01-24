@@ -161,43 +161,105 @@ class SearchConnection(object):
                size=10, start=0, facet=None, facet_constraints=None,
                facet_sort=None, facet_top_n=None, t=None):
         """
-        Query Cloudsearch
+        Send a query to CloudSearch
 
-        :type q:
-        :param q:
+        Each search query should use at least the q or bq argument to specify
+        the search parameter. The other options are used to specify the
+        criteria of the search.
 
-        :type bq:
-        :param bq:
+        :type q: string
+        :param q: A string to search the default search fields for.
 
-        :type rank:
-        :param rank:
+        :type bq: string
+        :param bq: A string to perform a Boolean search. This can be used to
+            create advanced searches.
 
-        :type return_fields:
-        :param return_fields:
+        :type rank: List of strings
+        :param rank: A list of fields or rank expressions used to order the
+            search results. A field can be reversed by using the - operator.
+            ``['-year', 'author']``
 
-        :type size:
-        :param size:
+        :type return_fields: List of strings
+        :param return_fields: A list of fields which should be returned by the
+            search. If this field is not specified, only IDs will be returned.
+            ``['headline']``
 
-        :type start:
-        :param start:
+        :type size: int
+        :param size: Number of search results to specify
 
-        :type facet:
-        :param facet:
+        :type start: int
+        :param start: Offset of the first search result to return (can be used
+            for paging)
 
-        :type facet_constraints:
-        :param facet_constraints:
+        :type facet: list
+        :param facet: List of fields for which facets should be returned
+            ``['colour', 'size']``
 
-        :type facet_sort:
-        :param facet_sort:
+        :type facet_constraints: dict
+        :param facet_constraints: Use to limit facets to specific values
+            specified as comma-delimited strings in a Dictionary of facets
+            ``{'colour': "'blue','white','red'", 'size': "big"}``
 
-        :type facet_top_n:
-        :param facet_top_n:
+        :type facet_sort: dict
+        :param facet_sort: Rules used to specify the order in which facet
+            values should be returned. Allowed values are *alpha*, *count*,
+            *max*, *sum*. Use *alpha* to sort alphabetical, and *count* to sort
+            the facet by number of available result. 
+            ``{'color': 'alpha', 'size': 'count'}``
 
-        :type t:
-        :param t:
+        :type facet_top_n: dict
+        :param facet_top_n: Dictionary of facets and number of facets to
+            return.
+            ``{'colour': 2}``
 
-        :rtype: :class:`exfm.cloudsearch.SearchResults`
-        :return: A cloudsearch SearchResults object
+        :type t: dict
+        :param t: Specify ranges for specific fields
+            ``{'year': '2000..2005'}``
+
+        :rtype: :class:`boto.cloudsearch.search.SearchResults`
+        :return: Returns the results of this search
+
+        The following examples all assume we have indexed a set of documents
+        with fields: *author*, *date*, *headline*
+
+        A simple search will look for documents whose default text search
+        fields will contain the search word exactly:
+
+        >>> search(q='Tim') # Return documents with the word Tim in them (but not Timothy)
+
+        A simple search with more keywords will return documents whose default
+        text search fields contain the search strings together or separately.
+
+        >>> search(q='Tim apple') # Will match "tim" and "apple"
+
+        More complex searches require the boolean search operator.
+
+        Wildcard searches can be used to search for any words that start with
+        the search string.
+
+        >>> search(bq="'Tim*'") # Return documents with words like Tim or Timothy)
+        
+        Search terms can also be combined. Allowed operators are "and", "or",
+        "not", "field", "optional", "token", "phrase", or "filter"
+        
+        >>> search(bq="(and 'Tim' (field author 'John Smith'))")
+
+        Facets allow you to show classification information about the search
+        results. For example, you can retrieve the authors who have written
+        about Tim:
+
+        >>> search(q='Tim', facet=['Author'])
+
+        With facet_constraints, facet_top_n and facet_sort more complicated
+        constraints can be specified such as returning the top author out of
+        John Smith and Mark Smith who have a document with the word Tim in it.
+        
+        >>> search(q='Tim', 
+        ...     facet=['Author'], 
+        ...     facet_constraints={'author': "'John Smith','Mark Smith'"}, 
+        ...     facet=['author'], 
+        ...     facet_top_n={'author': 1}, 
+        ...     facet_sort={'author': 'count'})
         """
 
         query = self.build_query(q=q, bq=bq, rank=rank,
