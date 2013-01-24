@@ -70,7 +70,7 @@ class GSStorageUriTest(GSTestCase):
         self.assertEquals(uri_str + "#0.0", uri.versioned_uri_str())
 
     def testCloneReplaceKey(self):
-        b = self.conn.create_bucket(self._MakeBucketName())
+        b = self._MakeBucket()
         k = b.new_key("obj")
         k.set_contents_from_string("stringdata")
 
