@@ -143,5 +143,5 @@ class CommitResponse(object):
 
         if response_num != commit_num:
             raise CommitMismatchError(
-                'Incorrect number of {}s returned. Commit: {} Respose: {}'\
+                'Incorrect number of {}s returned. Commit: {} Response: {}'\
                 .format(type_, commit_num, response_num))
