@@ -62,8 +62,8 @@ class SearchResults(object):
     def next_page(self):
         """Call Cloudsearch to get the next page of search results
 
-        :rtype: :class:`exfm.cloudsearch.SearchResults`
-        :return: A cloudsearch SearchResults object
+        :rtype: :class:`boto.cloudsearch.search.SearchResults`
+        :return: the following page of search results
         """
         if self.query.page <= self.num_pages_needed:
             self.query.start += self.query.real_size
@@ -211,11 +211,11 @@ class SearchConnection(object):
     def __call__(self, query):
         """Make a call to CloudSearch
 
-        :type query: :class:`exfm.cloudsearch.Query`
-        :param query: A fully specified Query instance
+        :type query: :class:`boto.cloudsearch.search.Query`
+        :param query: A group of search criteria
 
-        :rtype: :class:`exfm.cloudsearch.SearchResults`
-        :return: A cloudsearch SearchResults object
+        :rtype: :class:`boto.cloudsearch.search.SearchResults`
+        :return: search results
         """
         url = "http://%s/2011-02-01/search" % (self.endpoint)
         params = query.to_params()
@@ -239,14 +239,14 @@ class SearchConnection(object):
     def get_all_paged(self, query, per_page):
         """Get a generator to iterate over all pages of search results
 
-        :type query: :class:`exfm.cloudsearch.Query`
-        :param query: A fully specified Query instance
+        :type query: :class:`boto.cloudsearch.search.Query`
+        :param query: A group of search criteria
 
         :type per_page: int
-        :param per_page: Number of docs in each SearchResults object.
+        :param per_page: Number of docs in each :class:`boto.cloudsearch.search.SearchResults` object.
 
         :rtype: generator
-        :return: Generator containing :class:`exfm.cloudsearch.SearchResults`
+        :return: Generator containing :class:`boto.cloudsearch.search.SearchResults`
         """
         query.update_size(per_page)
         page = 0
@@ -266,8 +266,8 @@ class SearchConnection(object):
         you can iterate over all results in a reasonably efficient
         manner.
 
-        :type query: :class:`exfm.cloudsearch.Query`
-        :param query: A fully specified Query instance
+        :type query: :class:`boto.cloudsearch.search.Query`
+        :param query: A group of search criteria
 
         :rtype: generator
         :return: All docs matching query
@@ -285,8 +285,8 @@ class SearchConnection(object):
     def get_num_hits(self, query):
         """Return the total number of hits for query
 
-        :type query: :class:`exfm.cloudsearch.Query`
-        :param query: A fully specified Query instance
+        :type query: :class:`boto.cloudsearch.search.Query`
+        :param query: a group of search criteria
 
         :rtype: int
         :return: Total number of hits for query
