@@ -46,7 +46,7 @@ class DocumentServiceConnection(object):
     as well as :func:`delete` to remove documents.
 
     Once the set of documents is ready to be index, use :func:`commit` to send the
-    commands to CloudSearch. 
+    commands to CloudSearch.
 
     If there are a lot of documents to index, it may be preferable to split the
     generation of SDF data and the actual uploading into CloudSearch. Retrieve
@@ -58,7 +58,7 @@ class DocumentServiceConnection(object):
     using the DocumentServiceConnection for another batch upload of commands,
     you will need to :func:`clear_sdf` first to stop the previous batch of
     commands from being uploaded again.
-   
+
     """
 
     def __init__(self, domain=None, endpoint=None):
@@ -142,7 +142,7 @@ class DocumentServiceConnection(object):
         :func:`add` and :func:`delete` being ignored.
 
         :type key_obj: :class:`boto.s3.key.Key`
-        :param key_obj: An S3 key which contains an SDF 
+        :param key_obj: An S3 key which contains an SDF
         """
         #@todo:: (lucas) would be nice if this could just take an s3://uri..."
 
@@ -153,7 +153,7 @@ class DocumentServiceConnection(object):
         Actually send an SDF to CloudSearch for processing
 
         If an SDF file has been explicitly loaded it will be used. Otherwise,
-        documents added through :func:`add` and :func:`delete` will be used. 
+        documents added through :func:`add` and :func:`delete` will be used.
 
         :rtype: :class:`CommitResponse`
         :returns: A summary of documents added and deleted
