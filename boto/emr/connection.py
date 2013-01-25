@@ -215,7 +215,8 @@ class EmrConnection(AWSQueryConnection):
                     additional_info=None,
                     ami_version=None,
                     api_params=None,
-                    visible_to_all_users=None):
+                    visible_to_all_users=None,
+                    job_flow_role=None):
         """
         Runs a job flow
         :type name: str
@@ -291,6 +292,12 @@ class EmrConnection(AWSQueryConnection):
             the IAM user that created the job flow can view and manage
             it.
 
+        :type job_flow_role: str
+        :param job_flow_role: An IAM role for the job flow. The EC2
+            instances of the job flow assume this role. The default role is
+            ``EMRJobflowDefault``. In order to use the default role,
+            you must have already created it using the CLI.
+
         :rtype: str
         :return: The jobflow id
         """
@@ -364,6 +371,9 @@ class EmrConnection(AWSQueryConnection):
                 params['VisibleToAllUsers'] = 'true'
             else:
                 params['VisibleToAllUsers'] = 'false'
+
+        if job_flow_role is not None:
+            params['JobFlowRole'] = job_flow_role
 
         response = self.get_object(
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')
