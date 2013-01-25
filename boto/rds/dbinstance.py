@@ -112,7 +112,8 @@ class DBInstance(object):
             self.pending_modified_values = PendingModifiedValues()
             return self.pending_modified_values
         elif name == 'ReadReplicaDBInstanceIdentifiers':
-            self.read_replica_dbinstance_identifiers = ReadReplicaDBInstanceIdentifiers()
+            self.read_replica_dbinstance_identifiers = \
+                    ReadReplicaDBInstanceIdentifiers()
             return self.read_replica_dbinstance_identifiers
         return None
 
@@ -337,7 +338,6 @@ class DBInstance(object):
 
 
 class PendingModifiedValues(dict):
-
     def startElement(self, name, attrs, connection):
         return None
 
