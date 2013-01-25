@@ -351,6 +351,5 @@ class ReadReplicaDBInstanceIdentifiers(list):
         return None
 
     def endElement(self, name, value, connection):
-        print name
         if name == 'ReadReplicaDBInstanceIdentifier':
             self.append(value)
