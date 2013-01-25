@@ -142,12 +142,16 @@ class StorageUri(object):
         return self.connection
 
     def has_version(self):
-        return (self.version_id is not None) or (self.generation is not None)
+        return (issubclass(type(self), BucketStorageUri)
+                and ((self.version_id is not None)
+                     or (self.generation is not None)))
 
     def versioned_uri_str(self):
         """Returns a versionful URI string."""
         version_desc = ''
-        if self.version_id is not None:
+        if not issubclass(type(self), BucketStorageUri):
+          pass
+        elif self.version_id is not None:
             version_desc += '#' + self.version_id
         elif self.generation is not None:
             version_desc += '#' + str(self.generation)
