@@ -821,7 +821,7 @@ class AWSAuthConnection(object):
         i = 0
         connection = self.get_http_connection(request.host, self.is_secure)
         while i <= num_retries:
-            # Use binary exponential backoff to desynchronize client requests
+            # Use binary exponential backoff to desynchronize client requests.
             next_sleep = random.random() * (2 ** i)
             try:
                 # we now re-sign each request before it is retried

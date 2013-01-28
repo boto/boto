@@ -19,10 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import base64
+import binascii
 import os
+import re
 import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
+from boto.s3.keyfile import KeyFile
 
 class Key(S3Key):
     """
@@ -284,22 +288,50 @@ class Key(S3Key):
             # caller requests reading from beginning of fp.
             fp.seek(0, os.SEEK_SET)
         else:
-            spos = fp.tell()
-            fp.seek(0, os.SEEK_END)
-            if fp.tell() == spos:
-                fp.seek(0, os.SEEK_SET)
-                if fp.tell() != spos:
-                    # Raise an exception as this is likely a programming error
-                    # whereby there is data before the fp but nothing after it.
-                    fp.seek(spos)
-                    raise AttributeError(
-                     'fp is at EOF. Use rewind option or seek() to data start.')
-            # seek back to the correct position.
-            fp.seek(spos)
+            # The following seek/tell/seek logic is intended
+            # to detect applications using the older interface to
+            # set_contents_from_file(), which automatically rewound the
+            # file each time the Key was reused. This changed with commit
+            # 14ee2d03f4665fe20d19a85286f78d39d924237e, to support uploads
+            # split into multiple parts and uploaded in parallel, and at
+            # the time of that commit this check was added because otherwise
+            # older programs would get a success status and upload an empty
+            # object. Unfortuantely, it's very inefficient for fp's implemented
+            # by KeyFile (used, for example, by gsutil when copying between
+            # providers). So, we skip the check for the KeyFile case.
+            # TODO: At some point consider removing this seek/tell/seek
+            # logic, after enough time has passed that it's unlikely any
+            # programs remain that assume the older auto-rewind interface.
+            if not isinstance(fp, KeyFile):
+                spos = fp.tell()
+                fp.seek(0, os.SEEK_END)
+                if fp.tell() == spos:
+                    fp.seek(0, os.SEEK_SET)
+                    if fp.tell() != spos:
+                        # Raise an exception as this is likely a programming
+                        # error whereby there is data before the fp but nothing
+                        # after it.
+                        fp.seek(spos)
+                        raise AttributeError('fp is at EOF. Use rewind option '
+                                             'or seek() to data start.')
+                # seek back to the correct position.
+                fp.seek(spos)
 
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
+            if isinstance(fp, KeyFile):
+                # Avoid EOF seek for KeyFile case as it's very inefficient.
+                key = fp.getkey()
+                size = key.size - fp.tell()
+                self.size = size
+                # At present both GCS and S3 use MD5 for the etag for
+                # non-multipart-uploaded objects. If the etag is 32 hex
+                # chars use it as an MD5, to avoid having to read the file
+                # twice while transferring.
+                if (re.match('^"[a-fA-F0-9]{32}"$', key.etag)):
+                    etag = key.etag.strip('"')
+                    md5 = (etag, base64.b64encode(binascii.unhexlify(etag)))
             if size:
                 self.size = size
             else:

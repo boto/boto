@@ -29,6 +29,7 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 import copy
 import boto
 import base64
+import re
 
 from boto.utils import compute_md5
 from boto.s3.prefix import Prefix
@@ -105,11 +106,17 @@ class MockKey(object):
         if 'Content-Language' in headers:
             self.content_language = headers['Content-Language']
 
-    def open_read(self, headers=NOT_IMPL, query_args=NOT_IMPL,
+    # Simplistic partial implementation for headers: Just supports range GETs
+    # of flavor 'Range: bytes=xyz-'.
+    def open_read(self, headers=None, query_args=NOT_IMPL,
                   override_num_retries=NOT_IMPL):
         if self.closed:
             self.read_pos = 0
         self.closed = False
+        if headers and 'Range' in headers:
+            match = re.match('bytes=([0-9]+)-$', headers['Range'])
+            if match:
+                self.read_pos = int(match.group(1))
 
     def close(self):
       self.closed = True
