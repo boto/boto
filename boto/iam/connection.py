@@ -352,7 +352,7 @@ class IAMConnection(AWSQueryConnection):
         implicitly based on the AWS Access Key ID used to sign the request.
 
         :type user_name: string
-        :param user_name: The name of the user to delete.
+        :param user_name: The name of the user to retrieve.
             If not specified, defaults to user making request.
         """
         params = {}
