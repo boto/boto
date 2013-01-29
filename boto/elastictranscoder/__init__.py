@@ -25,7 +25,7 @@ from boto.regioninfo import RegionInfo
 
 def regions():
     """
-    Get all available regions for the AWS Elastic Beanstalk service.
+    Get all available regions for the AWS Elastic Transcoder service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
