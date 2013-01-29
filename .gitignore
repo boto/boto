@@ -11,3 +11,6 @@ MANIFEST
 .tox
 .coverage
 *flymake.py
+
+# for python 3 port
+py3kport/build*

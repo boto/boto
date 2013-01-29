@@ -1,3 +1,5 @@
+** Py3k Porting: See py3kport/README.txt **
+
 ####
 boto
 ####
