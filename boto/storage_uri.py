@@ -297,6 +297,11 @@ class BucketStorageUri(StorageUri):
         self.meta_generation = meta_generation and int(meta_generation)
         self.is_latest = is_latest
 
+    def _update_from_key(self, key):
+      self.version_id = getattr(key, 'version_id', None)
+      self.generation = getattr(key, 'generation', None)
+      self.meta_generation = getattr(key, 'meta_generation', None)
+
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
         bucket = self.get_bucket(validate, headers)
@@ -599,11 +604,14 @@ class BucketStorageUri(StorageUri):
                 sys.stderr.write('Warning: GCS does not support '
                                  'reduced_redundancy; argument ignored by '
                                  'set_contents_from_string')
-            key.set_contents_from_string(s, headers, replace, cb, num_cb,
-                                         policy, md5)
+            result = key.set_contents_from_string(
+                s, headers, replace, cb, num_cb, policy, md5)
         else:
-            key.set_contents_from_string(s, headers, replace, cb, num_cb,
-                                         policy, md5, reduced_redundancy)
+            result = key.set_contents_from_string(
+                s, headers, replace, cb, num_cb, policy, md5,
+                reduced_redundancy)
+        self._update_from_key(key)
+        return result
 
     def set_contents_from_file(self, fp, headers=None, replace=True, cb=None,
                                num_cb=10, policy=None, md5=None, size=None,
@@ -611,23 +619,27 @@ class BucketStorageUri(StorageUri):
         self._check_object_uri('set_contents_from_file')
         key = self.new_key(headers=headers)
         if self.scheme == 'gs':
-            return key.set_contents_from_file(
-                    fp, headers, replace, cb, num_cb, policy, md5, size=size,
-                    rewind=rewind, res_upload_handler=res_upload_handler)
+            result = key.set_contents_from_file(
+                fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                rewind=rewind, res_upload_handler=res_upload_handler)
         else:
             self._warn_about_args('set_contents_from_file',
                                   res_upload_handler=res_upload_handler)
-            return key.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                              policy, md5, size=size,
-                                              rewind=rewind)
+            result = key.set_contents_from_file(
+                fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                rewind=rewind)
+        self._update_from_key(key)
+        return result
 
     def set_contents_from_stream(self, fp, headers=None, replace=True, cb=None,
                                  policy=None, reduced_redundancy=False):
         self._check_object_uri('set_contents_from_stream')
         dst_key = self.new_key(False, headers)
-        dst_key.set_contents_from_stream(fp, headers, replace, cb,
-                                         policy=policy,
-                                         reduced_redundancy=reduced_redundancy)
+        result = dst_key.set_contents_from_stream(
+            fp, headers, replace, cb, policy=policy,
+            reduced_redundancy=reduced_redundancy)
+        self._update_from_key(dst_key)
+        return result
 
     def copy_key(self, src_bucket_name, src_key_name, metadata=None,
                  src_version_id=None, storage_class='STANDARD',
