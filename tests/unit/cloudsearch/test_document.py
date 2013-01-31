@@ -2,11 +2,15 @@
 
 from tests.unit import unittest
 from httpretty import HTTPretty
+from mock import MagicMock
 
 import urlparse
 import json
 
 from boto.cloudsearch.document import DocumentServiceConnection
+from boto.cloudsearch.document import CommitMismatchError, EncodingError, ContentTooLongError, DocumentServiceConnection
+
+import boto
 
 class CloudSearchDocumentTest(unittest.TestCase):
     def setUp(self):
@@ -168,3 +172,91 @@ class CloudSearchDocumentDeleteMultiple(CloudSearchDocumentTest):
                 self.assertEqual(arg['version'], '11')
             else: # Unknown result out of AWS that shouldn't be there
                 self.assertTrue(False)
+
+class CloudSearchSDFManipulation(CloudSearchDocumentTest):
+    response = {
+        'status': 'success',
+        'adds': 1,
+        'deletes': 0,
+    }
+
+
+    def test_cloudsearch_initial_sdf_is_blank(self):
+        document = DocumentServiceConnection(endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+
+        self.assertEqual(document.get_sdf(), '[]')
+
+    def test_cloudsearch_single_document_sdf(self):
+        document = DocumentServiceConnection(endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+
+        document.add("1234", 10, {"id": "1234", "title": "Title 1", "category": ["cat_a", "cat_b", "cat_c"]})
+
+        self.assertNotEqual(document.get_sdf(), '[]')
+
+        document.clear_sdf()
+
+        self.assertEqual(document.get_sdf(), '[]')
+
+class CloudSearchBadSDFTesting(CloudSearchDocumentTest):
+    response = {
+        'status': 'success',
+        'adds': 1,
+        'deletes': 0,
+    }
+
+
+    def test_cloudsearch_erroneous_sdf(self):
+        original = boto.log.error
+        boto.log.error = MagicMock()
+        document = DocumentServiceConnection(endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+
+        document.add("1234", 10, {"id": "1234", "title": None, "category": ["cat_a", "cat_b", "cat_c"]})
+
+        document.commit()
+        self.assertNotEqual(len(boto.log.error.call_args_list), 1)
+
+        boto.log.error = original
+
+class CloudSearchDocumentErrorBadUnicode(CloudSearchDocumentTest):
+    response = {
+            'status': 'error',
+            'adds': 0,
+            'deletes': 0,
+            'errors': [{'message': 'Illegal Unicode character in document'}]
+            }
+
+    def test_fake_bad_unicode(self):
+        document = DocumentServiceConnection(endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+        document.add("1234", 10, {"id": "1234", "title": "Title 1", "category": ["cat_a", "cat_b", "cat_c"]})
+
+        self.assertRaises(EncodingError, document.commit)
+
+class CloudSearchDocumentErrorDocsTooBig(CloudSearchDocumentTest):
+    response = {
+            'status': 'error',
+            'adds': 0,
+            'deletes': 0,
+            'errors': [{'message': 'The Content-Length is too long'}]
+            }
+
+    def test_fake_docs_too_big(self):
+        document = DocumentServiceConnection(endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+        document.add("1234", 10, {"id": "1234", "title": "Title 1", "category": ["cat_a", "cat_b", "cat_c"]})
+
+        self.assertRaises(ContentTooLongError, document.commit)
+
+class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
+    response = {
+            'status': 'error',
+            'adds': 0,
+            'deletes': 0,
+            'errors': [{'message': 'Something went wrong'}]
+            }
+
+    def test_fake_failure(self):
+        document = DocumentServiceConnection(endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+
+        document.add("1234", 10, {"id": "1234", "title": "Title 1", "category": ["cat_a", "cat_b", "cat_c"]})
+
+        self.assertRaises(CommitMismatchError, document.commit)
+
