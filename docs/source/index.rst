@@ -18,6 +18,7 @@ Currently Supported Services
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
 
 * **Content Delivery**
 

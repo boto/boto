@@ -34,6 +34,24 @@ class SearchServiceException(Exception):
 class CommitMismatchError(Exception):
     pass
 
+class EncodingError(Exception):
+    """
+    Content sent for Cloud Search indexing was incorrectly encoded.
+
+    This usually happens when a document is marked as unicode but non-unicode
+    characters are present.
+    """
+    pass
+
+class ContentTooLongError(Exception):
+    """
+    Content sent for Cloud Search indexing was too long
+
+    This will usually happen when documents queued for indexing add up to more
+    than the limit allowed per upload batch (5MB)
+
+    """
+    pass
 
 class DocumentServiceConnection(object):
     """
@@ -212,6 +230,11 @@ class CommitResponse(object):
         if self.status == 'error':
             self.errors = [e.get('message') for e in self.content.get('errors',
                 [])]
+            for e in self.errors:
+                if "Illegal Unicode character" in e:
+                    raise EncodingError("Illegal Unicode character in document")
+                elif e == "The Content-Length is too long":
+                    raise ContentTooLongError("Content was too long")
         else:
             self.errors = []
 
