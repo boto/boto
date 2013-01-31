@@ -274,8 +274,10 @@ class Bucket(object):
         :param delimiter: can be used in conjunction with the prefix
             to allow you to organize and browse your keys
             hierarchically. See:
-            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
-            more details.
+
+            http://aws.amazon.com/releasenotes/Amazon-S3/213
+
+            for more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
