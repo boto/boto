@@ -253,8 +253,8 @@ other criteria:
 
     >>> results = search_service.search(bq=query, rank=['-recently_active'])
 
- Viewing and Adjusting Stemming for a Domain
---------------------------------------------
+Viewing and Adjusting Stemming for a Domain
+-------------------------------------------
 
 A stemming dictionary maps related words to a common stem. A stem is
 typically the root or base word from which variants are derived. For
