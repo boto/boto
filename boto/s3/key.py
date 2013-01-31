@@ -506,7 +506,7 @@ class Key(object):
 
         """
         response = self.bucket.connection.make_request(
-            'GET', self.bucket.name, self.name)
+            'HEAD', self.bucket.name, self.name)
         if response.status == 200:
             return response.getheader('x-amz-website-redirect-location')
         else:
