@@ -164,6 +164,12 @@ make the plain dictionary response a nice object (ie result.adds,
 result.deletes) and raise an exception for us if all of our documents
 weren't actually committed.
 
+After you have successfully committed some documents to cloudsearch, you must
+use :py:meth:`clear_sdf
+<boto.cloudsearch.document.DocumentServiceConnection.clear_sdf>`, if you wish
+to use the same document service connection again so that its internal cache is
+cleared.
+
 Searching Documents
 -------------------
 
