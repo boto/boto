@@ -8,15 +8,44 @@ import boto.cloudsearch
 from boto.cloudsearch.domain import Domain
 
 class CloudSearchConnectionTest(unittest.TestCase):
-
     def setUp(self):
         HTTPretty.enable()
         HTTPretty.register_uri(HTTPretty.POST, "https://cloudsearch.us-east-1.amazonaws.com/",
-            body=CREATE_DOMAIN_XML,
+            body=self.response,
             content_type="text/xml")
 
     def tearDown(self):
         HTTPretty.disable()
+
+class CloudSearchConnectionCreationTest(CloudSearchConnectionTest):
+    response = """
+<CreateDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
+  <CreateDomainResult>
+    <DomainStatus>
+      <SearchPartitionCount>0</SearchPartitionCount>
+      <SearchService>
+        <Arn>arn:aws:cs:us-east-1:1234567890:search/demo</Arn>
+        <Endpoint>search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com</Endpoint>
+      </SearchService>
+      <NumSearchableDocs>0</NumSearchableDocs>
+      <Created>true</Created>
+      <DomainId>1234567890/demo</DomainId>
+      <Processing>false</Processing>
+      <SearchInstanceCount>0</SearchInstanceCount>
+      <DomainName>demo</DomainName>
+      <RequiresIndexDocuments>false</RequiresIndexDocuments>
+      <Deleted>false</Deleted>
+      <DocService>
+        <Arn>arn:aws:cs:us-east-1:1234567890:doc/demo</Arn>
+        <Endpoint>doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com</Endpoint>
+      </DocService>
+    </DomainStatus>
+  </CreateDomainResult>
+  <ResponseMetadata>
+    <RequestId>00000000-0000-0000-0000-000000000000</RequestId>
+  </ResponseMetadata>
+</CreateDomainResponse>
+"""
 
     def test_cloudsearch_connection(self):
         """Check that the correct arguments are sent to AWS when creating a cloudsearch connection"""
@@ -47,6 +76,7 @@ class CloudSearchConnectionTest(unittest.TestCase):
         self.assertEqual(domain.created, True)
         self.assertEqual(domain.processing, False)
         self.assertEqual(domain.requires_index_documents, False)
+        self.assertEqual(domain.deleted, False)
 
     def test_cloudsearch_connect_result_details(self):
         """Check that the domain information is correctly returned from AWS"""
@@ -77,12 +107,10 @@ class CloudSearchConnectionTest(unittest.TestCase):
 
         self.assertEqual(search.endpoint, "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
-
-
-# Sample dummy reply used to mock the standard AWS reply
-CREATE_DOMAIN_XML="""
-<CreateDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
-  <CreateDomainResult>
+class CloudSearchConnectionDeletionTest(CloudSearchConnectionTest):
+    response = """
+<DeleteDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
+  <DeleteDomainResult>
     <DomainStatus>
       <SearchPartitionCount>0</SearchPartitionCount>
       <SearchService>
@@ -102,10 +130,22 @@ CREATE_DOMAIN_XML="""
         <Endpoint>doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com</Endpoint>
       </DocService>
     </DomainStatus>
-  </CreateDomainResult>
+  </DeleteDomainResult>
   <ResponseMetadata>
     <RequestId>00000000-0000-0000-0000-000000000000</RequestId>
   </ResponseMetadata>
-</CreateDomainResponse>
+</DeleteDomainResponse>
 """
+
+    def test_cloudsearch_deletion(self):
+        """Check that the correct arguments are sent to AWS when creating a cloudsearch connection"""
+        conn = boto.cloudsearch.connect_to_region("us-east-1", aws_access_key_id='key_id', aws_secret_access_key='access_key')
+        conn.delete_domain('demo')
+
+        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        
+        self.assertEqual(args['AWSAccessKeyId'], ['key_id'])
+        self.assertEqual(args['Action'], ['DeleteDomain'])
+        self.assertEqual(args['DomainName'], ['demo'])
+
 
