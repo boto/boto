@@ -18,6 +18,7 @@ Currently Supported Services
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
 
 * **Content Delivery**
 
@@ -28,6 +29,7 @@ Currently Supported Services
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
   * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
+  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
 
 * **Deployment and Management**
 

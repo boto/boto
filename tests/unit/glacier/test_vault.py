@@ -33,25 +33,57 @@ class TestVault(unittest.TestCase):
     def setUp(self):
         self.size_patch = mock.patch('os.path.getsize')
         self.getsize = self.size_patch.start()
+        self.api = mock.Mock()
+        self.vault = vault.Vault(self.api, None)
+        self.vault.name = 'myvault'
+        self.mock_open = mock.mock_open()
+        stringio = StringIO('content')
+        self.mock_open.return_value.read = stringio.read
 
     def tearDown(self):
         self.size_patch.stop()
 
     def test_upload_archive_small_file(self):
-        api = mock.Mock()
-        v = vault.Vault(api, None)
-        v.name = 'myvault'
         self.getsize.return_value = 1
-        stringio = StringIO('content')
-        m = mock.mock_open()
-        m.return_value.read = stringio.read
 
-        api.upload_archive.return_value = {'ArchiveId': 'archive_id'}
-        with mock.patch('boto.glacier.vault.open', m, create=True):
-            archive_id = v.upload_archive('filename', 'my description')
+        self.api.upload_archive.return_value = {'ArchiveId': 'archive_id'}
+        with mock.patch('boto.glacier.vault.open', self.mock_open,
+                        create=True):
+            archive_id = self.vault.upload_archive(
+                'filename', 'my description')
         self.assertEqual(archive_id, 'archive_id')
-        api.upload_archive.assert_called_with('myvault', m.return_value, ANY,
-                                              ANY, 'my description')
+        self.api.upload_archive.assert_called_with(
+            'myvault', self.mock_open.return_value,
+            mock.ANY, mock.ANY, 'my description')
+
+    def test_small_part_size_is_obeyed(self):
+        self.vault.DefaultPartSize = 2 * 1024 * 1024
+        self.vault.create_archive_writer = mock.Mock()
+
+        self.getsize.return_value = 1
+
+        with mock.patch('boto.glacier.vault.open', self.mock_open,
+                        create=True):
+            self.vault.create_archive_from_file('myfile')
+        # The write should be created with the default part size of the
+        # instance (2 MB).
+        self.vault.create_archive_writer.assert_called_with(
+                description=mock.ANY, part_size=self.vault.DefaultPartSize)
+
+    def test_large_part_size_is_obeyed(self):
+        self.vault.DefaultPartSize = 8 * 1024 * 1024
+        self.vault.create_archive_writer = mock.Mock()
+        self.getsize.return_value = 1
+        with mock.patch('boto.glacier.vault.open', self.mock_open,
+                        create=True):
+            self.vault.create_archive_from_file('myfile')
+        # The write should be created with the default part size of the
+        # instance (8 MB).
+        self.vault.create_archive_writer.assert_called_with(
+            description=mock.ANY, part_size=self.vault.DefaultPartSize)
+
+
+class TestConcurrentUploads(unittest.TestCase):
 
     def test_concurrent_upload_file(self):
         v = vault.Vault(None, None)

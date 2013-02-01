@@ -308,5 +308,9 @@ class AlarmHistoryItem(object):
         elif name == 'HistorySummary':
             self.summary = value
         elif name == 'Timestamp':
-            self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            try:
+                self.timestamp = datetime.strptime(value,
+                                                   '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 

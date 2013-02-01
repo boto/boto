@@ -38,6 +38,7 @@ from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
 from boto.s3.lifecycle import Lifecycle, Expiration, Transition
+from boto.s3.website import RedirectLocation
 
 
 class S3BucketTest (unittest.TestCase):
@@ -162,6 +163,26 @@ class S3BucketTest (unittest.TestCase):
         config2, xml = self.bucket.get_website_configuration_with_xml()
         self.assertEqual(config, config2)
         self.assertTrue('<Suffix>index.html</Suffix>' in xml, xml)
+
+    def test_website_redirect_all_requests(self):
+        response = self.bucket.configure_website(
+            redirect_all_requests_to=RedirectLocation('example.com'))
+        config = self.bucket.get_website_configuration()
+        self.assertEqual(config, {
+            'WebsiteConfiguration': {
+                'RedirectAllRequestsTo': {
+                    'HostName': 'example.com'}}})
+
+        # Can configure the protocol as well.
+        response = self.bucket.configure_website(
+            redirect_all_requests_to=RedirectLocation('example.com', 'https'))
+        config = self.bucket.get_website_configuration()
+        self.assertEqual(config, {
+            'WebsiteConfiguration': {'RedirectAllRequestsTo': {
+                'HostName': 'example.com',
+                'Protocol': 'https',
+            }}}
+        )
 
     def test_lifecycle(self):
         lifecycle = Lifecycle()

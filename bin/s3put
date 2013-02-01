@@ -53,7 +53,7 @@ SYNOPSIS
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] """ + usage_string_multipart_capable + """ path [path...]
+          [--header] [--host <s3_host>]""" + usage_flag_multipart_capable + """ path [path...]
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -67,7 +67,7 @@ SYNOPSIS
         path - A path to a directory or file that represents the items
                to be uploaded.  If the path points to an individual file,
                that file will be uploaded to the specified bucket.  If the
-               path points to a directory, s3_it will recursively traverse
+               path points to a directory, it will recursively traverse
                the directory and upload all files to the specified bucket.
         debug_level - 0 means no debug output (default), 1 means normal
                       debug output from boto, and 2 means boto debug output
@@ -101,8 +101,10 @@ SYNOPSIS
                        sync, even if the file has been updated locally if
                        the key exists on s3 the file on s3 will not be
                        updated.
-        header - key=value paris of extra header(s) to pass along in the
-                 request""" + usage_string_multipart_capable + """
+        header - key=value pairs of extra header(s) to pass along in the
+                 request
+        host - Hostname override, for using an endpoint other then AWS S3
+""" + usage_string_multipart_capable + """
 
 
      If the -n option is provided, no files will be transferred to S3 but
@@ -238,6 +240,7 @@ def main():
     no_overwrite = False
     reduced = False
     headers = {}
+    host = None
     multipart_requested = False
 
     try:
@@ -245,7 +248,8 @@ def main():
             sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
-             'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart'])
+             'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
+             'host='])
     except:
         usage()
 
@@ -286,6 +290,8 @@ def main():
         if o in ('--header'):
             (k, v) = a.split("=")
             headers[k] = v
+        if o in ('--host'):
+            host = a
         if o in ('--multipart'):
             if multipart_capable:
                 multipart_requested = True
@@ -300,7 +306,11 @@ def main():
         print "bucket name is required!"
         usage()
 
-    c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
+    if host:
+        c = boto.connect_s3(host=host, aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key)
+    else:
+        c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=aws_secret_access_key)
     c.debug = debug
     b = c.get_bucket(bucket_name)

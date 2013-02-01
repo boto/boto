@@ -53,6 +53,11 @@ class TestPartSizeCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             minimum_part_size((40000 * 1024 * 1024 * 1024) + 1)
 
+    def test_default_part_size_can_be_specified(self):
+        default_part_size = 2 * 1024 * 1024
+        self.assertEqual(minimum_part_size(8 * 1024 * 1024, default_part_size),
+                         default_part_size)
+
 
 class TestChunking(unittest.TestCase):
     def test_chunk_hashes_exact(self):

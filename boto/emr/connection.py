@@ -214,7 +214,9 @@ class EmrConnection(AWSQueryConnection):
                     instance_groups=None,
                     additional_info=None,
                     ami_version=None,
-                    api_params=None):
+                    api_params=None,
+                    visible_to_all_users=None,
+                    job_flow_role=None):
         """
         Runs a job flow
         :type name: str
@@ -280,6 +282,21 @@ class EmrConnection(AWSQueryConnection):
             directly to the EMR API (so you don't have to upgrade boto to
             use new EMR features). You can also delete an API parameter
             by setting it to None.
+
+        :type visible_to_all_users: bool
+        :param visible_to_all_users: Whether the job flow is visible to all IAM
+            users of the AWS account associated with the job flow. If this
+            value is set to ``True``, all IAM users of that AWS
+            account can view and (if they have the proper policy permissions
+            set) manage the job flow. If it is set to ``False``, only
+            the IAM user that created the job flow can view and manage
+            it.
+
+        :type job_flow_role: str
+        :param job_flow_role: An IAM role for the job flow. The EC2
+            instances of the job flow assume this role. The default role is
+            ``EMRJobflowDefault``. In order to use the default role,
+            you must have already created it using the CLI.
 
         :rtype: str
         :return: The jobflow id
@@ -348,6 +365,15 @@ class EmrConnection(AWSQueryConnection):
                     params.pop(key, None)
                 else:
                     params[key] = value
+
+        if visible_to_all_users is not None:
+            if visible_to_all_users:
+                params['VisibleToAllUsers'] = 'true'
+            else:
+                params['VisibleToAllUsers'] = 'false'
+
+        if job_flow_role is not None:
+            params['JobFlowRole'] = job_flow_role
 
         response = self.get_object(
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')

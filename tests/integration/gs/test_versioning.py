@@ -23,44 +23,17 @@
 
 """Unit tests for GS versioning support."""
 
-import time
+from xml import sax
+
+from boto import handler
 from boto.gs import acl
-from boto.gs.connection import GSConnection
-from tests.integration.gs.util import has_google_credentials
-from tests.unit import unittest
+from tests.integration.gs.testcase import GSTestCase
 
 
-@unittest.skipUnless(has_google_credentials(),
-                     "Google credentials are required to run the Google "
-                     "Cloud Storage tests.  Update your boto.cfg to run "
-                     "these tests.")
-class GSVersioningTest(unittest.TestCase):
-    gs = True
-
-    def setUp(self):
-        self.conn = GSConnection()
-        self.buckets = []
-
-    def tearDown(self):
-        for b in self.buckets:
-            bucket = self.conn.get_bucket(b)
-            while len(list(bucket.list_versions())) > 0:
-                for k in bucket.list_versions():
-                    bucket.delete_key(k.name, generation=k.generation)
-            bucket.delete()
-
-    def _MakeBucketName(self):
-        b = "boto-gs-test-%s" % repr(time.time()).replace(".", "-")
-        self.buckets.append(b)
-        return b
-
-    def _MakeVersionedBucket(self):
-        b = self.conn.create_bucket(self._MakeBucketName())
-        b.configure_versioning(True)
-        return b
+class GSVersioningTest(GSTestCase):
 
     def testVersioningToggle(self):
-        b = self.conn.create_bucket(self._MakeBucketName())
+        b = self._MakeBucket()
         self.assertFalse(b.get_versioning_status())
         b.configure_versioning(True)
         self.assertTrue(b.get_versioning_status())
@@ -141,7 +114,89 @@ class GSVersioningTest(unittest.TestCase):
         k = b.get_key("foo", generation=g2)
         self.assertEqual(k.get_contents_as_string(), s2)
 
-    def testVersionedAcl(self):
+    def testVersionedBucketCannedAcl(self):
+        b = self._MakeVersionedBucket()
+        k = b.new_key("foo")
+        s1 = "test1"
+        k.set_contents_from_string(s1)
+
+        k = b.get_key("foo")
+        g1 = k.generation
+
+        s2 = "test2"
+        k.set_contents_from_string(s2)
+        k = b.get_key("foo")
+        g2 = k.generation
+
+        acl1g1 = b.get_acl("foo", generation=g1)
+        acl1g2 = b.get_acl("foo", generation=g2)
+        owner1g1 = acl1g1.owner.id
+        owner1g2 = acl1g2.owner.id
+        self.assertEqual(owner1g1, owner1g2)
+        entries1g1 = acl1g1.entries.entry_list
+        entries1g2 = acl1g2.entries.entry_list
+        self.assertEqual(len(entries1g1), len(entries1g2))
+
+        b.set_acl("public-read", key_name="foo", generation=g1)
+
+        acl2g1 = b.get_acl("foo", generation=g1)
+        acl2g2 = b.get_acl("foo", generation=g2)
+        entries2g1 = acl2g1.entries.entry_list
+        entries2g2 = acl2g2.entries.entry_list
+        self.assertEqual(len(entries2g2), len(entries1g2))
+        public_read_entries1 = [e for e in entries2g1 if e.permission == "READ"
+                                and e.scope.type == acl.ALL_USERS]
+        public_read_entries2 = [e for e in entries2g2 if e.permission == "READ"
+                                and e.scope.type == acl.ALL_USERS]
+        self.assertEqual(len(public_read_entries1), 1)
+        self.assertEqual(len(public_read_entries2), 0)
+
+    def testVersionedBucketXmlAcl(self):
+        b = self._MakeVersionedBucket()
+        k = b.new_key("foo")
+        s1 = "test1"
+        k.set_contents_from_string(s1)
+
+        k = b.get_key("foo")
+        g1 = k.generation
+
+        s2 = "test2"
+        k.set_contents_from_string(s2)
+        k = b.get_key("foo")
+        g2 = k.generation
+
+        acl1g1 = b.get_acl("foo", generation=g1)
+        acl1g2 = b.get_acl("foo", generation=g2)
+        owner1g1 = acl1g1.owner.id
+        owner1g2 = acl1g2.owner.id
+        self.assertEqual(owner1g1, owner1g2)
+        entries1g1 = acl1g1.entries.entry_list
+        entries1g2 = acl1g2.entries.entry_list
+        self.assertEqual(len(entries1g1), len(entries1g2))
+
+        acl_xml = (
+            '<ACCESSControlList><EntrIes><Entry>'    +
+            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
+            '</Entry></EntrIes></ACCESSControlList>')
+        aclo = acl.ACL()
+        h = handler.XmlHandler(aclo, b)
+        sax.parseString(acl_xml, h)
+
+        b.set_acl(aclo, key_name="foo", generation=g1)
+
+        acl2g1 = b.get_acl("foo", generation=g1)
+        acl2g2 = b.get_acl("foo", generation=g2)
+        entries2g1 = acl2g1.entries.entry_list
+        entries2g2 = acl2g2.entries.entry_list
+        self.assertEqual(len(entries2g2), len(entries1g2))
+        public_read_entries1 = [e for e in entries2g1 if e.permission == "READ"
+                                and e.scope.type == acl.ALL_USERS]
+        public_read_entries2 = [e for e in entries2g2 if e.permission == "READ"
+                                and e.scope.type == acl.ALL_USERS]
+        self.assertEqual(len(public_read_entries1), 1)
+        self.assertEqual(len(public_read_entries2), 0)
+
+    def testVersionedObjectCannedAcl(self):
         b = self._MakeVersionedBucket()
         k = b.new_key("foo")
         s1 = "test1"
@@ -196,3 +251,18 @@ class GSVersioningTest(unittest.TestCase):
         k2 = b2.get_key("foo2")
         s3 = k2.get_contents_as_string()
         self.assertEqual(s3, s1)
+
+    def testKeyGenerationUpdatesOnSet(self):
+        b = self._MakeVersionedBucket()
+        k = b.new_key("foo")
+        self.assertIsNone(k.generation)
+        k.set_contents_from_string("test1")
+        g1 = k.generation
+        self.assertRegexpMatches(g1, r'[0-9]+')
+        self.assertEqual(k.meta_generation, '1')
+        k.set_contents_from_string("test2")
+        g2 = k.generation
+        self.assertNotEqual(g1, g2)
+        self.assertRegexpMatches(g2, r'[0-9]+')
+        self.assertGreater(int(g2), int(g1))
+        self.assertEqual(k.meta_generation, '1')

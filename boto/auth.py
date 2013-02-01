@@ -188,6 +188,9 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         headers = http_request.headers
         if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
+        if self._provider.security_token:
+            key = self._provider.security_token_header
+            headers[key] = self._provider.security_token
 
         b64_hmac = self.sign_string(headers['Date'])
         auth_hdr = self._provider.auth_header

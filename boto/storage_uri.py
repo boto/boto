@@ -141,6 +141,24 @@ class StorageUri(object):
         self.connection.debug = self.debug
         return self.connection
 
+    def has_version(self):
+        return (issubclass(type(self), BucketStorageUri)
+                and ((self.version_id is not None)
+                     or (self.generation is not None)))
+
+    def versioned_uri_str(self):
+        """Returns a versionful URI string."""
+        version_desc = ''
+        if not issubclass(type(self), BucketStorageUri):
+          pass
+        elif self.version_id is not None:
+            version_desc += '#' + self.version_id
+        elif self.generation is not None:
+            version_desc += '#' + str(self.generation)
+            if self.meta_generation is not None:
+                version_desc += '.' + str(self.meta_generation)
+        return self.uri + version_desc
+
     def delete_key(self, validate=False, headers=None, version_id=None,
                    mfa_token=None):
         self._check_object_uri('delete_key')
@@ -231,7 +249,8 @@ class BucketStorageUri(StorageUri):
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=0, connection_args=None, suppress_consec_slashes=True,
-                 version_id=None, generation=None, meta_generation=None):
+                 version_id=None, generation=None, meta_generation=None,
+                 is_latest=False):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -251,6 +270,8 @@ class BucketStorageUri(StorageUri):
         @param version_id: Object version id (S3-specific).
         @param generation: Object generation number (GCS-specific).
         @param meta_generation: Object meta-generation number (GCS-specific).
+        @param is_latest: boolean indicating that a versioned object is the
+            current version
 
         After instantiation the components are available in the following
         fields: uri, scheme, bucket_name, object_name.
@@ -274,6 +295,12 @@ class BucketStorageUri(StorageUri):
         self.version_id = version_id
         self.generation = generation and int(generation)
         self.meta_generation = meta_generation and int(meta_generation)
+        self.is_latest = is_latest
+
+    def _update_from_key(self, key):
+      self.version_id = getattr(key, 'version_id', None)
+      self.generation = getattr(key, 'generation', None)
+      self.meta_generation = getattr(key, 'meta_generation', None)
 
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
@@ -312,6 +339,38 @@ class BucketStorageUri(StorageUri):
             debug=self.debug,
             suppress_consec_slashes=self.suppress_consec_slashes)
 
+    def clone_replace_key(self, key):
+        """Instantiate a BucketStorageUri from a Key object while maintaining
+        debug and suppress_consec_slashes values.
+
+        @type key: Key
+        @param key: key for the new StorageUri to represent
+        """
+        self._check_bucket_uri('clone_replace_key')
+        version_id = None
+        generation = None
+        meta_generation = None
+        is_latest = False
+        if hasattr(key, 'version_id'):
+            version_id = key.version_id
+        if hasattr(key, 'generation'):
+            generation = key.generation
+        if hasattr(key, 'meta_generation'):
+            meta_generation = key.meta_generation
+        if hasattr(key, 'is_latest'):
+            is_latest = key.is_latest
+
+        return BucketStorageUri(
+                key.provider.get_provider_name(),
+                bucket_name=key.bucket.name,
+                object_name=key.name,
+                debug=self.debug,
+                suppress_consec_slashes=self.suppress_consec_slashes,
+                version_id=version_id,
+                generation=generation,
+                meta_generation=meta_generation,
+                is_latest=is_latest)
+
     def get_acl(self, validate=False, headers=None, version_id=None):
         """returns a bucket's acl"""
         self._check_bucket_uri('get_acl')
@@ -331,9 +390,7 @@ class BucketStorageUri(StorageUri):
         """returns a bucket's default object acl"""
         self._check_bucket_uri('get_def_acl')
         bucket = self.get_bucket(validate, headers)
-        # This works for both bucket- and object- level ACLs (former passes
-        # key_name=None):
-        acl = bucket.get_def_acl('', headers)
+        acl = bucket.get_def_acl(headers)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
@@ -506,11 +563,11 @@ class BucketStorageUri(StorageUri):
           version_id = version_id or self.version_id
           bucket.set_acl(acl_or_str, key_name, headers, version_id)
 
-    def set_def_acl(self, acl_or_str, key_name='', validate=False,
-                    headers=None, version_id=None):
+    def set_def_acl(self, acl_or_str, validate=False, headers=None,
+                    version_id=None):
         """sets or updates a bucket's default object acl"""
         self._check_bucket_uri('set_def_acl')
-        self.get_bucket(validate, headers).set_def_acl(acl_or_str, '', headers)
+        self.get_bucket(validate, headers).set_def_acl(acl_or_str, headers)
 
     def set_canned_acl(self, acl_str, validate=False, headers=None,
                        version_id=None):
@@ -547,11 +604,14 @@ class BucketStorageUri(StorageUri):
                 sys.stderr.write('Warning: GCS does not support '
                                  'reduced_redundancy; argument ignored by '
                                  'set_contents_from_string')
-            key.set_contents_from_string(s, headers, replace, cb, num_cb,
-                                         policy, md5)
+            result = key.set_contents_from_string(
+                s, headers, replace, cb, num_cb, policy, md5)
         else:
-            key.set_contents_from_string(s, headers, replace, cb, num_cb,
-                                         policy, md5, reduced_redundancy)
+            result = key.set_contents_from_string(
+                s, headers, replace, cb, num_cb, policy, md5,
+                reduced_redundancy)
+        self._update_from_key(key)
+        return result
 
     def set_contents_from_file(self, fp, headers=None, replace=True, cb=None,
                                num_cb=10, policy=None, md5=None, size=None,
@@ -559,23 +619,27 @@ class BucketStorageUri(StorageUri):
         self._check_object_uri('set_contents_from_file')
         key = self.new_key(headers=headers)
         if self.scheme == 'gs':
-            return key.set_contents_from_file(
-                    fp, headers, replace, cb, num_cb, policy, md5, size=size,
-                    rewind=rewind, res_upload_handler=res_upload_handler)
+            result = key.set_contents_from_file(
+                fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                rewind=rewind, res_upload_handler=res_upload_handler)
         else:
             self._warn_about_args('set_contents_from_file',
                                   res_upload_handler=res_upload_handler)
-            return key.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                              policy, md5, size=size,
-                                              rewind=rewind)
+            result = key.set_contents_from_file(
+                fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                rewind=rewind)
+        self._update_from_key(key)
+        return result
 
     def set_contents_from_stream(self, fp, headers=None, replace=True, cb=None,
                                  policy=None, reduced_redundancy=False):
         self._check_object_uri('set_contents_from_stream')
         dst_key = self.new_key(False, headers)
-        dst_key.set_contents_from_stream(fp, headers, replace, cb,
-                                         policy=policy,
-                                         reduced_redundancy=reduced_redundancy)
+        result = dst_key.set_contents_from_stream(
+            fp, headers, replace, cb, policy=policy,
+            reduced_redundancy=reduced_redundancy)
+        self._update_from_key(dst_key)
+        return result
 
     def copy_key(self, src_bucket_name, src_key_name, metadata=None,
                  src_version_id=None, storage_class='STANDARD',
