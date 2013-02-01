@@ -148,4 +148,57 @@ class CloudSearchConnectionDeletionTest(CloudSearchConnectionTest):
         self.assertEqual(args['Action'], ['DeleteDomain'])
         self.assertEqual(args['DomainName'], ['demo'])
 
+class CloudSearchConnectionIndexDocumentTest(CloudSearchConnectionTest):
+    response = """
+<IndexDocumentsResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
+  <IndexDocumentsResult>
+    <FieldNames>
+      <member>average_score</member>
+      <member>brand_id</member>
+      <member>colors</member>
+      <member>context</member>
+      <member>context_owner</member>
+      <member>created_at</member>
+      <member>creator_id</member>
+      <member>description</member>
+      <member>file_size</member>
+      <member>format</member>
+      <member>has_logo</member>
+      <member>has_messaging</member>
+      <member>height</member>
+      <member>image_id</member>
+      <member>ingested_from</member>
+      <member>is_advertising</member>
+      <member>is_photo</member>
+      <member>is_reviewed</member>
+      <member>modified_at</member>
+      <member>subject_date</member>
+      <member>tags</member>
+      <member>title</member>
+      <member>width</member>
+    </FieldNames>
+  </IndexDocumentsResult>
+  <ResponseMetadata>
+    <RequestId>eb2b2390-6bbd-11e2-ab66-93f3a90dcf2a</RequestId>
+  </ResponseMetadata>
+</IndexDocumentsResponse>
+"""
+
+    def test_cloudsearch_index_documents(self):
+        """Check that the correct arguments are sent to AWS when indexing a domain"""
+        conn = boto.cloudsearch.connect_to_region("us-east-1", aws_access_key_id='key_id', aws_secret_access_key='access_key')
+        conn.index_documents('demo')
+
+        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        
+        self.assertEqual(args['AWSAccessKeyId'], ['key_id'])
+        self.assertEqual(args['Action'], ['IndexDocuments'])
+        self.assertEqual(args['DomainName'], ['demo'])
+
+    def test_cloudsearch_index_documents_resp(self):
+        """Check that the AWS response is being parsed correctly when indexing a domain"""
+        conn = boto.cloudsearch.connect_to_region("us-east-1", aws_access_key_id='key_id', aws_secret_access_key='access_key')
+        results = conn.index_documents('demo')
+
+        self.assertEqual(results, ['average_score', 'brand_id', 'colors', 'context', 'context_owner', 'created_at', 'creator_id', 'description', 'file_size', 'format', 'has_logo', 'has_messaging', 'height', 'image_id', 'ingested_from', 'is_advertising', 'is_photo', 'is_reviewed', 'modified_at', 'subject_date', 'tags', 'title', 'width'])
 
