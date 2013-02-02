@@ -143,7 +143,7 @@ class Route53Connection(AWSAuthConnection):
 
         :type hosted_zone_name: str
         :param hosted_zone_name: The fully qualified domain name for the Hosted
-        Zone
+            Zone
 
         """
         if hosted_zone_name[-1] != '.':
