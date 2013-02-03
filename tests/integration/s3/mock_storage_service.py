@@ -118,7 +118,7 @@ class MockKey(object):
             if match:
                 self.read_pos = int(match.group(1))
 
-    def close(self):
+    def close(self, fast=NOT_IMPL):
       self.closed = True
 
     def read(self, size=0):

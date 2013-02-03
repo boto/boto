@@ -295,8 +295,23 @@ class Key(object):
 
     closed = False
 
-    def close(self):
-        if self.resp:
+    def close(self, fast=False):
+        """
+        Close this key.
+
+        :type fast: bool
+        :param fast: True if you want the connection to be closed without first
+        reading the content. This should only be used in cases where subsequent
+        calls don't need to return the content from the open HTTP connection.
+        Note: As explained at
+        http://docs.python.org/2/library/httplib.html#httplib.HTTPConnection.getresponse,
+        callers must read the whole response before sending a new request to the
+        server. Calling Key.close(fast=True) and making a subsequent request to
+        the server will work because boto will get an httplib exception and
+        close/reopen the connection.
+
+        """
+        if self.resp and not fast:
             self.resp.read()
         self.resp = None
         self.mode = None
