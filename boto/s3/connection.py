@@ -143,6 +143,7 @@ class Location:
     SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
+    APSoutheast2 = 'ap-southeast-2'
 
 
 class S3Connection(AWSAuthConnection):
@@ -228,8 +229,14 @@ class S3Connection(AWSAuthConnection):
         :param expires_in: Time (in seconds) before this expires, defaults
             to 6000
 
-        :type acl: :class:`boto.s3.acl.ACL`
-        :param acl: ACL rule to use, if any
+        :type acl: string
+        :param acl: A canned ACL.  One of:
+            * private
+            * public-read
+            * public-read-write
+            * authenticated-read
+            * bucket-owner-read
+            * bucket-owner-full-control
 
         :type success_action_redirect: string
         :param success_action_redirect: URL to redirect to on success
@@ -277,8 +284,6 @@ class S3Connection(AWSAuthConnection):
             fields.append({"name": "success_action_redirect", "value": success_action_redirect})
         if max_content_length:
             conditions.append('["content-length-range", 0, %i]' % max_content_length)
-            fields.append({"name": 'content-length-range',
-                           "value": "0,%i" % max_content_length})
 
         if self.provider.security_token:
             fields.append({'name': 'x-amz-security-token',
@@ -291,9 +296,9 @@ class S3Connection(AWSAuthConnection):
             conditions.append('{"x-amz-storage-class": "%s"}' % storage_class)
 
         if server_side_encryption:
-            fields.append({'name': 'x-azm-server-side-encryption',
+            fields.append({'name': 'x-amz-server-side-encryption',
                            'value': server_side_encryption})
-            conditions.append('{"x-azm-server-side-encryption": "%s"}' % server_side_encryption)
+            conditions.append('{"x-amz-server-side-encryption": "%s"}' % server_side_encryption)
 
         policy = self.build_post_policy(expiration, conditions)
 
@@ -423,8 +428,10 @@ class S3Connection(AWSAuthConnection):
         :type headers: dict
         :param headers: Additional headers to pass along with the request to AWS.
 
-        :type location: :class:`boto.s3.connection.Location`
-        :param location: The location of the new bucket
+        :type location: str
+        :param location: The location of the new bucket.  You can use one of the
+            constants in :class:`boto.s3.connection.Location` (e.g. Location.EU,
+            Location.USWest, etc.).
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the

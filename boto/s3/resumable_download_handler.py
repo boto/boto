@@ -30,6 +30,7 @@ from boto import config, storage_uri_for_key
 from boto.connection import AWSAuthConnection
 from boto.exception import ResumableDownloadException
 from boto.exception import ResumableTransferDisposition
+from boto.s3.keyfile import KeyFile
 
 """
 Resumable download handler.
@@ -72,6 +73,9 @@ def get_cur_file_size(fp, position_to_eof=False):
     """
     Returns size of file, optionally leaving fp positioned at EOF.
     """
+    if isinstance(fp, KeyFile) and not position_to_eof:
+        # Avoid EOF seek for KeyFile case as it's very inefficient.
+        return fp.getkey().size
     if not position_to_eof:
         cur_pos = fp.tell()
     fp.seek(0, os.SEEK_END)

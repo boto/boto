@@ -22,7 +22,7 @@
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from credentials import Credentials, FederationToken
+from credentials import Credentials, FederationToken, AssumedRole
 import boto
 import boto.utils
 import datetime
@@ -152,3 +152,56 @@ class STSConnection(AWSQueryConnection):
             params['Policy'] = policy
         return self.get_object('GetFederationToken', params,
                                 FederationToken, verb='POST')
+
+    def assume_role(self, role_arn, role_session_name, policy=None,
+                    duration_seconds=None, external_id=None):
+        """
+        Returns a set of temporary credentials that the caller can use to
+        access resources that are allowed by the temporary credentials.  The
+        credentials are valid for the duration that the caller specified, which
+        can be from 15 minutes (900 seconds) to 1 hour (3600 seconds)
+
+        :type role_arn: str
+        :param role_arn: The Amazon Resource Name (ARN) of the role that the
+            caller is assuming.
+
+        :type role_session_name: str
+        :param role_session_name: The session name of the temporary security
+            credentials. The session name is part of the AssumedRoleUser.
+
+        :type policy: str
+        :param policy: A supplemental policy that can be associated with the
+            temporary security credentials. The caller can limit the
+            permissions that are available on the role's temporary security
+            credentials to maintain the least amount of privileges.  When a
+            service call is made with the temporary security credentials, both
+            policies (the role policy and supplemental policy) are checked.
+
+
+        :type duration_seconds: int
+        :param duration_seconds: he duration, in seconds, of the role session.
+            The value can range from 900 seconds (15 minutes) to 3600 seconds
+            (1 hour).  By default, the value is set to 3600 seconds.
+
+        :type external_id: str
+        :param external_id: A unique identifier that is used by
+            third-party services to ensure that they are assuming a role that
+            corresponds to the correct users. For third-party services that
+            have access to resources across multiple AWS accounts, the unique
+            client ID helps third-party services simplify access control
+            verification.
+
+        :return: An instance of :class:`boto.sts.credentials.AssumedRole`
+
+        """
+        params = {
+            'RoleArn': role_arn,
+            'RoleSessionName': role_session_name
+        }
+        if policy is not None:
+            params['Policy'] = policy
+        if duration_seconds is not None:
+            params['DurationSeconds'] = duration_seconds
+        if external_id is not None:
+            params['ExternalId'] = external_id
+        return self.get_object('AssumeRole', params, AssumedRole, verb='POST')

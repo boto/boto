@@ -38,9 +38,15 @@ class CloudFormationConnection(AWSQueryConnection):
     DefaultRegionEndpoint = boto.config.get('Boto', 'cfn_region_endpoint',
                                             'cloudformation.us-east-1.amazonaws.com')
 
-    valid_states = ("CREATE_IN_PROGRESS", "CREATE_FAILED", "CREATE_COMPLETE",
-            "ROLLBACK_IN_PROGRESS", "ROLLBACK_FAILED", "ROLLBACK_COMPLETE",
-            "DELETE_IN_PROGRESS", "DELETE_FAILED", "DELETE_COMPLETE")
+    valid_states = (
+        'CREATE_IN_PROGRESS', 'CREATE_FAILED', 'CREATE_COMPLETE',
+        'ROLLBACK_IN_PROGRESS', 'ROLLBACK_FAILED', 'ROLLBACK_COMPLETE',
+        'DELETE_IN_PROGRESS', 'DELETE_FAILED', 'DELETE_COMPLETE',
+        'UPDATE_IN_PROGRESS', 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_COMPLETE', 'UPDATE_ROLLBACK_IN_PROGRESS',
+        'UPDATE_ROLLBACK_FAILED',
+        'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_ROLLBACK_COMPLETE')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,

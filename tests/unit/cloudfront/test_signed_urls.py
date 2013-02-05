@@ -1,10 +1,11 @@
-
+import tempfile
 import unittest
 try:
     import simplejson as json
 except ImportError:
     import json
 from textwrap import dedent
+
 from boto.cloudfront.distribution import Distribution
 
 class CloudfrontSignedUrlsTest(unittest.TestCase):
@@ -96,6 +97,38 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
                     "t9w2EOwi6sIIqrg_")
         sig = self.dist._sign_string(self.canned_policy, private_key_string=self.pk_str)
+        encoded_sig = self.dist._url_base64_encode(sig)
+        self.assertEqual(expected, encoded_sig)
+
+    def test_sign_canned_policy_pk_file(self):
+        """
+        Test signing the canned policy from amazon's cloudfront documentation
+        with a file object.
+        """
+        expected = ("Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyEXPDN"
+                    "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
+                    "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
+                    "t9w2EOwi6sIIqrg_")
+        pk_file = tempfile.TemporaryFile()
+        pk_file.write(self.pk_str)
+        pk_file.seek(0)
+        sig = self.dist._sign_string(self.canned_policy, private_key_file=pk_file)
+        encoded_sig = self.dist._url_base64_encode(sig)
+        self.assertEqual(expected, encoded_sig)
+
+    def test_sign_canned_policy_pk_file_name(self):
+        """
+        Test signing the canned policy from amazon's cloudfront documentation
+        with a file name.
+        """
+        expected = ("Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyEXPDN"
+                    "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
+                    "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
+                    "t9w2EOwi6sIIqrg_")
+        pk_file = tempfile.NamedTemporaryFile()
+        pk_file.write(self.pk_str)
+        pk_file.flush()
+        sig = self.dist._sign_string(self.canned_policy, private_key_file=pk_file.name)
         encoded_sig = self.dist._url_base64_encode(sig)
         self.assertEqual(expected, encoded_sig)
 

@@ -27,11 +27,13 @@ import re
 import rfc822
 import StringIO
 import base64
+import binascii
 import math
 import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.provider import Provider
+from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
 from boto.utils import compute_md5
@@ -42,8 +44,41 @@ except ImportError:
 
 
 class Key(object):
+    """
+    Represents a key (object) in an S3 bucket.
+
+    :ivar bucket: The parent :class:`boto.s3.bucket.Bucket`.
+    :ivar name: The name of this Key object.
+    :ivar metadata: A dictionary containing user metadata that you
+        wish to store with the object or that has been retrieved from
+        an existing object.
+    :ivar cache_control: The value of the `Cache-Control` HTTP header.
+    :ivar content_type: The value of the `Content-Type` HTTP header.
+    :ivar content_encoding: The value of the `Content-Encoding` HTTP header.
+    :ivar content_disposition: The value of the `Content-Disposition` HTTP
+        header.
+    :ivar content_language: The value of the `Content-Language` HTTP header.
+    :ivar etag: The `etag` associated with this object.
+    :ivar last_modified: The string timestamp representing the last
+        time this object was modified in S3.
+    :ivar owner: The ID of the owner of this object.
+    :ivar storage_class: The storage class of the object.  Currently, one of:
+        STANDARD | REDUCED_REDUNDANCY | GLACIER
+    :ivar md5: The MD5 hash of the contents of the object.
+    :ivar size: The size, in bytes, of the object.
+    :ivar version_id: The version ID of this object, if it is a versioned
+        object.
+    :ivar encrypted: Whether the object is encrypted while at rest on
+        the server.
+    """
 
     DefaultContentType = 'application/octet-stream'
+
+    RestoreBody = """<?xml version="1.0" encoding="UTF-8"?>
+      <RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+        <Days>%s</Days>
+      </RestoreRequest>"""
+
 
     BufferSize = 8192
 
@@ -84,6 +119,13 @@ class Key(object):
         self.source_version_id = None
         self.delete_marker = False
         self.encrypted = None
+        # If the object is being restored, this attribute will be set to True.
+        # If the object is restored, it will be set to False.  Otherwise this
+        # value will be None. If the restore is completed (ongoing_restore =
+        # False), the expiry_date will be populated with the expiry date of the
+        # restored object.
+        self.ongoing_restore = None
+        self.expiry_date = None
 
     def __repr__(self):
         if self.bucket:
@@ -109,9 +151,8 @@ class Key(object):
     @property
     def provider(self):
         provider = None
-        if self.bucket:
-            if self.bucket.connection:
-                provider = self.bucket.connection.provider
+        if self.bucket and self.bucket.connection:
+            provider = self.bucket.connection.provider
         return provider
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
@@ -119,7 +160,6 @@ class Key(object):
         A utility function to create the 2-tuple (md5hexdigest, base64md5)
         from just having a precalculated md5_hexdigest.
         """
-        import binascii
         digest = binascii.unhexlify(md5_hexdigest)
         base64md5 = base64.encodestring(digest)
         if base64md5[-1] == '\n':
@@ -148,6 +188,19 @@ class Key(object):
             self.delete_marker = True
         else:
             self.delete_marker = False
+
+    def handle_restore_headers(self, response):
+        header = response.getheader('x-amz-restore')
+        if header is None:
+            return
+        parts = header.split(',', 1)
+        for part in parts:
+            key, val = [i.strip() for i in part.split('=')]
+            val = val.replace('"', '')
+            if key == 'ongoing-request':
+                self.ongoing_restore = True if val.lower() == 'true' else False
+            elif key == 'expiry-date':
+                self.expiry_date = val
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
@@ -242,8 +295,23 @@ class Key(object):
 
     closed = False
 
-    def close(self):
-        if self.resp:
+    def close(self, fast=False):
+        """
+        Close this key.
+
+        :type fast: bool
+        :param fast: True if you want the connection to be closed without first
+        reading the content. This should only be used in cases where subsequent
+        calls don't need to return the content from the open HTTP connection.
+        Note: As explained at
+        http://docs.python.org/2/library/httplib.html#httplib.HTTPConnection.getresponse,
+        callers must read the whole response before sending a new request to the
+        server. Calling Key.close(fast=True) and making a subsequent request to
+        the server will work because boto will get an httplib exception and
+        close/reopen the connection.
+
+        """
+        if self.resp and not fast:
             self.resp.read()
         self.resp = None
         self.mode = None
@@ -453,7 +521,7 @@ class Key(object):
 
         """
         response = self.bucket.connection.make_request(
-            'GET', self.bucket.name, self.name)
+            'HEAD', self.bucket.name, self.name)
         if response.status == 200:
             return response.getheader('x-amz-website-redirect-location')
         else:
@@ -981,18 +1049,34 @@ class Key(object):
             # caller requests reading from beginning of fp.
             fp.seek(0, os.SEEK_SET)
         else:
-            spos = fp.tell()
-            fp.seek(0, os.SEEK_END)
-            if fp.tell() == spos:
-                fp.seek(0, os.SEEK_SET)
-                if fp.tell() != spos:
-                    # Raise an exception as this is likely a programming error
-                    # whereby there is data before the fp but nothing after it.
-                    fp.seek(spos)
-                    raise AttributeError(
-                     'fp is at EOF. Use rewind option or seek() to data start.')
-            # seek back to the correct position.
-            fp.seek(spos)
+            # The following seek/tell/seek logic is intended
+            # to detect applications using the older interface to
+            # set_contents_from_file(), which automatically rewound the
+            # file each time the Key was reused. This changed with commit
+            # 14ee2d03f4665fe20d19a85286f78d39d924237e, to support uploads
+            # split into multiple parts and uploaded in parallel, and at
+            # the time of that commit this check was added because otherwise
+            # older programs would get a success status and upload an empty
+            # object. Unfortuantely, it's very inefficient for fp's implemented
+            # by KeyFile (used, for example, by gsutil when copying between
+            # providers). So, we skip the check for the KeyFile case.
+            # TODO: At some point consider removing this seek/tell/seek
+            # logic, after enough time has passed that it's unlikely any
+            # programs remain that assume the older auto-rewind interface.
+            if not isinstance(fp, KeyFile):
+                spos = fp.tell()
+                fp.seek(0, os.SEEK_END)
+                if fp.tell() == spos:
+                    fp.seek(0, os.SEEK_SET)
+                    if fp.tell() != spos:
+                        # Raise an exception as this is likely a programming
+                        # error whereby there is data before the fp but nothing
+                        # after it.
+                        fp.seek(spos)
+                        raise AttributeError('fp is at EOF. Use rewind option '
+                                             'or seek() to data start.')
+                # seek back to the correct position.
+                fp.seek(spos)
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
@@ -1002,7 +1086,6 @@ class Key(object):
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
-
         if self.bucket != None:
             if not md5 and provider.supports_chunked_transfer():
                 # defer md5 calculation to on the fly and
@@ -1011,6 +1094,18 @@ class Key(object):
                 self.size = None
             else:
                 chunked_transfer = False
+                if isinstance(fp, KeyFile):
+                    # Avoid EOF seek for KeyFile case as it's very inefficient.
+                    key = fp.getkey()
+                    size = key.size - fp.tell()
+                    self.size = size
+                    # At present both GCS and S3 use MD5 for the etag for
+                    # non-multipart-uploaded objects. If the etag is 32 hex
+                    # chars use it as an MD5, to avoid having to read the file
+                    # twice while transferring.
+                    if (re.match('^"[a-fA-F0-9]{32}"$', key.etag)):
+                        etag = key.etag.strip('"')
+                        md5 = (etag, base64.b64encode(binascii.unhexlify(etag)))
                 if not md5:
                     # compute_md5() and also set self.size to actual
                     # size of the bytes read computing the md5.
@@ -1101,10 +1196,12 @@ class Key(object):
             stored in an encrypted form while at rest in S3.
         """
         fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, reduced_redundancy,
-                                    encrypt_key=encrypt_key)
-        fp.close()
+        try:
+            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5, reduced_redundancy,
+                                        encrypt_key=encrypt_key)
+        finally:
+            fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
@@ -1211,13 +1308,22 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
+        self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                torrent=torrent, version_id=version_id,
+                                override_num_retries=override_num_retries,
+                                response_headers=response_headers,
+                                query_args=None)
+
+    def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None, query_args=None):
         if headers is None:
             headers = {}
         save_debug = self.bucket.connection.debug
         if self.bucket.connection.debug == 1:
             self.bucket.connection.debug = 0
 
-        query_args = []
+        query_args = query_args or []
         if torrent:
             query_args.append('torrent')
             m = None
@@ -1406,11 +1512,16 @@ class Key(object):
             http://goo.gl/EWOPb for details.
         """
         fp = open(filename, 'wb')
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id,
-                                  res_download_handler=res_download_handler,
-                                  response_headers=response_headers)
-        fp.close()
+        try:
+            self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                      version_id=version_id,
+                                      res_download_handler=res_download_handler,
+                                      response_headers=response_headers)
+        except Exception:
+            os.remove(filename)
+            raise
+        finally:
+            fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified != None:
             try:
@@ -1514,7 +1625,7 @@ class Key(object):
         :param display_name: An option string containing the user's
             Display Name.  Only required on Walrus.
         """
-        policy = self.get_acl()
+        policy = self.get_acl(headers=headers)
         policy.acl.add_user_grant(permission, user_id,
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
@@ -1575,3 +1686,26 @@ class Key(object):
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
                             metadata=metadata, preserve_acl=preserve_acl)
+
+    def restore(self, days, headers=None):
+        """Restore an object from an archive.
+
+        :type days: int
+        :param days: The lifetime of the restored object (must
+            be at least 1 day).  If the object is already restored
+            then this parameter can be used to readjust the lifetime
+            of the restored object.  In this case, the days
+            param is with respect to the initial time of the request.
+            If the object has not been restored, this param is with
+            respect to the completion time of the request.
+
+        """
+        response = self.bucket.connection.make_request(
+            'POST', self.bucket.name, self.name,
+            data=self.RestoreBody % days,
+            headers=headers, query_args='restore')
+        if response.status not in (200, 202):
+            provider = self.bucket.connection.provider
+            raise provider.storage_response_error(response.status,
+                                                  response.reason,
+                                                  response.read())
