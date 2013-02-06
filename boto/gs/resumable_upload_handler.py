@@ -472,8 +472,8 @@ class ResumableUploadHandler(object):
         # and can report that progress on next attempt.
         try:
             return self._upload_file_bytes(conn, http_conn, fp, file_length,
-                                           total_bytes_uploaded, cb, num_cb,
-                                           md5sum, headers)
+                                           total_bytes_uploaded, cb, num_cb, md5sum,
+                                           headers)
         except (ResumableUploadException, socket.error):
             resp = self._query_server_state(conn, file_length)
             if resp.status == 400:
@@ -605,7 +605,6 @@ class ResumableUploadHandler(object):
           fp.seek(0, os.SEEK_END)
           file_length = fp.tell()
           fp.seek(0)
-
         debug = key.bucket.connection.debug
 
         # Compute the MD5 checksum on the fly.
