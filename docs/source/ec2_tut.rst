@@ -12,23 +12,19 @@ Creating a Connection
 ---------------------
 
 The first step in accessing EC2 is to create a connection to the service.
-There are two ways to do this in boto.  The first is::
+The recommended way of doing this in boto is::
 
-    >>> from boto.ec2.connection import EC2Connection
-    >>> conn = EC2Connection('<AWS_ACCESS_KEY_ID>', '<AWS_SECRET_ACCESS_KEY>')
+    >>> from boto.ec2
+    >>> conn = boto.ec2.connect_to_region("us-east-1",
+    ...    aws_access_key_id= '<aws access key'>,
+    ...    aws_secret_access_key='<aws secret key>')
 
 At this point the variable conn will point to an EC2Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
-method explicitely.  Alternatively, you can set the boto config environment variables
-and then call the constructor without any arguments, like this::
+method explicitly.  Alternatively, you can set the boto config environment variables
+and then simple specify which region you want as follows::
 
-    >>> conn = EC2Connection()
-
-There is also a shortcut function in the boto package, called connect_ec2
-that may provide a slightly easier means of creating a connection::
-
-    >>> import boto
-    >>> conn = boto.connect_ec2()
+    >>> conn = boto.ec2.connect_to_region("us-east-1")
 
 In either case, conn will point to an EC2Connection object which we will
 use throughout the remainder of this tutorial.
