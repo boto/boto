@@ -159,8 +159,8 @@ class Queue:
 
         :type action_name: str or unicode
         :param action_name: The action.  Valid choices are:
-            *|SendMessage|ReceiveMessage|DeleteMessage|
-            ChangeMessageVisibility|GetQueueAttributes
+            SendMessage|ReceiveMessage|DeleteMessage|
+            ChangeMessageVisibility|GetQueueAttributes|*
 
         :rtype: bool
         :return: True if successful, False otherwise.
