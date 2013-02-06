@@ -37,7 +37,7 @@ stop and terminate instances. In its most primitive form, you can launch an
 instance as follows::
 
     >>> conn.run_instances('<ami-image-id>')
-    
+
 This will launch an instance in the specified region with the default parameters.
 You will not be able to SSH into this machine, as it doesn't have a security
 group set. See :doc:`security_groups` for details on creating one.
