@@ -76,7 +76,8 @@ boto.s3.connection module, like this:
 
 >>> from boto.s3.connection import Location
 >>> dir(Location)
-['DEFAULT', 'EU', 'USWest', 'APSoutheast', '__doc__', '__module__']
+>>> dir(Location)
+['APNortheast', 'APSoutheast', 'DEFAULT', 'EU', 'SAEast', 'USWest', 'USWest2', '__doc__', '__module__']
 >>>
 
 As you can see, the Location object defines three possible locations;
