@@ -16,13 +16,13 @@ The recommended way of doing this in boto is::
 
     >>> from boto.ec2
     >>> conn = boto.ec2.connect_to_region("us-east-1",
-    ...    aws_access_key_id= '<aws access key'>,
+    ...    aws_access_key_id='<aws access key>',
     ...    aws_secret_access_key='<aws secret key>')
 
-At this point the variable conn will point to an EC2Connection object.  In
-this example, the AWS access key and AWS secret key are passed in to the
-method explicitly.  Alternatively, you can set the boto config environment variables
-and then simple specify which region you want as follows::
+At this point the variable ``conn`` will point to an EC2Connection object.  In
+this example, the AWS access key and AWS secret key are passed in to the method
+explicitly.  Alternatively, you can set the boto config environment variables
+and then simply specify which region you want as follows::
 
     >>> conn = boto.ec2.connect_to_region("us-east-1")
 
