@@ -12,7 +12,7 @@ boto.glacier
    :undoc-members:
 
 boto.glacier.layer1
-------------------
+-------------------
 
 .. automodule:: boto.glacier.layer1
    :members:
@@ -47,7 +47,7 @@ boto.glacier.writer
    :undoc-members:
 
 boto.glacier.concurrent
--------------------
+-----------------------
 
 .. automodule:: boto.glacier.concurrent
    :members:

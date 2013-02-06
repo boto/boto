@@ -60,6 +60,3 @@ class InstanceState(object):
             self.reason_code = value
         else:
             setattr(self, name, value)
-
-
-

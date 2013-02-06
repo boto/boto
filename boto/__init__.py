@@ -35,7 +35,7 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.6.0-dev'
+__version__ = '2.8.0-dev'
 Version = __version__  # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
@@ -633,6 +633,26 @@ def connect_beanstalk(aws_access_key_id=None,
     """
     from boto.beanstalk.layer1 import Layer1
     return Layer1(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+
+def connect_elastictranscoder(aws_access_key_id=None,
+                              aws_secret_access_key=None,
+                              **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ets.layer1.ElasticTranscoderConnection`
+    :return: A connection to Amazon's Elastic Transcoder service
+    """
+    from boto.elastictranscoder.layer1 import ElasticTranscoderConnection
+    return ElasticTranscoderConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs)
 
 
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,

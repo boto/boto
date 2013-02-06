@@ -175,7 +175,7 @@ class EnvironmentDescription(BaseObject):
 
 class EnvironmentInfoDescription(BaseObject):
     def __init__(self, response):
-        EnvironmentInfoDescription(Response, self).__init__()
+        super(EnvironmentInfoDescription, self).__init__()
 
         self.ec2_instance_id = str(response['Ec2InstanceId'])
         self.info_type = str(response['InfoType'])

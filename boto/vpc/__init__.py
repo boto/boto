@@ -33,6 +33,47 @@ from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
+from boto.ec2 import RegionData
+from boto.regioninfo import RegionInfo
+
+def regions(**kw_params):
+    """
+    Get all available regions for the EC2 service.
+    You may pass any of the arguments accepted by the VPCConnection
+    object's constructor as keyword arguments and they will be
+    passed along to the VPCConnection object.
+
+    :rtype: list
+    :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
+    """
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=VPCConnection)
+        regions.append(region)
+    return regions
+
+
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a
+    :class:`boto.vpc.VPCConnection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
+
+    :type: str
+    :param region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.vpc.VPCConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+             name is given
+    """
+    for region in regions(**kw_params):
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None
+
 
 class VPCConnection(EC2Connection):
 
@@ -217,6 +258,44 @@ class VPCConnection(EC2Connection):
             params['InstanceId'] = instance_id
 
         return self.get_status('CreateRoute', params)
+
+    def replace_route(self, route_table_id, destination_cidr_block,
+                     gateway_id=None, instance_id=None, interface_id=None):
+        """
+        Replaces an existing route within a route table in a VPC.
+
+        :type route_table_id: str
+        :param route_table_id: The ID of the route table for the route.
+
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR address block used for the
+                                       destination match.
+
+        :type gateway_id: str
+        :param gateway_id: The ID of the gateway attached to your VPC.
+
+        :type instance_id: str
+        :param instance_id: The ID of a NAT instance in your VPC.
+
+        :type interface_id: str
+        :param interface_id: Allows routing to network interface attachments.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'RouteTableId': route_table_id,
+            'DestinationCidrBlock': destination_cidr_block
+        }
+
+        if gateway_id is not None:
+            params['GatewayId'] = gateway_id
+        elif instance_id is not None:
+            params['InstanceId'] = instance_id
+        elif interface_id is not None:
+            params['NetworkInterfaceId'] = interface_id
+
+        return self.get_status('ReplaceRoute', params)
 
     def delete_route(self, route_table_id, destination_cidr_block):
         """
@@ -571,27 +650,74 @@ class VPCConnection(EC2Connection):
         return self.get_list('DescribeDhcpOptions', params,
                              [('item', DhcpOptions)])
 
-    def create_dhcp_options(self, vpc_id, cidr_block, availability_zone=None):
+    def create_dhcp_options(self, domain_name=None, domain_name_servers=None,
+                            ntp_servers=None, netbios_name_servers=None,
+                            netbios_node_type=None):
         """
         Create a new DhcpOption
 
-        :type vpc_id: str
-        :param vpc_id: The ID of the VPC where you want to create the subnet.
+        This corresponds to
+        http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-CreateDhcpOptions.html
 
-        :type cidr_block: str
-        :param cidr_block: The CIDR block you want the subnet to cover.
+        :type domain_name: str
+        :param domain_name: A domain name of your choice (for example,
+            example.com)
 
-        :type availability_zone: str
-        :param availability_zone: The AZ you want the subnet in
+        :type domain_name_servers: list of strings
+        :param domain_name_servers: The IP address of a domain name server. You
+            can specify up to four addresses.
+
+        :type ntp_servers: list of strings
+        :param ntp_servers: The IP address of a Network Time Protocol (NTP)
+            server. You can specify up to four addresses.
+
+        :type netbios_name_servers: list of strings
+        :param netbios_name_servers: The IP address of a NetBIOS name server.
+            You can specify up to four addresses.
+
+        :type netbios_node_type: str
+        :param netbios_node_type: The NetBIOS node type (1, 2, 4, or 8). For
+            more information about the values, see RFC 2132. We recommend you
+            only use 2 at this time (broadcast and multicast are currently not
+            supported).
 
         :rtype: The newly created DhcpOption
         :return: A :class:`boto.vpc.customergateway.DhcpOption` object
         """
-        params = {'VpcId' : vpc_id,
-                  'CidrBlock' : cidr_block}
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
-        return self.get_object('CreateDhcpOption', params, DhcpOptions)
+
+        key_counter = 1
+        params = {}
+
+        def insert_option(params, name, value):
+            params['DhcpConfiguration.%d.Key' % (key_counter,)] = name
+            if isinstance(value, (list, tuple)):
+                for idx, value in enumerate(value, 1):
+                    key_name = 'DhcpConfiguration.%d.Value.%d' % (
+                        key_counter, idx)
+                    params[key_name] = value
+            else:
+                key_name = 'DhcpConfiguration.%d.Value.1' % (key_counter,)
+                params[key_name] = value
+
+            return key_counter + 1
+
+        if domain_name:
+            key_counter = insert_option(params,
+                'domain-name', domain_name)
+        if domain_name_servers:
+            key_counter = insert_option(params,
+                'domain-name-servers', domain_name_servers)
+        if ntp_servers:
+            key_counter = insert_option(params,
+                'ntp-servers', ntp_servers)
+        if netbios_name_servers:
+            key_counter = insert_option(params,
+                'netbios-name-servers', netbios_name_servers)
+        if netbios_node_type:
+            key_counter = insert_option(params,
+                'netbios-node-type', netbios_node_type)
+
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)
 
     def delete_dhcp_options(self, dhcp_options_id):
         """

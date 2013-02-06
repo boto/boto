@@ -34,6 +34,7 @@ from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
+from boto.s3.keyfile import KeyFile
 try:
     from hashlib import md5
 except ImportError:
@@ -450,7 +451,12 @@ class ResumableUploadHandler(object):
             self.upload_start_point = server_end
 
         total_bytes_uploaded = server_end + 1
-        fp.seek(total_bytes_uploaded)
+        # Corner case: Don't attempt to seek if we've already uploaded the
+        # entire file, because if the file is a stream (e.g., the KeyFile
+        # wrapper around input key when copying between providers), attempting
+        # to seek to the end of file would result in an InvalidRange error.
+        if file_length < total_bytes_uploaded:
+          fp.seek(total_bytes_uploaded)
         conn = key.bucket.connection
 
         # Get a new HTTP connection (vs conn.get_http_connection(), which reuses
@@ -541,7 +547,7 @@ class ResumableUploadHandler(object):
                     'progress. You might try this upload again later',
                     ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
-        # Use binary exponential backoff to desynchronize client requests
+        # Use binary exponential backoff to desynchronize client requests.
         sleep_time_secs = random.random() * (2**self.progress_less_iterations)
         if debug >= 1:
             print ('Got retryable failure (%d progress-less in a row).\n'
@@ -591,9 +597,15 @@ class ResumableUploadHandler(object):
 
         headers['User-Agent'] = UserAgent
 
-        fp.seek(0, os.SEEK_END)
-        file_length = fp.tell()
-        fp.seek(0)
+        # Determine file size different ways for case where fp is actually a
+        # wrapper around a Key vs an actual file.
+        if isinstance(fp, KeyFile):
+          file_length = fp.getkey().size
+        else:
+          fp.seek(0, os.SEEK_END)
+          file_length = fp.tell()
+          fp.seek(0)
+
         debug = key.bucket.connection.debug
 
         # Compute the MD5 checksum on the fly.
@@ -602,7 +614,7 @@ class ResumableUploadHandler(object):
         # Use num-retries from constructor if one was provided; else check
         # for a value specified in the boto config file; else default to 5.
         if self.num_retries is None:
-            self.num_retries = config.getint('Boto', 'num_retries', 5)
+            self.num_retries = config.getint('Boto', 'num_retries', 6)
         self.progress_less_iterations = 0
 
         while True:  # Retry as long as we're making progress.

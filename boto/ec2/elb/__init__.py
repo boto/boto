@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -25,9 +27,10 @@ load balancing service from AWS.
 """
 from boto.connection import AWSQueryConnection
 from boto.ec2.instanceinfo import InstanceInfo
-from boto.ec2.elb.loadbalancer import LoadBalancer
+from boto.ec2.elb.loadbalancer import LoadBalancer, LoadBalancerZones
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
+from boto.ec2.elb.listelement import ListElement
 from boto.regioninfo import RegionInfo
 import boto
 
@@ -180,7 +183,8 @@ class ELBConnection(AWSQueryConnection):
             to an Amazon VPC.
 
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
-        :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
+        :return: The newly created
+            :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
         params = {'LoadBalancerName': name,
                   'Scheme': scheme}
@@ -289,8 +293,9 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, zones_to_add,
                                'AvailabilityZones.member.%d')
-        return self.get_list('EnableAvailabilityZonesForLoadBalancer',
-                             params, None)
+        obj = self.get_object('EnableAvailabilityZonesForLoadBalancer',
+                               params, LoadBalancerZones)
+        return obj.zones
 
     def disable_availability_zones(self, load_balancer_name, zones_to_remove):
         """
@@ -313,8 +318,9 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, zones_to_remove,
                                'AvailabilityZones.member.%d')
-        return self.get_list('DisableAvailabilityZonesForLoadBalancer',
-                             params, None)
+        obj = self.get_object('DisableAvailabilityZonesForLoadBalancer',
+                               params, LoadBalancerZones)
+        return obj.zones
 
     def register_instances(self, load_balancer_name, instances):
         """
@@ -453,10 +459,13 @@ class ELBConnection(AWSQueryConnection):
         from the same user to that server. The validity of the cookie is based
         on the cookie expiration time, which is specified in the policy
         configuration.
+
+        None may be passed for cookie_expiration_period.
         """
-        params = {'CookieExpirationPeriod': cookie_expiration_period,
-                  'LoadBalancerName': lb_name,
+        params = {'LoadBalancerName': lb_name,
                   'PolicyName': policy_name}
+        if cookie_expiration_period is not None:
+            params['CookieExpirationPeriod'] = cookie_expiration_period
         return self.get_status('CreateLBCookieStickinessPolicy', params)
 
     def delete_lb_policy(self, lb_name, policy_name):

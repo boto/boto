@@ -154,12 +154,12 @@ class STSConnection(AWSQueryConnection):
                                 FederationToken, verb='POST')
 
     def assume_role(self, role_arn, role_session_name, policy=None,
-                    duration_seconds=None, unique_client_id=None):
+                    duration_seconds=None, external_id=None):
         """
         Returns a set of temporary credentials that the caller can use to
         access resources that are allowed by the temporary credentials.  The
         credentials are valid for the duration that the caller specified, which
-        can be from 1 to 36 hours.
+        can be from 15 minutes (900 seconds) to 1 hour (3600 seconds)
 
         :type role_arn: str
         :param role_arn: The Amazon Resource Name (ARN) of the role that the
@@ -180,12 +180,11 @@ class STSConnection(AWSQueryConnection):
 
         :type duration_seconds: int
         :param duration_seconds: he duration, in seconds, of the role session.
-            The value can range from 3600 seconds (one hour) to 129600 seconds
-            (36 hours).  By default, the value is set to 43200 seconds (12
-            hours).
+            The value can range from 900 seconds (15 minutes) to 3600 seconds
+            (1 hour).  By default, the value is set to 3600 seconds.
 
-        :type unique_client_id: str
-        :param unique_client_id: A unique identifier that is used by
+        :type external_id: str
+        :param external_id: A unique identifier that is used by
             third-party services to ensure that they are assuming a role that
             corresponds to the correct users. For third-party services that
             have access to resources across multiple AWS accounts, the unique
@@ -203,6 +202,6 @@ class STSConnection(AWSQueryConnection):
             params['Policy'] = policy
         if duration_seconds is not None:
             params['DurationSeconds'] = duration_seconds
-        if unique_client_id is not None:
-            params['UniqueClientId'] = unique_client_id
+        if external_id is not None:
+            params['ExternalId'] = external_id
         return self.get_object('AssumeRole', params, AssumedRole, verb='POST')

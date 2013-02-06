@@ -17,6 +17,8 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
 
 * **Content Delivery**
 
@@ -27,6 +29,7 @@ Currently Supported Services
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
   * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
+  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
 
 * **Deployment and Management**
 
@@ -70,6 +73,10 @@ Currently Supported Services
 
   * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
 
+* **Other**
+
+  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
+
 Additional Resources
 --------------------
 
@@ -107,6 +114,7 @@ Additional Resources
    ref/rds
    ref/cloudformation
    ref/iam
+   ref/mws
    sqs_tut
    ref/sqs
    ref/sns

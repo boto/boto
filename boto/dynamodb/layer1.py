@@ -30,13 +30,6 @@ from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
 from boto.compat import json
 
-#
-# To get full debug output, uncomment the following line and set the
-# value of Debug to be 2
-#
-#boto.set_stream_logger('dynamodb')
-Debug = 0
-
 
 class Layer1(AWSAuthConnection):
     """
@@ -74,6 +67,9 @@ class Layer1(AWSAuthConnection):
     """The error response returned when an item is invalid in some way"""
 
     ResponseError = DynamoDBResponseError
+
+    NumberRetries = 10
+    """The number of times an error is retried."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -118,7 +114,7 @@ class Layer1(AWSAuthConnection):
                                                     {}, headers, body, None)
         start = time.time()
         response = self._mexe(http_request, sender=None,
-                              override_num_retries=10,
+                              override_num_retries=self.NumberRetries,
                               retry_handler=self._retry_handler)
         elapsed = (time.time() - start) * 1000
         request_id = response.getheader('x-amzn-RequestId')
@@ -141,6 +137,12 @@ class Layer1(AWSAuthConnection):
                 next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
+                if i == self.NumberRetries:
+                    # If this was our last retry attempt, raise
+                    # a specific error saying that the throughput
+                    # was exceeded.
+                    raise dynamodb_exceptions.DynamoDBThroughputExceededError(
+                        response.status, response.reason, data)
             elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
                 self._get_session_token()
@@ -460,7 +462,7 @@ class Layer1(AWSAuthConnection):
     def query(self, table_name, hash_key_value, range_key_conditions=None,
               attributes_to_get=None, limit=None, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
-              object_hook=None):
+              object_hook=None, count=False):
         """
         Perform a query of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -484,6 +486,11 @@ class Layer1(AWSAuthConnection):
         :type limit: int
         :param limit: The maximum number of items to return.
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Query operation, even if the
+            operation has no matching items for the assigned filter.
+
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
@@ -506,6 +513,8 @@ class Layer1(AWSAuthConnection):
             data['AttributesToGet'] = attributes_to_get
         if limit:
             data['Limit'] = limit
+        if count:
+            data['Count'] = True
         if consistent_read:
             data['ConsistentRead'] = True
         if scan_index_forward:
@@ -520,8 +529,7 @@ class Layer1(AWSAuthConnection):
 
     def scan(self, table_name, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None,
-             object_hook=None):
+             exclusive_start_key=None, object_hook=None, count=False):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -540,7 +548,7 @@ class Layer1(AWSAuthConnection):
             be returned.  Otherwise, all attributes will be returned.
 
         :type limit: int
-        :param limit: The maximum number of items to return.
+        :param limit: The maximum number of items to evaluate.
 
         :type count: bool
         :param count: If True, Amazon DynamoDB returns a total

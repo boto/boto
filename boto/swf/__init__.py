@@ -25,6 +25,17 @@
 from boto.ec2.regioninfo import RegionInfo
 import boto.swf.layer1
 
+RegionData = {
+    'us-east-1': 'swf.us-east-1.amazonaws.com',
+    'us-west-1': 'swf.us-west-1.amazonaws.com',
+    'us-west-2': 'swf.us-west-2.amazonaws.com',
+    'sa-east-1': 'swf.sa-east-1.amazonaws.com',
+    'eu-west-1': 'swf.eu-west-1.amazonaws.com',
+    'ap-northeast-1': 'swf.ap-northeast-1.amazonaws.com',
+    'ap-southeast-1': 'swf.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'swf.ap-southeast-2.amazonaws.com',
+}
+
 
 def regions():
     """
@@ -33,11 +44,13 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    import boto.dynamodb.layer2
-    return [RegionInfo(name='us-east-1',
-                       endpoint='swf.us-east-1.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            ]
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=boto.swf.layer1.Layer1)
+        regions.append(region)
+    return regions
+
 
 
 def connect_to_region(region_name, **kw_params):

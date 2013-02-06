@@ -42,13 +42,17 @@ class UnexpectedHTTPResponseError(Exception):
         super(UnexpectedHTTPResponseError, self).__init__(msg)
 
 
-class UploadArchiveError(Exception):
+class ArchiveError(Exception):
     pass
 
 
-class DownloadArchiveError(Exception):
+class UploadArchiveError(ArchiveError):
     pass
 
 
-class TreeHashDoesNotMatchError(DownloadArchiveError):
+class DownloadArchiveError(ArchiveError):
+    pass
+
+
+class TreeHashDoesNotMatchError(ArchiveError):
     pass

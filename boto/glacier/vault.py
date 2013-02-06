@@ -70,7 +70,7 @@ class Vault(object):
         """
         self.layer1.delete_vault(self.name)
 
-    def upload_archive(self, filename):
+    def upload_archive(self, filename, description=None):
         """
         Adds an archive to a vault. For archives greater than 100MB the
         multipart upload will be used.
@@ -78,19 +78,26 @@ class Vault(object):
         :type file: str
         :param file: A filename to upload
 
+        :type description: str
+        :param description: An optional description for the archive.
+
         :rtype: str
         :return: The archive id of the newly created archive
         """
         if os.path.getsize(filename) > self.SingleOperationThreshold:
-            return self.create_archive_from_file(filename)
-        return self._upload_archive_single_operation(filename)
+            return self.create_archive_from_file(filename, description=description)
+        return self._upload_archive_single_operation(filename, description)
 
-    def _upload_archive_single_operation(self, filename):
+    def _upload_archive_single_operation(self, filename, description):
         """
         Adds an archive to a vault in a single operation. It's recommended for
         archives less than 100MB
+
         :type file: str
         :param file: A filename to upload
+
+        :type description: str
+        :param description: A description for the archive.
 
         :rtype: str
         :return: The archive id of the newly created archive
@@ -99,7 +106,8 @@ class Vault(object):
             linear_hash, tree_hash = compute_hashes_from_fileobj(fileobj)
             fileobj.seek(0)
             response = self.layer1.upload_archive(self.name, fileobj,
-                                                  linear_hash, tree_hash)
+                                                  linear_hash, tree_hash,
+                                                  description)
         return response['ArchiveId']
 
     def create_archive_writer(self, part_size=DefaultPartSize,
@@ -153,7 +161,8 @@ class Vault(object):
         if not file_obj:
             file_size = os.path.getsize(filename)
             try:
-                part_size = minimum_part_size(file_size)
+                min_part_size = minimum_part_size(file_size,
+                                                  self.DefaultPartSize)
             except ValueError:
                 raise UploadArchiveError("File size of %s bytes exceeds "
                                          "40,000 GB archive limit of Glacier.")
@@ -228,7 +237,7 @@ class Vault(object):
         return resume_file_upload(
             self, upload_id, part_size, file_obj, part_hash_map)
 
-    def concurrent_create_archive_from_file(self, filename):
+    def concurrent_create_archive_from_file(self, filename, description):
         """
         Create a new archive from a file and upload the given
         file.
@@ -249,7 +258,7 @@ class Vault(object):
 
         """
         uploader = ConcurrentUploader(self.layer1, self.name)
-        archive_id = uploader.upload(filename)
+        archive_id = uploader.upload(filename, description)
         return archive_id
 
     def retrieve_archive(self, archive_id, sns_topic=None,

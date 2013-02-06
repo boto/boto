@@ -188,6 +188,9 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         headers = http_request.headers
         if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
+        if self._provider.security_token:
+            key = self._provider.security_token_header
+            headers[key] = self._provider.security_token
 
         b64_hmac = self.sign_string(headers['Date'])
         auth_hdr = self._provider.auth_header
@@ -303,9 +306,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     capability = ['hmac-v4']
 
-    def __init__(self, host, config, provider):
+    def __init__(self, host, config, provider,
+                 service_name=None, region_name=None):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
+        # You can set the service_name and region_name to override the
+        # values which would otherwise come from the endpoint, e.g.
+        # <service>.<region>.amazonaws.com.
+        self.service_name = service_name
+        self.region_name = region_name
 
     def _sign(self, key, msg, hex=False):
         if hex:
@@ -399,13 +408,26 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         scope = []
         http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
         scope.append(http_request.timestamp)
+        # The service_name and region_name either come from:
+        # * The service_name/region_name attrs or (if these values are None)
+        # * parsed from the endpoint <service>.<region>.amazonaws.com.
         parts = http_request.host.split('.')
-        if len(parts) == 3:
-            http_request.region_name = 'us-east-1'
+        if self.region_name is not None:
+            region_name = self.region_name
         else:
-            http_request.region_name = parts[1]
+            if len(parts) == 3:
+                region_name = 'us-east-1'
+            else:
+                region_name = parts[1]
+        if self.service_name is not None:
+            service_name = self.service_name
+        else:
+            service_name = parts[0]
+
+        http_request.service_name = service_name
+        http_request.region_name = region_name
+
         scope.append(http_request.region_name)
-        http_request.service_name = parts[0]
         scope.append(http_request.service_name)
         scope.append('aws4_request')
         return '/'.join(scope)
@@ -628,8 +650,7 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         An implementation of AuthHandler.
 
     Raises:
-        boto.exception.NoAuthHandlerFound:
-        boto.exception.TooManyAuthHandlerReadyToAuthenticate:
+        boto.exception.NoAuthHandlerFound
     """
     ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
@@ -648,18 +669,14 @@ def get_auth_handler(host, config, provider, requested_capability=None):
               ' %s '
               'Check your credentials' % (len(names), str(names)))
 
-    if len(ready_handlers) > 1:
-        # NOTE: Even though it would be nice to accept more than one handler
-        # by using one of the many ready handlers, we are never sure that each
-        # of them are referring to the same storage account. Since we cannot
-        # easily guarantee that, it is always safe to fail, rather than operate
-        # on the wrong account.
-        names = [handler.__class__.__name__ for handler in ready_handlers]
-        raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
-               '%d AuthHandlers %s ready to authenticate for requested_capability '
-               '%s, only 1 expected. This happens if you import multiple '
-               'pluging.Plugin implementations that declare support for the '
-               'requested_capability.' % (len(names), str(names),
-               requested_capability))
-
-    return ready_handlers[0]
+    # We select the last ready auth handler that was loaded, to allow users to
+    # customize how auth works in environments where there are shared boto
+    # config files (e.g., /etc/boto.cfg and ~/.boto): The more general,
+    # system-wide shared configs should be loaded first, and the user's
+    # customizations loaded last. That way, for example, the system-wide
+    # config might include a plugin_directory that includes a service account
+    # auth plugin shared by all users of a Google Compute Engine instance
+    # (allowing sharing of non-user data between various services), and the
+    # user could override this with a .boto config that includes user-specific
+    # credentials (for access to user data).
+    return ready_handlers[-1]
