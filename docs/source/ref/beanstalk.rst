@@ -5,7 +5,7 @@ Elastic Beanstalk
 =================
 
 boto.beanstalk
--------------
+--------------
 
 .. automodule:: boto.beanstalk
    :members:

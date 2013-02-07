@@ -68,7 +68,7 @@ boto.s3.multipart
    :undoc-members:
 
 boto.s3.multidelete
------------------
+-------------------
 
 .. automodule:: boto.s3.multidelete
    :members:
@@ -96,7 +96,7 @@ boto.s3.prefix
    :undoc-members:
 
 boto.s3.tagging
---------------
+---------------
 
 .. automodule:: boto.s3.tagging
    :members:

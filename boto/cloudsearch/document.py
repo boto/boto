@@ -221,8 +221,8 @@ class CommitResponse(object):
         try:
             self.content = json.loads(response.content)
         except:
-            boto.log.error('Error indexing documents.\nResponse Content:\n{}\n\n'
-                'SDF:\n{}'.format(response.content, self.sdf))
+            boto.log.error('Error indexing documents.\nResponse Content:\n{0}\n\n'
+                'SDF:\n{1}'.format(response.content, self.sdf))
             raise boto.exception.BotoServerError(self.response.status_code, '',
                 body=response.content)
 
@@ -259,5 +259,5 @@ class CommitResponse(object):
 
         if response_num != commit_num:
             raise CommitMismatchError(
-                'Incorrect number of {}s returned. Commit: {} Response: {}'\
+                'Incorrect number of {0}s returned. Commit: {1} Response: {2}'\
                 .format(type_, commit_num, response_num))

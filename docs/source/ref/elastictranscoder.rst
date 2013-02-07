@@ -19,7 +19,7 @@ boto.elastictranscoder.layer1
    :undoc-members:
 
 boto.elastictranscoder.exceptions
------------------------------
+---------------------------------
 
 .. automodule:: boto.elastictranscoder.exceptions
    :members:
