@@ -60,10 +60,16 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
         api_response = self.service_connection.create_domain('demo')
         domain = Domain(self, api_response)
 
-        self.assertEqual(domain.doc_service_arn, "arn:aws:cs:us-east-1:1234567890:doc/demo")
-        self.assertEqual(domain.doc_service_endpoint, "doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        self.assertEqual(domain.search_service_arn, "arn:aws:cs:us-east-1:1234567890:search/demo")
-        self.assertEqual(domain.search_service_endpoint, "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+        self.assertEqual(domain.doc_service_arn,
+                         "arn:aws:cs:us-east-1:1234567890:doc/demo")
+        self.assertEqual(
+            domain.doc_service_endpoint,
+            "doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+        self.assertEqual(domain.search_service_arn,
+                         "arn:aws:cs:us-east-1:1234567890:search/demo")
+        self.assertEqual(
+            domain.search_service_endpoint,
+            "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
     def test_cloudsearch_connect_result_statuses(self):
         """Check that domain statuses are correctly returned from AWS"""
@@ -92,7 +98,9 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
 
         document = domain.get_document_service()
 
-        self.assertEqual(document.endpoint, "doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+        self.assertEqual(
+            document.endpoint,
+            "doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
     def test_cloudsearch_searchservice_creation(self):
         self.set_http_response(status_code=200)
@@ -101,7 +109,9 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
 
         search = domain.get_search_service()
 
-        self.assertEqual(search.endpoint, "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
+        self.assertEqual(
+            search.endpoint,
+            "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
 
 class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
@@ -138,7 +148,10 @@ class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
 """
 
     def test_cloudsearch_deletion(self):
-        """Check that the correct arguments are sent to AWS when creating a cloudsearch connection"""
+        """
+        Check that the correct arguments are sent to AWS when creating a
+        cloudsearch connection.
+        """
         self.set_http_response(status_code=200)
         api_response = self.service_connection.delete_domain('demo')
 
@@ -192,7 +205,10 @@ class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
 """
 
     def test_cloudsearch_index_documents(self):
-        """Check that the correct arguments are sent to AWS when indexing a domain"""
+        """
+        Check that the correct arguments are sent to AWS when indexing a
+        domain.
+        """
         self.set_http_response(status_code=200)
         api_response = self.service_connection.index_documents('demo')
 
@@ -206,9 +222,20 @@ class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
         }, ignore_params_values=['Timestamp'])
 
     def test_cloudsearch_index_documents_resp(self):
-        """Check that the AWS response is being parsed correctly when indexing a domain"""
+        """
+        Check that the AWS response is being parsed correctly when indexing a
+        domain.
+        """
         self.set_http_response(status_code=200)
         api_response = self.service_connection.index_documents('demo')
 
-        self.assertEqual(api_response, ['average_score', 'brand_id', 'colors', 'context', 'context_owner', 'created_at', 'creator_id', 'description', 'file_size', 'format', 'has_logo', 'has_messaging', 'height', 'image_id', 'ingested_from', 'is_advertising', 'is_photo', 'is_reviewed', 'modified_at', 'subject_date', 'tags', 'title', 'width'])
-
+        self.assertEqual(api_response, ['average_score', 'brand_id', 'colors',
+                                        'context', 'context_owner',
+                                        'created_at', 'creator_id',
+                                        'description', 'file_size', 'format',
+                                        'has_logo', 'has_messaging', 'height',
+                                        'image_id', 'ingested_from',
+                                        'is_advertising', 'is_photo',
+                                        'is_reviewed', 'modified_at',
+                                        'subject_date', 'tags', 'title',
+                                        'width'])
