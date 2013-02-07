@@ -29,7 +29,7 @@ import socket
 import time
 import urlparse
 import boto
-from boto import config
+from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
@@ -306,7 +306,7 @@ class ResumableUploadHandler(object):
         self._save_tracker_uri_to_file()
 
     def _upload_file_bytes(self, conn, http_conn, fp, file_length,
-                           total_bytes_uploaded, cb, num_cb, md5sum):
+                           total_bytes_uploaded, cb, num_cb, md5sum, headers):
         """
         Makes one attempt to upload file bytes, using an existing resumable
         upload connection.
@@ -332,7 +332,10 @@ class ResumableUploadHandler(object):
         # Content-Range header if the file is 0 bytes long, because the
         # resumable upload protocol uses an *inclusive* end-range (so, sending
         # 'bytes 0-0/1' would actually mean you're sending a 1-byte file).
-        put_headers = {}
+        if not headers:
+            put_headers = {}
+        else:
+            put_headers = headers.copy()
         if file_length:
             if total_bytes_uploaded == file_length:
                 range_header = self._build_content_range_header(
@@ -469,7 +472,8 @@ class ResumableUploadHandler(object):
         # and can report that progress on next attempt.
         try:
             return self._upload_file_bytes(conn, http_conn, fp, file_length,
-                                           total_bytes_uploaded, cb, num_cb, md5sum)
+                                           total_bytes_uploaded, cb, num_cb, md5sum,
+                                           headers)
         except (ResumableUploadException, socket.error):
             resp = self._query_server_state(conn, file_length)
             if resp.status == 400:
@@ -590,6 +594,8 @@ class ResumableUploadHandler(object):
         CT = 'Content-Type'
         if CT in headers and headers[CT] is None:
           del headers[CT]
+
+        headers['User-Agent'] = UserAgent
 
         # Determine file size different ways for case where fp is actually a
         # wrapper around a Key vs an actual file.
