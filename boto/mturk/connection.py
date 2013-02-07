@@ -306,7 +306,7 @@ class MTurkConnection(AWSQueryConnection):
         pages = total_records / page_size + bool(total_records % page_size)
         return range(1, pages + 1)
 
-    def get_all_hits(self):
+    def get_all_hits(self, response_groups=None):
         """
         Return all of a Requester's HITs
 
@@ -316,9 +316,10 @@ class MTurkConnection(AWSQueryConnection):
         iteratively, so subsequent requests are made on demand.
         """
         page_size = 100
-        search_rs = self.search_hits(page_size=page_size)
+        search_rs = self.search_hits(page_size=page_size, response_groups=response_groups)
         total_records = int(search_rs.TotalNumResults)
-        get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
+        get_page_hits = lambda page: self.search_hits(page_size=page_size, 
+            page_number=page, response_groups=response_groups)
         page_nums = self._get_pages(page_size, total_records)
         hit_sets = itertools.imap(get_page_hits, page_nums)
         return itertools.chain.from_iterable(hit_sets)
