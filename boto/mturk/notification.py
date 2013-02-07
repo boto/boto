@@ -34,7 +34,6 @@ import re
 
 class NotificationMessage:
 
-    NOTIFICATION_WSDL = "http://mechanicalturk.amazonaws.com/AWSMechanicalTurk/2006-05-05/AWSMechanicalTurkRequesterNotification.wsdl"
     NOTIFICATION_VERSION = '2006-05-05'
 
     SERVICE_NAME = "AWSMechanicalTurkRequesterNotification"
@@ -75,11 +74,23 @@ class NotificationMessage:
         """
         Verifies the authenticity of a notification message.
 
+        *** As of September 2012, Amazon modified the 2012-03-25
+            API such that it has now deprecated the REST and SOAP
+            notification protocols; and to inform us of that fact
+            they are no longer signing their REST and SOAP notification 
+            messages. The signature keyword now instead returns:
+                Signature: u'DEPRECATED'
+            So we are now always returning True in this case so
+            as not to break existing code. ***
+
         TODO: This is doing a form of authentication and
               this functionality should really be merged
               with the pluggable authentication mechanism
               at some point.
         """
+        if self.signature == u'DEPRECATED':
+            return True
+
         verification_input = NotificationMessage.SERVICE_NAME
         verification_input += NotificationMessage.OPERATION_NAME
         verification_input += self.timestamp
