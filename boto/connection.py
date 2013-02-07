@@ -974,8 +974,9 @@ class AWSQueryConnection(AWSAuthConnection):
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
+        # Convert comma- or whitespace-delimited string to array
         if isinstance(items, basestring):
-            items = [items]
+            items = re.findall('[^,\s]+', items)
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
 
