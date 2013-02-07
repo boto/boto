@@ -28,13 +28,18 @@ class DBSecurityGroup(object):
     """
     Represents an RDS database security group
 
-    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBSecurityGroup.html
+    Properties reference available from the AWS documentation at
+    http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBSecurityGroup.html
 
-    :ivar Status: The current status of the security group. Possible values are [ active, ? ]. Reference documentation lacks specifics of possibilities
+    :ivar Status: The current status of the security group. Possible values are
+        [ active, ? ]. Reference documentation lacks specifics of possibilities
     :ivar connection: :py:class:`boto.rds.RDSConnection` associated with the current object
     :ivar description: The description of the security group
-    :ivar ec2_groups: List of :py:class:`EC2 Security Group <boto.ec2.securitygroup.SecurityGroup>` objects that this security group PERMITS
-    :ivar ip_ranges: List of :py:class:`boto.rds.dbsecuritygroup.IPRange` objects (containing CIDR addresses) that this security group PERMITS
+    :ivar ec2_groups: List of :py:class:`EC2 Security Group
+        <boto.ec2.securitygroup.SecurityGroup>` objects that this security
+        group PERMITS
+    :ivar ip_ranges: List of :py:class:`boto.rds.dbsecuritygroup.IPRange`
+        objects (containing CIDR addresses) that this security group PERMITS
     :ivar name: Name of the security group
     :ivar owner_id: ID of the owner of the security group. Can be 'None'
     """
