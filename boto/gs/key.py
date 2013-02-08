@@ -669,8 +669,7 @@ class Key(S3Key):
                                            if_metageneration=if_metageneration)
 
     def set_canned_acl(self, acl_str, headers=None, generation=None,
-                       meta_generation=None, if_generation=None,
-                       if_metageneration=None):
+                       if_generation=None, if_metageneration=None):
         """Sets this objects's ACL using a predefined (canned) value.
 
         :type acl_str: string
@@ -692,11 +691,6 @@ class Key(S3Key):
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the acl
             will only be updated if its current generation number is this value.
-
-        :type if_metageneration: int
-        :param if_metageneration: (optional) If set to a metageneration number,
-            the acl will only be updated if its current metageneration number is
-            this value.
         """
         if self.bucket != None:
             return self.bucket.set_canned_acl(
@@ -704,7 +698,6 @@ class Key(S3Key):
                 self.name,
                 headers=headers,
                 generation=generation,
-                meta_generation=meta_generation,
                 if_generation=if_generation,
                 if_metageneration=if_metageneration
             )

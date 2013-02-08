@@ -376,8 +376,7 @@ class BucketStorageUri(StorageUri):
             version_id = version_id or self.version_id
             acl = bucket.get_acl(key_name, headers, version_id)
         else:
-            acl = bucket.get_acl(key_name, headers, generation=self.generation,
-                                 meta_generation=self.meta_generation)
+            acl = bucket.get_acl(key_name, headers, generation=self.generation)
         self.check_response(acl, 'acl', self.uri)
         return acl
 
@@ -553,8 +552,7 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         if self.generation: # Makes no sense to pass only meta_generation.
           bucket.set_acl(acl_or_str, key_name, headers,
-                         generation=self.generation,
-                         meta_generation=self.meta_generation)
+                         generation=self.generation)
         else:
           version_id = version_id or self.version_id
           bucket.set_acl(acl_or_str, key_name, headers, version_id)
