@@ -59,6 +59,16 @@ class Key(S3Key):
     generation = None
     meta_generation = None
 
+    def __repr__(self):
+        if self.generation and self.meta_generation:
+            ver_str = '#%s.%s' % (self.generation, self.meta_generation)
+        else:
+            ver_str = ''
+        if self.bucket:
+            return '<Key: %s,%s%s>' % (self.bucket.name, self.name, ver_str)
+        else:
+            return '<Key: None,%s%s>' % (self.name, ver_str)
+
     def endElement(self, name, value, connection):
         if name == 'Key':
             self.name = value
@@ -659,7 +669,8 @@ class Key(S3Key):
                                            if_metageneration=if_metageneration)
 
     def set_canned_acl(self, acl_str, headers=None, generation=None,
-                         if_generation=None, if_metageneration=None):
+                       meta_generation=None, if_generation=None,
+                       if_metageneration=None):
         """Sets this objects's ACL using a predefined (canned) value.
 
         :type acl_str: string
@@ -673,6 +684,10 @@ class Key(S3Key):
         :param generation: If specified, sets the ACL for a specific generation
             of a versioned object. If not specified, the current version is
             modified.
+
+        :type meta_generation: int
+        :param meta_generation: If specified, sets the ACL for a specific
+            meta-generation of a versioned object.
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the acl
@@ -689,6 +704,7 @@ class Key(S3Key):
                 self.name,
                 headers=headers,
                 generation=generation,
+                meta_generation=meta_generation,
                 if_generation=if_generation,
                 if_metageneration=if_metageneration
             )

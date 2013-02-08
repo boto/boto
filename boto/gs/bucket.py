@@ -65,7 +65,8 @@ class Bucket(S3Bucket):
             setattr(self, name, value)
 
     def get_key(self, key_name, headers=None, version_id=None,
-                response_headers=None, generation=None):
+                response_headers=None, generation=None,
+                meta_generation=None):
         """Returns a Key instance for an object in this bucket.
 
          Note that this method uses a HEAD request to check for the existence of
@@ -80,9 +81,16 @@ class Bucket(S3Bucket):
             with the stored object in the response.  See
             http://goo.gl/06N3b for details.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type generation: int
         :param generation: A specific generation number to fetch the key at. If
             not specified, the latest generation is fetched.
+
+        :type meta_generation: int
+        :param meta_generation: A specific meta_generation number to fetch the
+            key at. If not specified, the latest meta_generation is fetched.
 
         :rtype: :class:`boto.gs.key.Key`
         :returns: A Key object from this bucket.
@@ -90,6 +98,8 @@ class Bucket(S3Bucket):
         query_args_l = []
         if generation:
             query_args_l.append('generation=%s' % generation)
+            if meta_generation:
+                query_args_l.append('meta_generation=%s' % meta_generation)
         if response_headers:
             for rk, rv in response_headers.iteritems():
                 query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
@@ -101,7 +111,8 @@ class Bucket(S3Bucket):
     def copy_key(self, new_key_name, src_bucket_name, src_key_name,
                  metadata=None, src_version_id=None, storage_class='STANDARD',
                  preserve_acl=False, encrypt_key=False, headers=None,
-                 query_args=None, src_generation=None):
+                 query_args=None, src_generation=None,
+                 src_meta_generation=None):
         """Create a new key in the bucket by copying an existing key.
 
         :type new_key_name: string
@@ -117,11 +128,18 @@ class Bucket(S3Bucket):
         :param src_generation: The generation number of the source key to copy.
             If not specified, the latest generation is copied.
 
+        :type src_meta_generation: int
+        :param src_meta_generation: The meta_generation number of the source key
+            to copy. If not specified, the latest meta_generation is copied.
+
         :type metadata: dict
         :param metadata: Metadata to be associated with new key.  If
             metadata is supplied, it will replace the metadata of the
             source key being copied.  If no metadata is supplied, the
             source key's metadata will be copied to the new key.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
 
         :type storage_class: string
         :param storage_class: The storage class of the new key.  By
@@ -205,7 +223,7 @@ class Bucket(S3Bucket):
                                             headers)
 
     def delete_key(self, key_name, headers=None, version_id=None,
-                   mfa_token=None, generation=None):
+                   mfa_token=None, generation=None, meta_generation=None):
         """
         Deletes a key from the bucket.
 
@@ -215,9 +233,19 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: A dictionary of header name/value pairs.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: Unused in this subclass.
+
         :type generation: int
         :param generation: The generation number of the key to delete. If not
             specified, the latest generation number will be deleted.
+
+        :type meta_generation: int
+        :param meta_generation: The meta_generation number of the key to delete.
+            If not specified, the latest meta_generation number will be deleted.
 
         :rtype: :class:`boto.gs.key.Key`
         :returns: A key object holding information on what was
@@ -226,12 +254,15 @@ class Bucket(S3Bucket):
         query_args_l = []
         if generation:
             query_args_l.append('generation=%s' % generation)
+            if meta_generation:
+                query_args_l.append('meta_generation=%s' % meta_generation)
         self._delete_key_internal(key_name, headers=headers,
                                   version_id=version_id, mfa_token=mfa_token,
                                   query_args_l=query_args_l)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
-                generation=None, if_generation=None, if_metageneration=None):
+                generation=None, meta_generation=None, if_generation=None,
+                if_metageneration=None):
         """Sets or changes a bucket's or key's ACL.
 
         :type acl_or_str: string or :class:`boto.gs.acl.ACL`
@@ -245,10 +276,18 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type generation: int
         :param generation: If specified, sets the ACL for a specific generation
             of a versioned object. If not specified, the current version is
             modified.
+
+        :type meta_generation: int
+        :param meta_generation: If specified, sets the ACL for a specific
+            meta_generation of a versioned object. If not specified, the
+            current version is modified.
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the acl
@@ -263,11 +302,14 @@ class Bucket(S3Bucket):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
             self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers,
-                             generation=generation, if_generation=if_generation,
+                             generation=generation,
+                             meta_generation=meta_generation,
+                             if_generation=if_generation,
                              if_metageneration=if_metageneration)
         else:
             self.set_canned_acl(acl_or_str, key_name, headers=headers,
                                 generation=generation,
+                                meta_generation=meta_generation,
                                 if_generation=if_generation,
                                 if_metageneration=if_metageneration)
 
@@ -308,7 +350,7 @@ class Bucket(S3Bucket):
         return acl
 
     def get_acl(self, key_name='', headers=None, version_id=None,
-                generation=None):
+                generation=None, meta_generation=None):
         """Returns the ACL of the bucket or an object in the bucket.
 
         :param str key_name: The name of the object to get the ACL for. If not
@@ -316,20 +358,30 @@ class Bucket(S3Bucket):
 
         :param dict headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :param int generation: If specified, gets the ACL for a specific
             generation of a versioned object. If not specified, the current
             version is returned. This parameter is only valid when retrieving
             the ACL of an object, not a bucket.
 
+        :param int meta_generation: If specified, gets the ACL for a specific
+            meta_generation of a versioned object. If not specified, the current
+            version is returned. This parameter is only valid when retrieving
+            the ACL of an object, not a bucket.
+
         :rtype: :class:`.gs.acl.ACL`
         """
-        query_args = STANDARD_ACL
+        query_args_l = [STANDARD_ACL]
         if generation:
-            query_args += '&generation=%s' % str(generation)
-        return self._get_acl_helper(key_name, headers, query_args)
+            query_args_l.append('generation=%s' % generation)
+            if meta_generation:
+                query_args_l.append('meta_generation=%s' % meta_generation)
+        return self._get_acl_helper(key_name, headers, "&".join(query_args_l))
 
     def get_xml_acl(self, key_name='', headers=None, version_id=None,
-                      generation=None):
+                    generation=None, meta_generation=None):
         """Returns the ACL string of the bucket or an object in the bucket.
 
         :param str key_name: The name of the object to get the ACL for. If not
@@ -337,8 +389,16 @@ class Bucket(S3Bucket):
 
         :param dict headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :param int generation: If specified, gets the ACL for a specific
             generation of a versioned object. If not specified, the current
+            version is returned. This parameter is only valid when retrieving
+            the ACL of an object, not a bucket.
+
+        :param int meta_generation: If specified, gets the ACL for a specific
+            meta_generation of a versioned object. If not specified, the current
             version is returned. This parameter is only valid when retrieving
             the ACL of an object, not a bucket.
 
@@ -346,7 +406,11 @@ class Bucket(S3Bucket):
         """
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%s' % str(generation)
+            if meta_generation:
+                query_args += '&generation=%s&meta_generation=%s' % (
+                    str(generation), str(meta_generation))
+            else:
+                query_args += '&generation=%s' % str(generation)
         return self._get_xml_acl_helper(key_name, headers, query_args)
 
     def get_def_acl(self, headers=None):
@@ -359,8 +423,8 @@ class Bucket(S3Bucket):
         return self._get_acl_helper('', headers, DEF_OBJ_ACL)
 
     def _set_acl_helper(self, acl_or_str, key_name, headers, query_args,
-                          generation, if_generation, if_metageneration,
-                          canned=False):
+                          generation, meta_generation, if_generation,
+                          if_metageneration, canned=False):
         """Provides common functionality for set_acl, set_xml_acl,
         set_canned_acl, set_def_acl, set_def_xml_acl, and
         set_def_canned_acl()."""
@@ -373,7 +437,11 @@ class Bucket(S3Bucket):
             data = acl_or_str.encode('UTF-8')
 
         if generation:
-            query_args += '&generation=%s' % str(generation)
+            if meta_generation:
+                query_args += '&generation=%s&meta_generation=%s' % (
+                    str(generation), str(meta_generation))
+            else:
+                query_args += '&generation=%s' % str(generation)
 
         if if_metageneration is not None and if_generation is None:
             raise ValueError("Received if_metageneration argument with no "
@@ -395,8 +463,8 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None,
-                    query_args='acl', generation=None, if_generation=None,
-                    if_metageneration=None):
+                    query_args='acl', generation=None, meta_generation=None,
+                    if_generation=None, if_metageneration=None):
         """Sets a bucket's or objects's ACL to an XML string.
 
         :type acl_str: string
@@ -409,6 +477,9 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type query_args: str
         :param query_args: The query parameters to pass with the request.
 
@@ -416,6 +487,11 @@ class Bucket(S3Bucket):
         :param generation: If specified, sets the ACL for a specific generation
             of a versioned object. If not specified, the current version is
             modified.
+
+        :type meta_generation: int
+        :param generation: If specified, sets the ACL for a specific
+            meta_generation of a versioned object. If not specified, the
+            current version is modified.
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the acl
@@ -429,12 +505,13 @@ class Bucket(S3Bucket):
         return self._set_acl_helper(acl_str, key_name=key_name, headers=headers,
                                     query_args=query_args,
                                     generation=generation,
+                                    meta_generation=meta_generation,
                                     if_generation=if_generation,
                                     if_metageneration=if_metageneration)
 
     def set_canned_acl(self, acl_str, key_name='', headers=None,
-                       version_id=None, generation=None, if_generation=None,
-                       if_metageneration=None):
+                       version_id=None, generation=None, meta_generation=None,
+                       if_generation=None, if_metageneration=None):
         """Sets a bucket's or objects's ACL using a predefined (canned) value.
 
         :type acl_str: string
@@ -448,10 +525,18 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type generation: int
         :param generation: If specified, sets the ACL for a specific generation
             of a versioned object. If not specified, the current version is
             modified.
+
+        :type meta_generation: int
+        :param generation: If specified, sets the ACL for a specific
+            meta_generation of a versioned object. If not specified, the
+            current version is modified.
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the acl
@@ -467,7 +552,7 @@ class Bucket(S3Bucket):
                              % acl_str)
         query_args = STANDARD_ACL
         return self._set_acl_helper(acl_str, key_name, headers, query_args,
-                                    generation, if_generation,
+                                    generation, meta_generation, if_generation,
                                     if_metageneration, canned=True)
 
     def set_def_canned_acl(self, acl_str, headers=None):
@@ -485,7 +570,7 @@ class Bucket(S3Bucket):
                              % acl_str)
         query_args = DEF_OBJ_ACL
         return self._set_acl_helper(acl_str, '', headers, query_args, None,
-                                    None, None, canned=True)
+                                    None, None, None, canned=True)
 
     def set_def_xml_acl(self, acl_str, headers=None):
         """Sets a bucket's default ACL to an XML string.
@@ -594,7 +679,8 @@ class Bucket(S3Bucket):
 
     # Method with same signature as boto.s3.bucket.Bucket.add_user_grant(),
     # to allow polymorphic treatment at application layer.
-    def add_user_grant(self, permission, user_id, recursive=False, headers=None):
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       headers=None):
         """
         Convenience method that provides a quick way to add a canonical user
         grant to a bucket. This method retrieves the current ACL, creates a new

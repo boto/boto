@@ -52,25 +52,6 @@ class GSStorageUriTest(GSTestCase):
         uri.generation = 0
         self.assertTrue(uri.has_version())
 
-    def testVersionUriStr(self):
-        uri_str = "gs://bucket/obj"
-        uri = storage_uri(uri_str)
-        uri.version_id = "versionid"
-        self.assertEquals(uri_str + "#versionid", uri.versioned_uri_str())
-
-        uri = storage_uri(uri_str)
-        self.assertEquals(uri_str, uri.versioned_uri_str())
-
-        uri.generation = 12345
-        self.assertEquals(uri_str + "#12345", uri.versioned_uri_str())
-        uri.generation = 0
-        self.assertEquals(uri_str + "#0", uri.versioned_uri_str())
-
-        uri.meta_generation = 1
-        self.assertEquals(uri_str + "#0.1", uri.versioned_uri_str())
-        uri.meta_generation = 0
-        self.assertEquals(uri_str + "#0.0", uri.versioned_uri_str())
-
     def testCloneReplaceKey(self):
         b = self._MakeBucket()
         k = b.new_key("obj")
