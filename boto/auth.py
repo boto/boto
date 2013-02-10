@@ -71,6 +71,20 @@ except ImportError:
     import sha
     sha256 = None
 
+# and this modifies sha and sha256 to accept the proper type
+_sha256 = sha256
+def sha256(*args, **kwargs):
+    args = list(args)
+    if len(args) > 0:
+        args[0] = boto.utils.ensure_bytes(args[0])
+    return _sha256(*args, **kwargs)
+try:
+    # this doesn't belong here
+    import hashlib
+    hashlib.sha256 = sha256
+except ImportError:
+    pass
+
 # this code intercepts calls to hmac.new and hmac.update
 # this fixes an issue in python3 where string objects get sent where
 # bytes are expected
