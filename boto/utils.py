@@ -60,6 +60,7 @@ import email.utils
 import email.encoders
 import gzip
 import base64
+import functools
 try:
     from hashlib import md5
 except ImportError:
@@ -154,7 +155,7 @@ def canonical_string(method, path, headers, expires=None,
         qsa = [a.split('=', 1) for a in qsa]
         qsa = [unquote_v(a) for a in qsa if a[0] in qsa_of_interest]
         if len(qsa) > 0:
-            qsa.sort(cmp=lambda x, y:cmp(x[0], y[0]))
+            qsa.sort(key=functools.cmp_to_key(lambda x, y:cmp(x[0], y[0])))
             qsa = ['='.join(a) for a in qsa]
             buf += '?'
             buf += '&'.join(qsa)
