@@ -27,11 +27,12 @@ Python types and vice-versa.
 import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
+import decimal
 from exceptions import DynamoDBNumberError
 
 
 DYNAMODB_CONTEXT = Context(
-    Emin=-128, Emax=126, rounding=None, prec=38,
+    Emin=-128, Emax=126, rounding=decimal.ROUND_HALF_EVEN, prec=38,
     traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
 
 
