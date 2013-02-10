@@ -1250,7 +1250,12 @@ class Key(object):
         """
         if isinstance(s, unicode):
             s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        if hasattr(s, 'decode') and not hasattr(s, 'encode'):
+            # python3
+            import io
+            fp = io.BytesIO(s)
+        else:
+            fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
