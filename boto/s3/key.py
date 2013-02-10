@@ -24,7 +24,10 @@
 import mimetypes
 import os
 import re
-import rfc822
+try:
+    import rfc822
+except ImportError:
+    import email.utils as rfc822
 import StringIO
 import base64
 import binascii
