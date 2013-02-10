@@ -137,10 +137,13 @@ def dynamize_value(val):
 
 class Binary(object):
     def __init__(self, value):
+        if isinstance(value, str) and not hasattr(value, 'decode'):
+            # python3 strings ONLY
+            value = bytes([ord(x) for x in value])
         self.value = value
 
     def encode(self):
-        return base64.b64encode(self.value)
+        return base64.b64encode(self.value).decode('utf-8')
 
     def __eq__(self, other):
         if isinstance(other, Binary):
@@ -251,7 +254,8 @@ class Dynamizer(object):
         raise DynamoDBNumberError(msg)
 
     def _encode_s(self, attr):
-        if isinstance(attr, unicode):
+        if isinstance(attr, unicode) and hasattr(attr, 'decode'):
+            # is a python2 unicode string ONLY
             attr = attr.encode('utf-8')
         elif not isinstance(attr, str):
             attr = str(attr)
