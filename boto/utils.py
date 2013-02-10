@@ -938,3 +938,9 @@ def ensure_bytes(string):
         # python3 string -> bytes
         string = string.encode('utf-8')
     return string
+
+def ensure_string(string):
+    if hasattr(string, 'decode') and not hasattr(string, 'encode'):
+        # it's a python3 byte literal
+        string = string.decode('utf-8')
+    return string

@@ -103,6 +103,12 @@ def fakeupdate(*args, **kwargs):
 hmac.HMAC._realupdate = hmac.HMAC.update
 hmac.HMAC.update = fakeupdate
 
+# ...and patch base64 too
+def fakeencodestring(*args, **kwargs):
+    return boto.utils.ensure_string(base64._realencodestring(*args, **kwargs))
+base64._realencodestring = base64.encodestring
+base64.encodestring = fakeencodestring
+
 class HmacKeys(object):
     """Key based Auth handler helper."""
 
