@@ -925,3 +925,15 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
     data_size = fp.tell() - spos
     fp.seek(spos)
     return (hex_digest, base64_digest, data_size)
+
+def ensure_bytes(string):
+    # in python2 convert unicode strings to regular strings and in
+    # python3 convert strings to bytes, but don't waste time converting
+    # regular python2 strings to themselves
+    if not isinstance(string, str) and hasattr(string, 'encode'):
+        # python2 unicode string
+        string = string.encode('utf-8')
+    elif isinstance(string, str) and not hasattr(string, 'decode'):
+        # python3 string -> bytes
+        string = string.encode('utf-8')
+    return string

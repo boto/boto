@@ -71,6 +71,23 @@ except ImportError:
     import sha
     sha256 = None
 
+# this code intercepts calls to hmac.new and hmac.update
+# this fixes an issue in python3 where string objects get sent where
+# bytes are expected
+    
+def fakenew(*args, **kwargs):
+    args = list(args)
+    args[0] = boto.utils.ensure_bytes(args[0])
+    return hmac._realnew(*args, **kwargs)
+hmac._realnew = hmac.new
+hmac.new = fakenew
+
+def fakeupdate(*args, **kwargs):
+    args = list(args)
+    args[1] = boto.utils.ensure_bytes(args[1])
+    return args[0]._realupdate(*args[1:], **kwargs)
+hmac.HMAC._realupdate = hmac.HMAC.update
+hmac.HMAC.update = fakeupdate
 
 class HmacKeys(object):
     """Key based Auth handler helper."""
