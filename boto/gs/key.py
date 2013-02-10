@@ -575,7 +575,7 @@ class Key(S3Key):
             headers = kwargs.get('headers', {})
             headers['x-goog-if-generation-match'] = str(if_generation)
             kwargs['headers'] = headers
-        return super(Key, self).set_contents_from_stream(*args, **kwargs)
+        super(Key, self).set_contents_from_stream(*args, **kwargs)
 
     def set_acl(self, acl_or_str, headers=None, generation=None,
                  if_generation=None, if_metageneration=None):

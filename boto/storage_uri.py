@@ -260,41 +260,65 @@ class BucketStorageUri(StorageUri):
             current version
 
         After instantiation the components are available in the following
-        fields: uri, scheme, bucket_name, object_name, version_id, generation,
-        meta_generation, is_latest, and (for object URIs) versionless_uri.
+        fields: scheme, bucket_name, object_name, version_id, generation,
+        meta_generation, is_latest, versionless_uri, version_specific_uri, uri.
+        Note on these last three fields: If instantiated without version info,
+        the string representation for a URI stays versionless; similarly, if
+        instantiated with version info, the string representation for a URI
+        stays version-specific.  If you call one of the
+        uri.set_contents_from_xyz() methods, a specific object version will be
+        created, and its version-specific URI string can be retrieved from
+        version_specific_uri even if the URI was instantiated without version
+        info.
         """
 
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
+        self.debug = debug
         if connection_args:
             self.connection_args = connection_args
         self.suppress_consec_slashes = suppress_consec_slashes
-        if self.bucket_name and self.object_name:
-            self.versionless_uri = '%s://%s/%s' % (scheme, bucket_name,
-                                                   object_name)
-            if generation and meta_generation:
-                self.uri = '%s#%s.%s' % (self.versionless_uri, generation,
-                    meta_generation)
-            elif version_id:
-                self.uri = '%s#%s' % (self.versionless_uri, version_id)
-            else:
-                self.uri = self.versionless_uri
-        elif self.bucket_name:
-            self.uri = ('%s://%s/' % (self.scheme, self.bucket_name))
-        else:
-            self.uri = ('%s://' % self.scheme)
-        self.debug = debug
-
         self.version_id = version_id
         self.generation = generation and int(generation)
         self.meta_generation = meta_generation and int(meta_generation)
         self.is_latest = is_latest
+        self.is_version_specific = bool(generation) or bool(version_id)
+        self._build_uri_strings()
+
+    def _build_uri_strings(self):
+      if self.bucket_name and self.object_name:
+          self.versionless_uri = '%s://%s/%s' % (self.scheme, self.bucket_name,
+                                                 self.object_name)
+          if self.generation and self.meta_generation:
+              self.version_specific_uri = '%s#%s.%s' % (
+                  self.versionless_uri, self.generation, self.meta_generation)
+          elif self.version_id:
+              self.version_specific_uri = '%s#%s' % (
+                  self.versionless_uri, self.version_id)
+          if self.is_version_specific:
+              self.uri = self.version_specific_uri
+          else:
+              self.uri = self.versionless_uri
+      elif self.bucket_name:
+          self.uri = ('%s://%s/' % (self.scheme, self.bucket_name))
+      else:
+          self.uri = ('%s://' % self.scheme)
 
     def _update_from_key(self, key):
-      self.version_id = getattr(key, 'version_id', None)
-      self.generation = getattr(key, 'generation', None)
-      self.meta_generation = getattr(key, 'meta_generation', None)
+      self._update_from_values(
+          getattr(key, 'version_id', None),
+          getattr(key, 'generation', None),
+          getattr(key, 'meta_generation', None),
+          getattr(key, 'is_latest', None))
+
+    def _update_from_values(self, version_id, generation, meta_generation,
+                            is_latest):
+      self.version_id = version_id
+      self.generation = generation
+      self.meta_generation = meta_generation
+      self.is_latest = is_latest
+      self._build_uri_strings()
 
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
@@ -334,8 +358,9 @@ class BucketStorageUri(StorageUri):
             suppress_consec_slashes=self.suppress_consec_slashes)
 
     def clone_replace_key(self, key):
-        """Instantiate a BucketStorageUri from a Key object while maintaining
-        debug and suppress_consec_slashes values.
+        """Instantiate a BucketStorageUri from the current BucketStorageUri, by
+        replacing the object name with the object name and other metadata found
+        in the given Key object (including generation, meta_generation, etc.)
 
         @type key: Key
         @param key: key for the new StorageUri to represent
@@ -616,6 +641,10 @@ class BucketStorageUri(StorageUri):
             result = key.set_contents_from_file(
                 fp, headers, replace, cb, num_cb, policy, md5, size=size,
                 rewind=rewind, res_upload_handler=res_upload_handler)
+            if res_upload_handler:
+                self._update_from_values(None, res_upload_handler.generation,
+                                         res_upload_handler.meta_generation,
+                                         None)
         else:
             self._warn_about_args('set_contents_from_file',
                                   res_upload_handler=res_upload_handler)
@@ -639,26 +668,22 @@ class BucketStorageUri(StorageUri):
                  src_version_id=None, storage_class='STANDARD',
                  preserve_acl=False, encrypt_key=False, headers=None,
                  query_args=None, src_generation=None):
+        """Returns newly created key."""
         self._check_object_uri('copy_key')
         dst_bucket = self.get_bucket(validate=False, headers=headers)
         if src_generation:
-          dst_bucket.copy_key(new_key_name=self.object_name,
-                              src_bucket_name=src_bucket_name,
-                              src_key_name=src_key_name, metadata=metadata,
-                              storage_class=storage_class,
-                              preserve_acl=preserve_acl,
-                              encrypt_key=encrypt_key,
-                              headers=headers, query_args=query_args,
-                              src_generation=src_generation)
+            return dst_bucket.copy_key(new_key_name=self.object_name,
+                src_bucket_name=src_bucket_name,
+                src_key_name=src_key_name, metadata=metadata,
+                storage_class=storage_class, preserve_acl=preserve_acl,
+                encrypt_key=encrypt_key, headers=headers, query_args=query_args,
+                src_generation=src_generation)
         else:
-          dst_bucket.copy_key(new_key_name=self.object_name,
-                              src_bucket_name=src_bucket_name,
-                              src_key_name=src_key_name, metadata=metadata,
-                              src_version_id=src_version_id,
-                              storage_class=storage_class,
-                              preserve_acl=preserve_acl,
-                              encrypt_key=encrypt_key,
-                              headers=headers, query_args=query_args)
+            return dst_bucket.copy_key(new_key_name=self.object_name,
+                src_bucket_name=src_bucket_name, src_key_name=src_key_name,
+                metadata=metadata, src_version_id=src_version_id,
+                storage_class=storage_class, preserve_acl=preserve_acl,
+                encrypt_key=encrypt_key, headers=headers, query_args=query_args)
 
     def enable_logging(self, target_bucket, target_prefix=None, validate=False,
                        headers=None, version_id=None):

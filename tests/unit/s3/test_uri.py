@@ -48,6 +48,7 @@ class UriTest(unittest.TestCase):
             self.assertEqual(uri.names_directory(), False)
             self.assertEqual(uri.names_file(), False)
             self.assertEqual(uri.is_stream(), False)
+            self.assertEqual(uri.is_version_specific, False)
 
     def test_bucket_uri_no_trailing_slash(self):
         for prov in ('gs', 's3'):
@@ -69,6 +70,7 @@ class UriTest(unittest.TestCase):
             self.assertEqual(uri.names_directory(), False)
             self.assertEqual(uri.names_file(), False)
             self.assertEqual(uri.is_stream(), False)
+            self.assertEqual(uri.is_version_specific, False)
 
     def test_bucket_uri_with_trailing_slash(self):
         for prov in ('gs', 's3'):
@@ -90,6 +92,7 @@ class UriTest(unittest.TestCase):
             self.assertEqual(uri.names_directory(), False)
             self.assertEqual(uri.names_file(), False)
             self.assertEqual(uri.is_stream(), False)
+            self.assertEqual(uri.is_version_specific, False)
 
     def test_non_versioned_object_uri(self):
         for prov in ('gs', 's3'):
@@ -111,6 +114,7 @@ class UriTest(unittest.TestCase):
             self.assertEqual(uri.names_directory(), False)
             self.assertEqual(uri.names_file(), False)
             self.assertEqual(uri.is_stream(), False)
+            self.assertEqual(uri.is_version_specific, False)
 
     def test_versioned_gs_object_uri(self):
         uri_str = 'gs://bucket/obj/a/b#1359908801674000.1'
@@ -131,6 +135,7 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.names_directory(), False)
         self.assertEqual(uri.names_file(), False)
         self.assertEqual(uri.is_stream(), False)
+        self.assertEqual(uri.is_version_specific, True)
 
     def test_roundtrip_versioned_gs_object_uri_parsed(self):
         uri_str = 'gs://bucket/obj#1359908801674000.1'
@@ -139,6 +144,7 @@ class UriTest(unittest.TestCase):
         roundtrip_uri = boto.storage_uri(uri.uri, validate=False,
             suppress_consec_slashes=False)
         self.assertEqual(uri.uri, roundtrip_uri.uri)
+        self.assertEqual(uri.is_version_specific, True)
 
     def test_versioned_s3_object_uri(self):
         uri_str = 's3://bucket/obj/a/b#eMuM0J15HkJ9QHlktfNP5MfA.oYR2q6S'
@@ -159,6 +165,7 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.names_directory(), False)
         self.assertEqual(uri.names_file(), False)
         self.assertEqual(uri.is_stream(), False)
+        self.assertEqual(uri.is_version_specific, True)
 
     def test_explicit_file_uri(self):
         tmp_dir = tempfile.tempdir
@@ -173,6 +180,7 @@ class UriTest(unittest.TestCase):
         self.assertFalse(hasattr(uri, 'version_id'))
         self.assertFalse(hasattr(uri, 'generation'))
         self.assertFalse(hasattr(uri, 'meta_generation'))
+        self.assertFalse(hasattr(uri, 'is_version_specific'))
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_bucket(), False)
         # Don't check uri.names_container(), uri.names_directory(),
@@ -194,6 +202,7 @@ class UriTest(unittest.TestCase):
         self.assertFalse(hasattr(uri, 'version_id'))
         self.assertFalse(hasattr(uri, 'generation'))
         self.assertFalse(hasattr(uri, 'meta_generation'))
+        self.assertFalse(hasattr(uri, 'is_version_specific'))
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_bucket(), False)
         # Don't check uri.names_container(), uri.names_directory(),
@@ -222,6 +231,7 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.names_directory(), False)
         self.assertEqual(uri.names_file(), False)
         self.assertEqual(uri.is_stream(), False)
+        self.assertEqual(uri.is_version_specific, False)
 
     def test_invalid_scheme(self):
         uri_str = 'mars://bucket/object'

@@ -174,12 +174,10 @@ class Bucket(S3Bucket):
         if src_generation:
             headers = headers or {}
             headers['x-goog-copy-source-generation'] = str(src_generation)
-        super(Bucket, self).copy_key(new_key_name, src_bucket_name,
-                                     src_key_name, metadata=metadata,
-                                     storage_class=storage_class,
-                                     preserve_acl=preserve_acl,
-                                     encrypt_key=encrypt_key, headers=headers,
-                                     query_args=query_args)
+        return super(Bucket, self).copy_key(
+            new_key_name, src_bucket_name, src_key_name, metadata=metadata,
+            storage_class=storage_class, preserve_acl=preserve_acl,
+            encrypt_key=encrypt_key, headers=headers, query_args=query_args)
 
     def list_versions(self, prefix='', delimiter='', marker='',
                       generation_marker='', headers=None):
