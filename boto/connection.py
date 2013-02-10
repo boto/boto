@@ -375,10 +375,10 @@ class HTTPRequest(object):
                  self.headers, self.body))
 
     def authorize(self, connection, **kwargs):
-        for key in self.headers:
-            val = self.headers[key]
-            if isinstance(val, unicode):
-                self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
+        #for key in self.headers:
+        #    val = self.headers[key]
+        #    if isinstance(val, unicode):
+        #        self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
 
         connection._auth_handler.add_auth(self, **kwargs)
 
