@@ -57,7 +57,10 @@ class KeyfileTest(unittest.TestCase):
         try:
             self.keyfile.tell()
         except ValueError, e:
-            self.assertEqual(e.message, 'I/O operation on closed file')
+            if not hasattr(e, 'message'):
+                self.assertEqual(e.args[0], 'I/O operation on closed file')
+            else:
+                self.assertEqual(e.message, 'I/O operation on closed file')
 
     def testSeek(self):
         self.assertEqual(self.keyfile.read(4), self.contents[:4])
@@ -70,7 +73,10 @@ class KeyfileTest(unittest.TestCase):
         try:
             self.keyfile.seek(-5)
         except IOError, e:
-            self.assertEqual(e.message, 'Invalid argument')
+            if not hasattr(e, 'message'):
+                self.assertEqual(e.args[0], 'Invalid argument')
+            else:
+                self.assertEqual(e.message, 'Invalid argument')
 
         # Reading past end of file is supposed to return empty string.
         self.keyfile.read(10)
@@ -92,7 +98,10 @@ class KeyfileTest(unittest.TestCase):
         try:
             self.keyfile.seek(-100, os.SEEK_END)
         except IOError, e:
-            self.assertEqual(e.message, 'Invalid argument')
+            if not hasattr(e, 'message'):
+                self.assertEqual(e.args[0], 'Invalid argument')
+            else:
+                self.assertEqual(e.message, 'Invalid argument')
 
     def testSeekCur(self):
         self.assertEqual(self.keyfile.read(1), self.contents[0])
