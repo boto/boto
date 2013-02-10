@@ -41,6 +41,10 @@ cd "${BUILD_DIR}"
 
 echo "2to3 successful! Running tests... (with verbose output)"
 
+# ghetto fix
+find . -type f -name \*.py -exec sed -i.bk -e 's,from mock,from unittest.mock,g' {} \;
+find . -type f -name \*.py -exec sed -i.bk -e 's,import mock,import unittest.mock as mock,g' {} \;
+
 set -x
 python tests/test.py tests/unit
 
