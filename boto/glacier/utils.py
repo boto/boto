@@ -128,7 +128,7 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
     chunks = []
     chunk = fileobj.read(chunk_size)
     while chunk:
-        linear_hash.update(chunk)
+        linear_hash.update(boto.utils.ensure_bytes(chunk))
         chunks.append(hashlib.sha256(chunk).digest())
         chunk = fileobj.read(chunk_size)
     if not chunks:
