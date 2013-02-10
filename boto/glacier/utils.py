@@ -22,6 +22,8 @@
 import hashlib
 import math
 
+# is this kosher?
+import boto.utils
 
 _MEGABYTE = 1024 * 1024
 DEFAULT_PART_SIZE = 4 * _MEGABYTE
@@ -69,6 +71,7 @@ def minimum_part_size(size_in_bytes, default_part_size=DEFAULT_PART_SIZE):
 
 
 def chunk_hashes(bytestring, chunk_size=_MEGABYTE):
+    bytestring = boto.utils.ensure_bytes(bytestring)
     chunk_count = int(math.ceil(len(bytestring) / float(chunk_size)))
     hashes = []
     for i in xrange(chunk_count):
@@ -134,6 +137,8 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
 
 
 def bytes_to_hex(str_as_bytes):
+    if isinstance(str_as_bytes[0], int):
+        return ''.join(["%02x" % x for x in str_as_bytes]).strip()
     return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
 
 
