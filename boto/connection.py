@@ -95,6 +95,14 @@ PORTS_BY_SECURITY = {True: 443,
 
 DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
 
+# sigh
+# monkeypatch xml.sax.parseString
+def ps(*args, **kwargs):
+    args = list(args)
+    args[0] = boto.utils.ensure_bytes(args[0])
+    xml.sax._parseString(*args, **kwargs)
+xml.sax._parseString = xml.sax.parseString
+xml.sax.parseString = ps
 
 class HostConnectionPool(object):
 
