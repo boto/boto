@@ -20,8 +20,13 @@
 # IN THE SOFTWARE.
 #
 from tests.unit import unittest
-from boto.connection import AWSQueryConnection
+from httpretty import HTTPretty
 
+from boto.connection import AWSQueryConnection
+from boto.regioninfo import RegionInfo
+
+import json
+import urlparse
 
 class TestListParamsSerialization(unittest.TestCase):
     maxDiff = None
@@ -54,6 +59,97 @@ class TestListParamsSerialization(unittest.TestCase):
             'ParamName.member.2': 'bar',
             'ParamName.member.3': 'baz',
         }, params)
+
+
+class MockAWSService(AWSQueryConnection):
+    """This is a fake AWS service which can be used to test the AWSQueryConnection object is behaving properly."""
+
+    API_VERSION = '2012-01-01'
+    def _required_auth_capability(self):
+        return ['sign-v2']
+
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+                 is_secure=True, host=None, port=None,
+                 proxy=None, proxy_port=None,
+                 proxy_user=None, proxy_pass=None, debug=0,
+                 https_connection_factory=None, region=None, path='/',
+                 api_version=None, security_token=None,
+                 validate_certs=True):
+        self.region = region
+        AWSQueryConnection.__init__(self, aws_access_key_id,
+                                    aws_secret_access_key,
+                                    is_secure, port, proxy, proxy_port,
+                                    proxy_user, proxy_pass,
+                                    self.region.endpoint, debug,
+                                    https_connection_factory, path,
+                                    security_token,
+                                    validate_certs=validate_certs)
+
+class TestAWSQueryConnection(unittest.TestCase):
+    def setUp(self):
+        self.region = RegionInfo(name='cc-zone-1',
+                            endpoint='mockservice.cc-zone-1.amazonaws.com',
+                            connection_cls=MockAWSService)
+
+        HTTPretty.enable()
+        HTTPretty.register_uri(HTTPretty.POST, 'https://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'secure'}), content_type='application/json')
+        HTTPretty.register_uri(HTTPretty.POST, 'http://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'normal'}), content_type='application/json')
+        HTTPretty.register_uri(HTTPretty.POST, 'http://mockservice.cc-zone-1.amazonaws.com:8080/', json.dumps({'test': 'alternate'}), content_type='application/json')
+
+    def tearDown(self):
+        HTTPretty.disable()
+
+    def test_query_connection_basis(self):
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+
+        self.assertEqual(conn.host, 'mockservice.cc-zone-1.amazonaws.com')
+    
+    def test_single_command(self):
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+        resp = conn.make_request('myCmd', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
+
+        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
+        self.assertEqual(args['SignatureMethod'], ['HmacSHA256'])
+        self.assertEqual(args['par1'], ['foo'])
+        self.assertEqual(args['par2'], ['baz'])
+
+        self.assertEqual(resp.read(), '{"test": "secure"}')
+
+    def test_multi_commands(self):
+        """Check connection re-use"""
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+ 
+        resp1 = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
+        body1 = urlparse.parse_qs(HTTPretty.last_request.body)
+        
+        resp2 = conn.make_request('myCmd2', {'par3': 'bar', 'par4': 'narf'}, "/", "POST")
+        body2 = urlparse.parse_qs(HTTPretty.last_request.body)
+
+        self.assertEqual(body1['par1'], ['foo'])
+        self.assertEqual(body1['par2'], ['baz'])
+        with self.assertRaises(KeyError):
+            body1['par3']
+
+        self.assertEqual(body2['par3'], ['bar'])
+        self.assertEqual(body2['par4'], ['narf'])
+        with self.assertRaises(KeyError):
+            body2['par1']
+
+        self.assertEqual(resp1.read(), '{"test": "secure"}')
+        self.assertEqual(resp2.read(), '{"test": "secure"}')
+
+    def test_non_secure(self):
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret', is_secure=False)
+        resp = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
+
+        self.assertEqual(resp.read(), '{"test": "normal"}')
+
+    def test_alternate_port(self):
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret', port=8080, is_secure=False)
+        resp = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
+
+        self.assertEqual(resp.read(), '{"test": "alternate"}')
 
 
 if __name__ == '__main__':
