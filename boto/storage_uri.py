@@ -570,17 +570,38 @@ class BucketStorageUri(StorageUri):
         return provider
 
     def set_acl(self, acl_or_str, key_name='', validate=False, headers=None,
-                version_id=None):
+                version_id=None, if_generation=None, if_metageneration=None):
         """Sets or updates a bucket's ACL."""
         self._check_bucket_uri('set_acl')
         key_name = key_name or self.object_name or ''
         bucket = self.get_bucket(validate, headers)
         if self.generation: # Makes no sense to pass only meta_generation.
-          bucket.set_acl(acl_or_str, key_name, headers,
-                         generation=self.generation)
+          bucket.set_acl(
+              acl_or_str, key_name, headers, generation=self.generation,
+              if_generation=if_generation, if_metageneration=if_metageneration)
         else:
           version_id = version_id or self.version_id
           bucket.set_acl(acl_or_str, key_name, headers, version_id)
+
+    def set_xml_acl(self, xmlstring, key_name='', validate=False, headers=None,
+            version_id=None, if_generation=None, if_metageneration=None):
+        """Sets or updates a bucket's ACL with an XML string."""
+        self._check_bucket_uri('set_xml_acl')
+        key_name = key_name or self.object_name or ''
+        bucket = self.get_bucket(validate, headers)
+        if self.generation:
+          bucket.set_xml_acl(
+              xmlstring, key_name, headers, generation=self.generation,
+              if_generation=if_generation, if_metageneration=if_metageneration)
+        else:
+          version_id = version_id or self.version_id
+          bucket.set_xml_acl(xmlstring, key_name, headers,
+                             version_id=version_id)
+
+    def set_def_xml_acl(self, xmlstring, validate=False, headers=None):
+        """Sets or updates a bucket's default object ACL with an XML string."""
+        self._check_bucket_uri('set_def_xml_acl')
+        self.get_bucket(validate, headers).set_def_xml_acl(xmlstring, headers)
 
     def set_def_acl(self, acl_or_str, validate=False, headers=None,
                     version_id=None):
