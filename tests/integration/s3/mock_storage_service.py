@@ -118,7 +118,7 @@ class MockKey(object):
             if match:
                 self.read_pos = int(match.group(1))
 
-    def close(self):
+    def close(self, fast=NOT_IMPL):
       self.closed = True
 
     def read(self, size=0):
@@ -417,6 +417,9 @@ class MockBucketStorageUri(object):
         self.generation = generation and int(generation)
         self.meta_generation = meta_generation and int(meta_generation)
         self.is_latest = is_latest
+        if bucket_name and object_name:
+            self.versionless_uri = '%s://%s/%s' % (scheme, bucket_name,
+                                                   object_name)
 
     def __repr__(self):
         """Returns string representation of URI."""
@@ -456,18 +459,6 @@ class MockBucketStorageUri(object):
         return (issubclass(type(self), MockBucketStorageUri)
                 and ((self.version_id is not None)
                      or (self.generation is not None)))
-
-    def versioned_uri_str(self):
-        version_desc = ''
-        if not issubclass(type(self), MockBucketStorageUri):
-          pass
-        elif self.version_id is not None:
-            version_desc += '#' + self.version_id
-        elif self.generation is not None:
-            version_desc += '#' + str(self.generation)
-            if self.meta_generation is not None:
-                version_desc += '.' + str(self.meta_generation)
-        return self.uri + version_desc
 
     def delete_key(self, validate=NOT_IMPL, headers=NOT_IMPL,
                    version_id=NOT_IMPL, mfa_token=NOT_IMPL):
