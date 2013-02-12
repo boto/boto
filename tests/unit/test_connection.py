@@ -23,9 +23,11 @@ from tests.unit import unittest
 from httpretty import HTTPretty
 
 from boto.connection import AWSQueryConnection
+from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 
 import json
+from mock import Mock, call
 import urlparse
 
 class TestListParamsSerialization(unittest.TestCase):
@@ -92,19 +94,21 @@ class TestAWSQueryConnection(unittest.TestCase):
                             connection_cls=MockAWSService)
 
         HTTPretty.enable()
-        HTTPretty.register_uri(HTTPretty.POST, 'https://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'secure'}), content_type='application/json')
-        HTTPretty.register_uri(HTTPretty.POST, 'http://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'normal'}), content_type='application/json')
-        HTTPretty.register_uri(HTTPretty.POST, 'http://mockservice.cc-zone-1.amazonaws.com:8080/', json.dumps({'test': 'alternate'}), content_type='application/json')
 
     def tearDown(self):
         HTTPretty.disable()
 
+class TestAWSQueryConnection(TestAWSQueryConnection):
     def test_query_connection_basis(self):
+        HTTPretty.register_uri(HTTPretty.POST, 'https://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'secure'}), content_type='application/json')
+
         conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
 
         self.assertEqual(conn.host, 'mockservice.cc-zone-1.amazonaws.com')
     
     def test_single_command(self):
+        HTTPretty.register_uri(HTTPretty.POST, 'https://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'secure'}), content_type='application/json')
+
         conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
         resp = conn.make_request('myCmd', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
 
@@ -118,6 +122,8 @@ class TestAWSQueryConnection(unittest.TestCase):
 
     def test_multi_commands(self):
         """Check connection re-use"""
+        HTTPretty.register_uri(HTTPretty.POST, 'https://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'secure'}), content_type='application/json')
+
         conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
  
         resp1 = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
@@ -140,17 +146,54 @@ class TestAWSQueryConnection(unittest.TestCase):
         self.assertEqual(resp2.read(), '{"test": "secure"}')
 
     def test_non_secure(self):
+        HTTPretty.register_uri(HTTPretty.POST, 'http://mockservice.cc-zone-1.amazonaws.com/', json.dumps({'test': 'normal'}), content_type='application/json')
+
         conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret', is_secure=False)
         resp = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
 
         self.assertEqual(resp.read(), '{"test": "normal"}')
 
     def test_alternate_port(self):
+        HTTPretty.register_uri(HTTPretty.POST, 'http://mockservice.cc-zone-1.amazonaws.com:8080/', json.dumps({'test': 'alternate'}), content_type='application/json')
+
         conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret', port=8080, is_secure=False)
         resp = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, "/", "POST")
 
         self.assertEqual(resp.read(), '{"test": "alternate"}')
 
+    def test_temp_failure(self):
+        HTTPretty.register_uri(HTTPretty.POST, 'https://mockservice.cc-zone-1.amazonaws.com/temp_fail/', 
+                               responses=[
+                                   HTTPretty.Response(body="{'test': 'fail'}", status=500),
+                                   HTTPretty.Response(body="{'test': 'success'}", status=200)])
+
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+        resp = conn.make_request('myCmd1', {'par1': 'foo', 'par2': 'baz'}, '/temp_fail/', 'POST')
+        self.assertEqual(resp.read(), "{'test': 'success'}")
+
+class TestAWSQueryStatus(TestAWSQueryConnection):
+
+    def test_get_status(self):
+        HTTPretty.register_uri(HTTPretty.GET, 'https://mockservice.cc-zone-1.amazonaws.com/status', '<status>ok</status>', content_type='text/xml')
+
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+        resp = conn.get_status('getStatus', {'par1': 'foo', 'par2': 'baz'}, 'status')
+
+        self.assertEqual(resp, "ok")
+
+    def test_get_status_blank_error(self):
+        HTTPretty.register_uri(HTTPretty.GET, 'https://mockservice.cc-zone-1.amazonaws.com/status', '', content_type='text/xml')
+
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+        with self.assertRaises(BotoServerError):
+            resp = conn.get_status('getStatus', {'par1': 'foo', 'par2': 'baz'}, 'status')
+
+    def test_get_status_error(self):
+        HTTPretty.register_uri(HTTPretty.GET, 'https://mockservice.cc-zone-1.amazonaws.com/status', '<status>error</status>', content_type='text/xml', status=400)
+
+        conn = self.region.connect(aws_access_key_id='access_key', aws_secret_access_key='secret')
+        with self.assertRaises(BotoServerError):
+            resp = conn.get_status('getStatus', {'par1': 'foo', 'par2': 'baz'}, 'status')
 
 if __name__ == '__main__':
     unittest.main()
