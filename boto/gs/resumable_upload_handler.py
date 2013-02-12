@@ -368,6 +368,7 @@ class ResumableUploadHandler(object):
                     cb(total_bytes_uploaded, file_length)
                     i = 0
             buf = fp.read(self.BUFFER_SIZE)
+        http_conn.set_debuglevel(conn.debug)
         if cb:
             cb(total_bytes_uploaded, file_length)
         if total_bytes_uploaded != file_length:
