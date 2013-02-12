@@ -228,7 +228,7 @@ class Redirect(object):
         if self.protocol is not None:
             inner_text.append(tag('Protocol', self.protocol))
         if self.replace_key is not None:
-            inner_text.append(tag('ReplaceKey', self.replace_key))
+            inner_text.append(tag('ReplaceKeyWith', self.replace_key))
         if self.replace_key_prefix is not None:
             inner_text.append(tag('ReplaceKeyPrefixWith',
                                   self.replace_key_prefix))
