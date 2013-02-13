@@ -27,7 +27,6 @@ from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 
 import json
-from mock import Mock, call
 import urlparse
 
 class TestListParamsSerialization(unittest.TestCase):
