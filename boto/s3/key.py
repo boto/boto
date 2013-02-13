@@ -1685,7 +1685,8 @@ class Key(object):
             rewritten_metadata[rewritten_h] = metadata[h]
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
-                            metadata=metadata, preserve_acl=preserve_acl)
+                            metadata=metadata, preserve_acl=preserve_acl,
+                            headers=headers)
 
     def restore(self, days, headers=None):
         """Restore an object from an archive.
