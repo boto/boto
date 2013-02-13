@@ -143,6 +143,54 @@ guessing.  The other thing to note is that boto does stream the content
 to and from S3 so you should be able to send and receive large files without
 any problem.
 
+Accessing A Bucket
+------------------
+
+Once a bucket exists, you can access it by getting the bucket. For example::
+
+    >>> mybucket = conn.get_bucket('mybucket') # Substitute in your bucket name
+    >>> mybucket.list()
+    <listing of keys in the bucket)
+
+By default, this method tries to validate the bucket's existence. You can
+override this behavior by passing ``validate=False``.::
+
+    >>> nonexistent = conn.get_bucket('i-dont-exist-at-all', validate=False)
+
+If the bucket does not exist, a ``S3ResponseError`` will commonly be thrown. If
+you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
+
+    >>> nonexistent = conn.lookup('i-dont-exist-at-all')
+    >>> if nonexistent is None:
+    ...     print "No such bucket!"
+    ...
+    No such bucket!
+
+Deleting A Bucket
+-----------------
+
+Removing a bucket can be done using the ``delete_bucket`` method. For example::
+
+    >>> conn.delete_bucket('mybucket') # Substitute in your bucket name
+
+The bucket must be empty of keys or this call will fail & an exception will be
+raised. You can remove a non-empty bucket by doing something like::
+
+    >>> full_bucket = conn.get_bucket('bucket-to-delete')
+    # It's full of keys. Delete them all.
+    >>> for key in full_bucket.list():
+    ...     key.delete()
+    ...
+    # The bucket is empty now. Delete it.
+    >>> conn.delete_bucket('bucket-to-delete')
+
+.. warning::
+
+    This method can cause data loss! Be very careful when using it.
+
+    Additionally, be aware that using the above method for removing all keys
+    and deleting the bucket involves a request for each key. As such, it's not
+    particularly fast & is very chatty.
 
 Listing All Available Buckets
 -----------------------------
