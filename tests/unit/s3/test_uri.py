@@ -40,7 +40,6 @@ class UriTest(unittest.TestCase):
             self.assertEqual('', uri.object_name)
             self.assertEqual(None, uri.version_id)
             self.assertEqual(None, uri.generation)
-            self.assertEqual(None, uri.meta_generation)
             self.assertEqual(uri.names_provider(), True)
             self.assertEqual(uri.names_container(), True)
             self.assertEqual(uri.names_bucket(), False)
@@ -62,7 +61,6 @@ class UriTest(unittest.TestCase):
             self.assertEqual('', uri.object_name)
             self.assertEqual(None, uri.version_id)
             self.assertEqual(None, uri.generation)
-            self.assertEqual(None, uri.meta_generation)
             self.assertEqual(uri.names_provider(), False)
             self.assertEqual(uri.names_container(), True)
             self.assertEqual(uri.names_bucket(), True)
@@ -84,7 +82,6 @@ class UriTest(unittest.TestCase):
             self.assertEqual('', uri.object_name)
             self.assertEqual(None, uri.version_id)
             self.assertEqual(None, uri.generation)
-            self.assertEqual(None, uri.meta_generation)
             self.assertEqual(uri.names_provider(), False)
             self.assertEqual(uri.names_container(), True)
             self.assertEqual(uri.names_bucket(), True)
@@ -106,7 +103,6 @@ class UriTest(unittest.TestCase):
             self.assertEqual('obj/a/b', uri.object_name)
             self.assertEqual(None, uri.version_id)
             self.assertEqual(None, uri.generation)
-            self.assertEqual(None, uri.meta_generation)
             self.assertEqual(uri.names_provider(), False)
             self.assertEqual(uri.names_container(), False)
             self.assertEqual(uri.names_bucket(), False)
@@ -117,7 +113,7 @@ class UriTest(unittest.TestCase):
             self.assertEqual(uri.is_version_specific, False)
 
     def test_versioned_gs_object_uri(self):
-        uri_str = 'gs://bucket/obj/a/b#1359908801674000.1'
+        uri_str = 'gs://bucket/obj/a/b#1359908801674000'
         uri = boto.storage_uri(uri_str, validate=False,
             suppress_consec_slashes=False)
         self.assertEqual('gs', uri.scheme)
@@ -127,7 +123,6 @@ class UriTest(unittest.TestCase):
         self.assertEqual('obj/a/b', uri.object_name)
         self.assertEqual(None, uri.version_id)
         self.assertEqual(1359908801674000, uri.generation)
-        self.assertEqual(1, uri.meta_generation)
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_container(), False)
         self.assertEqual(uri.names_bucket(), False)
@@ -138,7 +133,7 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.is_version_specific, True)
 
     def test_roundtrip_versioned_gs_object_uri_parsed(self):
-        uri_str = 'gs://bucket/obj#1359908801674000.1'
+        uri_str = 'gs://bucket/obj#1359908801674000'
         uri = boto.storage_uri(uri_str, validate=False,
             suppress_consec_slashes=False)
         roundtrip_uri = boto.storage_uri(uri.uri, validate=False,
@@ -157,7 +152,6 @@ class UriTest(unittest.TestCase):
         self.assertEqual('obj/a/b', uri.object_name)
         self.assertEqual('eMuM0J15HkJ9QHlktfNP5MfA.oYR2q6S', uri.version_id)
         self.assertEqual(None, uri.generation)
-        self.assertEqual(None, uri.meta_generation)
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_container(), False)
         self.assertEqual(uri.names_bucket(), False)
@@ -179,7 +173,6 @@ class UriTest(unittest.TestCase):
         self.assertEqual(tmp_dir, uri.object_name)
         self.assertFalse(hasattr(uri, 'version_id'))
         self.assertFalse(hasattr(uri, 'generation'))
-        self.assertFalse(hasattr(uri, 'meta_generation'))
         self.assertFalse(hasattr(uri, 'is_version_specific'))
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_bucket(), False)
@@ -201,7 +194,6 @@ class UriTest(unittest.TestCase):
         self.assertEqual(tmp_dir, uri.object_name)
         self.assertFalse(hasattr(uri, 'version_id'))
         self.assertFalse(hasattr(uri, 'generation'))
-        self.assertFalse(hasattr(uri, 'meta_generation'))
         self.assertFalse(hasattr(uri, 'is_version_specific'))
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_bucket(), False)
@@ -212,18 +204,17 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.is_stream(), False)
 
     def test_gs_object_uri_contains_sharp_not_matching_version_syntax(self):
-        uri_str = 'gs://bucket/obj#135990880167400.1'
+        uri_str = 'gs://bucket/obj#135990880167400'
         uri = boto.storage_uri(uri_str, validate=False,
             suppress_consec_slashes=False)
         self.assertEqual('gs', uri.scheme)
         self.assertEqual(uri_str, uri.uri)
-        self.assertEqual('gs://bucket/obj#135990880167400.1',
+        self.assertEqual('gs://bucket/obj#135990880167400',
                          uri.versionless_uri)
         self.assertEqual('bucket', uri.bucket_name)
-        self.assertEqual('obj#135990880167400.1', uri.object_name)
+        self.assertEqual('obj#135990880167400', uri.object_name)
         self.assertEqual(None, uri.version_id)
         self.assertEqual(None, uri.generation)
-        self.assertEqual(None, uri.meta_generation)
         self.assertEqual(uri.names_provider(), False)
         self.assertEqual(uri.names_container(), False)
         self.assertEqual(uri.names_bucket(), False)

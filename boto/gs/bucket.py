@@ -65,8 +65,7 @@ class Bucket(S3Bucket):
             setattr(self, name, value)
 
     def get_key(self, key_name, headers=None, version_id=None,
-                response_headers=None, generation=None,
-                meta_generation=None):
+                response_headers=None, generation=None):
         """Returns a Key instance for an object in this bucket.
 
          Note that this method uses a HEAD request to check for the existence of
@@ -88,18 +87,12 @@ class Bucket(S3Bucket):
         :param generation: A specific generation number to fetch the key at. If
             not specified, the latest generation is fetched.
 
-        :type meta_generation: int
-        :param meta_generation: A specific meta_generation number to fetch the
-            key at. If not specified, the latest meta_generation is fetched.
-
         :rtype: :class:`boto.gs.key.Key`
         :returns: A Key object from this bucket.
         """
         query_args_l = []
         if generation:
             query_args_l.append('generation=%s' % generation)
-            if meta_generation:
-                query_args_l.append('meta_generation=%s' % meta_generation)
         if response_headers:
             for rk, rv in response_headers.iteritems():
                 query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
@@ -111,8 +104,7 @@ class Bucket(S3Bucket):
     def copy_key(self, new_key_name, src_bucket_name, src_key_name,
                  metadata=None, src_version_id=None, storage_class='STANDARD',
                  preserve_acl=False, encrypt_key=False, headers=None,
-                 query_args=None, src_generation=None,
-                 src_meta_generation=None):
+                 query_args=None, src_generation=None):
         """Create a new key in the bucket by copying an existing key.
 
         :type new_key_name: string
@@ -127,10 +119,6 @@ class Bucket(S3Bucket):
         :type src_generation: int
         :param src_generation: The generation number of the source key to copy.
             If not specified, the latest generation is copied.
-
-        :type src_meta_generation: int
-        :param src_meta_generation: The meta_generation number of the source key
-            to copy. If not specified, the latest meta_generation is copied.
 
         :type metadata: dict
         :param metadata: Metadata to be associated with new key.  If
@@ -221,7 +209,7 @@ class Bucket(S3Bucket):
                                             headers)
 
     def delete_key(self, key_name, headers=None, version_id=None,
-                   mfa_token=None, generation=None, meta_generation=None):
+                   mfa_token=None, generation=None):
         """
         Deletes a key from the bucket.
 
@@ -241,10 +229,6 @@ class Bucket(S3Bucket):
         :param generation: The generation number of the key to delete. If not
             specified, the latest generation number will be deleted.
 
-        :type meta_generation: int
-        :param meta_generation: The meta_generation number of the key to delete.
-            If not specified, the latest meta_generation number will be deleted.
-
         :rtype: :class:`boto.gs.key.Key`
         :returns: A key object holding information on what was
             deleted.
@@ -252,8 +236,6 @@ class Bucket(S3Bucket):
         query_args_l = []
         if generation:
             query_args_l.append('generation=%s' % generation)
-            if meta_generation:
-                query_args_l.append('meta_generation=%s' % meta_generation)
         self._delete_key_internal(key_name, headers=headers,
                                   version_id=version_id, mfa_token=mfa_token,
                                   query_args_l=query_args_l)

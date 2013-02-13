@@ -234,8 +234,7 @@ class BucketStorageUri(StorageUri):
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=0, connection_args=None, suppress_consec_slashes=True,
-                 version_id=None, generation=None, meta_generation=None,
-                 is_latest=False):
+                 version_id=None, generation=None, is_latest=False):
         """Instantiate a BucketStorageUri from scheme,bucket,object tuple.
 
         @type scheme: string
@@ -243,8 +242,7 @@ class BucketStorageUri(StorageUri):
         @type bucket_name: string
         @param bucket_name: bucket name
         @type object_name: string
-        @param object_name: object name, excluding
-            generation/meta_genearation/version.
+        @param object_name: object name, excluding generation/version.
         @type debug: int
         @param debug: debug level to pass in to connection (range 0..2)
         @type connection_args: map
@@ -255,21 +253,19 @@ class BucketStorageUri(StorageUri):
             consecutive slashes will be suppressed in key paths.
         @param version_id: Object version id (S3-specific).
         @param generation: Object generation number (GCS-specific).
-        @param meta_generation: Object meta-generation number (GCS-specific).
         @param is_latest: boolean indicating that a versioned object is the
             current version
 
         After instantiation the components are available in the following
         fields: scheme, bucket_name, object_name, version_id, generation,
-        meta_generation, is_latest, versionless_uri, version_specific_uri, uri.
-        Note on these last three fields: If instantiated without version info,
-        the string representation for a URI stays versionless; similarly, if
-        instantiated with version info, the string representation for a URI
-        stays version-specific.  If you call one of the
-        uri.set_contents_from_xyz() methods, a specific object version will be
-        created, and its version-specific URI string can be retrieved from
-        version_specific_uri even if the URI was instantiated without version
-        info.
+        is_latest, versionless_uri, version_specific_uri, uri.
+        Note: If instantiated without version info, the string representation
+        for a URI stays versionless; similarly, if instantiated with version
+        info, the string representation for a URI stays version-specific. If you
+        call one of the uri.set_contents_from_xyz() methods, a specific object
+        version will be created, and its version-specific URI string can be
+        retrieved from version_specific_uri even if the URI was instantiated
+        without version info.
         """
 
         self.scheme = scheme
@@ -281,7 +277,6 @@ class BucketStorageUri(StorageUri):
         self.suppress_consec_slashes = suppress_consec_slashes
         self.version_id = version_id
         self.generation = generation and int(generation)
-        self.meta_generation = meta_generation and int(meta_generation)
         self.is_latest = is_latest
         self.is_version_specific = bool(generation) or bool(version_id)
         self._build_uri_strings()
@@ -290,9 +285,9 @@ class BucketStorageUri(StorageUri):
       if self.bucket_name and self.object_name:
           self.versionless_uri = '%s://%s/%s' % (self.scheme, self.bucket_name,
                                                  self.object_name)
-          if self.generation and self.meta_generation:
-              self.version_specific_uri = '%s#%s.%s' % (
-                  self.versionless_uri, self.generation, self.meta_generation)
+          if self.generation:
+              self.version_specific_uri = '%s#%s' % (self.versionless_uri,
+                                                     self.generation)
           elif self.version_id:
               self.version_specific_uri = '%s#%s' % (
                   self.versionless_uri, self.version_id)
@@ -309,14 +304,11 @@ class BucketStorageUri(StorageUri):
       self._update_from_values(
           getattr(key, 'version_id', None),
           getattr(key, 'generation', None),
-          getattr(key, 'meta_generation', None),
           getattr(key, 'is_latest', None))
 
-    def _update_from_values(self, version_id, generation, meta_generation,
-                            is_latest):
+    def _update_from_values(self, version_id, generation, is_latest):
       self.version_id = version_id
       self.generation = generation
-      self.meta_generation = meta_generation
       self.is_latest = is_latest
       self._build_uri_strings()
 
@@ -360,7 +352,7 @@ class BucketStorageUri(StorageUri):
     def clone_replace_key(self, key):
         """Instantiate a BucketStorageUri from the current BucketStorageUri, by
         replacing the object name with the object name and other metadata found
-        in the given Key object (including generation, meta_generation, etc.)
+        in the given Key object (including generation).
 
         @type key: Key
         @param key: key for the new StorageUri to represent
@@ -368,14 +360,11 @@ class BucketStorageUri(StorageUri):
         self._check_bucket_uri('clone_replace_key')
         version_id = None
         generation = None
-        meta_generation = None
         is_latest = False
         if hasattr(key, 'version_id'):
             version_id = key.version_id
         if hasattr(key, 'generation'):
             generation = key.generation
-        if hasattr(key, 'meta_generation'):
-            meta_generation = key.meta_generation
         if hasattr(key, 'is_latest'):
             is_latest = key.is_latest
 
@@ -387,7 +376,6 @@ class BucketStorageUri(StorageUri):
                 suppress_consec_slashes=self.suppress_consec_slashes,
                 version_id=version_id,
                 generation=generation,
-                meta_generation=meta_generation,
                 is_latest=is_latest)
 
     def get_acl(self, validate=False, headers=None, version_id=None):
@@ -575,7 +563,7 @@ class BucketStorageUri(StorageUri):
         self._check_bucket_uri('set_acl')
         key_name = key_name or self.object_name or ''
         bucket = self.get_bucket(validate, headers)
-        if self.generation: # Makes no sense to pass only meta_generation.
+        if self.generation:
           bucket.set_acl(
               acl_or_str, key_name, headers, generation=self.generation,
               if_generation=if_generation, if_metageneration=if_metageneration)
@@ -664,7 +652,6 @@ class BucketStorageUri(StorageUri):
                 rewind=rewind, res_upload_handler=res_upload_handler)
             if res_upload_handler:
                 self._update_from_values(None, res_upload_handler.generation,
-                                         res_upload_handler.meta_generation,
                                          None)
         else:
             self._warn_about_args('set_contents_from_file',

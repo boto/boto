@@ -684,13 +684,14 @@ class Key(S3Key):
             of a versioned object. If not specified, the current version is
             modified.
 
-        :type meta_generation: int
-        :param meta_generation: If specified, sets the ACL for a specific
-            meta-generation of a versioned object.
-
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the acl
             will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
         """
         if self.bucket != None:
             return self.bucket.set_canned_acl(

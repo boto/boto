@@ -399,8 +399,7 @@ class MockBucketStorageUri(object):
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL,
-                 version_id=None, generation=None, meta_generation=None,
-                 is_latest=False):
+                 version_id=None, generation=None, is_latest=False):
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -415,7 +414,8 @@ class MockBucketStorageUri(object):
 
         self.version_id = version_id
         self.generation = generation and int(generation)
-        self.meta_generation = meta_generation and int(meta_generation)
+        self.is_version_specific = (bool(self.generation)
+                                    or bool(self.version_id))
         self.is_latest = is_latest
         if bucket_name and object_name:
             self.versionless_uri = '%s://%s/%s' % (scheme, bucket_name,
@@ -442,7 +442,6 @@ class MockBucketStorageUri(object):
                 suppress_consec_slashes=self.suppress_consec_slashes,
                 version_id=getattr(key, 'version_id', None),
                 generation=getattr(key, 'generation', None),
-                meta_generation=getattr(key, 'meta_generation', None),
                 is_latest=getattr(key, 'is_latest', None))
 
     def connect(self, access_key_id=NOT_IMPL, secret_access_key=NOT_IMPL):

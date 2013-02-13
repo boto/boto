@@ -43,10 +43,6 @@ class GSStorageUriTest(GSTestCase):
         # Generation triggers versioning.
         uri.generation = 12345
         self.assertTrue(uri.has_version())
-        # Meta-generation is permitted.
-        uri.meta_generation = 1
-        self.assertTrue(uri.has_version())
-        # Meta-generation is insufficient for versioning.
         uri.generation = None
         self.assertFalse(uri.has_version())
 
@@ -65,7 +61,6 @@ class GSStorageUriTest(GSTestCase):
         uri = orig_uri.clone_replace_key(k)
         self.assertTrue(uri.has_version())
         self.assertRegexpMatches(str(uri.generation), r"[0-9]+")
-        self.assertEquals(uri.meta_generation, 1)
 
     def testSetAclXml(self):
         """Ensures that calls to the set_xml_acl functions succeed."""
@@ -111,28 +106,20 @@ class GSStorageUriTest(GSTestCase):
         key_uri.set_contents_from_string("data1")
 
         self.assertRegexpMatches(str(key_uri.generation), r"[0-9]+")
-        self.assertEquals(int(key_uri.meta_generation), 1)
         k = b.get_key("obj")
         self.assertEqual(k.generation, key_uri.generation)
-        self.assertEqual(k.meta_generation, key_uri.meta_generation)
         self.assertEquals(k.get_contents_as_string(), "data1")
 
         key_uri.set_contents_from_stream(StringIO.StringIO("data2"))
         self.assertRegexpMatches(str(key_uri.generation), r"[0-9]+")
         self.assertGreater(key_uri.generation, k.generation)
-        self.assertEqual(int(key_uri.meta_generation), 1)
         k = b.get_key("obj")
         self.assertEqual(k.generation, key_uri.generation)
-        self.assertEqual(k.meta_generation, key_uri.meta_generation)
-        self.assertEquals(int(key_uri.meta_generation), 1)
         self.assertEquals(k.get_contents_as_string(), "data2")
 
         key_uri.set_contents_from_file(StringIO.StringIO("data3"))
         self.assertRegexpMatches(str(key_uri.generation), r"[0-9]+")
         self.assertGreater(key_uri.generation, k.generation)
-        self.assertEqual(int(key_uri.meta_generation), 1)
         k = b.get_key("obj")
         self.assertEqual(k.generation, key_uri.generation)
-        self.assertEqual(k.meta_generation, key_uri.meta_generation)
-        self.assertEquals(int(key_uri.meta_generation), 1)
         self.assertEquals(k.get_contents_as_string(), "data3")

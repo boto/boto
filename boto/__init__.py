@@ -47,8 +47,7 @@ BUCKET_NAME_RE = re.compile(r'^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$')
 # Regex to disallow buckets with individual DNS labels longer than 63.
 TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
-                           r'#(?P<generation>[0-9]{16,})'
-                           r'(\.(?P<meta_generation>[0-9]+))$')
+                           r'#(?P<generation>[0-9]{16,})$')
 VERSION_RE = re.compile('(?P<versionless_uri_str>.+)#(?P<version_id>.+)$')
 
 
@@ -708,7 +707,6 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     """
     version_id = None
     generation = None
-    meta_generation = None
 
     # Manually parse URI components instead of using urlparse.urlparse because
     # what we're calling URIs don't really fit the standard syntax for URIs
@@ -762,8 +760,6 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 versionless_uri_str = md['versionless_uri_str']
                 path_parts = versionless_uri_str.split('/', 1)
                 generation = int(md['generation'])
-                if md['meta_generation']:
-                    meta_generation = int(md['meta_generation'])
         elif scheme == 's3':
             match = VERSION_RE.search(path)
             if match:
@@ -778,8 +774,7 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
         return bucket_storage_uri_class(
             scheme, bucket_name, object_name, debug,
             suppress_consec_slashes=suppress_consec_slashes,
-            version_id=version_id, generation=generation,
-            meta_generation=meta_generation, is_latest=is_latest)
+            version_id=version_id, generation=generation, is_latest=is_latest)
 
 
 def storage_uri_for_key(key):
