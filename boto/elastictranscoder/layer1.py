@@ -291,7 +291,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         if page_token is not None:
             params['PageToken'] = page_token
         return self.make_request('GET', uri, expected_status=200,
-                                 param=params)
+                                 params=params)
 
     def list_jobs_by_status(self, status, ascending=None, page_token=None):
         """
@@ -327,7 +327,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         if page_token is not None:
             params['PageToken'] = page_token
         return self.make_request('GET', uri, expected_status=200,
-                                 param=params)
+                                 params=params)
 
     def list_pipelines(self):
         """
