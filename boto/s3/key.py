@@ -1565,7 +1565,11 @@ class Key(object):
         :rtype: string
         :returns: The contents of the file as a string
         """
-        fp = StringIO.StringIO()
+        if hasattr("", 'decode'):
+            fp = StringIO.StringIO()
+        else:
+            import io
+            fp = io.BytesIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
                                   version_id=version_id,
                                   response_headers=response_headers)
