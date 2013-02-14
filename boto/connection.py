@@ -377,7 +377,8 @@ class HTTPRequest(object):
     def authorize(self, connection, **kwargs):
         for key in self.headers:
             val = self.headers[key]
-            if isinstance(val, unicode):
+            if len([x for x in val if ord(x) > 127]):
+                # this is a unicode string with non-ascii characters
                 v = val.encode("utf-8")
                 v = urllib.quote_plus(v)
                 if not hasattr(v, 'encode'):
