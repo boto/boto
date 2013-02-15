@@ -29,7 +29,7 @@ Currently Supported Services
 
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
-  * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
+  * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
 
 * **Deployment and Management**

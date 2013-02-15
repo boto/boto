@@ -82,7 +82,7 @@ class Layer1(AWSQueryConnection):
             if not inner:
                 return None if list_marker == None else []
             if isinstance(inner, list):
-                return [dict(**i) for i in inner]
+                return inner
             else:
                 return dict(**inner)
         else:

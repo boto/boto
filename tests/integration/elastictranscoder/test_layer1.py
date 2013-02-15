@@ -105,6 +105,11 @@ class TestETSLayer1PipelineManagement(unittest.TestCase):
         self.assertEqual(response['Pipeline']['Notifications']['Error'],
                          topic_arn)
 
+    def test_list_jobs_by_pipeline(self):
+        pipeline_id = self.create_pipeline()
+        response = self.api.list_jobs_by_pipeline(pipeline_id)
+        self.assertEqual(response['Jobs'], [])
+
     def test_proper_error_when_pipeline_does_not_exist(self):
         with self.assertRaises(ValidationException):
             self.api.read_pipeline('badpipelineid')
