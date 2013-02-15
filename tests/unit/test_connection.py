@@ -69,7 +69,7 @@ class MockAWSService(AWSQueryConnection):
     This is used to test the AWSQueryConnection object is behaving properly.
     """
 
-    API_VERSION = '2012-01-01'
+    APIVersion = '2012-01-01'
     def _required_auth_capability(self):
         return ['sign-v2']
 
@@ -129,6 +129,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
         args = urlparse.parse_qs(HTTPretty.last_request.body)
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
         self.assertEqual(args['SignatureMethod'], ['HmacSHA256'])
+        self.assertEqual(args['Version'], [conn.APIVersion])
         self.assertEqual(args['par1'], ['foo'])
         self.assertEqual(args['par2'], ['baz'])
 
