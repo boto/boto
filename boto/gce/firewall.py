@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-class Firewall():
+class Firewall(object):
     """
     Represents a GCE Firewall.
     """

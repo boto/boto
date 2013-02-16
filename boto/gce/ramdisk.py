@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-class Ramdisk():
+class Ramdisk(object):
     """
     Represents a GCE Ramdisk.
     """

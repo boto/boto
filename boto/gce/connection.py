@@ -59,8 +59,11 @@ FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
 
 API_VERSION = 'v1beta13'
 
+DEFAULT_NETWORK = ("https://www.googleapis.com/compute/{0}/"
+                   "projects/google/networks/default").format(API_VERSION)
 
-class GCEConnection():
+
+class GCEConnection(object):
     def __init__(self, gce_project):
         """
         Init method to create a new connection to Google Compute Engine.
@@ -69,8 +72,7 @@ class GCEConnection():
         self.google_project = 'google'
         self.storage = Storage('creds.dat')
         self.credentials = self.storage.get()
-        self.default_network = "https://www.googleapis.com/compute/{0}/projects/
-        google/networks/default".format(API_VERSION)
+        self.default_network = DEFAULT_NETWORK
 
         if self.credentials is None or self.credentials.invalid:
             self.credentials = run(FLOW, self.storage)

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-class InstanceAttribute():
+class InstanceAttribute(object):
     """
     Represents the value of an attribute from a Google Compute Engine instance.
     Supported attributes are:

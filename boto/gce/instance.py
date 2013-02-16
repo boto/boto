@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-class Instance():
+class Instance(object):
     """
     Represents a GCE Instance.
     """

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-class Zone():
+class Zone(object):
     """
     Represents a GCE Zone.
     """

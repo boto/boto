@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-class Image():
+class Image(object):
     """
     Represents a GCE Image.
     """
