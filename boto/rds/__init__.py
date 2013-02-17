@@ -28,7 +28,7 @@ from boto.rds.parametergroup import ParameterGroup
 from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
-
+from boto.rds.dbsubnetgroup import DBSubnetGroup
 
 def regions():
     """
@@ -1192,3 +1192,95 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
+
+    def create_db_subnet_group(self, name, desc, subnet_ids):
+        """
+        Create a new Database Subnet Group.
+
+        :type name: string
+        :param name: The identifier for the db_subnet_group
+
+        :type desc: string
+        :param desc: A description of the db_subnet_group
+
+        :type subnet_ids: list
+        :param subnets: A list of the subnet identifiers to include in the
+                        db_subnet_group
+
+        :rtype: :class:`boto.rds.dbsubnetgroup.DBSubnetGroup
+        :return: the created db_subnet_group
+        """
+
+        params = {'DBSubnetGroupName': name,
+                  'DBSubnetGroupDescription': desc}
+        self.build_list_params(params, subnet_ids, 'SubnetIds.member')
+
+        return self.get_object('CreateDBSubnetGroup', params, DBSubnetGroup)
+
+    def delete_db_subnet_group(self, name):
+        """
+        Delete a Database Subnet Group.
+
+        :type name: string
+        :param name: The identifier of the db_subnet_group to delete
+
+        :rtype: :class:`boto.rds.dbsubnetgroup.DBSubnetGroup`
+        :return: The deleted db_subnet_group.
+        """
+
+        params = {'DBSubnetGroupName': name}
+
+        return self.get_object('DeleteDBSubnetGroup', params, DBSubnetGroup)
+
+
+    def get_all_db_subnet_groups(self, name=None, max_records=None, marker=None):
+        """
+        Retrieve all the DBSubnetGroups in your account.
+
+        :type name: str
+        :param name: DBSubnetGroup name If supplied, only information about
+                     this DBSubnetGroup will be returned. Otherwise, info
+                     about all DBSubnetGroups will be returned.
+
+        :type max_records: int
+        :param max_records: The maximum number of records to be returned.
+                            If more results are available, a Token will be
+                            returned in the response that can be used to
+                            retrieve additional records.  Default is 100.
+
+        :type marker: str
+        :param marker: The marker provided by a previous request.
+
+        :rtype: list
+        :return: A list of :class:`boto.rds.dbsubnetgroup.DBSubnetGroup`
+        """
+        params = dict()
+        if name != None:
+            params['DBSubnetGroupName'] = name
+        if max_records != None:
+            params['MaxRecords'] = max_records
+        if marker != None:
+            params['Marker'] = marker
+
+        return self.get_list('DescribeDBSubnetGroups', params, [('DBSubnetGroup',DBSubnetGroup)])
+
+    def modify_db_subnet_group(self, name, description=None, subnet_ids=None):
+        """
+        Modify a parameter group for your account.
+
+        :type name: string
+        :param name: The name of the new parameter group
+
+        :type parameters: list of :class:`boto.rds.parametergroup.Parameter`
+        :param parameters: The new parameters
+
+        :rtype: :class:`boto.rds.parametergroup.ParameterGroup`
+        :return: The newly created ParameterGroup
+        """
+        params = {'DBSubnetGroupName': name}
+        if description != None:
+            params['DBSubnetGroupDescription'] = description
+        if subnet_ids != None:
+            self.build_list_params(params, subnet_ids, 'SubnetIds.member')
+
+        return self.get_object('ModifyDBSubnetGroup', params, DBSubnetGroup)
