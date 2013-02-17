@@ -36,7 +36,7 @@ RegionData = {
 }
 
 
-def regions():
+def regions(**kw_params):
     """
     Get all available regions for the Amazon Simple Workflow service.
 
@@ -44,29 +44,13 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     import boto.swf.layer1
-    return [RegionInfo(name='us-east-1',
-                       endpoint='swf.us-east-1.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            RegionInfo(name='us-west-1',
-                       endpoint='swf.us-west-1.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            RegionInfo(name='us-west-2',
-                       endpoint='swf.us-west-2.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            RegionInfo(name='ap-northeast-1',
-                       endpoint='swf.ap-northeast-1.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            RegionInfo(name='ap-southeast-1',
-                       endpoint='swf.ap-southeast-1.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            RegionInfo(name='ap-southeast-2',
-                       endpoint='swf.ap-southeast-2.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            RegionInfo(name='eu-west-1',
-                       endpoint='swf.eu-west-1.amazonaws.com',
-                       connection_cls=boto.swf.layer1.Layer1),
-            ]
-
+    regions = []
+    for region_name in RegionData:
+        region = RegionInfo(name=region_name,
+                            endpoint=RegionData[region_name],
+                            connection_cls=boto.swf.layer1.Layer1)
+        regions.append(region)
+    return regions
 
 def connect_to_region(region_name, **kw_params):
     for region in regions():
