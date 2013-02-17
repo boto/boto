@@ -24,6 +24,17 @@
 
 from boto.ec2.regioninfo import RegionInfo
 
+RegionData = {
+    'us-east-1': 'swf.us-east-1.amazonaws.com',
+    'us-west-1': 'swf.us-west-1.amazonaws.com',
+    'us-west-2': 'swf.us-west-2.amazonaws.com',
+    'sa-east-1': 'swf.sa-east-1.amazonaws.com',
+    'eu-west-1': 'swf.eu-west-1.amazonaws.com',
+    'ap-northeast-1': 'swf.ap-northeast-1.amazonaws.com',
+    'ap-southeast-1': 'swf.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'swf.ap-southeast-2.amazonaws.com',
+}
+
 
 def regions():
     """

@@ -53,6 +53,9 @@ def regions():
             RegionInfo(name='eu-west-1',
                        endpoint='dynamodb.eu-west-1.amazonaws.com',
                        connection_cls=boto.dynamodb.layer2.Layer2),
+            RegionInfo(name='sa-east-1',
+                   endpoint='dynamodb.sa-east-1.amazonaws.com',
+                   connection_cls=boto.dynamodb.layer2.Layer2),
             ]
 
 

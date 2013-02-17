@@ -295,8 +295,23 @@ class Key(object):
 
     closed = False
 
-    def close(self):
-        if self.resp:
+    def close(self, fast=False):
+        """
+        Close this key.
+
+        :type fast: bool
+        :param fast: True if you want the connection to be closed without first
+        reading the content. This should only be used in cases where subsequent
+        calls don't need to return the content from the open HTTP connection.
+        Note: As explained at
+        http://docs.python.org/2/library/httplib.html#httplib.HTTPConnection.getresponse,
+        callers must read the whole response before sending a new request to the
+        server. Calling Key.close(fast=True) and making a subsequent request to
+        the server will work because boto will get an httplib exception and
+        close/reopen the connection.
+
+        """
+        if self.resp and not fast:
             self.resp.read()
         self.resp = None
         self.mode = None
@@ -689,11 +704,11 @@ class Key(object):
 
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
-            # If the debuglevel < 3 we don't want to show connection
+            # If the debuglevel < 4 we don't want to show connection
             # payload, so turn off HTTP connection-level debug output (to
             # be restored below).
             # Use the getattr approach to allow this to work in AppEngine.
-            if getattr(http_conn, 'debuglevel', 0) < 3:
+            if getattr(http_conn, 'debuglevel', 0) < 4:
                 http_conn.set_debuglevel(0)
 
             data_len = 0
@@ -765,10 +780,10 @@ class Key(object):
             if cb and (cb_count <= 1 or i > 0) and data_len > 0:
                 cb(data_len, cb_size)
 
-            response = http_conn.getresponse()
-            body = response.read()
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
+            response = http_conn.getresponse()
+            body = response.read()
             if ((response.status == 500 or response.status == 503 or
                     response.getheader('location')) and not chunked_transfer):
                 # we'll try again.
@@ -1670,7 +1685,8 @@ class Key(object):
             rewritten_metadata[rewritten_h] = metadata[h]
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
-                            metadata=metadata, preserve_acl=preserve_acl)
+                            metadata=metadata, preserve_acl=preserve_acl,
+                            headers=headers)
 
     def restore(self, days, headers=None):
         """Restore an object from an archive.

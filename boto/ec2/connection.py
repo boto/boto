@@ -2773,11 +2773,9 @@ class EC2Connection(AWSQueryConnection):
             single-tenant hardware and can only be launched within a VPC.
 
         :type offering_type: string
-        :param offering_type: The Reserved Instance offering type.
-            Valid Values:
-                * Heavy Utilization
-                * Medium Utilization
-                * Light Utilization
+        :param offering_type: The Reserved Instance offering type.  Valid
+            Values: `"Heavy Utilization" | "Medium Utilization" | "Light
+            Utilization"`
 
         :type include_marketplace: bool
         :param include_marketplace: Include Marketplace offerings in the

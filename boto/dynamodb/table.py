@@ -335,7 +335,7 @@ class Table(object):
         the hash_key and range_key values of the item.  You can use
         these explicit parameters when calling the method, such as::
 
-        >>> my_item = my_table.new_item(hash_key='a', range_key=1,
+            >>> my_item = my_table.new_item(hash_key='a', range_key=1,
                                         attrs={'key1': 'val1', 'key2': 'val2'})
             >>> my_item
             {u'bar': 1, u'foo': 'a', 'key1': 'val1', 'key2': 'val2'}
