@@ -301,6 +301,11 @@ class EmrConnection(AWSQueryConnection):
 
         :rtype: str
         :return: The jobflow id
+
+        :type supported_products: str
+        :param supported_products: Installs supported products in EMR
+            current supported options are ``mapr-m3``, ``mapr-m5`` and
+            ``karmasphere-enterprise-utility``.
         """
         params = {}
         if action_on_failure:
