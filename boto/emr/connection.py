@@ -310,7 +310,7 @@ class EmrConnection(AWSQueryConnection):
         params['Name'] = name
 
         if supported_products:
-            params['SupportedProducts.member.N'] = supported_products
+            params['SupportedProducts.member.1'] = supported_products
 
         # Common instance args
         common_params = self._build_instance_common_args(ec2_keyname,
