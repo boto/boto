@@ -1,5 +1,5 @@
 import sys
-import json
+from boto.compat import json
 from boto.exception import BotoServerError
 
 
