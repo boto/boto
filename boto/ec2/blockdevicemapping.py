@@ -125,7 +125,7 @@ class BlockDeviceMapping(dict):
                 params['%s.VirtualName' % pre] = block_dev.ephemeral_name
             else:
                 if block_dev.no_device:
-                    params['%s.Ebs.NoDevice' % pre] = 'true'
+                    params['%s.NoDevice' % pre] = 'true'
                 if block_dev.snapshot_id:
                     params['%s.Ebs.SnapshotId' % pre] = block_dev.snapshot_id
                 if block_dev.size:
