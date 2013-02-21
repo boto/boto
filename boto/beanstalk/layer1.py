@@ -21,10 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import json
 
 import boto
 import boto.jsonresponse
+from boto.compat import json
 from boto.regioninfo import RegionInfo
 from boto.connection import AWSQueryConnection
 

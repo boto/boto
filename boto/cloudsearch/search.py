@@ -23,8 +23,8 @@
 #
 from math import ceil
 import time
-import json
 import boto
+from boto.compat import json
 import requests
 
 
