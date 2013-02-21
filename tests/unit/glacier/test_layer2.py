@@ -23,7 +23,10 @@
 
 from tests.unit import unittest
 
-from mock import call, Mock, patch, sentinel
+try:
+    from unittest.mock import call, Mock, patch, sentinel
+except ImportError:
+    from mock import call, Mock, patch, sentinel
 
 from boto.glacier.layer1 import Layer1
 from boto.glacier.layer2 import Layer2

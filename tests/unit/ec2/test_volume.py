@@ -1,4 +1,7 @@
-import mock
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 from tests.unit import unittest
 
 from boto.ec2.snapshot import Snapshot

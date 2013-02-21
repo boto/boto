@@ -3,7 +3,10 @@ import random
 import string
 from tests.unit import unittest
 
-import mock
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 import boto
 
 

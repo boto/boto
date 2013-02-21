@@ -20,7 +20,10 @@
 # IN THE SOFTWARE.
 #
 from tests.unit import unittest
-from mock import Mock
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
 
 from boto.sqs.queue import Queue
 

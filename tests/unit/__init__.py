@@ -4,7 +4,10 @@ except ImportError:
     import unittest
 import httplib
 
-from mock import Mock
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
 
 
 class AWSMockServiceTestCase(unittest.TestCase):
