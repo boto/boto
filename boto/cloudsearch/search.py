@@ -288,7 +288,8 @@ class SearchConnection(object):
         params = query.to_params()
 
         r = requests.get(url, params=params)
-        data = json.loads(r.content)
+        content = r.content.decode('utf-8')
+        data = json.loads(content)
         data['query'] = query
         data['search_service'] = self
 

@@ -221,7 +221,12 @@ class CommitResponse(object):
         self.sdf = sdf
 
         try:
-            self.content = json.loads(response.content)
+            if hasattr(response.content, 'decode') and not hasattr(response.content, 'encode'):
+                # decode the python3 byte literal
+                rc = response.content.decode('utf-8')
+            else:
+                rc = response.content
+            self.content = json.loads(rc)
         except:
             boto.log.error('Error indexing documents.\nResponse Content:\n{0}\n\n'
                 'SDF:\n{1}'.format(response.content, self.sdf))
