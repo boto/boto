@@ -83,12 +83,18 @@ class Address(EC2Object):
 
     delete = release
 
-    def associate(self, instance_id):
+    def associate(self, instance_id, allow_reassociation=False):
         """
         Associate this Elastic IP address with a currently running instance.
         :see: :meth:`boto.ec2.connection.EC2Connection.associate_address`
         """
-        return self.connection.associate_address(instance_id, self.public_ip)
+        if self.allocation_id:
+            return self.connection.associate_address(instance_id,
+                allocation_id=self.allocation_id,
+                allow_reassociation=allow_reassociation)
+        else:
+            return self.connection.associate_address(instance_id, self.public_ip,
+                allow_reassociation=allow_reassociation)
 
     def disassociate(self):
         """
