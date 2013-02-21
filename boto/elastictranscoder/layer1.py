@@ -144,6 +144,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :type notifications: dict
         :param notifications: The () topic that you want to notify to report job
             status.
+        
         To receive notifications, you must also subscribe
             to the new topic in the console.
 
@@ -229,7 +230,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def delete_pipeline(self, id):
         """
         To delete a pipeline, send a DELETE request to the
-        `//pipelines/ [pipelineId] ` resource.
+        `//pipelines/ [pipelineId]` resource.
 
         You can only delete a pipeline that has never been used or
         that is not currently in use (doesn't contain any active
@@ -246,7 +247,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def delete_preset(self, id):
         """
         To delete a preset, send a DELETE request to the `//presets/
-        [presetId] ` resource.
+        [presetId]` resource.
 
         If the preset has been used, you cannot delete it.
 
@@ -262,7 +263,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
                               page_token=None):
         """
         To get a list of the jobs currently in a pipeline, send a GET
-        request to the `//jobsByPipeline/ [pipelineId] ` resource.
+        request to the `//jobsByPipeline/ [pipelineId]` resource.
 
         Elastic Transcoder returns all of the jobs currently in the
         specified pipeline. The response body contains one element for
@@ -296,7 +297,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def list_jobs_by_status(self, status, ascending=None, page_token=None):
         """
         To get a list of the jobs that have a specified status, send a
-        GET request to the `//jobsByStatus/ [status] ` resource.
+        GET request to the `//jobsByStatus/ [status]` resource.
 
         Elastic Transcoder returns all of the jobs that have the
         specified status. The response body contains one element for
@@ -352,7 +353,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def read_job(self, id):
         """
         To get detailed information about a job, send a GET request to
-        the `//jobs/ [jobId] ` resource.
+        the `//jobs/ [jobId]` resource.
 
         :type id: string
         :param id: The identifier of the job for which you want to get detailed
@@ -365,7 +366,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def read_pipeline(self, id):
         """
         To get detailed information about a pipeline, send a GET
-        request to the `//pipelines/ [pipelineId] ` resource.
+        request to the `//pipelines/ [pipelineId]` resource.
 
         :type id: string
         :param id: The identifier of the pipeline to read.
@@ -377,7 +378,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def read_preset(self, id):
         """
         To get detailed information about a preset, send a GET request
-        to the `//presets/ [presetId] ` resource.
+        to the `//presets/ [presetId]` resource.
 
         :type id: string
         :param id: The identifier of the preset for which you want to get
