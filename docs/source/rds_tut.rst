@@ -1,4 +1,4 @@
-.. _sqs_tut:
+.. _rds_tut:
 
 =======================================
 An Introduction to boto's RDS interface
