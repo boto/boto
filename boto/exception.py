@@ -29,6 +29,10 @@ import xml.sax
 from boto import handler
 from boto.resultset import ResultSet
 
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 class BotoClientError(StandardError):
     """
@@ -91,6 +95,13 @@ class BotoServerError(StandardError):
                 # because occasionally we get error messages from Eucalyptus
                 # that are just text strings that we want to preserve.
                 self.error_message = self.body
+                self.body = None
+        # If the message isn't in XML, it might be JSON (for example, dynamodb responses)
+        if self.error_message:
+            try:
+                self.body = json.loads(self.error_message)
+                self.error_message = None
+            except (TypeError, json.JSONDecodeError), pe:
                 self.body = None
 
     def __getattr__(self, name):
