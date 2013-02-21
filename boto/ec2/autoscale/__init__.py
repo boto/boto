@@ -156,12 +156,13 @@ class AutoScaleConnection(AWSQueryConnection):
 
     def _update_group(self, op, as_group):
         params = {'AutoScalingGroupName': as_group.name,
-                  'LaunchConfigurationName': as_group.launch_config_name,
                   'MinSize': as_group.min_size,
                   'MaxSize': as_group.max_size}
         # get availability zone information (required param)
         zones = as_group.availability_zones
         self.build_list_params(params, zones, 'AvailabilityZones')
+        if as_group.launch_config_name:
+            params['LaunchConfigurationName'] = as_group.launch_config_name
         if as_group.desired_capacity:
             params['DesiredCapacity'] = as_group.desired_capacity
         if as_group.vpc_zone_identifier:
