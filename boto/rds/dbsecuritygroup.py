@@ -28,13 +28,18 @@ class DBSecurityGroup(object):
     """
     Represents an RDS database security group
 
-    Properties reference available from the AWS documentation at http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBSecurityGroup.html
+    Properties reference available from the AWS documentation at
+    http://docs.amazonwebservices.com/AmazonRDS/latest/APIReference/API_DeleteDBSecurityGroup.html
 
-    :ivar Status: The current status of the security group. Possibile values are [ active, ? ]. Reference documentation lacks specifics of possibilities
-    :ivar connection: boto.rds.RDSConnection associated with the current object
+    :ivar Status: The current status of the security group. Possible values are
+        [ active, ? ]. Reference documentation lacks specifics of possibilities
+    :ivar connection: :py:class:`boto.rds.RDSConnection` associated with the current object
     :ivar description: The description of the security group
-    :ivar ec2_groups: List of EC2SecurityGroup objects that this security group PERMITS
-    :ivar ip_ranges: List of IPRange objects (containing CIDR addresses) that this security group PERMITS
+    :ivar ec2_groups: List of :py:class:`EC2 Security Group
+        <boto.ec2.securitygroup.SecurityGroup>` objects that this security
+        group PERMITS
+    :ivar ip_ranges: List of :py:class:`boto.rds.dbsecuritygroup.IPRange`
+        objects (containing CIDR addresses) that this security group PERMITS
     :ivar name: Name of the security group
     :ivar owner_id: ID of the owner of the security group. Can be 'None'
     """
@@ -83,13 +88,14 @@ class DBSecurityGroup(object):
         You need to pass in either a CIDR block to authorize or
         and EC2 SecurityGroup.
 
-        @type cidr_ip: string
-        @param cidr_ip: A valid CIDR IP range to authorize
+        :type cidr_ip: string
+        :param cidr_ip: A valid CIDR IP range to authorize
 
-        @type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup>`
+        :type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup`
+        :param ec2_group: An EC2 security group to authorize
 
-        @rtype: bool
-        @return: True if successful.
+        :rtype: bool
+        :return: True if successful.
         """
         if isinstance(ec2_group, SecurityGroup):
             group_name = ec2_group.name
@@ -108,13 +114,14 @@ class DBSecurityGroup(object):
         You need to pass in either a CIDR block or
         an EC2 SecurityGroup from which to revoke access.
 
-        @type cidr_ip: string
-        @param cidr_ip: A valid CIDR IP range to revoke
+        :type cidr_ip: string
+        :param cidr_ip: A valid CIDR IP range to revoke
 
-        @type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup>`
+        :type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup`
+        :param ec2_group: An EC2 security group to revoke
 
-        @rtype: bool
-        @return: True if successful.
+        :rtype: bool
+        :return: True if successful.
         """
         if isinstance(ec2_group, SecurityGroup):
             group_name = ec2_group.name
@@ -131,6 +138,8 @@ class DBSecurityGroup(object):
 class IPRange(object):
     """
     Describes a CIDR address range for use in a DBSecurityGroup
+
+    :ivar cidr_ip: IP Address range
     """
 
     def __init__(self, parent=None):
