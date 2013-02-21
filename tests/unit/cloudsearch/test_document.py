@@ -2,7 +2,10 @@
 
 from tests.unit import unittest
 from httpretty import HTTPretty
-from mock import MagicMock
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock
 
 import urlparse
 import json
@@ -45,7 +48,7 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
                                   "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['lang'], 'en')
         self.assertEqual(args['type'], 'add')
@@ -61,7 +64,7 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
                                   "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['id'], '1234')
         self.assertEqual(args['version'], 10)
@@ -77,7 +80,7 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
                                   "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['fields']['category'], ['cat_a', 'cat_b',
                                                       'cat_c'])
@@ -133,7 +136,7 @@ class CloudSearchDocumentMultipleAddTest(CloudSearchDocumentTest):
             document.add(key, obj['version'], obj['fields'])
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))
 
         for arg in args:
             self.assertTrue(arg['id'] in self.objs)
@@ -177,7 +180,7 @@ class CloudSearchDocumentDelete(CloudSearchDocumentTest):
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
         document.delete("5", "10")
         document.commit()
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['version'], '10')
         self.assertEqual(args['type'], 'delete')
@@ -210,7 +213,7 @@ class CloudSearchDocumentDeleteMultiple(CloudSearchDocumentTest):
         document.delete("5", "10")
         document.delete("6", "11")
         document.commit()
-        args = json.loads(HTTPretty.last_request.body)
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))
 
         self.assertEqual(len(args), 2)
         for arg in args:
