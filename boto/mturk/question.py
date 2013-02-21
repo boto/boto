@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import xml.sax.saxutils
 
 class Question(object):
     template = "<Question>%(items)s</Question>"
@@ -71,7 +72,7 @@ class ExternalQuestion(ValidatingXML):
     template = '<ExternalQuestion xmlns="%(schema_url)s"><ExternalURL>%%(external_url)s</ExternalURL><FrameHeight>%%(frame_height)s</FrameHeight></ExternalQuestion>' % vars()
 
     def __init__(self, external_url, frame_height):
-        self.external_url = external_url
+        self.external_url = xml.sax.saxutils.escape( external_url )
         self.frame_height = frame_height
 
     def get_as_params(self, label='ExternalQuestion'):

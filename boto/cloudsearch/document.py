@@ -34,6 +34,24 @@ class SearchServiceException(Exception):
 class CommitMismatchError(Exception):
     pass
 
+class EncodingError(Exception):
+    """
+    Content sent for Cloud Search indexing was incorrectly encoded.
+
+    This usually happens when a document is marked as unicode but non-unicode
+    characters are present.
+    """
+    pass
+
+class ContentTooLongError(Exception):
+    """
+    Content sent for Cloud Search indexing was too long
+
+    This will usually happen when documents queued for indexing add up to more
+    than the limit allowed per upload batch (5MB)
+
+    """
+    pass
 
 class DocumentServiceConnection(object):
     """
@@ -99,7 +117,7 @@ class DocumentServiceConnection(object):
         """
         Schedule a document to be removed from the CloudSearch service
 
-        The document will not actually be scheduled for removal until .commit() is called
+        The document will not actually be scheduled for removal until :func:`commit` is called
 
         :type _id: string
         :param _id: The unique ID of this document.
@@ -127,7 +145,7 @@ class DocumentServiceConnection(object):
         """
         Clear the working documents from this DocumentServiceConnection
 
-        This should be used after a commit() if the connection will be reused
+        This should be used after :func:`commit` if the connection will be reused
         for another set of documents.
         """
 
@@ -188,12 +206,14 @@ class CommitResponse(object):
     :type response: :class:`requests.models.Response`
     :param response: Response from Cloudsearch /documents/batch API
 
-    :type doc_service: :class:`exfm.cloudsearch.DocumentServiceConnection`
+    :type doc_service: :class:`boto.cloudsearch.document.DocumentServiceConnection`
     :param doc_service: Object containing the documents posted and methods to
         retry
 
     :raises: :class:`boto.exception.BotoServerError`
-    :raises: :class:`exfm.cloudsearch.SearchServiceException`
+    :raises: :class:`boto.cloudsearch.document.SearchServiceException`
+    :raises: :class:`boto.cloudsearch.document.EncodingError`
+    :raises: :class:`boto.cloudsearch.document.ContentTooLongError`
     """
     def __init__(self, response, doc_service, sdf):
         self.response = response
@@ -203,8 +223,8 @@ class CommitResponse(object):
         try:
             self.content = json.loads(response.content)
         except:
-            boto.log.error('Error indexing documents.\nResponse Content:\n{}\n\n'
-                'SDF:\n{}'.format(response.content, self.sdf))
+            boto.log.error('Error indexing documents.\nResponse Content:\n{0}\n\n'
+                'SDF:\n{1}'.format(response.content, self.sdf))
             raise boto.exception.BotoServerError(self.response.status_code, '',
                 body=response.content)
 
@@ -212,6 +232,11 @@ class CommitResponse(object):
         if self.status == 'error':
             self.errors = [e.get('message') for e in self.content.get('errors',
                 [])]
+            for e in self.errors:
+                if "Illegal Unicode character" in e:
+                    raise EncodingError("Illegal Unicode character in document")
+                elif e == "The Content-Length is too long":
+                    raise ContentTooLongError("Content was too long")
         else:
             self.errors = []
 
@@ -229,12 +254,12 @@ class CommitResponse(object):
         :type response_num: int
         :param response_num: Number of adds or deletes in the response.
 
-        :raises: :class:`exfm.cloudsearch.SearchServiceException`
+        :raises: :class:`boto.cloudsearch.document.CommitMismatchError`
         """
         commit_num = len([d for d in self.doc_service.documents_batch
             if d['type'] == type_])
 
         if response_num != commit_num:
             raise CommitMismatchError(
-                'Incorrect number of {}s returned. Commit: {} Response: {}'\
+                'Incorrect number of {0}s returned. Commit: {1} Response: {2}'\
                 .format(type_, commit_num, response_num))

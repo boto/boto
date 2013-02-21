@@ -59,6 +59,16 @@ class Key(S3Key):
     generation = None
     meta_generation = None
 
+    def __repr__(self):
+        if self.generation and self.meta_generation:
+            ver_str = '#%s.%s' % (self.generation, self.meta_generation)
+        else:
+            ver_str = ''
+        if self.bucket:
+            return '<Key: %s,%s%s>' % (self.bucket.name, self.name, ver_str)
+        else:
+            return '<Key: None,%s%s>' % (self.name, ver_str)
+
     def endElement(self, name, value, connection):
         if name == 'Key':
             self.name = value
@@ -565,7 +575,7 @@ class Key(S3Key):
             headers = kwargs.get('headers', {})
             headers['x-goog-if-generation-match'] = str(if_generation)
             kwargs['headers'] = headers
-        return super(Key, self).set_contents_from_stream(*args, **kwargs)
+        super(Key, self).set_contents_from_stream(*args, **kwargs)
 
     def set_acl(self, acl_or_str, headers=None, generation=None,
                  if_generation=None, if_metageneration=None):
@@ -659,7 +669,7 @@ class Key(S3Key):
                                            if_metageneration=if_metageneration)
 
     def set_canned_acl(self, acl_str, headers=None, generation=None,
-                         if_generation=None, if_metageneration=None):
+                       if_generation=None, if_metageneration=None):
         """Sets this objects's ACL using a predefined (canned) value.
 
         :type acl_str: string

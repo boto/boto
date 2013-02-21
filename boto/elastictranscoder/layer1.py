@@ -77,7 +77,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             action.
 
         """
-        uri = '/2012-09-25/jobs/{}'.format(id)
+        uri = '/2012-09-25/jobs/{0}'.format(id)
         return self.make_request('DELETE', uri, expected_status=202)
 
     def create_job(self, pipeline_id, input_name, output):
@@ -97,12 +97,12 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             which Elastic Transcoder puts the transcoded
             files.
 
-        :type input_name: structure
+        :type input_name: dict
         :param input_name: A section of the request body that provides
             information about the file that is being
             transcoded.
 
-        :type output: structure
+        :type output: dict
         :param output: A section of the request body that provides information
             about the transcoded (target) file.
 
@@ -141,7 +141,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :param role: The IAM Amazon Resource Name (ARN) for the role that you
             want to use to create the pipeline.
 
-        :type notifications: structure
+        :type notifications: dict
         :param notifications: The () topic that you want to notify to report job
             status.
         To receive notifications, you must also subscribe
@@ -200,15 +200,15 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :param container: The container type for the output file. This value
             must be `mp4`.
 
-        :type video: structure
+        :type video: dict
         :param video: A section of the request body that specifies the video
             parameters.
 
-        :type audio: structure
+        :type audio: dict
         :param audio: A section of the request body that specifies the audio
             parameters
 
-        :type thumbnails: structure
+        :type thumbnails: dict
         :param thumbnails: A section of the request body that specifies the
             thumbnail parameters, if any.
 
@@ -240,7 +240,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :param id: The identifier of the pipeline that you want to delete.
 
         """
-        uri = '/2012-09-25/pipelines/{}'.format(id)
+        uri = '/2012-09-25/pipelines/{0}'.format(id)
         return self.make_request('DELETE', uri, expected_status=202)
 
     def delete_preset(self, id):
@@ -255,7 +255,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             detailed information.
 
         """
-        uri = '/2012-09-25/presets/{}'.format(id)
+        uri = '/2012-09-25/presets/{0}'.format(id)
         return self.make_request('DELETE', uri, expected_status=202)
 
     def list_jobs_by_pipeline(self, pipeline_id, ascending=None,
@@ -284,14 +284,14 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             each successive page of results.
 
         """
-        uri = '/2012-09-25/jobsByPipeline/{}'.format(pipeline_id)
+        uri = '/2012-09-25/jobsByPipeline/{0}'.format(pipeline_id)
         params = {}
         if ascending is not None:
             params['Ascending'] = ascending
         if page_token is not None:
             params['PageToken'] = page_token
         return self.make_request('GET', uri, expected_status=200,
-                                 param=params)
+                                 params=params)
 
     def list_jobs_by_status(self, status, ascending=None, page_token=None):
         """
@@ -320,14 +320,14 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             each successive page of results.
 
         """
-        uri = '/2012-09-25/jobsByStatus/{}'.format(status)
+        uri = '/2012-09-25/jobsByStatus/{0}'.format(status)
         params = {}
         if ascending is not None:
             params['Ascending'] = ascending
         if page_token is not None:
             params['PageToken'] = page_token
         return self.make_request('GET', uri, expected_status=200,
-                                 param=params)
+                                 params=params)
 
     def list_pipelines(self):
         """
@@ -359,7 +359,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             information.
 
         """
-        uri = '/2012-09-25/jobs/{}'.format(id)
+        uri = '/2012-09-25/jobs/{0}'.format(id)
         return self.make_request('GET', uri, expected_status=200)
 
     def read_pipeline(self, id):
@@ -371,7 +371,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :param id: The identifier of the pipeline to read.
 
         """
-        uri = '/2012-09-25/pipelines/{}'.format(id)
+        uri = '/2012-09-25/pipelines/{0}'.format(id)
         return self.make_request('GET', uri, expected_status=200)
 
     def read_preset(self, id):
@@ -384,7 +384,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             detailed information.
 
         """
-        uri = '/2012-09-25/presets/{}'.format(id)
+        uri = '/2012-09-25/presets/{0}'.format(id)
         return self.make_request('GET', uri, expected_status=200)
 
     def test_role(self, role, input_bucket, output_bucket, topics):
@@ -441,7 +441,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :param id: The identifier of the pipeline for which you want to change
             notification settings.
 
-        :type notifications: structure
+        :type notifications: dict
         :param notifications: The () topic that you want to notify to report job
             status.
         To receive notifications, you must also subscribe
@@ -457,7 +457,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
               when encounters an error condition.
 
         """
-        uri = '/2012-09-25/pipelines/{}/notifications'.format(id)
+        uri = '/2012-09-25/pipelines/{0}/notifications'.format(id)
         params = {'Notifications': notifications, }
         return self.make_request('POST', uri, expected_status=200,
                                  data=json.dumps(params))
@@ -489,7 +489,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
               jobs.
 
         """
-        uri = '/2012-09-25/pipelines/{}/status'.format(id)
+        uri = '/2012-09-25/pipelines/{0}/status'.format(id)
         params = {'Status': status, }
         return self.make_request('POST', uri, expected_status=200,
                                  data=json.dumps(params))
