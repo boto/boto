@@ -52,3 +52,14 @@ class VPC(TaggedEC2Object):
     def delete(self):
         return self.connection.delete_vpc(self.id)
 
+    def _update(self, updated):
+        self.__dict__.update(updated.__dict__)
+
+    def update(self, validate=False):
+        vpc_list = self.connection.get_all_vpcs([self.id])
+        if len(vpc_list):
+            updated_vpc = vpc_list[0]
+            self._update(updated_vpc)
+        elif validate:
+            raise ValueError('%s is not a valid VPC ID' % (self.id,))
+        return self.state
