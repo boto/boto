@@ -35,7 +35,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 def ensure_bytes(bytes_or_str):
-    if isinstance(bytes_or_str, bytes):
+    if isinstance(bytes_or_str, bytes) or bytes_or_str is None:
         return bytes_or_str
     else:
         return bytes_or_str.encode('latin-1')
