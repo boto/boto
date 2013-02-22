@@ -500,7 +500,11 @@ class Key(S3Key):
 
         if isinstance(s, unicode):
             s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        try:
+            import io
+            fp = io.BytesIO(s)
+        except ImportError:
+            fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
