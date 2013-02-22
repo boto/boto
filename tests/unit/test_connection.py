@@ -19,15 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import urlparse
 from tests.unit import unittest
 from httpretty import HTTPretty
 
 from boto.connection import AWSQueryConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
+from boto.compat import json
 
-import json
-import urlparse
 
 class TestListParamsSerialization(unittest.TestCase):
     maxDiff = None
