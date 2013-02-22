@@ -49,10 +49,10 @@ import errno
 
 try:
     # Python 2
-    from httplib import HTTPConnection, HTTPSConnection, HTTPResponse, HTTPException, BadStatusLine
+    import httplib
 except ImportError:
     # Python 3
-    from http.client import HTTPConnection, HTTPSConnection, HTTPResponse, HTTPException, BadStatusLine
+    import http.client as httplib
 
 from boto.compat23 import ensure_bytes, integer_types, urlparse
 
@@ -390,10 +390,10 @@ class HTTPRequest(object):
                 self.headers['Content-Length'] = str(len(self.body))
 
 
-class HTTPResponse(HTTPResponse):
+class HTTPResponse(httplib.HTTPResponse):
 
     def __init__(self, *args, **kwargs):
-        HTTPResponse.__init__(self, *args, **kwargs)
+        httplib.HTTPResponse.__init__(self, *args, **kwargs)
         self._cached_response = ''
 
     def read(self, amt=None):
@@ -413,10 +413,10 @@ class HTTPResponse(HTTPResponse):
             # will return the full body.  Note that this behavior only
             # happens if the amt arg is not specified.
             if not self._cached_response:
-                self._cached_response = HTTPResponse.read(self)
+                self._cached_response = httplib.HTTPResponse.read(self)
             return self._cached_response
         else:
-            return HTTPResponse.read(self, amt)
+            return httplib.HTTPResponse.read(self, amt)
 
 
 class AWSAuthConnection(object):
@@ -493,8 +493,8 @@ class AWSAuthConnection(object):
                 'Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define HTTP-related exceptions that we want to catch and retry
-        self.http_exceptions = (HTTPException, socket.error,
-                                socket.gaierror, BadStatusLine)
+        self.http_exceptions = (httplib.HTTPException, socket.error,
+                                socket.gaierror, httplib.BadStatusLine)
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
@@ -682,7 +682,7 @@ class AWSAuthConnection(object):
                         host, ca_certs=self.ca_certificates_file,
                         **self.http_connection_kwargs)
             else:
-                connection = HTTPSConnection(host,
+                connection = httplib.HTTPSConnection(host,
                         **self.http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
@@ -693,7 +693,7 @@ class AWSAuthConnection(object):
                 connection = self.https_connection_factory(host,
                     **self.http_connection_kwargs)
             else:
-                connection = HTTPConnection(host,
+                connection = httplib.HTTPConnection(host,
                     **self.http_connection_kwargs)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
@@ -729,7 +729,7 @@ class AWSAuthConnection(object):
                 sock.sendall("\r\n")
         else:
             sock.sendall("\r\n")
-        resp = HTTPResponse(sock, strict=True, debuglevel=self.debug)
+        resp = httplib.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
         if resp.status != 200:
@@ -743,7 +743,7 @@ class AWSAuthConnection(object):
         # We can safely close the response, it duped the original socket
         resp.close()
 
-        h = HTTPConnection(host)
+        h = httplib.HTTPConnection(host)
 
         if self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
             boto.log.debug("wrapping ssl socket for proxied connection; "
