@@ -30,6 +30,7 @@ from threading import Timer
 from tests.unit import unittest
 
 from boto.sqs.connection import SQSConnection
+from boto.sqs.message import Message
 from boto.sqs.message import MHMessage
 from boto.exception import SQSError
 
@@ -215,3 +216,27 @@ class SQSConnectionTest(unittest.TestCase):
         # we're giving +- .5 seconds for the total time the queue
         # was blocked on the read call.
         self.assertTrue(4.5 <= (end - start) <= 5.5)
+
+    def test_queue_deletion_affects_full_queues(self):
+        conn = SQSConnection()
+
+        # Nuke any leftover queues.
+        for q in conn.get_all_queues():
+            q.delete()
+
+        empty = conn.create_queue('empty%d' % int(time.time()))
+        full = conn.create_queue('full%d' % int(time.time()))
+        # Make sure they're both around.
+        self.assertEqual(len(conn.get_all_queues()), 2)
+
+        # Put a message in the full queue.
+        m1 = Message()
+        m1.set_body('This is a test message.')
+        full.write(m1)
+        self.assertEqual(full.count(), 1)
+
+        self.assertTrue(conn.delete_queue(empty))
+        # Here's the regression for the docs. SQS will delete a queue with
+        # messages in it, no ``force_deletion`` needed.
+        self.assertTrue(conn.delete_queue(full))
+        self.assertEqual(len(conn.get_all_queues()), 0)
