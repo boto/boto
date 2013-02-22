@@ -106,7 +106,7 @@ class BotoServerError(Exception):
 
     def __str__(self):
         return '%s: %s %s\n%s' % (self.__class__.__name__,
-                                  self.status, self.reason, self.body)
+                                  self.status, self.reason, self.body.decode('utf-8'))
 
     def startElement(self, name, attrs, connection):
         pass
