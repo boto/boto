@@ -194,11 +194,16 @@ class TransferThread(threading.Thread):
             except Empty:
                 continue
             if work is _END_SENTINEL:
+                self._cleanup()
                 return
             result = self._process_chunk(work)
             self._result_queue.put(result)
+        self._cleanup()
 
     def _process_chunk(self, work):
+        pass
+
+    def _cleanup(self):
         pass
 
 
@@ -247,6 +252,9 @@ class UploadWorkerThread(TransferThread):
         # Reading the response allows the connection to be reused.
         response.read()
         return (part_number, tree_hash_bytes)
+
+    def _cleanup(self):
+        self._fileobj.close()
 
 
 class ConcurrentDownloader(ConcurrentTransferer):
