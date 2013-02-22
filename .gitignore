@@ -11,3 +11,4 @@ MANIFEST
 .tox
 .coverage
 *flymake.py
+venv
