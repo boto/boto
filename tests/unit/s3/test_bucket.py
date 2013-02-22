@@ -36,7 +36,7 @@ class TestS3Bucket(AWSMockServiceTestCase):
     def test_bucket_new_key_missing_name(self):
         self.set_http_response(status_code=200)
         bucket = self.service_connection.create_bucket('mybucket')
-        
+
         with self.assertRaises(ValueError):
             key = bucket.new_key('')
 
