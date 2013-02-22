@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import tempfile
 from Queue import Queue
 
 import mock
@@ -27,6 +28,7 @@ from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader
+from boto.glacier.concurrent import UploadWorkerThread
 
 
 class FakeThreadedConcurrentUploader(ConcurrentUploader):
@@ -114,6 +116,24 @@ class TestConcurrentUploader(unittest.TestCase):
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).
         self.assertEqual(len(items), 12)
+
+
+class TestResourceCleanup(unittest.TestCase):
+    def setUp(self):
+        self.fileobj = tempfile.NamedTemporaryFile()
+        self.filename = self.fileobj.name
+
+    def test_fileobj_closed_when_thread_shuts_down(self):
+        thread = UploadWorkerThread(mock.Mock(), 'vault_name',
+                                    self.filename, 'upload_id',
+                                    Queue(), Queue())
+        fileobj = thread._fileobj
+        self.assertFalse(fileobj.closed)
+        # By settings should_continue to False, it should immediately
+        # exit, and we can still verify cleanup behavior.
+        thread.should_continue = False
+        thread.run()
+        self.assertTrue(fileobj.closed)
 
 
 if __name__ == '__main__':
