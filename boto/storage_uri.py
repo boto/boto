@@ -278,7 +278,7 @@ class BucketStorageUri(StorageUri):
         self.version_id = version_id
         self.generation = generation and int(generation)
         self.is_latest = is_latest
-        self.is_version_specific = bool(generation) or bool(version_id)
+        self.is_version_specific = bool(self.generation) or bool(version_id)
         self._build_uri_strings()
 
     def _build_uri_strings(self):

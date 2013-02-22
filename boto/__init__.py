@@ -47,7 +47,7 @@ BUCKET_NAME_RE = re.compile(r'^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$')
 # Regex to disallow buckets with individual DNS labels longer than 63.
 TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
-                           r'#(?P<generation>[0-9]{16,})$')
+                           r'#(?P<generation>[0-9]+)$')
 VERSION_RE = re.compile('(?P<versionless_uri_str>.+)#(?P<version_id>.+)$')
 
 

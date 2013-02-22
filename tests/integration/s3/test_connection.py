@@ -99,7 +99,8 @@ class S3ConnectionTest (unittest.TestCase):
         k.name = 'foo/bar'
         k.set_contents_from_string(s1, headers)
         k.name = 'foo/bas'
-        k.set_contents_from_filename('foobar')
+        size = k.set_contents_from_filename('foobar')
+        assert size == 42
         k.name = 'foo/bat'
         k.set_contents_from_string(s1)
         k.name = 'fie/bar'

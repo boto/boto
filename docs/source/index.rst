@@ -112,6 +112,7 @@ Additional Resources
    ref/sdb_db
    dynamodb_tut
    ref/dynamodb
+   rds_tut
    ref/rds
    ref/cloudformation
    ref/iam

@@ -25,8 +25,8 @@ import os.path
 import string
 import inspect
 import datetime, calendar
-import json
 import boto.mturk.connection, boto.mturk.price, boto.mturk.question, boto.mturk.qualification
+from boto.compat import json
 
 # --------------------------------------------------
 # Globals
