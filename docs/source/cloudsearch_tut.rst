@@ -16,7 +16,9 @@ The first step in accessing CloudSearch is to create a connection to the service
 The recommended method of doing this is as follows::
 
     >>> import boto.cloudsearch
-    >>> conn = boto.cloudsearch.connect_to_region("us-east-1", aws_access_key_id= '<aws access key'>, aws_secret_access_key='<aws secret key>')
+    >>> conn = boto.cloudsearch.connect_to_region("us-east-1", 
+    ...             aws_access_key_id='<aws access key'>, 
+    ...             aws_secret_access_key='<aws secret key>')
 
 At this point, the variable conn will point to a CloudSearch connection object
 in the us-east-1 region. Currently, this is the only region which has the
@@ -40,7 +42,7 @@ Creating a Domain
 
 Once you have a connection established with the CloudSearch service, you will
 want to create a domain. A domain encapsulates the data that you wish to index,
-as well as indexes and metadata relating to it.
+as well as indexes and metadata relating to it::
 
     >>> from boto.cloudsearch.domain import Domain
     >>> domain = Domain(conn, conn.create_domain('demo'))
@@ -51,8 +53,9 @@ document service, which you will use to index and search.
 Setting access policies
 -----------------------
 
-Before you can connect to a document service, you need to set the correct access properties.
-For example, if you were connecting from 192.168.1.0, you could give yourself access as follows:
+Before you can connect to a document service, you need to set the correct
+access properties.  For example, if you were connecting from 192.168.1.0, you
+could give yourself access as follows::
 
     >>> our_ip = '192.168.1.0'
 
@@ -61,50 +64,57 @@ For example, if you were connecting from 192.168.1.0, you could give yourself ac
     >>> policy.allow_search_ip(our_ip)
     >>> policy.allow_doc_ip(our_ip)
 
-You can use the allow_search_ip() and allow_doc_ip() methods to give different
-CIDR blocks access to searching and the document service respectively.
+You can use the :py:meth:`allow_search_ip
+<boto.cloudsearch.optionstatus.ServicePoliciesStatus.allow_search_ip>` and
+:py:meth:`allow_doc_ip <boto.cloudsearch.optionstatus.ServicePoliciesStatus.allow_doc_ip>`
+methods to give different CIDR blocks access to searching and the document
+service respectively.
 
 Creating index fields
 ---------------------
 
 Each domain can have up to twenty index fields which are indexed by the
 CloudSearch service. For each index field, you will need to specify whether
-it's a text or integer field, as well as optionaly a default value.
+it's a text or integer field, as well as optionaly a default value::
 
     >>> # Create an 'text' index field called 'username'
     >>> uname_field = domain.create_index_field('username', 'text')
 
     >>> # Epoch time of when the user last did something
-    >>> time_field = domain.create_index_field('last_activity', 'uint', default=0)
+    >>> time_field = domain.create_index_field('last_activity', 
+    ...                                        'uint', 
+    ...                                        default=0)
 
 It is also possible to mark an index field as a facet. Doing so allows a search
 query to return categories into which results can be grouped, or to create
-drill-down categories
+drill-down categories::
    
     >>> # But it would be neat to drill down into different countries    
     >>> loc_field = domain.create_index_field('location', 'text', facet=True)
 
 Finally, you can also mark a snippet of text as being able to be returned
-directly in your search query by using the results option.
+directly in your search query by using the results option::
 
     >>> # Directly insert user snippets in our results
     >>> snippet_field = domain.create_index_field('snippet', 'text', result=True)
 
-You can add up to 20 index fields in this manner:
+You can add up to 20 index fields in this manner::
 
-    >>> follower_field = domain.create_index_field('follower_count', 'uint', default=0)
+    >>> follower_field = domain.create_index_field('follower_count',
+    ...                                            'uint', 
+    ...                                            default=0)
 
 Adding Documents to the Index
 -----------------------------
 
 Now, we can add some documents to our new search domain. First, you will need a
-document service object through which queries are sent:
+document service object through which queries are sent::
 
     >>> doc_service = domain.get_document_service()
 
 For this example, we will use a pre-populated list of sample content for our
 import. You would normally pull such data from your database or another
-document store.
+document store::
 
     >>> users = [
         {
@@ -142,27 +152,30 @@ document store.
     ]
 
 When adding documents to our document service, we will batch them together. You
-can schedule a document to be added by using the add() method. Whenever you are
-adding a document, you must provide a unique ID, a version ID, and the actual
-document to be indexed. In this case, we are using the user ID as our unique
-ID. The version ID is used to determine which is the latest version of an
-object to be indexed. If you wish to update a document, you must use a higher
-version ID. In this case, we are using the time of the user's last activity as
-a version number.
+can schedule a document to be added by using the :py:meth:`add
+<boto.cloudsearch.document.DocumentServiceConnection.add>` method. Whenever you are adding a
+document, you must provide a unique ID, a version ID, and the actual document
+to be indexed. In this case, we are using the user ID as our unique ID. The
+version ID is used to determine which is the latest version of an object to be
+indexed. If you wish to update a document, you must use a higher version ID. In
+this case, we are using the time of the user's last activity as a version
+number::
 
     >>> for user in users:
     >>>     doc_service.add(user['id'], user['last_activity'], user)
 
 When you are ready to send the batched request to the document service, you can
-do with the commit() method. Note that cloudsearch will charge per 1000 batch
-uploads. Each batch upload must be under 5MB.
+do with the :py:meth:`commit
+<boto.cloudsearch.document.DocumentServiceConnection.commit>` method. Note that
+cloudsearch will charge per 1000 batch uploads. Each batch upload must be under
+5MB::
 
     >>> result = doc_service.commit() 
 
-The result is an instance of `cloudsearch.CommitResponse` which will
-make the plain dictionary response a nice object (ie result.adds,
-result.deletes) and raise an exception for us if all of our documents
-weren't actually committed.
+The result is an instance of :py:class:`CommitResponse
+<boto.cloudsearch.document.CommitResponse>` which will make the plain
+dictionary response a nice object (ie result.adds, result.deletes) and raise an
+exception for us if all of our documents weren't actually committed.
 
 After you have successfully committed some documents to cloudsearch, you must
 use :py:meth:`clear_sdf
@@ -173,12 +186,13 @@ cleared.
 Searching Documents
 -------------------
 
-Now, let's try performing a search. First, we will need a SearchServiceConnection:
+Now, let's try performing a search. First, we will need a
+SearchServiceConnection::
 
     >>> search_service = domain.get_search_service()
 
 A standard search will return documents which contain the exact words being
-searched for.
+searched for::
 
     >>> results = search_service.search(q="dan")
     >>> results.hits
@@ -186,7 +200,7 @@ searched for.
     >>> map(lambda x: x['id'], results)
     [u'1', u'4']
 
-The standard search does not look at word order:
+The standard search does not look at word order::
 
     >>> results = search_service.search(q="dinosaur dress")
     >>> results.hits
@@ -196,7 +210,7 @@ The standard search does not look at word order:
 
 It's also possible to do more complex queries using the bq argument (Boolean
 Query). When you are using bq, your search terms must be enclosed in single
-quotes.
+quotes::
 
     >>> results = search_service.search(bq="'dan'")
     >>> results.hits
@@ -205,7 +219,7 @@ quotes.
     [u'1', u'4']
 
 When you are using boolean queries, it's also possible to use wildcards to
-extend your search to all words which start with your search terms:
+extend your search to all words which start with your search terms::
 
     >>> results = search_service.search(bq="'dan*'")
     >>> results.hits
@@ -215,7 +229,7 @@ extend your search to all words which start with your search terms:
 
 The boolean query also allows you to create more complex queries. You can OR
 term together using "|", AND terms together using "+" or a space, and you can
-remove words from the query using the "-" operator.
+remove words from the query using the "-" operator::
 
     >>> results = search_service.search(bq="'watched|moved'")
     >>> results.hits
@@ -224,7 +238,7 @@ remove words from the query using the "-" operator.
     [u'3', u'4']
 
 By default, the search will return 10 terms but it is possible to adjust this
-by using the size argument as follows:
+by using the size argument as follows::
 
     >>> results = search_service.search(bq="'dan*'", size=2)
     >>> results.hits
@@ -232,7 +246,8 @@ by using the size argument as follows:
     >>> map(lambda x: x['id'], results)
     [u'1', u'2']
 
-It is also possible to offset the start of the search by using the start argument as follows:
+It is also possible to offset the start of the search by using the start
+argument as follows::
 
     >>> results = search_service.search(bq="'dan*'", start=2)
     >>> results.hits
@@ -244,18 +259,20 @@ It is also possible to offset the start of the search by using the start argumen
 Ordering search results and rank expressions
 --------------------------------------------
 
-If your search query is going to return many results, it is good to be able to sort them 
-You can order your search results by using the rank argument. You are able to
-sort on any fields which have the results option turned on.
+If your search query is going to return many results, it is good to be able to
+sort them. You can order your search results by using the rank argument. You are
+able to sort on any fields which have the results option turned on::
 
     >>> results = search_service.search(bq=query, rank=['-follower_count'])
 
 You can also create your own rank expressions to sort your results according to
-other criteria:
+other criteria, such as showing most recently active user, or combining the
+recency score with the text_relevance::
 
-    >>> domain.create_rank_expression('recently_active', 'last_activity')  # We'll want to be able to just show the most recently active users
+    >>> domain.create_rank_expression('recently_active', 'last_activity')
     
-    >>> domain.create_rank_expression('activish', 'text_relevance + ((follower_count/(time() - last_activity))*1000)')  # Let's get trickier and combine text relevance with a really dynamic expression
+    >>> domain.create_rank_expression('activish',
+    ...   'text_relevance + ((follower_count/(time() - last_activity))*1000)')
 
     >>> results = search_service.search(bq=query, rank=['-recently_active'])
 
@@ -273,7 +290,7 @@ you map the term running to the stem run and then search for running,
 the request matches documents that contain run as well as running.
 
 To get the current stemming dictionary defined for a domain, use the
-``get_stemming`` method of the Domain object.
+:py:meth:`get_stemming <boto.cloudsearch.domain.Domain.get_stemming>` method::
 
     >>> stems = domain.get_stemming()
     >>> stems
@@ -282,7 +299,7 @@ To get the current stemming dictionary defined for a domain, use the
 
 This returns a dictionary object that can be manipulated directly to
 add additional stems for your search domain by adding pairs of term:stem
-to the stems dictionary.
+to the stems dictionary::
 
     >>> stems['stems']['running'] = 'run'
     >>> stems['stems']['ran'] = 'run'
@@ -291,12 +308,12 @@ to the stems dictionary.
     >>>
 
 This has changed the value locally.  To update the information in
-Amazon CloudSearch, you need to save the data.
+Amazon CloudSearch, you need to save the data::
 
     >>> stems.save()
 
 You can also access certain CloudSearch-specific attributes related to
-the stemming dictionary defined for your domain.
+the stemming dictionary defined for your domain::
 
     >>> stems.status
     u'RequiresIndexDocuments'
@@ -321,7 +338,7 @@ so common that including them would result in a massive number of
 matches.
 
 To view the stopwords currently defined for your domain, use the
-``get_stopwords`` method of the Domain object.
+:py:meth:`get_stopwords <boto.cloudsearch.domain.Domain.get_stopwords>` method::
 
     >>> stopwords = domain.get_stopwords()
     >>> stopwords
@@ -344,17 +361,18 @@ To view the stopwords currently defined for your domain, use the
      u'the',
      u'to',
      u'was']}
-     >>>
+    >>>
 
 You can add additional stopwords by simply appending the values to the
-list.
+list::
 
     >>> stopwords['stopwords'].append('foo')
     >>> stopwords['stopwords'].append('bar')
     >>> stopwords
 
 Similarly, you could remove currently defined stopwords from the list.
-To save the changes, use the ``save`` method.
+To save the changes, use the :py:meth:`save
+<boto.cloudsearch.optionstatus.OptionStatus.save>` method::
 
     >>> stopwords.save()
 
@@ -371,13 +389,13 @@ the indexed term, the results will include documents that contain the
 indexed term.
 
 If you want two terms to match the same documents, you must define
-them as synonyms of each other. For example:
+them as synonyms of each other. For example::
 
     cat, feline
     feline, cat
 
 To view the synonyms currently defined for your domain, use the
-``get_synonyms`` method of the Domain object.
+:py:meth:`get_synonyms <boto.cloudsearch.domain.Domain.get_synonyms>` method::
 
     >>> synonyms = domain.get_synonyms()
     >>> synonyms
@@ -385,12 +403,13 @@ To view the synonyms currently defined for your domain, use the
     >>>
 
 You can define new synonyms by adding new term:synonyms entries to the
-synonyms dictionary object.
+synonyms dictionary object::
 
     >>> synonyms['synonyms']['cat'] = ['feline', 'kitten']
     >>> synonyms['synonyms']['dog'] = ['canine', 'puppy']
 
-To save the changes, use the ``save`` method.
+To save the changes, use the :py:meth:`save
+<boto.cloudsearch.optionstatus.OptionStatus.save>` method::
 
     >>> synonyms.save()
 
@@ -399,6 +418,8 @@ that provide additional information about the stopwords in your domain.
 
 Deleting Documents
 ------------------
+
+It is also possible to delete documents::
 
     >>> import time
     >>> from datetime import datetime

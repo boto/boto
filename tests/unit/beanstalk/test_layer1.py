@@ -44,11 +44,8 @@ class TestListAvailableSolutionStacks(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListAvailableSolutionStacks',
             'ContentType': 'JSON',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2010-12-01',
-            'AWSAccessKeyId': 'aws_access_key_id',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class TestCreateApplicationVersion(AWSMockServiceTestCase):
@@ -78,16 +75,13 @@ class TestCreateApplicationVersion(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'CreateApplicationVersion',
             'ContentType': 'JSON',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2010-12-01',
             'ApplicationName': 'application1',
             'AutoCreateApplication': 'true',
             'SourceBundle.S3Bucket': 'mybucket',
             'SourceBundle.S3Key': 'mykey',
             'VersionLabel': 'version1',
-            'AWSAccessKeyId': 'aws_access_key_id',
-        }, ignore_params_values=['Timestamp'])
+        })
         self.assertEqual(app_version['ApplicationName'], 'application1')
         self.assertEqual(app_version['VersionLabel'], 'version1')
 
@@ -114,15 +108,12 @@ class TestCreateEnvironment(AWSMockServiceTestCase):
             'EnvironmentName': 'environment1',
             'TemplateName': '32bit Amazon Linux running Tomcat 7',
             'ContentType': 'JSON',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2010-12-01',
             'VersionLabel': 'version1',
-            'AWSAccessKeyId': 'aws_access_key_id',
             'OptionSettings.member.1.Namespace': 'aws:autoscaling:launchconfiguration',
             'OptionSettings.member.1.OptionName': 'Ec2KeyName',
             'OptionSettings.member.1.Value': 'mykeypair',
             'OptionSettings.member.2.Namespace': 'aws:elasticbeanstalk:application:environment',
             'OptionSettings.member.2.OptionName': 'ENVVAR',
             'OptionSettings.member.2.Value': 'VALUE1',
-        }, ignore_params_values=['Timestamp'])
+        })
