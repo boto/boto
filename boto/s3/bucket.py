@@ -315,7 +315,8 @@ class Bucket(object):
             k = k.replace('_', '-')
             if  k == 'maxkeys':
                 k = 'max-keys'
-            if isinstance(v, unicode):
+            if isinstance(v, unicode) and hasattr(v, 'decode'):
+                # for python2 strings only
                 v = v.encode('utf-8')
             if v is not None and v != '':
                 l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
