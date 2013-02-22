@@ -202,7 +202,7 @@ class TransferThread(threading.Thread):
 
     def _process_chunk(self, work):
         pass
- 
+
     def _cleanup(self):
         pass
 
@@ -252,7 +252,7 @@ class UploadWorkerThread(TransferThread):
         # Reading the response allows the connection to be reused.
         response.read()
         return (part_number, tree_hash_bytes)
-        
+
     def _cleanup(self):
         self._fileobj.close()
 
