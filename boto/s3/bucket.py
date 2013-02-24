@@ -45,7 +45,7 @@ import boto.jsonresponse
 import boto.utils
 import xml.sax
 import xml.sax.saxutils
-import StringIO
+import io
 import urllib
 import re
 import base64
@@ -545,7 +545,7 @@ class Bucket(object):
             if count <= 0:
                 return False  # no more
             data = data.encode('utf-8')
-            fp = StringIO.StringIO(data)
+            fp = io.BytesIO(data)
             md5 = boto.utils.compute_md5(fp)
             hdrs['Content-MD5'] = md5[1]
             hdrs['Content-Type'] = 'text/xml'
@@ -1168,7 +1168,7 @@ class Bucket(object):
         """
         xml = lifecycle_config.to_xml()
         xml = xml.encode('utf-8')
-        fp = StringIO.StringIO(xml)
+        fp = io.BytesIO(xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1395,7 +1395,8 @@ class Bucket(object):
             CORS configuration.  See the S3 documentation for details
             of the exact syntax required.
         """
-        fp = StringIO.StringIO(cors_xml)
+        cors_xml = boto.utils.ensure_bytes(cors_xml)
+        fp = io.BytesIO(cors_xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1553,7 +1554,7 @@ class Bucket(object):
         # Some errors will be reported in the body of the response
         # even though the HTTP response code is 200.  This check
         # does a quick and dirty peek in the body for an error element.
-        if body.find('<Error>') > 0:
+        if body.find(b'<Error>') > 0:
             contains_error = True
         boto.log.debug(body)
         if response.status == 200 and not contains_error:
@@ -1608,11 +1609,12 @@ class Bucket(object):
     def set_xml_tags(self, tag_str, headers=None, query_args='tagging'):
         if headers is None:
             headers = {}
-        md5 = boto.utils.compute_md5(StringIO.StringIO(tag_str))
+        tag_str = boto.utils.ensure_bytes(tag_str)
+        md5 = boto.utils.compute_md5(io.BytesIO(tag_str))
         headers['Content-MD5'] = md5[1]
         headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('PUT', self.name,
-                                                data=tag_str.encode('utf-8'),
+                                                data=tag_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()

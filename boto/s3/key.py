@@ -39,12 +39,12 @@ from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
-from boto.utils import compute_md5
+from boto.utils import compute_md5, wrap_hash_function
 try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
-
+md5 = wrap_hash_function(md5)
 
 class Key(object):
     """
