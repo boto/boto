@@ -76,7 +76,7 @@ class BotoServerError(StandardError):
         self.body = body or ''
         self.request_id = None
         self.error_code = None
-        self.error_message = None
+        self._error_message = None
         self.box_usage = None
 
         # Attempt to parse the error response. If body isn't present,
@@ -90,15 +90,21 @@ class BotoServerError(StandardError):
                 # in exception. But first, save self.body in self.error_message
                 # because occasionally we get error messages from Eucalyptus
                 # that are just text strings that we want to preserve.
-                self.error_message = self.body
+                self.message = self.body
                 self.body = None
 
     def __getattr__(self, name):
-        if name == 'message':
-            return self.error_message
+        if name == 'error_message':
+            return self.message
         if name == 'code':
             return self.error_code
         raise AttributeError
+
+    def __setattr__(self, name, value):
+        if name == 'error_message':
+            self.message = value
+        else:
+            super(BotoServerError, self).__setattr__(name, value)
 
     def __repr__(self):
         return '%s: %s %s\n%s' % (self.__class__.__name__,
@@ -117,7 +123,7 @@ class BotoServerError(StandardError):
         elif name == 'Code':
             self.error_code = value
         elif name == 'Message':
-            self.error_message = value
+            self.message = value
         elif name == 'BoxUsage':
             self.box_usage = value
         return None
@@ -125,7 +131,7 @@ class BotoServerError(StandardError):
     def _cleanupParsedProperties(self):
         self.request_id = None
         self.error_code = None
-        self.error_message = None
+        self.message = None
         self.box_usage = None
 
 class ConsoleOutput:
