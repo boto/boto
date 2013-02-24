@@ -28,8 +28,6 @@ import boto
 import time
 import uuid
 
-from StringIO import StringIO
-
 from threading import Thread
 
 def spawn(function, *args, **kwargs):

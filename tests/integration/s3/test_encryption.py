@@ -65,8 +65,8 @@ class S3EncryptionTest (unittest.TestCase):
         
         # create an unencrypted key
         k = bucket.new_key('foobar')
-        s1 = 'This is unencrypted data'
-        s2 = 'This is encrypted data'
+        s1 = b'This is unencrypted data'
+        s2 = b'This is encrypted data'
         k.set_contents_from_string(s1)
         time.sleep(5)
         

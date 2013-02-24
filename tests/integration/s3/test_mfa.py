@@ -65,7 +65,7 @@ class S3MFATest (unittest.TestCase):
 
         # Add a key to the bucket
         k = self.bucket.new_key('foobar')
-        s1 = 'This is v1'
+        s1 = b'This is v1'
         k.set_contents_from_string(s1)
         v1 = k.version_id
 

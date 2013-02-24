@@ -162,7 +162,7 @@ class S3BucketTest (unittest.TestCase):
                                   {'IndexDocument': {'Suffix': 'index.html'}}})
         config2, xml = self.bucket.get_website_configuration_with_xml()
         self.assertEqual(config, config2)
-        self.assertTrue('<Suffix>index.html</Suffix>' in xml, xml)
+        self.assertTrue(b'<Suffix>index.html</Suffix>' in xml, xml)
 
     def test_website_redirect_all_requests(self):
         response = self.bucket.configure_website(
