@@ -72,12 +72,7 @@ except ImportError:
     sha256 = None
 
 # and this modifies sha and sha256 to accept the proper type
-_sha256 = sha256
-def sha256(*args, **kwargs):
-    args = list(args)
-    if len(args) > 0:
-        args[0] = boto.utils.ensure_bytes(args[0])
-    return _sha256(*args, **kwargs)
+sha256 = boto.utils.wrap_hash_function(sha256)
 try:
     # this doesn't belong here
     import hashlib

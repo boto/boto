@@ -155,6 +155,8 @@ def canonical_string(method, path, headers, expires=None,
         qsa = [a.split('=', 1) for a in qsa]
         qsa = [unquote_v(a) for a in qsa if a[0] in qsa_of_interest]
         if len(qsa) > 0:
+            def cmp(a, b):
+              return (a > b) - (a < b)
             if hasattr(functools, 'cmp_to_key'):
                 qsa.sort(key=functools.cmp_to_key(lambda x, y:cmp(x[0], y[0])))
             else:
@@ -950,3 +952,25 @@ def ensure_string(string):
         # it's a python3 byte literal
         string = string.decode('utf-8')
     return string
+
+class FakeHashObj(object):
+  """Intercept calls to hashlib objects and ensure
+  only bytes get by in python3
+  """
+  def __init__(self, obj):
+    self.obj = obj
+
+  def __getattr__(self, attr):
+    return getattr(self.obj, attr)
+
+  def update(self, str):
+    return self.obj.update(boto.utils.ensure_bytes(str))
+
+def wrap_hash_function(hf):
+  def get_hash(*args, **kwargs):
+    if args:
+      args = list(args)
+      args[0] = boto.utils.ensure_bytes(args[0])
+    obj = FakeHashObj(hf(*args, **kwargs))
+    return obj
+  return get_hash
