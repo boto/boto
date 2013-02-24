@@ -89,7 +89,7 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        fp.write(self.data)
+        fp.write(ensure_bytes(self.data))
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
