@@ -27,11 +27,13 @@ import re
 import rfc822
 import StringIO
 import base64
+import binascii
 import math
 import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.provider import Provider
+from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
 from boto.utils import compute_md5
@@ -149,9 +151,8 @@ class Key(object):
     @property
     def provider(self):
         provider = None
-        if self.bucket:
-            if self.bucket.connection:
-                provider = self.bucket.connection.provider
+        if self.bucket and self.bucket.connection:
+            provider = self.bucket.connection.provider
         return provider
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
@@ -159,7 +160,6 @@ class Key(object):
         A utility function to create the 2-tuple (md5hexdigest, base64md5)
         from just having a precalculated md5_hexdigest.
         """
-        import binascii
         digest = binascii.unhexlify(md5_hexdigest)
         base64md5 = base64.encodestring(digest)
         if base64md5[-1] == '\n':
@@ -295,8 +295,23 @@ class Key(object):
 
     closed = False
 
-    def close(self):
-        if self.resp:
+    def close(self, fast=False):
+        """
+        Close this key.
+
+        :type fast: bool
+        :param fast: True if you want the connection to be closed without first
+        reading the content. This should only be used in cases where subsequent
+        calls don't need to return the content from the open HTTP connection.
+        Note: As explained at
+        http://docs.python.org/2/library/httplib.html#httplib.HTTPConnection.getresponse,
+        callers must read the whole response before sending a new request to the
+        server. Calling Key.close(fast=True) and making a subsequent request to
+        the server will work because boto will get an httplib exception and
+        close/reopen the connection.
+
+        """
+        if self.resp and not fast:
             self.resp.read()
         self.resp = None
         self.mode = None
@@ -506,7 +521,7 @@ class Key(object):
 
         """
         response = self.bucket.connection.make_request(
-            'GET', self.bucket.name, self.name)
+            'HEAD', self.bucket.name, self.name)
         if response.status == 200:
             return response.getheader('x-amz-website-redirect-location')
         else:
@@ -689,11 +704,11 @@ class Key(object):
 
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
-            # If the debuglevel < 3 we don't want to show connection
+            # If the debuglevel < 4 we don't want to show connection
             # payload, so turn off HTTP connection-level debug output (to
             # be restored below).
             # Use the getattr approach to allow this to work in AppEngine.
-            if getattr(http_conn, 'debuglevel', 0) < 3:
+            if getattr(http_conn, 'debuglevel', 0) < 4:
                 http_conn.set_debuglevel(0)
 
             data_len = 0
@@ -765,10 +780,10 @@ class Key(object):
             if cb and (cb_count <= 1 or i > 0) and data_len > 0:
                 cb(data_len, cb_size)
 
-            response = http_conn.getresponse()
-            body = response.read()
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
+            response = http_conn.getresponse()
+            body = response.read()
             if ((response.status == 500 or response.status == 503 or
                     response.getheader('location')) and not chunked_transfer):
                 # we'll try again.
@@ -1034,18 +1049,34 @@ class Key(object):
             # caller requests reading from beginning of fp.
             fp.seek(0, os.SEEK_SET)
         else:
-            spos = fp.tell()
-            fp.seek(0, os.SEEK_END)
-            if fp.tell() == spos:
-                fp.seek(0, os.SEEK_SET)
-                if fp.tell() != spos:
-                    # Raise an exception as this is likely a programming error
-                    # whereby there is data before the fp but nothing after it.
-                    fp.seek(spos)
-                    raise AttributeError(
-                     'fp is at EOF. Use rewind option or seek() to data start.')
-            # seek back to the correct position.
-            fp.seek(spos)
+            # The following seek/tell/seek logic is intended
+            # to detect applications using the older interface to
+            # set_contents_from_file(), which automatically rewound the
+            # file each time the Key was reused. This changed with commit
+            # 14ee2d03f4665fe20d19a85286f78d39d924237e, to support uploads
+            # split into multiple parts and uploaded in parallel, and at
+            # the time of that commit this check was added because otherwise
+            # older programs would get a success status and upload an empty
+            # object. Unfortuantely, it's very inefficient for fp's implemented
+            # by KeyFile (used, for example, by gsutil when copying between
+            # providers). So, we skip the check for the KeyFile case.
+            # TODO: At some point consider removing this seek/tell/seek
+            # logic, after enough time has passed that it's unlikely any
+            # programs remain that assume the older auto-rewind interface.
+            if not isinstance(fp, KeyFile):
+                spos = fp.tell()
+                fp.seek(0, os.SEEK_END)
+                if fp.tell() == spos:
+                    fp.seek(0, os.SEEK_SET)
+                    if fp.tell() != spos:
+                        # Raise an exception as this is likely a programming
+                        # error whereby there is data before the fp but nothing
+                        # after it.
+                        fp.seek(spos)
+                        raise AttributeError('fp is at EOF. Use rewind option '
+                                             'or seek() to data start.')
+                # seek back to the correct position.
+                fp.seek(spos)
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
@@ -1055,7 +1086,6 @@ class Key(object):
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
-
         if self.bucket != None:
             if not md5 and provider.supports_chunked_transfer():
                 # defer md5 calculation to on the fly and
@@ -1064,6 +1094,18 @@ class Key(object):
                 self.size = None
             else:
                 chunked_transfer = False
+                if isinstance(fp, KeyFile):
+                    # Avoid EOF seek for KeyFile case as it's very inefficient.
+                    key = fp.getkey()
+                    size = key.size - fp.tell()
+                    self.size = size
+                    # At present both GCS and S3 use MD5 for the etag for
+                    # non-multipart-uploaded objects. If the etag is 32 hex
+                    # chars use it as an MD5, to avoid having to read the file
+                    # twice while transferring.
+                    if (re.match('^"[a-fA-F0-9]{32}"$', key.etag)):
+                        etag = key.etag.strip('"')
+                        md5 = (etag, base64.b64encode(binascii.unhexlify(etag)))
                 if not md5:
                     # compute_md5() and also set self.size to actual
                     # size of the bytes read computing the md5.
@@ -1152,12 +1194,16 @@ class Key(object):
             :param encrypt_key: If True, the new copy of the object
             will be encrypted on the server-side by S3 and will be
             stored in an encrypted form while at rest in S3.
+
+        :rtype: int
+        :return: The number of bytes written to the key.
         """
         fp = open(filename, 'rb')
         try:
-            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5, reduced_redundancy,
-                                        encrypt_key=encrypt_key)
+            return self.set_contents_from_file(fp, headers, replace,
+                                               cb, num_cb, policy,
+                                               md5, reduced_redundancy,
+                                               encrypt_key=encrypt_key)
         finally:
             fp.close()
 
@@ -1643,7 +1689,8 @@ class Key(object):
             rewritten_metadata[rewritten_h] = metadata[h]
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
-                            metadata=metadata, preserve_acl=preserve_acl)
+                            metadata=metadata, preserve_acl=preserve_acl,
+                            headers=headers)
 
     def restore(self, days, headers=None):
         """Restore an object from an archive.

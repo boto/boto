@@ -404,12 +404,49 @@ class S3Connection(AWSAuthConnection):
         return rs.owner.id
 
     def get_bucket(self, bucket_name, validate=True, headers=None):
+        """
+        Retrieves a bucket by name.
+
+        If the bucket does not exist, an ``S3ResponseError`` will be raised. If
+        you are unsure if the bucket exists or not, you can use the
+        ``S3Connection.lookup`` method, which will either return a valid bucket
+        or ``None``.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :type validate: boolean
+        :param validate: If ``True``, it will try to fetch all keys within the
+            given bucket. (Default: ``True``)
+        """
         bucket = self.bucket_class(self, bucket_name)
         if validate:
             bucket.get_all_keys(headers, maxkeys=0)
         return bucket
 
     def lookup(self, bucket_name, validate=True, headers=None):
+        """
+        Attempts to get a bucket from S3.
+
+        Works identically to ``S3Connection.get_bucket``, save for that it
+        will return ``None`` if the bucket does not exist instead of throwing
+        an exception.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :type validate: boolean
+        :param validate: If ``True``, it will try to fetch all keys within the
+            given bucket. (Default: ``True``)
+        """
         try:
             bucket = self.get_bucket(bucket_name, validate, headers=headers)
         except:
@@ -463,6 +500,19 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
 
     def delete_bucket(self, bucket, headers=None):
+        """
+        Removes an S3 bucket.
+
+        In order to remove the bucket, it must first be empty. If the bucket is
+        not empty, an ``S3ResponseError`` will be raised.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+        """
         response = self.make_request('DELETE', bucket, headers=headers)
         body = response.read()
         if response.status != 204:

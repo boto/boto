@@ -19,14 +19,55 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import base64
+import binascii
 import os
+import re
 import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
+from boto.s3.keyfile import KeyFile
 
 class Key(S3Key):
+    """
+    Represents a key (object) in a GS bucket.
+
+    :ivar bucket: The parent :class:`boto.gs.bucket.Bucket`.
+    :ivar name: The name of this Key object.
+    :ivar metadata: A dictionary containing user metadata that you
+        wish to store with the object or that has been retrieved from
+        an existing object.
+    :ivar cache_control: The value of the `Cache-Control` HTTP header.
+    :ivar content_type: The value of the `Content-Type` HTTP header.
+    :ivar content_encoding: The value of the `Content-Encoding` HTTP header.
+    :ivar content_disposition: The value of the `Content-Disposition` HTTP
+        header.
+    :ivar content_language: The value of the `Content-Language` HTTP header.
+    :ivar etag: The `etag` associated with this object.
+    :ivar last_modified: The string timestamp representing the last
+        time this object was modified in GS.
+    :ivar owner: The ID of the owner of this object.
+    :ivar storage_class: The storage class of the object.  Currently, one of:
+        STANDARD | DURABLE_REDUCED_AVAILABILITY.
+    :ivar md5: The MD5 hash of the contents of the object.
+    :ivar size: The size, in bytes, of the object.
+    :ivar generation: The generation number of the object.
+    :ivar meta_generation: The generation number of the object metadata.
+    :ivar encrypted: Whether the object is encrypted while at rest on
+        the server.
+    """
     generation = None
     meta_generation = None
+
+    def __repr__(self):
+        if self.generation and self.meta_generation:
+            ver_str = '#%s.%s' % (self.generation, self.meta_generation)
+        else:
+            ver_str = ''
+        if self.bucket:
+            return '<Key: %s,%s%s>' % (self.bucket.name, self.name, ver_str)
+        else:
+            return '<Key: None,%s%s>' % (self.name, ver_str)
 
     def endElement(self, name, value, connection):
         if name == 'Key':
@@ -160,7 +201,8 @@ class Key(S3Key):
 
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
-                               res_upload_handler=None, size=None, rewind=False):
+                               res_upload_handler=None, size=None, rewind=False,
+                               if_generation=None):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file pointed to by 'fp' as the
@@ -230,6 +272,12 @@ class Key(S3Key):
                        it. The default behaviour is False which reads from
                        the current position of the file pointer (fp).
 
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
+
         :rtype: int
         :return: The number of bytes written to the key.
 
@@ -250,22 +298,50 @@ class Key(S3Key):
             # caller requests reading from beginning of fp.
             fp.seek(0, os.SEEK_SET)
         else:
-            spos = fp.tell()
-            fp.seek(0, os.SEEK_END)
-            if fp.tell() == spos:
-                fp.seek(0, os.SEEK_SET)
-                if fp.tell() != spos:
-                    # Raise an exception as this is likely a programming error
-                    # whereby there is data before the fp but nothing after it.
-                    fp.seek(spos)
-                    raise AttributeError(
-                     'fp is at EOF. Use rewind option or seek() to data start.')
-            # seek back to the correct position.
-            fp.seek(spos)
+            # The following seek/tell/seek logic is intended
+            # to detect applications using the older interface to
+            # set_contents_from_file(), which automatically rewound the
+            # file each time the Key was reused. This changed with commit
+            # 14ee2d03f4665fe20d19a85286f78d39d924237e, to support uploads
+            # split into multiple parts and uploaded in parallel, and at
+            # the time of that commit this check was added because otherwise
+            # older programs would get a success status and upload an empty
+            # object. Unfortuantely, it's very inefficient for fp's implemented
+            # by KeyFile (used, for example, by gsutil when copying between
+            # providers). So, we skip the check for the KeyFile case.
+            # TODO: At some point consider removing this seek/tell/seek
+            # logic, after enough time has passed that it's unlikely any
+            # programs remain that assume the older auto-rewind interface.
+            if not isinstance(fp, KeyFile):
+                spos = fp.tell()
+                fp.seek(0, os.SEEK_END)
+                if fp.tell() == spos:
+                    fp.seek(0, os.SEEK_SET)
+                    if fp.tell() != spos:
+                        # Raise an exception as this is likely a programming
+                        # error whereby there is data before the fp but nothing
+                        # after it.
+                        fp.seek(spos)
+                        raise AttributeError('fp is at EOF. Use rewind option '
+                                             'or seek() to data start.')
+                # seek back to the correct position.
+                fp.seek(spos)
 
         if hasattr(fp, 'name'):
             self.path = fp.name
         if self.bucket != None:
+            if isinstance(fp, KeyFile):
+                # Avoid EOF seek for KeyFile case as it's very inefficient.
+                key = fp.getkey()
+                size = key.size - fp.tell()
+                self.size = size
+                # At present both GCS and S3 use MD5 for the etag for
+                # non-multipart-uploaded objects. If the etag is 32 hex
+                # chars use it as an MD5, to avoid having to read the file
+                # twice while transferring.
+                if (re.match('^"[a-fA-F0-9]{32}"$', key.etag)):
+                    etag = key.etag.strip('"')
+                    md5 = (etag, base64.b64encode(binascii.unhexlify(etag)))
             if size:
                 self.size = size
             else:
@@ -284,9 +360,14 @@ class Key(S3Key):
 
             if self.name == None:
                 self.name = self.md5
+
             if not replace:
                 if self.bucket.lookup(self.name):
                     return
+
+            if if_generation is not None:
+                headers['x-goog-if-generation-match'] = str(if_generation)
+
             if res_upload_handler:
                 res_upload_handler.send_file(self, fp, headers, cb, num_cb)
             else:
@@ -296,7 +377,8 @@ class Key(S3Key):
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
                                    reduced_redundancy=None,
-                                   res_upload_handler=None):
+                                   res_upload_handler=None,
+                                   if_generation=None):
         """
         Store an object in GS using the name of the Key object as the
         key in GS and the contents of the file named by 'filename'.
@@ -342,6 +424,12 @@ class Key(S3Key):
         :type res_upload_handler: ResumableUploadHandler
         :param res_upload_handler: If provided, this handler will perform the
             upload.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
         """
         # Clear out any previously computed md5 hashes, since we are setting the content.
         self.md5 = None
@@ -349,11 +437,13 @@ class Key(S3Key):
 
         fp = open(filename, 'rb')
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, res_upload_handler)
+                                    policy, md5, res_upload_handler,
+                                    if_generation=if_generation)
         fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
-                                 cb=None, num_cb=10, policy=None, md5=None):
+                                 cb=None, num_cb=10, policy=None, md5=None,
+                                 if_generation=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the string 's' as the contents.
@@ -396,6 +486,12 @@ class Key(S3Key):
                     to upload, it's silly to have to do it twice so this
                     param, if present, will be used as the MD5 values
                     of the file.  Otherwise, the checksum will be computed.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
         """
 
         # Clear out any previously computed md5 hashes, since we are setting the content.
@@ -406,6 +502,203 @@ class Key(S3Key):
             s = s.encode("utf-8")
         fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5)
+                                        policy, md5,
+                                        if_generation=if_generation)
         fp.close()
         return r
+
+    def set_contents_from_stream(self, *args, **kwargs):
+        """
+        Store an object using the name of the Key object as the key in
+        cloud and the contents of the data stream pointed to by 'fp' as
+        the contents.
+
+        The stream object is not seekable and total size is not known.
+        This has the implication that we can't specify the
+        Content-Size and Content-MD5 in the header. So for huge
+        uploads, the delay in calculating MD5 is avoided but with a
+        penalty of inability to verify the integrity of the uploaded
+        data.
+
+        :type fp: file
+        :param fp: the file whose contents are to be uploaded
+
+        :type headers: dict
+        :param headers: additional HTTP headers to be sent with the
+            PUT request.
+
+        :type replace: bool
+        :param replace: If this parameter is False, the method will first check
+            to see if an object exists in the bucket with the same key. If it
+            does, it won't overwrite it. The default value is True which will
+            overwrite the object.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload. The callback should accept two integer
+            parameters, the first representing the number of bytes that have
+            been successfully transmitted to GS and the second representing the
+            total number of bytes that need to be transmitted.
+
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter, this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file transfer.
+
+        :type policy: :class:`boto.gs.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the new key
+            in GS.
+
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+            class of the new Key to be REDUCED_REDUNDANCY. The Reduced
+            Redundancy Storage (RRS) feature of S3, provides lower
+            redundancy at lower storage cost.
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read from
+            the file pointer (fp). This is useful when uploading a
+            file in multiple parts where you are splitting the file up
+            into different ranges to be uploaded. If not specified,
+            the default behaviour is to read all bytes from the file
+            pointer. Less bytes may be available.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the
+            object will only be written to if its current generation number is
+            this value. If set to the value 0, the object will only be written
+            if it doesn't already exist.
+        """
+        if_generation = kwargs.pop('if_generation', None)
+        if if_generation is not None:
+            headers = kwargs.get('headers', {})
+            headers['x-goog-if-generation-match'] = str(if_generation)
+            kwargs['headers'] = headers
+        super(Key, self).set_contents_from_stream(*args, **kwargs)
+
+    def set_acl(self, acl_or_str, headers=None, generation=None,
+                 if_generation=None, if_metageneration=None):
+        """Sets the ACL for this object.
+
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string (see
+            :data:`~.gs.acl.CannedACLStrings`) or an ACL object.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if self.bucket != None:
+            self.bucket.set_acl(acl_or_str, self.name, headers=headers,
+                                generation=generation,
+                                if_generation=if_generation,
+                                if_metageneration=if_metageneration)
+
+    def get_acl(self, headers=None, generation=None):
+        """Returns the ACL of this object.
+
+        :param dict headers: Additional headers to set during the request.
+
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned.
+
+        :rtype: :class:`.gs.acl.ACL`
+        """
+        if self.bucket != None:
+            return self.bucket.get_acl(self.name, headers=headers,
+                                       generation=generation)
+
+    def get_xml_acl(self, headers=None, generation=None):
+        """Returns the ACL string of this object.
+
+        :param dict headers: Additional headers to set during the request.
+
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned.
+
+        :rtype: str
+        """
+        if self.bucket != None:
+            return self.bucket.get_xml_acl(self.name, headers=headers,
+                                           generation=generation)
+
+    def set_xml_acl(self, acl_str, headers=None, generation=None,
+                     if_generation=None, if_metageneration=None):
+        """Sets this objects's ACL to an XML string.
+
+        :type acl_str: string
+        :param acl_str: A string containing the ACL XML.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if self.bucket != None:
+            return self.bucket.set_xml_acl(acl_str, self.name, headers=headers,
+                                           generation=generation,
+                                           if_generation=if_generation,
+                                           if_metageneration=if_metageneration)
+
+    def set_canned_acl(self, acl_str, headers=None, generation=None,
+                       if_generation=None, if_metageneration=None):
+        """Sets this objects's ACL using a predefined (canned) value.
+
+        :type acl_str: string
+        :param acl_str: A canned ACL string. See
+            :data:`~.gs.acl.CannedACLStrings`.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if self.bucket != None:
+            return self.bucket.set_canned_acl(
+                acl_str,
+                self.name,
+                headers=headers,
+                generation=generation,
+                if_generation=if_generation,
+                if_metageneration=if_metageneration
+            )

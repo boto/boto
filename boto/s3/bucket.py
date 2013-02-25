@@ -40,6 +40,7 @@ from boto.s3.lifecycle import Lifecycle
 from boto.s3.tagging import Tags
 from boto.s3.cors import CORSConfiguration
 from boto.s3.bucketlogging import BucketLogging
+from boto.s3 import website
 import boto.jsonresponse
 import boto.utils
 import xml.sax
@@ -273,8 +274,10 @@ class Bucket(object):
         :param delimiter: can be used in conjunction with the prefix
             to allow you to organize and browse your keys
             hierarchically. See:
-            http://docs.amazonwebservices.com/AmazonS3/2006-03-01/ for
-            more details.
+
+            http://aws.amazon.com/releasenotes/Amazon-S3/213
+
+            for more details.
 
         :type marker: string
         :param marker: The "marker" of where you are in the result set
@@ -589,6 +592,8 @@ class Bucket(object):
             created or removed and what version_id the delete created
             or removed.
         """
+        if not key_name:
+            raise ValueError('Empty key names are not allowed')
         return self._delete_key_internal(key_name, headers=headers,
                                          version_id=version_id,
                                          mfa_token=mfa_token,
@@ -1215,7 +1220,10 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def configure_website(self, suffix, error_key='', headers=None):
+    def configure_website(self, suffix=None, error_key=None,
+                          redirect_all_requests_to=None,
+                          routing_rules=None,
+                          headers=None):
         """
         Configure this bucket to act as a website
 
@@ -1231,12 +1239,22 @@ class Bucket(object):
         :param error_key: The object key name to use when a 4XX class
             error occurs.  This is optional.
 
+        :type redirect_all_requests_to: :class:`boto.s3.website.RedirectLocation`
+        :param redirect_all_requests_to: Describes the redirect behavior for
+            every request to this bucket's website endpoint. If this value is
+            non None, no other values are considered when configuring the
+            website configuration for the bucket. This is an instance of
+            ``RedirectLocation``.
+
+        :type routing_rules: :class:`boto.s3.website.RoutingRules`
+        :param routing_rules: Object which specifies conditions
+            and redirects that apply when the conditions are met.
+
         """
-        if error_key:
-            error_frag = self.WebsiteErrorFragment % error_key
-        else:
-            error_frag = ''
-        body = self.WebsiteBody % (suffix, error_frag)
+        config = website.WebsiteConfiguration(
+                suffix, error_key, redirect_all_requests_to,
+                routing_rules)
+        body = config.to_xml()
         response = self.connection.make_request('PUT', self.name, data=body,
                                                 query_args='website',
                                                 headers=headers)
@@ -1275,7 +1293,7 @@ class Bucket(object):
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
         1) A dictionary containing a Python representation
-                  of the XML response from GCS. The overall structure is:
+                  of the XML response. The overall structure is:
           * WebsiteConfiguration
             * IndexDocument
               * Suffix : suffix that is appended to request that

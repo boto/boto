@@ -19,6 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import urllib
+import xml.sax
+
 import boto
 from boto import handler
 from boto.resultset import ResultSet
@@ -30,7 +33,6 @@ from boto.gs.cors import Cors
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
-import xml.sax
 
 # constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
@@ -38,6 +40,8 @@ STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
 
 class Bucket(S3Bucket):
+    """Represents a Google Cloud Storage bucket."""
+
     VersioningBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                       '<VersioningConfiguration><Status>%s</Status>'
                       '</VersioningConfiguration>')
@@ -62,10 +66,10 @@ class Bucket(S3Bucket):
 
     def get_key(self, key_name, headers=None, version_id=None,
                 response_headers=None, generation=None):
-        """
-        Check to see if a particular key exists within the bucket.  This
-        method uses a HEAD request to check for the existance of the key.
-        Returns: An instance of a Key object or None
+        """Returns a Key instance for an object in this bucket.
+
+         Note that this method uses a HEAD request to check for the existence of
+         the key.
 
         :type key_name: string
         :param key_name: The name of the key to retrieve
@@ -76,7 +80,14 @@ class Bucket(S3Bucket):
             with the stored object in the response.  See
             http://goo.gl/06N3b for details.
 
-        :rtype: :class:`boto.s3.key.Key`
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type generation: int
+        :param generation: A specific generation number to fetch the key at. If
+            not specified, the latest generation is fetched.
+
+        :rtype: :class:`boto.gs.key.Key`
         :returns: A Key object from this bucket.
         """
         query_args_l = []
@@ -94,16 +105,67 @@ class Bucket(S3Bucket):
                  metadata=None, src_version_id=None, storage_class='STANDARD',
                  preserve_acl=False, encrypt_key=False, headers=None,
                  query_args=None, src_generation=None):
+        """Create a new key in the bucket by copying an existing key.
+
+        :type new_key_name: string
+        :param new_key_name: The name of the new key
+
+        :type src_bucket_name: string
+        :param src_bucket_name: The name of the source bucket
+
+        :type src_key_name: string
+        :param src_key_name: The name of the source key
+
+        :type src_generation: int
+        :param src_generation: The generation number of the source key to copy.
+            If not specified, the latest generation is copied.
+
+        :type metadata: dict
+        :param metadata: Metadata to be associated with new key.  If
+            metadata is supplied, it will replace the metadata of the
+            source key being copied.  If no metadata is supplied, the
+            source key's metadata will be copied to the new key.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type storage_class: string
+        :param storage_class: The storage class of the new key.  By
+            default, the new key will use the standard storage class.
+            Possible values are: STANDARD | DURABLE_REDUCED_AVAILABILITY
+
+        :type preserve_acl: bool
+        :param preserve_acl: If True, the ACL from the source key will
+            be copied to the destination key.  If False, the
+            destination key will have the default ACL.  Note that
+            preserving the ACL in the new key object will require two
+            additional API calls to GCS, one to retrieve the current
+            ACL and one to set that ACL on the new object.  If you
+            don't care about the ACL (or if you have a default ACL set
+            on the bucket), a value of False will be significantly more
+            efficient.
+
+        :type encrypt_key: bool
+        :param encrypt_key: Included for compatibility with S3. This argument is
+            ignored.
+
+        :type headers: dict
+        :param headers: A dictionary of header name/value pairs.
+
+        :type query_args: string
+        :param query_args: A string of additional querystring arguments
+            to append to the request
+
+        :rtype: :class:`boto.gs.key.Key`
+        :returns: An instance of the newly created key object
+        """
         if src_generation:
-            if headers is None:
-                headers = {}
-            headers['x-goog-copy-source-generation'] = src_generation
-        super(Bucket, self).copy_key(new_key_name, src_bucket_name,
-                                     src_key_name, metadata=metadata,
-                                     storage_class=storage_class,
-                                     preserve_acl=preserve_acl,
-                                     encrypt_key=encrypt_key, headers=headers,
-                                     query_args=query_args)
+            headers = headers or {}
+            headers['x-goog-copy-source-generation'] = str(src_generation)
+        return super(Bucket, self).copy_key(
+            new_key_name, src_bucket_name, src_key_name, metadata=metadata,
+            storage_class=storage_class, preserve_acl=preserve_acl,
+            encrypt_key=encrypt_key, headers=headers, query_args=query_args)
 
     def list_versions(self, prefix='', delimiter='', marker='',
                       generation_marker='', headers=None):
@@ -132,12 +194,15 @@ class Bucket(S3Bucket):
         :param marker: The "marker" of where you are in the result set
 
         :type generation_marker: string
-        :param marker: The "generation marker" of where you are in the result
-            set
+        :param generation_marker: The "generation marker" of where you are in
+            the result set.
+
+        :type headers: dict
+        :param headers: A dictionary of header name/value pairs.
 
         :rtype:
             :class:`boto.gs.bucketlistresultset.VersionedBucketListResultSet`
-        :return: an instance of a BucketListResultSet that handles paging, etc
+        :return: an instance of a BucketListResultSet that handles paging, etc.
         """
         return VersionedBucketListResultSet(self, prefix, delimiter,
                                             marker, generation_marker,
@@ -145,6 +210,29 @@ class Bucket(S3Bucket):
 
     def delete_key(self, key_name, headers=None, version_id=None,
                    mfa_token=None, generation=None):
+        """
+        Deletes a key from the bucket.
+
+        :type key_name: string
+        :param key_name: The key name to delete
+
+        :type headers: dict
+        :param headers: A dictionary of header name/value pairs.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: Unused in this subclass.
+
+        :type generation: int
+        :param generation: The generation number of the key to delete. If not
+            specified, the latest generation number will be deleted.
+
+        :rtype: :class:`boto.gs.key.Key`
+        :returns: A key object holding information on what was
+            deleted.
+        """
         query_args_l = []
         if generation:
             query_args_l.append('generation=%s' % generation)
@@ -153,108 +241,297 @@ class Bucket(S3Bucket):
                                   query_args_l=query_args_l)
 
     def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
-                generation=None):
-        """Sets or changes a bucket's or key's ACL. The generation argument can
-        be used to specify an object version, else we will modify the current
-        version."""
-        key_name = key_name or ''
-        query_args = STANDARD_ACL
-        if generation:
-          query_args += '&generation=%s' % str(generation)
+                generation=None, if_generation=None, if_metageneration=None):
+        """Sets or changes a bucket's or key's ACL.
+
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string (see
+            :data:`~.gs.acl.CannedACLStrings`) or an ACL object.
+
+        :type key_name: string
+        :param key_name: A key name within the bucket to set the ACL for. If not
+            specified, the ACL for the bucket will be set.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
             self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers,
-                             query_args=query_args)
+                             generation=generation,
+                             if_generation=if_generation,
+                             if_metageneration=if_metageneration)
         else:
             self.set_canned_acl(acl_or_str, key_name, headers=headers,
-                                generation=generation)
+                                generation=generation,
+                                if_generation=if_generation,
+                                if_metageneration=if_metageneration)
 
-    def set_def_acl(self, acl_or_str, key_name='', headers=None):
-        """sets or changes a bucket's default object acl. The key_name argument
-        is ignored since keys have no default ACL property."""
+    def set_def_acl(self, acl_or_str, headers=None):
+        """Sets or changes a bucket's default ACL.
+
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string (see
+            :data:`~.gs.acl.CannedACLStrings`) or an ACL object.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+        """
         if isinstance(acl_or_str, Policy):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
-            self.set_def_xml_acl(acl_or_str.to_xml(), '', headers=headers)
+            self.set_def_xml_acl(acl_or_str.to_xml(), headers=headers)
         else:
-            self.set_def_canned_acl(acl_or_str, '', headers=headers)
+            self.set_def_canned_acl(acl_or_str, headers=headers)
 
-    def get_acl_helper(self, key_name, headers, query_args):
-        """provides common functionality for get_acl() and get_def_acl()"""
+    def _get_xml_acl_helper(self, key_name, headers, query_args):
+        """Provides common functionality for get_xml_acl and _get_acl_helper."""
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
-        if response.status == 200:
-            acl = ACL(self)
-            h = handler.XmlHandler(acl, self)
-            xml.sax.parseString(body, h)
-            return acl
-        else:
+        if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+        return body
+
+    def _get_acl_helper(self, key_name, headers, query_args):
+        """Provides common functionality for get_acl and get_def_acl."""
+        body = self._get_xml_acl_helper(key_name, headers, query_args)
+        acl = ACL(self)
+        h = handler.XmlHandler(acl, self)
+        xml.sax.parseString(body, h)
+        return acl
 
     def get_acl(self, key_name='', headers=None, version_id=None,
                 generation=None):
-        """returns a bucket's acl. We include a version_id argument
-           to support a polymorphic interface for callers, however,
-           version_id is not relevant for Google Cloud Storage buckets
-           and is therefore ignored here."""
+        """Returns the ACL of the bucket or an object in the bucket.
+
+        :param str key_name: The name of the object to get the ACL for. If not
+            specified, the ACL for the bucket will be returned.
+
+        :param dict headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned. This parameter is only valid when retrieving
+            the ACL of an object, not a bucket.
+
+        :rtype: :class:`.gs.acl.ACL`
+        """
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%s' % str(generation)
-        return self.get_acl_helper(key_name, headers, query_args)
+            query_args += '&generation=%s' % generation
+        return self._get_acl_helper(key_name, headers, query_args)
 
-    def get_def_acl(self, key_name='', headers=None):
-        """returns a bucket's default object acl. The key_name argument is
-        ignored since keys have no default ACL property."""
-        return self.get_acl_helper('', headers, DEF_OBJ_ACL)
+    def get_xml_acl(self, key_name='', headers=None, version_id=None,
+                    generation=None):
+        """Returns the ACL string of the bucket or an object in the bucket.
 
-    def set_canned_acl_helper(self, acl_str, key_name, headers, query_args):
-        """provides common functionality for set_canned_acl() and
-           set_def_canned_acl()"""
-        assert acl_str in CannedACLStrings
+        :param str key_name: The name of the object to get the ACL for. If not
+            specified, the ACL for the bucket will be returned.
 
-        if headers:
-            headers[self.connection.provider.acl_header] = acl_str
+        :param dict headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned. This parameter is only valid when retrieving
+            the ACL of an object, not a bucket.
+
+        :rtype: str
+        """
+        query_args = STANDARD_ACL
+        if generation:
+            query_args += '&generation=%s' % generation
+        return self._get_xml_acl_helper(key_name, headers, query_args)
+
+    def get_def_acl(self, headers=None):
+        """Returns the bucket's default ACL.
+
+        :param dict headers: Additional headers to set during the request.
+
+        :rtype: :class:`.gs.acl.ACL`
+        """
+        return self._get_acl_helper('', headers, DEF_OBJ_ACL)
+
+    def _set_acl_helper(self, acl_or_str, key_name, headers, query_args,
+                          generation, if_generation, if_metageneration,
+                          canned=False):
+        """Provides common functionality for set_acl, set_xml_acl,
+        set_canned_acl, set_def_acl, set_def_xml_acl, and
+        set_def_canned_acl()."""
+
+        headers = headers or {}
+        data = ''
+        if canned:
+            headers[self.connection.provider.acl_header] = acl_or_str
         else:
-            headers={self.connection.provider.acl_header: acl_str}
+            data = acl_or_str.encode('UTF-8')
+
+        if generation:
+            query_args += '&generation=%s' % generation
+
+        if if_metageneration is not None and if_generation is None:
+            raise ValueError("Received if_metageneration argument with no "
+                             "if_generation argument. A meta-generation has no "
+                             "meaning without a content generation.")
+        if not key_name and (if_generation or if_metageneration):
+            raise ValueError("Received if_generation or if_metageneration "
+                             "parameter while setting the ACL of a bucket.")
+        if if_generation is not None:
+            headers['x-goog-if-generation-match'] = str(if_generation)
+        if if_metageneration is not None:
+            headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
         response = self.connection.make_request('PUT', self.name, key_name,
-                headers=headers, query_args=query_args)
+                data=data, headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def set_xml_acl(self, acl_str, key_name='', headers=None, version_id=None,
+                    query_args='acl', generation=None, if_generation=None,
+                    if_metageneration=None):
+        """Sets a bucket's or objects's ACL to an XML string.
+
+        :type acl_str: string
+        :param acl_str: A string containing the ACL XML.
+
+        :type key_name: string
+        :param key_name: A key name within the bucket to set the ACL for. If not
+            specified, the ACL for the bucket will be set.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type query_args: str
+        :param query_args: The query parameters to pass with the request.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        return self._set_acl_helper(acl_str, key_name=key_name, headers=headers,
+                                    query_args=query_args,
+                                    generation=generation,
+                                    if_generation=if_generation,
+                                    if_metageneration=if_metageneration)
+
     def set_canned_acl(self, acl_str, key_name='', headers=None,
-                       version_id=None, generation=None):
-        """sets or changes a bucket's acl to a predefined (canned) value.
-           We include a version_id argument to support a polymorphic
-           interface for callers, however, version_id is not relevant for
-           Google Cloud Storage buckets and is therefore ignored here."""
+                       version_id=None, generation=None, if_generation=None,
+                       if_metageneration=None):
+        """Sets a bucket's or objects's ACL using a predefined (canned) value.
+
+        :type acl_str: string
+        :param acl_str: A canned ACL string. See
+            :data:`~.gs.acl.CannedACLStrings`.
+
+        :type key_name: string
+        :param key_name: A key name within the bucket to set the ACL for. If not
+            specified, the ACL for the bucket will be set.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if acl_str not in CannedACLStrings:
+            raise ValueError("Provided canned ACL string (%s) is not valid."
+                             % acl_str)
         query_args = STANDARD_ACL
-        if generation:
-            query_args += '&generation=%s' % str(generation)
-        return self.set_canned_acl_helper(acl_str, key_name, headers,
-                                          query_args=query_args)
+        return self._set_acl_helper(acl_str, key_name, headers, query_args,
+                                    generation, if_generation,
+                                    if_metageneration, canned=True)
 
-    def set_def_canned_acl(self, acl_str, key_name='', headers=None):
-        """sets or changes a bucket's default object acl to a predefined
-           (canned) value. The key_name argument is ignored since keys have no
-           default ACL property."""
-        return self.set_canned_acl_helper(acl_str, '', headers,
-                                          query_args=DEF_OBJ_ACL)
+    def set_def_canned_acl(self, acl_str, headers=None):
+        """Sets a bucket's default ACL using a predefined (canned) value.
 
-    def set_def_xml_acl(self, acl_str, key_name='', headers=None):
-        """sets or changes a bucket's default object ACL. The key_name argument
-        is ignored since keys have no default ACL property."""
+        :type acl_str: string
+        :param acl_str: A canned ACL string. See
+            :data:`~.gs.acl.CannedACLStrings`.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+        """
+        if acl_str not in CannedACLStrings:
+            raise ValueError("Provided canned ACL string (%s) is not valid."
+                             % acl_str)
+        query_args = DEF_OBJ_ACL
+        return self._set_acl_helper(acl_str, '', headers, query_args,
+                                    generation=None, if_generation=None,
+                                    if_metageneration=None, canned=True)
+
+    def set_def_xml_acl(self, acl_str, headers=None):
+        """Sets a bucket's default ACL to an XML string.
+
+        :type acl_str: string
+        :param acl_str: A string containing the ACL XML.
+
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+        """
         return self.set_xml_acl(acl_str, '', headers,
                                 query_args=DEF_OBJ_ACL)
 
     def get_cors(self, headers=None):
-        """returns a bucket's CORS XML"""
+        """Returns a bucket's CORS XML document.
+
+        :param dict headers: Additional headers to send with the request.
+        :rtype: :class:`~.cors.Cors`
+        """
         response = self.connection.make_request('GET', self.name,
                                                 query_args=CORS_ARG,
                                                 headers=headers)
@@ -270,7 +547,11 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def set_cors(self, cors, headers=None):
-        """sets or changes a bucket's CORS XML."""
+        """Sets a bucket's CORS XML document.
+
+        :param str cors: A string containing the CORS XML.
+        :param dict headers: Additional headers to send with the request.
+        """
         cors_xml = cors.encode('UTF-8')
         response = self.connection.make_request('PUT', self.name,
                                                 data=cors_xml,
@@ -319,7 +600,7 @@ class Bucket(S3Bucket):
         :param email_address: The email address associated with the GS
                               account your are granting the permission to.
 
-        :type recursive: boolean
+        :type recursive: bool
         :param recursive: A boolean value to controls whether the call
                           will apply the grant to all keys within the bucket
                           or not.  The default value is False.  By passing a
@@ -340,7 +621,8 @@ class Bucket(S3Bucket):
 
     # Method with same signature as boto.s3.bucket.Bucket.add_user_grant(),
     # to allow polymorphic treatment at application layer.
-    def add_user_grant(self, permission, user_id, recursive=False, headers=None):
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       headers=None):
         """
         Convenience method that provides a quick way to add a canonical user
         grant to a bucket. This method retrieves the current ACL, creates a new
@@ -416,14 +698,34 @@ class Bucket(S3Bucket):
     # (but returning different object type), to allow polymorphic treatment
     # at application layer.
     def list_grants(self, headers=None):
+        """Returns the ACL entries applied to this bucket.
+
+        :param dict headers: Additional headers to send with the request.
+        :rtype: list containing :class:`~.gs.acl.Entry` objects.
+        """
         acl = self.get_acl(headers=headers)
         return acl.entries
 
     def disable_logging(self, headers=None):
+        """Disable logging on this bucket.
+
+        :param dict headers: Additional headers to send with the request.
+        """
         xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging/>'
         self.set_subresource('logging', xml_str, headers=headers)
 
     def enable_logging(self, target_bucket, target_prefix=None, headers=None):
+        """Enable logging on a bucket.
+
+        :type target_bucket: bucket or string
+        :param target_bucket: The bucket to log to.
+
+        :type target_prefix: string
+        :param target_prefix: The prefix which should be prepended to the
+            generated log files written to the target_bucket.
+
+        :param dict headers: Additional headers to send with the request.
+        """
         if isinstance(target_bucket, Bucket):
             target_bucket = target_bucket.name
         xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging>'
@@ -437,25 +739,22 @@ class Bucket(S3Bucket):
 
     def configure_website(self, main_page_suffix=None, error_key=None,
                           headers=None):
-        """
-        Configure this bucket to act as a website
+        """Configure this bucket to act as a website
 
-        :type suffix: str
-        :param suffix: Suffix that is appended to a request that is for a
-                       "directory" on the website endpoint (e.g. if the suffix
-                       is index.html and you make a request to
-                       samplebucket/images/ the data that is returned will
-                       be for the object with the key name images/index.html).
-                       The suffix must not be empty and must not include a
-                       slash character. This parameter is optional and the
-                       property is disabled if excluded.
-
+        :type main_page_suffix: str
+        :param main_page_suffix: Suffix that is appended to a request that is
+            for a "directory" on the website endpoint (e.g. if the suffix is
+            index.html and you make a request to samplebucket/images/ the data
+            that is returned will be for the object with the key name
+            images/index.html). The suffix must not be empty and must not
+            include a slash character. This parameter is optional and the
+            property is disabled if excluded.
 
         :type error_key: str
-        :param error_key: The object key name to use when a 400
-                          error occurs. This parameter is optional and the
-                          property is disabled if excluded.
+        :param error_key: The object key name to use when a 400 error occurs.
+            This parameter is optional and the property is disabled if excluded.
 
+        :param dict headers: Additional headers to send with the request.
         """
         if main_page_suffix:
             main_page_frag = self.WebsiteMainPageFragment % main_page_suffix
@@ -479,36 +778,43 @@ class Bucket(S3Bucket):
                 response.status, response.reason, body)
 
     def get_website_configuration(self, headers=None):
-        """
-        Returns the current status of website configuration on the bucket.
+        """Returns the current status of website configuration on the bucket.
+
+        :param dict headers: Additional headers to send with the request.
 
         :rtype: dict
         :returns: A dictionary containing a Python representation
-                  of the XML response from GCS. The overall structure is:
+            of the XML response from GCS. The overall structure is:
 
-        * WebsiteConfiguration
-          * MainPageSuffix: suffix that is appended to request that
-              is for a "directory" on the website endpoint
-          * NotFoundPage: name of an object to serve when site visitors
-              encounter a 404
+            * WebsiteConfiguration
+
+              * MainPageSuffix: suffix that is appended to request that
+                is for a "directory" on the website endpoint.
+              * NotFoundPage: name of an object to serve when site visitors
+                encounter a 404.
         """
         return self.get_website_configuration_xml(self, headers)[0]
 
     def get_website_configuration_with_xml(self, headers=None):
-        """
-        Returns the current status of website configuration on the bucket as
+        """Returns the current status of website configuration on the bucket as
         unparsed XML.
+
+        :param dict headers: Additional headers to send with the request.
 
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
-        1) A dictionary containing a Python representation
-                  of the XML response from GCS. The overall structure is:
-          * WebsiteConfiguration
-            * MainPageSuffix: suffix that is appended to request that
-                is for a "directory" on the website endpoint
-            * NotFoundPage: name of an object to serve when site visitors
-                encounter a 404
-        2) unparsed XML describing the bucket's website configuration.
+
+            1) A dictionary containing a Python representation of the XML
+               response from GCS. The overall structure is:
+
+              * WebsiteConfiguration
+
+                * MainPageSuffix: suffix that is appended to request that is for
+                  a "directory" on the website endpoint.
+                * NotFoundPage: name of an object to serve when site visitors
+                  encounter a 404
+
+            2) Unparsed XML describing the bucket's website configuration.
         """
         response = self.connection.make_request('GET', self.name,
                 query_args='websiteConfig', headers=headers)
@@ -525,14 +831,16 @@ class Bucket(S3Bucket):
         return e, body
 
     def delete_website_configuration(self, headers=None):
+        """Remove the website configuration from this bucket.
+
+        :param dict headers: Additional headers to send with the request.
+        """
         self.configure_website(headers=headers)
 
     def get_versioning_status(self, headers=None):
-        """
-        Returns the current status of versioning configuration on the bucket.
+        """Returns the current status of versioning configuration on the bucket.
 
-        :rtype: boolean
-        :returns: boolean indicating whether or not versioning is enabled.
+        :rtype: bool
         """
         response = self.connection.make_request('GET', self.name,
                                                 query_args='versioning',
@@ -548,6 +856,13 @@ class Bucket(S3Bucket):
         return ('Status' in resp_json) and (resp_json['Status'] == 'Enabled')
 
     def configure_versioning(self, enabled, headers=None):
+        """Configure versioning for this bucket.
+
+        :param bool enabled: If set to True, enables versioning on this bucket.
+            If set to False, disables versioning.
+
+        :param dict headers: Additional headers to send with the request.
+        """
         if enabled == True:
             req_body = self.VersioningBody % ('Enabled')
         else:

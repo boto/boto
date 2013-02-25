@@ -88,7 +88,9 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    # (StorageClass is associated to individual keys in S3, but
                    # having it listed here should cause no problems because
                    # GET bucket?storageClass is not part of the S3 API.)
-                   'storageClass']
+                   'storageClass',
+                   # websiteConfig is a QSA for buckets in Google Cloud Storage.
+                   'websiteConfig']
 
 
 _first_cap_regex = re.compile('(.)([A-Z][a-z]+)')

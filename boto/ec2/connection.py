@@ -54,6 +54,7 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
+from boto.ec2.vmtype import VmType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
@@ -146,14 +147,12 @@ class EC2Connection(AWSQueryConnection):
                               user ID has explicit launch permissions
 
         :type filters: dict
-        :param filters: Optional filters that can be used to limit
-                        the results returned.  Filters are provided
-                        in the form of a dictionary consisting of
-                        filter names as the key and filter values
-                        as the value.  The set of allowable filter
-                        names/values is dependent on the request
-                        being performed.  Check the EC2 API guide
-                        for details.
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
@@ -298,8 +297,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type delete_snapshot: bool
         :param delete_snapshot: Set to True if we should delete the
-                                snapshot associated with an EBS volume
-                                mounted at /dev/sda1
+            snapshot associated with an EBS volume mounted at /dev/sda1
 
         :rtype: bool
         :return: True if successful
@@ -332,14 +330,14 @@ class EC2Connection(AWSQueryConnection):
 
         :type description: string
         :param description: An optional human-readable string describing
-                            the contents and purpose of the AMI.
+            the contents and purpose of the AMI.
 
         :type no_reboot: bool
-        :param no_reboot: An optional flag indicating that the bundling process
-                          should not attempt to shutdown the instance before
-                          bundling.  If this flag is True, the responsibility
-                          of maintaining file system integrity is left to the
-                          owner of the instance.
+        :param no_reboot: An optional flag indicating that the
+            bundling process should not attempt to shutdown the
+            instance before bundling.  If this flag is True, the
+            responsibility of maintaining file system integrity is
+            left to the owner of the instance.
 
         :rtype: string
         :return: The new image id
@@ -364,10 +362,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: string
         :param attribute: The attribute you need information about.
-                          Valid choices are:
-                          * launchPermission
-                          * productCodes
-                          * blockDeviceMapping
+            Valid choices are:
+            * launchPermission
+            * productCodes
+            * blockDeviceMapping
 
         :rtype: :class:`boto.ec2.image.ImageAttribute`
         :return: An ImageAttribute object representing the value of the
@@ -392,7 +390,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type operation: string
         :param operation: Either add or remove (this is required for changing
-                          launchPermissions)
+            launchPermissions)
 
         :type user_ids: list
         :param user_ids: The Amazon IDs of users to add/remove attributes
@@ -402,8 +400,8 @@ class EC2Connection(AWSQueryConnection):
 
         :type product_codes: list
         :param product_codes: Amazon DevPay product code. Currently only one
-                              product code can be associated with an AMI. Once
-                              set, the product code cannot be changed or reset.
+            product code can be associated with an AMI. Once
+            set, the product code cannot be changed or reset.
         """
         params = {'ImageId': image_id,
                   'Attribute': attribute,
@@ -1332,11 +1330,11 @@ class EC2Connection(AWSQueryConnection):
     def allocate_address(self, domain=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
-        
+
         :type domain: string
-        :param domain: Optional string. If domain is set to "vpc" the address 
-                        will be allocated to VPC . Will return address 
-                        object with allocation_id.
+        :param domain: Optional string. If domain is set to "vpc" the address
+            will be allocated to VPC . Will return address object with
+            allocation_id.
 
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
@@ -2772,11 +2770,9 @@ class EC2Connection(AWSQueryConnection):
             single-tenant hardware and can only be launched within a VPC.
 
         :type offering_type: string
-        :param offering_type: The Reserved Instance offering type.
-            Valid Values:
-                * Heavy Utilization
-                * Medium Utilization
-                * Light Utilization
+        :param offering_type: The Reserved Instance offering type.  Valid
+            Values: `"Heavy Utilization" | "Medium Utilization" | "Light
+            Utilization"`
 
         :type include_marketplace: bool
         :param include_marketplace: Include Marketplace offerings in the
@@ -3371,7 +3367,7 @@ class EC2Connection(AWSQueryConnection):
                   'DeviceIndex': device_index}
         return self.get_status('AttachNetworkInterface', params, verb='POST')
 
-    def detach_network_interface(self, attachement_id, force=False):
+    def detach_network_interface(self, attachment_id, force=False):
         """
         Detaches a network interface from an instance.
 
@@ -3382,7 +3378,7 @@ class EC2Connection(AWSQueryConnection):
         :param force: Set to true to force a detachment.
 
         """
-        params = {'AttachmentId': network_interface_id}
+        params = {'AttachmentId': attachment_id}
         if force:
             params['Force'] = 'true'
         return self.get_status('DetachNetworkInterface', params, verb='POST')
@@ -3397,3 +3393,13 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {'NetworkInterfaceId': network_interface_id}
         return self.get_status('DeleteNetworkInterface', params, verb='POST')
+
+    def get_all_vmtypes(self):
+        """
+        Get all vmtypes available on this cloud (eucalyptus specific)
+
+        :rtype: list of :class:`boto.ec2.vmtype.VmType`
+        :return: The requested VmType objects
+        """
+        params = {}
+        return self.get_list('DescribeVmTypes', params, [('euca:item', VmType)], verb='POST')

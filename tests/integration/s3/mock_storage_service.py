@@ -29,6 +29,7 @@ of the optional params (which we indicate with the constant "NOT_IMPL").
 import copy
 import boto
 import base64
+import re
 
 from boto.utils import compute_md5
 from boto.s3.prefix import Prefix
@@ -64,6 +65,7 @@ class MockKey(object):
         self.data = None
         self.etag = None
         self.size = None
+        self.closed = True
         self.content_encoding = None
         self.content_language = None
         self.content_type = None
@@ -104,15 +106,51 @@ class MockKey(object):
         if 'Content-Language' in headers:
             self.content_language = headers['Content-Language']
 
-    def open_read(self, headers=NOT_IMPL, query_args=NOT_IMPL,
+    # Simplistic partial implementation for headers: Just supports range GETs
+    # of flavor 'Range: bytes=xyz-'.
+    def open_read(self, headers=None, query_args=NOT_IMPL,
                   override_num_retries=NOT_IMPL):
-        pass
+        if self.closed:
+            self.read_pos = 0
+        self.closed = False
+        if headers and 'Range' in headers:
+            match = re.match('bytes=([0-9]+)-$', headers['Range'])
+            if match:
+                self.read_pos = int(match.group(1))
+
+    def close(self, fast=NOT_IMPL):
+      self.closed = True
+
+    def read(self, size=0):
+        self.open_read()
+        if size == 0:
+            data = self.data[self.read_pos:]
+            self.read_pos = self.size
+        else:
+            data = self.data[self.read_pos:self.read_pos+size]
+            self.read_pos += size
+        if not data:
+            self.close()
+        return data
 
     def set_contents_from_file(self, fp, headers=None, replace=NOT_IMPL,
                                cb=NOT_IMPL, num_cb=NOT_IMPL,
                                policy=NOT_IMPL, md5=NOT_IMPL,
                                res_upload_handler=NOT_IMPL):
         self.data = fp.read()
+        self.set_etag()
+        self.size = len(self.data)
+        self._handle_headers(headers)
+
+    def set_contents_from_stream(self, fp, headers=None, replace=NOT_IMPL,
+                               cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
+                               reduced_redundancy=NOT_IMPL, query_args=NOT_IMPL,
+                               size=NOT_IMPL):
+        self.data = ''
+        chunk = fp.read(self.BufferSize)
+        while chunk:
+          self.data += chunk
+          chunk = fp.read(self.BufferSize)
         self.set_etag()
         self.size = len(self.data)
         self._handle_headers(headers)
@@ -133,12 +171,19 @@ class MockKey(object):
         self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                     policy, md5, res_upload_handler)
         fp.close()
-    
+
     def copy(self, dst_bucket_name, dst_key, metadata=NOT_IMPL,
              reduced_redundancy=NOT_IMPL, preserve_acl=NOT_IMPL):
         dst_bucket = self.bucket.connection.get_bucket(dst_bucket_name)
         return dst_bucket.copy_key(dst_key, self.bucket.name,
                                    self.name, metadata)
+
+    @property
+    def provider(self):
+        provider = None
+        if self.bucket and self.bucket.connection:
+            provider = self.bucket.connection.provider
+        return provider
 
     def set_etag(self):
         """
@@ -193,7 +238,7 @@ class MockBucket(object):
                  storage_class=NOT_IMPL, preserve_acl=NOT_IMPL,
                  encrypt_key=NOT_IMPL, headers=NOT_IMPL, query_args=NOT_IMPL):
         new_key = self.new_key(key_name=new_key_name)
-        src_key = mock_connection.get_bucket(
+        src_key = self.connection.get_bucket(
             src_bucket_name).get_key(src_key_name)
         new_key.data = copy.copy(src_key.data)
         new_key.size = len(new_key.data)
@@ -294,6 +339,15 @@ class MockBucket(object):
         self.subresources[subresource] = value
 
 
+class MockProvider(object):
+
+    def __init__(self, provider):
+        self.provider = provider
+
+    def get_provider_name(self):
+        return self.provider
+
+
 class MockConnection(object):
 
     def __init__(self, aws_access_key_id=NOT_IMPL,
@@ -303,9 +357,10 @@ class MockConnection(object):
                  host=NOT_IMPL, debug=NOT_IMPL,
                  https_connection_factory=NOT_IMPL,
                  calling_format=NOT_IMPL,
-                 path=NOT_IMPL, provider=NOT_IMPL,
+                 path=NOT_IMPL, provider='s3',
                  bucket_class=NOT_IMPL):
         self.buckets = {}
+        self.provider = MockProvider(provider)
 
     def create_bucket(self, bucket_name, headers=NOT_IMPL, location=NOT_IMPL,
                       policy=NOT_IMPL, storage_class=NOT_IMPL):
@@ -343,10 +398,12 @@ class MockBucketStorageUri(object):
     delim = '/'
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
-                 debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL):
+                 debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL,
+                 version_id=None, generation=None, is_latest=False):
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
+        self.suppress_consec_slashes = suppress_consec_slashes
         if self.bucket_name and self.object_name:
             self.uri = ('%s://%s/%s' % (self.scheme, self.bucket_name,
                                         self.object_name))
@@ -354,6 +411,15 @@ class MockBucketStorageUri(object):
             self.uri = ('%s://%s/' % (self.scheme, self.bucket_name))
         else:
             self.uri = ('%s://' % self.scheme)
+
+        self.version_id = version_id
+        self.generation = generation and int(generation)
+        self.is_version_specific = (bool(self.generation)
+                                    or bool(self.version_id))
+        self.is_latest = is_latest
+        if bucket_name and object_name:
+            self.versionless_uri = '%s://%s/%s' % (scheme, bucket_name,
+                                                   object_name)
 
     def __repr__(self):
         """Returns string representation of URI."""
@@ -366,7 +432,17 @@ class MockBucketStorageUri(object):
         return boto.provider.Provider('aws').canned_acls
 
     def clone_replace_name(self, new_name):
-        return MockBucketStorageUri(self.scheme, self.bucket_name, new_name)
+        return self.__class__(self.scheme, self.bucket_name, new_name)
+
+    def clone_replace_key(self, key):
+        return self.__class__(
+                key.provider.get_provider_name(),
+                bucket_name=key.bucket.name,
+                object_name=key.name,
+                suppress_consec_slashes=self.suppress_consec_slashes,
+                version_id=getattr(key, 'version_id', None),
+                generation=getattr(key, 'generation', None),
+                is_latest=getattr(key, 'is_latest', None))
 
     def connect(self, access_key_id=NOT_IMPL, secret_access_key=NOT_IMPL):
         return mock_connection
@@ -377,6 +453,11 @@ class MockBucketStorageUri(object):
 
     def delete_bucket(self, headers=NOT_IMPL):
         return self.connect().delete_bucket(self.bucket_name)
+
+    def has_version(self):
+        return (issubclass(type(self), MockBucketStorageUri)
+                and ((self.version_id is not None)
+                     or (self.generation is not None)))
 
     def delete_key(self, validate=NOT_IMPL, headers=NOT_IMPL,
                    version_id=NOT_IMPL, mfa_token=NOT_IMPL):

@@ -23,8 +23,8 @@
 #
 import os
 from six.moves import configparser
+from boto.compat import json
 import requests
-import json
 
 
 class Credentials(object):

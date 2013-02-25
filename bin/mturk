@@ -25,8 +25,8 @@ import os.path
 import string
 import inspect
 import datetime, calendar
-import json
 import boto.mturk.connection, boto.mturk.price, boto.mturk.question, boto.mturk.qualification
+from boto.compat import json
 
 # --------------------------------------------------
 # Globals
@@ -39,6 +39,28 @@ mturk_website = None
 default_nicknames_path = os.path.expanduser('~/.boto_mturkcli_hit_nicknames')
 nicknames = {}
 nickname_pool = set(string.ascii_lowercase)
+
+time_units = dict(
+    s = 1,
+    min = 60,
+    h = 60 * 60,
+    d = 24 * 60 * 60)
+
+qual_requirements = dict(
+    Adult = '00000000000000000060',
+    Locale = '00000000000000000071',
+    NumberHITsApproved = '00000000000000000040',
+    PercentAssignmentsSubmitted = '00000000000000000000',
+    PercentAssignmentsAbandoned = '00000000000000000070',
+    PercentAssignmentsReturned = '000000000000000000E0',
+    PercentAssignmentsApproved = '000000000000000000L0',
+    PercentAssignmentsRejected = '000000000000000000S0')
+
+qual_comparators = {v : k for k, v in dict(
+    LessThan = '<', LessThanOrEqualTo = '<=',
+    GreaterThan = '>', GreaterThanOrEqualTo = '>=',
+    EqualTo = '==', NotEqualTo = '!=',
+    Exists = 'exists').items()}
 
 example_config_file = '''Example configuration file:
 
@@ -53,7 +75,8 @@ example_config_file = '''Example configuration file:
     "approval_delay": "14 d",
     "qualifications": [
         "PercentAssignmentsApproved > 90",
-        "Locale == US"
+        "Locale == US",
+        "2ARFPLSP75KLA8M8DH1HTEQVJT3SY6 exists"
     ],
     "question_url": "http://example.com/myhit",
     "question_frame_height": 450
@@ -99,7 +122,6 @@ def save_nicknames(nicknames_path = default_nicknames_path):
             json.dump(nicknames, o, sort_keys = True, indent = 4)
             print >>o
 
-time_units = dict(s = 1, min = 60, h = 60 * 60, d = 24 * 60 * 60)
 def parse_duration(s):
     '''Parses durations like "2 d", "48 h", "2880 min",
 "172800 s", or "172800".'''
@@ -110,17 +132,27 @@ def display_duration(n):
         if n % m == 0:
             return '{} {}'.format(n / m, unit)
 
-def parse_qualification(s):
-    '''Parses qualifications like "PercentAssignmentsApproved > 90" and "Locale == US".'''
-    name, comparator, value = s.split()
-    f = dict(
-        PercentAssignmentsApproved = boto.mturk.qualification.PercentAssignmentsApprovedRequirement,
-        Locale = boto.mturk.qualification.LocaleRequirement)[name]
-    comparator = {v : k for k, v in dict(
-        LessThan = '<', LessThanOrEqualTo = '<=',
-        GreaterThan = '>', GreaterThanOrEqualTo = '>=',
-        EqualTo = '==', NotEqualTo = '!=').items()}[comparator]
-    return f(comparator, value, required_to_preview = False)
+def parse_qualification(inp):
+    '''Parses qualifications like "PercentAssignmentsApproved > 90",
+"Locale == US", and "2ARFPLSP75KLA8M8DH1HTEQVJT3SY6 exists".'''
+    inp = inp.split()
+    name, comparator, value = inp.pop(0), inp.pop(0), (inp[0] if len(inp) else None)
+    qtid = qual_requirements.get(name)
+    if qtid is None:
+      # Treat "name" as a Qualification Type ID.
+        qtid = name
+    if qtid == qual_requirements['Locale']:
+        return boto.mturk.qualification.LocaleRequirement(
+            qual_comparators[comparator],
+            value,
+            required_to_preview = False)
+    return boto.mturk.qualification.Requirement(
+        qtid,
+        qual_comparators[comparator],
+        value,
+        required_to_preview = qtid == qual_requirements['Adult'])
+          # Thus required_to_preview is true only for the
+          # Worker_Adult requirement.
 
 def preview_url(hit):
     return 'https://{}/mturk/preview?groupId={}'.format(
@@ -280,6 +312,9 @@ def unreject_assignments(message, assignments):
         con.approve_rejected_assignment(a, message)
         if interactive: print 'Unrejected', a
 
+def notify_workers(subject, text, workers):
+    con.notify_workers(workers, subject, text)
+
 # --------------------------------------------------
 # Mainline code
 # --------------------------------------------------
@@ -303,7 +338,7 @@ if __name__ == '__main__':
         [get_hitid(args.hit)])
 
     sub = subs.add_parser('hits',
-        help = 'list all your HITS')
+        help = 'list all your HITs')
     sub.set_defaults(f = list_hits, a = lambda: [])
 
     sub = subs.add_parser('new',
@@ -378,7 +413,7 @@ if __name__ == '__main__':
             [args.message, args.assignment])
 
     sub = subs.add_parser('bonus',
-        help = 'give a worker a bonus')
+        help = 'give some workers a bonus')
     sub.add_argument('amount', type = float,
         help = 'bonus amount, in USD')
     sub.add_argument('message',
@@ -388,6 +423,17 @@ if __name__ == '__main__':
     sub.set_defaults(f = grant_bonus, a = lambda:
         [args.message, args.amount,
             [p.split(',') for p in args.widaid]])
+
+    sub = subs.add_parser('notify',
+        help = 'send a message to some workers')
+    sub.add_argument('subject',
+        help = 'subject of the message')
+    sub.add_argument('message',
+        help = 'text of the message')
+    sub.add_argument('worker', nargs = '+',
+        help = 'ID of a worker')
+    sub.set_defaults(f = notify_workers, a = lambda:
+        [args.subject, args.message, args.worker])
 
     args = parser.parse_args()
 
