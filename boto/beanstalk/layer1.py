@@ -21,10 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import json
 
 import boto
 import boto.jsonresponse
+from boto.compat import json
 from boto.regioninfo import RegionInfo
 from boto.connection import AWSQueryConnection
 
@@ -54,7 +54,7 @@ class Layer1(AWSQueryConnection):
                                     security_token)
 
     def _required_auth_capability(self):
-        return ['sign-v2']
+        return ['hmac-v4']
 
     def _encode_bool(self, v):
         v = bool(v)

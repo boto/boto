@@ -1194,12 +1194,16 @@ class Key(object):
             :param encrypt_key: If True, the new copy of the object
             will be encrypted on the server-side by S3 and will be
             stored in an encrypted form while at rest in S3.
+
+        :rtype: int
+        :return: The number of bytes written to the key.
         """
         fp = open(filename, 'rb')
         try:
-            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5, reduced_redundancy,
-                                        encrypt_key=encrypt_key)
+            return self.set_contents_from_file(fp, headers, replace,
+                                               cb, num_cb, policy,
+                                               md5, reduced_redundancy,
+                                               encrypt_key=encrypt_key)
         finally:
             fp.close()
 
