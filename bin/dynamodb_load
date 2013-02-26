@@ -69,26 +69,12 @@ def load_table(table, in_fd):
         table.new_item(attrs=i).put()
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        prog="dynamodb_load",
-        description=DESCRIPTION
-    )
-    parser.add_argument(
-        "--create-tables",
-        action="store_true",
-        help="Create the tables if they don't exist already (without this flag, attempts to load data into non-existing tables fail)."
-    )
-    parser.add_argument("--in-dir", default=".")
-    parser.add_argument("tables", metavar="TABLES", nargs="+")
-
-    namespace = parser.parse_args()
-
+def dynamodb_load(tables, in_dir, create_tables):
     conn = boto.connect_dynamodb()
-    for t in namespace.tables:
-        metadata_file = os.path.join(namespace.in_dir, "%s.metadata" % t)
-        data_file = os.path.join(namespace.in_dir, "%s.data" % t)
-        if namespace.create_tables:
+    for t in tables:
+        metadata_file = os.path.join(in_dir, "%s.metadata" % t)
+        data_file = os.path.join(in_dir, "%s.data" % t)
+        if create_tables:
             with open(metadata_file) as meta_fd:
                 metadata = json.load(meta_fd)
             table = conn.create_table(
@@ -106,4 +92,18 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        prog="dynamodb_load",
+        description=DESCRIPTION
+    )
+    parser.add_argument(
+        "--create-tables",
+        action="store_true",
+        help="Create the tables if they don't exist already (without this flag, attempts to load data into non-existing tables fail)."
+    )
+    parser.add_argument("--in-dir", default=".")
+    parser.add_argument("tables", metavar="TABLES", nargs="+")
+
+    namespace = parser.parse_args()
+
+    dynamodb_load(namespace.tables, namespace.in_dir, namespace.create_tables)

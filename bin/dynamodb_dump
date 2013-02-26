@@ -48,7 +48,20 @@ def dump_table(table, out_dir):
             data_fd.write("\n")
 
 
-def main():
+def dynamodb_dump(tables, out_dir):
+    try:
+        os.makedirs(out_dir)
+    except OSError as e:
+        # Error 17 is "file exists", which we don't care about
+        if e.errno != 17:
+            raise
+
+    conn = boto.connect_dynamodb()
+    for t in tables:
+        dump_table(conn.get_table(t), out_dir)
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="dynamodb_dump",
         description=DESCRIPTION
@@ -58,17 +71,4 @@ def main():
 
     namespace = parser.parse_args()
 
-    try:
-        os.makedirs(namespace.out_dir)
-    except OSError as e:
-        # Error 17 is "file exists", which we don't care about
-        if e.errno != 17:
-            raise
-
-    conn = boto.connect_dynamodb()
-    for t in namespace.tables:
-        dump_table(conn.get_table(t), namespace.out_dir)
-
-
-if __name__ == "__main__":
-    main()
+    dynamodb_dump(namespace.tables, namespace.out_dir)
