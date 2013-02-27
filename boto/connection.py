@@ -632,7 +632,10 @@ class AWSAuthConnection(object):
     def server_name(self, port=None):
         if not port:
             port = self.port
-        signature_host = self.host
+        if port == 80 or port == 443:
+            signature_host = self.host
+        else:
+            signature_host = "%s:%d"%(self.host, port)
         return signature_host
 
     def handle_proxy(self, proxy, proxy_port, proxy_user, proxy_pass):
