@@ -202,7 +202,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
 
-        self.assertEqual(resp.read(), '{"test": "alternate"}')
+        self.assertEqual(resp.read(), b'{"test": "alternate"}')
 
     def test_temp_failure(self):
         responses = [HTTPretty.Response(body="{'test': 'fail'}", status=500),
