@@ -704,8 +704,14 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         bucket.disable_logging(headers=headers)
 
+    def get_logging_config(self, validate=False, headers=None, version_id=None):
+        self._check_bucket_uri('get_logging_config')
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_logging_config(headers=headers)
+
     def set_website_config(self, main_page_suffix=None, error_key=None,
                            validate=False, headers=None):
+        self._check_bucket_uri('set_website_config')
         bucket = self.get_bucket(validate, headers)
         if not (main_page_suffix or error_key):
             bucket.delete_website_configuration(headers)
@@ -713,10 +719,12 @@ class BucketStorageUri(StorageUri):
             bucket.configure_website(main_page_suffix, error_key, headers)
 
     def get_website_config(self, validate=False, headers=None):
+        self._check_bucket_uri('get_website_config')
         bucket = self.get_bucket(validate, headers)
-        return bucket.get_website_configuration_with_xml(headers)
+        return bucket.get_website_configuration(headers)
 
     def get_versioning_config(self, headers=None):
+        self._check_bucket_uri('get_versioning_config')
         bucket = self.get_bucket(False, headers)
         return bucket.get_versioning_status(headers)
 
