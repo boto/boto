@@ -746,15 +746,15 @@ class Bucket(S3Bucket):
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
 
-            1) A dictionary containing a Python representation of the XML
-               response from GCS. The overall structure is:
+            1) A dictionary containing the parsed XML response from GCS. The
+              overall structure is:
 
               * Logging
 
                 * LogObjectPrefix: Prefix that is prepended to log objects.
-                * LogBucket: Target bucket for lob objects.
+                * LogBucket: Target bucket for log objects.
 
-            2) Unparsed XML describing the bucket's loggin configuration.
+            2) Unparsed XML describing the bucket's logging configuration.
         """
         response = self.connection.make_request('GET', self.name,
                                                 query_args='logging',
@@ -777,13 +777,13 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
 
         :rtype: dict
-        :returns: A dictionary containing a Python representation of the XML
-            response from GCS. The overall structure is:
+        :returns: A dictionary containing the parsed XML response from GCS. The
+            overall structure is:
 
             * Logging
 
               * LogObjectPrefix: Prefix that is prepended to log objects.
-              * LogBucket: Target bucket for lob objects.
+              * LogBucket: Target bucket for log objects.
         """
         return self.get_logging_config_with_xml(headers)[0]
 
@@ -833,8 +833,8 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
 
         :rtype: dict
-        :returns: A dictionary containing a Python representation
-            of the XML response from GCS. The overall structure is:
+        :returns: A dictionary containing the parsed XML response from GCS. The
+            overall structure is:
 
             * WebsiteConfiguration
 
@@ -854,8 +854,8 @@ class Bucket(S3Bucket):
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
 
-            1) A dictionary containing a Python representation of the XML
-               response from GCS. The overall structure is:
+            1) A dictionary containing the parsed XML response from GCS. The
+              overall structure is:
 
               * WebsiteConfiguration
 
