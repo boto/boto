@@ -100,12 +100,8 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The SQS queue to be deleted
 
         :type force_deletion: Boolean
-        :param force_deletion: Normally, SQS will not delete a queue
-            that contains messages.  However, if the force_deletion
-            argument is True, the queue will be deleted regardless of
-            whether there are messages in the queue or not.  USE WITH
-            CAUTION.  This will delete all messages in the queue as
-            well.
+        :param force_deletion: A deprecated parameter that is no longer used by
+            SQS's API.
 
         :rtype: bool
         :return: True if the command succeeded, False otherwise
