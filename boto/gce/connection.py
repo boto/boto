@@ -54,10 +54,9 @@ with information from the APIs Console <https://code.google.com/apis/console>.
 
 # Set up a Flow object to be used if we need to authenticate.
 FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
-                               scope='https://www.googleapis.com/auth/compute',
-                               message=MISSING_CLIENT_SECRETS_MESSAGE)
+                               scope='https://www.googleapis.com/auth/compute')
 
-API_VERSION = 'v1beta13'
+API_VERSION = 'v1beta14'
 
 DEFAULT_NETWORK = ("https://www.googleapis.com/compute/{0}/"
                    "projects/google/networks/default").format(API_VERSION)
@@ -109,16 +108,19 @@ class GCEConnection(object):
 
         return list_kernels
 
-    def get_all_ramdisks(self):
+    def get_all_ramdisks(self, zones=None):
         """
         Retrieve all the Google Compute Engine disks available to your project.
         """
-        list_gce_ramdisks = self.service.disks().list(
-            project=self.gce_project).execute(http=self.http)
+        if zones is None:
+          zones = [zone.name for zone in self.get_all_zones()]
 
         list_ramdisks = []
-        for ramdisk in list_gce_ramdisks['items']:
-            list_ramdisks.append(Ramdisk(ramdisk))
+        for zone in zones:
+          request = self.service.disks().list(
+              project=self.gce_project, zone=zone)
+          response = request.execute(http=self.http)
+          list_ramdisks.extend(Ramdisk(rd) for rd in response.get('items', []))
 
         return list_ramdisks
 
@@ -140,17 +142,20 @@ class GCEConnection(object):
 
     # Instance methods
 
-    def get_all_instances(self):
+    def get_all_instances(self, zones=None):
         """
         Retrieve all the Google Compute Engine instances available to your
         project.
         """
-        list_gce_instances = self.service.instances().list(
-            project=self.gce_project).execute(http=self.http)
+        if zones is None:
+          zones = [zone.name for zone in self.get_all_zones()]
 
         list_instances = []
-        for instance in list_gce_instances['items']:
-            list_instances.append(Instance(instance))
+        for zone in zones:
+          request = self.service.instances().list(
+              project=self.gce_project, zone=zone)
+          response = request.execute(http=self.http)
+          list_instances.extend(Instance(i) for i in response.get('items', []))
 
         return list_instances
 
@@ -196,7 +201,7 @@ class GCEConnection(object):
 
         return Instance(gce_instance)
 
-    def get_instance_attribute(self, name=None, attribute=None):
+    def get_instance_attribute(self, zone, name=None, attribute=None):
         """
         Get an attribute from a Google Compute Engine instance.
 
@@ -236,7 +241,7 @@ class GCEConnection(object):
         }
 
         gce_attribute = self.service.instances().get(
-            project=self.gce_project, instance=name).execute(
+            project=self.gce_project, instance=name, zone=zone).execute(
                 http=self.http)[attribute_map[attribute]]
 
         return InstanceAttribute(gce_attribute)

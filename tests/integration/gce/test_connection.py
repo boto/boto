@@ -17,14 +17,17 @@
 Unit tests for the GCEConnection class.
 """
 
-import unittest
+import os
 
 from boto.gce.connection import GCEConnection
+from tests.unit import unittest
 
 
 class GCEConnectionTest(unittest.TestCase):
     gce = True
-    connection = GCEConnection('YOUR_PROJECT_NAME')
+
+    def setUp(self):
+      self.connection = GCEConnection(os.environ['GCE_PROJECT'])
 
     # List integration tests
 
@@ -120,13 +123,14 @@ class GCEConnectionTest(unittest.TestCase):
         instance = self.connection.get_all_instances()[0]
 
         status_attr = self.connection.get_instance_attribute(
-            name=instance.name, attribute='status').value
+            name=instance.name, zone=instance.zone, attribute='status').value
 
         name_attr = self.connection.get_instance_attribute(
-            name=instance.name, attribute='name').value
+            name=instance.name, zone=instance.zone, attribute='name').value
 
         machine_type_attr = self.connection.get_instance_attribute(
-            name=instance.name, attribute='machine_type').value
+            name=instance.name, zone=instance.zone,
+            attribute='machine_type').value
 
         assert status_attr == instance.status
         assert name_attr == instance.name

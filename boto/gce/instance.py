@@ -26,6 +26,7 @@ class Instance(object):
         self.self_link = instance['selfLink']
         self.image = instance['image']
         self.machine_type = instance['machineType']
+        self.zone = instance['zone'].rsplit('/', 1)[-1]
 
     def __repr__(self):
         return 'Instance:%s' % self.id
