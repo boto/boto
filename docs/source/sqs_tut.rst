@@ -217,7 +217,7 @@ If I want to delete the entire queue, I would use:
 
 >>> conn.delete_queue(q)
 
-However, and this is a good safe guard, this won't succeed unless the queue is empty.
+This will delete the queue, even if there are still messages within the queue.
 
 Additional Information
 ----------------------
