@@ -52,16 +52,16 @@ class Key(S3Key):
     :ivar md5: The MD5 hash of the contents of the object.
     :ivar size: The size, in bytes, of the object.
     :ivar generation: The generation number of the object.
-    :ivar meta_generation: The generation number of the object metadata.
+    :ivar metageneration: The generation number of the object metadata.
     :ivar encrypted: Whether the object is encrypted while at rest on
         the server.
     """
     generation = None
-    meta_generation = None
+    metageneration = None
 
     def __repr__(self):
-        if self.generation and self.meta_generation:
-            ver_str = '#%s.%s' % (self.generation, self.meta_generation)
+        if self.generation and self.metageneration:
+            ver_str = '#%s.%s' % (self.generation, self.metageneration)
         else:
             ver_str = ''
         if self.bucket:
@@ -92,12 +92,12 @@ class Key(S3Key):
         elif name == 'Generation':
             self.generation = value
         elif name == 'MetaGeneration':
-            self.meta_generation = value
+            self.metageneration = value
         else:
             setattr(self, name, value)
 
     def handle_version_headers(self, resp, force=False):
-        self.meta_generation = resp.getheader('x-goog-metageneration', None)
+        self.metageneration = resp.getheader('x-goog-metageneration', None)
         self.generation = resp.getheader('x-goog-generation', None)
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,

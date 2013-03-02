@@ -250,6 +250,9 @@ class MockBucket(object):
     def enable_logging(self, target_bucket_prefix):
         self.logging = True
 
+    def get_logging_config(self):
+        return {"Logging": {}}
+
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
             # Return ACL for the key.
@@ -470,6 +473,10 @@ class MockBucketStorageUri(object):
     def enable_logging(self, target_bucket, target_prefix, validate=NOT_IMPL,
                        headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().enable_logging(target_bucket)
+
+    def get_logging_config(self, validate=NOT_IMPL, headers=NOT_IMPL,
+                           version_id=NOT_IMPL):
+        return self.get_bucket().get_logging_config()
 
     def equals(self, uri):
         return self.uri == uri.uri

@@ -311,7 +311,7 @@ class ResumableUploadHandler(object):
         Makes one attempt to upload file bytes, using an existing resumable
         upload connection.
 
-        Returns (etag, generation, meta_generation) from server upon success.
+        Returns (etag, generation, metageneration) from server upon success.
 
         Raises ResumableUploadException if any problems occur.
         """
@@ -404,7 +404,7 @@ class ResumableUploadHandler(object):
         """
         Attempts a resumable upload.
 
-        Returns (etag, generation, meta_generation) from server upon success.
+        Returns (etag, generation, metageneration) from server upon success.
 
         Raises ResumableUploadException if any problems occur.
         """
@@ -624,10 +624,10 @@ class ResumableUploadHandler(object):
             server_had_bytes_before_attempt = self.server_has_bytes
             self.md5sum_before_attempt = self.md5sum.copy()
             try:
-                # Save generation and meta_generation in class state so caller
+                # Save generation and metageneration in class state so caller
                 # can find these values, for use in preconditions of future
                 # operations on the uploaded object.
-                (etag, self.generation, self.meta_generation) = (
+                (etag, self.generation, self.metageneration) = (
                     self._attempt_resumable_upload(key, fp, file_length,
                                                    headers, cb, num_cb,
                                                    self.md5sum))
