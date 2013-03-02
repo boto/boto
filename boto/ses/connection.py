@@ -28,6 +28,7 @@ from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
+import boto.utils
 from boto.ses import exceptions as ses_exceptions
 
 
@@ -125,52 +126,52 @@ class SESConnection(AWSAuthConnection):
         boto.log.error('%s %s' % (response.status, response.reason))
         boto.log.error('%s' % body)
 
-        if "Address blacklisted." in body:
+        if b"Address blacklisted." in body:
             # Delivery failures happened frequently enough with the recipient's
             # email address for Amazon to blacklist it. After a day or three,
             # they'll be automatically removed, and delivery can be attempted
             # again (if you write the code to do so in your application).
             ExceptionToRaise = ses_exceptions.SESAddressBlacklistedError
             exc_reason = "Address blacklisted."
-        elif "Email address is not verified." in body:
+        elif b"Email address is not verified." in body:
             # This error happens when the "Reply-To" value passed to
             # send_email() hasn't been verified yet.
             ExceptionToRaise = ses_exceptions.SESAddressNotVerifiedError
             exc_reason = "Email address is not verified."
-        elif "Daily message quota exceeded." in body:
+        elif b"Daily message quota exceeded." in body:
             # Encountered when your account exceeds the maximum total number
             # of emails per 24 hours.
             ExceptionToRaise = ses_exceptions.SESDailyQuotaExceededError
             exc_reason = "Daily message quota exceeded."
-        elif "Maximum sending rate exceeded." in body:
+        elif b"Maximum sending rate exceeded." in body:
             # Your account has sent above its allowed requests a second rate.
             ExceptionToRaise = ses_exceptions.SESMaxSendingRateExceededError
             exc_reason = "Maximum sending rate exceeded."
-        elif "Domain ends with dot." in body:
+        elif b"Domain ends with dot." in body:
             # Recipient address ends with a dot/period. This is invalid.
             ExceptionToRaise = ses_exceptions.SESDomainEndsWithDotError
             exc_reason = "Domain ends with dot."
-        elif "Local address contains control or whitespace" in body:
+        elif b"Local address contains control or whitespace" in body:
             # I think this pertains to the recipient address.
             ExceptionToRaise = ses_exceptions.SESLocalAddressCharacterError
             exc_reason = "Local address contains control or whitespace."
-        elif "Illegal address" in body:
+        elif b"Illegal address" in body:
             # A clearly mal-formed address.
             ExceptionToRaise = ses_exceptions.SESIllegalAddressError
             exc_reason = "Illegal address"
         # The re.search is to distinguish from the
         # SESAddressNotVerifiedError error above.
-        elif re.search('Identity.*is not verified', body):
+        elif re.search(b'Identity.*is not verified', body):
             ExceptionToRaise = ses_exceptions.SESIdentityNotVerifiedError
             exc_reason = "Identity is not verified."
-        elif "ownership not confirmed" in body:
+        elif b"ownership not confirmed" in body:
             ExceptionToRaise = ses_exceptions.SESDomainNotConfirmedError
             exc_reason = "Domain ownership is not confirmed."
         else:
             # This is either a common AWS error, or one that we don't devote
             # its own exception to.
             ExceptionToRaise = self.ResponseError
-            exc_reason = response.reason
+            exc_reason = boto.utils.ensure_string(response.reason)
 
         raise ExceptionToRaise(response.status, exc_reason, body)
 
