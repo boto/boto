@@ -54,7 +54,8 @@ class SearchResults(object):
         self.facets = {}
         if 'facets' in attrs:
             for (facet, values) in attrs['facets'].iteritems():
-                self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['constraints']))
+                if 'constraints' in values:
+                    self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['constraints']))
 
         self.num_pages_needed = ceil(self.hits / self.query.real_size)
 
