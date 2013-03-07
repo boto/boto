@@ -15,8 +15,9 @@ Creating a Connection
 The first step in accessing SES is to create a connection to the service.
 To do so, the most straight forward way is the following::
 
-    >>> import boto
-    >>> conn = boto.connect_ses(
+    >>> import boto.ses
+    >>> conn = boto.ses.connect_to_region(
+            'us-east-1',
             aws_access_key_id='<YOUR_AWS_KEY_ID>',
             aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
     >>> conn
@@ -26,7 +27,7 @@ Bear in mind that if you have your credentials in boto config in your home
 directory, the two keyword arguments in the call above are not needed. More
 details on configuration can be fond in :doc:`boto_config_tut`.
 
-The :py:func:`boto.connect_ses` functions returns a
+The :py:func:`boto.ses.connect_to_region` functions returns a
 :py:class:`boto.ses.connection.SESConnection` instance, which is a the boto API
 for working with SES.
 
