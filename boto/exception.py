@@ -83,8 +83,8 @@ class BotoServerError(StandardError):
         # then just ignore the error response.
         if self.body:
             try:
-                h = handler.XmlHandler(self, self)
-                xml.sax.parseString(self.body, h)
+                h = handler.XmlHandlerWrapper(self, self)
+                h.parseString(self.body)
             except (TypeError, xml.sax.SAXParseException), pe:
                 # Remove unparsable message body so we don't include garbage
                 # in exception. But first, save self.body in self.error_message
