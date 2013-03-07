@@ -2,6 +2,8 @@ from tests.unit import unittest
 
 from boto.exception import BotoServerError
 
+from httpretty import HTTPretty, httprettified
+
 class TestBotoServerError(unittest.TestCase):
 
     def test_botoservererror_basics(self):
@@ -50,6 +52,18 @@ class TestBotoServerError(unittest.TestCase):
         self.assertEqual(bse.error_code, 'AuthorizationFailure')
         self.assertEqual(bse.status, '403')
         self.assertEqual(bse.reason, 'Forbidden')
+
+    @httprettified
+    def test_xmlns_not_loaded(self):
+        xml = '<ErrorResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2011-11-15/">'
+        bse = BotoServerError('403', 'Forbidden', body=xml)
+        self.assertEqual([], HTTPretty.latest_requests)
+
+    @httprettified
+    def test_xml_entity_not_loaded(self):
+        xml = '<!DOCTYPE Message [<!ENTITY xxe SYSTEM "http://aws.amazon.com/">]><Message>error:&xxe;</Message>'
+        bse = BotoServerError('403', 'Forbidden', body=xml)
+        self.assertEqual([], HTTPretty.latest_requests)
 
     def test_message_not_xml(self):
         body = 'This is not XML'
