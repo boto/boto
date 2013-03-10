@@ -148,17 +148,20 @@ class Location:
 
 class S3Connection(AWSAuthConnection):
 
-    DefaultHost = 's3.amazonaws.com'
+    DefaultHost = boto.config.get('s3', 'host', 's3.amazonaws.com')
+    DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.SubdomainCallingFormat')
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/',
+                 calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None):
+        if isinstance(calling_format, str):
+            calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon

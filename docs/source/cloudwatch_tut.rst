@@ -12,8 +12,8 @@ EC2Connection object or call the monitor method on the Instance object.
 It takes a while for the monitoring data to start accumulating but once
 it does, you can do this::
 
-    >>> import boto
-    >>> c = boto.connect_cloudwatch()
+    >>> import boto.ec2.cloudwatch
+    >>> c = boto.ec2.cloudwatch.connect_to_region('us-west-2')
     >>> metrics = c.list_metrics()
     >>> metrics
     [Metric:NetworkIn,

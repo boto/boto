@@ -531,7 +531,7 @@ class Key(object):
             raise self.provider.storage_response_error(
                 response.status, response.reason, response.read())
 
-    def set_redirect(self, redirect_location):
+    def set_redirect(self, redirect_location, headers=None):
         """Configure this key to redirect to another location.
 
         When the bucket associated with this key is accessed from the website
@@ -542,7 +542,12 @@ class Key(object):
         :param redirect_location: The location to redirect.
 
         """
-        headers = {'x-amz-website-redirect-location': redirect_location}
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+
+        headers['x-amz-website-redirect-location'] = redirect_location
         response = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                        self.name, headers)
         if response.status == 200:

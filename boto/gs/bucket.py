@@ -397,7 +397,7 @@ class Bucket(S3Bucket):
 
         if if_metageneration is not None and if_generation is None:
             raise ValueError("Received if_metageneration argument with no "
-                             "if_generation argument. A meta-generation has no "
+                             "if_generation argument. A metageneration has no "
                              "meaning without a content generation.")
         if not key_name and (if_generation or if_metageneration):
             raise ValueError("Received if_generation or if_metageneration "
