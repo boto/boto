@@ -117,7 +117,10 @@ Even if you have your boto config setup, you can also have credentials and
 options stored in environmental variables or you can explicitly pass them to
 method calls i.e.::
 
-	>>> boto.connect_ec2('<KEY_ID>','<SECRET_KEY>')
+    >>> boto.ec2.connect_to_region(
+    ...     'us-west-2',
+    ...     aws_access_key_id='foo',
+    ...     aws_secret_access_key='bar')
 
 In these cases where these options can be found in more than one place boto
 will first use the explicitly supplied arguments, if none found it will then
