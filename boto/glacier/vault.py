@@ -26,7 +26,7 @@ from .exceptions import UploadArchiveError
 from .job import Job
 from .writer import compute_hashes_from_fileobj, resume_file_upload, Writer
 from .concurrent import ConcurrentUploader
-from .utils import minimum_part_size, DEFAULT_PART_SIZE
+from .utils import minimum_part_size, DEFAULT_PART_SIZE, DEFAULT_NUM_THREADS
 import os.path
 
 
@@ -237,7 +237,9 @@ class Vault(object):
         return resume_file_upload(
             self, upload_id, part_size, file_obj, part_hash_map)
 
-    def concurrent_create_archive_from_file(self, filename, description):
+    def concurrent_create_archive_from_file(self, filename, description,
+                                            part_size=DEFAULT_PART_SIZE,
+                                            num_threads=DEFAULT_NUM_THREADS):
         """
         Create a new archive from a file and upload the given
         file.
@@ -257,7 +259,9 @@ class Vault(object):
         :return: The archive id of the newly created archive
 
         """
-        uploader = ConcurrentUploader(self.layer1, self.name)
+        uploader = ConcurrentUploader(self.layer1, self.name,
+                                      part_size=part_size,
+                                      num_threads=num_threads)
         archive_id = uploader.upload(filename, description)
         return archive_id
 
