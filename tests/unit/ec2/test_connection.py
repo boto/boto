@@ -476,5 +476,91 @@ class TestCopySnapshot(TestEC2ConnectionBase):
                                    'Version'])
 
 
+class TestAccountAttributes(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+        <DescribeAccountAttributesResponse xmlns="http://ec2.amazonaws.com/doc/2012-12-01/">
+            <requestId>6d042e8a-4bc3-43e8-8265-3cbc54753f14</requestId>
+            <accountAttributeSet>
+                <item>
+                    <attributeName>vpc-max-security-groups-per-interface</attributeName>
+                    <attributeValueSet>
+                        <item>
+                            <attributeValue>5</attributeValue>
+                        </item>
+                    </attributeValueSet>
+                </item>
+                <item>
+                    <attributeName>max-instances</attributeName>
+                    <attributeValueSet>
+                        <item>
+                            <attributeValue>50</attributeValue>
+                        </item>
+                    </attributeValueSet>
+                </item>
+                <item>
+                    <attributeName>supported-platforms</attributeName>
+                    <attributeValueSet>
+                        <item>
+                            <attributeValue>EC2</attributeValue>
+                        </item>
+                        <item>
+                            <attributeValue>VPC</attributeValue>
+                        </item>
+                    </attributeValueSet>
+                </item>
+                <item>
+                    <attributeName>default-vpc</attributeName>
+                    <attributeValueSet>
+                        <item>
+                            <attributeValue>none</attributeValue>
+                        </item>
+                    </attributeValueSet>
+                </item>
+            </accountAttributeSet>
+        </DescribeAccountAttributesResponse>
+        """
+
+    def test_describe_account_attributes(self):
+        self.set_http_response(status_code=200)
+        parsed = self.ec2.describe_account_attributes()
+        self.assertEqual(len(parsed), 4)
+        self.assertEqual(parsed[0].attribute_name,
+                         'vpc-max-security-groups-per-interface')
+        self.assertEqual(parsed[0].attribute_values,
+                         ['5'])
+        self.assertEqual(parsed[-1].attribute_name,
+                         'default-vpc')
+        self.assertEqual(parsed[-1].attribute_values,
+                         ['none'])
+
+
+class TestDescribeVPCAttribute(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+        <DescribeVpcAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
+            <requestId>request_id</requestId>
+            <vpcId>vpc-id</vpcId>
+            <enableDnsHostnames>
+                <value>false</value>
+            </enableDnsHostnames>
+        </DescribeVpcAttributeResponse>
+        """
+
+    def test_describe_vpc_attribute(self):
+        self.set_http_response(status_code=200)
+        parsed = self.ec2.describe_vpc_attribute('vpc-id',
+                                                 'enableDnsHostnames')
+        self.assertEqual(parsed.vpc_id, 'vpc-id')
+        self.assertFalse(parsed.enable_dns_hostnames)
+        self.assert_request_parameters({
+            'Action': 'DescribeVpcAttribute',
+            'VpcId': 'vpc-id',
+            'Attribute': 'enableDnsHostnames',},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+
 if __name__ == '__main__':
     unittest.main()
