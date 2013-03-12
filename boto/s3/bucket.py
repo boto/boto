@@ -86,14 +86,6 @@ class Bucket(object):
          <MfaDelete>%s</MfaDelete>
        </VersioningConfiguration>"""
 
-    WebsiteBody = """<?xml version="1.0" encoding="UTF-8"?>
-      <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-        <IndexDocument><Suffix>%s</Suffix></IndexDocument>
-        %s
-      </WebsiteConfiguration>"""
-
-    WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
-
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
 
