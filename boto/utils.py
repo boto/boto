@@ -311,7 +311,7 @@ class LazyLoadMetadata(dict):
 
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254',
-                          timeout=None, num_retries=5):
+                          data='meta-data', timeout=None, num_retries=5):
     """
     Returns the instance metadata as a nested Python dictionary.
     Simple values (e.g. local_hostname, hostname, etc.) will be
@@ -327,7 +327,7 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
         original = socket.getdefaulttimeout()
         socket.setdefaulttimeout(timeout)
     try:
-        return _get_instance_metadata('%s/%s/meta-data/' % (url, version),
+        return _get_instance_metadata('%s/%s/%s/' % (url, version, data),
                                       num_retries=num_retries)
     except urllib2.URLError, e:
         return None
