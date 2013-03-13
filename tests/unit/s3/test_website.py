@@ -141,6 +141,34 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         """
         self.assertEqual(x(expected_xml), x(xml))
 
+    def test_key_prefix(self):
+        x = pretty_print_xml
+        rules = RoutingRules()
+        condition = Condition(key_prefix="images/")
+        redirect = Redirect(replace_key='folderdeleted.html')
+        rules.add_rule(RoutingRule(condition, redirect))
+        config = WebsiteConfiguration(suffix='index.html', routing_rules=rules)
+        xml = config.to_xml()
+
+        expected_xml = """<?xml version="1.0" encoding="UTF-8"?>
+            <WebsiteConfiguration xmlns='http://s3.amazonaws.com/doc/2006-03-01/'>
+              <IndexDocument>
+                <Suffix>index.html</Suffix>
+              </IndexDocument>
+              <RoutingRules>
+                <RoutingRule>
+                <Condition>
+                  <KeyPrefixEquals>images/</KeyPrefixEquals>
+                </Condition>
+                <Redirect>
+                  <ReplaceKeyWith>folderdeleted.html</ReplaceKeyWith>
+                </Redirect>
+                </RoutingRule>
+              </RoutingRules>
+            </WebsiteConfiguration>
+        """
+        self.assertEqual(x(expected_xml), x(xml))
+
     def test_builders(self):
         x = pretty_print_xml
         # This is a more declarative way to create rules.

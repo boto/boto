@@ -43,48 +43,26 @@ Creating a Connection
 
 The first step in accessing ELB is to create a connection to the service.
 
->>> import boto
->>> conn = boto.connect_elb(
-        aws_access_key_id='YOUR-KEY-ID-HERE',
-        aws_secret_access_key='YOUR-SECRET-HERE'
-    )
-
-
-A Note About Regions and Endpoints
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Like EC2, the ELB service has a different endpoint for each region. By default
-the US East endpoint is used. To choose a specific region, instantiate the
-ELBConnection object with that region's information.
+the US East endpoint is used. To choose a specific region, use the
+``connect_to_region`` function::
 
->>> from boto.regioninfo import RegionInfo
->>> reg = RegionInfo(
-        name='eu-west-1',
-        endpoint='elasticloadbalancing.eu-west-1.amazonaws.com'
-    )
->>> conn = boto.connect_elb(
-        aws_access_key_id='YOUR-KEY-ID-HERE',
-        aws_secret_access_key='YOUR-SECRET-HERE',
-        region=reg
-    )
-
-Another way to connect to an alternative region is like this:
-
->>> import boto.ec2.elb
->>> elb = boto.ec2.elb.connect_to_region('eu-west-1')
+    >>> import boto.ec2.elb
+    >>> elb = boto.ec2.elb.connect_to_region('us-west-2')
 
 Here's yet another way to discover what regions are available and then
-connect to one:
+connect to one::
 
->>> import boto.ec2.elb
->>> regions = boto.ec2.elb.regions()
->>> regions
-[RegionInfo:us-east-1,
- RegionInfo:ap-northeast-1,
- RegionInfo:us-west-1,
- RegionInfo:ap-southeast-1,
- RegionInfo:eu-west-1]
->>> elb = regions[-1].connect()
+    >>> import boto.ec2.elb
+    >>> regions = boto.ec2.elb.regions()
+    >>> regions
+    [RegionInfo:us-east-1,
+     RegionInfo:ap-northeast-1,
+     RegionInfo:us-west-1,
+     RegionInfo:ap-southeast-1,
+     RegionInfo:eu-west-1]
+    >>> elb = regions[-1].connect()
 
 Alternatively, edit your boto.cfg with the default ELB endpoint to use::
 
