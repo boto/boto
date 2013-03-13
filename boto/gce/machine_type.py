@@ -15,10 +15,10 @@
 
 from boto.gce.resource import Resource, register_kind
 
+
 @register_kind
 class MachineType(Resource):
     """
     Represents a GCE MachineType.
     """
- 
     deprecated = None

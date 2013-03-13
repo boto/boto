@@ -15,6 +15,7 @@
 
 from boto.gce.resource import Resource, register_kind
 
+
 @register_kind
 class Instance(Resource):
     """
