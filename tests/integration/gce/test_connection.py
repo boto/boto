@@ -17,6 +17,7 @@
 Unit tests for the GCEConnection class.
 """
 
+import boto
 import os
 import time
 
@@ -28,7 +29,7 @@ class GCEConnectionTest(unittest.TestCase):
     gce = True
 
     def setUp(self):
-      self.connection = GCEConnection(os.environ['GCE_PROJECT'])
+      self.connection = GCEConnection()
 
     # List integration tests
 

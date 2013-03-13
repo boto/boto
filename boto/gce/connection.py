@@ -15,6 +15,7 @@
 
 import boto
 import httplib2
+import os
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
@@ -36,8 +37,6 @@ from boto.gce.zone_operation import ZoneOperation
 # application, including client_id and client_secret, which are found
 # on the API Access tab on the Google APIs
 # Console <http://code.google.com/apis/console>
-DEFAULT_CLIENT_SECRETS = 'client_secrets.json'
-DEFAULT_CREDENTIALS_FILE = 'creds.dat'
 
 # Helpful message to display if the CLIENT_SECRETS file is missing.
 MISSING_CLIENT_SECRETS_MESSAGE = """
@@ -49,36 +48,41 @@ found at:
    {0}
 
 with information from the APIs Console <https://code.google.com/apis/console>.
-The location of this file can also be configured via:
-
-[Credentials]
-gce_client_secrets_file={0}
-
-In your boto config.
 """
 
 OAUTH2_SCOPE = 'https://www.googleapis.com/auth/compute'
 GOOGLE_PROJECT = 'google'
 
 
-def _get_oauth2_credentials():
+def get_oauth2_credentials():
     """
     Return oauth2 credentials, running the configured flow if necessary.
     """
-    client_secrets = boto.config.get('Credentials',
-                                     'gce_client_secrets_file',
-                                     DEFAULT_CLIENT_SECRETS)
-    credentials_file = boto.config.get('Credentials',
-                                       'gce_credentials_file',
-                                       DEFAULT_CREDENTIALS_FILE)
+    try:
+      client_secrets = _get_config('Credentials', 'gce_client_secrets_file')
+      credentials_file = _get_config('Credentials', 'gce_credentials_file')
+    except ConfigError:
+      raise RuntimeError('OAuth2 credentials missing.')
+
     storage = Storage(credentials_file)
     credentials = storage.get()
     if credentials is None or credentials.invalid:
         message = MISSING_CLIENT_SECRETS_MESSAGE.format(client_secrets)
-        flow = flow_from_clientsecrets(client_secrets, message=message,
+        flow = flow_from_clientsecrets(client_secrets,
+                                       message=message,
                                        scope=OAUTH2_SCOPE)
         return run(flow, storage)
     return credentials
+
+
+def _get_config(section, key):
+    """
+    Check boto.config and the environment for the specified key.
+    """
+    value = boto.config.get(section, key, None)
+    if value is not None:
+        return value
+    return os.environ[key.upper()]
 
 
 class GCEConnection(object):
@@ -96,9 +100,9 @@ class GCEConnection(object):
         :param credentials: A valid OAuth2 credentials instance.
         """
         if gce_project is None:
-            gce_project = boto.config.get('Boto', 'gce_project')
+            gce_project = _get_config('Boto', 'gce_project')
         if credentials is None:
-            credentials = _get_oauth2_credentials()
+            credentials = get_oauth2_credentials()
 
         self.gce_project = gce_project
         self.credentials = credentials
