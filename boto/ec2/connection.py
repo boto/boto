@@ -3359,7 +3359,7 @@ class EC2Connection(AWSQueryConnection):
         :param instance_id: The ID of the instance that will be attached
             to the network interface.
 
-        :type device_index: int
+        :type device_index: str
         :param device_index: The index of the device for the network
             interface attachment on the instance.
         """
