@@ -26,15 +26,7 @@ VERSION = "%prog version 1.0"
 import boto
 import time
 from boto import sdb
-
-# Allow support for JSON
-try:
-    import simplejson as json
-except:
-    try:
-        import json
-    except:
-        json = False
+from boto.compat import json
 
 def choice_input(options, default=None, title=None):
     """

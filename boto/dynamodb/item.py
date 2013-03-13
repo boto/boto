@@ -194,3 +194,9 @@ class Item(dict):
         if self._updates is not None:
             self.delete_attribute(key)
         dict.__delitem__(self, key)
+
+    # Allow this item to still be pickled
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, d):
+        self.__dict__.update(d)

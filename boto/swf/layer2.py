@@ -41,9 +41,9 @@ class SWFBase(object):
 
     def __repr__(self):
         """Generate string representation."""
-        rep_str = self.name
+        rep_str = str(self.name)
         if hasattr(self, 'version'):
-            rep_str += '-' + getattr(self, 'version')
+            rep_str += '-' + str(getattr(self, 'version'))
         return '<%s %r at 0x%x>' % (self.__class__.__name__, rep_str, id(self))
 
 class Domain(SWFBase):

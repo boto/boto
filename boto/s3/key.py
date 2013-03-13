@@ -528,7 +528,7 @@ class Key(object):
             raise self.provider.storage_response_error(
                 response.status, response.reason, response.read())
 
-    def set_redirect(self, redirect_location):
+    def set_redirect(self, redirect_location, headers=None):
         """Configure this key to redirect to another location.
 
         When the bucket associated with this key is accessed from the website
@@ -539,7 +539,12 @@ class Key(object):
         :param redirect_location: The location to redirect.
 
         """
-        headers = {'x-amz-website-redirect-location': redirect_location}
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+
+        headers['x-amz-website-redirect-location'] = redirect_location
         response = self.bucket.connection.make_request('PUT', self.bucket.name,
                                                        self.name, headers)
         if response.status == 200:
@@ -704,11 +709,11 @@ class Key(object):
 
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
-            # If the debuglevel < 3 we don't want to show connection
+            # If the debuglevel < 4 we don't want to show connection
             # payload, so turn off HTTP connection-level debug output (to
             # be restored below).
             # Use the getattr approach to allow this to work in AppEngine.
-            if getattr(http_conn, 'debuglevel', 0) < 3:
+            if getattr(http_conn, 'debuglevel', 0) < 4:
                 http_conn.set_debuglevel(0)
 
             data_len = 0
@@ -780,10 +785,10 @@ class Key(object):
             if cb and (cb_count <= 1 or i > 0) and data_len > 0:
                 cb(data_len, cb_size)
 
-            response = http_conn.getresponse()
-            body = response.read()
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
+            response = http_conn.getresponse()
+            body = response.read()
             if ((response.status == 500 or response.status == 503 or
                     response.getheader('location')) and not chunked_transfer):
                 # we'll try again.
@@ -1194,12 +1199,16 @@ class Key(object):
             :param encrypt_key: If True, the new copy of the object
             will be encrypted on the server-side by S3 and will be
             stored in an encrypted form while at rest in S3.
+
+        :rtype: int
+        :return: The number of bytes written to the key.
         """
         fp = open(filename, 'rb')
         try:
-            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                        policy, md5, reduced_redundancy,
-                                        encrypt_key=encrypt_key)
+            return self.set_contents_from_file(fp, headers, replace,
+                                               cb, num_cb, policy,
+                                               md5, reduced_redundancy,
+                                               encrypt_key=encrypt_key)
         finally:
             fp.close()
 
@@ -1685,7 +1694,8 @@ class Key(object):
             rewritten_metadata[rewritten_h] = metadata[h]
         metadata = rewritten_metadata
         src_bucket.copy_key(self.name, self.bucket.name, self.name,
-                            metadata=metadata, preserve_acl=preserve_acl)
+                            metadata=metadata, preserve_acl=preserve_acl,
+                            headers=headers)
 
     def restore(self, days, headers=None):
         """Restore an object from an archive.

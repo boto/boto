@@ -13,8 +13,11 @@ Creating a Connection
 The first step in accessing SimpleDB is to create a connection to the service.
 To do so, the most straight forward way is the following::
 
-    >>> import boto
-    >>> conn = boto.connect_sdb(aws_access_key_id='<YOUR_AWS_KEY_ID>',aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
+    >>> import boto.sdb
+    >>> conn = boto.sdb.connect_to_region(
+    ...     'us-west-2',
+    ...     aws_access_key_id='<YOUR_AWS_KEY_ID>',
+    ...     aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
     >>> conn
     SDBConnection:sdb.amazonaws.com
     >>>

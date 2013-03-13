@@ -32,9 +32,6 @@ There are two ways to do this in boto.  The first is:
 >>> from boto.ec2.autoscale import AutoScaleConnection
 >>> conn = AutoScaleConnection('<aws access key>', '<aws secret key>')
 
-Alternatively, you can use the shortcut:
-
->>> conn = boto.connect_autoscale()
 
 A Note About Regions and Endpoints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -43,7 +40,7 @@ default the US endpoint is used. To choose a specific region, instantiate the
 AutoScaleConnection object with that region's endpoint.
 
 >>> import boto.ec2.autoscale
->>> ec2 = boto.ec2.autoscale.connect_to_region('eu-west-1')
+>>> autoscale = boto.ec2.autoscale.connect_to_region('eu-west-1')
 
 Alternatively, edit your boto.cfg with the default Autoscale endpoint to use::
 
@@ -163,7 +160,8 @@ will now be a property of our ScalingPolicy objects.
 Next we'll create CloudWatch alarms that will define when to run the
 Auto Scaling Policies.
 
->>> cloudwatch = boto.connect_cloudwatch()
+>>> import boto.ec2.cloudwatch
+>>> cloudwatch = boto.ec2.cloudwatch.connect_to_region('us-west-2')
 
 It makes sense to measure the average CPU usage across the whole Auto Scaling
 Group, rather than individual instances. We express that as CloudWatch
@@ -199,7 +197,8 @@ beyond the limits of the Scaling Group's 'max_size' and 'min_size' properties.
 
 To retrieve the instances in your autoscale group:
 
->>> ec2 = boto.connect_ec2()
+>>> import boto.ec2
+>>> ec2 = boto.ec2.connect_to_region('us-west-2)
 >>> conn.get_all_groups(names=['my_group'])[0]
 >>> instance_ids = [i.instance_id for i in group.instances]
 >>> reservations = ec2.get_all_instances(instance_ids)

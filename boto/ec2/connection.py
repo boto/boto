@@ -1,6 +1,6 @@
 # Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -33,7 +33,7 @@ from datetime import timedelta
 import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
-from boto.ec2.image import Image, ImageAttribute
+from boto.ec2.image import Image, ImageAttribute, CopyImage
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -58,6 +58,7 @@ from boto.ec2.vmtype import VmType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
+from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -65,7 +66,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-12-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-02-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -147,14 +148,12 @@ class EC2Connection(AWSQueryConnection):
                               user ID has explicit launch permissions
 
         :type filters: dict
-        :param filters: Optional filters that can be used to limit
-                        the results returned.  Filters are provided
-                        in the form of a dictionary consisting of
-                        filter names as the key and filter values
-                        as the value.  The set of allowable filter
-                        names/values is dependent on the request
-                        being performed.  Check the EC2 API guide
-                        for details.
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
 
         :rtype: list
         :return: A list of :class:`boto.ec2.image.Image`
@@ -299,8 +298,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type delete_snapshot: bool
         :param delete_snapshot: Set to True if we should delete the
-                                snapshot associated with an EBS volume
-                                mounted at /dev/sda1
+            snapshot associated with an EBS volume mounted at /dev/sda1
 
         :rtype: bool
         :return: True if successful
@@ -333,14 +331,14 @@ class EC2Connection(AWSQueryConnection):
 
         :type description: string
         :param description: An optional human-readable string describing
-                            the contents and purpose of the AMI.
+            the contents and purpose of the AMI.
 
         :type no_reboot: bool
-        :param no_reboot: An optional flag indicating that the bundling process
-                          should not attempt to shutdown the instance before
-                          bundling.  If this flag is True, the responsibility
-                          of maintaining file system integrity is left to the
-                          owner of the instance.
+        :param no_reboot: An optional flag indicating that the
+            bundling process should not attempt to shutdown the
+            instance before bundling.  If this flag is True, the
+            responsibility of maintaining file system integrity is
+            left to the owner of the instance.
 
         :rtype: string
         :return: The new image id
@@ -365,10 +363,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type attribute: string
         :param attribute: The attribute you need information about.
-                          Valid choices are:
-                          * launchPermission
-                          * productCodes
-                          * blockDeviceMapping
+            Valid choices are:
+            * launchPermission
+            * productCodes
+            * blockDeviceMapping
 
         :rtype: :class:`boto.ec2.image.ImageAttribute`
         :return: An ImageAttribute object representing the value of the
@@ -393,7 +391,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type operation: string
         :param operation: Either add or remove (this is required for changing
-                          launchPermissions)
+            launchPermissions)
 
         :type user_ids: list
         :param user_ids: The Amazon IDs of users to add/remove attributes
@@ -403,8 +401,8 @@ class EC2Connection(AWSQueryConnection):
 
         :type product_codes: list
         :param product_codes: Amazon DevPay product code. Currently only one
-                              product code can be associated with an AMI. Once
-                              set, the product code cannot be changed or reset.
+            product code can be associated with an AMI. Once
+            set, the product code cannot be changed or reset.
         """
         params = {'ImageId': image_id,
                   'Attribute': attribute,
@@ -1333,11 +1331,11 @@ class EC2Connection(AWSQueryConnection):
     def allocate_address(self, domain=None):
         """
         Allocate a new Elastic IP address and associate it with your account.
-        
+
         :type domain: string
-        :param domain: Optional string. If domain is set to "vpc" the address 
-                        will be allocated to VPC . Will return address 
-                        object with allocation_id.
+        :param domain: Optional string. If domain is set to "vpc" the address
+            will be allocated to VPC . Will return address object with
+            allocation_id.
 
         :rtype: :class:`boto.ec2.address.Address`
         :return: The newly allocated Address
@@ -3370,7 +3368,7 @@ class EC2Connection(AWSQueryConnection):
                   'DeviceIndex': device_index}
         return self.get_status('AttachNetworkInterface', params, verb='POST')
 
-    def detach_network_interface(self, attachement_id, force=False):
+    def detach_network_interface(self, attachment_id, force=False):
         """
         Detaches a network interface from an instance.
 
@@ -3381,7 +3379,7 @@ class EC2Connection(AWSQueryConnection):
         :param force: Set to true to force a detachment.
 
         """
-        params = {'AttachmentId': network_interface_id}
+        params = {'AttachmentId': attachment_id}
         if force:
             params['Force'] = 'true'
         return self.get_status('DetachNetworkInterface', params, verb='POST')
@@ -3406,4 +3404,49 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
         return self.get_list('DescribeVmTypes', params, [('euca:item', VmType)], verb='POST')
-       
+
+    def copy_image(self, source_region, source_image_id, name,
+                   description=None, client_token=None):
+        params = {
+            'SourceRegion': source_region,
+            'SourceImageId': source_image_id,
+            'Name': name
+        }
+        if description is not None:
+            params['Description'] = description
+        if client_token is not None:
+            params['ClientToken'] = client_token
+        image = self.get_object('CopyImage', params, CopyImage,
+                                 verb='POST')
+        return image
+
+    def describe_account_attributes(self, attribute_names=None):
+        params = {}
+        if attribute_names is not None:
+            self.build_list_params(params, attribute_names, 'AttributeName')
+        return self.get_list('DescribeAccountAttributes', params,
+                             [('item', AccountAttribute)], verb='POST')
+
+    def describe_vpc_attribute(self, vpc_id, attribute=None):
+        params = {
+            'VpcId': vpc_id
+        }
+        if attribute is not None:
+            params['Attribute'] = attribute
+        attr = self.get_object('DescribeVpcAttribute', params,
+                               VPCAttribute, verb='POST')
+        return attr
+
+    def modify_vpc_attribute(self, vpc_id, enable_dns_support=None,
+                             enable_dns_hostnames=None):
+        params = {
+            'VpcId': vpc_id
+        }
+        if enable_dns_support is not None:
+            params['EnableDnsSupport.Value'] = (
+                'true' if enable_dns_support else 'false')
+        if enable_dns_hostnames is not None:
+            params['EnableDnsHostnames.Value'] = (
+                'true' if enable_dns_hostnames else 'false')
+        result = self.get_status('ModifyVpcAttribute', params, verb='POST')
+        return result

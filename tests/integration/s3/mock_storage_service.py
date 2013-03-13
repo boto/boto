@@ -250,6 +250,9 @@ class MockBucket(object):
     def enable_logging(self, target_bucket_prefix):
         self.logging = True
 
+    def get_logging_config(self):
+        return {"Logging": {}}
+
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
             # Return ACL for the key.
@@ -399,8 +402,7 @@ class MockBucketStorageUri(object):
 
     def __init__(self, scheme, bucket_name=None, object_name=None,
                  debug=NOT_IMPL, suppress_consec_slashes=NOT_IMPL,
-                 version_id=None, generation=None, meta_generation=None,
-                 is_latest=False):
+                 version_id=None, generation=None, is_latest=False):
         self.scheme = scheme
         self.bucket_name = bucket_name
         self.object_name = object_name
@@ -415,8 +417,12 @@ class MockBucketStorageUri(object):
 
         self.version_id = version_id
         self.generation = generation and int(generation)
-        self.meta_generation = meta_generation and int(meta_generation)
+        self.is_version_specific = (bool(self.generation)
+                                    or bool(self.version_id))
         self.is_latest = is_latest
+        if bucket_name and object_name:
+            self.versionless_uri = '%s://%s/%s' % (scheme, bucket_name,
+                                                   object_name)
 
     def __repr__(self):
         """Returns string representation of URI."""
@@ -439,7 +445,6 @@ class MockBucketStorageUri(object):
                 suppress_consec_slashes=self.suppress_consec_slashes,
                 version_id=getattr(key, 'version_id', None),
                 generation=getattr(key, 'generation', None),
-                meta_generation=getattr(key, 'meta_generation', None),
                 is_latest=getattr(key, 'is_latest', None))
 
     def connect(self, access_key_id=NOT_IMPL, secret_access_key=NOT_IMPL):
@@ -457,18 +462,6 @@ class MockBucketStorageUri(object):
                 and ((self.version_id is not None)
                      or (self.generation is not None)))
 
-    def versioned_uri_str(self):
-        version_desc = ''
-        if not issubclass(type(self), MockBucketStorageUri):
-          pass
-        elif self.version_id is not None:
-            version_desc += '#' + self.version_id
-        elif self.generation is not None:
-            version_desc += '#' + str(self.generation)
-            if self.meta_generation is not None:
-                version_desc += '.' + str(self.meta_generation)
-        return self.uri + version_desc
-
     def delete_key(self, validate=NOT_IMPL, headers=NOT_IMPL,
                    version_id=NOT_IMPL, mfa_token=NOT_IMPL):
         self.get_bucket().delete_key(self.object_name)
@@ -480,6 +473,10 @@ class MockBucketStorageUri(object):
     def enable_logging(self, target_bucket, target_prefix, validate=NOT_IMPL,
                        headers=NOT_IMPL, version_id=NOT_IMPL):
         self.get_bucket().enable_logging(target_bucket)
+
+    def get_logging_config(self, validate=NOT_IMPL, headers=NOT_IMPL,
+                           version_id=NOT_IMPL):
+        return self.get_bucket().get_logging_config()
 
     def equals(self, uri):
         return self.uri == uri.uri

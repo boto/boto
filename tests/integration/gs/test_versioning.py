@@ -259,10 +259,10 @@ class GSVersioningTest(GSTestCase):
         k.set_contents_from_string("test1")
         g1 = k.generation
         self.assertRegexpMatches(g1, r'[0-9]+')
-        self.assertEqual(k.meta_generation, '1')
+        self.assertEqual(k.metageneration, '1')
         k.set_contents_from_string("test2")
         g2 = k.generation
         self.assertNotEqual(g1, g2)
         self.assertRegexpMatches(g2, r'[0-9]+')
         self.assertGreater(int(g2), int(g1))
-        self.assertEqual(k.meta_generation, '1')
+        self.assertEqual(k.metageneration, '1')
