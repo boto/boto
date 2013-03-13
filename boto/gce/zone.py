@@ -13,18 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto.gce.resource import Resource, register_kind
 
-class Zone(object):
+
+@register_kind
+class Zone(Resource):
     """
     Represents a GCE Zone.
     """
-    def __init__(self, zone):
-        self.status = zone['status']
-        self.kind = zone['kind']
-        self.creation_timestamp = zone['creationTimestamp']
-        self.id = zone['id']
-        self.self_link = zone['selfLink']
-        self.name = zone['name']
-
-    def __repr__(self):
-        return 'Zone:%s' % self.id

@@ -13,21 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto.gce.resource import Resource, register_kind
 
-class Image(object):
+
+@register_kind
+class Image(Resource):
     """
     Represents a GCE Image.
     """
-    def __init__(self, image):
-        self.id = image['id']
-        self.name = image['name']
-        self.kind = image['kind']
-        self.self_link = image['selfLink']
-        self.creation_timestamp = image['creationTimestamp']
-        self.description = image['description']
-        self.raw_disk = image['rawDisk']
-        self.preferred_kernel = image['preferredKernel']
-        self.source_type = image['sourceType']
-
-    def __repr__(self):
-        return 'Image:%s' % self.id
+    deprecated = None

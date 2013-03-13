@@ -13,20 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto.utils import pythonize_name
 
-class Network(object):
+from boto.gce.resource import Resource, register_kind
+
+
+def _pythonize_network(name):
+    """
+    A pythonize_name() that special cases 'IPv4'.
+    """
+    return pythonize_name(name.replace('IPv4', 'Ip'))
+
+
+@register_kind
+class Network(Resource):
     """
     Represents a GCE Network.
     """
-    def __init__(self, network):
-        self.id = network['id']
-        self.kind = network['kind']
-        self.description = network['description']
-        self.ip_range = network['IPv4Range']
-        self.self_link = network['selfLink']
-        self.name = network['name']
-        self.creation_timestamp = network['creationTimestamp']
-        self.gateway_ip = network['gatewayIPv4']
-
-    def __repr__(self):
-        return 'Network:%s' % self.id
+    def __init__(self, items, transform=_pythonize_network):
+        super(Network, self).__init__(items, transform)

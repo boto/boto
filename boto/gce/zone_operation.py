@@ -15,13 +15,9 @@
 
 from boto.gce.resource import Resource, register_kind
 
+
 @register_kind
-class Instance(Resource):
+class ZoneOperation(Resource):
     """
-    Represents a GCE Instance.
+    Represents a GCE ZoneOperation.
     """
-    def __init__(self, items):
-        assert 'zone' in items
-        super(Instance, self).__init__(items)
-        # The JSON 'zone' has a full URL, but we only ever need the name.
-        self.zone = self.zone[self.zone.rfind('/') + 1:]

@@ -13,21 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto.gce.resource import Resource, register_kind
 
-class Firewall(object):
+
+@register_kind
+class Firewall(Resource):
     """
     Represents a GCE Firewall.
     """
-    def __init__(self, firewall):
-        self.id = firewall['id']
-        self.kind = firewall['kind']
-        self.description = firewall['description']
-        self.source_ranges = firewall['sourceRanges']
-        self.network = firewall['network']
-        self.allowed = firewall['allowed']
-        self.creation_timestamp = firewall['creationTimestamp']
-        self.self_link = firewall['selfLink']
-        self.name = firewall['name']
-
-    def __repr__(self):
-        return 'Firewall:%s' % self.id

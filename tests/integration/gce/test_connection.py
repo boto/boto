@@ -18,6 +18,7 @@ Unit tests for the GCEConnection class.
 """
 
 import os
+import time
 
 from boto.gce.connection import GCEConnection
 from tests.unit import unittest
@@ -115,44 +116,56 @@ class GCEConnectionTest(unittest.TestCase):
     def test_get_image(self):
         first_image = self.connection.get_all_images()[0]
         second_image = self.connection.get_image(first_image.name)
+        self.assertEqual(first_image, second_image)
 
-        for attr in first_image.__dict__:
-            assert first_image.__dict__[attr] == second_image.__dict__[attr]
-
-    def test_get_instance_attribute(self):
-        instance = self.connection.get_all_instances()[0]
-
-        status_attr = self.connection.get_instance_attribute(
-            name=instance.name, zone=instance.zone, attribute='status').value
-
-        name_attr = self.connection.get_instance_attribute(
-            name=instance.name, zone=instance.zone, attribute='name').value
-
-        machine_type_attr = self.connection.get_instance_attribute(
-            name=instance.name, zone=instance.zone,
-            attribute='machine_type').value
-
-        assert status_attr == instance.status
-        assert name_attr == instance.name
-        assert machine_type_attr == instance.machine_type
+    def test_get_instance(self):
+        first_instance = self.connection.get_all_instances()[0]
+        second_instance = self.connection.get_instance(first_instance.name,
+                                                       first_instance.zone)
+        self.assertEqual(first_instance, second_instance)
 
     def test_get_zone(self):
         first_zone = self.connection.get_all_zones()[0]
         second_zone = self.connection.get_zone(first_zone.name)
-
-        for attr in first_zone.__dict__:
-            assert first_zone.__dict__[attr] == second_zone.__dict__[attr]
+        self.assertEqual(first_zone, second_zone)
 
     def test_get_network(self):
         first_network = self.connection.get_all_networks()[0]
         second_network = self.connection.get_network(first_network.name)
-
-        for attr in first_network.__dict__:
-            assert first_network.__dict__[attr] == second_network.__dict__[attr]
+        self.assertEqual(first_network, second_network)
 
     def test_get_firewall(self):
         first_firewall = self.connection.get_all_firewalls()[0]
         second_firewall = self.connection.get_firewall(first_firewall.name)
+        self.assertEqual(first_firewall, second_firewall)
 
-        for attr in first_firewall.__dict__:
-            assert first_firewall.__dict__[attr] == second_firewall.__dict__[attr]
+    def test_get_all_machine_types(self):
+      machine_types = self.connection.get_all_machine_types()
+      for machine_type in machine_types:
+          assert machine_type.id
+          assert machine_type.name
+
+    def test_instance_lifecycle(self):
+        name = time.strftime('test-instance-%Y%m%d%H%M%S')
+        machine_type = None
+        for machine in self.connection.get_all_machine_types():
+            if machine.deprecated is None:
+                machine_type = machine.self_link
+                break
+        self.assertIsNotNone(machine_type)
+        image_url = None
+        for image in self.connection.get_all_images():
+            if image.deprecated is None:
+                image_url = image.self_link
+                break
+        self.assertIsNotNone(image_url)
+        zone_name = None
+        for zone in self.connection.get_all_zones():
+            if zone.status == 'UP':
+                zone_name = zone.name
+                break
+        self.assertIsNotNone(zone_name)
+        self.connection.run_instance(name, machine_type, zone_name, image_url)
+        # TODO: use the returned ZoneOperation to wait for the instance to be up.
+        time.sleep(30)
+        self.connection.terminate_instance(name, zone_name)

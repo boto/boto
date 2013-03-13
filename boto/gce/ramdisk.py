@@ -13,18 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto.gce.resource import Resource, register_kind
 
-class Ramdisk(object):
+@register_kind('disk')
+class Ramdisk(Resource):
     """
     Represents a GCE Ramdisk.
     """
-    def __init__(self, ramdisk):
-        self.id = ramdisk['id']
-        self.name = ramdisk['name']
-        self.kind = ramdisk['kind']
-        self.description = ramdisk['description']
-        self.creation_timestamp = ramdisk['creationTimestamp']
-        self.self_link = ramdisk['selfLink']
-
-    def __repr__(self):
-        return 'Ramdisk:%s' % self.id

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2012 Google Inc.
+# Copyright (C) 2013 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,12 +16,9 @@
 from boto.gce.resource import Resource, register_kind
 
 @register_kind
-class Instance(Resource):
+class MachineType(Resource):
     """
-    Represents a GCE Instance.
+    Represents a GCE MachineType.
     """
-    def __init__(self, items):
-        assert 'zone' in items
-        super(Instance, self).__init__(items)
-        # The JSON 'zone' has a full URL, but we only ever need the name.
-        self.zone = self.zone[self.zone.rfind('/') + 1:]
+ 
+    deprecated = None

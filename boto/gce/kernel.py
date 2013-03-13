@@ -13,18 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from boto.gce.resource import Resource, register_kind
 
-class Kernel(object):
+
+@register_kind
+class Kernel(Resource):
     """
     Represents a GCE Kernel.
     """
-    def __init__(self, kernel):
-        self.id = kernel['id']
-        self.name = kernel['name']
-        self.kind = kernel['kind']
-        self.description = kernel['description']
-        self.creation_timestamp = kernel['creationTimestamp']
-        self.self_link = kernel['selfLink']
-
-    def __repr__(self):
-        return 'Kernel:%s' % self.id

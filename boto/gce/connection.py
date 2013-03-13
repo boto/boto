@@ -13,131 +13,159 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import httplib2
-import os
 import boto
+import httplib2
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
-from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run
 
-from boto.gce.image import Image
-from boto.gce.kernel import Kernel
-from boto.gce.ramdisk import Ramdisk
-from boto.gce.instance import Instance
-from boto.gce.instance_attribute import InstanceAttribute
-from boto.gce.zone import Zone
-from boto.gce.network import Network
 from boto.gce.firewall import Firewall
+from boto.gce.image import Image
+from boto.gce.instance import Instance
+from boto.gce.kernel import Kernel
+from boto.gce.network import Network
+from boto.gce.machine_type import MachineType
+from boto.gce.ramdisk import Ramdisk
+from boto.gce.zone import Zone
+from boto.gce.zone_operation import ZoneOperation
+
 
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
 # application, including client_id and client_secret, which are found
 # on the API Access tab on the Google APIs
 # Console <http://code.google.com/apis/console>
-CLIENT_SECRETS = 'client_secrets.json'
+DEFAULT_CLIENT_SECRETS = 'client_secrets.json'
+DEFAULT_CREDENTIALS_FILE = 'creds.dat'
 
-# Helpful message to display in the browser if the CLIENT_SECRETS file
-# is missing.
+# Helpful message to display if the CLIENT_SECRETS file is missing.
 MISSING_CLIENT_SECRETS_MESSAGE = """
 WARNING: Please configure OAuth 2.0
 
 To make this sample run you will need to populate the client_secrets.json file
 found at:
 
-   %s
+   {0}
 
 with information from the APIs Console <https://code.google.com/apis/console>.
+The location of this file can also be configured via:
 
-""" % os.path.join(os.path.dirname(__file__), CLIENT_SECRETS)
+[Credentials]
+gce_client_secrets_file={0}
 
-# Set up a Flow object to be used if we need to authenticate.
-FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
-                               scope='https://www.googleapis.com/auth/compute')
+In your boto config.
+"""
 
-API_VERSION = 'v1beta14'
+OAUTH2_SCOPE = 'https://www.googleapis.com/auth/compute'
+GOOGLE_PROJECT = 'google'
 
-DEFAULT_NETWORK = ("https://www.googleapis.com/compute/{0}/"
-                   "projects/google/networks/default").format(API_VERSION)
+
+def _get_oauth2_credentials():
+    """
+    Return oauth2 credentials, running the configured flow if necessary.
+    """
+    client_secrets = boto.config.get('Credentials',
+                                     'gce_client_secrets_file',
+                                     DEFAULT_CLIENT_SECRETS)
+    credentials_file = boto.config.get('Credentials',
+                                       'gce_credentials_file',
+                                       DEFAULT_CREDENTIALS_FILE)
+    storage = Storage(credentials_file)
+    credentials = storage.get()
+    if credentials is None or credentials.invalid:
+        message = MISSING_CLIENT_SECRETS_MESSAGE.format(client_secrets)
+        flow = flow_from_clientsecrets(client_secrets, message=message,
+                                       scope=OAUTH2_SCOPE)
+        return run(flow, storage)
+    return credentials
 
 
 class GCEConnection(object):
-    def __init__(self, gce_project):
+
+    APIVersion = 'v1beta14'
+
+    def __init__(self, gce_project=None, credentials=None):
         """
         Init method to create a new connection to Google Compute Engine.
-        """
-        self.gce_project = gce_project
-        self.google_project = 'google'
-        self.storage = Storage('creds.dat')
-        self.credentials = self.storage.get()
-        self.default_network = DEFAULT_NETWORK
 
-        if self.credentials is None or self.credentials.invalid:
-            self.credentials = run(FLOW, self.storage)
+        :type gce_project: string
+        :param gce_project: The GCE Project name to use.
+
+        :type credentials: apiclient.Credentials
+        :param credentials: A valid OAuth2 credentials instance.
+        """
+        if gce_project is None:
+            gce_project = boto.config.get('Boto', 'gce_project')
+        if credentials is None:
+            credentials = _get_oauth2_credentials()
+
+        self.gce_project = gce_project
+        self.credentials = credentials
 
         self.http = self.credentials.authorize(httplib2.Http())
-        self.service = build("compute", API_VERSION, http=self.http)
+        self.service = build('compute', self.APIVersion, http=self.http)
 
     # Image methods
 
-    def get_all_images(self):
+    def get_all_images(self, global_images=True):
         """
         Retrieve all the Google Compute Engine images available to your
         project.
         """
+        if global_images:
+            project = GOOGLE_PROJECT
+        else:
+            project = self.gce_project
+
         list_gce_images = self.service.images().list(
-            project=self.google_project).execute(http=self.http)
+            project=project).execute(http=self.http)
 
-        list_images = []
-        for image in list_gce_images['items']:
-            list_images.append(Image(image))
+        return [Image(i) for i in list_gce_images.get('items', [])]
 
-        return list_images
-
-    def get_all_kernels(self):
+    def get_all_kernels(self, global_kernels=True):
         """
         Retrieve all the Google Compute Engine kernels available to your project.
         """
+        if global_kernels:
+            project = GOOGLE_PROJECT
+        else:
+            project = self.gce_project
+
         list_gce_kernels = self.service.kernels().list(
-            project=self.google_project).execute(http=self.http)
-
-        list_kernels = []
-        for kernel in list_gce_kernels['items']:
-            list_kernels.append(Kernel(kernel))
-
-        return list_kernels
+            project=project).execute(http=self.http)
+        return [Kernel(k) for k in list_gce_kernels.get('items', [])]
 
     def get_all_ramdisks(self, zones=None):
         """
         Retrieve all the Google Compute Engine disks available to your project.
         """
         if zones is None:
-          zones = [zone.name for zone in self.get_all_zones()]
+            zones = [zone.name for zone in self.get_all_zones()]
 
-        list_ramdisks = []
+        ramdisks = []
         for zone in zones:
-          request = self.service.disks().list(
-              project=self.gce_project, zone=zone)
-          response = request.execute(http=self.http)
-          list_ramdisks.extend(Ramdisk(rd) for rd in response.get('items', []))
+            request = self.service.disks().list(
+                    project=self.gce_project, zone=zone)
+            response = request.execute(http=self.http)
+            ramdisks.extend(Ramdisk(rd) for rd in response.get('items', []))
+        return ramdisks
 
-        return list_ramdisks
-
-    def get_image(self, image_name):
+    def get_image(self, name):
         """
         Shortcut method to retrieve a specific image.
 
-        :type image_name: string
-        :param image_name: The name of the Image to retrieve.
+        :type name: string
+        :param name: The name of the Image to retrieve.
 
         :rtype: :class:`boto.gce.image.Image`
         :return: The Google Compute Engine Image specified, or None if the image
         is not found
         """
-        gce_image = self.service.images().get(project=self.google_project,
-                                              image=image_name).execute(
-                                                  http=self.http)
+        # TODO: Fix this to work with both global and per-project images.
+        request = self.service.images().get(project=GOOGLE_PROJECT,
+                                            image=name)
+        gce_image = request.execute(http=self.http)
         return Image(gce_image)
 
     # Instance methods
@@ -148,19 +176,18 @@ class GCEConnection(object):
         project.
         """
         if zones is None:
-          zones = [zone.name for zone in self.get_all_zones()]
+            zones = [zone.name for zone in self.get_all_zones()]
 
-        list_instances = []
+        instances = []
         for zone in zones:
-          request = self.service.instances().list(
-              project=self.gce_project, zone=zone)
-          response = request.execute(http=self.http)
-          list_instances.extend(Instance(i) for i in response.get('items', []))
+            request = self.service.instances().list(
+                    project=self.gce_project, zone=zone)
+            response = request.execute(http=self.http)
+            instances.extend(Instance(i) for i in response.get('items', []))
+        return instances
 
-        return list_instances
-
-    def run_instance(self, name=None, image_name=None, machine_type=None,
-                     zone_name=None):
+    def run_instance(self, name, machine_type, zone, image,
+                     disk_types=None):
         """
         Insert a Google Compute Engine instance into your cluster.
 
@@ -170,81 +197,62 @@ class GCEConnection(object):
         :rtype: :class:`boto.gce.operation.Operation`
         :return: A Google Compute Engine operation.
         """
+        if disk_types is None:
+            disk_types = ['EPHEMERAL']
+        network = self.get_network('default').self_link
+
         body = {
             'name': name,
-            'image': image_name,
-            'zone': zone_name,
+            'image': image,
             'machineType': machine_type,
             'networkInterfaces': [{
-                'network': self.default_network
-             }]
+                'network': network
+             }],
+            'disks': [{'type': t} for t in disk_types]
         }
 
-        gce_instance = self.service.instances().insert(project=self.gce_project,
-                                                       body=body).execute(
-                                                           http=self.http)
-        return Instance(gce_instance)
+        request = self.service.instances().insert(project=self.gce_project,
+                                                  zone=zone,
+                                                  body=body)
+        operation = request.execute(http=self.http)
+        return ZoneOperation(operation)
 
-    def terminate_instance(self, name=None):
+    def terminate_instance(self, name, zone):
         """
         Terminate a specific Google Compute Engine instance.
 
         :type name: string
         :param name: The name of the instance to terminate.
 
+        :type name: string
+        :param zone: The zone in which the instance resides.
+
         :rtype: :class:`boto.gce.operation.Operation`
         :return: A Google Compute Engine operation.
         """
-        gce_instance = self.service.instances().delete(project=self.gce_project,
-                                                       instance=name).execute(
-                                                           http=self.http)
+        request = self.service.instances().delete(zone=zone,
+                                                  project=self.gce_project,
+                                                  instance=name)
+        operation = request.execute(http=self.http)
+        return ZoneOperation(operation)
 
-        return Instance(gce_instance)
-
-    def get_instance_attribute(self, zone, name=None, attribute=None):
+    def get_instance(self, name, zone):
         """
-        Get an attribute from a Google Compute Engine instance.
+        Get an instance from Google Compute Engine.
 
         :type name: string
-        :param name: The name of the instance from which to get an attribute.
+        :param name: The name of the instance to get.
 
-        :type attribute: string
-        :param attribute: The attribute you need information about
-            Valid choices are:
+        :type zone: string
+        :param zone: The name of the zone in which the instance resides.
 
-            * status
-            * kind
-            * machine_type
-            * name
-            * zone
-            * image
-            * disks
-            * self_link
-            * network_interfaces
-            * creation_timestamp
-
-        :rtype: :class:`boto.gce.image.InstanceAttribute`
-        :return: An InstanceAttribute object representing the value of the
-        attribute requested.
+        :rtype: :class:`boto.gce.resource.Resource`
+        :return: A Resource object representing the instance information.
         """
-        attribute_map = {
-            "status": "status",
-            "kind": "kind",
-            "machine_type": "machineType",
-            "name": "name",
-            "zone": "zone",
-            "image": "image",
-            "disks": "disks",
-            "self_link": "selfLink",
-            "network_interfaces": "networkInterfaces",
-            "creation_timestamp": "creationTimestamp"
-        }
-
-        gce_attribute = self.service.instances().get(
-            project=self.gce_project, instance=name, zone=zone).execute(
-                http=self.http)[attribute_map[attribute]]
-
-        return InstanceAttribute(gce_attribute)
+        request = self.service.instances().get(
+                project=self.gce_project, instance=name, zone=zone)
+        instance = request.execute(http=self.http)
+        return Instance(instance)
 
     # Zone methods
 
@@ -253,27 +261,22 @@ class GCEConnection(object):
         Retrieve all the Google Compute Engine zones available to your project.
         """
         list_gce_zones = self.service.zones().list(
-            project=self.google_project).execute(http=self.http)
+            project=self.gce_project).execute(http=self.http)
+        return [Zone(z) for z in list_gce_zones.get('items', [])]
 
-        list_zones = []
-        for zone in list_gce_zones['items']:
-            list_zones.append(Zone(zone))
-
-        return list_zones
-
-    def get_zone(self, zone_name):
+    def get_zone(self, name):
         """
         Shortcut method to retrieve a specific zone.
 
-        :type zone_name: string
-        :param zone_name: The name of the Zone to retrieve.
+        :type name: string
+        :param name: The name of the Zone to retrieve.
 
         :rtype: :class:`boto.gce.zone.Zone`
         :return: The Google Compute Engine Zone specified, or None if the zone
         is not found
         """
-        gce_zone = self.service.zones().get(project=self.google_project,
-                                            zone=zone_name).execute(
+        gce_zone = self.service.zones().get(project=self.gce_project,
+                                            zone=name).execute(
                                                 http=self.http)
 
         return Zone(gce_zone)
@@ -286,29 +289,23 @@ class GCEConnection(object):
         project.
         """
         list_gce_networks = self.service.networks().list(
-            project=self.google_project).execute(http=self.http)
+            project=self.gce_project).execute(http=self.http)
+        return [Network(n) for n in list_gce_networks.get('items', [])]
 
-        list_networks = []
-        for network in list_gce_networks['items']:
-            list_networks.append(Network(network))
-
-        return list_networks
-
-    def get_network(self, network_name):
+    def get_network(self, name):
         """
         Shortcut method to retrieve a specific network.
 
-        :type network_name: string
-        :param network_name: The name of the Network to retrieve.
+        :type name: string
+        :param name: The name of the Network to retrieve.
 
         :rtype: :class:`boto.gce.network.Network`
         :return: The Google Compute Engine Network specified, or None if the
         network is not found
         """
-        gce_network = self.service.networks().get(project=self.google_project,
-                                                  network=network_name).execute(
+        gce_network = self.service.networks().get(project=self.gce_project,
+                                                  network=name).execute(
                                                       http=self.http)
-
         return Network(gce_network)
 
     # Firewall methods
@@ -319,27 +316,35 @@ class GCEConnection(object):
         project.
         """
         list_gce_firewalls = self.service.firewalls().list(
-            project=self.google_project).execute(http=self.http)
+            project=self.gce_project).execute(http=self.http)
+        return [Firewall(fw) for fw in list_gce_firewalls.get('items', [])]
 
-        list_firewalls = []
-        for firewall in list_gce_firewalls['items']:
-            list_firewalls.append(Firewall(firewall))
-
-        return list_firewalls
-
-    def get_firewall(self, firewall_name):
+    def get_firewall(self, name):
         """
         Shortcut method to retrieve a specific firewall.
 
-        :type firewall_name: string
-        :param firewall_name: The name of the Firewall to retrieve.
+        :type name: string
+        :param name: The name of the Firewall to retrieve.
 
         :rtype: :class:`boto.gce.firewall.Firewall`
         :return: The Google Compute Engine Firewall specified, or None if the
         firewall is not found
         """
         gce_firewall = self.service.firewalls().get(
-            project=self.google_project, firewall=firewall_name).execute(
+            project=self.gce_project, firewall=name).execute(
                 http=self.http)
 
         return Firewall(gce_firewall)
+
+    # MachineType methods
+
+    def get_all_machine_types(self):
+        """
+        Return a list of all known machine types.
+
+        :rtype: :class:`boto.gce.machine_type.MachineType`
+        :return: The GCE resource for all know machine types.
+        """
+        request = self.service.machineTypes().list(project=self.gce_project)
+        machine_list = request.execute(http=self.http)
+        return [MachineType(m) for m in machine_list.get('items', [])]
