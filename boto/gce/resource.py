@@ -73,15 +73,15 @@ class Resource(object):
             return 'Resource(%s)' % vars(self)
 
     def __eq__(self, other):
-      if type(other) is not type(self):
-        return NotImplemented
-      return vars(self) == vars(other)
+        if type(other) is not type(self):
+            return NotImplemented
+        return vars(self) == vars(other)
 
     def __ne__(self, other):
-      result = self.__eq__(other)
-      if result is NotImplemented:
-        return result
-      return not result
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result
 
 
 def _iteritems(possible_dict):

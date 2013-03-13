@@ -59,10 +59,10 @@ def get_oauth2_credentials():
     Return oauth2 credentials, running the configured flow if necessary.
     """
     try:
-      client_secrets = _get_config('Credentials', 'gce_client_secrets_file')
-      credentials_file = _get_config('Credentials', 'gce_credentials_file')
-    except ConfigError:
-      raise RuntimeError('OAuth2 credentials missing.')
+        client_secrets = _get_config('Credentials', 'gce_client_secrets_file')
+        credentials_file = _get_config('Credentials', 'gce_credentials_file')
+    except KeyError:
+        raise RuntimeError('OAuth2 credentials missing.')
 
     storage = Storage(credentials_file)
     credentials = storage.get()
