@@ -304,13 +304,15 @@ class BucketStorageUri(StorageUri):
       self._update_from_values(
           getattr(key, 'version_id', None),
           getattr(key, 'generation', None),
-          getattr(key, 'is_latest', None))
+          getattr(key, 'is_latest', None),
+          getattr(key, 'md5', None))
 
-    def _update_from_values(self, version_id, generation, is_latest):
+    def _update_from_values(self, version_id, generation, is_latest, md5):
       self.version_id = version_id
       self.generation = generation
       self.is_latest = is_latest
       self._build_uri_strings()
+      self.md5 = md5
 
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
@@ -652,7 +654,7 @@ class BucketStorageUri(StorageUri):
                 rewind=rewind, res_upload_handler=res_upload_handler)
             if res_upload_handler:
                 self._update_from_values(None, res_upload_handler.generation,
-                                         None)
+                                         None, md5)
         else:
             self._warn_about_args('set_contents_from_file',
                                   res_upload_handler=res_upload_handler)
