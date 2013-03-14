@@ -175,7 +175,7 @@ class ResumableUploadHandler(object):
         # logic anyway.
         delim = '?upload_id='
         if self.tracker_uri and delim in self.tracker_uri:
-          return uri[uri.index(delim) + len(delim):]
+          return self.tracker_uri[self.tracker_uri.index(delim) + len(delim):]
         else:
           return None
 
