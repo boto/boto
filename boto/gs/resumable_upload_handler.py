@@ -163,6 +163,22 @@ class ResumableUploadHandler(object):
         """
         return self.tracker_uri
 
+    def get_upload_id(self):
+        """
+        Returns the upload ID for resumable uploads, or None if the upload has
+        not yet started.
+        """
+        # We extract the upload_id from the tracker uri. We could retrieve the
+        # upload_id from the headers in the response but this only works for
+        # the case where we get the tracker uri from the service. In the case
+        # where we get the tracker from the tracking file we need to do this
+        # logic anyway.
+        delim = '?upload_id='
+        if self.tracker_uri and delim in self.tracker_uri:
+          return uri[uri.index(delim) + len(delim):]
+        else:
+          return None
+
     def _remove_tracker_file(self):
         if (self.tracker_file_name and
             os.path.exists(self.tracker_file_name)):
