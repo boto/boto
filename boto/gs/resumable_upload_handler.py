@@ -165,8 +165,8 @@ class ResumableUploadHandler(object):
 
     def get_upload_id(self):
         """
-        Returns the upload ID for resumable uploads, or None if the upload has
-        not yet started.
+        Returns the upload ID for the resumable upload, or None if the upload
+        has not yet started.
         """
         # We extract the upload_id from the tracker uri. We could retrieve the
         # upload_id from the headers in the response but this only works for
