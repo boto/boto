@@ -64,8 +64,7 @@ class GSVersioningTest(GSTestCase):
 
         # Delete "current" version and make sure that version is no longer
         # visible from a basic GET call.
-        k = b.get_key("foo")
-        k.delete()
+        b.delete_key("foo", generation=None)
         self.assertIsNone(b.get_key("foo"))
 
         # Both old versions should still be there when listed using the versions
