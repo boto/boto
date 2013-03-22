@@ -310,6 +310,21 @@ class LazyLoadMetadata(dict):
         return super(LazyLoadMetadata, self).__repr__()
 
 
+def _build_instance_metadata_url(url, version, path):
+    """
+    Builds an EC2 metadata URL for fetching information about an instance.
+
+    Requires the following arguments: a URL, a version and a path.
+
+    Example:
+
+        >>> _build_instance_metadata_url('http://169.254.169.254', 'latest', 'meta-data')
+        http://169.254.169.254/latest/meta-data/
+
+    """
+    return '%s/%s/%s/' % (url, version, path)
+
+
 def get_instance_metadata(version='latest', url='http://169.254.169.254',
                           data='meta-data', timeout=None, num_retries=5):
     """
@@ -327,8 +342,8 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
         original = socket.getdefaulttimeout()
         socket.setdefaulttimeout(timeout)
     try:
-        return _get_instance_metadata('%s/%s/%s/' % (url, version, data),
-                                      num_retries=num_retries)
+        metadata_url = _build_instance_metadata_url(url, version, data)
+        return _get_instance_metadata(metadata_url, num_retries=num_retries)
     except urllib2.URLError, e:
         return None
     finally:
@@ -342,7 +357,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
     Returns the instance identity as a nested Python dictionary.
     """
     iid = {}
-    base_url = 'http://169.254.169.254/latest/dynamic/instance-identity'
+    base_url = _build_instance_metadata_url(url, version, 'dynamic/instance-identity')
     if timeout is not None:
         original = socket.getdefaulttimeout()
         socket.setdefaulttimeout(timeout)
@@ -365,7 +380,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
 
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
-    ud_url = '%s/%s/user-data' % (url, version)
+    ud_url = _build_instance_metadata_url(url, version, 'user-data')
     user_data = retry_url(ud_url, retry_on_404=False)
     if user_data:
         if sep:
