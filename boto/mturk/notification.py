@@ -31,6 +31,9 @@ except ImportError:
     import sha
 import base64
 import re
+import email
+from datetime import datetime
+from dateutil import tz
 
 class NotificationMessage:
 
@@ -100,16 +103,64 @@ class NotificationMessage:
         signature_calc = base64.b64encode(h.digest())
         return self.signature == signature_calc
 
+class NotificationEmail:
+
+    EVENT_PATTERN = r"^\s*(?P<key>[a-zA-Z\s]+[a-zA-Z]+)\s*:\s*(?P<value>[a-zA-Z0-9\-:\s]+[a-zA-Z0-9]+)\s*$"
+    EVENT_RE = re.compile(EVENT_PATTERN)
+    BLANK_PATTERN = r"^\s*$"
+    BLANK_RE = re.compile(BLANK_PATTERN)
+
+    def __init__(self, fp):
+        """
+        Constructor; expects parameter d to be a file pointer to an email message, usually stdin.
+        """
+
+        msg = email.message_from_file(fp)
+        for part in msg.walk():
+            if part.get_content_type() != 'text/plain':
+                continue
+
+            # Build Events
+            self.events = []
+            events_dict = {}
+            kvFound = False
+            for line in part.get_payload(decode=True).split('\n'):
+                # Search for MTurk key-value pairs
+                kv = NotificationEmail.EVENT_RE.search(line)
+                # Search for blank line
+                bl = NotificationEmail.BLANK_RE.search(line)
+
+                if kv:
+                    kvFound = True
+                    key = str(kv.group('key'))
+                    value = str(kv.group('value'))
+                    events_dict[key] = value
+                elif kvFound and bl:
+                    kvFound = False
+                    self.events.append(Event(events_dict))
+
 class Event:
     def __init__(self, d):
-        self.event_type = d['EventType']
-        self.event_time_str = d['EventTime']
-        self.hit_type = d['HITTypeId']
-        self.hit_id = d['HITId']
-        if 'AssignmentId' in d:   # Not present in all event types
-            self.assignment_id = d['AssignmentId']
+        # If REST notification
+        if 'EventType' in d:
+            self.event_type = d['EventType']
+            self.event_time_str = d['EventTime']
+            self.hit_type = d['HITTypeId']
+            self.hit_id = d['HITId']
+            if 'AssignmentId' in d:   # Not present in all event types
+                self.assignment_id = d['AssignmentId']
+        # Else, if email notification
+        elif 'Event Type' in d:
+            self.event_type = d['Event Type']
+            self.event_time_str = d['Event Time']
+            self.hit_type = d['HIT Type ID']
+            self.hit_id = d['HIT ID']
+            if 'Assignment ID' in d:   # Not present in all event types
+                self.assignment_id = d['Assignment ID']
 
-        #TODO: build self.event_time datetime from string self.event_time_str
+        # Build self.event_time local datetime from UTC string self.event_time_str
+        dtmturk = datetime.strptime(self.event_time_str, '%Y-%m-%dT%H:%M:%SZ')
+        self.event_time = dtmturk.replace(tzinfo=tz.tzutc()).astimezone(tz.tzlocal())
 
     def __repr__(self):
         return "<boto.mturk.notification.Event: %s for HIT # %s>" % (self.event_type, self.hit_id)

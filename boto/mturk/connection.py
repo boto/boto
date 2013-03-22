@@ -125,14 +125,23 @@ class MTurkConnection(AWSQueryConnection):
         return self._set_notification(hit_type, "SQS", queue_url,
                                       'SetHITTypeNotification', event_types)
 
-    def send_test_event_notification(self, hit_type, url,
-                                     event_types=None,
+    def send_email_test_event_notification(self, email, event_types=None,
+                                     test_event_type='Ping'):
+        """
+        Performs a SendTestEventNotification operation with email notification
+        for a specified HIT type
+        """
+        return self._set_notification(None, 'Email', email,
+                                      'SendTestEventNotification',
+                                      event_types, test_event_type)
+
+    def send_rest_test_event_notification(self, url, event_types=None,
                                      test_event_type='Ping'):
         """
         Performs a SendTestEventNotification operation with REST notification
         for a specified HIT type
         """
-        return self._set_notification(hit_type, 'REST', url,
+        return self._set_notification(None, 'REST', url,
                                       'SendTestEventNotification',
                                       event_types, test_event_type)
 
@@ -140,10 +149,15 @@ class MTurkConnection(AWSQueryConnection):
                           destination, request_type,
                           event_types=None, test_event_type=None):
         """
-        Common operation to set notification or send a test event
-        notification for a specified HIT type
+        Common operation to set notification for a specified HIT type
+        or send a test event notification
         """
-        params = {'HITTypeId': hit_type}
+        # If SetHITTypeNotification, specify the HIT type
+        if not test_event_type:
+            params = {'HITTypeId': hit_type}
+        # else if test notification, specify the notification type to be tested
+        else:
+            params = {'TestEventType': test_event_type}
 
         # from the Developer Guide:
         # The 'Active' parameter is optional. If omitted, the active status of
@@ -168,10 +182,6 @@ class MTurkConnection(AWSQueryConnection):
 
         # Update main params dict
         params.update(notification_rest_params)
-
-        # If test notification, specify the notification type to be tested
-        if test_event_type:
-            params.update({'TestEventType': test_event_type})
 
         # Execute operation
         return self._process_request(request_type, params)
