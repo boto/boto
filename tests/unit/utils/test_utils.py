@@ -109,19 +109,49 @@ class TestPythonizeName(unittest.TestCase):
 class TestBuildInstanceMetadataURL(unittest.TestCase):
     def test_normal(self):
         # This is the all-defaults case.
-        self.assertEqual(_build_instance_metadata_url('http://169.254.169.254', 'latest', 'meta-data'), 'http://169.254.169.254/latest/meta-data/')
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                'latest',
+                'meta-data'
+            ),
+            'http://169.254.169.254/latest/meta-data/'
+        )
 
     def test_custom_path(self):
-        self.assertEqual(_build_instance_metadata_url('http://169.254.169.254', 'latest', 'dynamic'), 'http://169.254.169.254/latest/dynamic/')
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                'latest',
+                'dynamic'
+            ),
+            'http://169.254.169.254/latest/dynamic/'
+        )
 
     def test_custom_version(self):
-        self.assertEqual(_build_instance_metadata_url('http://169.254.169.254', '1.0', 'meta-data'), 'http://169.254.169.254/1.0/meta-data/')
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                '1.0',
+                'meta-data'
+            ),
+            'http://169.254.169.254/1.0/meta-data/'
+        )
 
     def test_custom_url(self):
-        self.assertEqual(_build_instance_metadata_url('http://10.0.1.5', 'latest', 'meta-data'), 'http://10.0.1.5/latest/meta-data/')
+        self.assertEqual(_build_instance_metadata_url(
+                'http://10.0.1.5',
+                'latest',
+                'meta-data'
+            ),
+            'http://10.0.1.5/latest/meta-data/'
+        )
 
     def test_all_custom(self):
-        self.assertEqual(_build_instance_metadata_url('http://10.0.1.5', '2013-03-22', 'user-data'), 'http://10.0.1.5/2013-03-22/user-data/')
+        self.assertEqual(_build_instance_metadata_url(
+                'http://10.0.1.5',
+                '2013-03-22',
+                'user-data'
+            ),
+            'http://10.0.1.5/2013-03-22/user-data/'
+        )
 
 
 if __name__ == '__main__':
