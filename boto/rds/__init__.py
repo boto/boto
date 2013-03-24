@@ -1266,16 +1266,20 @@ class RDSConnection(AWSQueryConnection):
 
     def modify_db_subnet_group(self, name, description=None, subnet_ids=None):
         """
-        Modify a parameter group for your account.
+        Modify a db_subnet_group.
 
         :type name: string
-        :param name: The name of the new parameter group
+        :param name: The name of the db_subnet_group to modify
 
-        :type parameters: list of :class:`boto.rds.parametergroup.Parameter`
-        :param parameters: The new parameters
+        :type description: string
+        :param description: The replacement description for the db_subnet_group
 
-        :rtype: :class:`boto.rds.parametergroup.ParameterGroup`
-        :return: The newly created ParameterGroup
+        :type subnet_ids: list
+        :param subnets: A list of the replacement subnet identifiers for the
+                        db_subnet_group
+
+        :rtype: :class:`boto.rds.dbsubnetgroup.DBSubnetGroup`
+        :return: The modified db_subnet_group.
         """
         params = {'DBSubnetGroupName': name}
         if description != None:
@@ -1284,3 +1288,4 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, subnet_ids, 'SubnetIds.member')
 
         return self.get_object('ModifyDBSubnetGroup', params, DBSubnetGroup)
+
