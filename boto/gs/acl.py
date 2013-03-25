@@ -51,11 +51,12 @@ CannedACLStrings = ['private', 'public-read', 'project-private',
 SupportedPermissions = ['READ', 'WRITE', 'FULL_CONTROL']
 """A list of supported ACL permissions."""
 
-class ACL:
+
+class ACL(object):
 
     def __init__(self, parent=None):
         self.parent = parent
-        self.entries = []
+        self.entries = Entries(self)
 
     @property
     def acl(self):
@@ -125,7 +126,7 @@ class ACL:
         return s
 
 
-class Entries:
+class Entries(object):
 
     def __init__(self, parent=None):
         self.parent = parent
@@ -154,15 +155,17 @@ class Entries:
             setattr(self, name, value)
 
     def to_xml(self):
+        if not self.entry_list:
+          return ''
         s = '<%s>' % ENTRIES
         for entry in self.entry_list:
             s += entry.to_xml()
         s += '</%s>' % ENTRIES
         return s
-        
+
 
 # Class that represents a single (Scope, Permission) entry in an ACL.
-class Entry:
+class Entry(object):
 
     def __init__(self, scope=None, type=None, id=None, name=None,
                  email_address=None, domain=None, permission=None):
@@ -219,7 +222,8 @@ class Entry:
         s += '</%s>' % ENTRY
         return s
 
-class Scope:
+
+class Scope(object):
 
     # Map from Scope type.lower() to lower-cased list of allowed sub-elems.
     ALLOWED_SCOPE_TYPE_SUB_ELEMS = {
