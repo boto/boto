@@ -20,8 +20,9 @@
 # IN THE SOFTWARE.
 #
 
-import json
+
 import boto
+from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 
@@ -805,7 +806,7 @@ class ElastiCacheConnection(AWSQueryConnection):
         :param offering_type: The offering type filter value. Specify this
             parameter to show only the available offerings matching the
             specified offering type.  Valid Values: `"Light Utilization" |
-            "Medium Utilization" | "Heavy Utilization" `
+            "Medium Utilization" | "Heavy Utilization"`
 
         :type max_records: integer
         :param max_records: The maximum number of records to include in the
@@ -878,7 +879,7 @@ class ElastiCacheConnection(AWSQueryConnection):
         :param offering_type: The offering type filter value. Specify this
             parameter to show only the available offerings matching the
             specified offering type.  Valid Values: `"Light Utilization" |
-            "Medium Utilization" | "Heavy Utilization" `
+            "Medium Utilization" | "Heavy Utilization"`
 
         :type max_records: integer
         :param max_records: The maximum number of records to include in the

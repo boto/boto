@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import StringIO
 import xml.sax
 
 class XmlHandler(xml.sax.ContentHandler):
@@ -42,3 +43,14 @@ class XmlHandler(xml.sax.ContentHandler):
 
     def characters(self, content):
         self.current_text += content
+
+
+class XmlHandlerWrapper(object):
+    def __init__(self, root_node, connection):
+        self.handler = XmlHandler(root_node, connection)
+        self.parser = xml.sax.make_parser()
+        self.parser.setContentHandler(self.handler)
+        self.parser.setFeature(xml.sax.handler.feature_external_ges, 0)
+
+    def parseString(self, content):
+        return self.parser.parse(StringIO.StringIO(content))

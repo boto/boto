@@ -253,7 +253,7 @@ class EmrConnection(AWSQueryConnection):
 
         :type hadoop_version: str
         :param hadoop_version: Version of Hadoop to use. This no longer
-        defaults to '0.20' and now uses the AMI default.
+            defaults to '0.20' and now uses the AMI default.
 
         :type steps: list(boto.emr.Step)
         :param steps: List of steps to add with the job

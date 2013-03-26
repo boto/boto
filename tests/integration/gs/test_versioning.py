@@ -64,8 +64,7 @@ class GSVersioningTest(GSTestCase):
 
         # Delete "current" version and make sure that version is no longer
         # visible from a basic GET call.
-        k = b.get_key("foo")
-        k.delete()
+        b.delete_key("foo", generation=None)
         self.assertIsNone(b.get_key("foo"))
 
         # Both old versions should still be there when listed using the versions
@@ -259,10 +258,10 @@ class GSVersioningTest(GSTestCase):
         k.set_contents_from_string("test1")
         g1 = k.generation
         self.assertRegexpMatches(g1, r'[0-9]+')
-        self.assertEqual(k.meta_generation, '1')
+        self.assertEqual(k.metageneration, '1')
         k.set_contents_from_string("test2")
         g2 = k.generation
         self.assertNotEqual(g1, g2)
         self.assertRegexpMatches(g2, r'[0-9]+')
         self.assertGreater(int(g2), int(g1))
-        self.assertEqual(k.meta_generation, '1')
+        self.assertEqual(k.metageneration, '1')

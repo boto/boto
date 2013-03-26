@@ -27,6 +27,7 @@ in a Key open for reading.
 """
 
 import os
+from boto.exception import StorageResponseError
 
 class KeyFile():
 
@@ -48,16 +49,15 @@ class KeyFile():
     return self.location
 
   def seek(self, pos, whence=os.SEEK_SET):
-    # Note: This seek implementation is very inefficient if you have a Key
-    # positioned to the start of a very large object and then call seek(0,
-    # os.SEEK_END), because it will first read all the data from the open socket
-    # before performing the range GET to position to the end of the file.
-    self.key.close()
+    self.key.close(fast=True)
     if whence == os.SEEK_END:
       # We need special handling for this case because sending an HTTP range GET
       # with EOF for the range start would cause an invalid range error. Instead
       # we position to one before EOF (plus pos) and then read one byte to
       # position at EOF.
+      if self.key.size == 0:
+        # Don't try to seek with an empty key.
+        return
       pos = self.key.size + pos - 1
       if pos < 0:
         raise IOError("Invalid argument")
@@ -75,7 +75,7 @@ class KeyFile():
       raise IOError('Invalid whence param (%d) passed to seek' % whence)
     try:
       self.key.open_read(headers={"Range": "bytes=%d-" % pos})
-    except GSResponseError as e:
+    except StorageResponseError as e:
       # 416 Invalid Range means that the given starting byte was past the end
       # of file. We catch this because the Python file interface allows silently
       # seeking past the end of the file.

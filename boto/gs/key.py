@@ -52,12 +52,22 @@ class Key(S3Key):
     :ivar md5: The MD5 hash of the contents of the object.
     :ivar size: The size, in bytes, of the object.
     :ivar generation: The generation number of the object.
-    :ivar meta_generation: The generation number of the object metadata.
+    :ivar metageneration: The generation number of the object metadata.
     :ivar encrypted: Whether the object is encrypted while at rest on
         the server.
     """
     generation = None
-    meta_generation = None
+    metageneration = None
+
+    def __repr__(self):
+        if self.generation and self.metageneration:
+            ver_str = '#%s.%s' % (self.generation, self.metageneration)
+        else:
+            ver_str = ''
+        if self.bucket:
+            return '<Key: %s,%s%s>' % (self.bucket.name, self.name, ver_str)
+        else:
+            return '<Key: None,%s%s>' % (self.name, ver_str)
 
     def endElement(self, name, value, connection):
         if name == 'Key':
@@ -82,12 +92,12 @@ class Key(S3Key):
         elif name == 'Generation':
             self.generation = value
         elif name == 'MetaGeneration':
-            self.meta_generation = value
+            self.metageneration = value
         else:
             setattr(self, name, value)
 
     def handle_version_headers(self, resp, force=False):
-        self.meta_generation = resp.getheader('x-goog-metageneration', None)
+        self.metageneration = resp.getheader('x-goog-metageneration', None)
         self.generation = resp.getheader('x-goog-generation', None)
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
@@ -565,7 +575,7 @@ class Key(S3Key):
             headers = kwargs.get('headers', {})
             headers['x-goog-if-generation-match'] = str(if_generation)
             kwargs['headers'] = headers
-        return super(Key, self).set_contents_from_stream(*args, **kwargs)
+        super(Key, self).set_contents_from_stream(*args, **kwargs)
 
     def set_acl(self, acl_or_str, headers=None, generation=None,
                  if_generation=None, if_metageneration=None):
@@ -659,7 +669,7 @@ class Key(S3Key):
                                            if_metageneration=if_metageneration)
 
     def set_canned_acl(self, acl_str, headers=None, generation=None,
-                         if_generation=None, if_metageneration=None):
+                       if_generation=None, if_metageneration=None):
         """Sets this objects's ACL using a predefined (canned) value.
 
         :type acl_str: string

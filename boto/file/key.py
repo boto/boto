@@ -37,8 +37,10 @@ class Key(object):
         self.full_path = name
         if name == '-':
             self.name = None
+            self.size = None
         else:
             self.name = name
+            self.size = os.stat(name).st_size
         self.key_type = key_type
         if key_type == self.KEY_STREAM_READABLE:
             self.fp = sys.stdin
@@ -68,9 +70,9 @@ class Key(object):
         :type cb: int
         :param num_cb: ignored in this subclass.
         """
-        if self.key_type & self.KEY_STREAM_READABLE:
-            raise BotoClientError('Stream is not Readable')
-        elif self.key_type & self.KEY_STREAM_WRITABLE:
+        if self.key_type & self.KEY_STREAM_WRITABLE:
+            raise BotoClientError('Stream is not readable')
+        elif self.key_type & self.KEY_STREAM_READABLE:
             key_file = self.fp
         else:
             key_file = open(self.full_path, 'rb')
@@ -114,9 +116,9 @@ class Key(object):
                    This is the same format returned by the compute_md5 method.
         :param md5: ignored in this subclass.
         """
-        if self.key_type & self.KEY_STREAM_WRITABLE:
+        if self.key_type & self.KEY_STREAM_READABLE:
             raise BotoClientError('Stream is not writable')
-        elif self.key_type & self.KEY_STREAM_READABLE:
+        elif self.key_type & self.KEY_STREAM_WRITABLE:
             key_file = self.fp
         else:
             if not replace and os.path.exists(self.full_path):
@@ -126,6 +128,35 @@ class Key(object):
             shutil.copyfileobj(fp, key_file)
         finally:
             key_file.close()
+
+    def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=None,
+                             torrent=False, version_id=None,
+                             res_download_handler=None, response_headers=None):
+        """
+        Copy contents from the current file to the file pointed to by 'fp'.
+
+        :type fp: File-like object
+        :param fp:
+
+        :type headers: dict
+        :param headers: Unused in this subclass.
+
+        :type cb: function
+        :param cb: Unused in this subclass.
+
+        :type cb: int
+        :param num_cb: Unused in this subclass.
+
+        :type torrent: bool
+        :param torrent: Unused in this subclass.
+
+        :type res_upload_handler: ResumableDownloadHandler
+        :param res_download_handler: Unused in this subclass.
+
+        :type response_headers: dict
+        :param response_headers: Unused in this subclass.
+        """
+        shutil.copyfileobj(self.fp, fp)
 
     def get_contents_as_string(self, headers=None, cb=None, num_cb=10,
                                torrent=False):

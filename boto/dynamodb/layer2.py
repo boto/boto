@@ -29,7 +29,7 @@ from boto.dynamodb.types import get_dynamodb_type, Dynamizer, \
         LossyFloatDynamizer
 
 
-class TableGenerator:
+class TableGenerator(object):
     """
     This is an object that wraps up the table_generator function.
     The only real reason to have this is that we want to be able
@@ -99,7 +99,7 @@ class TableGenerator:
         """
         # preserve any existing limit in case the user alters self.remaining
         limit = self.kwargs.get('limit')
-        if self.remaining > 0 and limit is None or limit > self.remaining:
+        if (self.remaining > 0 and (limit is None or limit > self.remaining)):
             self.kwargs['limit'] = self.remaining
         self._response = self.callable(**self.kwargs)
         self.kwargs['limit'] = limit

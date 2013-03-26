@@ -592,6 +592,8 @@ class Bucket(object):
             created or removed and what version_id the delete created
             or removed.
         """
+        if not key_name:
+            raise ValueError('Empty key names are not allowed')
         return self._delete_key_internal(key_name, headers=headers,
                                          version_id=version_id,
                                          mfa_token=mfa_token,

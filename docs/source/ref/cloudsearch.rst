@@ -7,7 +7,7 @@ Cloudsearch
 boto.cloudsearch
 ----------------
 
-.. automodule:: boto.swf
+.. automodule:: boto.cloudsearch
    :members:   
    :undoc-members:
 

@@ -80,6 +80,9 @@ class Bucket(S3Bucket):
             with the stored object in the response.  See
             http://goo.gl/06N3b for details.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type generation: int
         :param generation: A specific generation number to fetch the key at. If
             not specified, the latest generation is fetched.
@@ -123,6 +126,9 @@ class Bucket(S3Bucket):
             source key being copied.  If no metadata is supplied, the
             source key's metadata will be copied to the new key.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type storage_class: string
         :param storage_class: The storage class of the new key.  By
             default, the new key will use the standard storage class.
@@ -156,12 +162,10 @@ class Bucket(S3Bucket):
         if src_generation:
             headers = headers or {}
             headers['x-goog-copy-source-generation'] = str(src_generation)
-        super(Bucket, self).copy_key(new_key_name, src_bucket_name,
-                                     src_key_name, metadata=metadata,
-                                     storage_class=storage_class,
-                                     preserve_acl=preserve_acl,
-                                     encrypt_key=encrypt_key, headers=headers,
-                                     query_args=query_args)
+        return super(Bucket, self).copy_key(
+            new_key_name, src_bucket_name, src_key_name, metadata=metadata,
+            storage_class=storage_class, preserve_acl=preserve_acl,
+            encrypt_key=encrypt_key, headers=headers, query_args=query_args)
 
     def list_versions(self, prefix='', delimiter='', marker='',
                       generation_marker='', headers=None):
@@ -215,6 +219,12 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: A dictionary of header name/value pairs.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
+        :type mfa_token: tuple or list of strings
+        :param mfa_token: Unused in this subclass.
+
         :type generation: int
         :param generation: The generation number of the key to delete. If not
             specified, the latest generation number will be deleted.
@@ -245,6 +255,9 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type generation: int
         :param generation: If specified, sets the ACL for a specific generation
             of a versioned object. If not specified, the current version is
@@ -263,7 +276,8 @@ class Bucket(S3Bucket):
             raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
         elif isinstance(acl_or_str, ACL):
             self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers,
-                             generation=generation, if_generation=if_generation,
+                             generation=generation,
+                             if_generation=if_generation,
                              if_metageneration=if_metageneration)
         else:
             self.set_canned_acl(acl_or_str, key_name, headers=headers,
@@ -316,6 +330,9 @@ class Bucket(S3Bucket):
 
         :param dict headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :param int generation: If specified, gets the ACL for a specific
             generation of a versioned object. If not specified, the current
             version is returned. This parameter is only valid when retrieving
@@ -325,17 +342,20 @@ class Bucket(S3Bucket):
         """
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%s' % str(generation)
+            query_args += '&generation=%s' % generation
         return self._get_acl_helper(key_name, headers, query_args)
 
     def get_xml_acl(self, key_name='', headers=None, version_id=None,
-                      generation=None):
+                    generation=None):
         """Returns the ACL string of the bucket or an object in the bucket.
 
         :param str key_name: The name of the object to get the ACL for. If not
             specified, the ACL for the bucket will be returned.
 
         :param dict headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
 
         :param int generation: If specified, gets the ACL for a specific
             generation of a versioned object. If not specified, the current
@@ -346,7 +366,7 @@ class Bucket(S3Bucket):
         """
         query_args = STANDARD_ACL
         if generation:
-            query_args += '&generation=%s' % str(generation)
+            query_args += '&generation=%s' % generation
         return self._get_xml_acl_helper(key_name, headers, query_args)
 
     def get_def_acl(self, headers=None):
@@ -373,11 +393,11 @@ class Bucket(S3Bucket):
             data = acl_or_str.encode('UTF-8')
 
         if generation:
-            query_args += '&generation=%s' % str(generation)
+            query_args += '&generation=%s' % generation
 
         if if_metageneration is not None and if_generation is None:
             raise ValueError("Received if_metageneration argument with no "
-                             "if_generation argument. A meta-generation has no "
+                             "if_generation argument. A metageneration has no "
                              "meaning without a content generation.")
         if not key_name and (if_generation or if_metageneration):
             raise ValueError("Received if_generation or if_metageneration "
@@ -408,6 +428,9 @@ class Bucket(S3Bucket):
 
         :type headers: dict
         :param headers: Additional headers to set during the request.
+
+        :type version_id: string
+        :param version_id: Unused in this subclass.
 
         :type query_args: str
         :param query_args: The query parameters to pass with the request.
@@ -448,6 +471,9 @@ class Bucket(S3Bucket):
         :type headers: dict
         :param headers: Additional headers to set during the request.
 
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+
         :type generation: int
         :param generation: If specified, sets the ACL for a specific generation
             of a versioned object. If not specified, the current version is
@@ -484,8 +510,9 @@ class Bucket(S3Bucket):
             raise ValueError("Provided canned ACL string (%s) is not valid."
                              % acl_str)
         query_args = DEF_OBJ_ACL
-        return self._set_acl_helper(acl_str, '', headers, query_args, None,
-                                    None, None, canned=True)
+        return self._set_acl_helper(acl_str, '', headers, query_args,
+                                    generation=None, if_generation=None,
+                                    if_metageneration=None, canned=True)
 
     def set_def_xml_acl(self, acl_str, headers=None):
         """Sets a bucket's default ACL to an XML string.
@@ -594,7 +621,8 @@ class Bucket(S3Bucket):
 
     # Method with same signature as boto.s3.bucket.Bucket.add_user_grant(),
     # to allow polymorphic treatment at application layer.
-    def add_user_grant(self, permission, user_id, recursive=False, headers=None):
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       headers=None):
         """
         Convenience method that provides a quick way to add a canonical user
         grant to a bucket. This method retrieves the current ACL, creates a new
@@ -709,6 +737,56 @@ class Bucket(S3Bucket):
 
         self.set_subresource('logging', xml_str, headers=headers)
 
+    def get_logging_config_with_xml(self, headers=None):
+        """Returns the current status of logging configuration on the bucket as
+        unparsed XML.
+
+        :param dict headers: Additional headers to send with the request.
+
+        :rtype: 2-Tuple
+        :returns: 2-tuple containing:
+
+            1) A dictionary containing the parsed XML response from GCS. The
+              overall structure is:
+
+              * Logging
+
+                * LogObjectPrefix: Prefix that is prepended to log objects.
+                * LogBucket: Target bucket for log objects.
+
+            2) Unparsed XML describing the bucket's logging configuration.
+        """
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='logging',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e, body
+
+    def get_logging_config(self, headers=None):
+        """Returns the current status of logging configuration on the bucket.
+
+        :param dict headers: Additional headers to send with the request.
+
+        :rtype: dict
+        :returns: A dictionary containing the parsed XML response from GCS. The
+            overall structure is:
+
+            * Logging
+
+              * LogObjectPrefix: Prefix that is prepended to log objects.
+              * LogBucket: Target bucket for log objects.
+        """
+        return self.get_logging_config_with_xml(headers)[0]
+
     def configure_website(self, main_page_suffix=None, error_key=None,
                           headers=None):
         """Configure this bucket to act as a website
@@ -755,8 +833,8 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
 
         :rtype: dict
-        :returns: A dictionary containing a Python representation
-            of the XML response from GCS. The overall structure is:
+        :returns: A dictionary containing the parsed XML response from GCS. The
+            overall structure is:
 
             * WebsiteConfiguration
 
@@ -765,7 +843,7 @@ class Bucket(S3Bucket):
               * NotFoundPage: name of an object to serve when site visitors
                 encounter a 404.
         """
-        return self.get_website_configuration_xml(self, headers)[0]
+        return self.get_website_configuration_with_xml(headers)[0]
 
     def get_website_configuration_with_xml(self, headers=None):
         """Returns the current status of website configuration on the bucket as
@@ -776,8 +854,8 @@ class Bucket(S3Bucket):
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
 
-            1) A dictionary containing a Python representation of the XML
-               response from GCS. The overall structure is:
+            1) A dictionary containing the parsed XML response from GCS. The
+              overall structure is:
 
               * WebsiteConfiguration
 
