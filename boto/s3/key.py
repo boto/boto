@@ -109,8 +109,6 @@ class Key(object):
         self.last_modified = None
         self.owner = None
         self.storage_class = 'STANDARD'
-        self.md5 = None
-        self.base64md5 = None
         self.path = None
         self.resp = None
         self.mode = None
@@ -126,24 +124,13 @@ class Key(object):
         # restored object.
         self.ongoing_restore = None
         self.expiry_date = None
+        self.local_hashes = {}
 
     def __repr__(self):
         if self.bucket:
             return '<Key: %s,%s>' % (self.bucket.name, self.name)
         else:
             return '<Key: None,%s>' % self.name
-
-    def __getattr__(self, name):
-        if name == 'key':
-            return self.name
-        else:
-            raise AttributeError
-
-    def __setattr__(self, name, value):
-        if name == 'key':
-            self.__dict__['name'] = value
-        else:
-            self.__dict__[name] = value
 
     def __iter__(self):
         return self
@@ -154,6 +141,38 @@ class Key(object):
         if self.bucket and self.bucket.connection:
             provider = self.bucket.connection.provider
         return provider
+
+    @property
+    def key(self):
+        return self.name
+
+    @key.setter
+    def key(self, value):
+        self.name = value
+
+    @property
+    def md5(self):
+        if 'md5' in self.local_hashes and self.local_hashes['md5']:
+            return binascii.b2a_hex(self.local_hashes['md5'])
+
+    @md5.setter
+    def md5(self, value):
+        if value:
+            self.local_hashes['md5'] = binascii.a2b_hex(value)
+        elif 'md5' in self.local_hashes:
+            self.local_hashes.pop('md5', None)
+
+    @property
+    def base64md5(self):
+        if 'md5' in self.local_hashes and self.local_hashes['md5']:
+            return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
+
+    @base64md5.setter
+    def base64md5(self, value):
+        if value:
+            self.local_hashes['md5'] = binascii.a2b_base64(value)
+        elif 'md5' in self.local_hashes:
+            del self.local_hashes['md5']
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
@@ -169,7 +188,8 @@ class Key(object):
     def handle_encryption_headers(self, resp):
         provider = self.bucket.connection.provider
         if provider.server_side_encryption_header:
-            self.encrypted = resp.getheader(provider.server_side_encryption_header, None)
+            self.encrypted = resp.getheader(
+                provider.server_side_encryption_header, None)
         else:
             self.encrypted = None
 
@@ -201,6 +221,13 @@ class Key(object):
                 self.ongoing_restore = True if val.lower() == 'true' else False
             elif key == 'expiry-date':
                 self.expiry_date = val
+
+    def handle_addl_headers(self, headers):
+        """
+        Used by Key subclasses to do additional, provider-specific
+        processing of response headers. No-op for this base class.
+        """
+        pass
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
@@ -265,6 +292,7 @@ class Key(object):
                     self.content_disposition = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
+            self.handle_addl_headers(self.resp.getheaders())
 
     def open_write(self, headers=None, override_num_retries=None):
         """
@@ -646,19 +674,11 @@ class Key(object):
             point point at the offset from which you wish to upload.
             ie. if uploading the full file, it should point at the
             start of the file. Normally when a file is opened for
-            reading, the fp will point at the first byte. See the
+            reading, the fp will point at the first byte.  See the
             bytes parameter below for more info.
 
         :type headers: dict
         :param headers: The headers to pass along with the PUT request
-
-        :type cb: function
-        :param cb: a callback function that will be called to report
-            progress on the upload.  The callback should accept two
-            integer parameters, the first representing the number of
-            bytes that have been successfully transmitted to S3 and
-            the second representing the size of the to be transmitted
-            object.
 
         :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
@@ -668,6 +688,13 @@ class Key(object):
             transfer. Providing a negative integer will cause your
             callback to be called with each buffer read.
 
+        :type query_args: string
+        :param query_args: (optional) Arguments to pass in the query string.
+
+        :type chunked_transfer: boolean
+        :param chunked_transfer: (optional) If true, we use chunked
+            Transfer-Encoding.
+
         :type size: int
         :param size: (optional) The Maximum number of bytes to read
             from the file pointer (fp). This is useful when uploading
@@ -676,12 +703,25 @@ class Key(object):
             the default behaviour is to read all bytes from the file
             pointer. Less bytes may be available.
         """
+        self._send_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                 query_args=query_args,
+                                 chunked_transfer=chunked_transfer, size=size)
+
+    def _send_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                            query_args=None, chunked_transfer=False, size=None,
+                            hash_algs=None):
         provider = self.bucket.connection.provider
         try:
             spos = fp.tell()
         except IOError:
             spos = None
             self.read_from_stream = False
+
+        # If hash_algs is unset and the MD5 hasn't already been computed,
+        # default to an MD5 hash_alg to hash the data on-the-fly.
+        if hash_algs is None and not self.md5:
+            hash_algs = {'md5': md5}
+        digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
 
         def sender(http_conn, method, path, data, headers):
             # This function is called repeatedly for temporary retries
@@ -700,12 +740,6 @@ class Key(object):
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
-
-            # Calculate all MD5 checksums on the fly, if not already computed
-            if not self.base64md5:
-                m = md5()
-            else:
-                m = None
 
             save_debug = self.bucket.connection.debug
             self.bucket.connection.debug = 0
@@ -729,7 +763,8 @@ class Key(object):
                     # of data transferred, except when we know size.
                     cb_count = (1024 * 1024) / self.BufferSize
                 elif num_cb > 1:
-                    cb_count = int(math.ceil(cb_size / self.BufferSize / (num_cb - 1.0)))
+                    cb_count = int(
+                        math.ceil(cb_size / self.BufferSize / (num_cb - 1.0)))
                 elif num_cb < 0:
                     cb_count = -1
                 else:
@@ -754,8 +789,8 @@ class Key(object):
                     http_conn.send('\r\n')
                 else:
                     http_conn.send(chunk)
-                if m:
-                    m.update(chunk)
+                for alg in digesters:
+                    digesters[alg].update(chunk)
                 if bytes_togo:
                     bytes_togo -= chunk_len
                     if bytes_togo <= 0:
@@ -772,10 +807,8 @@ class Key(object):
 
             self.size = data_len
 
-            if m:
-                # Use the chunked trailer for the digest
-                hd = m.hexdigest()
-                self.md5, self.base64md5 = self.get_md5_from_hexdigest(hd)
+            for alg in digesters:
+                self.local_hashes[alg] = digesters[alg].digest()
 
             if chunked_transfer:
                 http_conn.send('0\r\n')
@@ -846,6 +879,7 @@ class Key(object):
                                                    sender=sender,
                                                    query_args=query_args)
         self.handle_version_headers(resp, force=True)
+        self.handle_addl_headers(resp.getheaders())
 
     def compute_md5(self, fp, size=None):
         """
@@ -858,14 +892,9 @@ class Key(object):
         :param size: (optional) The Maximum number of bytes to read
             from the file pointer (fp). This is useful when uploading
             a file in multiple parts where the file is being split
-            inplace into different parts. Less bytes may be available.
-
-        :rtype: tuple
-        :return: A tuple containing the hex digest version of the MD5
-            hash as the first element and the base64 encoded version
-            of the plain digest as the second element.
+            in place into different parts. Less bytes may be available.
         """
-        tup = compute_md5(fp, size=size)
+        hex_digest, b64_digest, data_size = compute_md5(fp, size=size)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and data size.
         # The internal implementation of compute_md5() needs to return the
         # data size but we don't want to return that value to the external
@@ -873,8 +902,8 @@ class Key(object):
         # break some code) so we consume the third tuple value here and
         # return the remainder of the tuple to the caller, thereby preserving
         # the existing interface.
-        self.size = tup[2]
-        return tup[0:2]
+        self.size = data_size
+        return (hex_digest, b64_digest)
 
     def set_contents_from_stream(self, fp, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None,
@@ -1203,14 +1232,11 @@ class Key(object):
         :rtype: int
         :return: The number of bytes written to the key.
         """
-        fp = open(filename, 'rb')
-        try:
-            return self.set_contents_from_file(fp, headers, replace,
-                                               cb, num_cb, policy,
-                                               md5, reduced_redundancy,
+        with open(filename, 'rb') as fp:
+            return self.set_contents_from_file(fp, headers, replace, cb,
+                                               num_cb, policy, md5,
+                                               reduced_redundancy,
                                                encrypt_key=encrypt_key)
-        finally:
-            fp.close()
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
@@ -1321,11 +1347,12 @@ class Key(object):
                                 torrent=torrent, version_id=version_id,
                                 override_num_retries=override_num_retries,
                                 response_headers=response_headers,
+                                hash_algs=None,
                                 query_args=None)
 
     def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
                  torrent=False, version_id=None, override_num_retries=None,
-                 response_headers=None, query_args=None):
+                 response_headers=None, hash_algs=None, query_args=None):
         if headers is None:
             headers = {}
         save_debug = self.bucket.connection.debug
@@ -1335,9 +1362,11 @@ class Key(object):
         query_args = query_args or []
         if torrent:
             query_args.append('torrent')
-            m = None
-        else:
-            m = md5()
+
+        if hash_algs is None and not torrent:
+            hash_algs = {'md5': md5}
+        digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
+
         # If a version_id is passed in, use that.  If not, check to see
         # if the Key object has an explicit version_id and, if so, use that.
         # Otherwise, don't pass a version_id query param.
@@ -1347,7 +1376,8 @@ class Key(object):
             query_args.append('versionId=%s' % version_id)
         if response_headers:
             for key in response_headers:
-                query_args.append('%s=%s' % (key, urllib.quote(response_headers[key])))
+                query_args.append('%s=%s' % (
+                    key, urllib.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
@@ -1373,8 +1403,8 @@ class Key(object):
         for bytes in self:
             fp.write(bytes)
             data_len += len(bytes)
-            if m:
-                m.update(bytes)
+            for alg in digesters:
+                digesters[alg].update(bytes)
             if cb:
                 if cb_size > 0 and data_len >= cb_size:
                     break
@@ -1384,8 +1414,8 @@ class Key(object):
                     i = 0
         if cb and (cb_count <= 1 or i > 0) and data_len > 0:
             cb(data_len, cb_size)
-        if m:
-            self.md5 = m.hexdigest()
+        for alg in digesters:
+          self.local_hashes[alg] = digesters[alg].digest()
         if self.size is None and not torrent and "Range" not in headers:
             self.size = data_len
         self.close()

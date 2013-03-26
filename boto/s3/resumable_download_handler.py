@@ -90,7 +90,7 @@ class ResumableDownloadHandler(object):
     Handler for resumable downloads.
     """
 
-    ETAG_REGEX = '([a-z0-9]{32})\n'
+    MIN_ETAG_LEN = 5
 
     RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
                             socket.gaierror)
@@ -127,11 +127,11 @@ class ResumableDownloadHandler(object):
         f = None
         try:
             f = open(self.tracker_file_name, 'r')
-            etag_line = f.readline()
-            m = re.search(self.ETAG_REGEX, etag_line)
-            if m:
-                self.etag_value_for_current_download = m.group(1)
-            else:
+            self.etag_value_for_current_download = f.readline().rstrip('\n')
+            # We used to match an MD5-based regex to ensure that the etag was
+            # read correctly. Since ETags need not be MD5s, we now do a simple
+            # length sanity check instead.
+            if len(self.etag_value_for_current_download) < self.MIN_ETAG_LEN:
                 print('Couldn\'t read etag in tracker file (%s). Restarting '
                       'download from scratch.' % self.tracker_file_name)
         except IOError, e:
@@ -173,7 +173,7 @@ class ResumableDownloadHandler(object):
                 os.unlink(self.tracker_file_name)
 
     def _attempt_resumable_download(self, key, fp, headers, cb, num_cb,
-                                    torrent, version_id):
+                                    torrent, version_id, hash_algs):
         """
         Attempts a resumable download.
 
@@ -213,11 +213,11 @@ class ResumableDownloadHandler(object):
         # Disable AWSAuthConnection-level retry behavior, since that would
         # cause downloads to restart from scratch.
         key.get_file(fp, headers, cb, num_cb, torrent, version_id,
-                     override_num_retries=0)
+                     override_num_retries=0, hash_algs=hash_algs)
         fp.flush()
 
     def get_file(self, key, fp, headers, cb=None, num_cb=10, torrent=False,
-                 version_id=None):
+                 version_id=None, hash_algs=None):
         """
         Retrieves a file from a Key
         :type key: :class:`boto.s3.key.Key` or subclass
@@ -249,6 +249,11 @@ class ResumableDownloadHandler(object):
         :type version_id: string
         :param version_id: The version ID (optional)
 
+        :type hash_algs: dictionary
+        :param hash_algs: (optional) Dictionary of hash algorithms and
+            corresponding hashing class that implements update() and digest().
+            Defaults to {'md5': hashlib/md5.md5}.
+
         Raises ResumableDownloadException if a problem occurs during
             the transfer.
         """
@@ -267,7 +272,7 @@ class ResumableDownloadHandler(object):
             had_file_bytes_before_attempt = get_cur_file_size(fp)
             try:
                 self._attempt_resumable_download(key, fp, headers, cb, num_cb,
-                                                 torrent, version_id)
+                                                 torrent, version_id, hash_algs)
                 # Download succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
                 # Previously, check_final_md5() was called here to validate 
@@ -286,7 +291,7 @@ class ResumableDownloadHandler(object):
                     # so we need to close and reopen the key before resuming
                     # the download.
                     key.get_file(fp, headers, cb, num_cb, torrent, version_id,
-                                 override_num_retries=0)
+                                 override_num_retries=0, hash_algs=hash_algs)
             except ResumableDownloadException, e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):

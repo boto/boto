@@ -209,6 +209,7 @@ class Bucket(object):
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
             k.handle_restore_headers(response)
+            k.handle_addl_headers(response.getheaders())
             return k, response
         else:
             if response.status == 404:
@@ -622,6 +623,7 @@ class Bucket(object):
             k = self.key_class(self)
             k.name = key_name
             k.handle_version_headers(response)
+            k.handle_addl_headers(response.getheaders())
             return k
 
     def copy_key(self, new_key_name, src_bucket_name,
@@ -715,6 +717,7 @@ class Bucket(object):
             if hasattr(key, 'Error'):
                 raise provider.storage_copy_error(key.Code, key.Message, body)
             key.handle_version_headers(response)
+            key.handle_addl_headers(response.getheaders())
             if preserve_acl:
                 self.set_xml_acl(acl, new_key_name)
             return key
