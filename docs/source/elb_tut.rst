@@ -172,9 +172,9 @@ Finally, let's create a load balancer in the US region that listens on ports
 and TCP. We want the load balancer to span the availability zones
 *us-east-1a* and *us-east-1b*:
 
->>> regions = ['us-east-1a', 'us-east-1b']
+>>> zones = ['us-east-1a', 'us-east-1b']
 >>> ports = [(80, 8080, 'http'), (443, 8443, 'tcp')]
->>> lb = conn.create_load_balancer('my-lb', regions, ports)
+>>> lb = conn.create_load_balancer('my-lb', zones, ports)
 >>> # This is from the previous section.
 >>> lb.configure_health_check(hc)
 
