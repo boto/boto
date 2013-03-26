@@ -113,9 +113,7 @@ class ResumableDownloadTests(GSTestCase):
             self.assertTrue(os.path.exists(tracker_file_name))
             f = open(tracker_file_name)
             etag_line = f.readline()
-            m = re.search(ResumableDownloadHandler.ETAG_REGEX, etag_line)
-            f.close()
-            self.assertTrue(m)
+            self.assertEquals(etag_line.rstrip('\n'), small_src_key.etag.strip('"\''))
 
     def test_retryable_exception_recovery(self):
         """
