@@ -403,7 +403,7 @@ class VPCConnection(EC2Connection):
         Attach an internet gateway to a specific VPC.
 
         :type internet_gateway_id: str
-        :param internet_gateway_id: The ID of the internet gateway to delete.
+        :param internet_gateway_id: The ID of the internet gateway to attach.
 
         :type vpc_id: str
         :param vpc_id: The ID of the VPC to attach to.
@@ -481,7 +481,7 @@ class VPCConnection(EC2Connection):
         Create a new Customer Gateway
 
         :type type: str
-        :param type: Type of VPN Connection.  Only valid valid currently is 'ipsec.1'
+        :param type: Type of VPN Connection.  Only valid value currently is 'ipsec.1'
 
         :type ip_address: str
         :param ip_address: Internet-routable IP address for customer's gateway.
@@ -551,7 +551,7 @@ class VPCConnection(EC2Connection):
         Create a new Vpn Gateway
 
         :type type: str
-        :param type: Type of VPN Connection.  Only valid valid currently is 'ipsec.1'
+        :param type: Type of VPN Connection.  Only valid value currently is 'ipsec.1'
 
         :type availability_zone: str
         :param availability_zone: The Availability Zone where you want the VPN gateway.

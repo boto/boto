@@ -90,7 +90,9 @@ qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
                    # GET bucket?storageClass is not part of the S3 API.)
                    'storageClass',
                    # websiteConfig is a QSA for buckets in Google Cloud Storage.
-                   'websiteConfig']
+                   'websiteConfig',
+                   # compose is a QSA for objects in Google Cloud Storage.
+                   'compose']
 
 
 _first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
@@ -378,7 +380,7 @@ def get_instance_userdata(version='latest', sep=None,
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
-
+RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
 
 def get_ts(ts=None):
     if not ts:
@@ -392,9 +394,12 @@ def parse_ts(ts):
         dt = datetime.datetime.strptime(ts, ISO8601)
         return dt
     except ValueError:
-        dt = datetime.datetime.strptime(ts, ISO8601_MS)
-        return dt
-
+        try:
+            dt = datetime.datetime.strptime(ts, ISO8601_MS)
+            return dt
+        except ValueError:
+            dt = datetime.datetime.strptime(ts, RFC1123)
+            return dt
 
 def find_class(module_name, class_name=None):
     if class_name:
