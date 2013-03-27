@@ -25,6 +25,7 @@ import hmac
 
 from boto.utils import Password
 from boto.utils import pythonize_name
+from boto.utils import _build_instance_metadata_url
 
 
 class TestPassword(unittest.TestCase):
@@ -103,6 +104,54 @@ class TestPythonizeName(unittest.TestCase):
 
     def test_string_with_numbers(self):
         self.assertEqual(pythonize_name('HTTPStatus200Ok'), 'http_status_200_ok')
+
+
+class TestBuildInstanceMetadataURL(unittest.TestCase):
+    def test_normal(self):
+        # This is the all-defaults case.
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                'latest',
+                'meta-data'
+            ),
+            'http://169.254.169.254/latest/meta-data/'
+        )
+
+    def test_custom_path(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                'latest',
+                'dynamic'
+            ),
+            'http://169.254.169.254/latest/dynamic/'
+        )
+
+    def test_custom_version(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                '1.0',
+                'meta-data'
+            ),
+            'http://169.254.169.254/1.0/meta-data/'
+        )
+
+    def test_custom_url(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://10.0.1.5',
+                'latest',
+                'meta-data'
+            ),
+            'http://10.0.1.5/latest/meta-data/'
+        )
+
+    def test_all_custom(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://10.0.1.5',
+                '2013-03-22',
+                'user-data'
+            ),
+            'http://10.0.1.5/2013-03-22/user-data/'
+        )
 
 
 if __name__ == '__main__':
