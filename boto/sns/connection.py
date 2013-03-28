@@ -310,7 +310,7 @@ class SNSConnection(AWSQueryConnection):
         """
         t = queue.id.split('/')
         q_arn = queue.arn
-        sid = hashlib.md5("%s##%s" % (topic, q_arn)).hexdigest()
+        sid = hashlib.md5(topic + q_arn).hexdigest()
         sid_exists = False
         resp = self.subscribe(topic, 'sqs', q_arn)
         attr = queue.get_attributes('Policy')
@@ -322,10 +322,10 @@ class SNSConnection(AWSQueryConnection):
             policy['Version'] = '2008-10-17'
         if 'Statement' not in policy:
             policy['Statement'] = []
-        if policy['Statement']:
-            for s in policy['Statement']:
-                if s['Sid'] == sid:
-                    sid_exists = True
+        # See if a Statement with the Sid exists already.
+        for s in policy['Statement']:
+            if s['Sid'] == sid:
+                sid_exists = True
         if not sid_exists:
             statement = {'Action': 'SQS:SendMessage',
                          'Effect': 'Allow',
