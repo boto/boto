@@ -22,9 +22,11 @@ import xml.sax
 import hashlib
 import base64
 import string
+
 from boto.connection import AWSQueryConnection
 from boto.mws.exception import ResponseErrorFactory
-from boto.mws.response import ResponseFactory, ResponseElement
+from boto.mws.response import Element
+from boto.mws.response import ResponseFactory
 from boto.handler import XmlHandler
 import boto.mws.response
 
@@ -94,7 +96,7 @@ def http_body(field):
 
 
 def destructure_object(value, into={}, prefix=''):
-    if isinstance(value, ResponseElement):
+    if isinstance(value, Element):
         for name, attr in value.__dict__.items():
             if name.startswith('_'):
                 continue
@@ -592,11 +594,11 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @structured_objects('DestinationAddress', 'Items')
     @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
+    @structured_objects('DestinationAddress', 'Items')
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, path, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
