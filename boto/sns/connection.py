@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 
 import uuid
+import hashlib
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
@@ -309,6 +310,8 @@ class SNSConnection(AWSQueryConnection):
         """
         t = queue.id.split('/')
         q_arn = queue.arn
+        sid = hashlib.md5("%s##%s" % (topic, q_arn)).hexdigest()
+        sid_exists = False
         resp = self.subscribe(topic, 'sqs', q_arn)
         attr = queue.get_attributes('Policy')
         if 'Policy' in attr:
@@ -319,13 +322,18 @@ class SNSConnection(AWSQueryConnection):
             policy['Version'] = '2008-10-17'
         if 'Statement' not in policy:
             policy['Statement'] = []
-        statement = {'Action': 'SQS:SendMessage',
-                     'Effect': 'Allow',
-                     'Principal': {'AWS': '*'},
-                     'Resource': q_arn,
-                     'Sid': str(uuid.uuid4()),
-                     'Condition': {'StringLike': {'aws:SourceArn': topic}}}
-        policy['Statement'].append(statement)
+        if policy['Statement']:
+            for s in policy['Statement']:
+                if s['Sid'] == sid:
+                    sid_exists = True
+        if not sid_exists:
+            statement = {'Action': 'SQS:SendMessage',
+                         'Effect': 'Allow',
+                         'Principal': {'AWS': '*'},
+                         'Resource': q_arn,
+                         'Sid': sid,
+                         'Condition': {'StringLike': {'aws:SourceArn': topic}}}
+            policy['Statement'].append(statement)
         queue.set_attribute('Policy', json.dumps(policy))
         return resp
 
