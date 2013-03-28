@@ -33,6 +33,13 @@ methods of that object. In addition, the boto
 :py:class:`Config <boto.pyami.config.Config>` class defines additional
 methods that are described on the PyamiConfigMethods page.
 
+An example ``~/.boto`` file should look like::
+
+    [Credentials]
+    aws_access_key_id = <your_access_key_here>
+    aws_secret_access_key = <your_secret_key_here>
+
+
 Sections
 --------
 
@@ -148,7 +155,7 @@ This section is also used for specifying endpoints for non-AWS services such as
 Eucalyptus and Walrus.
 
 :eucalyptus_host: Select a default endpoint host for eucalyptus
-:walrus_host: Select a default host for Walrus 
+:walrus_host: Select a default host for Walrus
 
 For example::
 
@@ -249,7 +256,7 @@ For example::
     emr_version = 2009-03-31
     emr_region_name = us-east-1
     emr_region_endpoint = elasticmapreduce.us-east-1.amazonaws.com
-    
+
 
 Precedence
 ----------
@@ -318,7 +325,7 @@ Example::
 DB
 ^^
 The DB section is used to configure access to databases through the
-:func:`boto.sdb.db.manager.get_manager` function. 
+:func:`boto.sdb.db.manager.get_manager` function.
 
 :db_type: Type of the database. Current allowed values are `SimpleDB` and
     `XML`.
