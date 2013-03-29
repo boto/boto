@@ -332,12 +332,10 @@ class ListInboundShipmentItemsByNextTokenResult(ListInboundShipmentItemsResult):
 
 
 class ListInventorySupplyResult(ResponseElement):
-    InventorySupplyList = MemberList(
-        EarliestAvailability=Element(),
-        SupplyDetail=MemberList(\
-            EarliestAvailabileToPick=Element(),
-            LatestAvailableToPick=Element(),
-        )
+    InventorySupplyList = ElementList(
+        SellerSKU=ComplexType,
+        TotalSupplyQuantity=ComplexType,
+        InStockSupplyQuantity=ComplexType
     )
 
 
