@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""Unit tests for StorageUri interface."""
+"""Integration tests for StorageUri interface."""
 
 import binascii
 import re

@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""Unit tests for GS versioning support."""
+"""Integration tests for GS versioning support."""
 
 from xml import sax
 
