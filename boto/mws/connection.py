@@ -240,10 +240,7 @@ def api_action(section, quota, restore, *api):
     def decorator(func, quota=int(quota), restore=float(restore)):
         version, accesskey, path = api_version_path[section]
         action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
-        if hasattr(boto.mws.response, action + 'Response'):
-            response = getattr(boto.mws.response, action + 'Response')
-        else:
-            response = ResponseFactory(action)
+        response = ResponseFactory(action)
         response._action = action
 
         @wraps(func)

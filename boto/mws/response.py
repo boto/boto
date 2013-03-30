@@ -121,13 +121,18 @@ class MemberList(ElementList):
 
 
 def ResponseFactory(action):
-    result = globals().get(action + 'Result', ResponseElement)
+    response_class = globals().get(action + 'Response', None)
 
-    class MWSResponse(Response):
-        _name = action + 'Response'
+    if response_class is None:
+        result = globals().get(action + 'Result', ResponseElement)
 
-    setattr(MWSResponse, action + 'Result', Element(result))
-    return MWSResponse
+        class MWSResponse(Response):
+            _name = action + 'Response'
+
+        setattr(MWSResponse, action + 'Result', Element(result))
+        response_class = MWSResponse
+
+    return response_class
 
 
 def strip_namespace(func):
