@@ -130,39 +130,22 @@ def structured_objects(*fields):
     return decorator
 
 
-def requires(*groups):
-
-    def decorator(func):
-
-        @wraps(func)
-        def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
-                message = ' OR '.join(['+'.join(g) for g in groups])
-                message = "{0} requires {1} argument(s)" \
-                          "".format(func.action, message)
-                raise KeyError(message)
-            return func(*args, **kw)
-        message = ' OR '.join(['+'.join(g) for g in groups])
-        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
-                                                           message)
-        return add_attrs_from(func, to=wrapper)
-    return decorator
-
-
-def requires_v2(*params_groups):
+def requires(*params_groups):
 
     def decorator(func):
 
         @wraps(func)
         def wrapper(*args, **kw):
             missing = []
+            at_least_one_group_completed = False
             for group in params_groups:
                 group_missing = [param for param in group if not kw.has_key(param)]
                 if group_missing:
                     missing.append(group_missing)
+                else:
+                    at_least_one_group_completed = True
 
-            if missing:
+            if missing and not at_least_one_group_completed:
                 message = '\nOR\n'.join([
                     ', '.join(group) for group in missing
                 ])
@@ -634,7 +617,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires_v2(['SellerFulfillmentOrderId', 'DisplayableOrderId',
+    @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
