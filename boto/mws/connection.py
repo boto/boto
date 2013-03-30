@@ -144,6 +144,34 @@ def requires(*groups):
     return decorator
 
 
+def requires_v2(*params_groups):
+
+    def decorator(func):
+
+        def wrapper(*args, **kw):
+            missing = []
+            for group in params_groups:
+                group_missing = [param for param in group if not kw.has_key(param)]
+                if group_missing:
+                    missing.append(group_missing)
+
+            if missing:
+                message = '\nOR\n'.join([
+                    ', '.join(group) for group in missing
+                ])
+                exception_msg = '{0} still requires {1}'.format(func.action, message)
+                raise TypeError(exception_msg)
+
+            return func(*args, **kw)
+
+        docstring = '\nOR\n'.join([', '.join(group) for group in params_groups])
+        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__, docstring)
+
+        return add_attrs_from(func, to=wrapper)
+
+    return decorator
+
+
 def exclusive(*groups):
 
     def decorator(func):
@@ -594,7 +622,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
+    @requires_v2(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
