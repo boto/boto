@@ -23,6 +23,8 @@ import hashlib
 import base64
 import string
 
+from functools import wraps
+
 from boto.connection import AWSQueryConnection
 from boto.mws.exception import ResponseErrorFactory
 from boto.mws.response import Element
@@ -60,6 +62,7 @@ def structured_lists(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(self, *args, **kw):
             for key, acc in [f.split('.') for f in fields]:
                 if key in kw:
@@ -78,6 +81,7 @@ def http_body(field):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             if filter(lambda x: not x in kw, (field, 'content_type')):
                 message = "{0} requires {1} and content_type arguments for " \
@@ -115,6 +119,7 @@ def structured_objects(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             for field in filter(kw.has_key, fields):
                 destructure_object(kw.pop(field), into=kw, prefix=field)
@@ -129,6 +134,7 @@ def requires(*groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if 1 != len(filter(hasgroup, groups)):
@@ -148,6 +154,7 @@ def requires_v2(*params_groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             missing = []
             for group in params_groups:
@@ -176,6 +183,7 @@ def exclusive(*groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if len(filter(hasgroup, groups)) not in (0, 1):
@@ -195,6 +203,7 @@ def dependent(field, *groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if field in kw and 1 > len(filter(hasgroup, groups)):
@@ -215,6 +224,7 @@ def requires_some_of(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             if not filter(kw.has_key, fields):
                 message = "{0} requires at least one of {1} argument(s)" \
@@ -231,6 +241,7 @@ def boolean_arguments(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             for field in filter(lambda x: isinstance(kw.get(x), bool), fields):
                 kw[field] = str(kw[field]).lower()
@@ -252,6 +263,7 @@ def api_action(section, quota, restore, *api):
             response = ResponseFactory(action)
         response._action = action
 
+        @wraps(func)
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
             if kw[accesskey] is None:
