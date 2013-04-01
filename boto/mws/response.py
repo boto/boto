@@ -451,17 +451,24 @@ class GetFulfillmentPreviewResult(ResponseElement):
 
 class FulfillmentOrder(ResponseElement):
     DestinationAddress = Element()
-    NotificationEmailList = MemberList(str)
+
+
+class FulfillmentShipmentPackage(ResponseElement):
+    pass
+
+
+class FulfillmentShipment(ResponseElement):
+    FulfillmentShipmentPackage = MemberList(FulfillmentShipmentPackage)
+
+
+class FulfillmentOrderItem(ResponseElement):
+    pass
 
 
 class GetFulfillmentOrderResult(ResponseElement):
     FulfillmentOrder = Element(FulfillmentOrder)
-    FulfillmentShipment = MemberList(Element(\
-            FulfillmentShipmentItem=MemberList(),
-            FulfillmentShipmentPackage=MemberList(),
-        )
-    )
-    FulfillmentOrderItem = MemberList()
+    FulfillmentShipment = MemberList(FulfillmentShipment)
+    FulfillmentOrderItem = MemberList(FulfillmentOrderItem)
 
 
 class ListAllFulfillmentOrdersResult(ResponseElement):
