@@ -616,5 +616,5 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': name}
         self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('DettachLoadBalancerFromSubnets',
+        return self.get_list('DetachLoadBalancerFromSubnets',
                              params, None)
