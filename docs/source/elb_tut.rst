@@ -60,6 +60,7 @@ connect to one::
     [RegionInfo:us-east-1,
      RegionInfo:ap-northeast-1,
      RegionInfo:us-west-1,
+     RegionInfo:us-west-2,
      RegionInfo:ap-southeast-1,
      RegionInfo:eu-west-1]
     >>> elb = regions[-1].connect()

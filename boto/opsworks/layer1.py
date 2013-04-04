@@ -74,7 +74,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :param name: The cloned stack name.
 
         :type region: string
-        :param region: The cloned stack AWS region, such as "us-east-1". For
+        :param region: The cloned stack AWS region, such as "us-west-2". For
             more information about AWS regions, see `Regions and Endpoints`_
 
         :type attributes: map
@@ -463,7 +463,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :param name: The stack name.
 
         :type region: string
-        :param region: The stack AWS region, such as "us-east-1". For more
+        :param region: The stack AWS region, such as "us-west-2". For more
             information about Amazon regions, see `Regions and Endpoints`_.
 
         :type attributes: map
