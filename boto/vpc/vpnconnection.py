@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -31,14 +31,15 @@ from boto.ec2.ec2object import TaggedEC2Object
 class VpnConnectionOptions(object):
     """
     Represents VPN connection options
-    
-    :ivar static_routes_only: Indicates whether the VPN connection uses static routes only.
-                            Static routes must be used for devices that don't support BGP.
+
+    :ivar static_routes_only: Indicates whether the VPN connection uses static
+        routes only.  Static routes must be used for devices that don't support
+        BGP.
 
     """
     def __init__(self, static_routes_only=None):
-        self.static_routes_only = static_routes_only 
- 
+        self.static_routes_only = static_routes_only
+
     def __repr__(self):
         return 'VpnConnectionOptions'
 
@@ -47,7 +48,7 @@ class VpnConnectionOptions(object):
 
     def endElement(self, name, value, connection):
         if name == 'staticRoutesOnly':
-            self.static_routes_only = True if value == 'true' else False  
+            self.static_routes_only = True if value == 'true' else False
         else:
             setattr(self, name, value)
 
@@ -55,8 +56,8 @@ class VpnStaticRoute(object):
     """
     Represents a static route for a VPN connection.
 
-    :ivar destination_cidr_block: The CIDR block associated with the
-                            local subnet of the customer data center.
+    :ivar destination_cidr_block: The CIDR block associated with the local
+        subnet of the customer data center.
     :ivar source: Indicates how the routes were provided.
     :ivar state: The current state of the static route.
     """
@@ -86,7 +87,7 @@ class VpnTunnel(object):
     Represents telemetry for a VPN tunnel
 
     :ivar outside_ip_address: The Internet-routable IP address of the
-                            virtual private gateway's outside interface.
+        virtual private gateway's outside interface.
     :ivar status: The status of the VPN tunnel. Valid values: UP | DOWN
     :ivar last_status_change: The date and time of the last change in status.
     :ivar status_message: If an error occurs, a description of the error.
@@ -131,19 +132,24 @@ class VpnConnection(TaggedEC2Object):
 
     :ivar id: The ID of the VPN connection.
     :ivar state: The current state of the VPN connection.
-                Valid values: pending | available | deleting | deleted
-    :ivar customer_gateway_configuration: The configuration information for the VPN connection's customer
-                                            gateway (in the native XML format). This element is always present
-                                            in the :class:`boto.vpc.VPCConnection.create_vpn_connection` response;
-                                            however, it's present in the :class:`boto.vpc.VPCConnection.get_all_vpn_connections` 
-                                            response only if the VPN connection is in the pending or available state.
+        Valid values: pending | available | deleting | deleted
+    :ivar customer_gateway_configuration: The configuration information for the
+        VPN connection's customer gateway (in the native XML format). This
+        element is always present in the
+        :class:`boto.vpc.VPCConnection.create_vpn_connection` response;
+        however, it's present in the
+        :class:`boto.vpc.VPCConnection.get_all_vpn_connections` response only
+        if the VPN connection is in the pending or available state.
     :ivar type: The type of VPN connection (ipsec.1).
-    :ivar customer_gateway_id: The ID of the customer gateway at your end of the VPN connection.
+    :ivar customer_gateway_id: The ID of the customer gateway at your end of
+        the VPN connection.
     :ivar vpn_gateway_id: The ID of the virtual private gateway
-                        at the AWS side of the VPN connection.
+        at the AWS side of the VPN connection.
     :ivar tunnels: A list of the vpn tunnels (always 2)
     :ivar options: The option set describing the VPN connection.
-    :ivar static_routes: A list of static routes associated with a VPN connection.
+    :ivar static_routes: A list of static routes associated with a VPN
+        connection.
+
     """
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
@@ -159,7 +165,7 @@ class VpnConnection(TaggedEC2Object):
 
     def __repr__(self):
         return 'VpnConnection:%s' % self.id
-    
+
     def startElement(self, name, attrs, connection):
         retval = super(VpnConnection, self).startElement(name, attrs, connection)
         if retval is not None:
@@ -174,7 +180,7 @@ class VpnConnection(TaggedEC2Object):
             self.options = VpnConnectionOptions()
             return self.options
         return None
-    
+
     def endElement(self, name, value, connection):
         if name == 'vpnConnectionId':
             self.id = value
@@ -193,4 +199,3 @@ class VpnConnection(TaggedEC2Object):
 
     def delete(self):
         return self.connection.delete_vpn_connection(self.id)
-

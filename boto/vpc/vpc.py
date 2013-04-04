@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -30,7 +30,7 @@ class VPC(TaggedEC2Object):
     def __init__(self, connection=None):
         """
         Represents a VPC.
-    
+
         :ivar id: The unique ID of the VPC.
         :ivar dhcp_options_id: The ID of the set of DHCP options you've associated with the VPC
                                 (or default if the default options are associated with the VPC).
@@ -49,7 +49,7 @@ class VPC(TaggedEC2Object):
 
     def __repr__(self):
         return 'VPC:%s' % self.id
-    
+
     def endElement(self, name, value, connection):
         if name == 'vpcId':
             self.id = value
