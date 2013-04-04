@@ -29,6 +29,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader
 from boto.glacier.concurrent import UploadWorkerThread
+from boto.glacier.concurrent import _END_SENTINEL
 
 
 class FakeThreadedConcurrentUploader(ConcurrentUploader):
@@ -41,6 +42,7 @@ class FakeThreadedConcurrentUploader(ConcurrentUploader):
     def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
         for i in xrange(total_parts):
             hash_chunks[i] = 'foo'
+
 
 class FakeThreadedConcurrentDownloader(ConcurrentDownloader):
     def _start_download_threads(self, results_queue, worker_queue):
@@ -118,7 +120,7 @@ class TestConcurrentUploader(unittest.TestCase):
         self.assertEqual(len(items), 12)
 
 
-class TestResourceCleanup(unittest.TestCase):
+class TestUploaderThread(unittest.TestCase):
     def setUp(self):
         self.fileobj = tempfile.NamedTemporaryFile()
         self.filename = self.fileobj.name
@@ -134,6 +136,22 @@ class TestResourceCleanup(unittest.TestCase):
         thread.should_continue = False
         thread.run()
         self.assertTrue(fileobj.closed)
+
+    def test_upload_errors_have_exception_messages(self):
+        api = mock.Mock()
+        job_queue = Queue()
+        result_queue = Queue()
+        upload_thread = UploadWorkerThread(
+            api, 'vault_name', self.filename,
+            'upload_id', job_queue, result_queue, num_retries=1,
+            time_between_retries=0)
+        api.upload_part.side_effect = Exception("exception message")
+        job_queue.put((0, 1024))
+        job_queue.put(_END_SENTINEL)
+
+        upload_thread.run()
+        result = result_queue.get(timeout=1)
+        self.assertIn("exception message", str(result))
 
 
 if __name__ == '__main__':
