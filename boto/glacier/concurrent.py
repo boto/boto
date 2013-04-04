@@ -29,7 +29,7 @@ from Queue import Queue, Empty
 import binascii
 
 from .utils import DEFAULT_PART_SIZE, minimum_part_size, chunk_hashes, \
-        tree_hash, bytes_to_hex
+        tree_hash, bytes_to_hex, DEFAULT_NUM_THREADS
 from .exceptions import UploadArchiveError, DownloadArchiveError, \
         TreeHashDoesNotMatchError
 
@@ -83,7 +83,7 @@ class ConcurrentUploader(ConcurrentTransferer):
 
     """
     def __init__(self, api, vault_name, part_size=DEFAULT_PART_SIZE,
-                 num_threads=10):
+                 num_threads=DEFAULT_NUM_THREADS):
         """
         :type api: :class:`boto.glacier.layer1.Layer1`
         :param api: A layer1 glacier object.
