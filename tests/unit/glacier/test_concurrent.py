@@ -153,6 +153,24 @@ class TestUploaderThread(unittest.TestCase):
         result = result_queue.get(timeout=1)
         self.assertIn("exception message", str(result))
 
+    def test_num_retries_is_obeyed(self):
+        # total attempts is 1 + num_retries so if I have num_retries of 2,
+        # I'll attempt the upload once, and if that fails I'll retry up to
+        # 2 more times for a total of 3 attempts.
+        api = mock.Mock()
+        job_queue = Queue()
+        result_queue = Queue()
+        upload_thread = UploadWorkerThread(
+            api, 'vault_name', self.filename,
+            'upload_id', job_queue, result_queue, num_retries=2,
+            time_between_retries=0)
+        api.upload_part.side_effect = Exception()
+        job_queue.put((0, 1024))
+        job_queue.put(_END_SENTINEL)
+
+        upload_thread.run()
+        self.assertEqual(api.upload_part.call_count, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

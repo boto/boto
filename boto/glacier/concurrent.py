@@ -224,7 +224,7 @@ class UploadWorkerThread(TransferThread):
 
     def _process_chunk(self, work):
         result = None
-        for i in xrange(self._num_retries):
+        for i in xrange(self._num_retries + 1):
             try:
                 result = self._upload_chunk(work)
                 break
