@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import cgi
 import errno
 import httplib
 import os
@@ -28,7 +27,6 @@ import re
 import socket
 import time
 import urlparse
-import boto
 from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
@@ -162,22 +160,6 @@ class ResumableUploadHandler(object):
         Returns upload tracker URI, or None if the upload has not yet started.
         """
         return self.tracker_uri
-
-    def get_upload_id(self):
-        """
-        Returns the upload ID for the resumable upload, or None if the upload
-        has not yet started.
-        """
-        # We extract the upload_id from the tracker uri. We could retrieve the
-        # upload_id from the headers in the response but this only works for
-        # the case where we get the tracker uri from the service. In the case
-        # where we get the tracker from the tracking file we need to do this
-        # logic anyway.
-        delim = '?upload_id='
-        if self.tracker_uri and delim in self.tracker_uri:
-          return self.tracker_uri[self.tracker_uri.index(delim) + len(delim):]
-        else:
-          return None
 
     def _remove_tracker_file(self):
         if (self.tracker_file_name and
@@ -397,7 +379,6 @@ class ResumableUploadHandler(object):
                 (total_bytes_uploaded, file_length),
                 ResumableTransferDisposition.ABORT)
         resp = http_conn.getresponse()
-        body = resp.read()
         # Restore http connection debug level.
         http_conn.set_debuglevel(conn.debug)
 

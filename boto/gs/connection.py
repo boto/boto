@@ -50,7 +50,7 @@ class GSConnection(S3Connection):
                       storage_class='STANDARD'):
         """
         Creates a new bucket. By default it's located in the USA. You can
-        pass Location.EU to create an European bucket. You can also pass
+        pass Location.EU to create bucket in the EU. You can also pass
         a LocationConstraint for where the bucket should be located, and 
         a StorageClass describing how the data should be stored.
 

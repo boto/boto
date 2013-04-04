@@ -390,7 +390,7 @@ class Bucket(S3Bucket):
         if canned:
             headers[self.connection.provider.acl_header] = acl_or_str
         else:
-            data = acl_or_str.encode('UTF-8')
+            data = acl_or_str
 
         if generation:
             query_args += '&generation=%s' % generation
