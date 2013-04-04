@@ -89,12 +89,13 @@ class SNSSubcribeSQSTest(unittest.TestCase):
         self.addCleanup(self.snsc.delete_topic, topic_arn)
 
         resp = self.snsc.subscribe_sqs_queue(topic_arn, queue)
+        time.sleep(3)
         first_subscribe_statements = self.get_policy_statements(queue)
         self.assertEqual(len(first_subscribe_statements),
                 len(initial_statements) + 1)
 
         resp2 = self.snsc.subscribe_sqs_queue(topic_arn, queue)
+        time.sleep(3)
         second_subscribe_statements = self.get_policy_statements(queue)
         self.assertEqual(len(second_subscribe_statements),
                 len(first_subscribe_statements))
-
