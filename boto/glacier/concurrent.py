@@ -96,6 +96,11 @@ class ConcurrentUploader(ConcurrentTransferer):
             the archive parts.  The part size must be a megabyte multiplied by
             a power of two.
 
+        :type num_threads: int
+        :param num_threads: The number of threads to spawn for the thread pool.
+            The number of threads will control how much parts are being
+            concurrently uploaded.
+
         """
         super(ConcurrentUploader, self).__init__(part_size, num_threads)
         self._api = api
