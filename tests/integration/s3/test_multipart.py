@@ -34,7 +34,7 @@ Some unit tests for the S3 MultiPartUpload
 
 import unittest
 import time
-import StringIO
+import io
 from boto.s3.connection import S3Connection
 
 
@@ -59,7 +59,7 @@ class S3MultiPartUploadTest(unittest.TestCase):
     def test_complete_ascii(self):
         key_name = "test"
         mpu = self.bucket.initiate_multipart_upload(key_name)
-        fp = StringIO.StringIO("small file")
+        fp = io.BytesIO(b"small file")
         mpu.upload_part_from_file(fp, part_num=1)
         fp.close()
         cmpu = mpu.complete_upload()
@@ -69,7 +69,7 @@ class S3MultiPartUploadTest(unittest.TestCase):
     def test_complete_japanese(self):
         key_name = u"テスト"
         mpu = self.bucket.initiate_multipart_upload(key_name)
-        fp = StringIO.StringIO("small file")
+        fp = io.BytesIO(b"small file")
         mpu.upload_part_from_file(fp, part_num=1)
         fp.close()
         cmpu = mpu.complete_upload()
@@ -108,8 +108,8 @@ class S3MultiPartUploadTest(unittest.TestCase):
 
     def test_four_part_file(self):
         key_name = "k"
-        contents = "01234567890123456789"
-        sfp = StringIO.StringIO(contents)
+        contents = b"01234567890123456789"
+        sfp = io.BytesIO(contents)
 
         # upload 20 bytes in 4 parts of 5 bytes each
         mpu = self.bucket.initiate_multipart_upload(key_name)

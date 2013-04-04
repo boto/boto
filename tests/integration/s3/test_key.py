@@ -26,7 +26,7 @@ Some unit tests for S3 Key
 
 from tests.unit import unittest
 import time
-import StringIO
+import io
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
@@ -47,8 +47,8 @@ class S3KeyTest (unittest.TestCase):
 
     def test_set_contents_from_file_dataloss(self):
         # Create an empty stringio and write to it.
-        content = "abcde"
-        sfp = StringIO.StringIO()
+        content = b"abcde"
+        sfp = io.BytesIO()
         sfp.write(content)
         # Try set_contents_from_file() without rewinding sfp
         k = self.bucket.new_key("k")
@@ -66,18 +66,18 @@ class S3KeyTest (unittest.TestCase):
         self.assertEqual(ks, content)
 
         # finally, try with a 0 length string
-        sfp = StringIO.StringIO()
+        sfp = io.BytesIO()
         k = self.bucket.new_key("k")
         k.set_contents_from_file(sfp)
         self.assertEqual(k.size, 0)
         # check actual contents by getting it.
         kn = self.bucket.new_key("k")
         ks = kn.get_contents_as_string()
-        self.assertEqual(ks, "")
+        self.assertEqual(ks, b"")
 
     def test_set_contents_as_file(self):
-        content="01234567890123456789"
-        sfp = StringIO.StringIO(content)
+        content=b"01234567890123456789"
+        sfp = io.BytesIO(content)
 
         # fp is set at 0 for just opened (for read) files.
         # set_contents should write full content to key.
@@ -110,8 +110,8 @@ class S3KeyTest (unittest.TestCase):
         self.assertEqual(ks, content[5:10])
 
     def test_set_contents_with_md5(self):
-        content="01234567890123456789"
-        sfp = StringIO.StringIO(content)
+        content=b"01234567890123456789"
+        sfp = io.BytesIO(content)
 
         # fp is set at 0 for just opened (for read) files.
         # set_contents should write full content to key.
@@ -145,8 +145,8 @@ class S3KeyTest (unittest.TestCase):
             pass
 
     def test_get_contents_with_md5(self):
-        content="01234567890123456789"
-        sfp = StringIO.StringIO(content)
+        content=b"01234567890123456789"
+        sfp = io.BytesIO(content)
 
         k = self.bucket.new_key("k")
         k.set_contents_from_file(sfp)
@@ -166,7 +166,7 @@ class S3KeyTest (unittest.TestCase):
         self.my_cb_last = None
         k = self.bucket.new_key("k")
         k.BufferSize = 2
-        sfp = StringIO.StringIO("")
+        sfp = io.BytesIO(b"")
         k.set_contents_from_file(sfp, cb=callback, num_cb=10)
         self.assertEqual(self.my_cb_cnt, 1)
         self.assertEqual(self.my_cb_last, 0)
@@ -179,8 +179,8 @@ class S3KeyTest (unittest.TestCase):
         self.assertEqual(self.my_cb_cnt, 1)
         self.assertEqual(self.my_cb_last, 0)
 
-        content="01234567890123456789"
-        sfp = StringIO.StringIO(content)
+        content=b"01234567890123456789"
+        sfp = io.BytesIO(content)
 
         # expect 2 calls due start/finish
         self.my_cb_cnt = 0

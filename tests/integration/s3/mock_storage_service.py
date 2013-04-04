@@ -31,7 +31,7 @@ import boto
 import base64
 import re
 
-from boto.utils import compute_md5
+from boto.utils import compute_md5, ensure_bytes
 from boto.s3.prefix import Prefix
 
 try:
@@ -89,7 +89,7 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        fp.write(self.data)
+        fp.write(ensure_bytes(self.data))
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
@@ -191,7 +191,7 @@ class MockKey(object):
         contents of mock key.
         """
         m = md5()
-        m.update(self.data)
+        m.update(ensure_bytes(self.data))
         hex_md5 = m.hexdigest()
         self.etag = hex_md5
 

@@ -1,3 +1,4 @@
+include boto/version.txt
 include boto/cacerts/cacerts.txt
 include README.rst
 include Changelog.rst

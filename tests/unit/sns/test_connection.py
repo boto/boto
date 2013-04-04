@@ -23,7 +23,10 @@
 import json
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
-from mock import Mock
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
 
 from boto.sns.connection import SNSConnection
 

@@ -21,6 +21,8 @@ class Tag(object):
             self.key, self.value)
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return (self.key == other.key and self.value == other.value)
 
 

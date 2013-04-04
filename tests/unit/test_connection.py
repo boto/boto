@@ -27,6 +27,7 @@ from boto.connection import AWSQueryConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 from boto.compat import json
+from boto.utils import ensure_bytes
 
 
 class TestListParamsSerialization(unittest.TestCase):
@@ -127,13 +128,13 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "POST")
 
         args = urlparse.parse_qs(HTTPretty.last_request.body)
-        self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
-        self.assertEqual(args['SignatureMethod'], ['HmacSHA256'])
-        self.assertEqual(args['Version'], [conn.APIVersion])
-        self.assertEqual(args['par1'], ['foo'])
-        self.assertEqual(args['par2'], ['baz'])
+        self.assertEqual(args[b'AWSAccessKeyId'], [b'access_key'])
+        self.assertEqual(args[b'SignatureMethod'], [b'HmacSHA256'])
+        self.assertEqual(args[b'Version'], [ensure_bytes(conn.APIVersion)])
+        self.assertEqual(args[b'par1'], [b'foo'])
+        self.assertEqual(args[b'par2'], [b'baz'])
 
-        self.assertEqual(resp.read(), '{"test": "secure"}')
+        self.assertEqual(resp.read(), b'{"test": "secure"}')
 
     def test_multi_commands(self):
         """Check connection re-use"""
@@ -157,18 +158,18 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                   "POST")
         body2 = urlparse.parse_qs(HTTPretty.last_request.body)
 
-        self.assertEqual(body1['par1'], ['foo'])
-        self.assertEqual(body1['par2'], ['baz'])
+        self.assertEqual(body1[b'par1'], [b'foo'])
+        self.assertEqual(body1[b'par2'], [b'baz'])
         with self.assertRaises(KeyError):
             body1['par3']
 
-        self.assertEqual(body2['par3'], ['bar'])
-        self.assertEqual(body2['par4'], ['narf'])
+        self.assertEqual(body2[b'par3'], [b'bar'])
+        self.assertEqual(body2[b'par4'], [b'narf'])
         with self.assertRaises(KeyError):
             body2['par1']
 
-        self.assertEqual(resp1.read(), '{"test": "secure"}')
-        self.assertEqual(resp2.read(), '{"test": "secure"}')
+        self.assertEqual(resp1.read(), b'{"test": "secure"}')
+        self.assertEqual(resp2.read(), b'{"test": "secure"}')
 
     def test_non_secure(self):
         HTTPretty.register_uri(HTTPretty.POST,
@@ -184,7 +185,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
 
-        self.assertEqual(resp.read(), '{"test": "normal"}')
+        self.assertEqual(resp.read(), b'{"test": "normal"}')
 
     def test_alternate_port(self):
         HTTPretty.register_uri(HTTPretty.POST,
@@ -201,7 +202,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
 
-        self.assertEqual(resp.read(), '{"test": "alternate"}')
+        self.assertEqual(resp.read(), b'{"test": "alternate"}')
 
     def test_temp_failure(self):
         responses = [HTTPretty.Response(body="{'test': 'fail'}", status=500),
@@ -217,7 +218,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  {'par1': 'foo', 'par2': 'baz'},
                                  '/temp_fail/',
                                  'POST')
-        self.assertEqual(resp.read(), "{'test': 'success'}")
+        self.assertEqual(resp.read(), b"{'test': 'success'}")
 
 class TestAWSQueryStatus(TestAWSQueryConnection):
 

@@ -53,14 +53,14 @@ class S3ConnectionTest (unittest.TestCase):
         bucket.disable_logging()
         c.delete_bucket(logging_bucket)
         k = bucket.new_key('foobar')
-        s1 = 'This is a test of file upload and download'
-        s2 = 'This is a second string to test file upload and download'
+        s1 = b'This is a test of file upload and download'
+        s2 = b'This is a second string to test file upload and download'
         k.set_contents_from_string(s1)
         fp = open('foobar', 'wb')
         # now get the contents from s3 to a local file
         k.get_contents_to_file(fp)
         fp.close()
-        fp = open('foobar')
+        fp = open('foobar', 'rb')
         # check to make sure content read from s3 is identical to original
         assert s1 == fp.read(), 'corrupted file'
         fp.close()
@@ -90,7 +90,7 @@ class S3ConnectionTest (unittest.TestCase):
         con.request("PUT", up.path + '?' + up.query, body="hello there")
         resp = con.getresponse()
         assert 200 == resp.status
-        assert "hello there" == k.get_contents_as_string()
+        assert "hello there" == k.get_contents_as_string().decode('utf-8')
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type
@@ -239,7 +239,7 @@ class S3ConnectionTest (unittest.TestCase):
     def test_error_code_populated(self):
         c = S3Connection()
         try:
-            c.create_bucket('bad$bucket$name')
+            c.create_bucket('bb')
         except S3ResponseError, e:
             self.assertEqual(e.error_code, 'InvalidBucketName')
         else:

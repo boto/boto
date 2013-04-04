@@ -95,6 +95,14 @@ PORTS_BY_SECURITY = {True: 443,
 
 DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
 
+# sigh
+# monkeypatch xml.sax.parseString
+def ps(*args, **kwargs):
+    args = list(args)
+    args[0] = boto.utils.ensure_bytes(args[0])
+    xml.sax._parseString(*args, **kwargs)
+xml.sax._parseString = xml.sax.parseString
+xml.sax.parseString = ps
 
 class HostConnectionPool(object):
 
@@ -369,8 +377,14 @@ class HTTPRequest(object):
     def authorize(self, connection, **kwargs):
         for key in self.headers:
             val = self.headers[key]
-            if isinstance(val, unicode):
-                self.headers[key] = urllib.quote_plus(val.encode('utf-8'))
+            if len([x for x in val if ord(x) > 127]):
+                # this is a unicode string with non-ascii characters
+                v = val.encode("utf-8")
+                v = urllib.quote_plus(v)
+                if not hasattr(v, 'encode'):
+                    # v is a python3 byte literal; we need to deocde it into unicode again
+                    v = v.decode("utf-8")
+                self.headers[key] = v
 
         connection._auth_handler.add_auth(self, **kwargs)
 
@@ -620,21 +634,10 @@ class AWSAuthConnection(object):
     def server_name(self, port=None):
         if not port:
             port = self.port
-        if port == 80:
+        if port == 80 or port == 443:
             signature_host = self.host
         else:
-            # This unfortunate little hack can be attributed to
-            # a difference in the 2.6 version of httplib.  In old
-            # versions, it would append ":443" to the hostname sent
-            # in the Host header and so we needed to make sure we
-            # did the same when calculating the V2 signature.  In 2.6
-            # (and higher!)
-            # it no longer does that.  Hence, this kludge.
-            if ((ON_APP_ENGINE and sys.version[:3] == '2.5') or
-                    sys.version[:3] in ('2.6', '2.7')) and port == 443:
-                signature_host = self.host
-            else:
-                signature_host = '%s:%d' % (self.host, port)
+            signature_host = "%s:%d"%(self.host, port)
         return signature_host
 
     def handle_proxy(self, proxy, proxy_port, proxy_user, proxy_pass):
@@ -818,7 +821,7 @@ class AWSAuthConnection(object):
         boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
-        e = None
+        ex = None
         if override_num_retries is None:
             num_retries = config.getint('Boto', 'num_retries', self.num_retries)
         else:
@@ -877,6 +880,7 @@ class AWSAuthConnection(object):
                     response = None
                     continue
             except self.http_exceptions, e:
+                ex = e # e will be unset after leaving the except: block
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
                         boto.log.debug(
@@ -895,8 +899,8 @@ class AWSAuthConnection(object):
         # Otherwise, raise the exception that must have already h#appened.
         if response:
             raise BotoServerError(response.status, response.reason, body)
-        elif e:
-            raise e
+        elif ex:
+            raise ex
         else:
             msg = 'Please report this exception as a Boto Issue!'
             raise BotoClientError(msg)

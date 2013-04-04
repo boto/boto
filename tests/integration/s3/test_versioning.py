@@ -55,7 +55,7 @@ class S3VersionTest (unittest.TestCase):
         
         # create a new key in the versioned bucket
         k = self.bucket.new_key("foobar")
-        s1 = 'This is v1'
+        s1 = b'This is v1'
         k.set_contents_from_string(s1)
         
         # remember the version id of this object
@@ -68,7 +68,7 @@ class S3VersionTest (unittest.TestCase):
         self.assertEqual(s1, o1)
         
         # now overwrite that same key with new data
-        s2 = 'This is v2'
+        s2 = b'This is v2'
         k.set_contents_from_string(s2)
         v2 = k.version_id
         

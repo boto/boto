@@ -20,7 +20,10 @@
 # IN THE SOFTWARE.
 #
 from tests.unit import unittest
-import mock
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 from boto.glacier.job import Job
 from boto.glacier.layer1 import Layer1

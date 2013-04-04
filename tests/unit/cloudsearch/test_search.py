@@ -62,7 +62,7 @@ class CloudSearchSearchTest(unittest.TestCase):
     }
 
     def get_args(self, requestline):
-        (_, request, _) = requestline.split(" ")
+        (_, request, _) = requestline.decode('utf-8').split(" ")
         (_, request) = request.split("?", 1)
         args = urlparse.parse_qs(request)
         return args

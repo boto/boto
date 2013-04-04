@@ -7,7 +7,10 @@ try:
 except ImportError:
     import simplejson as json
 
-from mock import Mock
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
 
 from tests.unit import AWSMockServiceTestCase
 from boto.cloudformation.connection import CloudFormationConnection

@@ -83,7 +83,7 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
 class GlacierUploadArchiveResets(GlacierLayer1ConnectionBase):
     def test_upload_archive(self):
         fake_data = tempfile.NamedTemporaryFile()
-        fake_data.write('foobarbaz')
+        fake_data.write(b'foobarbaz')
         # First seek to a non zero offset.
         fake_data.seek(2)
         self.set_http_response(status_code=201)

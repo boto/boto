@@ -26,3 +26,12 @@ try:
     import simplejson as json
 except ImportError:
     import json
+
+json._loads = json.loads
+def loads(*args, **kwargs):
+    if args:
+        args = list(args)
+        if hasattr(args[0], 'decode') and not hasattr(args[0], 'encode'):
+            args[0] = args[0].decode('utf-8')
+    return json._loads(*args, **kwargs)
+json.loads = loads

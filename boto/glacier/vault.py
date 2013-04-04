@@ -54,7 +54,8 @@ class Vault(object):
         if response_data:
             for response_name, attr_name, default in self.ResponseDataElements:
                 value = response_data[response_name]
-                if isinstance(value, unicode):
+                if isinstance(value, unicode) and hasattr(value, 'decode'):
+                    # python2 unicode strings only
                     value = value.encode('utf8')
                 setattr(self, attr_name, value)
         else:
@@ -228,7 +229,10 @@ class Vault(object):
         for part_desc in part_list_response['Parts']:
             part_index = self._range_string_to_part_index(
                 part_desc['RangeInBytes'], part_size)
-            part_tree_hash = part_desc['SHA256TreeHash'].decode('hex')
+            if hasattr(part_desc['SHA256TreeHash'], 'decode'):
+                part_tree_hash = part_desc['SHA256TreeHash'].decode('hex')
+            else:
+                part_tree_hash = bytes.fromhex(part_desc['SHA256TreeHash'])
             part_hash_map[part_index] = part_tree_hash
 
         if not file_obj:

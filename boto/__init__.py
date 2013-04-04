@@ -36,7 +36,10 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.8.0-dev'
+vfile = os.path.join(os.path.dirname(os.path.abspath(boto.__file__ )), "version.txt")
+with open(vfile) as f:
+  __version__ = f.read().strip()
+
 Version = __version__  # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)

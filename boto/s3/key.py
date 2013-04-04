@@ -24,7 +24,10 @@
 import mimetypes
 import os
 import re
-import rfc822
+try:
+    import rfc822
+except ImportError:
+    import email.utils as rfc822
 import StringIO
 import base64
 import binascii
@@ -36,12 +39,12 @@ from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
-from boto.utils import compute_md5
+from boto.utils import compute_md5, wrap_hash_function
 try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
-
+md5 = wrap_hash_function(md5)
 
 class Key(object):
     """
@@ -1297,7 +1300,12 @@ class Key(object):
         """
         if isinstance(s, unicode):
             s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        if hasattr(s, 'decode') and not hasattr(s, 'encode'):
+            # python3
+            import io
+            fp = io.BytesIO(s)
+        else:
+            fp = StringIO.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
@@ -1611,7 +1619,11 @@ class Key(object):
         :rtype: string
         :returns: The contents of the file as a string
         """
-        fp = StringIO.StringIO()
+        if hasattr("", 'decode'):
+            fp = StringIO.StringIO()
+        else:
+            import io
+            fp = io.BytesIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
                                   version_id=version_id,
                                   response_headers=response_headers)

@@ -23,8 +23,12 @@
 import unittest
 from cStringIO import StringIO
 
-import mock
-from mock import ANY
+try:
+    import unittest.mock as mock
+    from unittest.mock import ANY
+except ImportError:
+    import mock
+    from mock import ANY
 
 from boto.glacier import vault
 

@@ -25,6 +25,7 @@ import socket
 import ssl
 
 import boto
+from boto.utils import ensure_bytes
 
 class InvalidCertificateException(httplib.HTTPException):
   """Raised when a certificate is provided with an invalid hostname."""
@@ -102,6 +103,9 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
     self.key_file = key_file
     self.cert_file = cert_file
     self.ca_certs = ca_certs
+
+  def send(self, data):
+    return httplib.HTTPConnection.send(self, ensure_bytes(data))
 
   def connect(self):
     "Connect to a host on a given (SSL) port."

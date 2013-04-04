@@ -68,6 +68,7 @@ import StringIO
 from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
 import boto
+from boto.utils import ensure_string, ensure_bytes
 
 class RawMessage:
     """
@@ -151,11 +152,11 @@ class Message(RawMessage):
     """
     
     def encode(self, value):
-        return base64.b64encode(value)
+        return ensure_string(base64.b64encode(ensure_bytes(value)))
 
     def decode(self, value):
         try:
-            value = base64.b64decode(value)
+            value = ensure_string(base64.b64decode(ensure_bytes(value)))
         except:
             boto.log.warning('Unable to decode message')
             return value

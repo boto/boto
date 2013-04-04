@@ -71,6 +71,38 @@ except ImportError:
     import sha
     sha256 = None
 
+# and this modifies sha and sha256 to accept the proper type
+sha256 = boto.utils.wrap_hash_function(sha256)
+try:
+    # this doesn't belong here
+    import hashlib
+    hashlib.sha256 = sha256
+except ImportError:
+    pass
+
+# this code intercepts calls to hmac.new and hmac.update
+# this fixes an issue in python3 where string objects get sent where
+# bytes are expected
+    
+def fakenew(*args, **kwargs):
+    args = list(args)
+    args[0] = boto.utils.ensure_bytes(args[0])
+    return hmac._realnew(*args, **kwargs)
+hmac._realnew = hmac.new
+hmac.new = fakenew
+
+def fakeupdate(*args, **kwargs):
+    args = list(args)
+    args[1] = boto.utils.ensure_bytes(args[1])
+    return args[0]._realupdate(*args[1:], **kwargs)
+hmac.HMAC._realupdate = hmac.HMAC.update
+hmac.HMAC.update = fakeupdate
+
+# ...and patch base64 too
+def fakeencodestring(*args, **kwargs):
+    return boto.utils.ensure_string(base64._realencodestring(*args, **kwargs))
+base64._realencodestring = base64.encodestring
+base64.encodestring = fakeencodestring
 
 class HmacKeys(object):
     """Key based Auth handler helper."""

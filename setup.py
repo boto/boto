@@ -34,7 +34,10 @@ except ImportError:
 
 import sys
 
-from boto import __version__
+try:  # Python 3
+  from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:  # Python 2
+  from distutils.command.build_py import build_py
 
 if sys.version_info <= (2, 4):
     error = "ERROR: boto requires Python Version 2.5 or above...exiting."
@@ -45,8 +48,13 @@ def readme():
     with open("README.rst") as f:
         return f.read()
 
-setup(name = "boto",
-      version = __version__,
+def version():
+    with open("boto/version.txt") as f:
+        return f.read().strip()
+
+setup(cmdclass = {'build_py': build_py},
+      name = "boto",
+      version = version(),
       description = "Amazon Web Services Library",
       long_description = readme(),
       author = "Mitch Garnaat",
@@ -74,7 +82,7 @@ setup(name = "boto",
                   "boto.swf", "boto.mws", "boto.cloudsearch", "boto.glacier",
                   "boto.beanstalk", "boto.datapipeline", "boto.elasticache",
                   "boto.elastictranscoder", "boto.opsworks"],
-      package_data = {"boto.cacerts": ["cacerts.txt"]},
+      package_data = {"boto.cacerts": ["cacerts.txt"], "boto": ["version.txt"]},
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",
       classifiers = ["Development Status :: 5 - Production/Stable",
@@ -83,8 +91,9 @@ setup(name = "boto",
                      "Operating System :: OS Independent",
                      "Topic :: Internet",
                      "Programming Language :: Python :: 2",
-                     "Programming Language :: Python :: 2.5",
                      "Programming Language :: Python :: 2.6",
-                     "Programming Language :: Python :: 2.7"],
+                     "Programming Language :: Python :: 2.7",
+                     "Programming Language :: Python :: 3",
+                     "Programming Language :: Python :: 3.3"],
       **extra
       )
