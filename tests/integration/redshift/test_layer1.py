@@ -117,6 +117,7 @@ class TestRedshiftLayer1Management(unittest.TestCase):
         self.assertEqual(response['CreateClusterSnapshotResponse']\
                          ['CreateClusterSnapshotResult']['Snapshot']\
                          ['Status'], 'creating')
+        self.addCleanup(self.api.delete_cluster_snapshot, snapshot_id)
 
         # More waiting. :(
         time.sleep(self.wait_time)
