@@ -33,6 +33,7 @@ from boto.gs.cors import Cors
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
+from boto.utils import get_utf8_value
 
 # constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
@@ -407,8 +408,9 @@ class Bucket(S3Bucket):
         if if_metageneration is not None:
             headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
-        response = self.connection.make_request('PUT', self.name, key_name,
-                data=data, headers=headers, query_args=query_args)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
+            data=get_utf8_value(data), headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -552,11 +554,9 @@ class Bucket(S3Bucket):
         :param str cors: A string containing the CORS XML.
         :param dict headers: Additional headers to send with the request.
         """
-        cors_xml = cors.encode('UTF-8')
-        response = self.connection.make_request('PUT', self.name,
-                                                data=cors_xml,
-                                                query_args=CORS_ARG,
-                                                headers=headers)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            query_args=CORS_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -817,9 +817,9 @@ class Bucket(S3Bucket):
             error_frag = ''
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
-        response = self.connection.make_request('PUT', self.name, data=body,
-                                                query_args='websiteConfig',
-                                                headers=headers)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:
             return True
