@@ -229,14 +229,16 @@ class UploadWorkerThread(TransferThread):
 
     def _process_chunk(self, work):
         result = None
-        for _ in xrange(self._num_retries):
+        for i in xrange(self._num_retries + 1):
             try:
                 result = self._upload_chunk(work)
                 break
             except self._retry_exceptions, e:
                 log.error("Exception caught uploading part number %s for "
-                          "vault %s, filename: %s", work[0], self._vault_name,
-                          self._filename)
+                          "vault %s, attempt: (%s / %s), filename: %s, "
+                          "exception: %s, msg: %s",
+                          work[0], self._vault_name, i + 1, self._num_retries + 1,
+                          self._filename, e.__class__, e)
                 time.sleep(self._time_between_retries)
                 result = e
         return result
