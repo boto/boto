@@ -618,7 +618,7 @@ class InstanceAttribute(dict):
                    'disableApiTermination',
                    'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',
-                   'groupSet']
+                   'groupSet', 'ebsOptimized']
 
     def __init__(self, parent=None):
         dict.__init__(self)
