@@ -565,7 +565,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param name: Scheduled action name.
 
         :type time: datetime.datetime
-        :param time: The time for this action to start.
+        :param time: The time for this action to start. (Depracated)
 
         :type desired_capacity: int
         :param desired_capacity: The number of EC2 instances that should
@@ -576,6 +576,15 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type max_size: int
         :param max_size: The minimum size for the new auto scaling group.
+
+        :type start_time: datetime.datetime
+        :param start_time: The time for this action to start. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
+
+        :type end_time: datetime.datetime
+        :param end_time: The time for this action to end. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
+
+        :type recurrence: string
+        :param recurrence: The time when recurring future actions will start. Start time is specified by the user following the Unix cron syntax format..
         """
         params = {'AutoScalingGroupName': as_group,
                   'ScheduledActionName': name}
