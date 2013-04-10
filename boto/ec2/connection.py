@@ -453,7 +453,7 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of  :class:`boto.ec2.instance.Reservation`
         """
         params = {}
-        if instance_ids:
+        if instance_ids is not None:
             self.build_list_params(params, instance_ids, 'InstanceId')
         if filters:
             if 'group-id' in filters:
