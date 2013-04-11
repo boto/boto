@@ -21,6 +21,7 @@
 
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
+from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.resultset import ResultSet
 
 
@@ -64,6 +65,9 @@ class DBInstance(object):
         Multi-AZ deployment.
     :ivar iops: The current number of provisioned IOPS for the DB Instance.
         Can be None if this is a standard instance.
+    :ivar vpc_security_groups: List of VPC Security Group Membership elements
+        containing only VpcSecurityGroupMembership.VpcSecurityGroupId and
+        VpcSecurityGroupMembership.Status subelements.
     :ivar pending_modified_values: Specifies that changes to the
         DB Instance are pending. This element is only included when changes
         are pending. Specific changes are identified by subelements.
@@ -91,6 +95,7 @@ class DBInstance(object):
         self.latest_restorable_time = None
         self.multi_az = False
         self.iops = None
+        self.vpc_security_groups = None
         self.pending_modified_values = None
         self._in_endpoint = False
         self._port = None
@@ -110,6 +115,10 @@ class DBInstance(object):
             self.security_groups = ResultSet([('DBSecurityGroup',
                                                DBSecurityGroup)])
             return self.security_groups
+        elif name == 'VpcSecurityGroups':
+            self.vpc_security_groups = ResultSet([('VpcSecurityGroupMembership',
+                                               VPCSecurityGroupMembership)])
+            return self.vpc_security_groups
         elif name == 'PendingModifiedValues':
             self.pending_modified_values = PendingModifiedValues()
             return self.pending_modified_values
@@ -255,6 +264,7 @@ class DBInstance(object):
                preferred_backup_window=None,
                multi_az=False,
                iops=None,
+               vpc_security_groups=None
                apply_immediately=False):
         """
         Modify this DBInstance.
@@ -326,6 +336,10 @@ class DBInstance(object):
             If you specify a value, it must be at least 1000 IOPS and
             you must allocate 100 GB of storage.
 
+        :type vpc_security_groups: list
+        :param vpc_security_groups: List of VPCSecurityGroupMembership
+            that this DBInstance is a memberof.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -340,7 +354,8 @@ class DBInstance(object):
                                                  preferred_backup_window,
                                                  multi_az,
                                                  apply_immediately,
-                                                 iops)
+                                                 iops,
+                                                 vpc_security_groups)
 
 
 class PendingModifiedValues(dict):

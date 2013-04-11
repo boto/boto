@@ -163,6 +163,7 @@ class RDSConnection(AWSQueryConnection):
                           license_model = None,
                           option_group_name = None,
                           iops=None,
+                          vpc_security_groups=None,
                           ):
         # API version: 2012-09-17
         # Parameter notes:
@@ -361,6 +362,10 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
+        :type vpc_security_groups: list of str or a VPCSecurityGroupMembership object
+        :param vpc_security_groups: List of VPC security group ids or a
+            VPCSecurityGroupMembership object this DBInstance should be a member of
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -388,6 +393,7 @@ class RDSConnection(AWSQueryConnection):
         # port => Port
         # preferred_backup_window => PreferredBackupWindow
         # preferred_maintenance_window => PreferredMaintenanceWindow
+        # vpc_security_groups => VpcSecurityGroupIds.member.N
         params = {
                   'AllocatedStorage': allocated_storage,
                   'AutoMinorVersionUpgrade': str(auto_minor_version_upgrade).lower() if auto_minor_version_upgrade else None,
@@ -419,6 +425,16 @@ class RDSConnection(AWSQueryConnection):
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'DBSecurityGroups.member')
+
+        if vpc_security_groups:
+            l = []
+            if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
+                for vpc_grp in vpc_security_groups.vpc_groups:
+                    l.append(vpc_grp)
+            else:
+                for vpc_grp in vpc_security_groups:
+                    l.append(vpc_grp)
+            self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
 
         # Remove any params set to None
         for k, v in params.items():
@@ -503,7 +519,9 @@ class RDSConnection(AWSQueryConnection):
                           preferred_backup_window=None,
                           multi_az=False,
                           apply_immediately=False,
-                          iops=None):
+                          iops=None,
+                          vpc_security_groups=None,
+                          ):
         """
         Modify an existing DBInstance.
 
@@ -579,6 +597,10 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
+        :type vpc_security_groups: list of str or a VPCSecurityGroupMembership object
+        :param vpc_security_groups: List of VPC security group ids or a
+            VPCSecurityGroupMembership object this DBInstance should be a member of
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -593,6 +615,15 @@ class RDSConnection(AWSQueryConnection):
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'DBSecurityGroups.member')
+        if vpc_security_groups:
+            l = []
+            if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
+                for vpc_grp in vpc_security_groups.vpc_groups:
+                    l.append(vpc_grp)
+            else:
+                for vpc_grp in vpc_security_groups:
+                    l.append(vpc_grp)
+            self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
         if master_password:
