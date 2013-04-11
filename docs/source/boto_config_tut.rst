@@ -148,8 +148,24 @@ These settings will default to::
     is_secure = True
     https_validate_certificates = True
     ca_certificates_file = cacerts.txt
-    http_socket_timeout=60
+    http_socket_timeout = 60
     send_crlf_after_proxy_auth_headers = False
+
+You can control the timeouts and number of retries used when retrieving
+information from the Metadata Service (this is used for retrieving credentials
+for IAM roles on EC2 instances):
+
+:metadata_service_timeout: Number of seconds until requests to the metadata
+  service will timeout (float).
+:metadata_service_num_attempts: Number of times to attempt to retrieve
+  information from the metadata service before giving up (int).
+
+These settings will default to::
+
+    [Boto]
+    metadata_service_timeout = 1.0
+    metadata_service_num_attempts = 1
+
 
 This section is also used for specifying endpoints for non-AWS services such as
 Eucalyptus and Walrus.
