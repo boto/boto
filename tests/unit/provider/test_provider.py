@@ -7,6 +7,21 @@ import mock
 from boto import provider
 
 
+INSTANCE_CONFIG = {
+    'iam': {
+        'security-credentials': {
+            'allowall': {u'AccessKeyId': u'iam_access_key',
+                            u'Code': u'Success',
+                            u'Expiration': u'2012-09-01T03:57:34Z',
+                            u'LastUpdated': u'2012-08-31T21:43:40Z',
+                            u'SecretAccessKey': u'iam_secret_key',
+                            u'Token': u'iam_token',
+                            u'Type': u'AWS-HMAC'}
+        }
+    }
+}
+
+
 class TestProvider(unittest.TestCase):
     def setUp(self):
         self.environ = {}
@@ -170,6 +185,19 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'second_access_key')
         self.assertEqual(p.secret_key, 'second_secret_key')
         self.assertEqual(p.security_token, 'second_token')
+
+    @mock.patch('boto.provider.config.getint')
+    @mock.patch('boto.provider.config.getfloat')
+    def test_metadata_config_params(self, config_float, config_int):
+        config_int.return_value = 10
+        config_float.return_value = 4.0
+        self.get_instance_metadata.return_value = INSTANCE_CONFIG
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'iam_access_key')
+        self.assertEqual(p.secret_key, 'iam_secret_key')
+        self.assertEqual(p.security_token, 'iam_token')
+        self.get_instance_metadata.assert_called_with(timeout=4.0,
+                                                      num_retries=10)
 
 
 if __name__ == '__main__':

@@ -275,7 +275,11 @@ class Provider(object):
         boto.log.debug("Retrieving credentials from metadata server.")
         from boto.utils import get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
-        metadata = get_instance_metadata(timeout=timeout, num_retries=1)
+        attempts = config.getint('Boto', 'metadata_service_num_attempts', 1)
+        # The num_retries arg is actually the total number of attempts made,
+        # so the config options is named *_num_attempts to make this more
+        # clear to users.
+        metadata = get_instance_metadata(timeout=timeout, num_retries=attempts)
         # I'm assuming there's only one role on the instance profile.
         if metadata and 'iam' in metadata:
             security = metadata['iam']['security-credentials'].values()[0]
