@@ -43,7 +43,10 @@ class TestVPCConnection(unittest.TestCase):
     """
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        """
+        Setup method to initialize vpc_connection objectq
+        """
+        super(TestVPCConnection, self).setUp()
         self.vpc_connection = VPCConnection(
             aws_access_key_id='aws_access_key_id',
             aws_secret_access_key='aws_secret_access_key')
@@ -52,7 +55,6 @@ class TestVPCConnection(unittest.TestCase):
         """
         Tests detach_internet_gateway with all valid parameters
         """
-
         internet_gateway_id = 'mock_gateway_id'
         vpc_id = 'mock_vpc_id'
 
