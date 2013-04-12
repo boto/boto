@@ -430,7 +430,7 @@ class RDSConnection(AWSQueryConnection):
         if vpc_security_groups:
             l = []
             for vpc_grp in vpc_security_groups:
-                if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
+                if isinstance(vpc_grp, VPCSecurityGroupMembership):
                     l.append(vpc_grp.vpc_group)
                 else:
                     l.append(vpc_grp)
@@ -618,7 +618,7 @@ class RDSConnection(AWSQueryConnection):
         if vpc_security_groups:
             l = []
             for vpc_grp in vpc_security_groups:
-                if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
+                if isinstance(vpc_grp, VPCSecurityGroupMembership):
                     l.append(vpc_grp.vpc_group)
                 else:
                     l.append(vpc_grp)
