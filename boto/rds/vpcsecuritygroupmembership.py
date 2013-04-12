@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2013 Anthony Tonns http://www.corsis.com/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,6 +22,7 @@
 """
 Represents a VPCSecurityGroupMembership
 """
+
 
 class VPCSecurityGroupMembership(object):
     """
