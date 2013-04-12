@@ -2,10 +2,10 @@
 Test module for VPC
 """
 from boto.vpc import VPCConnection
-import unittest2
+from unittest2 import TestCase
 
 
-class TestVPCConnection(unittest2.TestCase):
+class TestVPCConnection(TestCase):
     """
     Test class for `boto.vpc.VPCConnection`
     """
