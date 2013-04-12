@@ -22,6 +22,8 @@
 import unittest
 import time
 
+from nose.plugins.attrib import attr
+
 from boto.redshift.layer1 import RedshiftConnection
 from boto.redshift.exceptions import ClusterNotFoundFault
 from boto.redshift.exceptions import ResizeNotFoundFault
