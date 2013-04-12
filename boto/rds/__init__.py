@@ -28,6 +28,7 @@ from boto.rds.parametergroup import ParameterGroup
 from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
+from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 
 
 def regions():
