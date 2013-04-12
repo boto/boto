@@ -4,6 +4,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection
 
+
 DESCRIBE_VPCS = r'''<?xml version="1.0" encoding="UTF-8"?>
 <DescribeVpcsResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
     <requestId>623040d1-b51c-40bc-8080-93486f38d03d</requestId>
