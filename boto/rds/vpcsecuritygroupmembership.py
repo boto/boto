@@ -53,6 +53,6 @@ class VPCSecurityGroupMembership(object):
             vpc_grp = value
             self.vpc_groups.append(vpc_grp)
         elif name == 'Status':
-            self.staus = value
+            self.status = value
         else:
             setattr(self, name, value)

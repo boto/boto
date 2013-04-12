@@ -264,7 +264,7 @@ class DBInstance(object):
                preferred_backup_window=None,
                multi_az=False,
                iops=None,
-               vpc_security_groups=None
+               vpc_security_groups=None,
                apply_immediately=False):
         """
         Modify this DBInstance.
