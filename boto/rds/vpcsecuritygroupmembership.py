@@ -25,33 +25,30 @@ Represents a VPCSecurityGroupMembership
 
 class VPCSecurityGroupMembership(object):
     """
-    Represents VPC Security Group and RDS database is a member of
+    Represents VPC Security Group that this RDS database is a member of
 
     Properties reference available from the AWS documentation at
     http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_VpcSecurityGroupMembership.html
 
     :ivar connection: :py:class:`boto.rds.RDSConnection` associated with the current object
-    :ivar name: Name of the VPC security group membership
+    :ivar vpc_group: This id of the VPC security group
     :ivar status: Status of the VPC security group membership
-    :ivar vpc_groups: List of :py:class:`VPC Security Group
         <boto.ec2.securitygroup.SecurityGroup>` objects that this RDS Instance is a member of
     """
-    def __init__(self, connection=None, name=None, status=None):
+    def __init__(self, connection=None, status=None, vpc_group=None):
         self.connection = connection
-        self.name = name
         self.status = status
-        self.vpc_groups = []
+        self.vpc_group = vpc_group
 
     def __repr__(self):
-        return 'VPCSecurityGroupMembership:%s' % self.name
+        return 'VPCSecurityGroupMembership:%s' % self.vpc_group
 
     def startElement(self, name, attrs, connection):
         pass
 
     def endElement(self, name, value, connection):
         if name == 'VpcSecurityGroupId':
-            vpc_grp = value
-            self.vpc_groups.append(vpc_grp)
+            self.vpc_group = value
         elif name == 'Status':
             self.status = value
         else:

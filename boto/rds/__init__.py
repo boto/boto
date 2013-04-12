@@ -364,8 +364,8 @@ class RDSConnection(AWSQueryConnection):
                       allocate 100 GB of storage.
 
         :type vpc_security_groups: list of str or a VPCSecurityGroupMembership object
-        :param vpc_security_groups: List of VPC security group ids or a
-            VPCSecurityGroupMembership object this DBInstance should be a member of
+        :param vpc_security_groups: List of VPC security group ids or a list of
+            VPCSecurityGroupMembership objects this DBInstance should be a member of
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
@@ -429,11 +429,10 @@ class RDSConnection(AWSQueryConnection):
 
         if vpc_security_groups:
             l = []
-            if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
-                for vpc_grp in vpc_security_groups.vpc_groups:
-                    l.append(vpc_grp)
-            else:
-                for vpc_grp in vpc_security_groups:
+            for vpc_grp in vpc_security_groups:
+                if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
+                    l.append(vpc_grp.vpc_group)
+                else:
                     l.append(vpc_grp)
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
 
@@ -618,11 +617,10 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, l, 'DBSecurityGroups.member')
         if vpc_security_groups:
             l = []
-            if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
-                for vpc_grp in vpc_security_groups.vpc_groups:
-                    l.append(vpc_grp)
-            else:
-                for vpc_grp in vpc_security_groups:
+            for vpc_grp in vpc_security_groups:
+                if isinstance(vpc_security_groups, VPCSecurityGroupMembership):
+                    l.append(vpc_grp.vpc_group)
+                else:
                     l.append(vpc_grp)
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
         if preferred_maintenance_window:
