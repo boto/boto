@@ -31,6 +31,32 @@ class VPCSecurityGroupMembership(object):
     Properties reference available from the AWS documentation at
     http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_VpcSecurityGroupMembership.html
 
+    Example:
+    pri = "sg-abcdefgh"
+    sec = "sg-hgfedcba"
+
+    # create with list of str
+    d = c.create_dbinstance(... vpc_security_groups=[pri], ... )
+
+    # modify with list of str
+    d.modify(... vpc_security_groups=[pri,sec], ... )
+
+    # create with objects
+    w = []
+    x = VPCSecurityGroupMembership()
+    x.vpc_group=pri
+    w.append(x)
+
+    d = c.create_dbinstance(... vpc_security_groups=w, ... )
+
+    # modify with objects
+    y = d.vpc_security_groups
+    z = VPCSecurityGroupMembership()
+    z.vpc_group=sec
+    y.append(z)
+
+    d.modify(...  vpc_security_groups=y, ... )
+
     :ivar connection: :py:class:`boto.rds.RDSConnection` associated with the current object
     :ivar vpc_group: This id of the VPC security group
     :ivar status: Status of the VPC security group membership
