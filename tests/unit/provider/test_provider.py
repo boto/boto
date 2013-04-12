@@ -8,16 +8,14 @@ from boto import provider
 
 
 INSTANCE_CONFIG = {
-    'iam': {
-        'security-credentials': {
-            'allowall': {u'AccessKeyId': u'iam_access_key',
-                            u'Code': u'Success',
-                            u'Expiration': u'2012-09-01T03:57:34Z',
-                            u'LastUpdated': u'2012-08-31T21:43:40Z',
-                            u'SecretAccessKey': u'iam_secret_key',
-                            u'Token': u'iam_token',
-                            u'Type': u'AWS-HMAC'}
-        }
+    'allowall': {
+        u'AccessKeyId': u'iam_access_key',
+        u'Code': u'Success',
+        u'Expiration': u'2012-09-01T03:57:34Z',
+        u'LastUpdated': u'2012-08-31T21:43:40Z',
+        u'SecretAccessKey': u'iam_secret_key',
+        u'Token': u'iam_token',
+        u'Type': u'AWS-HMAC'
     }
 }
 
@@ -127,24 +125,14 @@ class TestProvider(unittest.TestCase):
         self.assertIsNone(p.security_token)
 
     def test_metadata_server_credentials(self):
-        instance_config = {
-            'iam': {
-                'security-credentials': {
-                    'allowall': {u'AccessKeyId': u'iam_access_key',
-                                 u'Code': u'Success',
-                                 u'Expiration': u'2012-09-01T03:57:34Z',
-                                 u'LastUpdated': u'2012-08-31T21:43:40Z',
-                                 u'SecretAccessKey': u'iam_secret_key',
-                                 u'Token': u'iam_token',
-                                 u'Type': u'AWS-HMAC'}
-                }
-            }
-        }
-        self.get_instance_metadata.return_value = instance_config
+        self.get_instance_metadata.return_value = INSTANCE_CONFIG
         p = provider.Provider('aws')
         self.assertEqual(p.access_key, 'iam_access_key')
         self.assertEqual(p.secret_key, 'iam_secret_key')
         self.assertEqual(p.security_token, 'iam_token')
+        self.assertEqual(
+            self.get_instance_metadata.call_args[1]['data'],
+            'meta-data/iam/security-credentials')
 
     def test_refresh_credentials(self):
         now = datetime.now()
@@ -159,13 +147,7 @@ class TestProvider(unittest.TestCase):
             u'Token': u'first_token',
             u'Type': u'AWS-HMAC'
         }
-        instance_config = {
-            'iam': {
-                'security-credentials': {
-                    'allowall': credentials
-                }
-            }
-        }
+        instance_config = {'allowall': credentials}
         self.get_instance_metadata.return_value = instance_config
         p = provider.Provider('aws')
         self.assertEqual(p.access_key, 'first_access_key')
@@ -196,8 +178,9 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'iam_access_key')
         self.assertEqual(p.secret_key, 'iam_secret_key')
         self.assertEqual(p.security_token, 'iam_token')
-        self.get_instance_metadata.assert_called_with(timeout=4.0,
-                                                      num_retries=10)
+        self.get_instance_metadata.assert_called_with(
+            timeout=4.0, num_retries=10,
+            data='meta-data/iam/security-credentials')
 
 
 if __name__ == '__main__':
