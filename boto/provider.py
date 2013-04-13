@@ -279,10 +279,12 @@ class Provider(object):
         # The num_retries arg is actually the total number of attempts made,
         # so the config options is named *_num_attempts to make this more
         # clear to users.
-        metadata = get_instance_metadata(timeout=timeout, num_retries=attempts)
-        # I'm assuming there's only one role on the instance profile.
-        if metadata and 'iam' in metadata:
-            security = metadata['iam']['security-credentials'].values()[0]
+        metadata = get_instance_metadata(
+            timeout=timeout, num_retries=attempts,
+            data='meta-data/iam/security-credentials')
+        if metadata:
+            # I'm assuming there's only one role on the instance profile.
+            security = metadata.values()[0]
             self._access_key = security['AccessKeyId']
             self._secret_key = self._convert_key_to_str(security['SecretAccessKey'])
             self._security_token = security['Token']
