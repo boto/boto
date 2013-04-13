@@ -811,3 +811,9 @@ class MWSConnection(AWSQueryConnection):
            or ListMarketplaceParticipationsByNextToken.
         """
         return self.post_request(path, kw, response)
+        
+    @api_action('Sellers', 15, 60, 'GetServiceStatus')
+    def get_inbound_service_status(self, path, response, **kw):
+        """Returns the operational status of the Sellers API section.
+        """
+        return self.post_request(path, kw, response)
