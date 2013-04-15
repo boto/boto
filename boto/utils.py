@@ -210,8 +210,7 @@ def retry_url(url, retry_on_404=True, num_retries=10):
             req = urllib2.Request(url)
             r = opener.open(req)
             result = r.read()
-            resp = urllib2.urlopen(req)
-            return resp.read()
+            return result
         except urllib2.HTTPError, e:
             # in 2.6 you use getcode(), in 2.5 and earlier you use code
             if hasattr(e, 'getcode'):
