@@ -10,9 +10,9 @@ bucket = conn.get_bucket("testingboto")
 if (bucket == None):
     print "no bucket"
 
-string = "this is a test string"
+string = "this is a test string2"
 
-ekey = EncryptedKey("password",bucket,"cipherString")
+ekey = EncryptedKey("password",bucket,"cipherString2.txt")
 
 ekey.set_contents_from_string(string)
 print "done"
