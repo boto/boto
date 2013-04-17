@@ -13,6 +13,8 @@ class BaseSchemaField(object):
     Contains most of the core functionality for the field. Subclasses must
     define an ``attr_type`` to pass to DynamoDB.
     """
+    attr_type = None
+
     def __init__(self, name, data_type=STRING):
         self.name = name
         self.data_type = data_type
@@ -170,7 +172,7 @@ class Item(object):
         """
         self._data = {}
 
-        for field_name, field_value in data.get('Items', {}):
+        for field_name, field_value in data.get('Item', {}).items():
             self[field_name] = self._dynamizer.decode(field_value)
 
         self.mark_clean()
