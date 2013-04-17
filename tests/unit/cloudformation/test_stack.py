@@ -59,5 +59,38 @@ class TestStackParse(unittest.TestCase):
         tags = rs[0].tags
         self.assertEqual(tags, {u'key0': u'value0', u'key1': u'value1'})
 
+    def test_disable_rollback_false(self):
+        # SAMPLE_XML defines DisableRollback=="false"
+        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        h = boto.handler.XmlHandler(rs, None)
+        xml.sax.parseString(SAMPLE_XML, h)
+        disable_rollback = rs[0].disable_rollback
+        self.assertFalse(disable_rollback)
+
+    def test_disable_rollback_false_upper(self):
+        # Should also handle "False"
+        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        h = boto.handler.XmlHandler(rs, None)
+        sample_xml_upper = SAMPLE_XML.replace('false', 'False')
+        xml.sax.parseString(sample_xml_upper, h)
+        disable_rollback = rs[0].disable_rollback
+        self.assertFalse(disable_rollback)
+
+    def test_disable_rollback_true(self):
+        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        h = boto.handler.XmlHandler(rs, None)
+        sample_xml_upper = SAMPLE_XML.replace('false', 'true')
+        xml.sax.parseString(sample_xml_upper, h)
+        disable_rollback = rs[0].disable_rollback
+        self.assertTrue(disable_rollback)
+
+    def test_disable_rollback_true_upper(self):
+        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        h = boto.handler.XmlHandler(rs, None)
+        sample_xml_upper = SAMPLE_XML.replace('false', 'True')
+        xml.sax.parseString(sample_xml_upper, h)
+        disable_rollback = rs[0].disable_rollback
+        self.assertTrue(disable_rollback)
+
 if __name__ == '__main__':
     unittest.main()

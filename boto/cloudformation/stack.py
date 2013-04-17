@@ -45,7 +45,10 @@ class Stack(object):
         elif name == "Description":
             self.description = value
         elif name == "DisableRollback":
-            self.disable_rollback = bool(value)
+            if str(value).lower() == 'true':
+                self.disable_rollback = True
+            else:
+                self.disable_rollback = False
         elif name == 'StackId':
             self.stack_id = value
         elif name == 'StackName':
