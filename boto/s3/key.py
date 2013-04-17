@@ -37,10 +37,8 @@ from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
 from boto.utils import compute_md5
-from boto.s3.localencryption import AESCipher
 try:
     from hashlib import md5
-    from hashlib import sha256
 except ImportError:
     from md5 import md5
 
@@ -96,7 +94,7 @@ class Key(object):
 
 
 
-    def __init__(self, bucket=None, name=None,localEncryptionKey=None):
+    def __init__(self, bucket=None, name=None):
         self.bucket = bucket
         self.name = name
         self.metadata = {}
@@ -119,8 +117,6 @@ class Key(object):
         self.source_version_id = None
         self.delete_marker = False
         self.encrypted = None
-        self.localEncryptionKey = localEncryptionKey
-        self.aes = AESCipher(sha256(localEncryptionKey).digest())
         # If the object is being restored, this attribute will be set to True.
         # If the object is restored, it will be set to False.  Otherwise this
         # value will be None. If the restore is completed (ongoing_restore =
@@ -707,12 +703,6 @@ class Key(object):
             the default behaviour is to read all bytes from the file
             pointer. Less bytes may be available.
         """
-        fp = self.aes.encryptFP(fp)
-        #compute the md5 for the encrypted content
-        fp.read()
-        size = fp.tell()
-        print size
-        fp.seek(0)
         self._send_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                  query_args=query_args,
                                  chunked_transfer=chunked_transfer, size=size)
@@ -1359,8 +1349,6 @@ class Key(object):
                                 response_headers=response_headers,
                                 hash_algs=None,
                                 query_args=None)
-
-        fp = self.aes.decryptFP(fp)
 
     def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
                  torrent=False, version_id=None, override_num_retries=None,
