@@ -33,6 +33,13 @@ methods of that object. In addition, the boto
 :py:class:`Config <boto.pyami.config.Config>` class defines additional
 methods that are described on the PyamiConfigMethods page.
 
+An example ``~/.boto`` file should look like::
+
+    [Credentials]
+    aws_access_key_id = <your_access_key_here>
+    aws_secret_access_key = <your_secret_key_here>
+
+
 Sections
 --------
 
@@ -141,14 +148,30 @@ These settings will default to::
     is_secure = True
     https_validate_certificates = True
     ca_certificates_file = cacerts.txt
-    http_socket_timeout=60
+    http_socket_timeout = 60
     send_crlf_after_proxy_auth_headers = False
+
+You can control the timeouts and number of retries used when retrieving
+information from the Metadata Service (this is used for retrieving credentials
+for IAM roles on EC2 instances):
+
+:metadata_service_timeout: Number of seconds until requests to the metadata
+  service will timeout (float).
+:metadata_service_num_attempts: Number of times to attempt to retrieve
+  information from the metadata service before giving up (int).
+
+These settings will default to::
+
+    [Boto]
+    metadata_service_timeout = 1.0
+    metadata_service_num_attempts = 1
+
 
 This section is also used for specifying endpoints for non-AWS services such as
 Eucalyptus and Walrus.
 
 :eucalyptus_host: Select a default endpoint host for eucalyptus
-:walrus_host: Select a default host for Walrus 
+:walrus_host: Select a default host for Walrus
 
 For example::
 
@@ -170,8 +193,8 @@ For example::
 
     [Boto]
     autoscale_version = 2011-01-01
-    autoscale_endpoint = autoscaling.us-east-1.amazonaws.com
-    autoscale_region_name = us-east-1
+    autoscale_endpoint = autoscaling.us-west-2.amazonaws.com
+    autoscale_region_name = us-west-2
 
 
 Cloudformation settings can also be defined:
@@ -184,8 +207,8 @@ For example::
 
     [Boto]
     cfn_version = 2010-05-15
-    cfn_region_name = us-east-1
-    cfn_region_endpoint = cloudformation.us-east-1.amazonaws.com
+    cfn_region_name = us-west-2
+    cfn_region_endpoint = cloudformation.us-west-2.amazonaws.com
 
 Cloudsearch settings:
 
@@ -195,8 +218,8 @@ Cloudsearch settings:
 For example::
 
     [Boto]
-    cs_region_name = us-east-1
-    cs_region_endpoint = cloudsearch.us-east-1.amazonaws.com
+    cs_region_name = us-west-2
+    cs_region_endpoint = cloudsearch.us-west-2.amazonaws.com
 
 Cloudwatch settings:
 
@@ -208,8 +231,8 @@ For example::
 
     [Boto]
     cloudwatch_version = 2010-08-01
-    cloudwatch_region_name = us-east-1
-    cloudwatch_region_endpoint = monitoring.us-east-1.amazonaws.com
+    cloudwatch_region_name = us-west-2
+    cloudwatch_region_endpoint = monitoring.us-west-2.amazonaws.com
 
 EC2 settings:
 
@@ -221,8 +244,8 @@ For example::
 
     [Boto]
     ec2_version = 2012-12-01
-    ec2_region_name = us-east-1
-    ec2_region_endpoint = ec2.us-east-1.amazonaws.com
+    ec2_region_name = us-west-2
+    ec2_region_endpoint = ec2.us-west-2.amazonaws.com
 
 ELB settings:
 
@@ -234,8 +257,8 @@ For example::
 
     [Boto]
     elb_version = 2012-06-01
-    elb_region_name = us-east-1
-    elb_region_endpoint = elasticloadbalancing.us-east-1.amazonaws.com
+    elb_region_name = us-west-2
+    elb_region_endpoint = elasticloadbalancing.us-west-2.amazonaws.com
 
 EMR settings:
 
@@ -247,9 +270,9 @@ For example::
 
     [Boto]
     emr_version = 2009-03-31
-    emr_region_name = us-east-1
-    emr_region_endpoint = elasticmapreduce.us-east-1.amazonaws.com
-    
+    emr_region_name = us-west-2
+    emr_region_endpoint = elasticmapreduce.us-west-2.amazonaws.com
+
 
 Precedence
 ----------
@@ -301,7 +324,7 @@ Amazon Simple Workflow service.
 Example::
 
     [SWF]
-    region = us-east-1
+    region = us-west-2
 
 Pyami
 ^^^^^
@@ -318,7 +341,7 @@ Example::
 DB
 ^^
 The DB section is used to configure access to databases through the
-:func:`boto.sdb.db.manager.get_manager` function. 
+:func:`boto.sdb.db.manager.get_manager` function.
 
 :db_type: Type of the database. Current allowed values are `SimpleDB` and
     `XML`.
@@ -359,7 +382,7 @@ This section is used to configure SimpleDB
 Example::
 
     [SDB]
-    region = us-east-1
+    region = us-west-2
 
 DynamoDB
 ^^^^^^^^
@@ -372,5 +395,5 @@ This section is used to configure DynamoDB
 Example::
 
     [DynamoDB]
-    region = us-east-1
+    region = us-west-2
     validate_checksums = True

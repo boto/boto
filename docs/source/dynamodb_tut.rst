@@ -57,7 +57,7 @@ hash key element, and the optional range key element. This is explained in
 greater detail in DynamoDB's `Data Model`_ documentation.
 
 We'll start by defining a schema that has a hash key and a range key that
-are both keys::
+are both strings::
 
     >>> message_table_schema = conn.create_schema(
             hash_key_name='forum_name',

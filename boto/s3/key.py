@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import errno
 import mimetypes
 import os
 import re
@@ -32,6 +33,7 @@ import math
 import urllib
 import boto.utils
 from boto.exception import BotoClientError
+from boto.exception import StorageDataError
 from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
@@ -1400,18 +1402,23 @@ class Key(object):
                 cb_count = 0
             i = 0
             cb(data_len, cb_size)
-        for bytes in self:
-            fp.write(bytes)
-            data_len += len(bytes)
-            for alg in digesters:
-                digesters[alg].update(bytes)
-            if cb:
-                if cb_size > 0 and data_len >= cb_size:
-                    break
-                i += 1
-                if i == cb_count or cb_count == -1:
-                    cb(data_len, cb_size)
-                    i = 0
+        try:
+            for bytes in self:
+                fp.write(bytes)
+                data_len += len(bytes)
+                for alg in digesters:
+                    digesters[alg].update(bytes)
+                if cb:
+                    if cb_size > 0 and data_len >= cb_size:
+                        break
+                    i += 1
+                    if i == cb_count or cb_count == -1:
+                        cb(data_len, cb_size)
+                        i = 0
+        except IOError as e:
+            if e.errno == errno.ENOSPC:
+                raise StorageDataError('Out of space for destination file '
+                                       '%s' % fp.name)
         if cb and (cb_count <= 1 or i > 0) and data_len > 0:
             cb(data_len, cb_size)
         for alg in digesters:

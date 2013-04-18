@@ -523,9 +523,11 @@ class AWSAuthConnection(object):
         # timeouts will only be applied if Python is 2.6 or greater.
         self.http_connection_kwargs = {}
         if (sys.version_info[0], sys.version_info[1]) >= (2, 6):
-            if config.has_option('Boto', 'http_socket_timeout'):
-                timeout = config.getint('Boto', 'http_socket_timeout')
-                self.http_connection_kwargs['timeout'] = timeout
+            # If timeout isn't defined in boto config file, use 70 second
+            # default as recommended by
+            # http://docs.aws.amazon.com/amazonswf/latest/apireference/API_PollForActivityTask.html
+            self.http_connection_kwargs['timeout'] = config.getint(
+                'Boto', 'http_socket_timeout', 70)
 
         if isinstance(provider, Provider):
             # Allow overriding Provider
@@ -813,6 +815,7 @@ class AWSAuthConnection(object):
         boto.log.debug('Data: %s' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
+        boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
         e = None

@@ -9,6 +9,13 @@ offered by `Amazon Web Services`_.
 
 .. _Amazon Web Services: http://aws.amazon.com/
 
+Getting Started
+---------------
+
+If you've never used ``boto`` before, you should read the
+:doc:`Getting Started with Boto <getting_started>` guide to get familiar
+with ``boto`` & its usage.
+
 Currently Supported Services
 ----------------------------
 
@@ -28,8 +35,10 @@ Currently Supported Services
 
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * DynamoDB2 -- (:doc:`API Reference <ref/dynamodb2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
+  * Redshift -- (:doc:`API Reference <ref/redshift>`)
 
 * **Deployment and Management**
 
@@ -97,6 +106,7 @@ Additional Resources
 .. toctree::
    :hidden:
 
+   getting_started
    ec2_tut
    security_groups
    ref/ec2
@@ -137,6 +147,12 @@ Additional Resources
    boto_config_tut
    ref/index
    documentation
+   contributing
+   ref/datapipeline
+   ref/elasticache
+   ref/elastictranscoder
+   ref/redshift
+   ref/dynamodb2
 
 
 Indices and tables
