@@ -26,6 +26,7 @@ import hashlib
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.compat import json
+from boto.utils import ensure_bytes
 import boto
 
 
@@ -310,7 +311,7 @@ class SNSConnection(AWSQueryConnection):
         """
         t = queue.id.split('/')
         q_arn = queue.arn
-        sid = hashlib.md5(topic + q_arn).hexdigest()
+        sid = hashlib.md5(ensure_bytes(topic + q_arn)).hexdigest()
         sid_exists = False
         resp = self.subscribe(topic, 'sqs', q_arn)
         attr = queue.get_attributes('Policy')
