@@ -35,8 +35,10 @@ Currently Supported Services
 
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * DynamoDB2 -- (:doc:`API Reference <ref/dynamodb2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
+  * Redshift -- (:doc:`API Reference <ref/redshift>`)
 
 * **Deployment and Management**
 
@@ -150,6 +152,7 @@ Additional Resources
    ref/elasticache
    ref/elastictranscoder
    ref/redshift
+   ref/dynamodb2
 
 
 Indices and tables
