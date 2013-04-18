@@ -195,12 +195,20 @@ class StorageUri(object):
 
     def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10,
                              torrent=False, version_id=None,
-                             res_download_handler=None, response_headers=None):
+                             res_download_handler=None, response_headers=None,
+                             hash_algs=None):
         self._check_object_uri('get_contents_to_file')
         key = self.get_key(None, headers)
         self.check_response(key, 'key', self.uri)
-        key.get_contents_to_file(fp, headers, cb, num_cb, torrent, version_id,
-                                 res_download_handler, response_headers)
+        if hash_algs:
+            key.get_contents_to_file(fp, headers, cb, num_cb, torrent,
+                                     version_id, res_download_handler,
+                                     response_headers,
+                                     hash_algs=hash_algs)
+        else:
+            key.get_contents_to_file(fp, headers, cb, num_cb, torrent,
+                                     version_id, res_download_handler,
+                                     response_headers)
 
     def get_contents_as_string(self, validate=False, headers=None, cb=None,
                                num_cb=10, torrent=False, version_id=None):
@@ -304,13 +312,15 @@ class BucketStorageUri(StorageUri):
       self._update_from_values(
           getattr(key, 'version_id', None),
           getattr(key, 'generation', None),
-          getattr(key, 'is_latest', None))
+          getattr(key, 'is_latest', None),
+          getattr(key, 'md5', None))
 
-    def _update_from_values(self, version_id, generation, is_latest):
+    def _update_from_values(self, version_id, generation, is_latest, md5):
       self.version_id = version_id
       self.generation = generation
       self.is_latest = is_latest
       self._build_uri_strings()
+      self.md5 = md5
 
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
@@ -652,7 +662,7 @@ class BucketStorageUri(StorageUri):
                 rewind=rewind, res_upload_handler=res_upload_handler)
             if res_upload_handler:
                 self._update_from_values(None, res_upload_handler.generation,
-                                         None)
+                                         None, md5)
         else:
             self._warn_about_args('set_contents_from_file',
                                   res_upload_handler=res_upload_handler)
@@ -739,6 +749,15 @@ class BucketStorageUri(StorageUri):
                                                        metadata_minus,
                                                        preserve_acl,
                                                        headers=headers)
+
+    def compose(self, components, content_type=None, headers=None):
+        self._check_object_uri('compose')
+        component_keys = []
+        for suri in components:
+            component_keys.append(suri.new_key())
+            component_keys[-1].generation = suri.generation
+        self.new_key().compose(
+                component_keys, content_type=content_type, headers=headers)
 
     def exists(self, headers=None):
       """Returns True if the object exists or False if it doesn't"""

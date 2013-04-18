@@ -9,6 +9,13 @@ offered by `Amazon Web Services`_.
 
 .. _Amazon Web Services: http://aws.amazon.com/
 
+Getting Started
+---------------
+
+If you've never used ``boto`` before, you should read the
+:doc:`Getting Started with Boto <getting_started>` guide to get familiar
+with ``boto`` & its usage.
+
 Currently Supported Services
 ----------------------------
 
@@ -97,6 +104,7 @@ Additional Resources
 .. toctree::
    :hidden:
 
+   getting_started
    ec2_tut
    security_groups
    ref/ec2
@@ -137,6 +145,11 @@ Additional Resources
    boto_config_tut
    ref/index
    documentation
+   contributing
+   ref/datapipeline
+   ref/elasticache
+   ref/elastictranscoder
+   ref/redshift
 
 
 Indices and tables

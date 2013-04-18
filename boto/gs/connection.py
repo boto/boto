@@ -23,6 +23,7 @@ from boto.gs.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
 from boto.s3.connection import check_lowercase_bucketname
+from boto.utils import get_utf8_value
 
 class Location:
     DEFAULT = 'US'
@@ -50,7 +51,7 @@ class GSConnection(S3Connection):
                       storage_class='STANDARD'):
         """
         Creates a new bucket. By default it's located in the USA. You can
-        pass Location.EU to create an European bucket. You can also pass
+        pass Location.EU to create bucket in the EU. You can also pass
         a LocationConstraint for where the bucket should be located, and 
         a StorageClass describing how the data should be stored.
 
@@ -89,8 +90,9 @@ class GSConnection(S3Connection):
             storage_class_elem = ''
         data = ('<CreateBucketConfiguration>%s%s</CreateBucketConfiguration>'
                  % (location_elem, storage_class_elem))
-        response = self.make_request('PUT', bucket_name, headers=headers,
-                data=data)
+        response = self.make_request(
+            'PUT', get_utf8_value(bucket_name), headers=headers,
+            data=get_utf8_value(data))
         body = response.read()
         if response.status == 409:
             raise self.provider.storage_create_error(

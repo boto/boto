@@ -25,7 +25,7 @@
 # IN THE SOFTWARE.
 
 """
-Some unit tests for the GSConnection
+Some integration tests for the GSConnection
 """
 
 import os

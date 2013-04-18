@@ -196,9 +196,9 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         boto.log.debug('StringToSign:\n%s' % string_to_sign)
         b64_hmac = self.sign_string(string_to_sign)
         auth_hdr = self._provider.auth_header
-        headers['Authorization'] = ("%s %s:%s" %
-                                    (auth_hdr,
-                                     self._provider.access_key, b64_hmac))
+        auth = ("%s %s:%s" % (auth_hdr, self._provider.access_key, b64_hmac))
+        boto.log.debug('Signature:\n%s' % auth)
+        headers['Authorization'] = auth
 
 
 class HmacAuthV2Handler(AuthHandler, HmacKeys):
