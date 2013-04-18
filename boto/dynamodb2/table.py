@@ -510,6 +510,29 @@ class BatchTable(object):
         if not self._to_put and not self._to_delete:
             return False
 
+        # Flush anything that's left.
+        self.flush()
+        return True
+
+    def put_item(self, data):
+        self._to_put.append(data)
+
+        if self.should_flush():
+            self.flush()
+
+    def delete_item(self, **kwargs):
+        self._to_delete.append(kwargs)
+
+        if self.should_flush():
+            self.flush()
+
+    def should_flush(self):
+        if len(self._to_put) + len(self._to_delete) == 25:
+            return True
+
+        return False
+
+    def flush(self):
         batch_data = {
             self.table.table_name: [
                 # We'll insert data here shortly.
@@ -532,10 +555,6 @@ class BatchTable(object):
             })
 
         self.table.connection.batch_write_item(self.table.table_name, batch_data)
+        self._to_put = []
+        self._to_delete = []
         return True
-
-    def put_item(self, data):
-        self._to_put.append(data)
-
-    def delete_item(self, **kwargs):
-        self._to_delete.append(kwargs)

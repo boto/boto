@@ -767,3 +767,48 @@ class TableTestCase(unittest.TestCase):
                 self.assertEqual(str(e), 'OH NOES')
 
         self.assertFalse(mock_batch.called)
+
+    def test_batch_write_flushing(self):
+        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+            with self.users.batch_write() as batch:
+                batch.put_item(data={
+                    'username': 'jane',
+                    'date_joined': 12342547
+                })
+                # This would only be enough for one batch.
+                batch.delete_item(username='johndoe1')
+                batch.delete_item(username='johndoe2')
+                batch.delete_item(username='johndoe3')
+                batch.delete_item(username='johndoe4')
+                batch.delete_item(username='johndoe5')
+                batch.delete_item(username='johndoe6')
+                batch.delete_item(username='johndoe7')
+                batch.delete_item(username='johndoe8')
+                batch.delete_item(username='johndoe9')
+                batch.delete_item(username='johndoe10')
+                batch.delete_item(username='johndoe11')
+                batch.delete_item(username='johndoe12')
+                batch.delete_item(username='johndoe13')
+                batch.delete_item(username='johndoe14')
+                batch.delete_item(username='johndoe15')
+                batch.delete_item(username='johndoe16')
+                batch.delete_item(username='johndoe17')
+                batch.delete_item(username='johndoe18')
+                batch.delete_item(username='johndoe19')
+                batch.delete_item(username='johndoe20')
+                batch.delete_item(username='johndoe21')
+                batch.delete_item(username='johndoe22')
+                batch.delete_item(username='johndoe23')
+
+                # We're only at 24 items. No flushing yet.
+                self.assertEqual(mock_batch.call_count, 0)
+
+                # This pushes it over the edge. A flush happens then we start
+                # queuing objects again.
+                batch.delete_item(username='johndoe24')
+                self.assertEqual(mock_batch.call_count, 1)
+                # Since we add another, there's enough for a second call to
+                # flush.
+                batch.delete_item(username='johndoe25')
+
+        self.assertEqual(mock_batch.call_count, 2)
