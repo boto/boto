@@ -2,9 +2,14 @@ import mock
 import unittest
 from boto.dynamodb2.constants import (STRING, NUMBER, BINARY,
                                       STRING_SET, NUMBER_SET, BINARY_SET)
+from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.table import (BaseSchemaField, HashKey, RangeKey,
                                   BaseIndexField, AllIndex, KeysOnlyIndex,
                                   IncludeIndex, Item, Table)
+
+
+FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
+
 
 
 class SchemaFieldsTestCase(unittest.TestCase):
@@ -165,7 +170,7 @@ class IndexFieldTestCase(unittest.TestCase):
 class ItemTestCase(unittest.TestCase):
     def setUp(self):
         super(ItemTestCase, self).setUp()
-        self.table = Table('whatever')
+        self.table = Table('whatever', connection=FakeDynamoDBConnection())
         self.johndoe = self.create_item({
             'username': 'johndoe',
             'first_name': 'John',
@@ -231,13 +236,145 @@ class ItemTestCase(unittest.TestCase):
         self.assertEqual(sorted(empty_item['friends']), sorted(['alice', 'bob', 'jane']))
 
     def test_get_keys(self):
-        pass
+        # Setup the data.
+        self.table.schema = [
+            HashKey('username'),
+            RangeKey('date_joined'),
+        ]
+        self.assertEqual(self.johndoe.get_keys(), {
+            'username': {'S': 'johndoe'},
+            'date_joined': {'N': '12345'}
+        })
 
     def test_prepare(self):
-        pass
+        self.assertEqual(self.johndoe.prepare(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'}
+        })
 
-    def test_save(self):
-        pass
+    def test_save_no_changes(self):
+        # Unchanged, no save.
+        with mock.patch.object(self.table, '_put_item', return_value=True) as mock_put_item:
+            self.assertFalse(self.johndoe.save())
+
+        self.assertFalse(mock_put_item.called)
+
+    def test_save_with_changes(self):
+        # With changed data.
+        with mock.patch.object(self.table, '_put_item', return_value=True) as mock_put_item:
+            self.johndoe['first_name'] = 'J'
+            self.johndoe['new_attr'] = 'never_seen_before'
+            self.assertTrue(self.johndoe.save())
+            self.assertFalse(self.johndoe.needs_save())
+
+        self.assertTrue(mock_put_item.called)
+        mock_put_item.assert_called_once_with({
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'J'},
+            'new_attr': {'S': 'never_seen_before'},
+            'date_joined': {'N': '12345'}
+        })
 
     def test_delete(self):
-        pass
+        # Setup the data.
+        self.table.schema = [
+            HashKey('username'),
+            RangeKey('date_joined'),
+        ]
+
+        with mock.patch.object(self.table, 'delete_item', return_value=True) as mock_delete_item:
+            self.johndoe.delete()
+
+        self.assertTrue(mock_delete_item.called)
+        mock_delete_item.assert_called_once_with(key={
+            'username': {'S': 'johndoe'},
+            'date_joined': {'N': '12345'}
+        })
+
+
+class TableTestCase(unittest.TestCase):
+    def setUp(self):
+        super(TableTestCase, self).setUp()
+        self.table = Table('users', connection=FakeDynamoDBConnection())
+
+    def test__introspect_schema(self):
+        raw_schema_1 = [
+            {
+                "AttributeName": "username",
+                "KeyType": "HASH"
+            },
+            {
+                "AttributeName": "date_joined",
+                "KeyType": "RANGE"
+            }
+        ]
+        schema_1 = self.table._introspect_schema(raw_schema_1)
+        self.assertEqual(len(schema_1), 2)
+        self.assertTrue(isinstance(schema_1[0], HashKey))
+        self.assertEqual(schema_1[0].name, 'username')
+        self.assertTrue(isinstance(schema_1[1], RangeKey))
+        self.assertEqual(schema_1[1].name, 'date_joined')
+
+    def test__introspect_indexes(self):
+        raw_indexes_1 = [
+            {
+                "IndexName": "MostRecentlyJoinedIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "date_joined",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "KEYS_ONLY"
+                }
+            },
+            {
+                "IndexName": "EverybodyIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    },
+                ],
+                "Projection": {
+                    "ProjectionType": "ALL"
+                }
+            },
+            {
+                "IndexName": "GenderIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "date_joined",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "INCLUDE",
+                    "NonKeyAttributes": [
+                        'gender',
+                    ]
+                }
+            }
+        ]
+        indexes_1 = self.table._introspect_indexes(raw_indexes_1)
+        self.assertEqual(len(indexes_1), 3)
+        self.assertTrue(isinstance(indexes_1[0], KeysOnlyIndex))
+        self.assertEqual(indexes_1[0].name, 'MostRecentlyJoinedIndex')
+        self.assertEqual(len(indexes_1[0].parts), 2)
+        self.assertTrue(isinstance(indexes_1[1], AllIndex))
+        self.assertEqual(indexes_1[1].name, 'EverybodyIndex')
+        self.assertEqual(len(indexes_1[1].parts), 1)
+        self.assertTrue(isinstance(indexes_1[2], IncludeIndex))
+        self.assertEqual(indexes_1[2].name, 'GenderIndex')
+        self.assertEqual(len(indexes_1[2].parts), 2)
+        self.assertEqual(indexes_1[2].includes_fields, ['gender'])

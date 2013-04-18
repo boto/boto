@@ -1,5 +1,4 @@
-from boto.dynamodb2.constants import (STRING, NUMBER, BINARY,
-                                      STRING_SET, NUMBER_SET, BINARY_SET)
+from boto.dynamodb2.constants import STRING
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.types import Dynamizer
@@ -182,7 +181,7 @@ class Item(object):
         key_data = {}
 
         for key in key_fields:
-            key_data[key] = self._dynamizer(self[key])
+            key_data[key] = self._dynamizer.encode(self[key])
 
         return key_data
 
@@ -191,7 +190,7 @@ class Item(object):
         # and hand-off to the table to handle creation/update.
         final_data = {}
 
-        for key, value in self._data:
+        for key, value in self._data.items():
             final_data[key] = self._dynamizer.encode(value)
 
         return final_data
@@ -250,7 +249,7 @@ class Table(object):
         >>> all_users = users.scan()
 
         # Batching!
-        >>> with users.batch() as batch:
+        >>> with users.batch_write() as batch:
         ...     batch.put_item(data={
         ...         'username': 'anotherdoe',
         ...         'first_name': 'Another',
@@ -278,6 +277,9 @@ class Table(object):
         self.connection = connection
         self.schema = None
         self.indexes = None
+        # FIXME: Maybe support this? Not sure what all should update it.
+        # FIXME: Also, IIRC, there's a lag time in this count. Is that accurate?
+        self.count = None
 
         if self.connection is None:
             self.connection = DynamoDBConnection()
@@ -333,7 +335,7 @@ class Table(object):
 
             kwargs['local_secondary_indexes'] = raw_lsi
 
-        result = self.connection.create_table(
+        self.connection.create_table(
             self.table_name,
             attribute_definitions,
             raw_schema,
@@ -342,9 +344,89 @@ class Table(object):
         )
         return True
 
+    def _introspect_schema(self, raw_schema):
+        # FIXME: Should we be inspecting the attributes as well to get the
+        #        correct datatype? If we don't use it anywhere, there's no
+        #        point.
+        schema = []
+
+        for field in raw_schema:
+            if field['KeyType'] is 'HASH':
+                schema.append(HashKey(field['AttributeName']))
+            elif field['KeyType'] is 'RANGE':
+                schema.append(RangeKey(field['AttributeName']))
+            else:
+                raise exceptions.UnknownSchemaFieldError(
+                    "%s was seen, but is unknown. Please report this at "
+                    "https://github.com/boto/boto/issues." % field['KeyType']
+                )
+
+        return schema
+
+    def _introspect_indexes(self, raw_indexes):
+        # FIXME: Should we be inspecting the attributes as well to get the
+        #        correct datatype? If we don't use it anywhere, there's no
+        #        point.
+        indexes = []
+
+        for field in raw_indexes:
+            index_klass = AllIndex
+            kwargs = {
+                'parts': []
+            }
+
+            if field['Projection']['ProjectionType'] is 'ALL':
+                index_klass = AllIndex
+            elif field['Projection']['ProjectionType'] is 'KEYS_ONLY':
+                index_klass = KeysOnlyIndex
+            elif field['Projection']['ProjectionType'] is 'INCLUDE':
+                index_klass = IncludeIndex
+                kwargs['includes'] = field['Projection']['NonKeyAttributes']
+            else:
+                raise exceptions.UnknownIndexFieldError(
+                    "%s was seen, but is unknown. Please report this at "
+                    "https://github.com/boto/boto/issues." % \
+                    field['Projection']['ProjectionType']
+                )
+
+            name = field['IndexName']
+            kwargs['parts'] = self._introspect_schema(field['KeySchema'])
+            indexes.append(index_klass(name, **kwargs))
+
+        return indexes
+
     def describe(self):
-        # FIXME: This is super-leaky.
-        return self.connection.describe_table(self.table_name)
+        result = self.connection.describe_table(self.table_name)
+
+        # Blindly update throughput, since what's on DynamoDB's end is likely
+        # more correct.
+        self.throughput['read'] = int(result[self.table_name]\
+                                            ['ProvisionedThroughput']\
+                                            ['ReadCapacityUnits'])
+        self.throughput['write'] = int(result[self.table_name]\
+                                             ['ProvisionedThroughput']\
+                                             ['WriteCapacityUnits'])
+
+        if not self.schema:
+            # Since we have the data, build the schema.
+            raw_schema = result[self.table_name]['KeySchema']
+            self.schema = self._introspect_schema(raw_schema)
+
+        if not self.indexes:
+            # Build the index information as well.
+            raw_indexes = result[self.table_name]['LocalSecondaryIndexes']
+            self.indexes = self._introspect_indexes(raw_indexes)
+
+        # This is leaky.
+        return result
+
+    def update(self, throughput):
+        self.throughput = throughput
+        self.connection.update_table(self.table_name, {
+            'ReadCapacityUnits': int(self.throughput['read']),
+            'WriteCapacityUnits': int(self.throughput['write']),
+        })
+        return True
 
     def delete(self):
         self.connection.delete_table(self.table_name)
@@ -363,9 +445,24 @@ class Table(object):
         item = Item(self, data=data)
         return item.save()
 
+    def _put_item(self, item_data):
+        self.connection.create_item(self.table_name, item_data)
+        return True
+
     def delete_item(self, key):
         self.connection.delete_item(self.table_name, key)
         return True
+
+    def get_key_fields(self):
+        if not self.schema:
+            # We don't know the structure of the table. Get a description to
+            # populate the schema.
+            self.describe()
+
+        return [field.name for field in self.schema]
+
+    def batch_write(self):
+        return BatchTable(self)
 
     def query(self, query_data, limit=None):
         pass
@@ -373,12 +470,11 @@ class Table(object):
     def scan(self, key=None, index=None):
         pass
 
-    def get_key_fields(self):
-        return [field.name for field in self.schema]
-
-    def _put_item(self, item_data):
-        self.connection.create_item(self.table_name, item_data)
-        return True
+    def batch_get(self, keys):
+        # TODO: Since this is likely to get paginated, presenting the same
+        #       interface as ``query/scan`` would be a smart idea.
+        #       Not sure how to deal nicely with all the keys. :/
+        pass
 
 
 class BatchTable(object):
