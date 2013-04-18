@@ -23,7 +23,10 @@ import unittest
 import hashlib
 import hmac
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from boto.utils import Password
 from boto.utils import pythonize_name
@@ -159,10 +162,16 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
 
 class TestRetryURL(unittest.TestCase):
     def setUp(self):
-        self.urlopen_patch = mock.patch('urllib2.urlopen')
-        self.opener_patch = mock.patch('urllib2.build_opener')
-        self.urlopen = self.urlopen_patch.start()
-        self.opener = self.opener_patch.start()
+        try:
+            self.urlopen_patch = mock.patch('urllib2.urlopen')
+            self.opener_patch = mock.patch('urllib2.build_opener')
+            self.urlopen = self.urlopen_patch.start()
+            self.opener = self.opener_patch.start()
+        except ImportError:
+            self.urlopen_patch = mock.patch('urllib.request.urlopen')
+            self.opener_patch = mock.patch('urllib.request.build_opener')
+            self.urlopen = self.urlopen_patch.start()
+            self.opener = self.opener_patch.start()
 
     def tearDown(self):
         self.urlopen_patch.stop()
