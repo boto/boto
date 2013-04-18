@@ -6,7 +6,6 @@ IFS=$'\n\t'
 
 # These are items in the boto source we want to copy into the build directory, and apply with 2to3.
 items=(
-    boto
     tests
 )
 
