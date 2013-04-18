@@ -37,6 +37,7 @@ Currently Supported Services
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
+  * Redshift -- (:doc:`API Reference <ref/redshift>`)
 
 * **Deployment and Management**
 
