@@ -2,10 +2,10 @@ import mock
 import unittest
 from boto.dynamodb2.constants import STRING, NUMBER
 from boto.dynamodb2 import exceptions
+from boto.dynamodb2.fields import (HashKey, RangeKey,
+                                   AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
-from boto.dynamodb2.table import (HashKey, RangeKey,
-                                  AllIndex, KeysOnlyIndex, IncludeIndex,
-                                  Item, Table)
+from boto.dynamodb2.table import Item, Table
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
