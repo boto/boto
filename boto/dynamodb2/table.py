@@ -148,6 +148,7 @@ class Item(object):
 
         if data:
             self._data = data
+            self._dirty_data = data
 
     def __getitem__(self, key):
         # TODO: Is ``None`` a safe assumption here?
@@ -158,7 +159,7 @@ class Item(object):
         self._dirty_data[key] = value
 
     def needs_save(self):
-        return len(self._dirty_data)
+        return len(self._dirty_data) != 0
 
     def mark_clean(self):
         self._dirty_data = {}
@@ -219,8 +220,6 @@ class Table(object):
         >>> users = Table('users')
 
         # Create the table.
-        # TODO: This is missing the other options (attributes, provisioning,
-        #       lsi).
         >>> users.create(schema=[
         ...     HashKey('username'),
         ...     RangeKey('date_joined', data_type=NUMBER)
@@ -235,12 +234,11 @@ class Table(object):
         ...     'friend_count': 3,
         ...     'friends': ['alice', 'bob', 'jane']
         ... })
-        >>> jane = users.get_item('jane')
+        >>> jane = users.get_item(username='jane')
 
         # Change & store the updated user.
-        # TODO: I don't love this (would rather expose as attributes) but then
-        #       we introduce reserved names. :/ Thoughts?
-        >>> jane.set('friends', ['johndoe'])
+        >>> jane['friends'] = ['johndoe']
+        # FIXME: This likely needs to do some locking/concurrency checking.
         >>> jane.save()
 
         # TODO: Too Django-like? But it is a shorter syntax...
@@ -267,14 +265,13 @@ class Table(object):
         >>> users.delete()
 
     """
-    throughput = {
-        'read': 5,
-        'write': 5,
-    }
-
     def __init__(self, table_name, connection=None):
         self.table_name = table_name
         self.connection = connection
+        self.throughput = {
+            'read': 5,
+            'write': 5,
+        }
         self.schema = None
         self.indexes = None
         # FIXME: Maybe support this? Not sure what all should update it.
@@ -283,6 +280,8 @@ class Table(object):
 
         if self.connection is None:
             self.connection = DynamoDBConnection()
+
+        self._dynamizer = Dynamizer()
 
     def create(self, schema, throughput=None, indexes=None):
         """
@@ -297,7 +296,7 @@ class Table(object):
             ...     'read':20,
             ...     'write': 10,
             ... }, indexes=[
-            ...     KeysOnlyIndex('MostRecentlyJoined', RangeKey('date_joined')), # ???!!!
+            ...     KeysOnlyIndex('MostRecentlyJoined', parts=[RangeKey('date_joined')]),
             ... ])
 
         """
@@ -331,7 +330,12 @@ class Table(object):
             for index_field in self.indexes:
                 raw_lsi.append(index_field.schema())
                 # Again, build the attributes off what we know.
-                attribute_definitions.append(index_field.definition())
+                # HOWEVER, only add attributes *NOT* already seen.
+                attr_define = index_field.definition()
+
+                for part in attr_define:
+                    if not part['AttributeName'] in [attr['AttributeName'] for attr in attribute_definitions]:
+                        attribute_definitions.append(part)
 
             kwargs['local_secondary_indexes'] = raw_lsi
 
@@ -432,8 +436,19 @@ class Table(object):
         self.connection.delete_table(self.table_name)
         return True
 
-    def get_item(self, key):
-        item_data = self.connection.get_item(self.table_name, key)
+    def _encode_keys(self, keys):
+        raw_key = {}
+
+        for key, value in keys.items():
+            raw_key[key] = self._dynamizer.encode(value)
+
+        return raw_key
+
+    def get_item(self, **kwargs):
+        # FIXME: The downside of a kwargs-based approach is the other options to
+        #        the low-level ``get_item``. Maybe add ``consistent_get_item``?
+        raw_key = self._encode_keys(kwargs)
+        item_data = self.connection.get_item(self.table_name, raw_key)
         item = Item(self)
         item.load(item_data)
         return item
@@ -446,11 +461,14 @@ class Table(object):
         return item.save()
 
     def _put_item(self, item_data):
-        self.connection.create_item(self.table_name, item_data)
+        self.connection.put_item(self.table_name, item_data)
         return True
 
-    def delete_item(self, key):
-        self.connection.delete_item(self.table_name, key)
+    def delete_item(self, **kwargs):
+        # FIXME: The downside of a kwargs-based approach is the other options to
+        #        the low-level ``get_item``. Maybe add ``consistent_get_item``?
+        raw_key = self._encode_keys(kwargs)
+        self.connection.delete_item(self.table_name, raw_key)
         return True
 
     def get_key_fields(self):
@@ -486,7 +504,9 @@ class BatchTable(object):
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, type, value, traceback):
+        # FIXME: Crap. This swallows exceptions! Don't let it do that!
+
         if not self._to_put and not self._to_delete:
             return False
 
@@ -505,12 +525,17 @@ class BatchTable(object):
             })
 
         for delete in self._to_delete:
-            item = Item(self.table, data=put)
             batch_data[self.table.table_name].append({
                 'DeleteRequest': {
-                    'Key': item.get_keys(),
+                    'Key': self.table._encode_keys(delete),
                 }
             })
 
-        self.table.connection.batch_write_item(self.table_name, batch_data)
+        self.table.connection.batch_write_item(self.table.table_name, batch_data)
         return True
+
+    def put_item(self, data):
+        self._to_put.append(data)
+
+    def delete_item(self, **kwargs):
+        self._to_delete.append(kwargs)

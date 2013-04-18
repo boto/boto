@@ -1,11 +1,11 @@
 import mock
 import unittest
-from boto.dynamodb2.constants import (STRING, NUMBER, BINARY,
-                                      STRING_SET, NUMBER_SET, BINARY_SET)
+from boto.dynamodb2.constants import STRING, NUMBER
+from boto.dynamodb2 import exceptions
 from boto.dynamodb2.layer1 import DynamoDBConnection
-from boto.dynamodb2.table import (BaseSchemaField, HashKey, RangeKey,
-                                  BaseIndexField, AllIndex, KeysOnlyIndex,
-                                  IncludeIndex, Item, Table)
+from boto.dynamodb2.table import (HashKey, RangeKey,
+                                  AllIndex, KeysOnlyIndex, IncludeIndex,
+                                  Item, Table)
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
@@ -209,6 +209,7 @@ class ItemTestCase(unittest.TestCase):
         self.assertEqual(self.johndoe['last_name'], 'Doe')
 
     def test_needs_save(self):
+        self.johndoe.mark_clean()
         self.assertFalse(self.johndoe.needs_save())
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
@@ -256,6 +257,8 @@ class ItemTestCase(unittest.TestCase):
     def test_save_no_changes(self):
         # Unchanged, no save.
         with mock.patch.object(self.table, '_put_item', return_value=True) as mock_put_item:
+            # Pretend we loaded it via ``get_item``...
+            self.johndoe.mark_clean()
             self.assertFalse(self.johndoe.save())
 
         self.assertFalse(mock_put_item.called)
@@ -296,7 +299,7 @@ class ItemTestCase(unittest.TestCase):
 class TableTestCase(unittest.TestCase):
     def setUp(self):
         super(TableTestCase, self).setUp()
-        self.table = Table('users', connection=FakeDynamoDBConnection())
+        self.users = Table('users', connection=FakeDynamoDBConnection())
 
     def test__introspect_schema(self):
         raw_schema_1 = [
@@ -309,12 +312,24 @@ class TableTestCase(unittest.TestCase):
                 "KeyType": "RANGE"
             }
         ]
-        schema_1 = self.table._introspect_schema(raw_schema_1)
+        schema_1 = self.users._introspect_schema(raw_schema_1)
         self.assertEqual(len(schema_1), 2)
         self.assertTrue(isinstance(schema_1[0], HashKey))
         self.assertEqual(schema_1[0].name, 'username')
         self.assertTrue(isinstance(schema_1[1], RangeKey))
         self.assertEqual(schema_1[1].name, 'date_joined')
+
+        raw_schema_2 = [
+            {
+                "AttributeName": "username",
+                "KeyType": "BTREE"
+            },
+        ]
+        self.assertRaises(
+            exceptions.UnknownSchemaFieldError,
+            self.users._introspect_schema,
+            raw_schema_2
+        )
 
     def test__introspect_indexes(self):
         raw_indexes_1 = [
@@ -366,7 +381,7 @@ class TableTestCase(unittest.TestCase):
                 }
             }
         ]
-        indexes_1 = self.table._introspect_indexes(raw_indexes_1)
+        indexes_1 = self.users._introspect_indexes(raw_indexes_1)
         self.assertEqual(len(indexes_1), 3)
         self.assertTrue(isinstance(indexes_1[0], KeysOnlyIndex))
         self.assertEqual(indexes_1[0].name, 'MostRecentlyJoinedIndex')
@@ -378,3 +393,377 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(indexes_1[2].name, 'GenderIndex')
         self.assertEqual(len(indexes_1[2].parts), 2)
         self.assertEqual(indexes_1[2].includes_fields, ['gender'])
+
+        raw_indexes_2 = [
+            {
+                "IndexName": "MostRecentlyJoinedIndex",
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "date_joined",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "Projection": {
+                    "ProjectionType": "SOMETHING_CRAZY"
+                }
+            },
+        ]
+        self.assertRaises(
+            exceptions.UnknownIndexFieldError,
+            self.users._introspect_indexes,
+            raw_indexes_2
+        )
+
+    def test_initialization(self):
+        users = Table('users')
+        self.assertEqual(users.table_name, 'users')
+        self.assertTrue(isinstance(users.connection, DynamoDBConnection))
+        self.assertEqual(users.throughput['read'], 5)
+        self.assertEqual(users.throughput['write'], 5)
+        self.assertEqual(users.schema, None)
+        self.assertEqual(users.indexes, None)
+
+        groups = Table('groups', connection=FakeDynamoDBConnection())
+        self.assertEqual(groups.table_name, 'groups')
+        self.assertTrue(hasattr(groups.connection, 'assert_called_once_with'))
+
+    def test_create_simple(self):
+        with mock.patch.object(self.users.connection, 'create_table', return_value={}) as mock_create_table:
+            retval = self.users.create(schema=[
+                HashKey('username'),
+                RangeKey('date_joined', data_type=NUMBER)
+            ])
+            self.assertTrue(retval)
+
+        self.assertTrue(mock_create_table.called)
+        mock_create_table.assert_called_once_with('users', [
+            {
+                'AttributeName': 'username',
+                'AttributeType': 'HASH'
+            },
+            {
+                'AttributeName': 'date_joined',
+                'AttributeType': 'RANGE'
+            }
+        ],
+        [
+            {
+                'KeyType': 'S',
+                'AttributeName': 'username'
+            },
+            {
+                'KeyType': 'N',
+                'AttributeName': 'date_joined'
+            }
+        ],
+        {
+            'WriteCapacityUnits': 5,
+            'ReadCapacityUnits': 5
+        })
+
+    def test_create_full(self):
+        with mock.patch.object(self.users.connection, 'create_table', return_value={}) as mock_create_table:
+            retval = self.users.create(schema=[
+                HashKey('username'),
+                RangeKey('date_joined', data_type=NUMBER)
+            ], throughput={
+                'read':20,
+                'write': 10,
+            }, indexes=[
+                KeysOnlyIndex('FriendCountIndex', parts=[RangeKey('friend_count')]),
+            ])
+            self.assertTrue(retval)
+
+        self.assertTrue(mock_create_table.called)
+        mock_create_table.assert_called_once_with('users', [
+            {
+                'AttributeName': 'username',
+                'AttributeType': 'HASH'
+            },
+            {
+                'AttributeName': 'date_joined',
+                'AttributeType': 'RANGE'
+            },
+            {
+                'AttributeName': 'friend_count',
+                'AttributeType': 'RANGE'
+            }
+        ],
+        [
+            {
+                'KeyType': 'S',
+                'AttributeName': 'username'
+            },
+            {
+                'KeyType': 'N',
+                'AttributeName': 'date_joined'
+            }
+        ],
+        {
+            'WriteCapacityUnits': 10,
+            'ReadCapacityUnits': 20
+        },
+        local_secondary_indexes=[
+            {
+                'KeySchema': [
+                    {
+                        'KeyType': 'S',
+                        'AttributeName': 'friend_count'
+                    }
+                ],
+                'IndexName': 'FriendCountIndex',
+                'Projection': {
+                    'ProjectionType': 'KEYS_ONLY'
+                }
+            }
+        ])
+
+    def test_describe(self):
+        expected = {
+            "users": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "username",
+                        "AttributeType": "S"
+                    }
+                ],
+                "ItemCount": 5,
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "LocalSecondaryIndexes": [
+                    {
+                        "IndexName": "UsernameIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "username",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "KEYS_ONLY"
+                        }
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 20,
+                    "WriteCapacityUnits": 6
+                },
+                "TableName": "Thread",
+                "TableStatus": "ACTIVE"
+            }
+        }
+
+        with mock.patch.object(self.users.connection, 'describe_table', return_value=expected) as mock_describe:
+            self.assertEqual(self.users.throughput['read'], 5)
+            self.assertEqual(self.users.throughput['write'], 5)
+            self.assertEqual(self.users.schema, None)
+            self.assertEqual(self.users.indexes, None)
+
+            self.users.describe()
+
+            self.assertEqual(self.users.throughput['read'], 20)
+            self.assertEqual(self.users.throughput['write'], 6)
+            self.assertEqual(len(self.users.schema), 1)
+            self.assertEqual(isinstance(self.users.schema[0], HashKey), 1)
+            self.assertEqual(len(self.users.indexes), 1)
+
+        mock_describe.assert_called_once_with('users')
+
+    def test_update(self):
+        with mock.patch.object(self.users.connection, 'update_table', return_value={}) as mock_update:
+            self.assertEqual(self.users.throughput['read'], 5)
+            self.assertEqual(self.users.throughput['write'], 5)
+            self.users.update(throughput={
+                'read': 7,
+                'write': 2,
+            })
+            self.assertEqual(self.users.throughput['read'], 7)
+            self.assertEqual(self.users.throughput['write'], 2)
+
+        mock_update.assert_called_once_with('users', {
+            'WriteCapacityUnits': 2,
+            'ReadCapacityUnits': 7
+        })
+
+    def test_delete(self):
+        with mock.patch.object(self.users.connection, 'delete_table', return_value={}) as mock_delete:
+            self.assertTrue(self.users.delete())
+
+        mock_delete.assert_called_once_with('users')
+
+    def test_get_item(self):
+        expected = {
+            'Item': {
+                'username': {'S': 'johndoe'},
+                'first_name': {'S': 'John'},
+                'last_name': {'S': 'Doe'},
+                'date_joined': {'N': '1366056668'},
+                'friend_count': {'N': '3'},
+                'friends': {'SS': ['alice', 'bob', 'jane']},
+            }
+        }
+
+        with mock.patch.object(self.users.connection, 'get_item', return_value=expected) as mock_get_item:
+            item = self.users.get_item(username='johndoe')
+            self.assertEqual(item['username'], 'johndoe')
+            self.assertEqual(item['first_name'], 'John')
+
+        mock_get_item.assert_called_once_with('users', {'username': {'S': 'johndoe'}})
+
+    def test_put_item(self):
+        with mock.patch.object(self.users.connection, 'put_item', return_value={}) as mock_put_item:
+            self.users.put_item(data={
+                'username': 'johndoe',
+                'last_name': 'Doe',
+                'date_joined': 2345,
+            })
+
+        mock_put_item.assert_called_once_with('users', {
+            'username': {'S': 'johndoe'},
+            'last_name': {'S': 'Doe'},
+            'date_joined': {'N': '2345'}
+        })
+
+    def test_private_put_item(self):
+        with mock.patch.object(self.users.connection, 'put_item', return_value={}) as mock_put_item:
+            self.users._put_item({'some': 'data'})
+
+        mock_put_item.assert_called_once_with('users', {'some': 'data'})
+
+    def test_delete_item(self):
+        with mock.patch.object(self.users.connection, 'delete_item', return_value={}) as mock_delete_item:
+            self.assertTrue(self.users.delete_item(username='johndoe', date_joined=23456))
+
+        mock_delete_item.assert_called_once_with('users', {'username': {'S': 'johndoe'}, 'date_joined': {'N': '23456'}})
+
+    def test_get_key_fields_no_schema_populated(self):
+        expected = {
+            "users": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "username",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "date_joined",
+                        "AttributeType": "N"
+                    }
+                ],
+                "ItemCount": 5,
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "date_joined",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "LocalSecondaryIndexes": [
+                    {
+                        "IndexName": "UsernameIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "username",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "KEYS_ONLY"
+                        }
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 20,
+                    "WriteCapacityUnits": 6
+                },
+                "TableName": "Thread",
+                "TableStatus": "ACTIVE"
+            }
+        }
+
+        with mock.patch.object(self.users.connection, 'describe_table', return_value=expected) as mock_describe:
+            self.assertEqual(self.users.schema, None)
+
+            key_fields = self.users.get_key_fields()
+            self.assertEqual(key_fields, ['username', 'date_joined'])
+
+            self.assertEqual(len(self.users.schema), 2)
+
+        mock_describe.assert_called_once_with('users')
+
+    def test_query(self):
+        pass
+
+    def test_scan(self):
+        pass
+
+    def test_batch_get(self):
+        pass
+
+    def test_batch_write_no_writes(self):
+        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+            with self.users.batch_write() as batch:
+                pass
+
+        self.assertFalse(mock_batch.called)
+
+    def test_batch_write(self):
+        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+            with self.users.batch_write() as batch:
+                batch.put_item(data={
+                    'username': 'jane',
+                    'date_joined': 12342547
+                })
+                batch.delete_item(username='johndoe')
+                batch.put_item(data={
+                    'username': 'alice',
+                    'date_joined': 12342888
+                })
+
+        mock_batch.assert_called_once_with('users', {
+            'users': [
+                {
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'jane'},
+                            'date_joined': {'N': '12342547'}
+                        }
+                    }
+                },
+                {
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'alice'},
+                            'date_joined': {'N': '12342888'}
+                        }
+                    }
+                },
+                {
+                    'DeleteRequest': {
+                        'Key': {
+                            'username': {'S': 'johndoe'},
+                        }
+                    }
+                },
+            ]
+        })
+
+    def test_batch_write_dont_swallow_exceptions(self):
+        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+            try:
+                with self.users.batch_write() as batch:
+                    raise Exception('OH NOES')
+            except Exception, e:
+                self.assertEqual(str(e), 'OH NOES')
+
+        self.assertFalse(mock_batch.called)
