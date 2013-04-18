@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rebuild the python 3 code from the python 2 sources, and run tests.
 
 set -eu
